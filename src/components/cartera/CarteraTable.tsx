@@ -3,6 +3,16 @@
 /**
  * CarteraTable — las deudas de la cartera en la tabla de la casa.
  *
+ * ── 🔴 Lo que cambió el 2026-09-16 ─────────────────────────────────────────
+ *
+ * La fila era un `Cobro`; ahora es una CUOTA del contrato. Y la columna de la
+ * derecha dejó de ser «Mora» para ser «Estado», porque «venció» ya no
+ * significa «hay que ir a buscarlo»: una cuota vencida dentro de los días de
+ * plazo del contrato es deuda, no cartera, y la cobranza no la toca. El badge
+ * dice en cuál de los tres cajones está y, cuando todavía no es cartera, dice
+ * también cuántos días de plazo la sostienen — sin eso, un «Vencido» sin mora
+ * se lee como un error del sistema.
+ *
  * ── Por qué existe (Nico, 2026-09-02) ──────────────────────────────────────
  * «Esto sabes que debe tener una tabla como las que ya usamos, y hasta para
  * los empty state, y cuando tenga datos que tenga paginación.»
@@ -55,13 +65,26 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 
-export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'mora'
+export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'estado'
 type Sentido = 'asc' | 'desc'
 
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
 export const COLUMNAS_DE_CARTERA = 7
+
+/**
+ * Qué tan grave está una fila, como UN número comparable.
+ *
+ * Ordenar por `diasDeMora` a secas ya no alcanza: una cuota por vencer y una
+ * vencida dentro del plazo tienen las dos 0 días de mora, y sin el cajón
+ * quedarían mezcladas. La escala de `edades.ts` las separa —por vencer <
+ * vencida en plazo < cartera por edad— y los días desempatan adentro.
+ */
+function peso(item: CarteraItem): number {
+  return GRAVEDAD.indexOf(gravedadDe(item)) * 100_000 + item.diasDeMora
+}
 
 /**
  * Ordena sin mutar.
@@ -81,15 +104,25 @@ export function ordenarCartera(
       case 'inquilino':
         return (a.tenantName ?? '').localeCompare(b.tenantName ?? '', 'es-CO') * signo
       case 'mes':
-        // `dueDate` es ISO: comparar como texto ya es cronológico, y sirve
-        // aunque el back mande fecha sola o fecha con hora.
-        return a.dueDate.localeCompare(b.dueDate) * signo
+        // `vence` es `YYYY-MM-DD`: comparar como texto ya es cronológico.
+        return a.vence.localeCompare(b.vence) * signo
       case 'debe':
         return (a.pendingAmount - b.pendingAmount) * signo
       default:
-        return (a.daysLate - b.daysLate) * signo
+        return (peso(a) - peso(b)) * signo
     }
   })
+}
+
+/**
+ * A dónde lleva la fila: al cobro si finanzas ya lo emitió, y si no al
+ * contrato. Se exporta porque `CarteraCompleta` abre lo mismo al tocar la fila
+ * y dos rutas distintas para el mismo clic es cómo aparece un enlace muerto.
+ */
+export function aDondeLleva(item: CarteraItem): string {
+  return item.cobroId
+    ? `/panel/inmobiliaria/pagos/cartera/cobros?cobro=${item.cobroId}`
+    : `/panel/inmobiliaria/contratos/${item.contractId}`
 }
 
 export interface CarteraTableProps {
@@ -107,7 +140,7 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
    * saber a quién hay que ir a buscar YA; el orden en que el back devolvió las
    * filas no contesta eso.
    */
-  const [campo, setCampo] = useState<CampoDeOrdenDeCartera>('mora')
+  const [campo, setCampo] = useState<CampoDeOrdenDeCartera>('estado')
   const [sentido, setSentido] = useState<Sentido>('desc')
 
   const ordenados = useMemo(() => ordenarCartera(items, campo, sentido), [items, campo, sentido])
@@ -162,7 +195,7 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
           <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')}</TableHead>
           <TableHead className="whitespace-nowrap">{t('cartera.tabla.propietario')}</TableHead>
           <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
-          <Ordenable campo="mora">{t('cartera.tabla.mora')}</Ordenable>
+          <Ordenable campo="estado">{t('cartera.tabla.mora')}</Ordenable>
           <Ordenable campo="debe" alineado="right">
             {t('cartera.tabla.debe')}
           </Ordenable>
@@ -179,7 +212,7 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
         ) : (
           ordenados.map((item) => (
             <FilaDeCartera
-              key={item.cobroId}
+              key={item.cuotaId}
               item={item}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
             />
@@ -209,7 +242,8 @@ function FilaDeCartera({
       className="cursor-pointer"
       onClick={onVerCobro}
       data-testid="cartera-fila"
-      data-cobro-id={item.cobroId}
+      data-cuota-id={item.cuotaId}
+      data-cajon={item.cajon}
     >
       {/* Inquilino: quién debe y por dónde se le habla. */}
       <TableCell className="align-middle">
@@ -285,37 +319,65 @@ function FilaDeCartera({
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
           <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
           <div className="font-mono text-xs tabular-nums text-fg-subtle">
-            {t('cartera.tabla.vence', { fecha: formatDate(item.dueDate) })}
+            {t('cartera.tabla.vence', { fecha: formatDate(item.vence) })}
           </div>
         </div>
       </TableCell>
 
-      {/* Mora + gestión: qué tan tarde va y qué hemos hecho al respecto. */}
+      {/* Estado + gestión: en qué cajón está, por qué, y qué hemos hecho.
+
+          🔴 El badge NO dice «al día» cuando no hay mora: una cuota que venció
+          hace dos días con tres de plazo no está al día, está dentro del plazo
+          —y la diferencia es justo la que decide si la cobranza la toca—. */}
       <TableCell className="align-middle">
         <div className="space-y-1">
           <Badge
             variant={
-              item.daysLate > 60 ? 'destructive' : item.daysLate > 0 ? 'secondary' : 'outline'
+              item.cajon !== 'CARTERA'
+                ? 'outline'
+                : item.diasDeMora > 60
+                  ? 'destructive'
+                  : 'secondary'
             }
           >
-            {item.daysLate > 0
-              ? t(item.daysLate === 1 ? 'cartera.tabla.unDiaDeMora' : 'cartera.tabla.diasDeMora', {
-                  n: item.daysLate,
-                })
-              : t('cartera.tabla.alDia')}
-          </Badge>
-          <div className="whitespace-nowrap text-xs text-fg-subtle">
-            {/* Cero recordatorios es un cero VERDADERO y dice algo: nadie le ha
-                escrito todavía. Un «0» suelto en una columna se lee como un
-                dato que faltó. */}
-            {item.remindersSent > 0
+            {item.cajon === 'CARTERA'
               ? t(
-                  item.remindersSent === 1
-                    ? 'cartera.tabla.unRecordatorio'
-                    : 'cartera.tabla.recordatorios',
-                  { n: item.remindersSent },
+                  item.diasDeMora === 1
+                    ? 'cartera.tabla.unDiaDeMora'
+                    : 'cartera.tabla.diasDeMora',
+                  { n: item.diasDeMora },
                 )
-              : t('cartera.tabla.sinRecordatorios')}
+              : item.cajon === 'VENCIDA_EN_PLAZO'
+                ? t('cartera.tabla.vencidoEnPlazo')
+                : t('cartera.tabla.porVencer')}
+          </Badge>
+          {/* El plazo se dice sólo donde explica algo: es la razón por la que
+              una cuota vencida todavía no es cartera. */}
+          {item.cajon === 'VENCIDA_EN_PLAZO' && item.diasDePlazo > 0 ? (
+            <div className="whitespace-nowrap text-xs text-fg-subtle">
+              {t(
+                item.diasDePlazo === 1
+                  ? 'cartera.tabla.unDiaDePlazo'
+                  : 'cartera.tabla.diasDePlazo',
+                { n: item.diasDePlazo },
+              )}
+            </div>
+          ) : null}
+          <div className="whitespace-nowrap text-xs text-fg-subtle">
+            {/* Tres estados, no dos. `null` es «no hay cobro emitido desde el
+                cual escribirle»; un 0 es un cero VERDADERO («no le hemos
+                escrito»). Taparlos con el mismo texto los vuelve el mismo
+                hecho, y no lo son. */}
+            {item.remindersSent === null
+              ? t('cartera.tabla.sinCobroEmitido')
+              : item.remindersSent > 0
+                ? t(
+                    item.remindersSent === 1
+                      ? 'cartera.tabla.unRecordatorio'
+                      : 'cartera.tabla.recordatorios',
+                    { n: item.remindersSent },
+                  )
+                : t('cartera.tabla.sinRecordatorios')}
           </div>
         </div>
       </TableCell>
@@ -335,14 +397,17 @@ function FilaDeCartera({
       </TableCell>
 
       <TableCell className="align-middle text-right">
-        {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña. */}
+        {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña.
+
+            🔴 Sin cobro emitido no hay cobro que abrir: el enlace va al
+            CONTRATO, que es de donde nace la deuda. Un `?cobro=null` era una
+            pestaña en blanco. */}
         <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link
-            href={`/panel/inmobiliaria/pagos/cartera/cobros?cobro=${item.cobroId}`}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <Link href={aDondeLleva(item)} onClick={(e) => e.stopPropagation()}>
             <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">{t('cartera.tabla.verCobro')}</span>
+            <span className="sr-only">
+              {item.cobroId ? t('cartera.tabla.verCobro') : t('cartera.tabla.verContrato')}
+            </span>
           </Link>
         </Button>
       </TableCell>

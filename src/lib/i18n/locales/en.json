@@ -11337,12 +11337,11 @@
       "propietario": "Owner",
       "mes": "Month",
       "debe": "Owes",
-      "mora": "Overdue",
+      "mora": "Status",
       "verCobro": "View the charge",
       "whatsapp": "Message on WhatsApp",
       "vence": "due {{fecha}}",
       "abonado": "paid {{monto}}",
-      "alDia": "Not due yet",
       "unDiaDeMora": "1 day",
       "diasDeMora": "{{n}} days",
       "unRecordatorio": "1 reminder",
@@ -11351,7 +11350,13 @@
       "sinInquilino": "No tenant on file",
       "sinTelefono": "No phone number",
       "sinDireccion": "No address",
-      "sinPropietario": "Owner not on file"
+      "sinPropietario": "Owner not on file",
+      "porVencer": "Not due yet",
+      "vencidoEnPlazo": "Due, within grace period",
+      "diasDePlazo": "{{n}}-day grace period",
+      "unDiaDePlazo": "1-day grace period",
+      "sinCobroEmitido": "No charge issued yet",
+      "verContrato": "View the contract"
     },
     "pestanas": {
       "ariaLabel": "How to read receivables",

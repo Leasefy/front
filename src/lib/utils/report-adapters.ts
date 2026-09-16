@@ -103,11 +103,18 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
 export function adaptCollections(report: CarteraReport | null | undefined): CollectionsData | null {
   if (!report) return null;
 
-  const totalLate = report.summary.totalPending;
-  const lateItems = report.items.filter((i: CarteraItem) => i.daysLate > 0);
+  /*
+   * 🔴 «Atrasado» es CARTERA, no «vencido» (back, 2026-09-16): lo que venció
+   * dentro de los días de plazo del contrato sigue siendo deuda y la cobranza
+   * no lo toca. `carteraCop` incluye los siniestros, igual que la franja de
+   * las dos pantallas de cartera, así que este tablero no puede dar un número
+   * distinto del que se ve allá.
+   */
+  const totalLate = report.summary.carteraCop;
+  const lateItems = report.items.filter((i: CarteraItem) => i.cajon === 'CARTERA');
   // Sin un solo contrato atrasado no hay atraso que promediar. El 0 decía
   // «Prom. 0 días de atraso», que se lee como una cartera medida y sana.
-  const avgDaysLate = promedioMedido(lateItems.map((i: CarteraItem) => i.daysLate));
+  const avgDaysLate = promedioMedido(lateItems.map((i: CarteraItem) => i.diasDeMora));
 
   // Derive summary totals from byMonth[] (current period is last month in the series)
   const byMonth: CarteraMonthItem[] = report.byMonth ?? [];
@@ -145,7 +152,7 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       .map((item) => ({
         tenantName: item.tenantName ?? '',
         propertyTitle: item.propertyTitle,
-        daysLate: item.daysLate,
+        daysLate: item.diasDeMora,
         amount: item.pendingAmount,
         // Los recordatorios que se enviaron de verdad. Antes era un 0 fijo: la
         // columna «Intentos» afirmaba, para TODA la cartera, que nadie había

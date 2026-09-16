@@ -425,11 +425,16 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards.
+
+          🔴 La cifra grande es la CARTERA (lo que pasó el plazo del contrato),
+          no toda la deuda: la deuda total de la inmobiliaria migrada es 12,9
+          veces mayor, y ponerla acá bajo el rótulo «cartera vencida» mandaría
+          a la cobranza a perseguir plata que nadie debe todavía. */}
       <div className="p-4 rounded-lg bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
-        <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-        <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
+        <p className="text-2xl font-bold">{formatCurrency(data.summary.carteraCop)}</p>
+        <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.summary.cuotasEnCartera })}</p>
       </div>
 
       {/* Bucket Summary */}
@@ -463,15 +468,18 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
       {/* Top Deudores */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">
-          {t('inmobiliaria.reporte.topDebtors')} ({data.items.length})
+          {t('inmobiliaria.reporte.topDebtors')} ({data.summary.cuotasEnCartera})
         </h4>
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {data.items
+            // Los peores deudores son los de la CARTERA: una cuota que todavía
+            // no vence no es un deudor moroso.
+            .filter((item) => item.cajon === 'CARTERA')
             .sort((a, b) => b.pendingAmount - a.pendingAmount)
             .slice(0, 8)
             .map((item) => (
               <div
-                key={item.cobroId}
+                key={item.cuotaId}
                 className="flex items-center justify-between p-3 rounded-md border border-border"
               >
                 <div className="min-w-0 flex-1">
@@ -487,7 +495,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
                     {formatCurrency(item.pendingAmount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t('inmobiliaria.reporte.nDays', { count: item.daysLate })}
+                    {t('inmobiliaria.reporte.nDays', { count: item.diasDeMora })}
                   </p>
                 </div>
               </div>

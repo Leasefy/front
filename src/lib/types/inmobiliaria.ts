@@ -4,6 +4,12 @@
  */
 
 import type { BankCode, AccountType } from './payment-accounts';
+/*
+ * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
+ * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
+ * terminan llamando distinto a lo mismo.
+ */
+import type { CajonDeLaCuota, EstadoDeCuota } from '@/lib/api/cartera.types';
 
 // ============================================================================
 // Propietario (Property Owner/Client)
@@ -964,67 +970,145 @@ export interface ExtractoPropietario {
 }
 
 /**
- * Una deuda de la cartera, como la manda `GET /inmobiliaria/reports/cartera`.
+ * Una fila del informe de cartera: UNA CUOTA de un contrato.
  *
- * Este tipo declaraba antes seis campos que el back nunca enviaba
- * (`propertyAddress`, `tenantPhone`, `propietarioName`, `agenteId`,
- * `agenteName`, `bucket`). Una pantalla que los pintara habría mostrado
- * `undefined` con tsc en verde. Ahora el back sí los manda — menos `bucket`,
- * que se calcula acá para poder separar lo que aún no vence de la mora.
+ * 🔴 Cambió la UNIDAD y cambió la MEDIDA (back, 2026-09-16):
+ *
+ * · La unidad era el `Cobro`. Ahora es la CUOTA del contrato
+ *   (`contrato_cuotas`). El cobro es el documento con el que finanzas reclama
+ *   una parte de la deuda, y la inmobiliaria migrada no tiene ni uno: el
+ *   informe salía en cero con $8.446,8 millones pendientes encima. Por eso
+ *   `cuotaId` es la llave de la fila y `cobroId` puede ser `null`.
+ * · `daysLate` se llama ahora `diasDeMora` y significa otra cosa: los días
+ *   DESPUÉS del plazo del contrato, no los días desde el vencimiento. El
+ *   nombre cambió a propósito para que ningún lector siga usando el viejo
+ *   creyendo que mide lo mismo.
+ *
+ * El vocabulario es el de `@/lib/api/cartera.types` —el de «Cartera por
+ * concepto»— para que las dos pantallas de cartera cuenten la misma historia
+ * con las mismas palabras.
  */
 export interface CarteraItem {
-  cobroId: string;
-  consignacionId: string;
+  /** 🔴 La identidad de la fila. Es la `key` de React, no `cobroId`. */
+  cuotaId: string;
+  /** El documento de cobro, si finanzas ya lo emitió. `null` es lo normal. */
+  cobroId: string | null;
+  contractId: string;
+  /** El número que la inmobiliaria conoce (el suyo si el contrato es migrado). */
+  contrato: string | null;
+  /** Nuestro consecutivo, rotulado, sólo cuando `contrato` es el de ella. */
+  contratoDeLeasefy: string | null;
+  /** `null` cuando el contrato migrado no tiene inmueble cargado. */
+  propertyId: string | null;
+  /** `null` cuando el inmueble no tiene mandato en esta inmobiliaria. */
+  consignacionId: string | null;
   propertyTitle: string;
   propertyAddress: string | null;
   tenantName: string | null;
   tenantPhone: string | null;
+  tenantDocument: string | null;
   propietarioId: string | null;
   propietarioName: string | null;
   agenteId: string | null;
   agenteName: string | null;
+  /** `YYYY-MM`: el período de la cuota. */
   month: string;
-  dueDate: string;
+  /** `YYYY-MM-DD`: el día de cartera del período. De acá arranca el plazo. */
+  vence: string;
+  estado: EstadoDeCuota;
+  /** 🔴 En cuál de los tres cajones cae. Los tres no se solapan. */
+  cajon: CajonDeLaCuota;
+  /** 🔴 Días DESPUÉS del plazo. `0` mientras el plazo del contrato corre. */
+  diasDeMora: number;
+  /** Los días de plazo que rigen para este contrato, ya resueltos. */
+  diasDePlazo: number;
+  /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
+  esVencida: boolean;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  daysLate: number;
-  status: string;
-  /** Recordatorios efectivamente enviados. Es el dato, no un cero fijo. */
-  remindersSent: number;
+  /**
+   * Recordatorios efectivamente enviados. 🔴 `null` —y no `0`— cuando la cuota
+   * no tiene cobro emitido: «no le hemos escrito» y «no hay documento desde el
+   * cual escribirle» son dos cosas distintas, y un cero las tapa.
+   */
+  remindersSent: number | null;
   lastReminderDate: string | null;
 }
 
-export interface CarteraReport {
-  generatedAt: string;
-  items: CarteraItem[];
-  summary: {
-    totalPending: number;
-    bucket0to30: number;
-    bucket31to60: number;
-    bucket61to90: number;
-    bucket90plus: number;
-  };
-  /** Optional monthly breakdown (backend may not return this yet) */
-  byMonth?: CarteraMonthItem[];
-  /**
-   * Los casos en siniestro: `diasParaSiniestro` días de mora con saldo. Van
-   * aparte de `items` — ya no son cobranza, son reclamación a la aseguradora.
-   * Opcional porque un back anterior no lo manda.
-   */
-  siniestros?: CarteraSiniestros;
+/**
+ * Las cinco cifras del informe. 🔴 NO se pueden sumar en una sola.
+ *
+ * Las tres del medio son una PARTICIÓN de `deudaTotalCop`: suman el total por
+ * construcción. Son las mismas palabras y los mismos números que la franja de
+ * «Cartera por concepto» (`TotalesDeCartera` en `@/lib/api/cartera.types`),
+ * donde `enMoraCop` es esta `carteraCop`.
+ */
+export interface CarteraSummary {
+  /** Toda la deuda pendiente del contrato, venza cuando venza. */
+  deudaTotalCop: number;
+  /** Todavía no vence. Es deuda, NO es cartera. */
+  porVencerCop: number;
+  /** Venció, pero el plazo del contrato sigue corriendo. Tampoco es cartera. */
+  vencidaEnPlazoCop: number;
+  /** 🔴 LA CARTERA: pasó el plazo. Siniestros incluidos. */
+  carteraCop: number;
+  /** Cartera − siniestros: lo que sigue siendo cobranza. Suman los tramos. */
+  carteraVivaCop: number;
+  enSiniestroCop: number;
+  /** Los tramos por edad, sobre la mora REAL y sobre la cartera viva. */
+  bucket0to30: number;
+  bucket31to60: number;
+  bucket61to90: number;
+  bucket90plus: number;
+  cuotas: number;
+  cuotasPorVencer: number;
+  cuotasVencidasEnPlazo: number;
+  cuotasEnCartera: number;
+  cuotasEnSiniestro: number;
 }
 
-/** Un caso en siniestro, con cuándo pasó y cuántos días lleva ahí. */
+/** Cuántas filas quedaron sin cada dato. Es el respaldo de `avisos`. */
+export interface CarteraSinCamino {
+  sinInmueble: number;
+  sinMandato: number;
+  sinPropietario: number;
+  sinAgente: number;
+  sinDireccion: number;
+  sinTelefono: number;
+}
+
+export interface CarteraReport {
+  generadoEn: string;
+  /** `YYYY-MM-DD` en Bogotá: contra qué día se midieron los días de mora. */
+  hoy: string;
+  /** Los tres cajones. Los siniestros van aparte, en `siniestros`. */
+  items: CarteraItem[];
+  summary: CarteraSummary;
+  byMonth?: CarteraMonthItem[];
+  siniestros: CarteraSiniestros;
+  sinCamino: CarteraSinCamino;
+  /** Contratos vigentes sin tabla de amortización: su deuda NO está acá. */
+  contratosSinCuotas: number;
+  /** Lo que estos números NO cuentan, escrito para que lo lea una persona. */
+  avisos: string[];
+}
+
+/** Un caso en siniestro, con desde cuándo lo es. */
 export interface CarteraSiniestro extends CarteraItem {
-  siniestroAt: string | null;
+  /**
+   * `YYYY-MM-DD`, DERIVADO de la regla (vencimiento + plazo +
+   * `diasParaSiniestro`), no un sello de auditoría. El informe habla de la
+   * regla, que es lo que se puede explicar y recalcular.
+   */
+  siniestroDesde: string;
   diasEnSiniestro: number;
 }
 
 export interface CarteraSiniestros {
   cantidad: number;
   totalCop: number;
-  /** A los cuántos días de mora pasa un cobro a siniestro en esta agencia. */
+  /** A los cuántos días de mora un caso pasa a siniestro en esta agencia. */
   diasParaSiniestro: number;
   items: CarteraSiniestro[];
 }
@@ -1064,9 +1148,13 @@ export interface OcupacionTrendItem {
 
 export interface CarteraMonthItem {
   month: string;
+  /** Lo pactado en las cuotas del mes (sin las anuladas ni las del sistema anterior). */
   total: number;
   collected: number;
+  /** 🔴 Lo que pasó el plazo del contrato, no todo lo vencido. */
   overdue: number;
+  /** Cuántas cuotas hay detrás del mes. Antes era `cobroCount`. */
+  cuotas: number;
   collectionRate: number;
 }
 

@@ -25,26 +25,35 @@ import { EnSiniestro } from './EnSiniestro'
 
 function caso(over: Partial<CarteraSiniestro> = {}): CarteraSiniestro {
   return {
+    cuotaId: 'q-1',
     cobroId: 'c-1',
+    contractId: 'ct-1',
+    contrato: '1686',
+    contratoDeLeasefy: 'Leasefy #12',
+    propertyId: 'inm-1',
     consignacionId: 'cons-1',
     propertyTitle: 'Apto 301',
     propertyAddress: 'Cra 13 # 55-20',
     tenantName: 'Ana Pérez',
     tenantPhone: null,
+    tenantDocument: '1020',
     propietarioId: 'po-1',
     propietarioName: 'Jorge Restrepo',
     agenteId: null,
     agenteName: null,
     month: '2026-10',
-    dueDate: '2026-10-06',
+    vence: '2026-10-06',
+    estado: 'PENDIENTE',
+    cajon: 'CARTERA',
+    diasDeMora: 45,
+    diasDePlazo: 3,
+    esVencida: true,
     totalAmount: 2_090_000,
     paidAmount: 0,
     pendingAmount: 2_090_000,
-    daysLate: 45,
-    status: 'DEFAULTED',
     remindersSent: 3,
     lastReminderDate: null,
-    siniestroAt: '2026-11-05T06:00:00.000Z',
+    siniestroDesde: '2026-11-05',
     diasEnSiniestro: 15,
     ...over,
   }
@@ -92,11 +101,12 @@ describe('EnSiniestro', () => {
       items: [
         caso(),
         caso({
-          cobroId: 'c-2',
+          cuotaId: 'q-2',
+          cobroId: null,
           tenantName: 'Luis Gómez',
           propietarioName: null,
           pendingAmount: 1_500_000,
-          siniestroAt: '2026-11-19T06:00:00.000Z',
+          siniestroDesde: '2026-11-19',
           diasEnSiniestro: 1,
         }),
       ],
@@ -114,9 +124,29 @@ describe('EnSiniestro', () => {
     expect(filas[0].textContent).toContain('15 días')
     expect(filas[1].textContent).toContain('1 día')
     expect(filas[1].textContent).toContain('Sin consignar')
-    // Cada fila lleva al cobro.
+    // Cada fila lleva al cobro, y si no hay cobro emitido, al contrato.
     expect(filas[0].querySelector('a')?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/pagos/cartera/cobros?cobro=c-1',
+    )
+    expect(filas[1].querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contratos/ct-1',
+    )
+  })
+
+  it('🔴 la fecha no se corre un día: `siniestroDesde` es un día del calendario', () => {
+    // `'2026-11-05'` lo parsea JavaScript a medianoche UTC; formateado en la
+    // zona local de Bogotá (UTC−5) se renderiza como el 4. El mismo defecto
+    // que ya cazamos en `consignedAt`.
+    pintar({ cantidad: 1, totalCop: 2_090_000, diasParaSiniestro: 30, items: [caso()] })
+    const fila = host.querySelector('[data-testid="siniestro-fila"]')
+    expect(fila?.textContent).toContain('5 de nov de 2026')
+    expect(fila?.textContent).not.toContain('4 de nov de 2026')
+  })
+
+  it('la regla dice que el umbral se cuenta DESPUÉS del plazo del contrato', () => {
+    pintar({ cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] })
+    expect(host.querySelector('[data-testid="siniestro-regla"]')?.textContent).toContain(
+      'DESPUÉS de los días de plazo del contrato',
     )
   })
 })

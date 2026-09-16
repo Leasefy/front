@@ -103,7 +103,12 @@ export interface CollectionsDelinquent {
   propertyTitle: string;
   daysLate: number;
   amount: number;
-  attempts: number;
+  /**
+   * Recordatorios enviados. `null` cuando la deuda todavía no tiene cobro
+   * emitido: no hay documento desde el cual se le haya escrito, que es
+   * distinto de «no le hemos escrito» (eso es un 0).
+   */
+  attempts: number | null;
 }
 
 export interface CollectionsData {

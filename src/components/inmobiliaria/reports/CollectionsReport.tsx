@@ -226,7 +226,9 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                   <TableCell className="py-2.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1 text-muted-foreground">
                       <Phone className="w-3.5 h-3.5" />
-                      {d.attempts}
+                      {/* Sin cobro emitido no hay intentos que contar: un 0
+                          afirmaría que nadie lo llamó, y no es lo que sabemos. */}
+                      {d.attempts ?? '—'}
                     </div>
                   </TableCell>
                 </TableRow>

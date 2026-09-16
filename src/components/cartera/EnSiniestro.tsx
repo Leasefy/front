@@ -1,12 +1,18 @@
 'use client'
 
 /**
- * Los casos en siniestro, aparte de la mora.
+ * Los casos en siniestro, aparte de la cartera viva.
  *
  * A los `diasParaSiniestro` días de mora con saldo (30 por defecto, por
- * inmobiliaria) el back pasa el cobro a `DEFAULTED`: deja de ser cobranza y
- * es reclamación a la aseguradora. Por eso no se suma a los tramos por edad
- * — meterlo ahí infla la mora y esconde que el caso ya cambió de naturaleza.
+ * inmobiliaria) el caso deja de ser cobranza y es reclamación a la
+ * aseguradora. Por eso no se suma a los tramos por edad — meterlo ahí infla la
+ * cartera viva y esconde que el caso ya cambió de naturaleza.
+ *
+ * 🔴 2026-09-16: el siniestro se DEDUCE de los días de mora de la CUOTA, no de
+ * un `Cobro` en `DEFAULTED`. Leer el estado del cobro daba cero siniestros en
+ * la inmobiliaria migrada, que no tiene un solo cobro y sí 373 cuotas en
+ * cartera. Y «mora» son los días DESPUÉS del plazo del contrato: el umbral se
+ * cuenta desde ahí, no desde el vencimiento.
  *
  * Dos piezas:
  *   - `TablaDeSiniestros`: la tabla de la casa con los casos. La usa
@@ -34,13 +40,22 @@ import {
 } from '@/components/ui/table'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { aDondeLleva } from '@/components/cartera/CarteraTable'
 import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliaria'
 import { nombreDelMes } from '@/lib/utils/mes'
 
+/**
+ * 🔴 `timeZone: 'UTC'` no es un detalle: `siniestroDesde` viaja como
+ * `'YYYY-MM-DD'`, que JavaScript parsea a medianoche UTC. Formateado en la
+ * zona local, en Bogotá (UTC−5) eso son las 7 p. m. del día ANTERIOR, y la
+ * fecha se renderiza corrida un día. Es el mismo defecto que ya cazamos en
+ * `consignedAt`.
+ */
 const FECHA_CORTA = new Intl.DateTimeFormat('es-CO', {
   day: 'numeric',
   month: 'short',
   year: 'numeric',
+  timeZone: 'UTC',
 })
 
 function fechaCorta(iso: string | null): string | null {
@@ -50,7 +65,7 @@ function fechaCorta(iso: string | null): string | null {
 }
 
 export function reglaDeSiniestro(diasParaSiniestro: number): string {
-  return `Un cobro pasa a siniestro a los ${diasParaSiniestro} días de mora con saldo; el plazo se cambia en la configuración de la inmobiliaria.`
+  return `Una deuda pasa a siniestro a los ${diasParaSiniestro} días de mora con saldo —contados DESPUÉS de los días de plazo del contrato—; el umbral se cambia en la configuración de la inmobiliaria.`
 }
 
 export interface TablaDeSiniestrosProps {
@@ -98,9 +113,13 @@ export function TablaDeSiniestros({
           </TableRow>
         ) : (
           items.map((i) => {
-            const desde = fechaCorta(i.siniestroAt)
+            const desde = fechaCorta(i.siniestroDesde)
             return (
-              <TableRow key={i.cobroId} data-testid="siniestro-fila" data-cobro-id={i.cobroId}>
+              <TableRow
+                key={i.cuotaId}
+                data-testid="siniestro-fila"
+                data-cuota-id={i.cuotaId}
+              >
                 <TableCell className="font-medium text-fg">
                   {i.tenantName ?? <span className="text-warning">Sin inquilino</span>}
                 </TableCell>
@@ -127,9 +146,12 @@ export function TablaDeSiniestros({
                 </TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm" hideArrow>
-                    <Link href={`/panel/inmobiliaria/pagos/cartera/cobros?cobro=${i.cobroId}`}>
+                    {/* Sin cobro emitido se abre el contrato: la deuda nace ahí. */}
+                    <Link href={aDondeLleva(i)}>
                       <ArrowSquareOut className="h-4 w-4" />
-                      <span className="sr-only">Ver el cobro</span>
+                      <span className="sr-only">
+                        {i.cobroId ? 'Ver el cobro' : 'Ver el contrato'}
+                      </span>
                     </Link>
                   </Button>
                 </TableCell>

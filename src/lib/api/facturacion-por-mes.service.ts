@@ -58,12 +58,23 @@ export type TipoDeLineaDeFactura =
   | 'GASTO_ADMINISTRATIVO'
   | 'AJUSTE_MANUAL'
 
+/**
+ * De dónde salió un recargo de mora.
+ *
+ * 🔴 No es cosmético: `COBRO` es un número que finanzas ya liquidó y quedó
+ * escrito; `CUOTA` es el mismo motor corriendo HOY sobre una deuda que ningún
+ * cobro reclamó todavía, y por lo tanto CRECE cada día hasta que se emita.
+ */
+export type OrigenDelRecargo = 'COBRO' | 'CUOTA'
+
 export interface LineaDeFactura {
   tipo: TipoDeLineaDeFactura
   nombre: string
   /** Siempre positivo: el signo lo pone `resta`. */
   valorCop: number
   resta: boolean
+  /** Sólo en los recargos de mora. Ausente con un back anterior. */
+  origen?: OrigenDelRecargo
 }
 
 /**
@@ -148,9 +159,25 @@ export interface FacturaDelMes {
   /** Por qué no se puede emitir hoy. `null` cuando sí se puede. */
   motivoNoEmitible: string | null
   /**
+   * 🔴 La mora de esta cuota y de dónde salió su recargo.
+   *
+   * `null` del lado PROPIETARIO (su comisión no se paga tarde) y ausente con un
+   * back anterior a la segunda vuelta de facturación.
+   */
+  mora?: {
+    esCartera: boolean
+    diasDeMora: number
+    /** El interés de mora y el gasto administrativo que la factura lleva. */
+    recargosCop: number
+    /** `null` cuando la factura no lleva ningún recargo. */
+    origen: OrigenDelRecargo | null
+    /** Por qué está en cartera y aun así no lleva recargo. `null` si lleva. */
+    motivo: string | null
+  } | null
+  /**
    * Lo que esta fila tiene que decir y no cabe en un número: una cuota en mora
-   * cuyo interés todavía no liquidó ningún cobro, un desglose que hubo que
-   * cuadrar contra el estado de cuenta.
+   * que ninguna regla pudo liquidar, un desglose que hubo que cuadrar contra el
+   * estado de cuenta.
    */
   avisos: string[]
 }
@@ -167,6 +194,18 @@ export interface ContratoOmitido {
   motivo: string
 }
 
+/** Un contrato que deja de prefacturarse después de un mes concreto. */
+export interface ContratoQueTermina {
+  contractId: string
+  destinatario: DestinatarioDeFactura
+  codigo: number | null
+  numeroExterno: string | null
+  inmueble: string
+  terceroNombre: string
+  /** `YYYY-MM-DD` del fin del contrato. */
+  terminaEl: string | null
+}
+
 /** Un mes del rango, con su carga y si hoy se puede emitir. */
 export interface MesDelRango {
   mes: string
@@ -176,6 +215,13 @@ export interface MesDelRango {
   motivoNoEmitible: string | null
   inquilinos: ResumenDeLado
   propietarios: ResumenDeLado
+  /**
+   * 🔴 Los contratos que se CAEN acá: éste es su último mes prefacturado
+   * porque el contrato termina. «Los contratos que finalicen antes se van
+   * eliminando de la prefactura» (el CEO). Sin esto, el total del mes siguiente
+   * baja y no hay forma de saber por qué. Ausente con un back anterior.
+   */
+  terminan?: ContratoQueTermina[]
 }
 
 /**

@@ -70,6 +70,34 @@ export interface ItemDelLote {
   motivoDeExclusion: string | null;
 }
 
+/**
+ * Qué pasó con la factura al propietario al marcar el lote pagado.
+ *
+ * El CEO (2026-09-15), describiendo el giro entero: «archivo plano por banco,
+ * egreso, **factura ahora o después**, correo al propietario». Esto es el
+ * resultado de esa casilla, con número.
+ *
+ * 🔴 Que `fallas` tenga filas NO deshace el pago: la plata ya salió del banco y
+ * el lote quedó PAGADO. Facturar es un paso posterior que se reintenta desde
+ * Facturación.
+ */
+export interface FacturacionDelLote {
+  /** `true` si se pidió facturar ahora. `false` = queda para después. */
+  pedida: boolean;
+  /** Cuántas prefacturas del lado propietario dejó este lote (contrato × mes). */
+  candidatas: number;
+  emitidas: number;
+  /** Ya estaban emitidas. NO es un error: es la llave única haciendo su trabajo. */
+  yaEstaban: number;
+  /** Las que no se numeraron porque el rango de la resolución no alcanzó. */
+  sinNumero: number;
+  totalCop: number;
+  /** Los números DIAN emitidos, para cruzarlos con el egreso. */
+  numeros: string[];
+  /** Lo que no se pudo facturar, por mes y con el motivo en palabras. */
+  fallas: { mes: string; motivo: string }[];
+}
+
 /** El lote entero, como lo devuelven `ver`, `aprobar`, `pagado` y `anular`. */
 export interface LoteDeDispersion extends LoteResumen {
   /**
@@ -80,6 +108,11 @@ export interface LoteDeDispersion extends LoteResumen {
   codigoExpiraAt: string | null;
   codigoIntentos: number;
   items: ItemDelLote[];
+  /**
+   * Sólo lo devuelve `POST /:id/pagado`. Ausente en `ver`, `aprobar` y
+   * `anular`, y con un back anterior a la segunda vuelta de facturación.
+   */
+  facturacion?: FacturacionDelLote;
 }
 
 /** A quién le falta un dato, con nombre y motivo. */

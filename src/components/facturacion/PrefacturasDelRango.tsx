@@ -19,6 +19,10 @@
  * literalmente la primera frase del CEO, «10 facturas de un millón». Cada mes se
  * puede abrir para ver sus filas.
  *
+ * 🔴 Y el mes a mes dice DÓNDE se cae cada contrato que termina dentro del
+ * rango. Sin eso, el total de un mes baja respecto al anterior y la única
+ * lectura posible es «faltan facturas».
+ *
  * 🔴 Y no emite. Acá no hay casillas ni botón: emitir sigue siendo del mes
  * elegido arriba. El mes que todavía no empieza se ve con su motivo a la vista
  * («Diciembre de 2026 todavía no empieza») en vez de con una casilla apagada que
@@ -47,6 +51,7 @@ import { formatCurrency } from '@/lib/format'
 import {
   fechaLegible,
   mesLegible,
+  type ContratoQueTermina,
   type FacturaDelMes,
   type FacturasPorGenerar,
   type MesDelRango,
@@ -222,6 +227,55 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
 }
 
 /** El mes a mes: cuánto pesa cada uno, si ya se puede emitir, y sus filas. */
+/**
+ * 🔴 Los contratos que se CAEN en este mes.
+ *
+ * El CEO: «los contratos que finalicen antes se van eliminando de la
+ * prefactura.» Eso el back ya lo hacía —las cuotas posteriores de un contrato
+ * terminado ni aparecen—, pero el mes a mes no lo mostraba: el total de
+ * noviembre bajaba respecto al de octubre y no había forma de saber por qué.
+ * Acá se ve DÓNDE se cae cada uno, con nombre y fecha.
+ */
+function ContratosQueTerminan({
+  mes,
+  contratos,
+}: {
+  mes: string
+  contratos: ContratoQueTermina[]
+}) {
+  if (contratos.length === 0) return null
+  return (
+    <div
+      className="mx-4 mb-3 rounded-md border border-border-faint bg-surface-muted px-3 py-2"
+      data-testid={`rango-terminan-${mes}`}
+    >
+      <p className="text-caption font-medium text-fg">
+        {contratos.length}{' '}
+        {contratos.length === 1
+          ? 'contrato termina acá'
+          : 'contratos terminan acá'}
+        : de este mes en adelante dejan de prefacturarse.
+      </p>
+      <ul className="mt-1 space-y-0.5">
+        {contratos.map((c) => (
+          <li
+            key={`${c.contractId}-${c.destinatario}`}
+            className="text-caption text-fg-muted"
+            data-testid={`rango-termina-${mes}-${c.contractId}-${c.destinatario}`}
+          >
+            <span className="tabular-nums text-fg">
+              {c.numeroExterno ?? `#${c.codigo ?? '—'}`}
+            </span>{' '}
+            · {c.terceroNombre} ·{' '}
+            {c.destinatario === 'INQUILINO' ? 'inquilino' : 'propietario'}
+            {c.terminaEl && ` · termina el ${fechaLegible(c.terminaEl)}`}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
   return (
     <div
@@ -266,6 +320,14 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                   <span className="tabular-nums text-caption text-fg-muted">
                     {cantidad} {cantidad === 1 ? 'factura' : 'facturas'} ·{' '}
                     {formatCurrency(totalCop)}
+                    {(m.terminan?.length ?? 0) > 0 && (
+                      <span
+                        className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-fg-subtle"
+                        data-testid={`rango-terminan-pildora-${m.mes}`}
+                      >
+                        {m.terminan?.length} terminan acá
+                      </span>
+                    )}
                   </span>
                 </summary>
                 {/* 🔴 El motivo con las palabras del back: «Diciembre de 2026
@@ -279,6 +341,7 @@ function MesAMes({ datos }: { datos: FacturasPorGenerar }) {
                     {m.motivoNoEmitible}
                   </p>
                 )}
+                <ContratosQueTerminan mes={m.mes} contratos={m.terminan ?? []} />
                 <div className="overflow-x-auto border-t border-border-faint">
                   <FilasDelMes filas={filasDelMes(datos, m.mes)} />
                 </div>

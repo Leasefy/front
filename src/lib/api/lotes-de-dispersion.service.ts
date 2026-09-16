@@ -152,9 +152,15 @@ export const lotesDeDispersionApi = {
   /**
    * Marca el lote pagado por el banco.
    *
-   * `facturarAhora` REGISTRA la decisión («se le puede facturar en ese momento
-   * o después», el CEO); no emite ninguna factura — eso es del módulo de
-   * facturación. Se manda sólo si se decidió: `undefined` sería clave de más.
+   * 🔴 `facturarAhora: true` EMITE las facturas del lado propietario (la
+   * comisión de la inmobiliaria y sus impuestos) de las cuotas que el lote
+   * giró. El resultado viene en `lote.facturacion`: cuántas se emitieron,
+   * cuántas ya estaban y qué falló. Un fallo ahí NO deshace el pago — la plata
+   * ya salió del banco y el lote queda PAGADO igual.
+   *
+   * Con `false` la comisión queda como prefactura pendiente y se emite desde
+   * Facturación. Se manda sólo si se decidió: `undefined` sería clave de más
+   * (el back monta el `ValidationPipe` con `forbidNonWhitelisted`).
    */
   async marcarPagado(
     id: string,
@@ -183,6 +189,7 @@ export type {
   CandidatoDeDispersion,
   CandidatosDeDispersion,
   EstadoDelLote,
+  FacturacionDelLote,
   FilaExcluida,
   FiltrosDeLotes,
   FormatoArchivoDePagos,

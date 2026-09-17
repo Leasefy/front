@@ -793,7 +793,7 @@ function NuevoContratoContent() {
             <Field label="Depósito (COP)" error={validation.deposit}>
               <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
             </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
+            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
                 type="number"
                 inputMode="numeric"

@@ -10,6 +10,8 @@ import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
 import { RenovacionesTable, RenovacionWorkflow } from '@/components/inmobiliaria';
 import { AvisoIpcQueFalta } from '@/components/inmobiliaria/AvisoIpcQueFalta';
+import { BandejaDeCartasDelIncremento } from '@/components/contratos/BandejaDeCartasDelIncremento';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 
 /**
@@ -26,6 +28,8 @@ function RenovacionesContent() {
     refetch,
   } = useRenovaciones();
 
+  const { canAccess } = usePermissions();
+  const puedeEditarContratos = canAccess('contratos', 'edit');
   const [selectedRenovacion, setSelectedRenovacion] = useState<Renovacion | null>(null);
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
 
@@ -77,6 +81,9 @@ function RenovacionesContent() {
       {/* N3: sin el IPC del año que rige, las renovaciones salen con el mismo
           canon. Se avisa arriba de la tabla, antes de que pase. */}
       <AvisoIpcQueFalta />
+
+      {/* D6 (17-09): las cartas del incremento por enviar, con la alerta roja. */}
+      <BandejaDeCartasDelIncremento puedeEditar={puedeEditarContratos} />
 
       {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
           como en Contratos: nada suelto por fuera. */}

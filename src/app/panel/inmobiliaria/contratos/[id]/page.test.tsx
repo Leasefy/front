@@ -193,6 +193,17 @@ vi.mock('@/components/contratos/InvitarInquilino', () => ({
   InvitarInquilino: () =>
     React.createElement('div', { 'data-testid': 'invitar-inquilino' }),
 }))
+// D5/D9/D10 (17-09): acá sólo importa que las secciones estén montadas; lo que
+// muestran se prueba en su propio archivo.
+vi.mock('@/components/contratos/ProrrogaDelContrato', () => ({
+  ProrrogaDelContrato: () => React.createElement('div', { 'data-testid': 'prorroga-montada' }),
+}))
+vi.mock('@/components/contratos/CondicionesDelContrato', () => ({
+  CondicionesDelContrato: () => React.createElement('div', { 'data-testid': 'condiciones-montadas' }),
+}))
+vi.mock('@/components/contratos/GarantiaDeServiciosDelContrato', () => ({
+  GarantiaDeServiciosDelContrato: () => React.createElement('div', { 'data-testid': 'garantia-montada' }),
+}))
 vi.mock('@/components/contratos/ReglasDeMoraDelContrato', () => ({
   ReglasDeMoraDelContrato: () =>
     React.createElement('div', { 'data-testid': 'reglas-de-mora' }),
@@ -552,6 +563,22 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
     // `compareDocumentPosition`: 4 = el otro nodo viene DESPUÉS.
     expect(conceptos!.compareDocumentPosition(documento!) & 4).toBe(4)
     expect(cobros!.compareDocumentPosition(documento!) & 4).toBe(4)
+  })
+
+  it('🔴 17-09: en un contrato activo se montan la prórroga (D5), las condiciones y la garantía de servicios (D10)', async () => {
+    withContract(contract({ status: 'active' }))
+    await renderPage()
+    expect(container.querySelector('[data-testid="prorroga-montada"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="condiciones-montadas"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="garantia-montada"]')).not.toBeNull()
+  })
+
+  it('mientras se firma ya se pactan las condiciones y la garantía (al INICIO se exige al activar), sin prórroga', async () => {
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    expect(container.querySelector('[data-testid="condiciones-montadas"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="garantia-montada"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="prorroga-montada"]')).toBeNull()
   })
 
   it('mientras se firma, el documento manda: va antes que la cuenta', async () => {

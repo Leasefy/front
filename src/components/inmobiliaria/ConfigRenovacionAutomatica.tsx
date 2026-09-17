@@ -57,16 +57,16 @@ interface Props {
  * (`renovacionAutomatica` e `ipcVigente`) sólo se prendían por SQL. Acá se
  * prenden.
  *
- * 🔴 Lo que este interruptor enciende NO es un reporte: a las 00:20 le manda
- * correo al inquilino Y al propietario de cada contrato que entra en preaviso,
- * y le sube el canon al que vence. Por eso la pantalla dice antes cuántos son
- * —`?simular=true` cuenta sin hacer— en vez de dejar que Nico se entere
- * mañana. Y por eso el default en el esquema sigue en `false`: prenderla es
- * una decisión de la inmobiliaria, agencia por agencia.
+ * 🔴 Lo que este interruptor enciende NO es un reporte. Desde el 17-09 (D5):
+ * a las 00:20, cada contrato vencido sin aviso de no renovación se PRORROGA
+ * —vivienda por el mismo término (Ley 820 art. 6), local comercial lo pactado
+ * o mes a mes— y eso ESCRIBE cuotas nuevas. Por eso la pantalla dice antes
+ * cuántos son —`?simular=true` cuenta sin hacer— y el default sigue en
+ * `false`: prenderla es una decisión de la inmobiliaria, agencia por agencia.
  *
- * El contrato se prorroga por ley (820/2003, art. 22) aunque esto esté
- * apagado: lo que cambia es si Leasefy avisa y sube el canon solo, o si lo
- * hace un humano desde el cajón de renovaciones.
+ * Ya no sale ningún correo solo: la carta del incremento se manda desde la
+ * bandeja de cartas (D6), y un contrato con aviso de no renovación queda en
+ * alerta para que una persona decida.
  */
 export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: Props) {
   const prendidaGuardada = agency.renovacionAutomatica ?? false;
@@ -120,7 +120,9 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
   // No es una promesa de marketing: es el número que el cron va a mover esta
   // noche. Se pide una sola vez y en silencio; si falla, no se dice nada —un
   // fallo de red no es «no va a pasar nada».
-  const [pronostico, setPronostico] = useState<{ propuestas: number; renovadas: number } | null>(null);
+  const [pronostico, setPronostico] = useState<{ prorrogas: number; alertas: number; porConfirmar: number } | null>(
+    null,
+  );
   useEffect(() => {
     if (!canEdit) return;
     let vigente = true;
@@ -144,10 +146,15 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
         const r = await renovacionAutomaticaApi.simular();
         // Y si la respuesta viniera con otra forma, tampoco se pinta: un
         // «NaN propuestas» asusta más que no decir nada.
-        const propuestas = Number(r?.propuestas);
-        const renovadas = Number(r?.renovadas);
-        if (!Number.isFinite(propuestas) || !Number.isFinite(renovadas)) return;
-        if (vigente) setPronostico({ propuestas, renovadas });
+        if (typeof r?.renovadas !== 'number' || !Number.isFinite(r.renovadas)) return;
+        const a = r.alertas;
+        const alertas = a
+          ? [a.avisoDeNoRenovacion, a.sinUso, a.terminoPorConfirmar, a.renovacionEnCurso]
+              .map((n) => (Number.isFinite(Number(n)) ? Number(n) : 0))
+              .reduce((x, y) => x + y, 0)
+          : 0;
+        const porConfirmar = Number.isFinite(Number(r.porConfirmar)) ? Number(r.porConfirmar) : 0;
+        if (vigente) setPronostico({ prorrogas: r.renovadas, alertas, porConfirmar });
       } catch {
         /* silencio: no saber cuántos son no es saber que no son ninguno */
       }
@@ -157,7 +164,8 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
     };
   }, [canEdit]);
 
-  const hayMovimiento = !!pronostico && pronostico.propuestas + pronostico.renovadas > 0;
+  const hayMovimiento =
+    !!pronostico && pronostico.prorrogas + pronostico.alertas + pronostico.porConfirmar > 0;
 
   return (
     <section
@@ -175,12 +183,12 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
       <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
         <div className="space-y-1">
           <label htmlFor="renovacion-automatica-switch" className="block text-sm font-medium text-foreground">
-            Renovar los contratos solos
+            Prorrogar los contratos vencidos solos
           </label>
           <p className="text-xs text-muted-foreground" data-testid="renovacion-automatica-hint">
             {prendida
-              ? 'Tres meses antes del vencimiento sale la propuesta al inquilino y al propietario con el canon incrementado; el día del vencimiento, si nadie avisó que no renueva, el contrato se prorroga solo y el canon sube.'
-              : 'Apagado: el contrato se prorroga igual por ley, pero Leasefy no manda la propuesta ni sube el canon solo. Lo hace un humano desde el cajón de renovaciones.'}
+              ? 'Al día siguiente del vencimiento, si nadie avisó que no renueva, el contrato se prorroga solo: vivienda por el mismo término (Ley 820, art. 6), local comercial por lo pactado o mes a mes. Se extienden sus cuotas y el canon sube en el aniversario. Con aviso de no renovación queda en alerta para que decidas. Ningún correo sale solo: la carta del incremento se manda desde la bandeja de cartas.'
+              : 'Apagado: el contrato se prorroga igual por ley, pero Leasefy no extiende sus cuotas solo. Se prorroga a mano desde la ficha del contrato.'}
           </p>
           {!canEdit && <p className="text-xs text-muted-foreground">Sólo un administrador puede cambiar esto.</p>}
         </div>
@@ -234,10 +242,11 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="duotone" />
           <span>
-            Si corriera ahora: <span className="font-mono tabular-nums">{pronostico.propuestas}</span> propuestas
-            por correo al inquilino y al propietario, y{' '}
-            <span className="font-mono tabular-nums">{pronostico.renovadas}</span> contratos renovados con el
-            canon nuevo. El cron corre todos los días a las 00:20.
+            Si corriera ahora: <span className="font-mono tabular-nums">{pronostico.prorrogas}</span> contratos
+            se prorrogarían (se escriben sus cuotas nuevas),{' '}
+            <span className="font-mono tabular-nums">{pronostico.alertas}</span> quedarían en alerta y{' '}
+            <span className="font-mono tabular-nums">{pronostico.porConfirmar}</span> esperan que una persona
+            confirme el término. El proceso corre todos los días a las 00:20.
           </span>
         </p>
       )}

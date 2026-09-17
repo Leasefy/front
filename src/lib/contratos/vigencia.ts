@@ -43,6 +43,10 @@ export interface ContratoParaVigencia {
   endDate?: string | null;
   /** Con fecha, lo terminaron antes de tiempo. Ausente = la columna no viajó. */
   terminadoEn?: string | null;
+  /** D8: el inicio, para saber si el fin cae en su aniversario. */
+  startDate?: string | null;
+  /** D8: la fecha de cartera, la otra base del aniversario. */
+  fechaDeCartera?: string | null;
 }
 
 const ESTADOS_QUE_CORREN: ContractStatus[] = ['active', 'signed'];
@@ -66,6 +70,39 @@ function dia(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+function diasDelMesUtc(anio: number, mes0: number): number {
+  return new Date(Date.UTC(anio, mes0 + 1, 0)).getUTCDate();
+}
+
+/** ¿`fin` es aniversario mensual de `base`? Mismo criterio que `esAniversarioMensual` del back. */
+function esAniversarioMensual(base: number, fin: number): boolean {
+  if (fin <= base) return false;
+  const b = new Date(base);
+  const f = new Date(fin);
+  if (f.getUTCDate() === b.getUTCDate()) return true;
+  const ultimo = diasDelMesUtc(f.getUTCFullYear(), f.getUTCMonth());
+  return b.getUTCDate() > ultimo && f.getUTCDate() === ultimo;
+}
+
+/**
+ * 🔴 D8 (Nico, 17-09): el ÚLTIMO día que rige el contrato. Un fin que cae en el
+ * aniversario del inicio (o de la fecha de cartera) termina un día antes: «del
+ * 5-dic-2025 al 5-dic-2026» rige hasta el 4-dic-2026. Espejo de
+ * `ultimoDiaDelContrato` (back, `vigencia/termino-del-contrato.ts`).
+ */
+export function ultimoDiaDelContrato(contrato: {
+  endDate?: string | null;
+  startDate?: string | null;
+  fechaDeCartera?: string | null;
+}): string | null {
+  const fin = comoDiaUtc(contrato.endDate);
+  if (fin === null) return null;
+  const inicio = comoDiaUtc(contrato.startDate);
+  const cartera = comoDiaUtc(contrato.fechaDeCartera) ?? inicio;
+  const bases = [inicio, cartera].filter((x): x is number => x !== null);
+  return bases.some((b) => esAniversarioMensual(b, fin)) ? dia(fin - MS_POR_DIA) : dia(fin);
+}
+
 export function vigenciaDelContrato(
   contrato: ContratoParaVigencia,
   hoy: Date = new Date(),
@@ -82,6 +119,8 @@ export function vigenciaDelContrato(
   }
 
   const fin = comoDiaUtc(contrato.endDate);
+  // D8: vigente hasta el último día que rige, no hasta el fin como está escrito.
+  const ultimoDia = comoDiaUtc(ultimoDiaDelContrato(contrato));
 
   if (contrato.status === 'expired') {
     return {
@@ -97,22 +136,22 @@ export function vigenciaDelContrato(
 
   // Un contrato migrado puede no tener fecha de fin: sin ella no hay de qué
   // decir que venció.
-  if (fin === null) {
+  if (ultimoDia === null) {
     return { ...quieto, estado: 'VIGENTE', leyenda: 'Vigente' };
   }
 
   const ahora = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
-  if (fin >= ahora) {
-    return { ...quieto, estado: 'VIGENTE', leyenda: `Vigente hasta el ${dia(fin)}` };
+  if (ultimoDia >= ahora) {
+    return { ...quieto, estado: 'VIGENTE', leyenda: `Vigente hasta el ${dia(ultimoDia)}` };
   }
 
-  const diasVencido = Math.max(1, Math.floor((ahora - fin) / MS_POR_DIA));
+  const diasVencido = Math.max(1, Math.floor((ahora - ultimoDia) / MS_POR_DIA));
   return {
     estado: 'VENCIDO_SIN_RENOVAR',
     vencidoSinRenovar: true,
-    vencidoDesde: dia(fin),
+    vencidoDesde: dia(ultimoDia),
     diasVencido,
-    leyenda: `Vencido desde el ${dia(fin)} (${diasVencido} ${
+    leyenda: `Vencido desde el ${dia(ultimoDia)} (${diasVencido} ${
       diasVencido === 1 ? 'día' : 'días'
     })`,
   };

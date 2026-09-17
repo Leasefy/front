@@ -4,6 +4,7 @@ import {
   etiquetaDeVigencia,
   puedeCederse,
   puedeTerminarse,
+  ultimoDiaDelContrato,
   vigenciaDelContrato,
 } from './vigencia';
 
@@ -67,6 +68,47 @@ describe('vigenciaDelContrato', () => {
     expect(
       vigenciaDelContrato({ status: 'draft', endDate: '2020-01-01' }, hoy).estado,
     ).toBe('NO_VIGENTE');
+  });
+});
+
+describe('🔴 D8 · el fin en el aniversario rige hasta el día anterior (espejo del back)', () => {
+  it('5-dic-2025 → 5-dic-2026 rige hasta el 4-dic-2026', () => {
+    expect(
+      ultimoDiaDelContrato({ startDate: '2025-12-05', endDate: '2026-12-05T00:00:00.000Z' }),
+    ).toBe('2026-12-04');
+  });
+
+  it('un fin que no es aniversario no cambia (21 → 20)', () => {
+    expect(ultimoDiaDelContrato({ startDate: '2025-09-21', endDate: '2026-09-20' })).toBe('2026-09-20');
+  });
+
+  it('31-ene → 30-abr es aniversario (art. 829): rige hasta el 29', () => {
+    expect(ultimoDiaDelContrato({ startDate: '2026-01-31', endDate: '2026-04-30' })).toBe('2026-04-29');
+  });
+
+  it('29-feb-2024 → 28-feb-2025 es aniversario: rige hasta el 27', () => {
+    expect(ultimoDiaDelContrato({ startDate: '2024-02-29', endDate: '2025-02-28' })).toBe('2025-02-27');
+  });
+
+  it('la fecha de cartera también es base del aniversario', () => {
+    expect(
+      ultimoDiaDelContrato({ startDate: '2025-09-20', fechaDeCartera: '2025-09-24', endDate: '2026-09-24' }),
+    ).toBe('2026-09-23');
+  });
+
+  it('el día del fin escrito ya está VENCIDO si es aniversario', () => {
+    const v = vigenciaDelContrato(
+      { status: 'active', startDate: '2025-09-15', endDate: '2026-09-15' },
+      hoy,
+    );
+    expect(v.estado).toBe('VENCIDO_SIN_RENOVAR');
+    expect(v.vencidoDesde).toBe('2026-09-14');
+    expect(v.leyenda).toBe('Vencido desde el 2026-09-14 (1 día)');
+  });
+
+  it('sin inicio ni cartera se queda con el fin escrito', () => {
+    const v = vigenciaDelContrato({ status: 'active', endDate: '2026-09-15' }, hoy);
+    expect(v.estado).toBe('VIGENTE');
   });
 });
 

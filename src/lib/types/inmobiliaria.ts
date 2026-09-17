@@ -2289,6 +2289,14 @@ export interface AgencyProfile {
   tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
   /** Penalidad por defecto por terminación anticipada, en cánones (17-09). */
   penalidadTerminacionCanones?: number | null;
+  /** D6: cuántos días antes del aniversario aparece la carta del incremento. `null` = 30. */
+  diasAntesCartaIncremento?: number | null;
+  /** D9: si los contratos pactan gastos de cobranza cuando no lo dicen. `null` = como hoy. */
+  pactaGastosDeCobranza?: boolean | null;
+  /** D10: cuándo se exige la garantía de servicios. `null` = no se exige. */
+  garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
+  /** D10: tope de la garantía. `null` = sin tope (validar con abogado). */
+  garantiaServiciosTopeCop?: number | null;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
@@ -2377,6 +2385,10 @@ export interface UpdateAgencyPayload {
    * de administración lleva IVA (con `ivaPorcentaje`). `null` = no se sabe: sin IVA.
    */
   responsableIva?: boolean | null;
+  diasAntesCartaIncremento?: number | null;
+  pactaGastosDeCobranza?: boolean | null;
+  garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
+  garantiaServiciosTopeCop?: number | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */

@@ -74,6 +74,9 @@ export function TerminarContrato({
   const [nota, setNota] = useState("");
   /** La penalidad pactada, sólo dígitos. Vacío = no hay. */
   const [penalidad, setPenalidad] = useState("");
+  /** Reparto negociado (17-09): la parte de la penalidad para la inmobiliaria. */
+  const [paraLaInmobiliaria, setParaLaInmobiliaria] = useState("");
+  const [penalidadTocada, setPenalidadTocada] = useState(false);
   const [vista, setVista] = useState<VistaPreviaDeTerminacion | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -109,12 +112,22 @@ export function TerminarContrato({
     if (abierto) void pedirVistaPrevia(terminadoEn);
   }, [abierto, terminadoEn, pedirVistaPrevia]);
 
+  // La penalidad por defecto (cánones del contrato o de la inmobiliaria) se
+  // prellena una vez; la persona la puede cambiar o borrar (17-09).
+  useEffect(() => {
+    const sugerida = vista?.penalidadSugerida;
+    if (sugerida && !penalidadTocada) setPenalidad(String(sugerida.valorCop));
+  }, [vista?.penalidadSugerida, penalidadTocada]);
+
   const elegido = motivos.find((m) => m.codigo === motivo);
   const faltaNota = elegido?.exigeNota === true && nota.trim().length === 0;
   const penalidadCop = penalidad.trim() === "" ? null : Number(penalidad.replace(/\D/g, ""));
+  const paraLaInmobiliariaCop =
+    paraLaInmobiliaria.trim() === "" ? 0 : Number(paraLaInmobiliaria.replace(/\D/g, ""));
+  const repartoInvalido = penalidadCop !== null && paraLaInmobiliariaCop > penalidadCop;
   const penalidadInvalida = penalidadCop !== null && !(penalidadCop > 0);
   const puedeConfirmar =
-    !guardando && !!terminadoEn && !!motivo && !faltaNota && !penalidadInvalida && vista?.puedeTerminarse !== false;
+    !guardando && !!terminadoEn && !!motivo && !faltaNota && !penalidadInvalida && !repartoInvalido && vista?.puedeTerminarse !== false;
 
   async function confirmar() {
     setGuardando(true);
@@ -123,7 +136,11 @@ export function TerminarContrato({
         terminadoEn,
         motivo,
         nota: nota.trim() || undefined,
-        penalidadCop: penalidadCop ?? undefined,
+        // Explícito siempre: vacío = sin penalidad (el back aplicaría la por defecto si faltara).
+        penalidadCop,
+        ...(penalidadCop !== null && paraLaInmobiliariaCop > 0
+          ? { penalidadParaLaInmobiliariaCop: paraLaInmobiliariaCop }
+          : {}),
       });
       toast.success(`Contrato terminado el ${r.terminadoEn}.`, {
         description: r.inmuebleLiberado
@@ -217,7 +234,10 @@ export function TerminarContrato({
               inputMode="numeric"
               placeholder="$ 0"
               value={penalidad}
-              onChange={(e) => setPenalidad(e.target.value.replace(/[^\d]/g, ""))}
+              onChange={(e) => {
+                setPenalidadTocada(true);
+                setPenalidad(e.target.value.replace(/[^\d]/g, ""));
+              }}
               data-testid="penalidad-de-terminacion"
             />
             <p className="text-xs text-muted-foreground">
@@ -226,8 +246,29 @@ export function TerminarContrato({
                 : penalidadCop
                   ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
                   : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
+              {vista?.penalidadSugerida &&
+                ` Por defecto: ${vista.penalidadSugerida.canones} cánones.`}
+              {penalidadCop ? " Le llega al propietario menos la comisión." : ""}
             </p>
           </div>
+          {penalidadCop ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="penalidad-inmobiliaria">Parte para la inmobiliaria (reparto negociado, opcional)</Label>
+              <Input
+                id="penalidad-inmobiliaria"
+                inputMode="numeric"
+                placeholder="$ 0"
+                value={paraLaInmobiliaria}
+                onChange={(e) => setParaLaInmobiliaria(e.target.value.replace(/[^\d]/g, ""))}
+                data-testid="penalidad-para-la-inmobiliaria"
+              />
+              <p className="text-xs text-muted-foreground">
+                {repartoInvalido
+                  ? "La parte de la inmobiliaria no puede ser mayor que la penalidad."
+                  : `Al propietario le llegan ${PESOS.format(Math.max(0, penalidadCop - paraLaInmobiliariaCop))} menos la comisión.`}
+              </p>
+            </div>
+          ) : null}
 
           {/* Lo que va a quedar cobrado. El número, antes de confirmar. */}
           {vista?.prorrateoDelUltimoMes && (

@@ -159,6 +159,38 @@ describe('TerminarContrato', () => {
     );
   });
 
+  it('🔴 17-09: prellena la penalidad por defecto y manda el reparto negociado', async () => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: true,
+      razon: null,
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+      penalidadSugerida: { canones: 3, valorCop: 9_000_000 },
+    });
+    await montar();
+    const penalidad = q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement;
+    expect(penalidad.value).toBe('9000000');
+    expect(document.body.textContent).toContain('Por defecto: 3 cánones');
+
+    const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'MUTUO_ACUERDO';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const reparto = q('[data-testid="penalidad-para-la-inmobiliaria"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(reparto, '3000000');
+      reparto.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(document.body.textContent).toContain('Al propietario le llegan');
+    await act(async () => { (q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).click(); });
+    expect(api.terminar).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ penalidadCop: 9_000_000, penalidadParaLaInmobiliariaCop: 3_000_000 }),
+    );
+  });
+
   it('🔴 el mensaje del back llega al usuario, no un «algo salió mal»', async () => {
     api.terminar.mockRejectedValue(new Error('La terminación es posterior al fin pactado.'));
     await montar();

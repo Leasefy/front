@@ -72,7 +72,8 @@ export function describirDisparador(regla: {
   disparadorDia: number;
 }): string {
   const dia = regla.disparadorDia;
-  if (regla.disparador === 'DIA_DEL_MES') return `el día ${dia} de cada mes`;
+  // Anclado al mes en que VENCE la cuota y una sola vez por cuota (back, 16-09).
+  if (regla.disparador === 'DIA_DEL_MES') return `pasado el día ${dia} del mes en que vence la cuota`;
   if (dia <= 0) return 'apenas vence el plazo';
   if (dia === 1) return 'desde el primer día de mora';
   return `a los ${dia} días de mora`;

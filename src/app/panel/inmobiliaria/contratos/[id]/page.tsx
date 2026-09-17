@@ -805,7 +805,7 @@ function decisionesDelContrato({
   const cesion = (
     <Button type="button" variant="link" hideArrow onClick={onCeder} className={enVozBaja} data-testid="abrir-cesion">
       <ArrowsLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
-      El propietario vendió el inmueble
+      Cambiar de propietario
     </Button>
   );
   const terminar = (

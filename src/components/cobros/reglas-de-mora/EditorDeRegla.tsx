@@ -222,7 +222,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                 etiqueta={disparador === 'DIA_DEL_MES' ? 'Día del mes' : 'Día de mora'}
                 ayuda={
                   disparador === 'DIA_DEL_MES'
-                    ? 'Del 1 al 31. «15» = pasado el 15 de cada mes.'
+                    ? 'Del 1 al 31. «15» = pasado el 15 del mes en que vence la cuota. Entra una sola vez por cuota y no se pierde al mirar otro día.'
                     : '«1» = desde el primer día después del plazo. «0» = apenas vence.'
                 }
                 error={errors.disparadorDia?.message}

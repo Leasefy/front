@@ -1012,6 +1012,8 @@ export type Faltante =
   | 'canon'
   | 'uso'
   | 'dia_de_pago'
+  /** La fecha de cartera es anterior a la de inicio (regla 3, 16-09). */
+  | 'cartera_antes_del_inicio'
   /**
    * La plata por dueño de «Valor Canon» no cuadra con los dueños o con el
    * canon. No se inventa un 50/50: se corrige el archivo o se quita esa

@@ -400,7 +400,7 @@ export interface FilaMirada {
   faltantes?: readonly string[];
 }
 
-const FALTANTES_DE_DATOS = ['fechas', 'canon', 'uso', 'dia_de_pago'];
+const FALTANTES_DE_DATOS = ['fechas', 'cartera_antes_del_inicio', 'canon', 'uso', 'dia_de_pago'];
 
 /**
  * 🔴 No se mira UN solo camino.

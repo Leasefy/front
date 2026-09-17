@@ -707,7 +707,41 @@ export interface DispersionItem {
   conceptosACargo: number;
   /** Lo que entró y no es suyo: administración, seguros, mora. */
   deTerceros: number;
+
+  /**
+   * 🔴 D1 (17-09) — con qué modalidad entró este renglón. `null` o ausente = el
+   * mandato no tiene modalidad y la liquidación es la de siempre.
+   */
+  modalidad?: ModalidadDelMandato | null;
+  /** De dónde salió: del mandato del inmueble o del default de la inmobiliaria. */
+  fuenteDeLaModalidad?: 'MANDATO' | 'INMOBILIARIA' | null;
+  /**
+   * El mes de la cuota, cuando NO es el de la liquidación: sobre recaudo, una
+   * cuota que el inquilino pagó tarde entra en la liquidación siguiente.
+   */
+  mesDeLaCuota?: string | null;
+  /**
+   * Garantizado: lo que de este renglón el inquilino todavía no pagó. Es la
+   * cuenta por cobrar al inquilino que la inmobiliaria recupera cuando pague.
+   */
+  sinRecaudoCop?: number;
+  /**
+   * D2: el recibo de caja cuyos intereses de mora y gastos de cobranza gira
+   * este renglón (cuando son del propietario). Sin recibo, es un canon.
+   */
+  interesDelRecibo?: {
+    reciboDeCajaId: string;
+    reciboNumero: number | null;
+    reciboFecha: string | null;
+    destino: 'PROPIETARIO' | 'REPARTO';
+    porcentajeAlPropietario: number;
+    interesesCop: number;
+    gastosDeCobranzaCop: number;
+  } | null;
 }
+
+/** D1: con qué base se le gira al propietario. */
+export type ModalidadDelMandato = 'GARANTIZADO' | 'SOBRE_RECAUDO';
 
 export interface Dispersion {
   id: string;
@@ -742,6 +776,14 @@ export interface Dispersion {
   netToPropietario: number;
   /** Las deducciones de esta liquidación y lo que se gira. Opcional: back viejo. */
   conDeducciones?: DeduccionesDeLaLiquidacion;
+
+  /**
+   * D1 garantizado: de lo girado, lo que el inquilino todavía no pagó. Queda
+   * como cuenta por cobrar al inquilino. Opcional: back anterior al 17-09.
+   */
+  cuentaPorCobrarAlInquilinoCop?: number;
+  /** D2: intereses de mora y gastos de cobranza recaudados que se le giran. */
+  interesesCop?: number;
 
   // Status
   status: DispersionStatus;
@@ -826,6 +868,10 @@ export interface VistaPreviaDeDispersiones {
   totalDeducciones?: number;
   /** Lo que queda en contra y pasa a la siguiente liquidación. */
   totalSaldoEnContra?: number;
+  /** D1 garantizado: lo que se giraría sin recaudo del inquilino. */
+  totalCuentaPorCobrarAlInquilino?: number;
+  /** D2: intereses de mora y gastos de cobranza del propietario que se girarían. */
+  totalIntereses?: number;
   propietarios: {
     propietarioId: string;
     propietarioName: string;
@@ -845,18 +891,7 @@ export interface VistaPreviaDeDispersiones {
      * el neto es el de siempre.
      */
     conDeducciones?: DeduccionesDeLaLiquidacion;
-    items: {
-      cobroId: string | null;
-      cuotaId: string | null;
-      propertyTitle: string;
-      rentCollected: number;
-      commissionPercent: number;
-      commissionAmount: number;
-      netAmount: number;
-      conceptosAFavor: number;
-      conceptosACargo: number;
-      deTerceros: number;
-    }[];
+    items: DispersionItem[];
   }[];
 }
 

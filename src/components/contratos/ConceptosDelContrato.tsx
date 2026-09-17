@@ -49,6 +49,7 @@ import {
   contractsApi,
   type ConceptoDelContrato,
 } from '@/lib/api/contracts.service'
+import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/ComisionableDelConcepto'
 import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -493,6 +494,14 @@ function ConceptoEnLista({
                   </li>
                 ))}
               </ul>
+              {/* 17-09: qué entra en la base de la comisión de administración. */}
+              <div className="pt-1">
+                <ComisionableDelConcepto
+                  contractId={contract.id}
+                  concepto={concepto}
+                  puedeEditar={puedeEditar}
+                />
+              </div>
               {esSupuesto(concepto, perfiles) ? (
                 <p className="pt-1 text-[11px] text-muted-foreground">
                   Alguna de las dos partes no tiene el perfil tributario

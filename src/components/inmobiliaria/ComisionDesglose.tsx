@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import type { DispersionItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { baseDeLaDispersion, type BaseDelCanon } from '@/lib/propietarios/base-del-canon';
+import { RotuloDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
 
 interface ComisionDesgloseProps {
   items: DispersionItem[];
@@ -36,6 +37,11 @@ interface ComisionDesgloseProps {
    * igual que el back: cobro sin cuota es RECAUDADO, todo lo demás CAUSADO.
    */
   baseDelCanon?: BaseDelCanon;
+  /**
+   * El mes de la liquidación, para que un renglón que trae otro mes lo diga
+   * (sobre recaudo: la cuota que el inquilino pagó tarde entra en la siguiente).
+   */
+  mesDeLaLiquidacion?: string;
   variant?: 'full' | 'compact';
   showPercentages?: boolean;
   className?: string;
@@ -139,6 +145,7 @@ function CommissionRatioBar({
 export function ComisionDesglose({
   items,
   baseDelCanon,
+  mesDeLaLiquidacion,
   variant = 'full',
   showPercentages = true,
   className,
@@ -241,8 +248,12 @@ export function ComisionDesglose({
                         <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
                           <Icon className="w-4 h-4 text-fg-muted" />
                         </div>
-                        <span className="text-sm text-fg truncate max-w-[200px]">
-                          {item.propertyTitle}
+                        <span className="flex flex-col min-w-0">
+                          <span className="text-sm text-fg truncate max-w-[200px]">
+                            {item.propertyTitle}
+                          </span>
+                          {/* D1/D2: de dónde sale este renglón. No cambia el número. */}
+                          <RotuloDelMandato item={item} mesDeLaLiquidacion={mesDeLaLiquidacion} />
                         </span>
                       </div>
                     </TableCell>

@@ -9229,7 +9229,8 @@
       "origen": {
         "REPARACION": "Repair",
         "MANUAL": "Deduction",
-        "SALDO_ANTERIOR": "Balance owed from the previous month"
+        "SALDO_ANTERIOR": "Balance owed from the previous month",
+        "COBRO_AL_ARRENDAR": "Leasing fee"
       },
       "estado": {
         "PENDIENTE": "To deduct",

@@ -51,9 +51,13 @@ export interface ProrrateoDelUltimoMes {
   diasDelMes: number;
   valorCop: number;
   canonMensualCop: number;
-  /** D8 (17-09): el último día que se cobra. */
+  /**
+   * 🔴 El último día que se cobra: la fecha del acta, INCLUSIVE (Nico, 17-09,
+   * segunda vuelta). D8 —«el fin que cae en el aniversario termina un día
+   * antes»— es la regla del TÉRMINO del contrato, no la de una entrega.
+   */
   ultimoDiaCobrado?: string;
-  /** D8: la fecha cae en el aniversario del inicio y se cobra hasta el día anterior. */
+  /** Siempre `false` en una terminación: D8 no aplica acá. */
   terminaUnDiaAntes?: boolean;
 }
 
@@ -119,6 +123,12 @@ export interface CartaDelIncremento {
   constancia?: string | null;
   ultimoIntentoAt?: string | null;
   ultimoIntento?: string | null;
+  /**
+   * 🔴 El soporte de la constancia (guía del correo certificado, acta de
+   * entrega personal). `null` = no se adjuntó ninguno, y está bien: adjuntarlo
+   * es OPCIONAL (Nico, 17-09).
+   */
+  soporteNombre?: string | null;
 }
 
 export interface AniversarioDelContrato {
@@ -195,7 +205,8 @@ export type AccionDeLaProrroga =
   | 'ALERTA_AVISO_DE_NO_RENOVACION'
   | 'ALERTA_SIN_USO'
   | 'ALERTA_TERMINO_POR_CONFIRMAR'
-  | 'ALERTA_RENOVACION_EN_CURSO';
+  /** 🔴 El contrato dice que NO se prorroga: nadie genera cuotas. */
+  | 'ALERTA_NO_SE_PRORROGA';
 export type ParteQueAvisa = 'INQUILINO' | 'PROPIETARIO' | 'INMOBILIARIA';
 
 export interface PlanDeLaProrroga {
@@ -213,6 +224,12 @@ export interface PlanDeLaProrroga {
   automatica: boolean;
   aviso: { at: string; por: string | null; motivo: string | null; fuente: 'CONTRATO' | 'RENOVACION' } | null;
   prorrogaMeses: number | null;
+  /** 🔴 Al vencer NO se prorroga: queda en alerta y nadie genera cuotas. */
+  noSeProrroga: boolean;
+  /** `false` = falta la migración 20260918021000: no se puede apagar. */
+  noSeProrrogaDisponible: boolean;
+  /** 🔴 Esta prórroga es el PUENTE mes a mes de una renovación firmándose. */
+  puenteDeRenovacion: boolean;
   uso: 'VIVIENDA' | 'COMERCIAL' | null;
   automaticaPrendida: boolean;
   /** `false` = falta la migración: se calcula, no se escribe. */
@@ -253,8 +270,24 @@ export interface CondicionesDelContrato {
   };
   seguroOpcional: {
     disponible: boolean;
-    oferta: { plan: string; nombre: string; primaCop: number } | null;
-    aceptado: { nombre: string | null; primaCop: number; aceptadoEl: string; aceptadoPor: string } | null;
+    /** `false` = falta la migración 20260918021000: sólo prima fija. */
+    porcentajeDisponible: boolean;
+    /**
+     * 🔴 `pct` es el % DEL CANON que la inmobiliaria le puso a ese plan
+     * (Nico, 17-09: «% del canon, no valor fijo»). Con él, `primaCop` ya es lo
+     * que da el canon de hoy, no el valor fijo del plan.
+     */
+    oferta: { plan: string; nombre: string; primaCop: number; pct: number | null } | null;
+    aceptado: {
+      nombre: string | null;
+      primaCop: number;
+      /** `null` = prima fija, como hasta hoy. */
+      pct: number | null;
+      aceptadoEl: string;
+      aceptadoPor: string;
+    } | null;
+    /** El % por plan que tiene configurado la inmobiliaria. */
+    pctPorPlan: Record<string, number>;
   };
   poliza: {
     disponible: boolean;
@@ -266,7 +299,16 @@ export interface CondicionesDelContrato {
   };
   administracion: {
     disponible: boolean;
+    /** La modalidad RESUELTA: la elegida, o la del respaldo de los migrados. */
     modalidad: ModalidadDeAdministracion | null;
+    /** Lo que el contrato tiene guardado. `null` = nadie la eligió. */
+    modalidadElegida: ModalidadDeAdministracion | null;
+    /**
+     * 🔴 `true` = la modalidad sale del RESPALDO (Nico, 17-09: los contratos
+     * migrados con `adminFee` quedan en «la paga la inmobiliaria»). No está
+     * guardada: cualquier elección la reemplaza.
+     */
+    porRespaldo: boolean;
     valorCop: number | null;
     delMandatoCop: number | null;
   };
@@ -291,6 +333,14 @@ export interface GarantiaDeServicios {
   disponible: boolean;
   momento: 'INICIO' | 'ENTREGA' | null;
   topeCop: number | null;
+  /** 🔴 El tope en PERÍODOS de facturación (Nico, 17-09). Por defecto 2. */
+  topePeriodos: number;
+  /** Cuántos meses entran al promedio sugerido (6). */
+  mesesDelPromedio: number;
+  /** 🔴 El valor SUGERIDO: el promedio mensual de los últimos 6 períodos. */
+  valorSugeridoCop: number | null;
+  /** El tope que de verdad aplica: el más bajo entre pesos y períodos. */
+  topeEfectivoCop: number | null;
   avisoDelTope: string | null;
   garantia: {
     momento: 'INICIO' | 'ENTREGA';
@@ -429,15 +479,41 @@ export const cicloDeVidaApi = {
       contenido ? { contenido } : {},
     ),
 
-  /** D6: la carta se entregó por otro medio. */
+  /**
+   * D6: la carta se entregó por otro medio (correo certificado, entrega
+   * personal). 🔴 El soporte es OPCIONAL (Nico, 17-09): sin archivo se manda
+   * como siempre; con archivo va en multipart.
+   */
   registrarConstancia: (
     contractId: string,
     desde: string,
-    body: { medio: 'FISICO' | 'WHATSAPP' | 'OTRO'; fecha: string; nota: string },
-  ) =>
-    apiClient.post<IncrementosDelContrato>(
-      `/contracts/${contractId}/incrementos/${desde}/carta/constancia`,
-      body,
+    body: {
+      medio: 'FISICO' | 'WHATSAPP' | 'OTRO';
+      fecha: string;
+      nota: string;
+      soporte?: File | null;
+    },
+  ) => {
+    const ruta = `/contracts/${contractId}/incrementos/${desde}/carta/constancia`;
+    if (!body.soporte) {
+      return apiClient.post<IncrementosDelContrato>(ruta, {
+        medio: body.medio,
+        fecha: body.fecha,
+        nota: body.nota,
+      });
+    }
+    const formulario = new FormData();
+    formulario.append('medio', body.medio);
+    formulario.append('fecha', body.fecha);
+    formulario.append('nota', body.nota);
+    formulario.append('soporte', body.soporte);
+    return enviarFormulario<IncrementosDelContrato>(ruta, formulario);
+  },
+
+  /** La URL firmada del soporte de una constancia. */
+  soporteDeLaConstancia: (contractId: string, desde: string) =>
+    apiClient.get<{ url: string; nombre: string }>(
+      `/contracts/${contractId}/incrementos/${desde}/carta/constancia/soporte`,
     ),
 
   /** D6: la bandeja de cartas por enviar de la inmobiliaria. */
@@ -452,6 +528,12 @@ export const cicloDeVidaApi = {
 
   fijarMesesDeProrroga: (contractId: string, meses: number | null) =>
     apiClient.put<PlanDeLaProrroga>(`/contracts/${contractId}/prorroga/meses`, { meses }),
+
+  /** 🔴 «Este contrato NO se prorroga al vencer» (Nico, 17-09). */
+  fijarNoSeProrroga: (contractId: string, noSeProrroga: boolean) =>
+    apiClient.put<PlanDeLaProrroga>(`/contracts/${contractId}/prorroga/no-se-prorroga`, {
+      noSeProrroga,
+    }),
 
   registrarAvisoDeNoRenovacion: (contractId: string, body: { parte: ParteQueAvisa; motivo: string }) =>
     apiClient.post<PlanDeLaProrroga>(`/contracts/${contractId}/aviso-de-no-renovacion`, body),
@@ -468,7 +550,13 @@ export const cicloDeVidaApi = {
 
   aceptarSeguroOpcional: (
     contractId: string,
-    body: { aceptadoPor: string; aceptadoEl: string; primaCop?: number | null },
+    body: {
+      aceptadoPor: string;
+      aceptadoEl: string;
+      primaCop?: number | null;
+      /** 🔴 El % del canon. Ausente = el que la inmobiliaria le puso al plan. */
+      pct?: number | null;
+    },
   ) => apiClient.put<CondicionesDelContrato>(`/contracts/${contractId}/seguro-opcional`, body),
 
   retirarSeguroOpcional: (contractId: string) =>

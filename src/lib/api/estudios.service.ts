@@ -22,6 +22,8 @@ export interface PagoDeEstudio {
   applicationId: string | null;
   vigenteHasta: string;
   vigente: boolean;
+  /** Cuántos días le quedan desde hoy. 0 = vencido. */
+  diasQueLeQuedan: number;
   factura: {
     estado: 'GENERADA' | 'EMITIDA' | 'ANULADA';
     numero: number | null;
@@ -38,6 +40,8 @@ export interface EstudioVigente {
   numeroRecibo: number | null;
   pagadoEl: string | null;
   vigenteHasta: string | null;
+  /** 🔴 Los días que le da esta inmobiliaria (60 por defecto, Nico 17-09). */
+  vigenciaDias: number;
 }
 
 export interface NuevoPagoDeEstudio {

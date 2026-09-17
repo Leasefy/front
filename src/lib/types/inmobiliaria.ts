@@ -2303,6 +2303,12 @@ export interface AgencyProfile {
   garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
   /** D10: tope de la garantía. `null` = sin tope (validar con abogado). */
   garantiaServiciosTopeCop?: number | null;
+  /** 🔴 D10 corregido (17-09): el tope en PERÍODOS de facturación. `null` = 2. */
+  garantiaServiciosTopePeriodos?: number | null;
+  /** 🔴 Cuántos días vale el estudio aprobado (Nico, 17-09). `null` = 60. */
+  vigenciaEstudioDias?: number | null;
+  /** 🔴 El seguro opcional como % del canon, POR PLAN: `{"BASIC":1.5}`. */
+  seguroOpcionalPctPorPlan?: Record<string, number> | null;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
@@ -2395,6 +2401,10 @@ export interface UpdateAgencyPayload {
   pactaGastosDeCobranza?: boolean | null;
   garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
   garantiaServiciosTopeCop?: number | null;
+  garantiaServiciosTopePeriodos?: number | null;
+  vigenciaEstudioDias?: number | null;
+  /** El mapa ENTERO del % por plan (reemplaza al guardado): un plan se quita mandándolo sin él. */
+  seguroOpcionalPctPorPlan?: Record<string, number> | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */

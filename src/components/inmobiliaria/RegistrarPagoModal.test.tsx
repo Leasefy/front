@@ -1507,3 +1507,17 @@ describe('<RegistrarPagoModal> las facturas del pago (2026-09-16)', () => {
     expect(descripcion).toContain('recibos.form.facturasSinEmitir');
   });
 });
+
+describe('<RegistrarPagoModal> el ajuste al peso (2026-09-16)', () => {
+  it('un desfase de hasta $1.000 se dice en el aviso', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({ ...RESPUESTA, ajusteAlPesoCop: 10 });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.ajusteAlPeso');
+  });
+});

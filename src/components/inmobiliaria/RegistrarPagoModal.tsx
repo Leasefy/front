@@ -540,6 +540,11 @@ export function RegistrarPagoModal({
               meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
               saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
             })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
+      // Un desfase de hasta $1.000 no abona ni queda como anticipo: se dice.
+      const lineaDelAjuste =
+        (res.ajusteAlPesoCop ?? 0) > 0
+          ? ` ${t('recibos.form.ajusteAlPeso', { valor: formatCurrency(res.ajusteAlPesoCop ?? 0) })}`
+          : '';
       toast.success(
         // Con la forma (b) y nada vencido no sale ningún recibo hoy: sale el anticipo.
         res.recibos.length === 0 && anticipo > 0
@@ -551,7 +556,9 @@ export function RegistrarPagoModal({
           description:
             (anticipo > 0
               ? `${saldo} ${t('recibos.form.emitidoConAnticipo', { anticipo: formatCurrency(anticipo) })}`
-              : saldo) + lineaDeFacturas,
+              : saldo) +
+            lineaDelAjuste +
+            lineaDeFacturas,
         },
       );
       cerrar();

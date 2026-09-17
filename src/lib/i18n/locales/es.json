@@ -11343,13 +11343,26 @@
         "despues": "Después de este pago sigue debiendo",
         "sinConciliar": "Uno de estos meses ya tiene plata registrada que ningún recibo respalda. Hay que conciliarla antes de recibir.",
         "adelanto": "Adelanto",
-        "hayAdelanto": "Los meses marcados como adelanto todavía no vencen: pagarlos ahora baja la deuda del contrato."
+        "hayAdelanto": "Los meses marcados como adelanto todavía no vencen: pagarlos ahora baja la deuda del contrato.",
+        "anticipo": "Anticipo",
+        "hayAnticipo": "Los meses marcados como anticipo no bajan todavía: la plata queda guardada en el contrato y se descuenta con un recibo el día de pago de cada mes."
       },
       "descripcionAdelanto": "No tiene nada vencido. Lo que entre hoy es un adelanto: baja las cuotas de su contrato que todavía no vencen, de la más próxima en adelante.",
       "pagaLoVencido": "Paga lo vencido",
       "adelantoDesde": "Vencido hoy: {{vencido}}. Por encima de esa cifra estás adelantando contra {{futuro}} que todavía no vencen.",
       "sinMandato": "Falta el mandato del inmueble",
-      "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran"
+      "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran",
+      "forma": {
+        "titulo": "¿Cómo registras el adelanto?",
+        "ayuda": "Este pago alcanza {{meses}}, que todavía no vencen. Lo vencido se paga primero en las dos formas.",
+        "parteDe": "parte de {{mes}}",
+        "abonarTitulo": "Registrar todo ya",
+        "abonarAyuda": "Abona ya {{monto}} a {{meses}}: esas cuotas quedan pagadas hoy, con su recibo de caja.",
+        "anticipoTitulo": "Dejarlo como anticipo y descontarlo mes a mes",
+        "anticipoAyuda": "{{monto}} quedan como anticipo del contrato y ninguna cuota baja todavía. El día de pago de cada mes sale solo un recibo de caja que descuenta esa cuota, hasta que el anticipo llegue a cero."
+      },
+      "anticipoRegistrado": "Anticipo registrado",
+      "emitidoConAnticipo": "Quedaron {{anticipo}} como anticipo del contrato: se descuentan solos el día de pago de cada mes."
     },
     "historial": {
       "titulo": "Recibos de caja",
@@ -11393,6 +11406,17 @@
       "conciliado": "Pago anterior conciliado",
       "conciliadoDesc": "Quedó el recibo {{numero}}. Ya puedes hacer el abono.",
       "fallo": "No se pudo conciliar"
+    },
+    "anticipoDelContrato": {
+      "titulo": "Anticipo del inquilino",
+      "ayuda": "Plata recibida por adelantado que todavía no abona a ninguna cuota. El día de pago de cada mes sale un recibo de caja que la descuenta.",
+      "saldo": "Queda por descontar",
+      "recibido": "Recibido",
+      "descontado": "Descontado",
+      "entrada": "Entró como anticipo",
+      "descuento": "Descuento de {{mes}}",
+      "recibo": "Recibo {{numero}}",
+      "anulado": "Anulado"
     }
   },
   "inquilinos": {

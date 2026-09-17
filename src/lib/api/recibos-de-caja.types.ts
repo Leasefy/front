@@ -260,7 +260,28 @@ export interface CarteraDelCliente {
    * fecha en la que se recibió, sin piso.)
    */
   liquidadoAl?: string;
+  /**
+   * 🔴 ¿Se puede dejar el adelanto como ANTICIPO DEL CONTRATO (2026-09-16)? Con
+   * `false` —o un back anterior que no lo manda— la pantalla no ofrece esa
+   * forma: el back respondería 503.
+   */
+  anticipoDelContratoDisponible?: boolean;
+  /** Lo que hoy queda de anticipo en cada contrato de la persona (sólo > 0). */
+  anticiposDelContrato?: { contractId: string; saldoCop: number }[];
+  /** Plata recibida como anticipo que todavía no abona a ninguna cuota. */
+  anticipoDelContratoCop?: number;
 }
+
+/**
+ * 🔴 Cómo queda lo que el pago tiene de adelanto (Juan Camilo, 2026-09-16). Lo
+ * elige caja al recibir:
+ *   · `ABONAR_A_LAS_CUOTAS` — abona ya a las cuotas que todavía no vencen (lo
+ *     de siempre, y lo que el back hace si no se manda nada);
+ *   · `ANTICIPO_DEL_CONTRATO` — queda como anticipo de ese contrato y se
+ *     descuenta con un recibo de caja el día de pago de cada mes.
+ * Lo vencido se paga primero en las dos.
+ */
+export type FormaDelAdelanto = 'ABONAR_A_LAS_CUOTAS' | 'ANTICIPO_DEL_CONTRATO';
 
 /**
  * Cuerpo de `POST /inmobiliaria/recibos-de-caja/por-cliente`.
@@ -286,6 +307,8 @@ export interface NuevoReciboPorCliente {
    * seguido de un reintento ya no deja dos juegos de recibos. Hasta 64.
    */
   idempotencyKey?: string;
+  /** Sólo cuando el pago alcanza cuotas que todavía no vencen. Ver `FormaDelAdelanto`. */
+  formaDelAdelanto?: FormaDelAdelanto;
 }
 
 /** A qué período fue una parte del pago, y cuánto de eso cubrió intereses. */
@@ -325,6 +348,49 @@ export interface RespuestaDeReciboPorCliente {
    * Opcional por la misma razón que `saldoAFavor`.
    */
   anticipoCop?: number;
+  /** 🔴 (2026-09-16) La forma con la que el back registró el adelanto. */
+  formaDelAdelanto?: FormaDelAdelanto;
+  /** Lo que quedó como anticipo de cada contrato, con los meses que alcanza a cubrir. */
+  anticipoDelContrato?: AnticipoDeUnContrato[];
+  anticipoDelContratoCop?: number;
+}
+
+/** Lo que de un pago quedó como anticipo de UN contrato. */
+export interface AnticipoDeUnContrato {
+  contractId: string;
+  propertyTitle: string;
+  valorCop: number;
+  /** `completo: false` en el último mes cuando el anticipo no alcanza entero. */
+  meses: { month: string; valorCop: number; completo: boolean }[];
+}
+
+/** Un movimiento del anticipo de un contrato: una entrada o el descuento de un mes. */
+export interface MovimientoDelAnticipoDelContrato {
+  id: string;
+  /** `YYYY-MM-DD`. */
+  fecha: string;
+  tipo: 'ENTRADA' | 'DESCUENTO';
+  /** Positivo en una entrada, negativo en un descuento. */
+  valorCop: number;
+  /** El mes que pagó un descuento (`YYYY-MM`); `null` en una entrada. */
+  mes: string | null;
+  medio: string;
+  referencia: string | null;
+  notas: string | null;
+  reciboDeCajaId: string | null;
+  reciboNumero: number | null;
+  anulado: boolean;
+}
+
+/** Lo que devuelve `GET /inmobiliaria/recibos-de-caja/anticipos/contrato/:contractId`. */
+export interface AnticipoDelContrato {
+  contractId: string;
+  /** `false` = esta base no tiene la migración: no hay anticipo que mostrar. */
+  disponible: boolean;
+  saldoCop: number;
+  recibidoCop: number;
+  descontadoCop: number;
+  movimientos: MovimientoDelAnticipoDelContrato[];
 }
 
 /** Un movimiento del libro de saldo a favor: positivo entra, negativo se gasta. */

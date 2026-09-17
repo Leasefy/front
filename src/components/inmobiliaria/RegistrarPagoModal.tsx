@@ -67,6 +67,13 @@
  *    El recibo de caja debe quedar con la fecha en la que se recibió». El
  *    campo acepta cualquier día pasado; sólo el futuro sigue cerrado.
  *
+ * 7. 🔴 (2026-09-16, tarde) Cuando el monto alcanza cuotas que todavía no
+ *    vencen, caja ELIGE la forma del adelanto (Juan Camilo): registrarlo todo
+ *    ya —abona a esas cuotas— o dejarlo como anticipo del contrato, que se
+ *    descuenta con un recibo el día de pago de cada mes. Se pregunta sólo si
+ *    el back puede guardar el anticipo (`anticipoDelContratoDisponible`); si
+ *    no, el pago se registra como siempre y no hay nada que elegir.
+ *
  * ⚠️ Decisión de producto tomada al pie de la letra: el campo REFERENCIA salió
  * del formulario. Nico enumeró los campos y cerró con «y nada más». El back lo
  * sigue aceptando (lo usa la conciliación bancaria), así que devolverlo es
@@ -109,10 +116,17 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
+  FormaDelAdelanto,
   NuevoReciboPorCliente,
   RespuestaDeRecibo,
   RespuestaDeReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
+import {
+  mesesQueSeAdelantan,
+  seOfreceElegirLaForma,
+  type MesQueSeAdelanta,
+} from '@/lib/recibos/forma-del-adelanto';
+import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import {
@@ -168,6 +182,23 @@ export function mediosParaElegir(
   }));
 }
 
+/**
+ * «octubre de 2026, noviembre de 2026 y parte de diciembre de 2026»: los meses
+ * que el adelanto alcanza, como los lee quien está en caja.
+ */
+export function mesesEnPalabras(
+  meses: readonly MesQueSeAdelanta[],
+  idioma: 'es' | 'en',
+  parteDe: (mes: string) => string,
+): string {
+  const nombres = meses.map((m) =>
+    m.completo ? nombreDelMes(m.month, idioma) : parteDe(nombreDelMes(m.month, idioma)),
+  );
+  if (nombres.length <= 1) return nombres.join('');
+  const y = idioma === 'en' ? ' and ' : ' y ';
+  return `${nombres.slice(0, -1).join(', ')}${y}${nombres[nombres.length - 1]}`;
+}
+
 /** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
 
@@ -201,7 +232,8 @@ export function RegistrarPagoModal({
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, locale } = useI18n();
+  const idioma = locale === 'en' ? 'en' : 'es';
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
@@ -231,6 +263,8 @@ export function RegistrarPagoModal({
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy);
   const [saludos, setSaludos] = React.useState('');
+  /** La forma del adelanto que eligió caja. Sólo viaja si se le preguntó. */
+  const [forma, setForma] = React.useState<FormaDelAdelanto>('ABONAR_A_LAS_CUOTAS');
   const [enviando, setEnviando] = React.useState(false);
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
   /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
@@ -297,6 +331,16 @@ export function RegistrarPagoModal({
   const sinConciliar = React.useMemo(
     () => periodosSinConciliar(cartera, plan),
     [cartera, plan],
+  );
+  /**
+   * 🔴 Lo que el pago le abona a cuotas que todavía no vencen, y si hay que
+   * preguntar cómo registrarlo. Con la forma (b) esas cuotas NO bajan: la plata
+   * queda como anticipo del contrato y el back la descuenta el día de pago.
+   */
+  const adelanto = React.useMemo(() => mesesQueSeAdelantan(cartera, plan), [cartera, plan]);
+  const ofrecerForma = seOfreceElegirLaForma(cartera, plan);
+  const mesesDelAdelanto = mesesEnPalabras(adelanto.meses, idioma, (mes) =>
+    t('recibos.form.forma.parteDe', { mes }),
   );
 
   /**
@@ -410,6 +454,7 @@ export function RegistrarPagoModal({
       setFecha(hoy);
       setFechaDeLaVistaPrevia(null);
       setSaludos('');
+      setForma('ABONAR_A_LAS_CUOTAS');
       setErrorDelBack(null);
       setTituloDelError(null);
       setTocado(false);
@@ -434,6 +479,7 @@ export function RegistrarPagoModal({
     setFecha(hoy);
     setFechaDeLaVistaPrevia(null);
     setSaludos('');
+    setForma('ABONAR_A_LAS_CUOTAS');
     setErrorDelBack(null);
     setTituloDelError(null);
     setTocado(false);
@@ -464,24 +510,34 @@ export function RegistrarPagoModal({
         medio,
         ...(saludos.trim() ? { notas: saludos.trim() } : {}),
         idempotencyKey: llaveDeEsteRecibo(),
+        // Sólo si se le preguntó a caja: si no, el back abona a las cuotas.
+        ...(ofrecerForma ? { formaDelAdelanto: forma } : {}),
       });
 
       // Salió: el próximo recibo es otro y lleva otra llave.
       llaveDelRecibo.current = null;
 
       const numeros = res.recibos.map((r) => String(r.numero)).join(', ');
+      const anticipo = res.anticipoDelContratoCop ?? 0;
+      const saldo =
+        res.deudaRestante > 0
+          ? t('recibos.form.emitidoQuedaSaldo', {
+              monto: formatCurrency(res.totalCop),
+              saldo: formatCurrency(res.deudaRestante),
+            })
+          : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) });
       toast.success(
-        res.recibos.length > 1
-          ? t('recibos.form.emitidoVarios', { numeros, count: res.recibos.length })
-          : t('recibos.form.emitido', { numero: numeros }),
+        // Con la forma (b) y nada vencido no sale ningún recibo hoy: sale el anticipo.
+        res.recibos.length === 0 && anticipo > 0
+          ? t('recibos.form.anticipoRegistrado')
+          : res.recibos.length > 1
+            ? t('recibos.form.emitidoVarios', { numeros, count: res.recibos.length })
+            : t('recibos.form.emitido', { numero: numeros }),
         {
           description:
-            res.deudaRestante > 0
-              ? t('recibos.form.emitidoQuedaSaldo', {
-                  monto: formatCurrency(res.totalCop),
-                  saldo: formatCurrency(res.deudaRestante),
-                })
-              : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) }),
+            anticipo > 0
+              ? `${saldo} ${t('recibos.form.emitidoConAnticipo', { anticipo: formatCurrency(anticipo) })}`
+              : saldo,
         },
       );
       cerrar();
@@ -546,10 +602,12 @@ export function RegistrarPagoModal({
     cerrar,
     cobroId,
     fecha,
+    forma,
     formatCurrency,
     llaveDeEsteRecibo,
     medio,
     monto,
+    ofrecerForma,
     onSubmit,
     puedeEnviar,
     saludos,
@@ -807,8 +865,70 @@ export function RegistrarPagoModal({
               </div>
 
               {/* 🔴 A dónde va la plata. El punto del cambio entero. */}
-              <PlanDeImputacion cartera={cartera} plan={plan} />
+              <PlanDeImputacion
+                cartera={cartera}
+                plan={plan}
+                comoAnticipo={ofrecerForma && forma === 'ANTICIPO_DEL_CONTRATO'}
+              />
               <AvisoSinConciliar periodos={sinConciliar} />
+
+              {/*
+                🔴 La forma del adelanto (Juan Camilo, 2026-09-16). Aparece sólo
+                cuando el monto alcanza cuotas que no vencen y el back puede
+                guardar el anticipo. Cada opción dice qué pasa y cuántos meses
+                cubre, ANTES de emitir: es plata que no se ve bajar en el acto.
+              */}
+              {ofrecerForma && (
+                <div className="space-y-2" data-testid="forma-del-adelanto">
+                  <p className="text-sm font-medium text-fg">{t('recibos.form.forma.titulo')}</p>
+                  <p className="text-xs text-fg-muted">
+                    {t('recibos.form.forma.ayuda', { meses: mesesDelAdelanto })}
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label={t('recibos.form.forma.titulo')}
+                    className="space-y-2"
+                  >
+                    {(
+                      [
+                        {
+                          valor: 'ABONAR_A_LAS_CUOTAS',
+                          titulo: t('recibos.form.forma.abonarTitulo'),
+                          ayuda: t('recibos.form.forma.abonarAyuda', {
+                            monto: formatCurrency(adelanto.valorCop),
+                            meses: mesesDelAdelanto,
+                          }),
+                        },
+                        {
+                          valor: 'ANTICIPO_DEL_CONTRATO',
+                          titulo: t('recibos.form.forma.anticipoTitulo'),
+                          ayuda: t('recibos.form.forma.anticipoAyuda', {
+                            monto: formatCurrency(adelanto.valorCop),
+                          }),
+                        },
+                      ] as const
+                    ).map((o) => (
+                      <button
+                        key={o.valor}
+                        type="button"
+                        role="radio"
+                        aria-checked={forma === o.valor}
+                        onClick={() => setForma(o.valor)}
+                        className={cn(
+                          'w-full rounded-lg border p-3 text-left transition-colors',
+                          forma === o.valor
+                            ? 'border-primary bg-primary-soft'
+                            : 'border-border bg-surface hover:bg-surface-muted',
+                        )}
+                        data-testid={`forma-${o.valor}`}
+                      >
+                        <p className="text-sm font-medium text-fg">{o.titulo}</p>
+                        <p className="mt-1 text-xs text-fg-muted">{o.ayuda}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Cómo pagó */}
               <div className="space-y-2">

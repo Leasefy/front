@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import { normalizeCobro } from './inmobiliaria.service';
 import type {
+  AnticipoDelContrato,
   CarteraDelCliente,
   CobroConDesglose,
   ConciliacionDePagoAnterior,
@@ -113,6 +114,8 @@ export const recibosDeCajaApi = {
     // Sin esta línea la llave del formulario se perdía acá y el reintento
     // volvía a emitir (R1).
     if (datos.idempotencyKey) cuerpo.idempotencyKey = datos.idempotencyKey;
+    // La forma del adelanto (2026-09-16). Sin ella el back abona a las cuotas.
+    if (datos.formaDelAdelanto) cuerpo.formaDelAdelanto = datos.formaDelAdelanto;
 
     const res = await apiClient.post<RespuestaDeReciboPorCliente>(`${BASE}/por-cliente`, cuerpo);
     invalidar('cobros');
@@ -145,6 +148,17 @@ export const recibosDeCajaApi = {
   async anticipos(tenantId: string): Promise<SaldoAFavorDelCliente> {
     return apiClient.get<SaldoAFavorDelCliente>(
       `${BASE}/anticipos/${encodeURIComponent(tenantId)}`,
+    );
+  },
+
+  /**
+   * 🔴 El ANTICIPO del inquilino sobre un contrato (2026-09-16): lo que queda,
+   * lo que entró, lo que se descontó y cada movimiento con el mes que pagó y
+   * su recibo. `disponible: false` = la base no tiene la migración.
+   */
+  async anticipoDelContrato(contractId: string): Promise<AnticipoDelContrato> {
+    return apiClient.get<AnticipoDelContrato>(
+      `${BASE}/anticipos/contrato/${encodeURIComponent(contractId)}`,
     );
   },
 
@@ -233,7 +247,11 @@ export const recibosDeCajaApi = {
 };
 
 export type {
+  AnticipoDelContrato,
+  AnticipoDeUnContrato,
   CarteraDelCliente,
+  FormaDelAdelanto,
+  MovimientoDelAnticipoDelContrato,
   CobroConDesglose,
   PeriodoEnDeuda,
   ConceptoDelCobro,

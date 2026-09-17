@@ -78,7 +78,7 @@ vi.mock('@/lib/api/inquilinos.service', () => ({
 }));
 
 import { ApiError } from '@/lib/api/client';
-import { RegistrarPagoModal } from './RegistrarPagoModal';
+import { RegistrarPagoModal, mesesEnPalabras } from './RegistrarPagoModal';
 import { ESPERA_DE_LA_FECHA_MS } from './ReciboPorCliente';
 
 const COBRO: Cobro = {
@@ -1381,5 +1381,98 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
       (onSubmit.mock.calls[i][0] as { idempotencyKey?: string }).idempotencyKey;
     expect(llave(0)).toBeTruthy();
     expect(llave(1)).toBe(llave(0));
+  });
+});
+
+describe('<RegistrarPagoModal> la forma del adelanto (2026-09-16)', () => {
+  /*
+   * Juan Camilo: cuando el monto alcanza cuotas que todavía no vencen, caja
+   * ELIGE: registrarlo todo ya, o dejarlo como anticipo del contrato y
+   * descontarlo mes a mes. Debe septiembre (vencido) y octubre a diciembre por
+   * vencer.
+   */
+  const conFuturo = (extra: Partial<CarteraDelCliente> = {}) =>
+    debeTresMeses({
+      total: 4_000_000,
+      vencidoCop: 1_000_000,
+      futuroCop: 3_000_000,
+      anticipoDelContratoDisponible: true,
+      cuotas: [
+        periodo('c-sep', '2026-09', 1_000_000),
+        periodo('c-oct', '2026-10', 1_000_000, { vencida: false }),
+        periodo('c-nov', '2026-11', 1_000_000, { vencida: false }),
+        periodo('c-dic', '2026-12', 1_000_000, { vencida: false }),
+      ],
+      ...extra,
+    });
+
+  it('con sólo lo vencido no pregunta nada ni manda la forma', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo());
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    expect(document.body.querySelector('[data-testid="forma-del-adelanto"]')).toBeNull();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('formaDelAdelanto');
+  });
+
+  it('🔴 si el monto alcanza meses futuros pregunta, dice cuáles, y manda la forma elegida', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo());
+    const onSubmit = await abrir();
+    escribir('#monto-recibo', '$ 3.500.000');
+    elegirMedio('efectivo');
+
+    const forma = document.body.querySelector('[data-testid="forma-del-adelanto"]');
+    expect(forma).toBeTruthy();
+    const abonar = document.body.querySelector<HTMLButtonElement>('[data-testid="forma-ABONAR_A_LAS_CUOTAS"]')!;
+    const anticipo = document.body.querySelector<HTMLButtonElement>('[data-testid="forma-ANTICIPO_DEL_CONTRATO"]')!;
+    // Por defecto, lo de siempre.
+    expect(abonar.getAttribute('aria-checked')).toBe('true');
+    expect(anticipo.getAttribute('aria-checked')).toBe('false');
+    expect(document.body.querySelector('[data-testid="plan-adelanto-2026-10"]')).toBeTruthy();
+
+    act(() => anticipo.click());
+    expect(anticipo.getAttribute('aria-checked')).toBe('true');
+    // El plan lo dice: esos meses quedan como anticipo, no bajan hoy.
+    expect(document.body.querySelector('[data-testid="plan-anticipo-2026-10"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-anticipo-2026-12"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-deuda-restante"]')?.textContent).toBe('$3000000');
+
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      valorCop: 3_500_000,
+      formaDelAdelanto: 'ANTICIPO_DEL_CONTRATO',
+    });
+  });
+
+  it('sin la migración del anticipo no pregunta: el pago se registra como siempre', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo({ anticipoDelContratoDisponible: false }));
+    const onSubmit = await abrir();
+    escribir('#monto-recibo', '$ 3.500.000');
+    elegirMedio('efectivo');
+
+    expect(document.body.querySelector('[data-testid="forma-del-adelanto"]')).toBeNull();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('formaDelAdelanto');
+  });
+});
+
+describe('mesesEnPalabras', () => {
+  it('nombra los meses y marca el último cuando no alcanza entero', () => {
+    const parteDe = (mes: string) => `parte de ${mes}`;
+    expect(
+      mesesEnPalabras(
+        [
+          { month: '2026-10', valorCop: 1, completo: true },
+          { month: '2026-11', valorCop: 1, completo: true },
+          { month: '2026-12', valorCop: 1, completo: false },
+        ],
+        'es',
+        parteDe,
+      ),
+    ).toBe('octubre de 2026, noviembre de 2026 y parte de diciembre de 2026');
+    expect(mesesEnPalabras([{ month: '2026-10', valorCop: 1, completo: true }], 'es', parteDe)).toBe(
+      'octubre de 2026',
+    );
   });
 });

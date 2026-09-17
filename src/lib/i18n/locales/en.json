@@ -11322,7 +11322,9 @@
         "anticipoAyuda": "{{monto}} stay as the contract's advance and no installment goes down yet. On each month's due date a cash receipt is issued automatically for that installment, until the advance reaches zero."
       },
       "anticipoRegistrado": "Advance recorded",
-      "emitidoConAnticipo": "{{anticipo}} stayed as the contract's advance: they're applied automatically on each month's due date."
+      "emitidoConAnticipo": "{{anticipo}} stayed as the contract's advance: they're applied automatically on each month's due date.",
+      "facturasDelPago": "Invoices for {{meses}} updated: {{saldo}} left to pay.",
+      "facturasSinEmitir": "They were generated and are pending issue with the DIAN."
     },
     "historial": {
       "titulo": "Cash receipts",

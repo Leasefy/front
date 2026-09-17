@@ -1476,3 +1476,34 @@ describe('mesesEnPalabras', () => {
     );
   });
 });
+
+describe('<RegistrarPagoModal> las facturas del pago (2026-09-16)', () => {
+  it('tras emitir, dice qué facturas quedaron al día y que están pendientes de emitir ante la DIAN', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({
+      ...RESPUESTA,
+      facturas: [
+        {
+          facturaId: 'f-1',
+          contractId: 'ct1',
+          mes: '2026-06',
+          estado: 'GENERADA',
+          numero: null,
+          totalCop: 1_000_000,
+          netoCop: 1_000_000,
+          abonadoCop: 1_000_000,
+          saldoCop: 0,
+          generadaAhora: true,
+        },
+      ],
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.facturasDelPago');
+    expect(descripcion).toContain('recibos.form.facturasSinEmitir');
+  });
+});

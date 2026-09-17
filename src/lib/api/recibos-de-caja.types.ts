@@ -315,8 +315,13 @@ export interface NuevoReciboPorCliente {
 export interface ParteDeLaImputacion {
   /** 🔴 La llave del período. `null` sólo en un cobro viejo sin cuota detrás. */
   cuotaId: string | null;
-  /** El cobro que quedó DOCUMENTANDO el período; puede haberse creado en este pago. */
-  cobroId: string;
+  /**
+   * 🔴 (2026-09-16) El cobro al que se vinculó el pago, o `null` cuando abonó
+   * directo a la cuota: el recibo ya no crea cobros.
+   */
+  cobroId: string | null;
+  /** Lo que el RECIBO dejó escrito que fue a intereses. `null` con un back anterior. */
+  interesesRegistradosCop?: number | null;
   month: string;
   propertyTitle: string;
   /** `false` = este renglón se adelantó: la cuota todavía no vencía. */
@@ -353,6 +358,28 @@ export interface RespuestaDeReciboPorCliente {
   /** Lo que quedó como anticipo de cada contrato, con los meses que alcanza a cubrir. */
   anticipoDelContrato?: AnticipoDeUnContrato[];
   anticipoDelContratoCop?: number;
+  /** El desfase de hasta $1.000 de un pago de más, llevado como ajuste al peso. */
+  ajusteAlPesoCop?: number;
+  /**
+   * 🔴 (2026-09-16) Las facturas de los meses que tocó el pago, ya al día: la
+   * que nació con este pago (`generadaAhora`) o la del día 1, con su abono y su
+   * saldo. Una GENERADA existe sin número y queda pendiente de emitir.
+   */
+  facturas?: FacturaDelPago[];
+}
+
+/** Una factura de un mes que el pago tocó. */
+export interface FacturaDelPago {
+  facturaId: string;
+  contractId: string;
+  mes: string;
+  estado: 'GENERADA' | 'EMITIDA';
+  numero: number | null;
+  totalCop: number;
+  netoCop: number;
+  abonadoCop: number;
+  saldoCop: number;
+  generadaAhora: boolean;
 }
 
 /** Lo que de un pago quedó como anticipo de UN contrato. */

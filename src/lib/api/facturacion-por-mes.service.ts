@@ -142,7 +142,12 @@ export interface FacturaDelMes {
     nombre: string
     certeza: 'CONFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR'
   } | null
-  estado: 'POR_EMITIR' | 'EMITIDA'
+  /**
+   * `GENERADA` (2026-09-16): la factura ya existe como documento —nació el día 1
+   * o con un pago— SIN número; emitirla es numerarla. Se selecciona y se emite
+   * igual que una por emitir.
+   */
+  estado: 'POR_EMITIR' | 'GENERADA' | 'EMITIDA'
   /** El consecutivo interno de la inmobiliaria. */
   numero: number | null
   /** El número autorizado por la resolución de la DIAN («FE-1042»). */

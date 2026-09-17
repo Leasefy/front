@@ -526,6 +526,20 @@ export function RegistrarPagoModal({
               saldo: formatCurrency(res.deudaRestante),
             })
           : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) });
+      /*
+       * 🔴 (2026-09-16) Qué quedó facturado: la factura de cada mes que tocó el
+       * pago, generada y pendiente de emitir ante la DIAN (o ya emitida), con lo
+       * que le falta. Nada se numera al recibir.
+       */
+      const facturas = res.facturas ?? [];
+      const pendientesDeEmitir = facturas.filter((f) => f.estado === 'GENERADA');
+      const lineaDeFacturas =
+        facturas.length === 0
+          ? ''
+          : ` ${t('recibos.form.facturasDelPago', {
+              meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
+              saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
+            })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
       toast.success(
         // Con la forma (b) y nada vencido no sale ningún recibo hoy: sale el anticipo.
         res.recibos.length === 0 && anticipo > 0
@@ -535,9 +549,9 @@ export function RegistrarPagoModal({
             : t('recibos.form.emitido', { numero: numeros }),
         {
           description:
-            anticipo > 0
+            (anticipo > 0
               ? `${saldo} ${t('recibos.form.emitidoConAnticipo', { anticipo: formatCurrency(anticipo) })}`
-              : saldo,
+              : saldo) + lineaDeFacturas,
         },
       );
       cerrar();
@@ -604,6 +618,7 @@ export function RegistrarPagoModal({
     fecha,
     forma,
     formatCurrency,
+    idioma,
     llaveDeEsteRecibo,
     medio,
     monto,

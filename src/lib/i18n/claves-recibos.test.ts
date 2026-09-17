@@ -64,6 +64,8 @@ const CLAVES_EN_USO = [
   'form.forma.anticipoAyuda',
   'form.anticipoRegistrado',
   'form.emitidoConAnticipo',
+  'form.facturasDelPago',
+  'form.facturasSinEmitir',
   'form.plan.anticipo',
   'form.plan.hayAnticipo',
   'form.titulo',

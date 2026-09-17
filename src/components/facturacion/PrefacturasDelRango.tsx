@@ -207,6 +207,14 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
                 <span className="text-caption text-fg-muted">
                   {f.numeroDian ?? `N° ${f.numero}`}
                 </span>
+              ) : f.estado === 'GENERADA' ? (
+                <span
+                  className="text-caption text-primary"
+                  data-testid={`rango-generada-${f.clave}`}
+                  title="La factura ya existe, sin número: se numera al emitirla."
+                >
+                  Generada · sin emitir
+                </span>
               ) : f.emitible ? (
                 <span className="text-caption text-primary">Por emitir</span>
               ) : (

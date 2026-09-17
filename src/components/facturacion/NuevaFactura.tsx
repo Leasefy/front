@@ -208,7 +208,7 @@ function TablaDeFacturas({
   const porEmitir = useMemo(
     () =>
       filas
-        .filter((f) => f.estado === 'POR_EMITIR' && f.emitible)
+        .filter((f) => (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible)
         .map((f) => f.clave),
     [filas],
   )
@@ -512,7 +512,7 @@ export function NuevaFactura() {
           [...r.inquilinos, ...r.propietarios]
             .filter(
               (f) =>
-                f.mes === elMes && f.estado === 'POR_EMITIR' && f.emitible,
+                f.mes === elMes && (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
             )
             .map((f) => f.clave),
         ),
@@ -567,7 +567,7 @@ export function NuevaFactura() {
     if (!datos) return 0
     return [...datos.inquilinos, ...datos.propietarios]
       .filter(
-        (f) => seleccion.has(f.clave) && f.estado === 'POR_EMITIR' && f.emitible,
+        (f) => seleccion.has(f.clave) && (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
       )
       .reduce((s, f) => s + f.totalCop, 0)
   }, [datos, seleccion])

@@ -232,6 +232,20 @@ export interface DeterioroDelMes extends PuedeFaltarLaMigracion {
   tramosSugeridos: TramoDeDeterioro[];
 }
 
+/**
+ * Lo que devuelve aprobar: la provisión más si la MISMA persona la propuso y la
+ * aprobó.
+ *
+ * 🔴 `mismoAprobador: true` **no bloquea nada** —en una inmobiliaria chica el
+ * contador es una sola persona— pero la pantalla tiene que decirlo: un control
+ * que existe sin que nadie sepa que no se aplicó es peor que no tenerlo. Si
+ * esta provisión debe exigir un segundo par de ojos como el lote de giros es
+ * una pregunta abierta para Nico (contrato del 17-09, §3).
+ */
+export interface ProvisionAprobada extends ProvisionDeCartera {
+  mismoAprobador: boolean;
+}
+
 export interface PropuestaDeDeterioro {
   mes: string;
   tramos: TramoDeDeterioro[];

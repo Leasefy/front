@@ -110,6 +110,12 @@ export function DeterioroDeCarteraPanel() {
   const [enviando, setEnviando] = useState(false);
   const [confirmando, setConfirmando] = useState<'aprobar' | 'anular' | null>(null);
   const [motivo, setMotivo] = useState('');
+  /**
+   * 🔴 La propuso y la aprobó la misma persona (lo dice el back al aprobar).
+   * No bloquea —en una inmobiliaria chica el contador es uno solo— pero se
+   * dice: un control que no se aplicó y que nadie ve es peor que no tenerlo.
+   */
+  const [mismoAprobador, setMismoAprobador] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -130,6 +136,7 @@ export function DeterioroDeCarteraPanel() {
     setCargando(true);
     setError(null);
     setPorcentajes({});
+    setMismoAprobador(false);
     finanzasApi
       .deterioro(mes)
       .then((r) => {
@@ -180,8 +187,13 @@ export function DeterioroDeCarteraPanel() {
     if (!provision) return;
     setEnviando(true);
     try {
-      await finanzasApi.aprobarDeterioro(provision.id);
-      toast.success('Provisión aprobada.', { description: 'El movimiento del mes quedó asentado.' });
+      const r = await finanzasApi.aprobarDeterioro(provision.id);
+      setMismoAprobador(r.mismoAprobador === true);
+      toast.success('Provisión aprobada.', {
+        description: r.mismoAprobador
+          ? 'El movimiento del mes quedó asentado. La propusiste y la aprobaste tú: no hubo segundo par de ojos.'
+          : 'El movimiento del mes quedó asentado.',
+      });
       setConfirmando(null);
       await cargar();
     } catch (e) {
@@ -221,6 +233,18 @@ export function DeterioroDeCarteraPanel() {
           </Badge>
         )}
       </div>
+
+      {mismoAprobador ? (
+        <p
+          className="rounded-md border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-fg"
+          data-testid="mismo-aprobador"
+          role="status"
+        >
+          Esta provisión la propusiste y la aprobaste tú: no hubo un segundo par de ojos. No está
+          prohibido —en una inmobiliaria chica el contador es una sola persona— pero queda dicho, y
+          el asiento ya está hecho.
+        </p>
+      ) : null}
 
       <EstadoDeDatos
         cargando={cargando && !datos}

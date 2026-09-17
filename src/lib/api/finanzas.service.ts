@@ -27,6 +27,7 @@ import {
   type NuevaSede,
   type NuevaTasaDeUsura,
   type PropuestaDeDeterioro,
+  type ProvisionAprobada,
   type ProvisionDeCartera,
   type Regiro,
   type Sede,
@@ -88,9 +89,12 @@ export const finanzasApi = {
   proponerDeterioro: (propuesta: PropuestaDeDeterioro) =>
     apiClient.post<ProvisionDeCartera>(`${BASE}/deterioro`, propuesta),
 
-  /** Permiso `reportes:edit`. Deja la provisión en APROBADA (y la asienta). */
+  /**
+   * Permiso `reportes:edit`. Deja la provisión en APROBADA (y la asienta).
+   * Devuelve además `mismoAprobador`: la propuso y la aprobó la misma persona.
+   */
   aprobarDeterioro: (id: string) =>
-    apiClient.post<ProvisionDeCartera>(`${BASE}/deterioro/${encodeURIComponent(id)}/aprobar`),
+    apiClient.post<ProvisionAprobada>(`${BASE}/deterioro/${encodeURIComponent(id)}/aprobar`),
 
   /** Permiso `reportes:edit`. Deja la provisión en ANULADA. */
   anularDeterioro: (id: string, motivo: string) =>

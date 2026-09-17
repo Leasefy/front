@@ -138,7 +138,7 @@ let root: Root;
 beforeEach(() => {
   h.deterioro.mockReset().mockResolvedValue(datos());
   h.proponer.mockReset().mockResolvedValue(provision());
-  h.aprobar.mockReset().mockResolvedValue(provision({ estado: 'APROBADA' }));
+  h.aprobar.mockReset().mockResolvedValue({ ...provision({ estado: 'APROBADA' }), mismoAprobador: false });
   h.anular.mockReset().mockResolvedValue(provision({ estado: 'ANULADA' }));
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -254,6 +254,35 @@ describe('deterioro de cartera', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
     expect(h.aprobar).toHaveBeenCalledWith('p-1');
+  });
+
+  it('🔴 si la misma persona propuso y aprobó, la pantalla lo dice (no lo bloquea)', async () => {
+    h.deterioro.mockResolvedValue(datos({ provision: provision() }));
+    h.aprobar.mockResolvedValue({ ...provision({ estado: 'APROBADA' }), mismoAprobador: true });
+    await pintar();
+    expect(document.body.querySelector('[data-testid="mismo-aprobador"]')).toBeNull();
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="aprobar"]')!.click();
+    });
+    await act(async () => {
+      botones('Aprobar y asentar').at(-1)!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(texto('mismo-aprobador')).toContain('segundo par de ojos');
+  });
+
+  it('con dos personas distintas no inventa la advertencia', async () => {
+    h.deterioro.mockResolvedValue(datos({ provision: provision() }));
+    h.aprobar.mockResolvedValue({ ...provision({ estado: 'APROBADA' }), mismoAprobador: false });
+    await pintar();
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="aprobar"]')!.click();
+    });
+    await act(async () => {
+      botones('Aprobar y asentar').at(-1)!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.body.querySelector('[data-testid="mismo-aprobador"]')).toBeNull();
   });
 
   it('anular exige motivo', async () => {

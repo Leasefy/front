@@ -95,6 +95,12 @@ import {
   type AccionDelLote,
 } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import {
+  AccionesDelGiro,
+  MarcarDevueltoDialog,
+  RegirarDialog,
+  useGirosDevueltos,
+} from './GirosDevueltos';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -274,6 +280,18 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const { canAccess } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
+  /*
+   * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
+   * plata que YA salió, así que la columna aparece cuando el lote está PAGADO.
+   * La lectura falla abierto: si no hay migración o la petición se cae, el
+   * detalle del lote se ve entero y sin la columna.
+   */
+  const [giroEnDialogo, setGiroEnDialogo] = useState<{
+    accion: 'devolver' | 'regirar';
+    dispersionId: string;
+    nombreTitular: string;
+    valorCop: number;
+  } | null>(null);
 
   const puede = useCallback(
     (accion: AccionDelLote) => canAccess('dispersiones', PERMISO_DE_LA_ACCION[accion]),
@@ -311,6 +329,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * tempranos— porque no se puede llamar condicionalmente.
    */
   const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
+
+  // Igual que el de arriba: antes de los returns tempranos, porque un hook no
+  // se puede llamar condicionalmente.
+  const lotePagado = vista?.lote.estado === 'PAGADO';
+  const giros = useGirosDevueltos(lotePagado);
+  // El contrato pide `dispersiones:edit` para marcar devuelto y para regirar.
+  const puedeTocarGiros = canAccess('dispersiones', 'edit');
 
   if (cargando && !vista) {
     return (
@@ -605,6 +630,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                   <TableHead>Cuenta</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Entra</TableHead>
+                  {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -635,6 +661,34 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         </span>
                       )}
                     </TableCell>
+                    {lotePagado ? (
+                      <TableCell>
+                        <AccionesDelGiro
+                          dispersionId={item.dispersionId}
+                          nombreTitular={item.nombreTitular}
+                          valorCop={item.valorCop}
+                          giro={giros.porDispersion.get(item.dispersionId)}
+                          puedeEditar={puedeTocarGiros}
+                          disponible={giros.disponible}
+                          onDevolver={() =>
+                            setGiroEnDialogo({
+                              accion: 'devolver',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                          onRegirar={() =>
+                            setGiroEnDialogo({
+                              accion: 'regirar',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                        />
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
@@ -691,6 +745,25 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         onListo={aplicarLote}
       />
       <AnularDialog abierto={dialogo === 'anular'} lote={lote} onCerrar={cerrar} onListo={aplicarLote} />
+
+      {/* ── Giros devueltos (17-09) ─────────────────────────────────────── */}
+      <MarcarDevueltoDialog
+        abierto={giroEnDialogo?.accion === 'devolver'}
+        dispersionId={giroEnDialogo?.dispersionId ?? null}
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        valorCop={giroEnDialogo?.valorCop ?? 0}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
+      <RegirarDialog
+        abierto={giroEnDialogo?.accion === 'regirar'}
+        giro={
+          giroEnDialogo ? (giros.porDispersion.get(giroEnDialogo.dispersionId) ?? null) : null
+        }
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
     </div>
   );
 }

@@ -65,7 +65,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
-import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -1390,6 +1390,11 @@ export const dispersionesApi = {
     skipped: number;
     /** Los del mes que quedaron fuera por la selección. */
     noElegidos: number;
+    /**
+     * Las cuotas que llegaron tarde: las que se sumaron a una liquidación
+     * abierta y las que no, con el motivo. Opcional: back anterior.
+     */
+    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[] };
   }> {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,

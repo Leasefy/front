@@ -150,7 +150,7 @@ export function DeduccionesDelPropietario({
           cargando={cargando}
           error={error}
           queEs={t(k('queSon'))}
-          onReintentar={() => void cargar()}
+          onReintentar={cargar}
           vacio={Boolean(listado?.disponible) && deducciones.length === 0}
           cuandoVacio={
             <div className="flex flex-col items-center py-12 text-center">

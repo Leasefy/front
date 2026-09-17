@@ -7,6 +7,7 @@ import type {
   CargoAlInquilino,
   DeduccionesDeLaLiquidacion,
   PropuestaDelAgente,
+  AprobacionDeReparacion,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 /*
@@ -945,6 +946,11 @@ export interface SolicitudMantenimiento {
   propuesta?: PropuestaDelAgente | null;
   /** El cargo vivo en el estado de cuenta del inquilino, si quedó a su cargo. */
   cargoAlInquilino?: CargoAlInquilino | null;
+  /**
+   * 🔴 D12: la última solicitud de aprobación al propietario (pendiente,
+   * aprobada, RECHAZADA, de emergencia o anulada). Ausente con un back viejo.
+   */
+  aprobacionDelPropietario?: AprobacionDeReparacion | null;
 
   createdAt: string;
   updatedAt: string;

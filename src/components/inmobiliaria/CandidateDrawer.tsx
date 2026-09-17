@@ -1023,6 +1023,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
           <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
             {formatCurrency(study.maxAsegurableCop)}
           </p>
+          {/*
+            D13 (Nico y Juan Camilo, 17-09-2026, «como Portofino»): el tope es un
+            DATO, no un bloqueo. Un canon por encima no frena la postulación; lo
+            decide la inmobiliaria, sin registro ni aviso obligatorio.
+          */}
+          <p className="text-xs text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
+            Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.
+          </p>
         </div>
       ) : (
         <p className="text-xs text-fg-muted">Este estudio no registró un monto máximo asegurable.</p>

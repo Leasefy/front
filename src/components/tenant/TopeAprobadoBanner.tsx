@@ -329,7 +329,7 @@ export function SobreTopeAlert({
           {'. '}
           {tf(
             `${NS}.alerta.codeudor`,
-            'Puedes postularte con el perfil de otra persona (un codeudor) que sí sea apto para este valor.',
+            'Puedes postularte igual: la inmobiliaria decide si te la arrienda. Si quieres reforzar tu postulación, suma a otra persona (un codeudor).',
           )}
         </p>
       </div>

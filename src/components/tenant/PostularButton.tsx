@@ -31,16 +31,13 @@ import { useLenis } from '@/components/providers/SmoothScroll'
 import { getAccessToken } from '@/lib/api/client'
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
 import { useAplicacionParaPropiedad } from '@/lib/hooks/use-aplicacion-propiedad'
-import { cabeEnTope, diasParaVencer, estadoVigencia } from '@/lib/api/aprobacion.service'
-import { formatCurrency } from '@/lib/format'
-import { cn } from '@/lib/utils'
+import { diasParaVencer, estadoVigencia } from '@/lib/api/aprobacion.service'
 
 /** Por qué no puede postularse todavía. */
 export type MotivoBloqueo =
   | 'sin_sesion'
   | 'sin_aprobacion'
   | 'vencida'
-  | 'sobre_tope'
   | 'en_proceso'
   | 'rechazado'
 
@@ -114,8 +111,6 @@ export function PostularButton({
         open={abierto}
         onClose={() => setAbierto(false)}
         motivo={motivo}
-        canonCop={canonCop}
-        topeCop={aprobacion?.topeAprobadoCop ?? null}
         propertyId={propertyId}
       />
     </>
@@ -157,13 +152,17 @@ export function motivoDeBloqueo({
    * `use-aprobacion.ts`.
    */
   if (aprobacion.estado === 'sin_estudio') return haySesion ? 'sin_aprobacion' : 'sin_sesion'
-  // Aprobada: solo falta que no esté vencida y que el canon entre.
+  // Aprobada: solo falta que no esté vencida.
   if (!vigente) return 'vencida'
-  if (typeof canonCop === 'number') {
-    // `null` (no sabemos el tope) NO bloquea: no se le niega algo a alguien
-    // por un dato que todavía no tenemos.
-    if (cabeEnTope(canonCop, aprobacion.topeAprobadoCop) === false) return 'sobre_tope'
-  }
+  /*
+   * 🔴 El canon por encima del tope YA NO BLOQUEA (D13, Nico y Juan Camilo,
+   * 17-09-2026): «canon mayor al tope asegurable del estudio: la inmobiliaria
+   * decide; el tope es sólo informativo». Antes esto devolvía `sobre_tope` y el
+   * diálogo mandaba a «Ver las que sí puedo»: la persona nunca llegaba a la
+   * inmobiliaria, que es la que decide. El tope se sigue mostrando como dato
+   * (el aviso de la ficha, `TopeAprobadoBanner`) y el back tampoco rechaza.
+   */
+  void canonCop
   return null
 }
 
@@ -191,15 +190,11 @@ function AntesDePostularte({
   open,
   onClose,
   motivo,
-  canonCop,
-  topeCop,
   propertyId,
 }: {
   open: boolean
   onClose: () => void
   motivo: MotivoBloqueo
-  canonCop?: number
-  topeCop: number | null
   propertyId: string
 }) {
   const lenis = useLenis()
@@ -230,13 +225,6 @@ function AntesDePostularte({
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.desc}</DialogDescription>
         </DialogHeader>
-
-        {motivo === 'sobre_tope' && topeCop !== null && (
-          <div className="rounded-lg bg-surface-muted p-4 space-y-2">
-            <Fila label="Canon de esta propiedad" valor={canonCop} destacado />
-            <Fila label="Tu tope aprobado" valor={topeCop} />
-          </div>
-        )}
 
         {motivo === 'sin_aprobacion' && (
           <ol className="space-y-3">
@@ -290,22 +278,6 @@ function AntesDePostularte({
   )
 }
 
-function Fila({ label, valor, destacado }: { label: string; valor?: number | null; destacado?: boolean }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="text-sm text-fg-muted">{label}</span>
-      <span
-        className={cn(
-          'font-mono tabular-nums text-sm',
-          destacado ? 'text-fg font-medium' : 'text-fg-muted',
-        )}
-      >
-        {typeof valor === 'number' ? formatCurrency(valor) : '—'}
-      </span>
-    </div>
-  )
-}
-
 const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; href: string }> = {
   /*
    * El CTA principal es «conocer el tope», no «crear cuenta»: la cuenta se
@@ -330,12 +302,6 @@ const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; hr
     desc: 'Las aseguradoras revisan tu situación cada vez, así que hay que renovarla. Es el mismo proceso de antes.',
     cta: 'Renovar mi aprobación',
     href: '/aprobacion',
-  },
-  sobre_tope: {
-    title: 'Esta propiedad está por encima de tu tope',
-    desc: 'Puedes postularte a cualquier propiedad hasta tu tope aprobado. Esta se pasa, pero hay otras que sí van contigo.',
-    cta: 'Ver las que sí puedo',
-    href: '/inquilino/para-ti',
   },
   en_proceso: {
     title: 'Estamos consultando a las aseguradoras',

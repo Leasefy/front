@@ -3,7 +3,8 @@
  *
  * «Los abogados se registran por inmobiliaria. UNA persona pasa el caso; el
  * sistema lo SUGIERE desde el día 90 sin póliza. Los honorarios van a cargo del
- * inquilino sólo si el contrato lo pacta, son un % de lo recaudado con tope, y
+ * inquilino sólo si el contrato lo pacta, entran a su ESTADO DE CUENTA al pasar
+ * el caso (un cargo de una vez, % de la deuda, con tope), y
  * son del abogado: cuenta por pagar.»
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -169,7 +170,7 @@ describe('el cobro jurídico', () => {
     await montar();
 
     const caso = $('[data-testid="caso-caso-1"]');
-    expect(caso.textContent).toContain('10 % de lo recaudado');
+    expect(caso.textContent).toContain('10 % de la deuda');
     expect(caso.textContent).toContain('causados');
 
     await clic($('[data-testid="pactar-ct-1"]'));
@@ -179,17 +180,19 @@ describe('el cobro jurídico', () => {
     );
   });
 
-  it('🔴 los honorarios son plata del ABOGADO: se listan por pagar y se marcan pagados', async () => {
+  it('🔴 el honorario entra al ESTADO DE CUENTA del inquilino y es plata del abogado', async () => {
     api.honorarios.mockResolvedValue([
       {
         id: 'h-1',
         casoId: 'caso-1',
         contractId: 'ct-1',
         abogado: { id: 'ab-1', nombre: 'Martínez & Asociados' },
-        reciboId: 'r-1',
-        recaudoCop: 1_000_000,
-        honorarioCop: 100_000,
+        origen: 'AL_PASAR',
+        baseCop: 4_000_000,
+        honorarioCop: 400_000,
         estado: 'POR_PAGAR_AL_ABOGADO',
+        conceptoDeUnaVezId: 'cargo-1',
+        reciboId: null,
         pagadoAt: null,
         createdAt: '2026-09-17T10:00:00.000Z',
       },
@@ -197,10 +200,78 @@ describe('el cobro jurídico', () => {
     api.pagarHonorarios.mockResolvedValue({ pagados: 1 });
     await montar();
 
-    expect($('[data-testid="honorarios"]').textContent).toContain('no es ingreso de la inmobiliaria');
-    expect($('[data-testid="honorario-h-1"]').textContent).toContain('recaudados');
+    const bloque = $('[data-testid="honorarios"]');
+    expect(bloque.textContent).toContain('no es ingreso de la inmobiliaria');
+    expect(bloque.textContent).toContain('al pasar cada caso');
+    const fila = $('[data-testid="honorario-h-1"]');
+    expect(fila.textContent).toContain('de deuda al pasar');
+    expect(fila.textContent).toContain('cargado al estado de cuenta del inquilino');
     await clic($('[data-testid="pagar-h-1"]'));
     expect(api.pagarHonorarios).toHaveBeenCalledWith(['h-1']);
+  });
+
+  it('las filas VIEJAS (origen RECAUDO) se siguen leyendo igual', async () => {
+    api.honorarios.mockResolvedValue([
+      {
+        id: 'h-viejo',
+        casoId: 'caso-1',
+        contractId: 'ct-1',
+        abogado: { id: 'ab-1', nombre: 'Martínez & Asociados' },
+        origen: 'RECAUDO',
+        baseCop: 1_000_000,
+        honorarioCop: 100_000,
+        estado: 'POR_PAGAR_AL_ABOGADO',
+        conceptoDeUnaVezId: null,
+        reciboId: 'r-1',
+        pagadoAt: null,
+        createdAt: '2026-09-17T10:00:00.000Z',
+      },
+    ]);
+    await montar();
+    expect($('[data-testid="honorario-h-viejo"]').textContent).toContain('recaudados');
+  });
+
+  it('🔴 cerrar el caso SIN COBRO saca el cargo del estado de cuenta del inquilino', async () => {
+    api.casos.mockResolvedValue([
+      {
+        id: 'caso-1',
+        contractId: 'ct-1',
+        tenantId: 'u-1',
+        estado: 'EN_JURIDICO',
+        pasadoAt: '2026-09-17T10:00:00.000Z',
+        motivo: null,
+        diasDeMora: 132,
+        deudaAlPasarCop: 4_000_000,
+        pactaHonorarios: true,
+        honorariosPct: 10,
+        honorariosTopeCop: null,
+        cerradoAt: null,
+        motivoDeCierre: null,
+        abogado: { id: 'ab-1', nombre: 'Martínez & Asociados', documento: null },
+        honorariosCausadosCop: 400_000,
+        honorariosPorPagarCop: 400_000,
+      },
+    ]);
+    api.cerrar.mockResolvedValue({});
+    await montar();
+
+    await clic($('[data-testid="cerrar-caso-1"]'));
+    const motivo = $('#motivo-cierre') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value',
+      )!.set!.call(motivo, 'El propietario retiró la demanda.');
+      motivo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clic($('[data-testid="cerrar-sin-cobro"]'));
+    await clic($('[data-testid="confirmar-cerrar-caso"]'));
+
+    expect(api.cerrar).toHaveBeenCalledWith(
+      'caso-1',
+      'El propietario retiró la demanda.',
+      true,
+    );
   });
 
   it('sin cobros:edit se ve todo pero no se mueve nada', async () => {

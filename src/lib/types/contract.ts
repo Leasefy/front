@@ -502,6 +502,8 @@ export interface Contract {
   referenciaDeRecaudo?: string | null;
   prorratearPrimerMes?: boolean;
   diasDePlazo?: number | null;
+  /** Penalidad por terminación anticipada propia del contrato, en cánones. `null` = la de la inmobiliaria. */
+  penalidadTerminacionCanones?: number | null;
   /** Desde qué día se cobra (`'YYYY-MM-DD'`). Nunca antes de `startDate`. */
   fechaDeCartera?: string | null;
 

@@ -36,6 +36,8 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { TerminarContrato } from '@/components/contratos/TerminarContrato';
+import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
+import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
 import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
 import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
@@ -424,6 +426,16 @@ function ContratoDetalleContent() {
             })
           : {})}
       />
+
+      {/* 17-09: contrato vencido con el inquilino adentro → renovar, nunca prórroga automática. */}
+      {canEditContracts && contract.status === 'active' && (
+        <RenovarContratoVencido contractId={contract.id} onRenovado={() => void refetch()} />
+      )}
+
+      {/* 17-09: incrementos del canon (vivienda al IPC, local comercial digitado) y su carta. */}
+      {(contract.status === 'active' || contract.status === 'signed') && (
+        <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+      )}
 
       {canEditContracts && (
         <>

@@ -775,6 +775,7 @@ export const contractsApi = {
        * inmobiliaria. La mora corre desde el día de pago + plazo.
        */
       diasDePlazo?: number | null;
+      penalidadTerminacionCanones?: number | null;
       prorratearPrimerMes?: boolean;
       /**
        * 🔴 La referencia de recaudo: con qué número paga el inquilino. Cadena

@@ -36,6 +36,7 @@ const h = vi.hoisted(() => ({
     updateStatus: vi.fn(),
     addQuote: vi.fn(),
   },
+  mantenimientos: [] as unknown[],
   ultimoForm: null as Props | null,
   ultimoViewer: null as Props | null,
 }))
@@ -56,7 +57,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useMantenimientos: () => ({
-    mantenimientos: [],
+    mantenimientos: h.mantenimientos,
     isLoading: false,
     errorCrudo: null,
     refetch: async () => [],
@@ -90,6 +91,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.canAccess.mockImplementation(() => true)
   h.consignaciones.errorCrudo = null
+  h.mantenimientos = []
   h.ultimoForm = null
   h.ultimoViewer = null
   container = document.createElement('div')
@@ -199,6 +201,92 @@ describe('M3 — aprobar una cotización', () => {
     expect(h.toast.success).toHaveBeenCalledWith(
       'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
       { description: 'El cobro todavía no entra solo al estado de cuenta del inquilino.' },
+    )
+  })
+})
+
+describe('M5 — el agente propone, una persona aprueba', () => {
+  async function abrirAprobacion(quoteId: string) {
+    await render()
+    const aprobar = h.ultimoViewer!.onApproveQuote as (s: string, q: string) => Promise<void>
+    await act(async () => {
+      await aprobar('sol-1', quoteId)
+    })
+  }
+
+  const conPropuesta = (propuesta: Record<string, unknown>) => {
+    h.mantenimientos = [
+      {
+        id: 'sol-1',
+        quotes: [],
+        propuesta: {
+          quoteId: 'q-1',
+          aCargoDeSugerido: 'INQUILINO',
+          nota: null,
+          propuestaPor: 'AGENTE',
+          propuestaAt: '2026-09-15T11:00:00.000Z',
+          atendidaAt: null,
+          ...propuesta,
+        },
+      },
+    ]
+  }
+
+  it('al aprobar la cotización que propuso el agente, el diálogo dice su sugerencia', async () => {
+    conPropuesta({})
+    await abrirAprobacion('q-1')
+
+    expect(document.body.querySelector('[data-testid="a-cargo-de-sugerencia"]')).not.toBeNull()
+    // Decir no es elegir: nada queda marcado.
+    expect(
+      document.body
+        .querySelector('[data-testid="a-cargo-de-INQUILINO"]')
+        ?.getAttribute('aria-checked'),
+    ).toBe('false')
+  })
+
+  it('otra cotización, o una propuesta ya atendida, no arrastra la sugerencia', async () => {
+    conPropuesta({})
+    await abrirAprobacion('q-2')
+    expect(document.body.querySelector('[data-testid="a-cargo-de"]')).not.toBeNull()
+    expect(document.body.querySelector('[data-testid="a-cargo-de-sugerencia"]')).toBeNull()
+
+    await act(async () => root.unmount())
+    root = createRoot(container)
+    conPropuesta({ atendidaAt: '2026-09-16T09:00:00.000Z' })
+    await abrirAprobacion('q-1')
+    expect(document.body.querySelector('[data-testid="a-cargo-de-sugerencia"]')).toBeNull()
+  })
+
+  it('con el cargo puesto en la cuota del inquilino, el aviso dice dónde quedó', async () => {
+    h.api.approveQuote.mockResolvedValue({
+      id: 'sol-1',
+      cargo: {
+        aCargoDe: 'INQUILINO',
+        deduccionIds: [],
+        avisos: [],
+        cargoAlInquilino: {
+          id: 'c-1',
+          contractId: 'k-1',
+          nombre: 'Reparación',
+          valorCop: 180000,
+          mesDesde: '2026-09',
+          mes: '2026-10',
+          cuotaId: 'cuota-10',
+        },
+      },
+    })
+    await abrirAprobacion('q-1')
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-INQUILINO"]')!.click()
+    })
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-confirmar"]')!.click()
+    })
+
+    expect(h.toast.success).toHaveBeenCalledWith(
+      'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
+      { description: 'inmobiliaria.deducciones.cargoAlInquilino.aprobada' },
     )
   })
 })

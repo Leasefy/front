@@ -3,7 +3,11 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
-import type { DeduccionesDeLaLiquidacion } from './deducciones';
+import type {
+  CargoAlInquilino,
+  DeduccionesDeLaLiquidacion,
+  PropuestaDelAgente,
+} from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
@@ -756,6 +760,24 @@ export interface PorQueElMesVieneVacio {
   contratosVigentes: number;
 }
 
+/**
+ * Las cuotas que llegaron TARDE a un mes que ya tiene la liquidación de ese
+ * propietario: un contrato activado después, una tabla regenerada, la parte de
+ * un copropietario. Antes se saltaban enteras; ahora, si la liquidación sigue
+ * abierta, se le suman al generar, y si no, el back dice por qué no.
+ */
+export interface CuotasTardias {
+  propietarioId: string;
+  propietarioName: string;
+  dispersionId: string;
+  cuotas: number;
+  netoCop: number;
+  /** `true` = se le suman a su liquidación del mes al generar. */
+  seSuman: boolean;
+  /** Por qué no se pueden sumar. `null` si se suman. */
+  motivo: string | null;
+}
+
 export interface VistaPreviaDeDispersiones {
   month: string;
   /**
@@ -768,6 +790,11 @@ export interface VistaPreviaDeDispersiones {
   totalPropietarios: number;
   /** Los que ya tienen dispersión de este mes: generar los saltaría. */
   yaGenerados: number;
+  /**
+   * De los que ya tienen dispersión, los que tienen cuotas que llegaron tarde.
+   * Opcional: un back anterior no lo manda (y saltaba esas cuotas).
+   */
+  tardias?: CuotasTardias[];
   /**
    * Sin un solo borrador, la razón contada; con alguno, `null`. Opcional: un
    * back anterior al 16-09 no lo manda, y entonces la pantalla dice la frase
@@ -891,6 +918,14 @@ export interface SolicitudMantenimiento {
   completedAt?: string;
   completionNotes?: string;
   completionPhotoUrls?: string[];
+
+  /**
+   * Lo que dejó propuesto el agente de mantenimiento, esperando a una persona.
+   * Ausente con un back anterior; `null` sin propuesta.
+   */
+  propuesta?: PropuestaDelAgente | null;
+  /** El cargo vivo en el estado de cuenta del inquilino, si quedó a su cargo. */
+  cargoAlInquilino?: CargoAlInquilino | null;
 
   createdAt: string;
   updatedAt: string;

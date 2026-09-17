@@ -41,6 +41,7 @@ import { nombreDelMes } from '@/lib/utils/mes';
 import Link from 'next/link';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
+import { ResumenDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -631,6 +632,13 @@ export function DispersionDetail({
             </div>
           </div>
           <BloqueDeDeducciones bloque={dispersion.conDeducciones} propietarioId={dispersion.propietarioId} />
+          {/* D1/D2 (17-09): lo girado sin recaudo y los intereses del propietario. */}
+          <ResumenDelMandato
+            numeros={{
+              cuentaPorCobrarAlInquilinoCop: dispersion.cuentaPorCobrarAlInquilinoCop,
+              interesesCop: dispersion.interesesCop,
+            }}
+          />
           {/* «Causado» no se entiende solo, y es la diferencia con lo recaudado. */}
           {dispersion.baseDelCanon !== 'RECAUDADO' && (
             <p className="text-xs text-muted-foreground" data-testid="dispersion-que-es-el-canon">
@@ -653,6 +661,7 @@ export function DispersionDetail({
           <ComisionDesglose
             items={dispersion.items}
             baseDelCanon={dispersion.baseDelCanon}
+            mesDeLaLiquidacion={dispersion.month}
             variant="compact"
             showPercentages={true}
           />

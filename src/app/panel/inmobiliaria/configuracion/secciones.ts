@@ -11,6 +11,7 @@ import {
   Users,
   Wallet,
   ArrowsClockwise,
+  HandCoins,
 } from '@phosphor-icons/react';
 
 /**
@@ -52,6 +53,7 @@ export type SeccionId =
   | 'equipo'
   | 'permisos'
   | 'medios-de-pago'
+  | 'mandato'
   | 'integraciones'
   | 'migracion'
   | 'notificaciones'
@@ -143,6 +145,17 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.mediosDePago',
     descKey: 'inmobiliaria.config.tabs.mediosDePagoDesc',
     icon: Wallet,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: modalidad por defecto de los mandatos, cobros al arrendar e IVA
+    // de la comisión. Del ADMIN, como el resto de los ajustes de la casa.
+    id: 'mandato',
+    grupo: 'dinero',
+    slug: 'mandato',
+    labelKey: 'inmobiliaria.config.tabs.mandato',
+    descKey: 'inmobiliaria.config.tabs.mandatoDesc',
+    icon: HandCoins,
     gate: { tipo: 'admin' },
   },
   {

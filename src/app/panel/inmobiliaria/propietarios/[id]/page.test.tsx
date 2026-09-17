@@ -95,7 +95,11 @@ vi.mock('framer-motion', () => ({
   },
 }));
 
-vi.mock('@leasefy/cadence', () => ({
+// La ficha del propietario ahora incluye el cambio de cuenta bancaria, que usa
+// los diálogos de Cadence: el mock parcial tenía que dejar pasar el resto del
+// paquete o la pantalla entera se caía al importar `ui/dialog`.
+vi.mock('@leasefy/cadence', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   SegmentedControl: ({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: React.ReactNode }[] }) =>
     React.createElement(
       'div',

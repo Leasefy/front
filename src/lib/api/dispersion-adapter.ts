@@ -28,6 +28,7 @@
 
 import type {
   Dispersion,
+  DispersionItem,
   DispersionStatus,
   PropietarioBankAccount,
 } from '@/lib/types/inmobiliaria';
@@ -49,6 +50,13 @@ export interface DispersionDelBack {
   baseDelCanon?: 'CAUSADO' | 'RECAUDADO' | null;
   /** La columna cruda, cuando la base la tiene y la fila la escribió. */
   baseDeCalculo?: string | null;
+  /**
+   * 🔴 D1/D2 (17-09), calculados por el back sobre las cuotas de la dispersión:
+   * lo girado sin recaudo (cuenta por cobrar al inquilino) y los intereses de
+   * mora recaudados que son del propietario. Ausentes = back sin el mandato.
+   */
+  cuentaPorCobrarAlInquilinoCop?: number;
+  interesesCop?: number;
   totalCollected: number;
   totalCommission: number;
   totalConceptosAFavor?: number;
@@ -65,18 +73,23 @@ export interface DispersionDelBack {
   failureReason?: string | null;
   createdAt: string;
   updatedAt: string;
-  items?: Array<{
-    cobroId: string | null;
-    cuotaId?: string | null;
-    propertyTitle: string;
-    rentCollected: number;
-    commissionPercent: number;
-    commissionAmount: number;
-    netAmount: number;
-    conceptosAFavor?: number;
-    conceptosACargo?: number;
-    deTerceros?: number;
-  }>;
+  items?: Array<
+    {
+      cobroId: string | null;
+      cuotaId?: string | null;
+      propertyTitle: string;
+      rentCollected: number;
+      commissionPercent: number;
+      commissionAmount: number;
+      netAmount: number;
+      conceptosAFavor?: number;
+      conceptosACargo?: number;
+      deTerceros?: number;
+    } & Pick<
+      DispersionItem,
+      'modalidad' | 'fuenteDeLaModalidad' | 'mesDeLaCuota' | 'sinRecaudoCop' | 'interesDelRecibo'
+    >
+  >;
 }
 
 const ESTADOS: Record<string, DispersionStatus> = {
@@ -139,6 +152,17 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
       conceptosAFavor: i.conceptosAFavor ?? 0,
       conceptosACargo: i.conceptosACargo ?? 0,
       deTerceros: i.deTerceros ?? 0,
+      // D1/D2 tal cual: ausentes en las dispersiones viejas, y ausente no es
+      // cero —es «esta dispersión no sabe de modalidad»—, así que no se rellena.
+      ...(i.modalidad !== undefined ? { modalidad: i.modalidad } : {}),
+      ...(i.fuenteDeLaModalidad !== undefined
+        ? { fuenteDeLaModalidad: i.fuenteDeLaModalidad }
+        : {}),
+      ...(i.mesDeLaCuota !== undefined ? { mesDeLaCuota: i.mesDeLaCuota } : {}),
+      ...(i.sinRecaudoCop !== undefined ? { sinRecaudoCop: i.sinRecaudoCop } : {}),
+      ...(i.interesDelRecibo !== undefined
+        ? { interesDelRecibo: i.interesDelRecibo }
+        : {}),
     })),
     // 🔴 Sin esto la pantalla decía «Recaudado» sobre el canon causado.
     baseDelCanon: baseDeLaDispersion(d),
@@ -150,6 +174,10 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     netToPropietario: d.netToPropietario,
     // Tal cual: la cuenta es del back. Ausente = back viejo = sin deducciones.
     ...(d.conDeducciones ? { conDeducciones: d.conDeducciones } : {}),
+    ...(d.cuentaPorCobrarAlInquilinoCop !== undefined
+      ? { cuentaPorCobrarAlInquilinoCop: d.cuentaPorCobrarAlInquilinoCop }
+      : {}),
+    ...(d.interesesCop !== undefined ? { interesesCop: d.interesesCop } : {}),
     status: estadoDeDispersion(d.status),
     approvedBy: d.approvedBy ?? undefined,
     approvedAt: d.approvedAt ?? undefined,

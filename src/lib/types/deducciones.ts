@@ -8,8 +8,16 @@
  * se pinta lo que llega.
  */
 
-/** De dónde sale la deducción. */
-export type OrigenDeDeduccion = 'REPARACION' | 'MANUAL' | 'SALDO_ANTERIOR';
+/**
+ * De dónde sale la deducción. `COBRO_AL_ARRENDAR` (17-09) es lo que la
+ * inmobiliaria le cobra al PROPIETARIO por arrendar el inmueble —colocación,
+ * una póliza opcional— y se descuenta en su primera liquidación.
+ */
+export type OrigenDeDeduccion =
+  | 'REPARACION'
+  | 'MANUAL'
+  | 'SALDO_ANTERIOR'
+  | 'COBRO_AL_ARRENDAR';
 
 /** En qué va. `PROYECTADA` = calculada para una liquidación que todavía no se generó. */
 export type EstadoDeLaDeduccion =

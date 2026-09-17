@@ -25,7 +25,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
-import type { CuotasTardias, Dispersion, PorQueElMesVieneVacio } from '@/lib/types/inmobiliaria';
+import type {
+  CuotasTardias,
+  Dispersion,
+  DispersionItem,
+  PorQueElMesVieneVacio,
+} from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
@@ -36,6 +41,11 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
 import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
 import { motivoDelMesVacio } from './dispersion-mes-vacio';
+import {
+  ResumenDelMandato,
+  RotuloDelMandato,
+  type NumerosDelMandato,
+} from './mandato/ElMandatoEnLaLiquidacion';
 import { CuotasQueLlegaronTarde } from './CuotasQueLlegaronTarde';
 import {
   ROTULO_DEL_CANON,
@@ -126,7 +136,7 @@ interface DispersionDraft {
   totalConceptosACargo: number;
   /** Lo que la inmobiliaria le abona: devoluciones, reajustes. */
   totalConceptosAFavor: number;
-  items: {
+  items: ({
     /** El documento, si existe. Desde el 16-09 es `null`: la plata sale de la cuota. */
     cobroId: string | null;
     /** La cuota del propietario que se gira. Es la identidad de la línea. */
@@ -136,7 +146,10 @@ interface DispersionDraft {
     commissionPercent: number;
     commissionAmount: number;
     netAmount: number;
-  }[];
+  } & Pick<
+    DispersionItem,
+    'modalidad' | 'fuenteDeLaModalidad' | 'mesDeLaCuota' | 'sinRecaudoCop' | 'interesDelRecibo'
+  >)[];
   totalCollected: number;
   totalCommission: number;
   netToPropietario: number;
@@ -258,6 +271,12 @@ export function DispersionWizard({
    * borradores: sin su id, el back no los mira y esas cuotas no se giran nunca.
    */
   const [tardias, setTardias] = useState<CuotasTardias[]>([]);
+  /**
+   * D1/D2 del mes, tal como los calculó el back: lo que se giraría sin recaudo
+   * (garantizado) y los intereses de mora del propietario. Vacío con un back
+   * sin las migraciones del mandato.
+   */
+  const [mandato, setMandato] = useState<NumerosDelMandato>({});
   const tardiasQueSeSuman = useMemo(() => tardias.filter((t) => t.seSuman), [tardias]);
   const haySumables = tardiasQueSeSuman.length > 0;
 
@@ -274,6 +293,10 @@ export function DispersionWizard({
         setTardias(previa.tardias ?? []);
         setVacio(previa.vacio ?? null);
         setBase(baseDeLaLiquidacion(previa));
+        setMandato({
+          cuentaPorCobrarAlInquilinoCop: previa.totalCuentaPorCobrarAlInquilino,
+          interesesCop: previa.totalIntereses,
+        });
         const borradores = previa.propietarios
           .filter((p) => !p.yaExiste)
           .map((p) => ({
@@ -298,6 +321,7 @@ export function DispersionWizard({
       })
       .catch((error: unknown) => {
         if (!cancelado) setTardias([]);
+        if (!cancelado) setMandato({});
         if (!cancelado) setErrorPrevia(error);
       })
       .finally(() => {
@@ -634,6 +658,10 @@ export function DispersionWizard({
               </div>
             </div>
 
+            {/* D1/D2 (17-09): qué parte de este mes se gira sin recaudo y qué
+                intereses de mora le tocan al propietario. */}
+            <ResumenDelMandato numeros={mandato} />
+
             {/* Grouped by Propietario */}
             <div className="space-y-4">
               {state.dispersionDrafts.map((draft) => (
@@ -667,7 +695,10 @@ export function DispersionWizard({
                       >
                         <span className="flex items-center gap-2 text-muted-foreground">
                           <Buildings className="w-4 h-4" />
-                          {item.propertyTitle}
+                          <span className="flex flex-col">
+                            {item.propertyTitle}
+                            <RotuloDelMandato item={item} mesDeLaLiquidacion={state.month} />
+                          </span>
                         </span>
                         <span className="font-medium text-foreground">
                           {formatCurrency(item.rentCollected)}
@@ -759,6 +790,7 @@ export function DispersionWizard({
                   {/* Expandable Detail */}
                   <ComisionDesglose
                     baseDelCanon={base}
+                    mesDeLaLiquidacion={state.month}
                     items={draft.items.map((i) => ({
                       cobroId: i.cobroId,
                       cuotaId: i.cuotaId,
@@ -770,6 +802,13 @@ export function DispersionWizard({
                       conceptosAFavor: 0,
                       conceptosACargo: 0,
                       deTerceros: 0,
+                      // D1/D2: el renglón dice de dónde sale (modalidad, mes de
+                      // la cuota, sin recaudo, intereses del recibo).
+                      modalidad: i.modalidad,
+                      fuenteDeLaModalidad: i.fuenteDeLaModalidad,
+                      mesDeLaCuota: i.mesDeLaCuota,
+                      sinRecaudoCop: i.sinRecaudoCop,
+                      interesDelRecibo: i.interesDelRecibo,
                     }))}
                     variant="compact"
                     showPercentages

@@ -1203,6 +1203,11 @@ export interface ConceptoDelContrato {
   valorCop: number;
   /** Si entra en el cobro de cada mes. Falso = una sola vez. */
   recurrente: boolean;
+  /**
+   * 🔴 17-09: si entra en la base de la comisión de administración. `null` o
+   * ausente = no (y un back sin la migración del mandato no lo manda).
+   */
+  comisionable?: boolean | null;
 }
 
 /**

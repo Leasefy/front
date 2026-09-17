@@ -89,6 +89,7 @@ export { DispersionTable } from './DispersionTable';
 export { DispersionFilters } from './DispersionFilters';
 export type { DispersionFiltersState } from './DispersionFilters';
 export { DispersionDetail } from './DispersionDetail';
+export { CaptacionesYArriendos } from './CaptacionesYArriendos';
 export { ComisionDesglose, ComisionDesgloseCompact } from './ComisionDesglose';
 export { ExtractoPropietario } from './ExtractoPropietario';
 export { DispersionResumen, DispersionResumenCompact } from './DispersionResumen';
@@ -102,7 +103,6 @@ export { ReporteViewer } from './ReporteViewer';
 
 // Report Visualization Components (Phase 8 - Plan 02)
 export { OcupacionChart } from './OcupacionChart';
-export { ComisionesTable } from './ComisionesTable';
 export { VencimientosTable } from './VencimientosTable';
 export { FlujoCajaChart } from './FlujoCajaChart';
 

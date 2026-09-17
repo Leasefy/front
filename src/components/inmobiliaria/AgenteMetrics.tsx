@@ -5,29 +5,23 @@ import {
   Handshake,
   CheckCircle,
   Calendar,
-  CurrencyDollar,
-  Wallet,
   Clock,
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteMetrics as AgenteMetricsType } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeTasa } from '@/lib/tasas';
-import {
-  AvisoDeComisionesSinAtribuir,
-  porQueLaComisionNoEsUnHecho,
-  type ResumenDeComisiones,
-} from './ComisionesSinAtribuir';
 
+/**
+ * 🔴 17-09: acá vivían «Comisiones del mes» y «Comisiones totales», y con
+ * ellas todo un aparato para explicar por qué salían en $0 (ningún inmueble
+ * tenía asesor asignado). La comisión de los asesores se paga por fuera de
+ * Leasefy: la pantalla ya no le atribuye un peso a nadie. Lo que sí se mide
+ * —quién captó y quién arrendó— vive en «Captaciones y arriendos».
+ */
 interface AgenteMetricsProps {
   metrics: AgenteMetricsType;
-  /**
-   * Lo que la comisión no atribuye (`GET /inmobiliaria/agentes/comisiones`).
-   * Con él, una comisión en $0 que es un vacío de datos se muestra «—».
-   */
-  resumenDeComisiones?: ResumenDeComisiones | null;
   className?: string;
 }
 
@@ -89,22 +83,8 @@ function MetricCard({ label, value, motivo, icon, iconBg, performance }: MetricC
  * AgenteMetrics - Detailed KPI cards for agente performance
  * Displays 8 metrics in a 2x4 grid with color-coded performance indicators
  */
-export function AgenteMetrics({
-  metrics,
-  resumenDeComisiones = null,
-  className,
-}: AgenteMetricsProps) {
+export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
   const { t } = useI18n();
-  const comisionDelMesSinCamino = porQueLaComisionNoEsUnHecho(
-    metrics.commissionsThisMonth,
-    resumenDeComisiones,
-    'mes',
-  );
-  const comisionTotalSinCamino = porQueLaComisionNoEsUnHecho(
-    metrics.totalCommissions,
-    resumenDeComisiones,
-    'total',
-  );
   // Determine performance levels
   // Above average: conversionRate > 60%, avgDaysToClose < 25
   // Below average: conversionRate < 30%
@@ -163,21 +143,7 @@ export function AgenteMetrics({
           iconBg="bg-surface-muted dark:bg-ink"
         />
 
-        {/* Row 2: Financial and Efficiency */}
-        <MetricCard
-          label={t('inmobiliaria.agente.commissionsMonth')}
-          value={comisionDelMesSinCamino ? '—' : formatCurrency(metrics.commissionsThisMonth)}
-          motivo={comisionDelMesSinCamino}
-          icon={<CurrencyDollar className="w-5 h-5 text-warning" />}
-          iconBg="bg-warning-soft"
-        />
-        <MetricCard
-          label={t('inmobiliaria.agente.totalCommissions')}
-          value={comisionTotalSinCamino ? '—' : formatCurrency(metrics.totalCommissions)}
-          motivo={comisionTotalSinCamino}
-          icon={<Wallet className="w-5 h-5 text-warning" />}
-          iconBg="bg-warning-soft"
-        />
+        {/* Row 2: Efficiency */}
         <MetricCard
           label={t('inmobiliaria.agente.avgDaysToClose')}
           value={metrics.avgDaysToClose > 0 ? `${metrics.avgDaysToClose} ${t('inmobiliaria.agente.daysUnit')}` : 'N/A'}
@@ -193,8 +159,6 @@ export function AgenteMetrics({
           performance={conversionPerformance}
         />
       </div>
-
-      <AvisoDeComisionesSinAtribuir resumen={resumenDeComisiones} />
 
       {/* Performance Legend */}
       <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-fg-muted dark:text-fg-subtle">

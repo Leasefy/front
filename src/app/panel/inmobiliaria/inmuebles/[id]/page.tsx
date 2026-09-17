@@ -51,6 +51,12 @@ import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropie
 import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { ModalidadDelMandato } from '@/components/inmobiliaria/mandato/ModalidadDelMandato';
+import {
+  RetiroDeLaAdministracionDialog,
+  RetiroRegistrado,
+} from '@/components/inmobiliaria/mandato/RetiroDeLaAdministracion';
+import { ApiError } from '@/lib/api/client';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
 import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
@@ -126,6 +132,12 @@ function ConsignacionDetailContent() {
    */
   const [motivoAlTerminar, setMotivoAlTerminar] = useState<string[]>([]);
   const [isTerminating, setIsTerminating] = useState(false);
+  /**
+   * 🔴 17-09: con contrato vigente, terminar OBLIGA a escoger qué pasa con él
+   * (seguir hasta el fin o corte a una fecha). Ese diálogo reemplaza al de
+   * siempre; el back además lo exige (409 RETIRO_SIN_ESCOGER).
+   */
+  const [showRetiro, setShowRetiro] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
   const [showCambiarPropietario, setShowCambiarPropietario] = useState(false);
@@ -305,9 +317,11 @@ function ConsignacionDetailContent() {
   }, [consignacion, t]);
 
   // Opens the destructive confirmation; the PUT happens in handleTerminateConfirm.
+  // Con contrato vigente abre el retiro de la administración (17-09).
   const handleTerminate = useCallback(() => {
-    setShowTerminateDialog(true);
-  }, []);
+    if (contratoVigente) setShowRetiro(true);
+    else setShowTerminateDialog(true);
+  }, [contratoVigente]);
 
   const handleTerminateConfirm = useCallback(async () => {
     if (!consignacion || isTerminating) return;
@@ -322,6 +336,12 @@ function ConsignacionDetailContent() {
       setShowTerminateDialog(false);
       toast.success(t('inmobiliaria.portafolio.detail.toasts.terminated'));
     } catch (err) {
+      // El back descubrió un contrato vigente que la ficha no veía: se escoge.
+      if (err instanceof ApiError && err.code === 'RETIRO_SIN_ESCOGER') {
+        setShowTerminateDialog(false);
+        setShowRetiro(true);
+        return;
+      }
       // El diálogo NO se cierra: el motivo se queda donde se apretó el botón.
       const motivos = motivosDelError(err);
       setMotivoAlTerminar(motivos);
@@ -574,6 +594,22 @@ function ConsignacionDetailContent() {
             />
           </motion.div>
 
+          {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
+              quién son los intereses de mora. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.21 }}
+          >
+            <ModalidadDelMandato
+              consignacionId={consignacion.id}
+              esVenta={consignacion.listingType === 'sale'}
+              terminada={terminada}
+            />
+          </motion.div>
+
+          {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
+
           {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
               pasa mientras el inmueble está disponible. */}
           <motion.div
@@ -743,6 +779,19 @@ function ConsignacionDetailContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RetiroDeLaAdministracionDialog
+        consignacionId={consignacion.id}
+        titulo={consignacion.propertyTitle}
+        abierto={showRetiro}
+        onCerrar={() => setShowRetiro(false)}
+        onRetirado={() => {
+          setShowRetiro(false);
+          // Relee el mandato: el back lo dejó terminado.
+          setConsignacionData(null);
+          void recargarConsignacion();
+        }}
+      />
 
       <PedirCitaModal
         isOpen={showCitaModal}

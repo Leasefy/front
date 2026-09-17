@@ -16,6 +16,7 @@ import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
+import { SeccionMandato } from './SeccionMandato';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
@@ -38,6 +39,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionPermisos />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
+    case 'mandato':
+      return <SeccionMandato />;
     case 'migracion':
       return <SeccionMigracion />;
     case 'integraciones':

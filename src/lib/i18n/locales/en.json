@@ -1365,7 +1365,9 @@
         "seguridad": "Security",
         "seguridadDesc": "Password and access",
         "automatizacionIa": "AI automation",
-        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat"
+        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat",
+        "mandato": "Mandate and payouts",
+        "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission"
       },
       "notifications": {
         "title": "Notifications",
@@ -9227,7 +9229,8 @@
       "origen": {
         "REPARACION": "Repair",
         "MANUAL": "Deduction",
-        "SALDO_ANTERIOR": "Balance owed from the previous month"
+        "SALDO_ANTERIOR": "Balance owed from the previous month",
+        "COBRO_AL_ARRENDAR": "Leasing fee"
       },
       "estado": {
         "PENDIENTE": "To deduct",

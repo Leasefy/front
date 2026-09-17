@@ -149,13 +149,16 @@ export type AgenteRole = 'agent' | 'coordinator' | 'director';
 // Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
 export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 
+/**
+ * 🔴 17-09 (Nico): «la comisión de los asesores va por FUERA de Leasefy». Acá
+ * ya no hay pesos por asesor —`totalCommissions` y `commissionsThisMonth` se
+ * quitaron del back y de la pantalla—: queda quién captó y quién arrendó.
+ */
 export interface AgenteMetrics {
   assignedProperties: number;
   activeLeases: number;
   closedThisMonth: number;
   closedThisYear: number;
-  totalCommissions: number;
-  commissionsThisMonth: number;
   avgDaysToClose: number;
   /**
    * PORCENTAJE de 0 a 100 (dos decimales), como lo calcula el back
@@ -707,7 +710,41 @@ export interface DispersionItem {
   conceptosACargo: number;
   /** Lo que entró y no es suyo: administración, seguros, mora. */
   deTerceros: number;
+
+  /**
+   * 🔴 D1 (17-09) — con qué modalidad entró este renglón. `null` o ausente = el
+   * mandato no tiene modalidad y la liquidación es la de siempre.
+   */
+  modalidad?: ModalidadDelMandato | null;
+  /** De dónde salió: del mandato del inmueble o del default de la inmobiliaria. */
+  fuenteDeLaModalidad?: 'MANDATO' | 'INMOBILIARIA' | null;
+  /**
+   * El mes de la cuota, cuando NO es el de la liquidación: sobre recaudo, una
+   * cuota que el inquilino pagó tarde entra en la liquidación siguiente.
+   */
+  mesDeLaCuota?: string | null;
+  /**
+   * Garantizado: lo que de este renglón el inquilino todavía no pagó. Es la
+   * cuenta por cobrar al inquilino que la inmobiliaria recupera cuando pague.
+   */
+  sinRecaudoCop?: number;
+  /**
+   * D2: el recibo de caja cuyos intereses de mora y gastos de cobranza gira
+   * este renglón (cuando son del propietario). Sin recibo, es un canon.
+   */
+  interesDelRecibo?: {
+    reciboDeCajaId: string;
+    reciboNumero: number | null;
+    reciboFecha: string | null;
+    destino: 'PROPIETARIO' | 'REPARTO';
+    porcentajeAlPropietario: number;
+    interesesCop: number;
+    gastosDeCobranzaCop: number;
+  } | null;
 }
+
+/** D1: con qué base se le gira al propietario. */
+export type ModalidadDelMandato = 'GARANTIZADO' | 'SOBRE_RECAUDO';
 
 export interface Dispersion {
   id: string;
@@ -742,6 +779,14 @@ export interface Dispersion {
   netToPropietario: number;
   /** Las deducciones de esta liquidación y lo que se gira. Opcional: back viejo. */
   conDeducciones?: DeduccionesDeLaLiquidacion;
+
+  /**
+   * D1 garantizado: de lo girado, lo que el inquilino todavía no pagó. Queda
+   * como cuenta por cobrar al inquilino. Opcional: back anterior al 17-09.
+   */
+  cuentaPorCobrarAlInquilinoCop?: number;
+  /** D2: intereses de mora y gastos de cobranza recaudados que se le giran. */
+  interesesCop?: number;
 
   // Status
   status: DispersionStatus;
@@ -826,6 +871,10 @@ export interface VistaPreviaDeDispersiones {
   totalDeducciones?: number;
   /** Lo que queda en contra y pasa a la siguiente liquidación. */
   totalSaldoEnContra?: number;
+  /** D1 garantizado: lo que se giraría sin recaudo del inquilino. */
+  totalCuentaPorCobrarAlInquilino?: number;
+  /** D2: intereses de mora y gastos de cobranza del propietario que se girarían. */
+  totalIntereses?: number;
   propietarios: {
     propietarioId: string;
     propietarioName: string;
@@ -845,18 +894,7 @@ export interface VistaPreviaDeDispersiones {
      * el neto es el de siempre.
      */
     conDeducciones?: DeduccionesDeLaLiquidacion;
-    items: {
-      cobroId: string | null;
-      cuotaId: string | null;
-      propertyTitle: string;
-      rentCollected: number;
-      commissionPercent: number;
-      commissionAmount: number;
-      netAmount: number;
-      conceptosAFavor: number;
-      conceptosACargo: number;
-      deTerceros: number;
-    }[];
+    items: DispersionItem[];
   }[];
 }
 
@@ -1457,26 +1495,53 @@ export interface OcupacionReport {
 // Comisiones Agente Report
 // ============================================================================
 
-export interface ComisionAgente {
-  agenteId: string;
-  agenteName: string;
-  agenteAvatar?: string;
-  closedDeals: number;
-  totalCommission: number;
-  avgCommissionPerDeal: number;
-  topPropertyTitle?: string;
-  previousPeriodCommission?: number;
-  trend: 'up' | 'down' | 'stable';
+/**
+ * El informe de comisiones, desde el 17-09: la comisión es de la
+ * INMOBILIARIA (un solo total) y por asesor sólo quedan los arriendos
+ * cerrados del embudo. Ni un peso atribuido a una persona.
+ */
+export interface ComisionesAgenteReport {
+  period: string; // '2026-02'
+  /** La comisión de administración causada del mes: es de la inmobiliaria. */
+  comisionDeLaAgenciaCop: number;
+  /** Contratos que generaron comisión ese mes. */
+  contratosConComision: number;
+  /** Arriendos cerrados del embudo, por asesor. Sin pesos. */
+  agentes: { userId: string; closedDeals: number }[];
+  totalClosedDeals: number;
+  /** Quién cerró más. `null` si nadie cerró nada. */
+  topAgentUserId: string | null;
 }
 
-export interface ComisionesAgenteReport {
-  generatedAt: string;
-  period: string; // '2026-02' or '2026-Q1'
-  totalCommissions: number;
-  avgCommissionPerAgent: number;
-  totalClosedDeals: number;
-  topAgentName: string;
-  agentes: ComisionAgente[];
+/** `GET /inmobiliaria/agentes/captaciones-y-arriendos`: quién captó y quién arrendó. */
+export interface CaptacionesYArriendos {
+  desde: string;
+  hasta: string;
+  asesores: {
+    userId: string;
+    nombre: string;
+    activo: boolean;
+    captados: number;
+    arrendados: number;
+  }[];
+  sinAsesor: { captados: number; arrendados: number };
+  captaciones: {
+    consignacionId: string;
+    inmueble: string;
+    propietario: string | null;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
+  arriendos: {
+    pipelineItemId: string;
+    consignacionId: string | null;
+    inmueble: string | null;
+    inquilino: string;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
 }
 
 // ============================================================================
@@ -2307,6 +2372,11 @@ export interface UpdateAgencyPayload {
   tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
   /** Penalidad por defecto por terminación anticipada, en cánones (17-09). */
   penalidadTerminacionCanones?: number | null;
+  /**
+   * D4 (17-09): si la inmobiliaria es responsable de IVA. Decide si la comisión
+   * de administración lleva IVA (con `ivaPorcentaje`). `null` = no se sabe: sin IVA.
+   */
+  responsableIva?: boolean | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */

@@ -65,6 +65,8 @@ import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelC
 import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
+import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
+import { CobrosAlArrendarDelContrato } from '@/components/inmobiliaria/mandato/CobrosAlArrendarDelContrato'
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
 import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
@@ -637,6 +639,14 @@ function ContratoDetalleContent() {
               <ComprobantesDelSistemaAnterior contractId={contract.id} />
               {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
               <PqrsDelContrato contractId={contract.id} />
+              {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por
+                  arrendar (se descuenta de su primera liquidación) y la
+                  bitácora del mandato con sus anexos. */}
+              <CobrosAlArrendarDelContrato
+                contractId={contract.id}
+                puedeAplicar={canEditContracts && !esTerminado}
+              />
+              <BitacoraDelContrato contractId={contract.id} />
             </>
           )}
 

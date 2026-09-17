@@ -62,6 +62,7 @@ const CLAVES = [
   `${D}.origen.REPARACION`,
   `${D}.origen.MANUAL`,
   `${D}.origen.SALDO_ANTERIOR`,
+  `${D}.origen.COBRO_AL_ARRENDAR`,
   `${D}.estado.PENDIENTE`,
   `${D}.estado.EN_LIQUIDACION`,
   `${D}.estado.EN_LIQUIDACION_SIN_MES`,

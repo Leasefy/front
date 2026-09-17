@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
-import { ChartBar, Trophy, UsersThree } from '@phosphor-icons/react';
+import { ChartBar, Handshake, Trophy, UsersThree } from '@phosphor-icons/react';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -29,7 +29,7 @@ import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
-import { useResumenDeComisiones } from '@/components/inmobiliaria/ComisionesSinAtribuir';
+import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
@@ -37,7 +37,7 @@ import type { AgencyInviteResult, AgencyRole, AgencyUser, UserInvite } from '@/l
 import { EsqueletoDeSeccion } from './piezas';
 import { RAIZ_CONFIGURACION } from './secciones';
 
-type Vista = 'miembros' | 'ranking' | 'carga';
+type Vista = 'miembros' | 'ranking' | 'carga' | 'captaciones';
 
 export function SeccionEquipo() {
   const { t } = useI18n();
@@ -55,9 +55,7 @@ export function SeccionEquipo() {
     isLoading: agentesCargando,
     errorCrudo: agentesError,
     refetch: recargarAgentes,
-  } = useAgentes({ skip: vista === 'miembros' });
-  // Lo que la comisión no atribuye: sólo lo mira el ranking.
-  const { resumen: resumenDeComisiones } = useResumenDeComisiones(vista !== 'ranking');
+  } = useAgentes({ skip: vista === 'miembros' || vista === 'captaciones' });
 
   /**
    * `?invitar=1` abre el formulario de una: es la puerta que ofrece el diálogo
@@ -86,6 +84,9 @@ export function SeccionEquipo() {
       { id: 'miembros', label: t('inmobiliaria.config.tabs.miembros'), icon: UsersThree },
       { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
       { id: 'carga', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
+      // 17-09: quién captó y quién arrendó. Reemplaza a las comisiones por
+      // asesor, que se liquidan por fuera de Leasefy.
+      { id: 'captaciones', label: 'Captaciones y arriendos', icon: Handshake },
     ],
     [t],
   );
@@ -262,7 +263,9 @@ export function SeccionEquipo() {
         })}
       />
 
-      {vista === 'miembros' ? (
+      {vista === 'captaciones' ? (
+        <CaptacionesYArriendos />
+      ) : vista === 'miembros' ? (
         <EstadoDeDatos
           cargando={isLoading}
           error={errorCrudo}
@@ -293,7 +296,7 @@ export function SeccionEquipo() {
           esqueleto={<EsqueletoDeSeccion filas={3} />}
         >
           {vista === 'ranking' ? (
-            <AgenteLeaderboard agentes={agentes} resumenDeComisiones={resumenDeComisiones} />
+            <AgenteLeaderboard agentes={agentes} />
           ) : (
             <AgenteWorkloadChart agentes={agentes} />
           )}

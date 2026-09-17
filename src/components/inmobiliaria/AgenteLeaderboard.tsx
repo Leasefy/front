@@ -7,7 +7,7 @@ import {
   Trophy,
   Medal,
   ChartLineUp,
-  CurrencyDollar,
+  Buildings,
   Calendar,
   CalendarBlank,
 } from '@phosphor-icons/react';
@@ -15,22 +15,18 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { Agente } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeTasa } from '@/lib/tasas';
-import {
-  AvisoDeComisionesSinAtribuir,
-  porQueLaComisionNoEsUnHecho,
-  type ResumenDeComisiones,
-} from './ComisionesSinAtribuir';
 
+/**
+ * 🔴 17-09: el ranking tenía una columna de COMISIONES por asesor, y con ella
+ * todo un aparato para explicar que esos «$0» eran un vacío de datos (ningún
+ * inmueble tenía asesor). La comisión de los asesores se paga por fuera de
+ * Leasefy: el ranking ordena por arriendos cerrados y muestra los inmuebles a
+ * cargo. Quién captó y quién arrendó, con detalle, está en «Captaciones y
+ * arriendos».
+ */
 interface AgenteLeaderboardProps {
   agentes: Agente[];
-  /**
-   * Lo que la comisión no atribuye (`GET /inmobiliaria/agentes/comisiones`).
-   * Sin él las cifras se muestran como llegan; con él, un $0 que es un vacío
-   * de datos se muestra «—» con su razón.
-   */
-  resumenDeComisiones?: ResumenDeComisiones | null;
   className?: string;
 }
 
@@ -62,11 +58,7 @@ const SIN_COMPARACION =
  * AgenteLeaderboard - Ranked table of agentes by performance
  * Shows top performers with medals and trend indicators
  */
-export function AgenteLeaderboard({
-  agentes,
-  resumenDeComisiones = null,
-  className,
-}: AgenteLeaderboardProps) {
+export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps) {
   const { t } = useI18n();
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
@@ -83,10 +75,13 @@ export function AgenteLeaderboard({
       // Primary: closings
       if (metricB !== metricA) return metricB - metricA;
 
-      // Secondary: commissions
-      const commA = timeRange === 'month' ? a.metrics.commissionsThisMonth : a.metrics.totalCommissions;
-      const commB = timeRange === 'month' ? b.metrics.commissionsThisMonth : b.metrics.totalCommissions;
-      if (commB !== commA) return commB - commA;
+      // Secundario: los del año, y después los inmuebles a cargo.
+      if (b.metrics.closedThisYear !== a.metrics.closedThisYear) {
+        return b.metrics.closedThisYear - a.metrics.closedThisYear;
+      }
+      if (b.metrics.assignedProperties !== a.metrics.assignedProperties) {
+        return b.metrics.assignedProperties - a.metrics.assignedProperties;
+      }
 
       // Tertiary: conversion rate
       return b.metrics.conversionRate - a.metrics.conversionRate;
@@ -183,7 +178,7 @@ export function AgenteLeaderboard({
             <span className="hidden sm:inline">{t('inmobiliaria.agente.closings')}</span>
             <ChartLineUp className="sm:hidden w-4 h-4 mx-auto" />
           </div>
-          <div className="col-span-3 text-right">{t('inmobiliaria.agente.commissions')}</div>
+          <div className="col-span-3 text-right">{t('inmobiliaria.agente.assignedProperties')}</div>
           <div className="col-span-1 text-center">
             <span className="hidden sm:inline">Conv.</span>
             <span className="sm:hidden">%</span>
@@ -207,14 +202,6 @@ export function AgenteLeaderboard({
                 ? agente.metrics.closedThisMonth
                 : agente.metrics.closedThisYear;
 
-              const commissions = timeRange === 'month'
-                ? agente.metrics.commissionsThisMonth
-                : agente.metrics.totalCommissions;
-              const comisionSinCamino = porQueLaComisionNoEsUnHecho(
-                commissions,
-                resumenDeComisiones,
-                timeRange === 'month' ? 'mes' : 'total',
-              );
 
               return (
                 <motion.div
@@ -285,25 +272,18 @@ export function AgenteLeaderboard({
                     </span>
                   </div>
 
-                  {/* Commissions */}
+                  {/* Inmuebles a cargo — sin plata: la comisión del asesor va
+                      por fuera de Leasefy (17-09). */}
                   <div className="col-span-3 flex items-center justify-end">
-                    {comisionSinCamino ? (
+                    <div className="flex items-center gap-1.5">
+                      <Buildings className="w-4 h-4 text-fg-subtle" />
                       <span
-                        className="text-sm text-fg-subtle tabular-nums"
-                        title={comisionSinCamino}
-                        aria-label={comisionSinCamino}
-                        data-testid="agente-comision-sin-camino"
+                        className="text-sm font-medium text-fg dark:text-fg-subtle tabular-nums"
+                        data-testid="agente-inmuebles"
                       >
-                        —
+                        {agente.metrics.assignedProperties}
                       </span>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
-                        <span className="text-sm font-medium text-fg dark:text-fg-subtle">
-                          {formatCurrency(commissions)}
-                        </span>
-                      </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Conversion Rate */}
@@ -365,33 +345,11 @@ export function AgenteLeaderboard({
           </div>
           <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
-              {t('inmobiliaria.agente.totalCommissions')}
+              {t('inmobiliaria.agente.assignedProperties')}
             </p>
-            {(() => {
-              const total = rankedAgentes.reduce(
-                (sum, a) =>
-                  sum + (timeRange === 'month' ? a.metrics.commissionsThisMonth : a.metrics.totalCommissions),
-                0
-              );
-              const sinCamino = porQueLaComisionNoEsUnHecho(
-                total,
-                resumenDeComisiones,
-                timeRange === 'month' ? 'mes' : 'total',
-              );
-              return sinCamino ? (
-                <p
-                  className="text-lg font-bold text-fg-subtle truncate"
-                  title={sinCamino}
-                  aria-label={sinCamino}
-                >
-                  —
-                </p>
-              ) : (
-                <p className="text-lg font-bold text-fg dark:text-white truncate">
-                  {formatCurrency(total)}
-                </p>
-              );
-            })()}
+            <p className="text-2xl font-bold text-fg dark:text-white">
+              {rankedAgentes.reduce((sum, a) => sum + a.metrics.assignedProperties, 0)}
+            </p>
           </div>
           <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
@@ -408,8 +366,6 @@ export function AgenteLeaderboard({
         </div>
       )}
 
-      {/* Lo que la comisión no atribuye: sin esto un $0 se lee como un hecho. */}
-      <AvisoDeComisionesSinAtribuir resumen={resumenDeComisiones} />
     </div>
   );
 }

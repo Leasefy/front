@@ -35,7 +35,7 @@ function marcadores(texto: string): string[] {
 const D = 'inmobiliaria.deducciones';
 const T = 'inmobiliaria.tesoreria';
 
-/** Lo que consumen los componentes de `components/inmobiliaria/deducciones`, Liquidaciones y Mantenimientos. Escrito a mano a propósito. */
+/** Lo que consumen los componentes de `components/inmobiliaria/deducciones`, Liquidaciones, Mantenimientos, la cartera de propietarios y la cuenta de cobro al propietario. Escrito a mano a propósito. */
 const CLAVES = [
   `${D}.tab`,
   `${D}.titulo`,
@@ -117,6 +117,55 @@ const CLAVES = [
   `${D}.aCargoDe.aprobando`,
   `${D}.aCargoDe.aprobadaPropietario`,
   `${D}.aCargoDe.aprobadaInquilino`,
+  `${D}.aCargoDe.sugiereElAgente`,
+  `${D}.aCargoDe.quienPropietario`,
+  `${D}.aCargoDe.quienInquilino`,
+  `${D}.propuesta.titulo`,
+  `${D}.propuesta.cotizacion`,
+  `${D}.propuesta.sinCotizacion`,
+  `${D}.propuesta.sugierePropietario`,
+  `${D}.propuesta.sugiereInquilino`,
+  `${D}.propuesta.aprobacionHumana`,
+  `${D}.propuesta.revisar`,
+  `${D}.cargoAlInquilino.titulo`,
+  `${D}.cargoAlInquilino.detalle`,
+  `${D}.cargoAlInquilino.aprobada`,
+  `${D}.deuda.titulo`,
+  `${D}.deuda.descripcion`,
+  `${D}.deuda.desde`,
+  `${D}.deuda.sinCuentaDeCobro`,
+  `${D}.deuda.generar`,
+  `${D}.deuda.generando`,
+  `${D}.deuda.generada`,
+  `${D}.deuda.noSeGenero`,
+  `${D}.deuda.verCuenta`,
+  `${D}.deuda.sinMigrar`,
+  `${D}.deuda.queEs`,
+  `${D}.cartera.titulo`,
+  `${D}.cartera.descripcion`,
+  `${D}.cartera.colPropietario`,
+  `${D}.cartera.colDebe`,
+  `${D}.cartera.colDesde`,
+  `${D}.cartera.colCuenta`,
+  `${D}.cartera.sinCuenta`,
+  `${D}.cartera.cuenta`,
+  `${D}.cartera.total`,
+  `${D}.cartera.queSon`,
+  `${D}.cuentaDeCobro.titulo`,
+  `${D}.cuentaDeCobro.numero`,
+  `${D}.cuentaDeCobro.emitida`,
+  `${D}.cuentaDeCobro.a`,
+  `${D}.cuentaDeCobro.de`,
+  `${D}.cuentaDeCobro.concepto`,
+  `${D}.cuentaDeCobro.valor`,
+  `${D}.cuentaDeCobro.total`,
+  `${D}.cuentaDeCobro.estado.VIGENTE`,
+  `${D}.cuentaDeCobro.estado.DESCONTADA`,
+  `${D}.cuentaDeCobro.estado.ANULADA`,
+  `${D}.cuentaDeCobro.imprimir`,
+  `${D}.cuentaDeCobro.volver`,
+  `${D}.cuentaDeCobro.noEsFactura`,
+  `${D}.cuentaDeCobro.queEs`,
   `${T}.fDeducciones`,
   `${T}.fAGirar`,
   `${T}.fSaldoEnContra`,
@@ -143,6 +192,16 @@ describe('claves de las deducciones del propietario', () => {
     const aviso = leer(es, `${D}.liquidacion.saldoEnContraAviso`) as string;
     expect(aviso).toMatch(/siguiente liquidación/);
     expect(aviso).not.toMatch(/cuenta de cobro|cobrar/i);
+  });
+
+  it('la deuda del propietario se cobra con cuenta de cobro, y la cuenta dice que no es factura', () => {
+    expect(leer(es, `${D}.deuda.descripcion`) as string).toMatch(/se le cobran/);
+    expect(leer(es, `${D}.cuentaDeCobro.noEsFactura`) as string).toMatch(/no es factura electrónica/);
+  });
+
+  it('la propuesta del agente dice que aprueba una persona', () => {
+    expect(leer(es, `${D}.propuesta.aprobacionHumana`) as string).toMatch(/no aprueba/);
+    expect(leer(es, `${D}.aCargoDe.sugiereElAgente`) as string).toMatch(/La decisión es tuya/);
   });
 
   it('el copy va en tuteo: nada de «usted» ni imperativos de usted', () => {

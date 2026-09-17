@@ -9200,12 +9200,73 @@
         "propietario": "Del propietario",
         "propietarioAyuda": "Se le descuenta de su primera liquidación sin pagar, repartido entre los dueños del inmueble.",
         "inquilino": "Del inquilino",
-        "inquilinoAyuda": "No se le descuenta al propietario. El cobro todavía no entra solo al estado de cuenta del inquilino: cóbraselo aparte.",
+        "inquilinoAyuda": "No se le descuenta al propietario: entra a su estado de cuenta como un cargo de una sola vez, en la cuota del mes o en la siguiente sin pagar.",
         "cancelar": "Cancelar",
         "confirmar": "Aprobar cotización",
         "aprobando": "Aprobando…",
         "aprobadaPropietario": "Cotización aprobada: se le descuenta al propietario",
-        "aprobadaInquilino": "Cotización aprobada a cargo del inquilino"
+        "aprobadaInquilino": "Cotización aprobada a cargo del inquilino",
+        "sugiereElAgente": "El agente sugiere que quede a cargo del {{quien}}. La decisión es tuya.",
+        "quienPropietario": "propietario",
+        "quienInquilino": "inquilino"
+      },
+      "propuesta": {
+        "titulo": "Propuesta del agente",
+        "cotizacion": "Propone la cotización de {{proveedor}} por {{valor}}.",
+        "sinCotizacion": "Pide que una persona apruebe la reparación.",
+        "sugierePropietario": "Sugiere que quede a cargo del propietario.",
+        "sugiereInquilino": "Sugiere que quede a cargo del inquilino.",
+        "aprobacionHumana": "El agente no aprueba: la aprobación, y con ella el descuento o el cargo, la haces tú.",
+        "revisar": "Revisar y aprobar"
+      },
+      "cargoAlInquilino": {
+        "titulo": "Cargo al inquilino",
+        "detalle": "{{valor}} en su cuota de {{mes}}: entró a su estado de cuenta.",
+        "aprobada": "Entró al estado de cuenta del inquilino: {{valor}} en su cuota de {{mes}}."
+      },
+      "deuda": {
+        "titulo": "Le debe a la inmobiliaria",
+        "descripcion": "Deducciones o saldo en contra que ya no tienen ninguna liquidación de la cual descontarse: se le cobran.",
+        "desde": "Desde {{mes}}",
+        "sinCuentaDeCobro": "{{valor}} todavía sin cuenta de cobro",
+        "generar": "Generar cuenta de cobro",
+        "generando": "Generando…",
+        "generada": "Cuenta de cobro n.º {{numero}} generada",
+        "noSeGenero": "No se generó la cuenta de cobro",
+        "verCuenta": "Cuenta de cobro n.º {{numero}}",
+        "sinMigrar": "La cuenta de cobro todavía no está disponible en esta base: la deuda se ve igual.",
+        "queEs": "lo que el propietario le debe a la inmobiliaria"
+      },
+      "cartera": {
+        "titulo": "Propietarios que le deben a la inmobiliaria",
+        "descripcion": "Ya no tienen ninguna liquidación de la cual descontar sus deducciones o su saldo en contra: se les cobra con una cuenta de cobro.",
+        "colPropietario": "Propietario",
+        "colDebe": "Debe",
+        "colDesde": "Desde",
+        "colCuenta": "Cuenta de cobro",
+        "sinCuenta": "Sin generar",
+        "cuenta": "N.º {{numero}}",
+        "total": "Total",
+        "queSon": "los propietarios que le deben a la inmobiliaria"
+      },
+      "cuentaDeCobro": {
+        "titulo": "Cuenta de cobro",
+        "numero": "N.º {{numero}}",
+        "emitida": "Emitida el {{fecha}}",
+        "a": "A",
+        "de": "De",
+        "concepto": "Concepto",
+        "valor": "Valor",
+        "total": "Total a pagar",
+        "estado": {
+          "VIGENTE": "Vigente",
+          "DESCONTADA": "Descontada después",
+          "ANULADA": "Anulada"
+        },
+        "imprimir": "Imprimir o guardar PDF",
+        "volver": "Volver a la ficha",
+        "noEsFactura": "Este documento no es factura electrónica.",
+        "queEs": "la cuenta de cobro"
       }
     },
     "tesoreria": {

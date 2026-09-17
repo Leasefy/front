@@ -9,7 +9,10 @@
 
 import { apiClient, ApiError, getAccessToken } from '@/lib/api/client';
 import type {
+  CuentaDeCobroDelPropietario,
   DeduccionDelListado,
+  DeudaDelPropietario,
+  DeudasDePropietarios,
   ListadoDeDeducciones,
   NuevoDescuento,
 } from '@/lib/types/deducciones';
@@ -84,6 +87,41 @@ export const deduccionesApi = {
     return apiClient.post<{ anuladas: number }>(
       `${BASE}/${propietarioId}/deducciones/${grupoId}/anular`,
       { motivo },
+    );
+  },
+
+  /**
+   * Lo que el propietario le DEBE a la inmobiliaria: deducciones o saldo en
+   * contra que ya no tienen liquidación de la cual descontarse. 200 con
+   * `disponible: false` si la base no tiene la tabla.
+   */
+  async deuda(propietarioId: string): Promise<DeudaDelPropietario> {
+    return apiClient.get<DeudaDelPropietario>(`${BASE}/${propietarioId}/deuda`);
+  },
+
+  /** Los propietarios de la agencia que le deben, para la cartera. */
+  async deudasDeLaAgencia(): Promise<DeudasDePropietarios> {
+    return apiClient.get<DeudasDePropietarios>('/inmobiliaria/deudas-de-propietarios');
+  },
+
+  /**
+   * Emite la cuenta de cobro con lo que debe y no está en ninguna. 409 si no
+   * debe nada o ya está todo cobrado; 503 si la base no tiene la migración.
+   */
+  async generarCuentaDeCobro(propietarioId: string): Promise<CuentaDeCobroDelPropietario> {
+    return apiClient.post<CuentaDeCobroDelPropietario>(
+      `${BASE}/${propietarioId}/cuenta-de-cobro`,
+      {},
+    );
+  },
+
+  /** El documento de una cuenta de cobro ya emitida. */
+  async cuentaDeCobro(
+    propietarioId: string,
+    cuentaId: string,
+  ): Promise<CuentaDeCobroDelPropietario> {
+    return apiClient.get<CuentaDeCobroDelPropietario>(
+      `${BASE}/${propietarioId}/cuenta-de-cobro/${cuentaId}`,
     );
   },
 

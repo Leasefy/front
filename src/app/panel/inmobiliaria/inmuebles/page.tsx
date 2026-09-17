@@ -58,6 +58,8 @@ import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSen
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
+import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
+import { bajarInventariosParaSinSenal } from '@/lib/inventario/cache-de-inventarios';
 
 type ViewMode = 'grid' | 'table';
 
@@ -353,6 +355,8 @@ function PortafolioContent() {
     setAvisoSinSenal(null);
     try {
       await guardarCopia(consignacion);
+      // Las versiones del inventario del inmueble (no falla si no están).
+      await bajarInventariosParaSinSenal(consignacion.id, inventarioDelInmuebleApi.listar);
       const conPagina = await prepararRutaSinSenal(
         `/panel/inmobiliaria/inmuebles/${consignacion.id}`,
       );

@@ -31,3 +31,24 @@ export function leerInventariosDeCache(consignacionId: string): InventariosDelIn
     return null;
   }
 }
+
+/**
+ * «Preparar para trabajar sin señal» desde la LISTA del portafolio no pasa
+ * por la ficha, así que nadie guardaría las versiones: se bajan acá. Nunca
+ * hace fallar la preparación —sin la migración del back o sin respuesta, la
+ * ficha sin señal monta la tarjeta de siempre, que sigue funcionando—.
+ * Devuelve si quedaron guardadas.
+ */
+export async function bajarInventariosParaSinSenal(
+  consignacionId: string,
+  listar: (consignacionId: string) => Promise<InventariosDelInmueble>,
+): Promise<boolean> {
+  try {
+    const datos = await listar(consignacionId);
+    if (!datos.disponible) return false;
+    guardarInventariosEnCache(datos);
+    return true;
+  } catch {
+    return false;
+  }
+}

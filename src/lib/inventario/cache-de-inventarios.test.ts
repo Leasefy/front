@@ -21,3 +21,20 @@ describe('copia local de las versiones del inventario', () => {
     expect(leerInventariosDeCache('cons-1')).toBeNull();
   });
 });
+
+describe('bajar las versiones al preparar desde la lista', () => {
+  afterEach(() => window.localStorage.clear());
+
+  it('las guarda si el back las tiene', async () => {
+    const { bajarInventariosParaSinSenal } = await import('@/lib/inventario/cache-de-inventarios');
+    await expect(bajarInventariosParaSinSenal('cons-1', async () => datos)).resolves.toBe(true);
+    expect(leerInventariosDeCache('cons-1')).toEqual(datos);
+  });
+
+  it('sin la migración o sin respuesta no guarda nada y no falla', async () => {
+    const { bajarInventariosParaSinSenal } = await import('@/lib/inventario/cache-de-inventarios');
+    await expect(bajarInventariosParaSinSenal('cons-1', async () => ({ ...datos, disponible: false }))).resolves.toBe(false);
+    await expect(bajarInventariosParaSinSenal('cons-1', async () => { throw new Error('sin señal'); })).resolves.toBe(false);
+    expect(leerInventariosDeCache('cons-1')).toBeNull();
+  });
+});

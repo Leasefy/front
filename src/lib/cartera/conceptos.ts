@@ -42,10 +42,10 @@ export function rotuloDelContrato(c: {
   contrato: string | null;
   contratoDeLeasefy?: string | null;
 }): string {
+  // Sin «Leasefy #…» (Nico, 16-09: «ese código de Leasefy no lo dejemos»):
+  // `contratoDeLeasefy` se sigue aceptando para no romper al back, pero no se lee.
   if (!c.contrato) return '';
-  return c.contratoDeLeasefy
-    ? ` · contrato ${c.contrato} · ${c.contratoDeLeasefy}`
-    : ` · contrato ${c.contrato}`;
+  return ` · contrato ${c.contrato}`;
 }
 
 /** Qué le pasó al giro de un mes, dicho como lo diría la persona de tesorería. */

@@ -100,7 +100,7 @@ describe('<ReglasDeMoraDelContrato>', () => {
 
     expect(delContrato).toHaveBeenCalledWith('c-1')
     expect(container.textContent).toContain('Honorario de cobranza')
-    expect(container.textContent).toContain('Se dispara el día 15 de cada mes y cobra 10 % del canon, sin tope.')
+    expect(container.textContent).toContain('Se dispara a los 15 días de mora y cobra 10 % del canon, sin tope.')
     const sw = container.querySelector('[data-testid="aplica-honorario"]')!
     expect(sw.getAttribute('aria-checked')).toBe('true')
     expect(container.querySelector('[data-testid="propio-honorario"]')).toBeNull()

@@ -109,7 +109,7 @@ function StatCard({
  * «#1839» acá, lo buscó en su sistema anterior y era OTRA persona. El dato
  * estaba bien: #1839 es NUESTRO consecutivo y el suyo es 1686. La celda lee
  * grande el número que la inmobiliaria conoce y, debajo, el nuestro con su
- * dueño («Leasefy #1839») para que se sepa cuál es cuál. Un contrato nativo
+ * dueño; desde el 16-09 nuestro consecutivo ya no se muestra (Nico: «ese código de Leasefy no lo dejemos»). Un contrato nativo
  * sigue mostrando `#code` solo. Sin ninguno ⇒ celda VACÍA: nunca «—», nunca
  * «#0» (`numero-del-contrato.ts`).
  */
@@ -118,11 +118,6 @@ function CeldaDeNumero({ contrato }: { contrato: Contract }) {
   return (
     <div className="min-w-0">
       <span className="font-mono tabular-nums text-sm text-foreground">{numero.principal ?? ''}</span>
-      {numero.secundario && (
-        <p className="text-caption text-muted-foreground font-mono tabular-nums whitespace-nowrap">
-          {numero.secundario}
-        </p>
-      )}
     </div>
   );
 }

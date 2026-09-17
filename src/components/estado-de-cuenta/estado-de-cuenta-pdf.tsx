@@ -232,17 +232,14 @@ export function paraElPapel(entrada: string): string {
 
 /** `texto()` pasado por el filtro. TODO rótulo del documento sale por acá. */
 /**
- * «Contrato 1686 · Leasefy #1839» en un migrado, «Contrato #14» en un nativo:
- * el papel dice de quién es cada número, igual que la pantalla.
+ * «Contrato 1686» en un migrado, «Contrato #14» en un nativo: el número que el
+ * cliente conoce, sin el de Leasefy (Nico, 16-09).
  */
 function tituloDelContratoEnElPapel(
   contrato: Pick<ContratoDelEstadoDeCuenta, 'numero' | 'numeroDeLeasefy'>,
 ): string {
   const numero = numeroDelContratoDelEstado(contrato);
-  const titulo = frase('estadoDeCuenta.contrato', { numero: numero.principal });
-  return numero.numeroDeLeasefy != null
-    ? `${titulo} · ${frase('estadoDeCuenta.numeroDeLeasefy', { numero: numero.numeroDeLeasefy })}`
-    : titulo;
+  return frase('estadoDeCuenta.contrato', { numero: numero.principal });
 }
 
 function frase(clave: string, params?: Record<string, string | number>): string {

@@ -486,13 +486,13 @@ describe('ContratosPage — el buscador', () => {
 describe('ContratosPage — el número que la inmobiliaria conoce', () => {
   const primeraCelda = () => bodyRows()[0].querySelectorAll('td')[0]
 
-  it('un contrato migrado muestra SU número grande y el nuestro como «Leasefy #…»', async () => {
+  it('un contrato migrado muestra SU número, y el nuestro ya no («Leasefy #…» se quitó el 16-09)', async () => {
     withContracts([contract({ id: 'c-1', code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' })])
     await renderPage()
 
     const celda = primeraCelda()
     expect(celda.querySelector('span')?.textContent).toBe('1686')
-    expect(celda.textContent).toContain('Leasefy #1839')
+    expect(celda.textContent).not.toContain('Leasefy')
   })
 
   it('un contrato nativo sigue mostrando sólo el nuestro', async () => {

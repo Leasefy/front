@@ -95,7 +95,7 @@ describe('TerminarContrato', () => {
     // disparan sin decir qué se llevan por delante (C11/C12/M5).
     await montar();
     const bloque = q('[data-testid="prorrateo-del-ultimo-mes"]');
-    expect(bloque?.textContent).toContain('12 de 30 días');
+    expect(bloque?.textContent).toContain('12 días de 30');
     expect(bloque?.textContent).toContain('2026-09');
   });
 
@@ -136,6 +136,59 @@ describe('TerminarContrato', () => {
       expect.objectContaining({ motivo: 'MUTUO_ACUERDO' }),
     );
     expect(onTerminado).toHaveBeenCalled();
+  });
+
+  it('🔴 regla 9: manda la penalidad pactada y dice cuándo se cobra', async () => {
+    await montar();
+    const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'MUTUO_ACUERDO';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const input = q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(input, '3300000');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(document.body.textContent).toContain('una sola vez, en la cuota del último mes');
+    await act(async () => { (q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).click(); });
+    expect(api.terminar).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ motivo: 'MUTUO_ACUERDO', penalidadCop: 3_300_000 }),
+    );
+  });
+
+  it('🔴 17-09: prellena la penalidad por defecto y manda el reparto negociado', async () => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: true,
+      razon: null,
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+      penalidadSugerida: { canones: 3, valorCop: 9_000_000 },
+    });
+    await montar();
+    const penalidad = q('[data-testid="penalidad-de-terminacion"]') as HTMLInputElement;
+    expect(penalidad.value).toBe('9000000');
+    expect(document.body.textContent).toContain('Por defecto: 3 cánones');
+
+    const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'MUTUO_ACUERDO';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const reparto = q('[data-testid="penalidad-para-la-inmobiliaria"]') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(reparto, '3000000');
+      reparto.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(document.body.textContent).toContain('Al propietario le llegan');
+    await act(async () => { (q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).click(); });
+    expect(api.terminar).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ penalidadCop: 9_000_000, penalidadParaLaInmobiliariaCop: 3_000_000 }),
+    );
   });
 
   it('🔴 el mensaje del back llega al usuario, no un «algo salió mal»', async () => {

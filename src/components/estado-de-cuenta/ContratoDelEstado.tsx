@@ -145,17 +145,10 @@ export function ContratoDelEstado({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
         <div className="min-w-0">
-          {/* El número que el cliente conoce, y el nuestro rotulado al lado
-              cuando no es el mismo («Contrato 1686 · Leasefy #1839»). */}
+          {/* El número que el cliente conoce: «Contrato 1686». Sin el de Leasefy (16-09). */}
           <h3 className="text-subtitle text-fg">
             {t('estadoDeCuenta.contratoPalabra')}{' '}
             <span className="font-mono tabular-nums">{numero.principal}</span>
-            {numero.numeroDeLeasefy != null && (
-              <span className="font-mono tabular-nums text-body-sm text-fg-muted" data-testid="numero-de-leasefy">
-                {' · '}
-                {t('estadoDeCuenta.numeroDeLeasefy', { numero: String(numero.numeroDeLeasefy) })}
-              </span>
-            )}
           </h3>
           <p className="mt-0.5 text-body-sm text-fg-muted">
             {t(

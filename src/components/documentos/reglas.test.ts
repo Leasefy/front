@@ -74,7 +74,7 @@ describe('etiquetas de la tabla', () => {
         propertyAddress: 'Calle 100 # 15-20',
         tenantName: 'Ana Pérez',
       }),
-    ).toBe('1686 · Leasefy #1839 · Calle 100 # 15-20 · Ana Pérez');
+    ).toBe('1686 · Calle 100 # 15-20 · Ana Pérez');
     expect(
       etiquetaDelContratoParaElCombo({ id: 'c-2', code: 111, propertyAddress: 'X', tenantName: 'Y' }),
     ).toBe('#111 · X · Y');
@@ -83,7 +83,7 @@ describe('etiquetas de la tabla', () => {
 
   it('el rótulo de la preparación dice cuál número es cuál', () => {
     expect(rotuloDelContratoPreparado({ codigo: 1839, numeroExterno: '1686' })).toBe(
-      'Contrato 1686 · Leasefy #1839',
+      'Contrato 1686',
     );
     expect(rotuloDelContratoPreparado({ codigo: 111, numeroExterno: null })).toBe('Contrato #111');
     expect(rotuloDelContratoPreparado({ codigo: 111 })).toBe('Contrato #111');

@@ -7,10 +7,9 @@ import { numeroDelContrato, tituloDelContrato } from './numero-del-contrato';
  * que leer el suyo y decir que el nuestro es el nuestro.
  */
 describe('numeroDelContrato', () => {
-  it('un contrato migrado con número de la inmobiliaria: el suyo grande, el nuestro rotulado', () => {
+  it('un contrato migrado con número de la inmobiliaria: sólo el suyo, sin «Leasefy #…» (16-09)', () => {
     expect(numeroDelContrato({ code: 1839, externalId: '1686' })).toEqual({
       principal: '1686',
-      secundario: 'Leasefy #1839',
       esDeLaInmobiliaria: true,
     });
   });
@@ -18,7 +17,6 @@ describe('numeroDelContrato', () => {
   it('un contrato nativo: sólo el nuestro, con numeral', () => {
     expect(numeroDelContrato({ code: 14, externalId: null })).toEqual({
       principal: '#14',
-      secundario: null,
       esDeLaInmobiliaria: false,
     });
   });
@@ -31,15 +29,13 @@ describe('numeroDelContrato', () => {
   it('sin ninguno de los dos no hay nada que dibujar — nunca «#0» ni «—»', () => {
     expect(numeroDelContrato({ code: undefined, externalId: null })).toEqual({
       principal: null,
-      secundario: null,
       esDeLaInmobiliaria: false,
     });
   });
 
-  it('con el número de la inmobiliaria y sin el nuestro (back viejo), no inventa el secundario', () => {
+  it('con el número de la inmobiliaria y sin el nuestro (back viejo), sólo el de la inmobiliaria', () => {
     expect(numeroDelContrato({ code: undefined, externalId: '1686' })).toEqual({
       principal: '1686',
-      secundario: null,
       esDeLaInmobiliaria: true,
     });
   });

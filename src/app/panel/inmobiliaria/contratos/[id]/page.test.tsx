@@ -708,7 +708,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     expect($('aviso-del-contrato')).toBeNull()
     const pie = $('acciones-del-arriendo')!
     expect(pie.textContent).toContain('Terminar el arriendo')
-    expect(pie.textContent).toContain('El propietario vendió el inmueble')
+    expect(pie.textContent).toContain('Cambiar de propietario')
     expect(bloque().innerHTML).not.toMatch(/success/)
     expect(container.textContent).not.toContain('Vigente hasta el')
   })
@@ -740,7 +740,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     expect(aviso.textContent).toContain('Vencido desde el 31 ene 2020')
     expect(aviso.textContent).toContain('Renovar contrato')
     expect(aviso.textContent).toContain('Terminar el arriendo')
-    expect($('acciones-del-arriendo')!.textContent).toContain('El propietario vendió el inmueble')
+    expect($('acciones-del-arriendo')!.textContent).toContain('Cambiar de propietario')
     expect(container.textContent).not.toMatch(/2020-01-31/)
   })
 
@@ -852,7 +852,7 @@ describe('ContratoDetallePage — un contrato que ya terminó', () => {
  * suyo, y debajo dice cuál es el nuestro.
  */
 describe('ContratoDetallePage — el número de la inmobiliaria en el título', () => {
-  it('un contrato migrado se titula con SU número y dice cuál es el de Leasefy', async () => {
+  it('un contrato migrado se titula con SU número, sin el de Leasefy (16-09)', async () => {
     withContract(contract({ code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' }))
 
     await renderPage()
@@ -860,7 +860,7 @@ describe('ContratoDetallePage — el número de la inmobiliaria en el título', 
     expect(container.querySelector('h1')?.textContent).toBe('Contrato 1686')
     const nota = container.querySelector('[data-testid="numero-de-leasefy"]')
     expect(nota?.textContent).toContain('1686 es el número de tu sistema anterior')
-    expect(nota?.textContent).toContain('en Leasefy es el #1839')
+    expect(nota?.textContent).not.toContain('#1839')
     expect(container.textContent).not.toContain('Contrato #1839')
   })
 

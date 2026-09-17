@@ -34,7 +34,7 @@ describe('describirDisparador', () => {
 
   it('día del mes', () => {
     expect(describirDisparador({ disparador: 'DIA_DEL_MES', disparadorDia: 15 })).toBe(
-      'el día 15 de cada mes',
+      'a los 15 días de mora',
     );
   });
 });
@@ -101,6 +101,6 @@ describe('describirRegla', () => {
         base: 'CANON',
         topeCop: null,
       }),
-    ).toBe('Se dispara el día 15 de cada mes y cobra 10 % del canon, sin tope.');
+    ).toBe('Se dispara a los 15 días de mora y cobra 10 % del canon, sin tope.');
   });
 });

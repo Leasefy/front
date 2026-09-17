@@ -235,7 +235,7 @@ function FilaDeRegla({
             testId={`valor-${regla.id}`}
           />
           <CampoPropio
-            etiqueta={regla.disparador === 'DIA_DEL_MES' ? 'Día del mes' : 'Día de mora'}
+            etiqueta="Días de mora"
             valor={fila.disparadorDia}
             deLaAgencia={fila.disparadorDiaDeLaAgencia}
             esPropio={diaEsPropio}

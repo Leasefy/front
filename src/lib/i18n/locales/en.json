@@ -11985,7 +11985,6 @@
     "enlaceVencido": "This link has expired",
     "enlaceVencidoDetalle": "Ask your agency for a new one: links expire so your information does not stay open on the internet.",
     "contrato": "Contract {{numero}}",
-    "numeroDeLeasefy": "Leasefy #{{numero}}",
     "comoInquilino": "Tenant of the property at {{direccion}}",
     "comoPropietario": "Owner of the property at {{direccion}}",
     "vigente": "Active",

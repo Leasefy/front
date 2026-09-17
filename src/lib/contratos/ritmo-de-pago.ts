@@ -29,6 +29,14 @@ export type Periodicidad = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' 
 
 export interface TerminosDelContrato {
   paymentDueDay?: number | null;
+  /**
+   * El modo (back `regla-del-arriendo.ts`, 16-09): `true` = se genera el 1 de
+   * cada mes; `false` = fecha a fecha, vence el día de la fecha de cartera.
+   */
+  prorratearPrimerMes?: boolean | null;
+  /** `'YYYY-MM-DD'`. Sin ella, la de inicio. */
+  fechaDeCartera?: string | null;
+  startDate?: string | null;
   diasDePlazo?: number | null;
   periodicidad?: Periodicidad | null;
 }
@@ -66,8 +74,19 @@ export function ritmoDePago(
 ): string {
   const cada = CADA[contrato.periodicidad ?? 'MENSUAL'] ?? CADA.MENSUAL;
 
+  // El día de la cartera, leído del texto: un `new Date('2026-08-21')` en
+  // Bogotá es el 20 a las 7 p. m.
+  const diaDeCartera = Number((contrato.fechaDeCartera ?? contrato.startDate ?? '').slice(8, 10)) || null;
+
   let cuando: string;
-  if (contrato.paymentDueDay) {
+  if (contrato.prorratearPrimerMes === true) {
+    // Nico y Juan Camilo, 16-09: «el arriendo se genera el día 1, sólo que se
+    // le dan N días de plazo». El primer mes se cobra por días desde la cartera.
+    cuando = `Se genera el 1${cada}`;
+  } else if (contrato.prorratearPrimerMes === false && diaDeCartera) {
+    // Fecha a fecha: del 20 al 19 del mes siguiente, vence el día en que empieza.
+    cuando = `Va fecha a fecha: vence el ${diaDeCartera}${cada}`;
+  } else if (contrato.paymentDueDay) {
     cuando = `Paga el ${contrato.paymentDueDay}${cada}`;
   } else if (agencia?.diaDePago) {
     cuando = `Paga el ${agencia.diaDePago}${cada} (el día de tu inmobiliaria)`;

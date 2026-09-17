@@ -288,7 +288,8 @@ describe('CarteraPorConcepto', () => {
     expect(filas[0]!.textContent).toContain('Nicolás Rojas')
     expect(filas[0]!.textContent).toContain('3 meses')
     // El número de Nui primero y el nuestro rotulado: nunca un «#1839» pelado.
-    expect(filas[0]!.textContent).toContain('contrato 1686 · Leasefy #1839')
+    expect(filas[0]!.textContent).toContain('contrato 1686')
+    expect(filas[0]!.textContent).not.toContain('Leasefy #1839')
     expect(filas[1]!.textContent).toContain('contrato #94')
 
     // Canon · intereses · gasto administrativo · mora liquidada hoy (este
@@ -642,7 +643,7 @@ describe('🔴 la puerta al estado de cuenta (Nico, 2026-09-16)', () => {
 describe('rotuloDelContrato — de quién es cada número', () => {
   it('migrado: el de la inmobiliaria y el nuestro rotulado', () => {
     expect(rotuloDelContrato({ contrato: '1686', contratoDeLeasefy: 'Leasefy #1839' })).toBe(
-      ' · contrato 1686 · Leasefy #1839',
+      ' · contrato 1686',
     )
   })
   it('nativo: sólo el nuestro', () => {

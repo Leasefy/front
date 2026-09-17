@@ -282,6 +282,11 @@ function FacturacionContent() {
             </TabsContent>
           ))}
 
+          {/* 🔴 «Compras» es la ÚNICA pestaña que sigue sin listado propio: las
+              facturas de proveedor viven en Pagos → cuentas por pagar. Las
+              otras tres que estaban acá («Electrónica», y ahora «Documento
+              soporte» y «Mandato») ya tienen motor y pintan sus propias
+              tablas. */}
           {TABS.filter((x) => x.key === 'compras').map((tab) => (
             <TabsContent key={tab.key} value={tab.key} className="mt-0">
               <Table>
@@ -298,45 +303,23 @@ function FacturacionContent() {
                   {/* El vacío vive dentro del cuerpo para que los encabezados
                       se sigan viendo.
 
-                      🔴 F4 (auditoría 13-09): estas cuatro pestañas NO tienen de
-                      dónde leer — no hay ruta en el back que liste documentos
-                      emitidos (sólo `por-generar`, `:id` y las resoluciones).
-                      El vacío decía «Todavía no tienes facturas de venta»
-                      después de emitir 800 en «Nueva factura»: una afirmación
-                      falsa sobre los datos de la persona. Ahora dice que el
-                      listado no existe todavía y a dónde ir a verlas. */}
+                      🔴 F4 (auditoría 13-09): decía «Todavía no tienes facturas
+                      de compra» sobre un listado que no puede leer. Una
+                      pantalla que no puede leer no afirma nada sobre los datos
+                      de la persona: dice dónde están de verdad. */}
                   <TableRow>
                     <TableCell colSpan={tab.columns.length} className="p-0">
-                      {tab.key === 'compras' ? (
-                        <SinDatos
-                          queSon={t(k('queSon_compras'))}
-                          icono={Receipt}
-                          titulo="Este listado todavía no trae tus compras"
-                          descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
-                          accion={
-                            <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
-                              <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
-                            </Button>
-                          }
-                        />
-                      ) : (
-                        <SinDatos
-                          queSon={t(k(`queSon_${tab.key}`))}
-                          icono={Receipt}
-                          titulo="El listado llega con el motor DIAN"
-                          descripcion={`${t(k(`desc_${tab.key}`))} El listado de documentos electrónicos llega con el motor DIAN. Las facturas que emitiste están en «Nueva factura», con su número, eligiendo el mes.`}
-                          accion={
-                            <Button
-                              variant="outline"
-                              hideArrow
-                              onClick={() => setActive('nueva')}
-                              data-testid={`facturacion-ver-emitidas-${tab.key}`}
-                            >
-                              Ver las facturas emitidas
-                            </Button>
-                          }
-                        />
-                      )}
+                      <SinDatos
+                        queSon={t(k('queSon_compras'))}
+                        icono={Receipt}
+                        titulo="Este listado todavía no trae tus compras"
+                        descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
+                        accion={
+                          <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
+                            <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
+                          </Button>
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 </TableBody>

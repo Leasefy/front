@@ -18,6 +18,7 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
     prorroga: vi.fn(),
     prorrogar: vi.fn(),
     fijarMesesDeProrroga: vi.fn(),
+    fijarNoSeProrroga: vi.fn(),
     registrarAvisoDeNoRenovacion: vi.fn(),
     retirarAvisoDeNoRenovacion: vi.fn(),
   },
@@ -48,6 +49,9 @@ function plan(overrides: Partial<PlanDeLaProrroga> = {}): PlanDeLaProrroga {
     automatica: true,
     aviso: null,
     prorrogaMeses: null,
+    noSeProrroga: false,
+    noSeProrrogaDisponible: true,
+    puenteDeRenovacion: false,
     uso: 'VIVIENDA',
     automaticaPrendida: false,
     disponible: true,
@@ -168,5 +172,54 @@ describe('<ProrrogaDelContrato> (D5)', () => {
     api.prorroga.mockResolvedValue(plan({ accion: 'NO_APLICA' }));
     await montar();
     expect($('prorroga-del-contrato')).toBeNull();
+  });
+
+  it('🔴 con una renovación en curso se prorroga MES A MES: la deuda no desaparece', async () => {
+    api.prorroga.mockResolvedValue(
+      plan({
+        accion: 'PRORROGAR',
+        regla: 'MES_A_MES',
+        meses: 1,
+        puenteDeRenovacion: true,
+        finNuevo: '2027-01-05',
+        porQue:
+          'Venció el 2026-12-04 con una renovación aprobada o firmándose: se prorroga MES A MES (hasta el 2027-01-05) para que la deuda no desaparezca mientras se firma. Al firmarla, la renovación manda.',
+      }),
+    );
+    await montar();
+    expect($('prorroga-por-hacer')!.textContent).toContain('MES A MES');
+    expect($('puente-de-renovacion')!.textContent).toContain('la deuda del inquilino no');
+  });
+
+  it('🔴 «no se prorroga»: la casilla lo guarda, y el término deja de preguntarse', async () => {
+    api.prorroga.mockResolvedValue(plan());
+    api.fijarNoSeProrroga.mockResolvedValue(plan({ noSeProrroga: true }));
+    await montar();
+
+    expect($('meses-de-prorroga')).toBeTruthy();
+    await act(async () => ($('no-se-prorroga-casilla') as HTMLInputElement).click());
+    expect(api.fijarNoSeProrroga).toHaveBeenCalledWith('c1', true);
+    // Con la bandera puesta, el término de la prórroga ya no aplica.
+    expect($('meses-de-prorroga')).toBeNull();
+  });
+
+  it('la alerta de «no se prorroga» dice que nadie genera cuotas', async () => {
+    api.prorroga.mockResolvedValue(
+      plan({
+        accion: 'ALERTA_NO_SE_PRORROGA',
+        noSeProrroga: true,
+        porQue:
+          'Venció el 2026-12-04 y el contrato dice que NO se prorroga: no se generan cuotas nuevas. Decide: renovarlo, o terminarlo con la fecha de entrega.',
+      }),
+    );
+    await montar();
+    expect($('prorroga-ALERTA_NO_SE_PRORROGA')!.textContent).toContain('no se generan cuotas nuevas');
+  });
+
+  it('sin la migración 20260918021000 la casilla se ve pero no se puede mover', async () => {
+    api.prorroga.mockResolvedValue(plan({ noSeProrrogaDisponible: false }));
+    await montar();
+    expect(($('no-se-prorroga-casilla') as HTMLInputElement).disabled).toBe(true);
+    expect($('no-se-prorroga')!.textContent).toContain('Falta una actualización de la base');
   });
 });

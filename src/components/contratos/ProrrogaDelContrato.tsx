@@ -141,6 +141,12 @@ export function ProrrogaDelContrato({
       {plan.accion === 'PRORROGAR' && (
         <div className="space-y-2 rounded-lg border border-plan-status-yellow/40 bg-plan-status-yellow/5 p-3" data-testid="prorroga-por-hacer">
           <p className="text-sm">{plan.porQue}</p>
+          {plan.puenteDeRenovacion && (
+            <p className="text-xs text-muted-foreground" data-testid="puente-de-renovacion">
+              Es un puente mientras se firma la renovación: se prorroga mes a mes para que la deuda del inquilino no
+              desaparezca. Cuando la renovación se complete, ella manda y las cuotas se rehacen.
+            </p>
+          )}
           {plan.tramos.length > 1 && (
             <p className="text-xs text-muted-foreground">
               Son {plan.tramos.length} términos seguidos: se crean de una vez las cuotas de todos. El proceso diario no
@@ -220,7 +226,35 @@ export function ProrrogaDelContrato({
         )
       )}
 
-      {plan.uso && (
+      {/* 🔴 «No se prorroga» explícito (Nico, 17-09). */}
+      <label className="flex items-start gap-2 text-xs" data-testid="no-se-prorroga">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={plan.noSeProrroga}
+          disabled={!editable || !plan.noSeProrrogaDisponible}
+          onChange={(e) =>
+            void hacer(
+              () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, e.target.checked),
+              e.target.checked
+                ? 'Este contrato ya no se prorroga: al vencer queda en alerta y no se generan cuotas nuevas.'
+                : 'Este contrato vuelve a prorrogarse como diga la regla.',
+            )
+          }
+          data-testid="no-se-prorroga-casilla"
+        />
+        <span>
+          <strong>Este contrato NO se prorroga al vencer.</strong> Queda en alerta y nadie genera cuotas nuevas: lo que
+          siga se decide a mano (renovarlo o terminarlo con la fecha de entrega).
+          {!plan.noSeProrrogaDisponible && (
+            <span className="block text-muted-foreground">
+              Falta una actualización de la base para poder apagarlo.
+            </span>
+          )}
+        </span>
+      </label>
+
+      {plan.uso && !plan.noSeProrroga && (
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs" htmlFor="meses-de-prorroga">
             {plan.uso === 'COMERCIAL'

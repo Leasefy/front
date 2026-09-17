@@ -169,13 +169,25 @@ function PagosHome() {
             —lo que entra, lo que deben, lo que sale y lo que queda—, así que se
             llega desde acá con un enlace y no con una card: esta pantalla es la
             deuda del mes de los inquilinos, y no se le puede robar el foco. */}
-        <Link
-          href="/panel/inmobiliaria/pagos/tablero"
-          className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-          data-testid="ir-al-tablero-financiero"
-        >
-          Tablero financiero
-        </Link>
+        <div className="flex shrink-0 items-center gap-4">
+          <Link
+            href="/panel/inmobiliaria/pagos/tablero"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-al-tablero-financiero"
+          >
+            Tablero financiero
+          </Link>
+          {/* El cuadre de la plata de terceros (17-09) se mira TODOS los días y
+              no es la deuda de nadie: por eso va como enlace desde acá y no
+              como una sección más de Pagos. */}
+          <Link
+            href="/panel/inmobiliaria/pagos/cuadre"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-al-cuadre"
+          >
+            Cuadre del día
+          </Link>
+        </div>
       </header>
 
       {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente

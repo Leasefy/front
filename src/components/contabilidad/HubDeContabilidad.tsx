@@ -520,6 +520,30 @@ function ParaElContador() {
         >
           Estado de cuenta
         </Link>
+        {/* Las tres pantallas de la lógica financiera del 17-09. Van acá como
+            enlaces y no como cards: el hub es el LIBRO, y estas tres son
+            trabajo del contador que cuelga de él, no otro libro. */}
+        <Link
+          href={`${BASE}/deterioro`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-al-deterioro"
+        >
+          Deterioro de cartera
+        </Link>
+        <Link
+          href={`${BASE}/certificados`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-a-certificados"
+        >
+          Certificados de retención
+        </Link>
+        <Link
+          href={`${BASE}/presupuesto`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-al-presupuesto"
+        >
+          Presupuesto
+        </Link>
       </div>
     </section>
   );

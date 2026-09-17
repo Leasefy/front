@@ -16,6 +16,7 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
     extender: vi.fn(),
     prorroga: vi.fn(),
     registrarConstancia: vi.fn(),
+    soporteDeLaConstancia: vi.fn(),
   },
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -37,6 +38,13 @@ const aniversario = {
   motivo: null,
   carta: null,
 };
+
+async function escribir(input: HTMLInputElement, valor: string) {
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, valor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
 
 async function montar(el: React.ReactElement) {
   container = document.createElement('div');
@@ -125,6 +133,74 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     const otroMedio = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Se entregó por otro medio')!;
     await act(async () => otroMedio.click());
     expect(document.querySelector('[data-testid="constancia-2026-08-21"]')).not.toBeNull();
+  });
+
+  it('🔴 la constancia se registra SIN soporte: adjuntarlo es opcional (Nico, 17-09)', async () => {
+    api.incrementos.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [aniversario],
+      disponible: true,
+      envioHabilitado: true,
+    });
+    api.registrarConstancia.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [aniversario],
+      disponible: true,
+      envioHabilitado: true,
+    });
+    await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
+    const otroMedio = [...document.querySelectorAll('button')].find(
+      (b) => b.textContent === 'Se entregó por otro medio',
+    )!;
+    await act(async () => otroMedio.click());
+
+    const bloque = document.querySelector('[data-testid="constancia-2026-08-21"]')!;
+    expect(bloque.textContent).toContain('no son obligatorias');
+    const fecha = bloque.querySelector('input[type="date"]') as HTMLInputElement;
+    const nota = bloque.querySelectorAll('input[type="text"], input:not([type])')[0] as HTMLInputElement;
+    await escribir(fecha, '2026-07-25');
+    await escribir(nota, 'Correo certificado 472, guía 88');
+    await act(async () =>
+      (document.querySelector('[data-testid="registrar-constancia-2026-08-21"]') as HTMLButtonElement).click(),
+    );
+
+    expect(api.registrarConstancia).toHaveBeenCalledWith('c1', '2026-08-21', {
+      medio: 'FISICO',
+      fecha: '2026-07-25',
+      nota: 'Correo certificado 472, guía 88',
+      soporte: null,
+    });
+  });
+
+  it('la constancia con soporte lo deja abrir después', async () => {
+    api.incrementos.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [
+        {
+          ...aniversario,
+          carta: {
+            estado: 'ENVIADA',
+            contenido: 'x',
+            generadaAt: null,
+            revisadaAt: null,
+            enviadaAt: '2026-07-25T17:00:00.000Z',
+            medio: 'FISICO',
+            soporteNombre: 'guia-472-88.pdf',
+          },
+        },
+      ],
+      disponible: true,
+      envioHabilitado: true,
+    });
+    api.soporteDeLaConstancia.mockResolvedValue({ url: 'https://firmada/guia.pdf', nombre: 'guia-472-88.pdf' });
+    await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
+    const enlace = document.querySelector('[data-testid="ver-soporte-constancia-2026-08-21"]')!;
+    expect(enlace.textContent).toContain('guia-472-88.pdf');
+    await act(async () => (enlace as HTMLButtonElement).click());
+    expect(api.soporteDeLaConstancia).toHaveBeenCalledWith('c1', '2026-08-21');
   });
 
   it('sin la migración de la constancia, enviar queda muerto y lo dice', async () => {

@@ -22,6 +22,8 @@ const CLAVES = [
   'contratoVerInmueble', 'tareaEsteContrato', 'irAlInventario', 'bloqueoTitulo',
   'bloqueoSinInventario', 'bloqueoSoloBorrador', 'bloqueoAnterior', 'bloqueoEnlace',
   'bloqueoSinEnlace', 'espacio', 'espacioPlaceholder',
+  'estadoFirmado', 'estadoPendiente',
+  'firmaTitulo', 'firmaPendiente', 'firmadoPor', 'firmaNoIntegra', 'firmaInquilinoTitulo', 'firmaInquilinoAyuda', 'firmaAceptacion', 'firmaBoton', 'firmaHecha', 'firmaExito', 'firmaError',
 ].map((k) => `${B}.${k}`);
 
 function leer(dic: unknown, ruta: string): unknown {

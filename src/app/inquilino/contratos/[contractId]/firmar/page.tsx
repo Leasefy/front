@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
+import { FirmaDelInventarioDelInquilino } from '@/components/inmobiliaria/inventario/FirmaDelInventarioDelInquilino';
 import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectContractModal } from '@/components/contract/RejectContractModal';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
@@ -461,6 +462,11 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
       <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <SigningSuccess locale={locale} />
+          {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
+              también el inventario con el que lo recibe. No bloquea nada. */}
+          <div className="mt-8">
+            <FirmaDelInventarioDelInquilino contractId={activeContract.id} />
+          </div>
         </div>
       </div>
     );

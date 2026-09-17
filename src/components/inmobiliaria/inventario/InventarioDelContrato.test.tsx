@@ -24,6 +24,9 @@ vi.mock('@/components/ui/alerta-accionable', () => ({
     </div>
   ),
 }));
+vi.mock('@/components/ui/badge', () => ({
+  Badge: (p: { children?: React.ReactNode }) => <span data-testid="badge">{p.children}</span>,
+}));
 vi.mock('@/components/ui/empty-state', () => ({
   EmptyState: (p: { description: string }) => <p data-testid="vacio">{p.description}</p>,
 }));
@@ -54,7 +57,11 @@ describe('InventarioDelContrato', () => {
   it('muestra la copia fija, sin agregar ni editar, con enlace al inventario del inmueble', async () => {
     copiaDelContrato.mockResolvedValue({
       disponible: true, contractId: 'c1', consignacionId: 'cons-1',
-      copia: { inventarioId: 'v3', version: 3, items: [{ id: 'a' }, { id: 'b' }], completadoEn: '2026-09-02T15:00:00Z', fijadoEn: '2026-09-03T15:00:00Z' },
+      copia: {
+        inventarioId: 'v3', version: 3, items: [{ id: 'a' }, { id: 'b' }],
+        completadoEn: '2026-09-02T15:00:00Z', fijadoEn: '2026-09-03T15:00:00Z',
+        firmaDelInquilino: { estado: 'PENDIENTE', firmadoPor: null, correo: null, firmadoEn: null, integra: null },
+      },
       vigenciaDelInmueble: null,
     });
     await montar();
@@ -63,6 +70,25 @@ describe('InventarioDelContrato', () => {
     expect(q('acta')?.getAttribute('data-enlace')).toBe('/panel/inmobiliaria/inmuebles/cons-1#inventario');
     expect(q('copia-version')?.textContent).toContain('Versión 3');
     expect(q('legado')).toBeNull();
+    // La firma del inquilino queda pendiente y visible, sin bloquear nada.
+    expect(q('firma-del-inquilino')?.getAttribute('data-estado')).toBe('pendiente');
+    expect(q('firma-del-inquilino')?.textContent).toContain('No impide activar el contrato');
+  });
+
+  it('firmada: dice quién y cuándo, y avisa si la copia no es la firmada', async () => {
+    copiaDelContrato.mockResolvedValue({
+      disponible: true, contractId: 'c1', consignacionId: 'cons-1',
+      copia: {
+        inventarioId: 'v3', version: 3, items: [], completadoEn: '2026-09-02T15:00:00Z', fijadoEn: '2026-09-03T15:00:00Z',
+        firmaDelInquilino: { estado: 'FIRMADO', firmadoPor: 'Ana Ríos', correo: 'ana@x.co', firmadoEn: '2026-09-05T01:00:00Z', integra: false },
+      },
+      vigenciaDelInmueble: null,
+    });
+    await montar();
+    const firma = q('firma-del-inquilino');
+    expect(firma?.getAttribute('data-estado')).toBe('firmado');
+    expect(firma?.textContent).toContain('Firmado por Ana Ríos el 4 de septiembre de 2026');
+    expect(firma?.textContent).toContain('no coincide con lo que se firmó');
   });
 
   it('un contrato sin copia lo dice (no inventa una)', async () => {

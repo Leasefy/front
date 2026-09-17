@@ -78,6 +78,24 @@ export interface CopiaDelContrato {
     items: ItemDeVersion[];
     completadoEn: string;
     fijadoEn: string;
+    /** La firma electrónica del inquilino sobre la copia. */
+    firmaDelInquilino: ResumenDeFirma;
   } | null;
   vigenciaDelInmueble: VigenciaDelInventario | null;
+}
+
+/** Pendiente, o quién y cuándo. `integra: false` = la copia no es la firmada. */
+export interface ResumenDeFirma {
+  estado: 'PENDIENTE' | 'FIRMADO';
+  firmadoPor: string | null;
+  correo: string | null;
+  firmadoEn: string | null;
+  integra: boolean | null;
+}
+
+/** Lo que ve el inquilino en su portal: `GET /contracts/:id/inventario/firma`. */
+export interface InventarioParaElInquilino {
+  disponible: boolean;
+  copia: { version: number; items: ItemDeVersion[]; completadoEn: string } | null;
+  firma: ResumenDeFirma | null;
 }

@@ -6,6 +6,7 @@ import { apiClient, ApiError, getAccessToken } from '@/lib/api/client';
 import type {
   CopiaDelContrato,
   InventariosDelInmueble,
+  InventarioParaElInquilino,
   ItemDeVersion,
   ParaIniciarUnContrato,
 } from '@/lib/types/inventario-del-inmueble';
@@ -38,7 +39,23 @@ export const inventarioDelInmuebleApi = {
     );
   },
 
-  copiaDelContrato(contractId: string): Promise<CopiaDelContrato> {
+  /** Portal del inquilino: la copia de SU contrato y si ya la firmó. */
+  inventarioParaFirmar(contractId: string): Promise<InventarioParaElInquilino> {
+    return apiClient.get<InventarioParaElInquilino>(`/contracts/${contractId}/inventario/firma`);
+  },
+
+  /**
+   * Portal del inquilino: firma la copia con el mismo formulario y el mismo
+   * OTP que la firma del contrato. No bloquea nada.
+   */
+  firmarInventario(
+    contractId: string,
+    dto: { acceptedTerms: true; consentText: string; signatureData?: string; otpVerificationToken?: string },
+  ): Promise<InventarioParaElInquilino> {
+    return apiClient.post<InventarioParaElInquilino>(`/contracts/${contractId}/inventario/firma`, dto);
+  },
+
+    copiaDelContrato(contractId: string): Promise<CopiaDelContrato> {
     return apiClient.get<CopiaDelContrato>(`${BASE}/contratos/${contractId}/inventario`);
   },
 

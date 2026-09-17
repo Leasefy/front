@@ -1405,7 +1405,9 @@
         "seguridad": "Seguridad",
         "seguridadDesc": "Contraseña y acceso",
         "automatizacionIa": "Automatización IA",
-        "automatizacionIaDesc": "Revisa y certifica lo que aprendió el asistente antes de que influya en el chat"
+        "automatizacionIaDesc": "Revisa y certifica lo que aprendió el asistente antes de que influya en el chat",
+        "mandato": "Mandato y giros",
+        "mandatoDesc": "Modalidad de los mandatos, cobros al arrendar e IVA de la comisión"
       },
       "notifications": {
         "title": "Notificaciones",

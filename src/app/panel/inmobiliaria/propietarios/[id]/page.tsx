@@ -45,6 +45,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
 import { ExtractosEnviadosDelPropietario } from '@/components/inmobiliaria/ExtractosEnviadosDelPropietario';
 import { DeduccionesDelPropietario } from '@/components/inmobiliaria/deducciones/DeduccionesDelPropietario';
+import { CambioDeCuentaBancaria } from '@/components/inmobiliaria/mandato/CambioDeCuentaBancaria';
 import {
   DropdownList,
   DropdownListContent,
@@ -855,6 +856,15 @@ function PropietarioDetailContent() {
           <PropietarioBankInfo
             bankAccount={propietario.bankAccount}
             onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
+          />
+
+          {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
+              confirmación del propietario y aprobación de un administrador. */}
+          <CambioDeCuentaBancaria
+            propietarioId={propietario.id}
+            tieneCuenta={!!propietario.bankAccount?.accountNumber}
+            puedeEditar={puedeEditar}
+            onCuentaCambiada={() => void refetch()}
           />
         </div>
 

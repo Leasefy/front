@@ -2307,6 +2307,11 @@ export interface UpdateAgencyPayload {
   tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
   /** Penalidad por defecto por terminación anticipada, en cánones (17-09). */
   penalidadTerminacionCanones?: number | null;
+  /**
+   * D4 (17-09): si la inmobiliaria es responsable de IVA. Decide si la comisión
+   * de administración lleva IVA (con `ivaPorcentaje`). `null` = no se sabe: sin IVA.
+   */
+  responsableIva?: boolean | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */

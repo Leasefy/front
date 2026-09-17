@@ -155,7 +155,7 @@ const ACCOUNT_TYPE_TO_WIRE: Record<AccountType, string> = {
  * same rule T-0011 established for `PropertyType` (see
  * `properties.mapper.ts` / `ConsignacionWizard.tsx`'s `TYPE_TO_BACKEND` throw).
  */
-function mapBankCodeToWire(code: BankCode): string {
+export function mapBankCodeToWire(code: BankCode): string {
   const wire = BANK_CODE_TO_WIRE[code];
   if (!wire) {
     throw new Error(

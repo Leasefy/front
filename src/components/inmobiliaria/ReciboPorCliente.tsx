@@ -76,6 +76,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ApiError } from '@/lib/api/client';
 import { inquilinosApi, type Inquilino } from '@/lib/api/inquilinos.service';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type { CarteraDelCliente, PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
@@ -576,54 +577,169 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
 // ── El pegamento: cargar la cartera ─────────────────────────────────────────
 
 /**
- * La cartera de la persona, resuelta por su id o por un cobro suyo.
+ * Cuánto se espera después del último cambio de la fecha antes de volver a
+ * pedir la cartera. Escribir `2026-08-20` a mano pasa por `2026-08-2`, `0002-…`
+ * y otros días intermedios: sin la espera, cada tecla sería una petición.
+ */
+export const ESPERA_DE_LA_FECHA_MS = 400;
+
+/** Un rechazo de la cartera pedida CON fecha: se muestra en el campo, no tapa la tabla. */
+export interface ErrorDeLaFecha {
+  mensaje: string;
+  /** `FECHA_ANTERIOR_A_LA_DEUDA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
+  code?: string;
+  /** El piso que el back exige, si lo mandó. */
+  piso?: string;
+}
+
+/**
+ * La cartera de la persona, resuelta por su id o por un cobro suyo, liquidada
+ * hasta `fecha`.
  *
  * `cobroId` gana sobre `tenantId`: es la entrada desde la fila de un cobro, y
  * ahí la persona la resuelve el back (un cobro migrado puede no tener cuenta).
+ *
+ * 🔴 `fecha` (2026-09-16, prueba en vivo en QA, contrato #69): el interés de
+ * mora se liquida hasta el día del recibo, así que la cartera que se muestra
+ * TIENE que ser la de ese día. Antes se pedía una sola vez, a hoy: con la
+ * fecha en 2026-08-20 el diálogo seguía diciendo $2.588.062 de interés y el
+ * recibo cobraba menos. `null` = hoy (no se manda `?fecha=`).
+ *
+ * Tres reglas, cada una con su porqué:
+ *   · CAMBIAR DE PERSONA pide ya, a hoy, y es una carga «de cero» (`cargando`,
+ *     y `cargaDeLaPersona` sube: el formulario arranca de nuevo).
+ *   · CAMBIAR LA FECHA espera `ESPERA_DE_LA_FECHA_MS` y CONSERVA la cartera
+ *     que hay mientras llega la nueva (`recalculando`): la tabla no parpadea.
+ *     Si esa petición falla, la cartera anterior sigue ahí y el rechazo va a
+ *     `errorDeLaFecha` — el 400 del piso es un problema del campo, no de la
+ *     cartera.
+ *   · SIN CARRERAS: cada petición lleva un número; la respuesta de una fecha
+ *     (o de una persona) vieja que llega tarde no pisa la nueva.
+ *
+ * `fechaDeLaCartera` dice para qué fecha es la cartera que se está mostrando:
+ * quien emite compara contra la fecha elegida y no deja emitir con números de
+ * otro día.
  */
 export function useCarteraDelCliente(
   tenantId: string | null,
   cobroId: string | null,
   activo: boolean,
+  fecha: string | null = null,
 ) {
   const [cartera, setCartera] = React.useState<CarteraDelCliente | null>(null);
   const [cargando, setCargando] = React.useState(false);
+  const [recalculando, setRecalculando] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [errorDeLaFecha, setErrorDeLaFecha] = React.useState<ErrorDeLaFecha | null>(null);
+  const [fechaDeLaCartera, setFechaDeLaCartera] = React.useState<string | null>(null);
+  const [cargaDeLaPersona, setCargaDeLaPersona] = React.useState(0);
 
-  /** Se cambia de cliente antes de que conteste el anterior: la vieja no pisa. */
+  /** La última petición que se lanzó. Una respuesta de otra no pisa. */
   const peticion = React.useRef(0);
+  /** La fecha de la última petición lanzada: no se repite la que ya va en camino. */
+  const fechaPedida = React.useRef<string | null>(null);
+  const hayCartera = React.useRef(false);
+  const fechaActual = React.useRef(fecha);
+  fechaActual.current = fecha;
 
-  const cargar = React.useCallback(async () => {
-    if (!activo || (!tenantId && !cobroId)) {
-      peticion.current += 1;
-      setCartera(null);
-      setError(null);
-      setCargando(false);
-      return;
-    }
-    const mia = ++peticion.current;
-    setCargando(true);
-    setError(null);
-    try {
-      const res = cobroId
-        ? await recibosDeCajaApi.carteraPorCobro(cobroId)
-        : await recibosDeCajaApi.cartera(tenantId!);
-      if (mia !== peticion.current) return;
-      setCartera(res);
-    } catch (e) {
-      if (mia !== peticion.current) return;
-      setCartera(null);
-      setError(e instanceof Error && e.message ? e.message : '');
-    } finally {
-      if (mia === peticion.current) setCargando(false);
-    }
-  }, [activo, cobroId, tenantId]);
+  const pedir = React.useCallback(
+    async (fechaAPedir: string | null, conservar: boolean) => {
+      if (!activo || (!tenantId && !cobroId)) {
+        peticion.current += 1;
+        fechaPedida.current = null;
+        hayCartera.current = false;
+        setCartera(null);
+        setError(null);
+        setErrorDeLaFecha(null);
+        setFechaDeLaCartera(null);
+        setCargando(false);
+        setRecalculando(false);
+        return;
+      }
+      const mia = ++peticion.current;
+      fechaPedida.current = fechaAPedir;
+      // Sin cartera a la vista no hay nada que conservar: es una carga de cero.
+      const soloLaFecha = conservar && hayCartera.current;
+      if (soloLaFecha) {
+        setRecalculando(true);
+      } else {
+        setCargando(true);
+        setError(null);
+      }
+      try {
+        // Sin fecha se llama como siempre: `?fecha=` sólo cuando la hay.
+        const res = cobroId
+          ? await (fechaAPedir
+              ? recibosDeCajaApi.carteraPorCobro(cobroId, fechaAPedir)
+              : recibosDeCajaApi.carteraPorCobro(cobroId))
+          : await (fechaAPedir
+              ? recibosDeCajaApi.cartera(tenantId!, fechaAPedir)
+              : recibosDeCajaApi.cartera(tenantId!));
+        if (mia !== peticion.current) return;
+        hayCartera.current = true;
+        setCartera(res);
+        setFechaDeLaCartera(fechaAPedir);
+        setError(null);
+        setErrorDeLaFecha(null);
+        if (!soloLaFecha) setCargaDeLaPersona((n) => n + 1);
+      } catch (e) {
+        if (mia !== peticion.current) return;
+        if (soloLaFecha) {
+          setErrorDeLaFecha({
+            mensaje: e instanceof Error && e.message ? e.message : '',
+            code: e instanceof ApiError ? e.code : undefined,
+            piso:
+              e instanceof ApiError && typeof e.detalle?.piso === 'string'
+                ? e.detalle.piso
+                : undefined,
+          });
+        } else {
+          hayCartera.current = false;
+          setCartera(null);
+          setFechaDeLaCartera(null);
+          setError(e instanceof Error && e.message ? e.message : '');
+        }
+      } finally {
+        if (mia === peticion.current) {
+          setCargando(false);
+          setRecalculando(false);
+        }
+      }
+    },
+    [activo, cobroId, tenantId],
+  );
 
+  // Otra persona (o el diálogo se abrió): de cero y a hoy.
   React.useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    void pedir(null, false);
+  }, [pedir]);
 
-  return { cartera, cargando, error, recargar: cargar };
+  // Otra fecha para la misma persona: con espera y conservando la tabla.
+  React.useEffect(() => {
+    if (!activo || (!tenantId && !cobroId)) return;
+    if (fecha === fechaPedida.current) return;
+    const espera = setTimeout(() => {
+      void pedir(fecha, true);
+    }, ESPERA_DE_LA_FECHA_MS);
+    return () => clearTimeout(espera);
+  }, [fecha]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Vuelve a pedir la cartera de la fecha elegida (tras conciliar, o un fallo). */
+  const recargar = React.useCallback(
+    () => pedir(fechaActual.current, true),
+    [pedir],
+  );
+
+  return {
+    cartera,
+    cargando,
+    recalculando,
+    error,
+    errorDeLaFecha,
+    fechaDeLaCartera,
+    cargaDeLaPersona,
+    recargar,
+  };
 }
 
 /** El plan que se muestra antes de emitir. Memoizado: se recalcula al teclear. */

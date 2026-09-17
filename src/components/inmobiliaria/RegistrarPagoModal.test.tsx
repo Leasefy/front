@@ -60,12 +60,16 @@ vi.mock('@/lib/hooks/use-medios-de-pago', () => ({
 }));
 
 /** La cartera llega por HTTP; acá interesa la pantalla, no la petición. */
-const carteraPorCobro = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
-const cartera = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
+const carteraPorCobro = vi.fn<(id: string, fecha?: string) => Promise<CarteraDelCliente>>();
+const cartera = vi.fn<(id: string, fecha?: string) => Promise<CarteraDelCliente>>();
+/*
+ * La fecha se reenvía SÓLO cuando viene: sin fecha la llamada sigue siendo
+ * `(id)`, que es lo que el back entiende como «hoy».
+ */
 vi.mock('@/lib/api/recibos-de-caja.service', () => ({
   recibosDeCajaApi: {
-    carteraPorCobro: (id: string) => carteraPorCobro(id),
-    cartera: (id: string) => cartera(id),
+    carteraPorCobro: (...args: [string, string?]) => carteraPorCobro(...args),
+    cartera: (...args: [string, string?]) => cartera(...args),
   },
 }));
 
@@ -75,6 +79,7 @@ vi.mock('@/lib/api/inquilinos.service', () => ({
 
 import { ApiError } from '@/lib/api/client';
 import { RegistrarPagoModal } from './RegistrarPagoModal';
+import { ESPERA_DE_LA_FECHA_MS } from './ReciboPorCliente';
 
 const COBRO: Cobro = {
   id: 'c-ago',
@@ -1094,5 +1099,293 @@ describe('<RegistrarPagoModal> los tres conflictos del back no son el mismo', ()
     await enviar();
 
     expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeTruthy();
+  });
+});
+
+describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
+  /*
+   * 🔴 Prueba en vivo en QA (2026-09-16, contrato #69): al cambiar la fecha
+   * del recibo a 2026-08-20 el diálogo seguía mostrando el interés de hoy
+   * ($2.588.062) y no salía ningún pedido nuevo. El back sí cobraba hasta la
+   * fecha, así que la pantalla mostraba más interés del que se iba a cobrar y
+   * «paga toda la deuda» mandaba de más.
+   *
+   * Hoy: 15-sep-2026. Debe junio, julio y agosto. A hoy el interés es 120.000;
+   * al 20-ago, 50.000.
+   */
+  const HOY = new Date('2026-09-15T17:00:00.000Z');
+
+  const aHoy = () =>
+    debeTresMeses({
+      total: 3_120_000,
+      vencidoCop: 3_120_000,
+      interesCop: 120_000,
+      liquidadoAl: '2026-09-15',
+      pisoDeLaFecha: '2026-06-01',
+    });
+  const al20DeAgosto = () =>
+    debeTresMeses({
+      total: 3_050_000,
+      vencidoCop: 3_050_000,
+      interesCop: 50_000,
+      liquidadoAl: '2026-08-20',
+      pisoDeLaFecha: '2026-06-01',
+    });
+  const al1DeSeptiembre = () =>
+    debeTresMeses({
+      total: 3_090_000,
+      vencidoCop: 3_090_000,
+      interesCop: 90_000,
+      liquidadoAl: '2026-09-01',
+      pisoDeLaFecha: '2026-06-01',
+    });
+
+  /** Una respuesta que se resuelve cuando la prueba dice. */
+  function diferida<T>() {
+    let resolver!: (v: T) => void;
+    let rechazar!: (e: unknown) => void;
+    const promesa = new Promise<T>((res, rej) => {
+      resolver = res;
+      rechazar = rej;
+    });
+    return { promesa, resolver, rechazar };
+  }
+
+  const total = () =>
+    document.body.querySelector('[data-testid="cartera-total"]')?.textContent ?? '';
+  const pedidosConFecha = () => carteraPorCobro.mock.calls.filter((c) => c.length > 1);
+
+  /** Deja pasar la espera de la fecha y las respuestas que ya estén listas. */
+  async function pasaLaEspera() {
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  async function resolverCon<T>(d: ReturnType<typeof diferida<T>>, valor: T) {
+    await act(async () => {
+      d.resolver(valor);
+      await d.promesa;
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    vi.setSystemTime(HOY);
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      Promise.resolve(fecha === '2026-08-20' ? al20DeAgosto() : aHoy()),
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('🔴 cambiar la fecha vuelve a pedir la cartera CON esa fecha, y «paga toda la deuda» sigue a la cartera nueva', async () => {
+    const onSubmit = await abrir();
+    expect(carteraPorCobro).toHaveBeenCalledTimes(1);
+    expect(carteraPorCobro).toHaveBeenCalledWith('c-ago');
+
+    act(() => document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click());
+    elegirMedio('efectivo');
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-08-20']]);
+    expect(total()).toContain('3050000');
+
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      fecha: '2026-08-20',
+      // El total AL 20 DE AGOSTO, no el de hoy (3.120.000): con el de hoy
+      // sobraban 70.000 que iban a dar 400 o a quedar a favor.
+      valorCop: 3_050_000,
+    });
+  });
+
+  it('escribir la fecha a mano no pide en cada tecla: una sola petición cuando se deja de escribir', async () => {
+    await abrir();
+    escribir('#fecha-recibo', '2026-08-01');
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS - 100);
+    });
+    escribir('#fecha-recibo', '2026-08-02');
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS - 100);
+    });
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-08-20']]);
+  });
+
+  it('🔴 la tabla no parpadea: mientras llega la cartera nueva se ve la anterior, se dice, y no se emite con ella', async () => {
+    const nueva = diferida<CarteraDelCliente>();
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha ? nueva.promesa : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    // La cartera anterior sigue ahí, sin el spinner de «cargando la cartera».
+    expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="cartera-cargando"]')).toBeNull();
+    expect(total()).toContain('3120000');
+    expect(document.body.querySelector('[data-testid="recalculando-interes"]')).toBeTruthy();
+    // Con números de otro día no se emite.
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await resolverCon(nueva, al20DeAgosto());
+    expect(total()).toContain('3050000');
+    expect(document.body.querySelector('[data-testid="recalculando-interes"]')).toBeNull();
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('🔴 la respuesta de una fecha VIEJA que llega tarde no pisa la de la fecha nueva', async () => {
+    const del20 = diferida<CarteraDelCliente>();
+    const del1 = diferida<CarteraDelCliente>();
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha === '2026-08-20'
+        ? del20.promesa
+        : fecha === '2026-09-01'
+          ? del1.promesa
+          : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    act(() => document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click());
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    escribir('#fecha-recibo', '2026-09-01');
+    await pasaLaEspera();
+    expect(pedidosConFecha()).toEqual([
+      ['c-ago', '2026-08-20'],
+      ['c-ago', '2026-09-01'],
+    ]);
+
+    // Llega primero la nueva y DESPUÉS la vieja.
+    await resolverCon(del1, al1DeSeptiembre());
+    await resolverCon(del20, al20DeAgosto());
+
+    expect(total()).toContain('3090000');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      fecha: '2026-09-01',
+      valorCop: 3_090_000,
+    });
+  });
+
+  it('🔴 cambiar la fecha NO borra el formulario ni devuelve la fecha a hoy', async () => {
+    await abrir();
+    elegirMedio('efectivo');
+    escribir('#saludos-recibo', 'Gracias por el pago');
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(document.body.querySelector<HTMLInputElement>('#fecha-recibo')!.value).toBe('2026-08-20');
+    expect(document.body.querySelector<HTMLTextAreaElement>('#saludos-recibo')!.value).toBe(
+      'Gracias por el pago',
+    );
+    // Y no entró en un bucle de pedidos: uno de hoy y uno del 20.
+    await pasaLaEspera();
+    expect(carteraPorCobro).toHaveBeenCalledTimes(2);
+  });
+
+  it('un monto escrito a mano NO se mueve con la fecha; el prellenado con lo vencido sí', async () => {
+    // Los envíos fallan a propósito: uno que sale bien cierra el formulario.
+    const onSubmit = await abrir({
+      onSubmit: vi.fn().mockRejectedValue(new ApiError(500, 'caído')) as never,
+    });
+    elegirMedio('efectivo');
+
+    // Prellenado con lo vencido de hoy → sigue a lo vencido del 20.
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 3_050_000 });
+
+    // Escrito a mano → se queda.
+    escribir('#monto-recibo', '$ 1.000.000');
+    escribir('#fecha-recibo', '2026-09-15');
+    await pasaLaEspera();
+    await enviar();
+    expect(onSubmit.mock.calls[1][0]).toMatchObject({ valorCop: 1_000_000, fecha: '2026-09-15' });
+  });
+
+  it('el piso lo manda el back: un día antes no se pide y el campo dice desde cuándo', async () => {
+    carteraPorCobro.mockImplementation(() =>
+      Promise.resolve({ ...aHoy(), pisoDeLaFecha: '2026-08-01' }),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo')!;
+    // Las cuotas empiezan en junio, pero el piso es el que dijo el servidor.
+    expect(campo.getAttribute('min')).toBe('2026-08-01');
+
+    escribir('#fecha-recibo', '2026-07-15');
+    await pasaLaEspera();
+    expect(pedidosConFecha()).toEqual([]);
+    expect(document.body.querySelector('[data-testid="fecha-antes-del-piso"]')?.textContent).toContain(
+      'recibos.form.fechaAntesDeLaDeuda',
+    );
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('🔴 el 400 del back sobre la fecha va al campo, tal cual, y la cartera anterior se queda', async () => {
+    const mensaje =
+      'El recibo no puede quedar fechado el 20 de agosto de 2026: la deuda más vieja de Jose Lopez es de septiembre de 2026.';
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha
+        ? Promise.reject(
+            new ApiError(400, mensaje, 'FECHA_ANTERIOR_A_LA_DEUDA', {
+              piso: '2026-09-01',
+              fecha,
+            }),
+          )
+        : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')?.textContent).toBe(mensaje);
+    expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
+    expect(total()).toContain('3120000');
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('🔴 R1: cambiar la fecha después de un fallo NO cambia la llave del recibo', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError(0, 'fetch failed'))
+      .mockResolvedValueOnce(RESPUESTA);
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar(); // se cae la red: pudo haber entrado
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    await enviar();
+
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const llave = (i: number) =>
+      (onSubmit.mock.calls[i][0] as { idempotencyKey?: string }).idempotencyKey;
+    expect(llave(0)).toBeTruthy();
+    expect(llave(1)).toBe(llave(0));
   });
 });

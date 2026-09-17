@@ -333,6 +333,68 @@ describe('CarteraCompleta', () => {
     expect(host.querySelector('[data-testid="sin-datos"]')).toBeNull()
   })
 
+  describe('🔴 el orden es de TODA la lista, no de la página', () => {
+    /*
+     * Prueba en navegador, 16-09: con 1517 cuotas la tabla ordenaba sólo las
+     * diez de su página. Los siniestros llegan al final de la lista, así que la
+     * página 1 decía «lo más vencido arriba» con cuotas de 27 días y las de 253
+     * quedaban en la página 74.
+     */
+    const muchas = (): CarteraReport => {
+      const vivas = Array.from({ length: 12 }, (_, i) =>
+        deuda({
+          cuotaId: `v${i}`,
+          tenantName: `Viva ${i}`,
+          diasDeMora: 5 + i,
+          pendingAmount: 1_000_000 + i,
+        }),
+      )
+      return reporte({
+        items: vivas,
+        siniestros: {
+          cantidad: 1,
+          totalCop: 9_000_000,
+          diasParaSiniestro: 30,
+          items: [
+            {
+              ...deuda({
+                cuotaId: 'peor',
+                tenantName: 'La más vieja',
+                diasDeMora: 253,
+                pendingAmount: 9_000_000,
+              }),
+              siniestroDesde: '2026-02-05',
+              diasEnSiniestro: 223,
+            },
+          ],
+        },
+      })
+    }
+    const primeraFila = () => todos('[data-testid="cartera-fila"]')[0].textContent ?? ''
+
+    it('la cuota más vencida abre la página 1 aunque llegue última', () => {
+      conReporte(muchas())
+      montar()
+
+      expect(todos('[data-testid="cartera-fila"]')).toHaveLength(10)
+      expect(primeraFila()).toContain('La más vieja')
+    })
+
+    it('ordenar por nombre ordena las trece, no las diez que se ven', () => {
+      conReporte(muchas())
+      montar()
+
+      clic($('[data-testid="ordenar-inquilino"]'))
+      // A→Z: «La más vieja» va antes que todas las «Viva N».
+      expect(primeraFila()).toContain('La más vieja')
+
+      clic($('[data-testid="ordenar-inquilino"]'))
+      // Z→A: «Viva 9» es la última del alfabeto y estaba en la página 1 sólo por azar.
+      expect(primeraFila()).toContain('Viva 9')
+      expect(todos('[data-testid="cartera-fila"]').map((f) => f.textContent ?? '').join(' ')).not.toContain('La más vieja')
+    })
+  })
+
   it('una cifra de la franja filtra su cajón', () => {
     conReporte(reporte())
     montar()

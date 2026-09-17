@@ -390,6 +390,17 @@ describe('CarteraPorConcepto', () => {
     )
   })
 
+  it('🔴 sin filtros el pie es la DEUDA, no «la cartera»: la cifra «Cartera» es otra', () => {
+    conCartera(cartera())
+    montar()
+
+    const pie = $('[data-testid="totales-por-concepto"]')
+    expect(pie.textContent).toContain('Total de la deuda')
+    expect(pie.textContent).not.toContain('Total de la cartera')
+    const pesos = pesosDe(pie)
+    expect(pesos[pesos.length - 1]).toBe(8_678_200)
+  })
+
   it('el buscador y «sólo en mora» achican la tabla, y el pie sigue a lo filtrado', () => {
     conCartera(cartera())
     montar()

@@ -16,7 +16,15 @@
  * forma honesta de probarlo.
  */
 
-const SOLO_DIA = /^(\d{4})-(\d{2})-(\d{2})$/;
+/*
+ * 🔴 Un día también llega con hora (prueba en navegador, 16-09): `GET
+ * /contracts` serializa el `@db.Date` de Prisma como medianoche UTC
+ * (`2026-06-05T00:00:00.000Z`), y la lista de Contratos decía «04 de jun →
+ * 04 de jun» de un contrato que la ficha y la base dicen que va del 5 al 5.
+ * Medianoche UTC exacta es la forma de un DÍA, no de un instante: se lee como
+ * día. Cualquier otra hora sigue siendo un instante.
+ */
+const SOLO_DIA = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/;
 
 /** El texto que se muestra cuando no hay fecha. */
 export const SIN_FECHA = '—';

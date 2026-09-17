@@ -56,6 +56,13 @@
  * 4. 🔴 Los rechazos del back se muestran TAL CUAL: el 400 del sobrepago trae
  *    el máximo abonable y el 409 dice qué período tiene plata sin conciliar.
  *
+ * 5. 🔴 (2026-09-16) La FECHA manda sobre la vista previa. El interés de mora
+ *    se liquida hasta el día del recibo, así que al cambiar «¿Qué día entró?»
+ *    la cartera se vuelve a pedir con esa fecha (`useCarteraDelCliente`), el
+ *    piso del campo es el que dice el back, y no se emite mientras los números
+ *    a la vista sean de otro día. Prueba en vivo en QA, contrato #69: con la
+ *    fecha en 2026-08-20 el diálogo seguía mostrando el interés de hoy.
+ *
  * ⚠️ Decisión de producto tomada al pie de la letra: el campo REFERENCIA salió
  * del formulario. Nico enumeró los campos y cerró con «y nada más». El back lo
  * sigue aceptando (lo usa la conciliación bancaria), así que devolverlo es
@@ -190,7 +197,7 @@ export function RegistrarPagoModal({
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
@@ -227,6 +234,23 @@ export function RegistrarPagoModal({
   const [tocado, setTocado] = React.useState(false);
 
   /*
+   * 🔴 La fecha con la que se pide la VISTA PREVIA (2026-09-16). No es `fecha`
+   * a secas: mientras la persona escribe, o si elige un día fuera de rango, la
+   * cartera no se vuelve a pedir — se queda la del último día válido y el
+   * campo dice qué pasa. `null` = hoy.
+   */
+  const [fechaDeLaVistaPrevia, setFechaDeLaVistaPrevia] = React.useState<string | null>(null);
+
+  /**
+   * De dónde salió el monto, para saber si sigue a la cartera cuando cambia la
+   * fecha. 🔴 «Paga toda la deuda» con una fecha pasada mandaba el total de HOY,
+   * que trae más interés del que el recibo cobra: un 400, o un saldo a favor que
+   * nadie quiso. Si el monto lo puso un atajo, se recalcula con la cartera
+   * nueva; si lo escribió la persona, no se toca.
+   */
+  const origenDelMonto = React.useRef<'vencido' | 'todo' | 'manual'>('manual');
+
+  /*
    * 🔴 R1: UNA llave por apertura del formulario.
    *
    * Sin llave, un timeout seguido de «Emitir» otra vez dejaba DOS juegos de
@@ -255,11 +279,16 @@ export function RegistrarPagoModal({
   const [errorDeConciliacion, setErrorDeConciliacion] = React.useState<string | null>(null);
 
   const cobroId = cobroDeEntrada?.id ?? null;
-  const { cartera, cargando, error, recargar } = useCarteraDelCliente(
-    tenantId,
-    cobroId,
-    isOpen,
-  );
+  const {
+    cartera,
+    cargando,
+    recalculando,
+    error,
+    errorDeLaFecha,
+    fechaDeLaCartera,
+    cargaDeLaPersona,
+    recargar,
+  } = useCarteraDelCliente(tenantId, cobroId, isOpen, fechaDeLaVistaPrevia);
   const plan = usePlanDeImputacion(cartera, monto);
   const sinConciliar = React.useMemo(
     () => periodosSinConciliar(cartera, plan),
@@ -316,12 +345,44 @@ export function RegistrarPagoModal({
    * escribe un recibo fechado en 2016.
    */
   const pisoDeLaFecha = React.useMemo(() => {
+    /*
+     * 🔴 El piso lo manda el back (2026-09-16): es el MISMO que exige al emitir
+     * y en la vista previa, así que el `min` del campo no puede dejar elegir un
+     * día que el servidor rechaza. La cuenta de abajo queda sólo para un back
+     * anterior que no lo manda.
+     */
+    if (cartera?.pisoDeLaFecha) return cartera.pisoDeLaFecha;
     const masViejoVencido = cartera?.cuotas.find((c) => c.vencida)?.month;
     const piso = masViejoVencido
       ? `${masViejoVencido}-01`
       : `${hoy.slice(0, 4)}-01-01`;
     return piso > hoy ? `${hoy.slice(0, 4)}-01-01` : piso;
   }, [cartera, hoy]);
+
+  /** Qué le pasa al día elegido, antes de preguntarle nada al servidor. */
+  const problemaDeLaFecha: 'vacia' | 'antesDelPiso' | 'futura' | null =
+    fecha === '' ? 'vacia' : fecha < pisoDeLaFecha ? 'antesDelPiso' : fecha > hoy ? 'futura' : null;
+
+  /*
+   * La vista previa sigue a la fecha sólo cuando la fecha es válida. Un día
+   * fuera de rango no se pregunta: el campo ya sabe decir por qué no sirve.
+   */
+  React.useEffect(() => {
+    if (problemaDeLaFecha !== null) return;
+    setFechaDeLaVistaPrevia(fecha === hoy ? null : fecha);
+  }, [fecha, hoy, problemaDeLaFecha]);
+
+  /**
+   * 🔴 ¿Lo que se ve es la cartera del día elegido? Mientras la nueva no llega
+   * (la espera de la fecha, o la petición en camino) los números a la vista son
+   * de OTRO día: se muestran —sin parpadear— pero no se emite con ellos.
+   */
+  const fechaElegida = problemaDeLaFecha === null ? (fecha === hoy ? null : fecha) : undefined;
+  const carteraAlDia =
+    fechaElegida !== undefined &&
+    fechaDeLaCartera === fechaElegida &&
+    fechaDeLaVistaPrevia === fechaElegida &&
+    !recalculando;
 
   const puedeEnviar =
     cartera !== null &&
@@ -330,7 +391,9 @@ export function RegistrarPagoModal({
     montoValido &&
     !seExcede &&
     medio !== '' &&
-    fecha !== '';
+    problemaDeLaFecha === null &&
+    carteraAlDia &&
+    errorDeLaFecha === null;
 
   /**
    * Al cambiar de cliente, el formulario arranca con lo VENCIDO.
@@ -344,26 +407,50 @@ export function RegistrarPagoModal({
    *
    * Sin nada vencido el campo queda VACÍO: el monto de un adelanto no lo
    * adivina la pantalla, lo dice quien trae la plata.
+   *
+   * 🔴 (2026-09-16) «Al cambiar de cliente» quiere decir eso y nada más: una
+   * carga de PERSONA (`cargaDeLaPersona`). Antes el reinicio colgaba de
+   * `cartera.total`, y desde que la cartera se vuelve a pedir con la fecha, el
+   * total cambia con cada fecha: el formulario se borraba y la fecha volvía a
+   * hoy — que pedía otra cartera, que volvía a borrar. Con la misma persona y
+   * otros números (otra fecha, o después de conciliar) sólo se mueve el monto
+   * que puso un atajo.
    */
+  const personaAtendida = React.useRef(-1);
   React.useEffect(() => {
     if (!cartera) return;
-    setMonto((cartera.vencidoCop ?? 0) > 0 ? cartera.vencidoCop : NaN);
-    setMedio('');
-    setFecha(hoy);
-    setSaludos('');
-    setErrorDelBack(null);
-    setTituloDelError(null);
-    setTocado(false);
-    setConciliando(null);
-    setOrigen('');
-    setErrorDeConciliacion(null);
-  }, [cartera?.tenantId, cartera?.total, cartera?.vencidoCop, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
+    const vencidoDeLaCartera = cartera.vencidoCop ?? 0;
+    if (personaAtendida.current !== cargaDeLaPersona) {
+      personaAtendida.current = cargaDeLaPersona;
+      origenDelMonto.current = vencidoDeLaCartera > 0 ? 'vencido' : 'manual';
+      setMonto(vencidoDeLaCartera > 0 ? vencidoDeLaCartera : NaN);
+      setMedio('');
+      setFecha(hoy);
+      setFechaDeLaVistaPrevia(null);
+      setSaludos('');
+      setErrorDelBack(null);
+      setTituloDelError(null);
+      setTocado(false);
+      setConciliando(null);
+      setOrigen('');
+      setErrorDeConciliacion(null);
+      return;
+    }
+    if (origenDelMonto.current === 'vencido') {
+      setMonto(vencidoDeLaCartera > 0 ? vencidoDeLaCartera : NaN);
+    } else if (origenDelMonto.current === 'todo') {
+      setMonto(cartera.total);
+    }
+  }, [cartera, cargaDeLaPersona, hoy]);
 
   const cerrar = React.useCallback(() => {
     llaveDelRecibo.current = null;
     setTenantId(null);
     setMonto(NaN);
+    origenDelMonto.current = 'manual';
     setMedio('');
+    setFecha(hoy);
+    setFechaDeLaVistaPrevia(null);
     setSaludos('');
     setErrorDelBack(null);
     setTituloDelError(null);
@@ -372,7 +459,7 @@ export function RegistrarPagoModal({
     setOrigen('');
     setErrorDeConciliacion(null);
     onClose();
-  }, [onClose]);
+  }, [hoy, onClose]);
 
   const emitir = React.useCallback(async () => {
     setTocado(true);
@@ -551,7 +638,16 @@ export function RegistrarPagoModal({
         <>
           {/* 1. El cliente. Con cobro de entrada la persona ya está resuelta. */}
           {!cobroId && conciliando === null && (
-            <ElegirCliente value={tenantId} onChange={setTenantId} />
+            <ElegirCliente
+              value={tenantId}
+              onChange={(id) => {
+                // Otra persona arranca de cero y a hoy: la fecha de la anterior
+                // puede quedar antes del piso de ésta.
+                setTenantId(id);
+                setFecha(hoy);
+                setFechaDeLaVistaPrevia(null);
+              }}
+            />
           )}
 
           {/* 2. Su cartera */}
@@ -655,7 +751,10 @@ export function RegistrarPagoModal({
                         size="sm"
                         hideArrow
                         className="h-auto p-0 text-xs"
-                        onClick={() => setMonto(vencido)}
+                        onClick={() => {
+                          origenDelMonto.current = 'vencido';
+                          setMonto(vencido);
+                        }}
                         data-testid="atajo-vencido"
                       >
                         {t('recibos.form.pagaLoVencido')}
@@ -667,7 +766,10 @@ export function RegistrarPagoModal({
                       size="sm"
                       hideArrow
                       className="h-auto p-0 text-xs"
-                      onClick={() => setMonto(maximo)}
+                      onClick={() => {
+                        origenDelMonto.current = 'todo';
+                        setMonto(maximo);
+                      }}
                       data-testid="atajo-todo"
                     >
                       {t('recibos.form.abonarTodo')}
@@ -678,6 +780,10 @@ export function RegistrarPagoModal({
                   id="monto-recibo"
                   value={Number.isFinite(monto) ? monto : undefined}
                   onChange={(v) => {
+                    // El campo avisa también al perder el foco, con el mismo
+                    // valor: eso no es escribir un monto.
+                    const mismo = v === monto || (Number.isNaN(v) && Number.isNaN(monto));
+                    if (!mismo) origenDelMonto.current = 'manual';
                     setMonto(v);
                     setTocado(true);
                   }}
@@ -773,10 +879,59 @@ export function RegistrarPagoModal({
                   max={hoy}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
-                  className={cn('w-full', tocado && !fecha ? 'border-destructive' : '')}
+                  aria-invalid={
+                    (problemaDeLaFecha !== null && problemaDeLaFecha !== 'vacia') ||
+                    errorDeLaFecha !== null ||
+                    (tocado && !fecha)
+                  }
+                  className={cn(
+                    'w-full',
+                    (tocado && !fecha) ||
+                      problemaDeLaFecha === 'antesDelPiso' ||
+                      problemaDeLaFecha === 'futura' ||
+                      errorDeLaFecha !== null
+                      ? 'border-destructive'
+                      : '',
+                  )}
                 />
                 {tocado && !fecha && (
                   <p className="text-xs text-destructive">{t('recibos.form.fechaRequerida')}</p>
+                )}
+                {problemaDeLaFecha === 'antesDelPiso' && (
+                  <p className="text-xs text-destructive" data-testid="fecha-antes-del-piso">
+                    {t('recibos.form.fechaAntesDeLaDeuda', {
+                      piso: formatDate(new Date(`${pisoDeLaFecha}T12:00:00`), {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      }),
+                    })}
+                  </p>
+                )}
+                {problemaDeLaFecha === 'futura' && (
+                  <p className="text-xs text-destructive" data-testid="fecha-futura">
+                    {t('recibos.form.fechaFutura')}
+                  </p>
+                )}
+                {/* El rechazo del back sobre ESTA fecha, tal cual: dice el piso y qué hacer. */}
+                {problemaDeLaFecha === null && errorDeLaFecha !== null && (
+                  <p className="text-xs text-destructive" data-testid="error-de-la-fecha">
+                    {errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')}
+                  </p>
+                )}
+                {/*
+                  Los números a la vista son de otro día mientras llega la
+                  cartera nueva: se dice, y el botón espera.
+                */}
+                {problemaDeLaFecha === null && errorDeLaFecha === null && !carteraAlDia && (
+                  <p
+                    className="flex items-center gap-1.5 text-xs text-fg-muted"
+                    data-testid="recalculando-interes"
+                    aria-live="polite"
+                  >
+                    <Spinner size="sm" variant="muted" />
+                    {t('recibos.form.recalculandoInteres')}
+                  </p>
                 )}
               </div>
 

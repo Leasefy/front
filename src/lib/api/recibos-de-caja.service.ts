@@ -46,6 +46,11 @@ function comoLista(res: ReciboDeCaja[] | { data: ReciboDeCaja[] } | null): Recib
   return res?.data ?? [];
 }
 
+/** `?fecha=YYYY-MM-DD` de la vista previa del recibo, o nada. */
+function conFecha(fecha?: string): string {
+  return fecha ? `?${new URLSearchParams({ fecha }).toString()}` : '';
+}
+
 /** El cobro recompuesto llega con los enums en mayúscula, como toda fila del back. */
 function normalizarRespuesta(res: RespuestaDeRecibo): RespuestaDeRecibo {
   return {
@@ -117,10 +122,17 @@ export const recibosDeCajaApi = {
     };
   },
 
-  /** Lo que debe una persona AHORA, del período más viejo al más nuevo. */
-  async cartera(tenantId: string): Promise<CarteraDelCliente> {
+  /**
+   * Lo que debe una persona, del período más viejo al más nuevo.
+   *
+   * 🔴 `fecha` (`YYYY-MM-DD`) es la VISTA PREVIA del recibo fechado ese día: el
+   * back liquida el interés de mora hasta ahí, con la misma regla y el mismo
+   * piso que al emitir. Sin fecha, hoy. Puede fallar con 400
+   * `FECHA_ANTERIOR_A_LA_DEUDA` (trae `piso`) o `FECHA_NO_VALIDA`.
+   */
+  async cartera(tenantId: string, fecha?: string): Promise<CarteraDelCliente> {
     return apiClient.get<CarteraDelCliente>(
-      `${BASE}/cartera/${encodeURIComponent(tenantId)}`,
+      `${BASE}/cartera/${encodeURIComponent(tenantId)}${conFecha(fecha)}`,
     );
   },
 
@@ -155,9 +167,9 @@ export const recibosDeCajaApi = {
    * Devuelve TODO lo que esa persona debe, no sólo ese cobro: la plata puede
    * tener que ir a un período más viejo, y eso hay que verlo antes de recibir.
    */
-  async carteraPorCobro(cobroId: string): Promise<CarteraDelCliente> {
+  async carteraPorCobro(cobroId: string, fecha?: string): Promise<CarteraDelCliente> {
     return apiClient.get<CarteraDelCliente>(
-      `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}`,
+      `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}${conFecha(fecha)}`,
     );
   },
 

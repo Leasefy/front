@@ -473,7 +473,11 @@ export function CarteraPorConcepto() {
                   interes={interesDeLoVisible}
                   conceptos={conceptos}
                   haySinDesglose={haySinDesglose}
-                  etiqueta={hayFiltros ? 'Total de lo filtrado' : 'Total de la cartera'}
+                  /* 🔴 Sin filtros el pie suma TODA la deuda —por vencer y en
+                     plazo incluidos—, no la cartera: llamarlo «Total de la
+                     cartera» ponía $5.318 M debajo de la cifra «Cartera» de
+                     $2.996 M, dos números con el mismo nombre. */
+                  etiqueta={hayFiltros ? 'Total de lo filtrado' : 'Total de la deuda'}
                 />
               </TableFooter>
             ) : null}

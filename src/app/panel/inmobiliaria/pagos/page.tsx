@@ -165,6 +165,17 @@ function PagosHome() {
             {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>
+        {/* El tablero financiero (17-09) es la vista de arriba de TODA la plata
+            —lo que entra, lo que deben, lo que sale y lo que queda—, así que se
+            llega desde acá con un enlace y no con una card: esta pantalla es la
+            deuda del mes de los inquilinos, y no se le puede robar el foco. */}
+        <Link
+          href="/panel/inmobiliaria/pagos/tablero"
+          className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+          data-testid="ir-al-tablero-financiero"
+        >
+          Tablero financiero
+        </Link>
       </header>
 
       {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente

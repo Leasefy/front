@@ -54,6 +54,7 @@ import {
   BookOpenText,
   ChartBar,
   DownloadSimple,
+  Certificate,
   Info,
   Plugs,
   Scales,
@@ -564,6 +565,12 @@ const DESTINOS: Destino[] = [
     icono: Scales,
     titulo: 'Deterioro de cartera',
     texto: 'La provisión por edades: sugerida, editable y aprobada cada mes.',
+  },
+  {
+    href: `${BASE}/certificados`,
+    icono: Certificate,
+    titulo: 'Certificados de retención',
+    texto: 'Lo que le retuvieron a cada propietario en el año, para declarar.',
   },
 ];
 

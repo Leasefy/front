@@ -193,9 +193,9 @@ describe('registro invitation flow — personal-role safety', () => {
 
     const confirmation = container.querySelector('[data-testid="invite-confirmation"]')
     expect(confirmation).not.toBeNull()
-    // Agency name + friendly role label (ROLE_LABELS['AGENTE'] = 'Agente').
+    // Agency name + friendly role label (ROLE_LABELS['AGENTE'] = 'Asesor comercial').
     expect(confirmation!.textContent).toContain('Inmobiliaria ABC')
-    expect(confirmation!.textContent).toContain('Agente')
+    expect(confirmation!.textContent).toContain('Asesor comercial')
     // Read-only confirmation — no role picker/selector in the form.
     expect(container.querySelector('select')).toBeNull()
   })

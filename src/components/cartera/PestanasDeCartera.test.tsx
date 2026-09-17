@@ -48,15 +48,16 @@ afterEach(() => {
 })
 
 describe('PestanasDeCartera', () => {
-  it('las cuatro lecturas cuelgan de la misma ruta de Cartera', () => {
+  it('las cinco lecturas cuelgan de la misma ruta de Cartera', () => {
     montarEn('/panel/inmobiliaria/pagos/cartera')
     expect(PESTANAS_DE_CARTERA.map((p) => p.href)).toEqual([
       '/panel/inmobiliaria/pagos/cartera',
       '/panel/inmobiliaria/pagos/cartera/conceptos',
       '/panel/inmobiliaria/pagos/cartera/por-pagar',
       '/panel/inmobiliaria/pagos/cartera/cobros',
+      '/panel/inmobiliaria/pagos/cartera/juridico',
     ])
-    expect(host.querySelectorAll('a')).toHaveLength(4)
+    expect(host.querySelectorAll('a')).toHaveLength(5)
   })
 
   it('«Cobros emitidos» es una lectura de la cartera, con su texto traducido', () => {

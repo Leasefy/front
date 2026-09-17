@@ -78,6 +78,7 @@ export function filasDelSidebar(
         href: entrada.href,
         icon: m.icon,
         module: entrada.module,
+        modulos: entrada.modulos,
         roles: entrada.roles,
         scope: entrada.scope,
         exact: m.exact,

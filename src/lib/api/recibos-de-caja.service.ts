@@ -116,6 +116,16 @@ export const recibosDeCajaApi = {
     if (datos.idempotencyKey) cuerpo.idempotencyKey = datos.idempotencyKey;
     // La forma del adelanto (2026-09-16). Sin ella el back abona a las cuotas.
     if (datos.formaDelAdelanto) cuerpo.formaDelAdelanto = datos.formaDelAdelanto;
+    // D11 (17-09-2026): la aseguradora que paga un siniestro. Sin esto pagó el cliente.
+    if (datos.pagador) {
+      cuerpo.pagador = {
+        tipo: datos.pagador.tipo,
+        aseguradoraId: datos.pagador.aseguradoraId,
+        ...(datos.pagador.siniestroReferencia
+          ? { siniestroReferencia: datos.pagador.siniestroReferencia }
+          : {}),
+      };
+    }
 
     const res = await apiClient.post<RespuestaDeReciboPorCliente>(`${BASE}/por-cliente`, cuerpo);
     invalidar('cobros');

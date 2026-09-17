@@ -14,6 +14,7 @@
  *   · Por concepto     — cuánto debe cada inquilino, por mes y por concepto.
  *   · Por pagar        — cuánto le debemos a cada propietario, por mes.
  *   · Cobros emitidos  — los DOCUMENTOS con los que se reclamó una parte.
+ *   · Cobro jurídico   — lo que ya no se cobra con una llamada (17-09-2026).
  *
  * 🔴 «Cobros emitidos» entró acá el 2026-09-15 y no es una mudanza cosmética.
  * Era el módulo «Cobros» del sidebar, con su propia fila. La deuda NACE CON EL
@@ -34,7 +35,7 @@
  * Cartera. `PESTANAS_DE_CARTERA` sigue exportada — hay tests que la leen.
  */
 
-import { CalendarBlank, CurrencyCircleDollar, HandCoins, Receipt } from '@phosphor-icons/react'
+import { CalendarBlank, CurrencyCircleDollar, Gavel, HandCoins, Receipt } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { RielDePestanas, type PestanaDelRiel } from '@/components/inmobiliaria/RielDePestanas'
@@ -46,6 +47,8 @@ export const PESTANAS_DE_CARTERA: readonly PestanaDelRiel[] = [
   { href: `${RAIZ}/conceptos`, labelKey: 'cartera.pestanas.porConcepto', icon: CurrencyCircleDollar },
   { href: `${RAIZ}/por-pagar`, labelKey: 'cartera.pestanas.porPagar', icon: HandCoins },
   { href: `${RAIZ}/cobros`, labelKey: 'cartera.pestanas.cobrosEmitidos', icon: Receipt },
+  // 🔴 (17-09-2026) El final del camino de la cartera: el cobro jurídico.
+  { href: `${RAIZ}/juridico`, labelKey: 'cartera.pestanas.juridico', icon: Gavel },
 ]
 
 export function PestanasDeCartera() {

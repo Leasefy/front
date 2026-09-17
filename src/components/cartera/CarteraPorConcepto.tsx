@@ -569,6 +569,17 @@ function FilasDelInquilino({
                     ? rotuloDelContrato(inquilino.contratos[0])
                     : ''}
               </span>
+              {/* 🔴 «En jurídico» se ve en la cartera (17-09-2026): quién lo
+                  lleva, para que nadie le escriba por otro lado. */}
+              {inquilino.contratos.some((c) => c.enJuridico) && (
+                <span
+                  className="mt-1 inline-block rounded-md border border-border bg-surface-muted px-1.5 py-0.5 text-xs text-fg"
+                  data-testid="en-juridico"
+                >
+                  En jurídico ·{' '}
+                  {inquilino.contratos.find((c) => c.enJuridico)?.enJuridico?.abogado}
+                </span>
+              )}
             </span>
           </button>
           {/* Fuera del `button`: un enlace no puede vivir dentro de otro

@@ -7,6 +7,7 @@ import type {
   CargoAlInquilino,
   DeduccionesDeLaLiquidacion,
   PropuestaDelAgente,
+  AprobacionDeReparacion,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 /*
@@ -983,6 +984,11 @@ export interface SolicitudMantenimiento {
   propuesta?: PropuestaDelAgente | null;
   /** El cargo vivo en el estado de cuenta del inquilino, si quedó a su cargo. */
   cargoAlInquilino?: CargoAlInquilino | null;
+  /**
+   * 🔴 D12: la última solicitud de aprobación al propietario (pendiente,
+   * aprobada, RECHAZADA, de emergencia o anulada). Ausente con un back viejo.
+   */
+  aprobacionDelPropietario?: AprobacionDeReparacion | null;
 
   createdAt: string;
   updatedAt: string;
@@ -2619,7 +2625,8 @@ const NEUTRAL_BADGE_COLOR =
 export function getRoleLabel(role: AgencyRole | null | undefined): string {
   const labels: Record<AgencyRole, string> = {
     admin: 'Administrador',
-    agente: 'Agente',
+    // «Asesor» (Nico, 17-09-2026): el rol AGENTE es el asesor comercial.
+    agente: 'Asesor comercial',
     contador: 'Contador',
     viewer: 'Solo Lectura',
   };
@@ -2709,17 +2716,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
     ],
   },
+  // El ASESOR COMERCIAL (Nico, 17-09-2026): «sólo los apartados comerciales,
+  // nada de operaciones». Espejo de `AGENCY_ROLE_DEFAULTS` del back.
   agente: {
     role: 'agente',
     permissions: [
-      { module: 'dashboard', actions: ['view'] },
-      { module: 'propietarios', actions: ['view'] },
-      { module: 'portafolio', actions: ['view', 'edit'] },
+      { module: 'propietarios', actions: ['view', 'create', 'edit'] },
+      { module: 'portafolio', actions: ['view', 'create', 'edit'] },
       { module: 'pipeline', actions: ['view', 'create', 'edit'] },
       { module: 'agentes', actions: ['view'] },
-      { module: 'cobros', actions: ['view'] },
-      { module: 'operaciones', actions: ['view', 'edit'] },
-      { module: 'documentos', actions: ['view'] },
+      { module: 'documentos', actions: ['view', 'create', 'edit'] },
+      { module: 'subscription', actions: ['view'] },
       { module: 'avaluos', actions: ['view', 'create'] },
     ],
   },

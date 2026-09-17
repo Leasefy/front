@@ -181,6 +181,20 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   }
 
   if (status === 403) {
+    // 🔴 El asesor comercial abriendo un inmueble ARRENDADO (17-09-2026): no es
+    // «no tienes acceso a esto» en general, es que la operación de ese
+    // inmueble no es de su rol. El back lo marca con su propio código.
+    if (error instanceof ApiError && error.code === 'INMUEBLE_ARRENDADO') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Este inmueble está arrendado',
+        descripcion:
+          'Su operación —el contrato, los cobros, el inventario de la entrega— no hace parte de tu rol. Si la necesitas, pídele a un administrador el permiso de ver contratos.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
     return {
       tipo: 'sinPermiso',
       titulo: 'No tienes acceso a esto',

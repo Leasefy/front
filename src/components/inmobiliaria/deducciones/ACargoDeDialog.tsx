@@ -6,8 +6,10 @@
  * Nico y Juan Camilo (2026-09-16): al aprobar la cotización, la inmobiliaria
  * marca a cargo de quién es.
  *
- * · Del PROPIETARIO: el back le registra la deducción por el valor aprobado,
- *   repartida entre los dueños del inmueble, en la misma operación.
+ * · Del PROPIETARIO: 🔴 D12 (17-09-2026) «siempre las aprueba el propietario».
+ *   No se descuenta todavía: se le PIDE la aprobación y la deducción nace
+ *   cuando él la acepta desde su portal. La EXCEPCIÓN es la emergencia: con
+ *   motivo y soporte se descuenta de una y se genera el aviso ese mismo día.
  * · Del INQUILINO: no se le descuenta nada al propietario y la reparación
  *   entra a su estado de cuenta como un cargo de una sola vez, en la cuota del
  *   mes de la aprobación o en la siguiente sin pagar.
@@ -31,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
-import type { ACargoDe } from '@/lib/types/deducciones';
+import type { ACargoDe, EmergenciaDeLaReparacion } from '@/lib/types/deducciones';
 
 export interface CotizacionPorAprobar {
   proveedor: string;
@@ -50,26 +52,42 @@ export function ACargoDeDialog({
   cotizacion: CotizacionPorAprobar | null;
   /** A cargo de quién sugiere el agente. Sólo se dice; decide la persona. */
   sugerencia?: ACargoDe | null;
-  /** Se espera: si el back rechaza, el diálogo queda abierto. */
-  onConfirmar: (aCargoDe: ACargoDe) => Promise<void>;
+  /**
+   * Se espera: si el back rechaza, el diálogo queda abierto. Con
+   * `emergencia`, la reparación del propietario se aprueba SIN esperarlo (D12).
+   */
+  onConfirmar: (aCargoDe: ACargoDe, emergencia?: EmergenciaDeLaReparacion) => Promise<void>;
 }) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.deducciones.aCargoDe.${s}`;
   const [eleccion, setEleccion] = useState<ACargoDe | null>(null);
   const [aprobando, setAprobando] = useState(false);
+  const [esEmergencia, setEsEmergencia] = useState(false);
+  const [motivoDeEmergencia, setMotivoDeEmergencia] = useState('');
+  const [soporte, setSoporte] = useState<File | null>(null);
 
   useEffect(() => {
     if (abierto) {
       setEleccion(null);
       setAprobando(false);
+      setEsEmergencia(false);
+      setMotivoDeEmergencia('');
+      setSoporte(null);
     }
   }, [abierto]);
 
+  const emergenciaIncompleta =
+    eleccion === 'PROPIETARIO' && esEmergencia && (!motivoDeEmergencia.trim() || !soporte);
+
   const confirmar = async () => {
-    if (!eleccion || aprobando) return;
+    if (!eleccion || aprobando || emergenciaIncompleta) return;
     setAprobando(true);
     try {
-      await onConfirmar(eleccion);
+      if (eleccion === 'PROPIETARIO' && esEmergencia && soporte) {
+        await onConfirmar(eleccion, { motivo: motivoDeEmergencia.trim(), soporte });
+      } else {
+        await onConfirmar(eleccion);
+      }
       onOpenChange(false);
     } catch {
       setAprobando(false);
@@ -129,6 +147,50 @@ export function ACargoDeDialog({
           ))}
         </div>
 
+        {eleccion === 'PROPIETARIO' && (
+          <div className="space-y-3 rounded-lg border border-border bg-surface-muted p-4" data-testid="emergencia">
+            <label className="flex items-start gap-2 text-sm text-fg">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={esEmergencia}
+                onChange={(e) => setEsEmergencia(e.target.checked)}
+                data-testid="emergencia-marcar"
+              />
+              <span>
+                <span className="font-medium">{t(k('emergencia'))}</span>
+                <span className="block text-xs text-fg-muted">{t(k('emergenciaAyuda'))}</span>
+              </span>
+            </label>
+            {esEmergencia && (
+              <>
+                <label className="block text-xs font-medium text-fg" htmlFor="emergencia-motivo">
+                  {t(k('emergenciaMotivo'))}
+                </label>
+                <textarea
+                  id="emergencia-motivo"
+                  className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
+                  rows={3}
+                  value={motivoDeEmergencia}
+                  onChange={(e) => setMotivoDeEmergencia(e.target.value)}
+                  data-testid="emergencia-motivo"
+                />
+                <label className="block text-xs font-medium text-fg" htmlFor="emergencia-soporte">
+                  {t(k('emergenciaSoporte'))}
+                </label>
+                <input
+                  id="emergencia-soporte"
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
+                  className="block w-full text-xs text-fg-muted"
+                  data-testid="emergencia-soporte"
+                />
+              </>
+            )}
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={aprobando}>
             {t(k('cancelar'))}
@@ -136,10 +198,14 @@ export function ACargoDeDialog({
           <Button
             hideArrow
             onClick={() => void confirmar()}
-            disabled={!eleccion || aprobando}
+            disabled={!eleccion || aprobando || emergenciaIncompleta}
             data-testid="a-cargo-de-confirmar"
           >
-            {aprobando ? t(k('aprobando')) : t(k('confirmar'))}
+            {aprobando
+              ? t(k('aprobando'))
+              : eleccion === 'PROPIETARIO'
+                ? t(k(esEmergencia ? 'confirmarEmergencia' : 'pedirAprobacion'))
+                : t(k('confirmar'))}
           </Button>
         </DialogFooter>
       </DialogContent>

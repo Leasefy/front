@@ -9,6 +9,12 @@ import { isAgentModule } from '@/lib/auth/agent-module-access';
 export type NavItemWithModule = NavItem & {
   /** AGENCY_MODULES key that governs this item ('view' access required). */
   module?: string | null;
+  /**
+   * Alternativas a `module`: alcanza con ver UNO de estos. Existe por la
+   * agenda (17-09-2026), que la usan el asesor comercial (`pipeline`) y la
+   * operación (`operaciones`). Con `modulos`, `module` no se mira.
+   */
+  modulos?: readonly string[];
   /** Agency roles allowed (in addition to isAdmin). */
   roles?: readonly string[];
   adminOnly?: boolean;
@@ -63,12 +69,13 @@ export interface NavFilterContext {
  * los tres lugares.
  */
 export function pasaGateDeFila(
-  fila: { module?: string | null; roles?: readonly string[] },
+  fila: { module?: string | null; modulos?: readonly string[]; roles?: readonly string[] },
   ctx: NavFilterContext,
 ): boolean {
-  // Module-based gate: agent modules use agent permissions, others use the
-  // monolith effectivePermissions map — both resolved inside canAccess.
-  if (fila.module && !ctx.canAccess(fila.module, 'view')) {
+  // Alguno de varios módulos (la agenda): alcanza con uno.
+  if (fila.modulos && fila.modulos.length > 0) {
+    if (!fila.modulos.some((m) => ctx.canAccess(m, 'view'))) return false;
+  } else if (fila.module && !ctx.canAccess(fila.module, 'view')) {
     // Excepción única: el agente no contestó y el módulo es suyo. No es que
     // no tenga permiso — es que no pudimos preguntar. Ver `agentUnverified`.
     const esDelAgente = ctx.agentUnverified === true && isAgentModule(fila.module);

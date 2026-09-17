@@ -32,7 +32,9 @@ import {
 } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
-import type { ACargoDe } from '@/lib/types/deducciones';
+import { BandejaDeAprobacionesDelPropietario } from '@/components/inmobiliaria/deducciones/BandejaDeAprobacionesDelPropietario';
+import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
+import type { ACargoDe, EmergenciaDeLaReparacion } from '@/lib/types/deducciones';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -330,16 +332,38 @@ function MantenimientosContent() {
     setCotizacionPorAprobar({ solicitudId, quoteId });
   }, []);
 
+  /** Sube cada vez que se aprueba algo: la bandeja del propietario se relee. */
+  const [versionDeAprobaciones, setVersionDeAprobaciones] = useState(0);
+
   const aprobarCotizacion = useCallback(
-    async (aCargoDe: ACargoDe) => {
+    async (aCargoDe: ACargoDe, emergencia?: EmergenciaDeLaReparacion) => {
       if (!cotizacionPorAprobar) return;
       try {
-        const aprobada = await mantenimientoApi.approveQuote(
-          cotizacionPorAprobar.solicitudId,
-          cotizacionPorAprobar.quoteId,
-          aCargoDe,
-        );
+        /*
+         * 🔴 D12: a cargo del propietario NO se descuenta al aprobar — se le
+         * pide su aprobación. Por emergencia (motivo + soporte) sí, de una, y
+         * el aviso queda generado.
+         */
+        const aprobada = emergencia
+          ? await aprobacionesDeReparacionApi.registrarEmergencia(
+              cotizacionPorAprobar.solicitudId,
+              cotizacionPorAprobar.quoteId,
+              emergencia.motivo,
+              emergencia.soporte,
+            )
+          : await mantenimientoApi.approveQuote(
+              cotizacionPorAprobar.solicitudId,
+              cotizacionPorAprobar.quoteId,
+              aCargoDe,
+            );
         await recargarMantenimientos();
+        setVersionDeAprobaciones((v) => v + 1);
+        if (emergencia) {
+          toast.success(t('inmobiliaria.deducciones.aCargoDe.emergenciaRegistrada'), {
+            description: aprobada.cargo?.aprobacionDelPropietario?.aviso?.asunto,
+          });
+          return;
+        }
         // Con el cargo puesto en su cuota se dice dónde quedó; sin él (base
         // sin la migración), los avisos del back dicen que se cobra aparte.
         const cargoAlInquilino = aprobada.cargo?.cargoAlInquilino;
@@ -543,6 +567,15 @@ function MantenimientosContent() {
           />
         </motion.div>
       )}
+
+      {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
+      <BandejaDeAprobacionesDelPropietario
+        version={versionDeAprobaciones}
+        onAbrir={(solicitudId) => {
+          const solicitud = mantenimientos.find((m) => m.id === solicitudId);
+          if (solicitud) handleViewMantenimiento(solicitud);
+        }}
+      />
 
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}

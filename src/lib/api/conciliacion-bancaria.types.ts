@@ -25,6 +25,12 @@ export interface ResultadoDeCarga {
   pendientes: number;
   /** De las pendientes, cuántas tienen exactamente un candidato seguro. */
   seguras: number;
+  /**
+   * 🔴 (17-09-2026) Al cargar, el sistema arma el LOTE de lo que calza exacto
+   * (referencia de recaudo + valor exacto). `null` si nada calza o si la base
+   * no tiene la migración del lote.
+   */
+  lote?: LoteDeConciliacion | null;
 }
 
 /**
@@ -132,4 +138,55 @@ export interface ResultadoDeSeguros {
   conciliados: number;
   sinCandidatoSeguro: number;
   errores: { movimientoId: string; mensaje: string }[];
+  /** Desde el 17-09 «conciliar seguros» ya no concilia: arma el lote. */
+  lote?: LoteDeConciliacion | null;
+}
+
+// ── El lote de lo que calza EXACTO (17-09-2026) ─────────────────────────────
+
+/**
+ * «Conciliación bancaria: sólo lo que calza EXACTO (referencia de recaudo +
+ * valor exacto): el sistema arma el LOTE y un funcionario lo aprueba de una
+ * vez, lo que genera los recibos. Lo que no calza va a la cola manual. Un
+ * administrador puede reversar.»
+ */
+export type EstadoDelLote = 'PROPUESTO' | 'APROBADO' | 'DESCARTADO' | 'REVERSADO';
+
+export interface MovimientoDelLote {
+  id: string;
+  movimientoId: string;
+  contractId: string;
+  tenantId: string;
+  valorCop: number;
+  meses: string[];
+  referencia: string | null;
+  /** FALLIDO = al aprobar ya no calzaba: volvió a la cola manual. */
+  estado: 'INCLUIDO' | 'CONCILIADO' | 'FALLIDO' | 'REVERSADO';
+  reciboIds: string[];
+  motivo: string | null;
+  tenantName?: string | null;
+  propertyTitle?: string | null;
+  fecha?: string | null;
+}
+
+export interface LoteDeConciliacion {
+  id: string;
+  estado: EstadoDelLote;
+  armadoPor: 'persona' | 'extracto' | 'piloto';
+  cantidad: number;
+  totalCop: number;
+  armadoAt: string;
+  aprobadoAt: string | null;
+  conciliados: number | null;
+  fallidos: number | null;
+  reversadoAt: string | null;
+  motivoDeReversa: string | null;
+  movimientos: MovimientoDelLote[];
+}
+
+export interface LoteActual {
+  /** `false` = la base no tiene la migración 20260917160000. */
+  disponible: boolean;
+  propuesto: LoteDeConciliacion | null;
+  recientes: LoteDeConciliacion[];
 }

@@ -141,6 +141,11 @@ export interface ContratoEnCartera {
   /** Ver `FilaDeCarteraDelInquilino.contratoDeLeasefy`. */
   contratoDeLeasefy?: string | null;
   inmueble: string;
+  /**
+   * 🔴 COBRO JURÍDICO (17-09-2026): «"en jurídico" se ve en el contrato y en la
+   * cartera». Ausente = no está en jurídico (o la base no tiene la migración).
+   */
+  enJuridico?: { casoId: string; abogado: string; pasadoAt: string } | null;
 }
 
 export interface InquilinoEnCartera {

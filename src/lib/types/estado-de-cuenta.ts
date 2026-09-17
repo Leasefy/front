@@ -44,6 +44,32 @@ export interface DocumentoDePago {
   /** «INGRESO» para el inquilino, «EGRESO» para el propietario. */
   tipo: string;
   descripcion: string;
+  /**
+   * 🔴 D11 (17-09-2026): quién pagó, cuando NO fue el cliente. Ausente = pagó
+   * el cliente. Hoy sólo una aseguradora que pagó un siniestro.
+   */
+  pagador?: {
+    tipo: 'ASEGURADORA';
+    nombre: string;
+    nit: string;
+    siniestroReferencia: string | null;
+  };
+}
+
+/**
+ * 🔴 D11: la deuda SUBROGADA a una aseguradora. Las cuotas que ella pagó
+ * quedan canceladas para la inmobiliaria y el propietario, pero el inquilino le
+ * debe ese valor a ella (C.Co. art. 1096): va aparte, nunca sumado a lo
+ * pendiente con la inmobiliaria.
+ */
+export interface Subrogacion {
+  aseguradoras: {
+    nombre: string;
+    nit: string;
+    valorCop: number;
+    siniestros: string[];
+  }[];
+  totalCop: number;
 }
 
 /**
@@ -73,6 +99,8 @@ export interface FilaDelEstadoDeCuenta {
   reteIcaComision?: number;
   /** Lo que efectivamente se paga o se gira por esta fila. */
   valorNeto: number;
+  /** 🔴 D11: la pagó una aseguradora; el inquilino se la debe a ella. */
+  subrogadaA?: { nombre: string; nit: string };
   /** `YYYY-MM-DD`. Es la fecha por la que se filtra y se ordena. */
   fechaVencimiento: string;
   documentoDePago: DocumentoDePago | null;
@@ -155,6 +183,8 @@ export interface ContratoDelEstadoDeCuenta {
     otrosConceptos: FilaDelEstadoDeCuenta[];
   };
   totales: TotalesDelEstadoDeCuenta;
+  /** 🔴 D11: lo que el inquilino le debe a una aseguradora. Ausente si no hay. */
+  subrogacion?: Subrogacion | null;
   /**
    * El interés de mora del contrato, APARTE del capital. Sólo del lado
    * INQUILINO; ausente o `null` en el del propietario y con un back anterior.
@@ -255,6 +285,8 @@ export interface EstadoDeCuenta {
   filtro?: FiltrosDelEstadoDeCuenta | null;
   /** Los intereses de todo el documento. `null`/ausente si no hay nada de mora. */
   intereses?: TotalesDeInteres | null;
+  /** 🔴 D11: la deuda subrogada de todos los contratos. Ausente si no hay. */
+  subrogacion?: Subrogacion | null;
 }
 
 /**

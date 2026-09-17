@@ -11,9 +11,12 @@
  *     ya atendida (una persona aprobó) no se vuelve a ofrecer.
  *   · La reparación a cargo del inquilino entra a su estado de cuenta: se dice
  *     cuánto y en qué cuota.
+ *   · 🔴 D12 (17-09-2026): a cargo del propietario, dónde está SU aprobación
+ *     —esperándolo, aprobada, RECHAZADA (y entonces la inmobiliaria decide qué
+ *     sigue) o registrada por emergencia con el aviso que se le generó—.
  */
 
-import { Robot, Receipt } from '@phosphor-icons/react';
+import { Robot, Receipt, Hourglass, CheckCircle, XCircle, Siren } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -33,13 +36,17 @@ export function PropuestaYCargoDeLaReparacion({
   const propuesta = solicitud.propuesta;
   const cargo = solicitud.cargoAlInquilino;
 
+  const aprobacion = solicitud.aprobacionDelPropietario ?? null;
+  // Una aprobación anulada es historia sin nada que hacer: no se pinta.
+  const aprobacionVisible = aprobacion && aprobacion.estado !== 'ANULADA' ? aprobacion : null;
+
   const pendiente =
     propuesta && !propuesta.atendidaAt && !solicitud.selectedQuoteId ? propuesta : null;
   const cotizacion = pendiente?.quoteId
     ? solicitud.quotes.find((q) => q.id === pendiente.quoteId)
     : undefined;
 
-  if (!pendiente && !cargo) return null;
+  if (!pendiente && !cargo && !aprobacionVisible) return null;
 
   return (
     <div className="space-y-3">
@@ -86,6 +93,52 @@ export function PropuestaYCargoDeLaReparacion({
             >
               {t(k('propuesta.revisar'))}
             </Button>
+          )}
+        </div>
+      )}
+
+      {aprobacionVisible && (
+        <div
+          className="space-y-2 rounded-lg border border-border bg-surface-muted p-4"
+          data-testid={`aprobacion-del-propietario-${aprobacionVisible.estado}`}
+        >
+          <p className="flex items-center gap-2 text-sm font-semibold text-fg">
+            {aprobacionVisible.estado === 'PENDIENTE' && <Hourglass className="h-4 w-4" aria-hidden="true" />}
+            {aprobacionVisible.estado === 'APROBADA' && <CheckCircle className="h-4 w-4 text-success" aria-hidden="true" />}
+            {aprobacionVisible.estado === 'RECHAZADA' && <XCircle className="h-4 w-4 text-danger" aria-hidden="true" />}
+            {aprobacionVisible.estado === 'EMERGENCIA' && <Siren className="h-4 w-4 text-warning" aria-hidden="true" />}
+            {t(k(`aprobacionDelPropietario.${aprobacionVisible.estado}`))}
+          </p>
+          <p className="text-sm text-fg-muted">
+            {t(k('aprobacionDelPropietario.valor'), { valor: formatCurrency(aprobacionVisible.valorCop) })}
+          </p>
+          {aprobacionVisible.estado === 'RECHAZADA' && (
+            <>
+              {aprobacionVisible.motivoDeRechazo && (
+                <p className="text-xs italic text-fg-muted" data-testid="aprobacion-motivo-de-rechazo">
+                  «{aprobacionVisible.motivoDeRechazo}»
+                </p>
+              )}
+              <p className="text-xs text-fg">{t(k('aprobacionDelPropietario.queSigue'))}</p>
+              {onRevisar && (
+                <Button
+                  size="sm"
+                  hideArrow
+                  onClick={() => onRevisar(solicitud.id, aprobacionVisible.quoteId)}
+                  data-testid="aprobacion-decidir"
+                >
+                  {t(k('aprobacionDelPropietario.decidir'))}
+                </Button>
+              )}
+            </>
+          )}
+          {aprobacionVisible.estado === 'EMERGENCIA' && aprobacionVisible.aviso && (
+            <details className="text-xs text-fg-muted" data-testid="aprobacion-aviso">
+              <summary className="cursor-pointer text-fg">
+                {t(k('aprobacionDelPropietario.avisoGenerado'))}: {aprobacionVisible.aviso.asunto}
+              </summary>
+              <pre className="mt-2 whitespace-pre-wrap font-sans">{aprobacionVisible.aviso.cuerpo}</pre>
+            </details>
           )}
         </div>
       )}

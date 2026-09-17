@@ -38,7 +38,10 @@ vi.mock('sonner', () => ({ toast: toastMock }))
 let _puedeEditar = true
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
-    canAccess: (m: string, a: string) => (m === 'operaciones' && a === 'edit' ? _puedeEditar : true),
+    // Desde el 17-09-2026 escribe quien tiene `operaciones:edit` o `pipeline:edit`
+    // (el asesor comercial): el doble de CONTADOR/VIEWER no tiene ninguno.
+    canAccess: (m: string, a: string) =>
+      (m === 'operaciones' || m === 'pipeline') && a === 'edit' ? _puedeEditar : true,
     isLoading: false,
   }),
 }))

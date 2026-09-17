@@ -896,6 +896,27 @@ function PaginaDelContrato({
         </View>
       ) : null}
 
+      {/* 🔴 D11: la deuda subrogada a la aseguradora, visible y SEPARADA de lo
+          que se le debe a la inmobiliaria. */}
+      {contrato.subrogacion && contrato.subrogacion.totalCop > 0 ? (
+        <View style={estilos.totales} wrap={false}>
+          <Text style={estilos.totalesRotulo}>
+            {frase('estadoDeCuenta.deudaSubrogada')}
+          </Text>
+          {contrato.subrogacion.aseguradoras.map((a) => (
+            <View style={estilos.totalCelda} key={a.nit}>
+              <Text style={estilos.rotulo}>{paraElPapel(`${a.nombre} · NIT ${a.nit}`)}</Text>
+              <Text
+                data-testid={`subrogacion-contrato-${contrato.numero}`}
+                style={estilos.totalCifraApagada}
+              >
+                {formatCurrency(a.valorCop)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <View style={estilos.totales} wrap={false}>
         <Text style={estilos.totalesRotulo}>
           {frase('estadoDeCuenta.totalesDelContrato', { numero: contrato.numero })}
@@ -1166,6 +1187,14 @@ function FilaDeLaTabla({
             <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue, marginTop: 1 }}>
               {paraElPapel(fila.documentoDePago.descripcion)}
             </Text>
+            {/* 🔴 D11: la pagó una aseguradora. */}
+            {fila.subrogadaA ? (
+              <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue, marginTop: 1 }}>
+                {paraElPapel(
+                  frase('estadoDeCuenta.subrogadaA', { nombre: fila.subrogadaA.nombre }),
+                )}
+              </Text>
+            ) : null}
           </>
         ) : (
           <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue }}>

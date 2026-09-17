@@ -20,9 +20,18 @@ const { api, toastMock, permisos } = vi.hoisted(() => ({
     reabrir: vi.fn(),
     conciliarSeguros: vi.fn(),
     cargarExtracto: vi.fn(),
+    loteActual: vi.fn(),
+    armarLote: vi.fn(),
+    aprobarLote: vi.fn(),
+    reversarLote: vi.fn(),
   },
   toastMock: { success: vi.fn(), error: vi.fn() },
-  permisos: { canAccess: vi.fn((_modulo: string, _accion: string) => true), isLoading: false },
+  permisos: {
+    canAccess: vi.fn((_modulo: string, _accion: string) => true),
+    isLoading: false,
+    isAdmin: true,
+    agencyRole: 'ADMIN' as string | null,
+  },
 }));
 
 vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancariaApi: api }));
@@ -174,6 +183,7 @@ beforeEach(() => {
   permisos.isLoading = false;
   api.resumen.mockResolvedValue(RESUMEN);
   api.listar.mockResolvedValue({ data: [movimiento()], total: 1, limite: 50, desplazamiento: 0 });
+  api.loteActual.mockResolvedValue({ disponible: true, propuesto: null, recientes: [] });
 });
 
 afterEach(async () => {
@@ -201,7 +211,10 @@ describe('ExtractoBancario — pendientes', () => {
     expect(seguro.textContent).toContain('Seguro');
     expect(seguro.textContent).toContain('«perez» aparece en la descripción.');
     expect($('[data-testid="candidato-m-1-ct-2"]').getAttribute('data-seguro')).toBe('false');
-    expect($('[data-testid="conciliar-seguros"]').textContent).toContain('(1)');
+    // 🔴 Ya no hay «Conciliar los seguros»: lo exacto va en lote y la tabla es la cola manual.
+    expect(document.querySelector('[data-testid="conciliar-seguros"]')).toBeNull();
+    expect($('[data-testid="cola-manual"]').textContent).toContain('Cola manual');
+    expect($('[data-testid="lote-exacto"]').textContent).toContain('Lote de lo que calza exacto');
   });
 
   it('«Conciliar» manda el movimiento y el cobro, avisa con el número del recibo y recarga', async () => {
@@ -309,14 +322,31 @@ describe('ExtractoBancario — pendientes', () => {
     expect(toastMock.success).toHaveBeenCalledWith('Movimiento ignorado.');
   });
 
-  it('«Conciliar los seguros» confirma con la cantidad y llama al lote', async () => {
-    api.conciliarSeguros.mockResolvedValue({ conciliados: 1, sinCandidatoSeguro: 0, errores: [] });
+  it('aprobar el lote desde la pantalla recarga la cola manual', async () => {
+    api.loteActual.mockResolvedValue({
+      disponible: true,
+      propuesto: {
+        id: 'l-1',
+        estado: 'PROPUESTO',
+        armadoPor: 'extracto',
+        cantidad: 1,
+        totalCop: 1800000,
+        armadoAt: '2026-09-17T10:00:00.000Z',
+        aprobadoAt: null,
+        conciliados: null,
+        fallidos: null,
+        reversadoAt: null,
+        motivoDeReversa: null,
+        movimientos: [],
+      },
+      recientes: [],
+    });
+    api.aprobarLote.mockResolvedValue({ conciliados: 1, fallidos: 0 });
     await montar();
-    await clic($('[data-testid="conciliar-seguros"]'));
-    expect(document.body.textContent).toContain('Conciliar 1 movimiento seguro');
-    await clic($('[data-testid="confirmar-seguros"]'));
-    expect(api.conciliarSeguros).toHaveBeenCalledTimes(1);
-    expect(toastMock.success).toHaveBeenCalledWith('1 conciliado · 0 sin candidato seguro', { description: undefined });
+    await clic($('[data-testid="aprobar-lote"]'));
+    await clic($('[data-testid="confirmar-aprobar-lote"]'));
+    expect(api.aprobarLote).toHaveBeenCalledWith('l-1');
+    expect(api.listar).toHaveBeenCalledTimes(2);
   });
 
   it('una salida no ofrece candidatos ni conciliar, sólo ignorar', async () => {
@@ -331,7 +361,6 @@ describe('ExtractoBancario — pendientes', () => {
     expect(fila.textContent).toContain('Salida');
     expect(fila.textContent).toContain('−$ 45.000');
     expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Ignorar']);
-    expect(($('[data-testid="conciliar-seguros"]') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('sin permiso de crear no se puede conciliar ni cargar; sin editar no se ignora', async () => {

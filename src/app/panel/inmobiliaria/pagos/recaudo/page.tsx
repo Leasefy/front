@@ -10,6 +10,7 @@
 import { SectionLabel } from '@/components/ui/section-label';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Recaudo } from '@/components/recaudo/Recaudo';
+import Link from 'next/link';
 
 export default function RecaudoPage() {
   return (
@@ -22,6 +23,16 @@ export default function RecaudoPage() {
             Lo que llegó, lo que falta, lo que salió a propietarios y lo que queda en la mano, mes
             por mes. Debajo de cada cifra está escrito de qué se compone.
           </p>
+          {/* 17-09-2026: los estudios que pagan los solicitantes, con su recibo. */}
+          <div className="flex flex-wrap gap-4">
+            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/estudios">
+              Estudios pagados por solicitantes
+            </Link>
+            {/* D11 (17-09-2026): las aseguradoras que pagan siniestros. */}
+            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
+              Aseguradoras
+            </Link>
+          </div>
         </header>
         <Recaudo />
       </div>

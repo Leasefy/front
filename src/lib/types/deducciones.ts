@@ -144,6 +144,66 @@ export interface CargoDeLaReparacion {
   cargoAlInquilino?: CargoAlInquilino | null;
   /** Lo que la pantalla tiene que decir, en palabras. */
   avisos: string[];
+  /**
+   * 🔴 D12 (17-09-2026): a cargo del propietario, la solicitud de aprobación
+   * que se le hizo (PENDIENTE, sin descuento) o la emergencia registrada (con
+   * descuento y aviso). `null` a cargo del inquilino; ausente con un back viejo.
+   */
+  aprobacionDelPropietario?: AprobacionDeReparacion | null;
+}
+
+/**
+ * 🔴 D12 (Nico y Juan Camilo, 17-09-2026): «las reparaciones a cargo del
+ * propietario SIEMPRE las aprueba el propietario, con excepción de
+ * EMERGENCIA». Espejo de `AprobacionDeReparacionDto` del back.
+ */
+export type EstadoDeLaAprobacion =
+  | 'PENDIENTE'
+  | 'APROBADA'
+  | 'RECHAZADA'
+  | 'EMERGENCIA'
+  | 'ANULADA';
+
+export interface AprobacionDeReparacion {
+  id: string;
+  solicitudId: string;
+  quoteId: string;
+  consignacionId: string;
+  propietarioId: string;
+  valorCop: number;
+  motivo: string;
+  estado: EstadoDeLaAprobacion;
+  emergencia: boolean;
+  motivoDeEmergencia: string | null;
+  soporteNombre: string | null;
+  /** El aviso GENERADO al propietario (sólo en una emergencia). */
+  aviso: { asunto: string; cuerpo: string; generadoAt: string } | null;
+  pedidaAt: string;
+  decididaAt: string | null;
+  motivoDeRechazo: string | null;
+  anuladaAt: string | null;
+  motivoDeAnulacion: string | null;
+}
+
+/** Lo que el propietario ve en su portal. */
+export interface AprobacionEnElPortal extends AprobacionDeReparacion {
+  inmobiliaria: string;
+  inmueble: string;
+  reparacion: { titulo: string; descripcion: string };
+  cotizacion: { proveedor: string; descripcion: string | null; diasEstimados: number | null } | null;
+}
+
+/** La bandeja de la inmobiliaria. */
+export interface AprobacionEnLaBandeja extends AprobacionDeReparacion {
+  inmueble: string;
+  propietario: string;
+  reparacion: string;
+}
+
+/** La excepción de emergencia, tal como la manda el diálogo. */
+export interface EmergenciaDeLaReparacion {
+  motivo: string;
+  soporte: File;
 }
 
 /**

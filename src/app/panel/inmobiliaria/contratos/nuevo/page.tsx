@@ -419,8 +419,10 @@ function NuevoContratoContent() {
     setBloqueoDeInventario(null);
     if (!inmuebleParaIniciar) return;
     let vivo = true;
-    inventarioDelInmuebleApi
-      .paraIniciar(inmuebleParaIniciar)
+    // `Promise.resolve().then` y no la llamada suelta: un fallo síncrono del
+    // cliente también cae en el `catch` en vez de tumbar el formulario.
+    Promise.resolve()
+      .then(() => inventarioDelInmuebleApi.paraIniciar(inmuebleParaIniciar))
       .then((r) => {
         if (vivo) setBloqueoDeInventario(bloqueoDeLaConsulta(r));
       })

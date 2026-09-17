@@ -27,7 +27,8 @@ import {
   instanteLegible,
   numeroDelContrato,
 } from '@/lib/inventario/bloqueo-por-inventario';
-import type { CopiaDelContrato } from '@/lib/types/inventario-del-inmueble';
+import { Badge } from '@/components/ui/badge';
+import type { CopiaDelContrato, ResumenDeFirma } from '@/lib/types/inventario-del-inmueble';
 
 const B = 'inmobiliaria.inventarioDelInmueble';
 
@@ -103,11 +104,16 @@ export function InventarioDelContrato({ contratoId, legado }: Props) {
       </div>
 
       {datos.copia ? (
-        <ActaEntregaView
-          inventoryItems={datos.copia.items}
-          contractDate={datos.copia.completadoEn}
-          enlace={enlace ? { href: enlace, texto: t(`${B}.contratoVerInmueble`), testid: 'ver-el-inmueble' } : undefined}
-        />
+        <>
+          <ActaEntregaView
+            inventoryItems={datos.copia.items}
+            contractDate={datos.copia.completadoEn}
+            enlace={enlace ? { href: enlace, texto: t(`${B}.contratoVerInmueble`), testid: 'ver-el-inmueble' } : undefined}
+          />
+          {/* 🔴 Nico, 2026-09-17: la firma del inquilino sobre esta copia, con su
+              estado. Pendiente no bloquea la activación: sólo se ve. */}
+          <FirmaDeLaCopia firma={datos.copia.firmaDelInquilino} />
+        </>
       ) : (
         <div className="rounded-xl border border-border bg-card p-4" data-testid="contrato-sin-copia">
           <EmptyState
@@ -117,6 +123,36 @@ export function InventarioDelContrato({ contratoId, legado }: Props) {
             action={enlace ? { label: t(`${B}.contratoVerInmueble`), href: enlace } : undefined}
           />
         </div>
+      )}
+    </div>
+  );
+}
+
+function FirmaDeLaCopia({ firma }: { firma: ResumenDeFirma | undefined }) {
+  const { t } = useI18n();
+  const firmado = firma?.estado === 'FIRMADO';
+  return (
+    <div
+      className="rounded-xl border border-border bg-card p-4 space-y-1"
+      data-testid="firma-del-inquilino"
+      data-estado={firmado ? 'firmado' : 'pendiente'}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <h4 className="text-sm font-semibold text-foreground">{t(`${B}.firmaTitulo`)}</h4>
+        <Badge variant={firmado ? 'success' : 'warning'}>
+          {t(firmado ? `${B}.estadoFirmado` : `${B}.estadoPendiente`)}
+        </Badge>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {firmado && firma
+          ? t(`${B}.firmadoPor`, {
+              nombre: firma.firmadoPor ?? firma.correo ?? '',
+              fecha: instanteLegible(firma.firmadoEn),
+            })
+          : t(`${B}.firmaPendiente`)}
+      </p>
+      {firmado && firma?.integra === false && (
+        <p className="text-sm text-danger">{t(`${B}.firmaNoIntegra`)}</p>
       )}
     </div>
   );

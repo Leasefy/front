@@ -93,6 +93,12 @@ function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: 
 
 /**
  * Comisiones Agente Preview
+ *
+ * 🔴 17-09: la comisión es de la INMOBILIARIA, no de cada asesor —la de los
+ * asesores se liquida por fuera de Leasefy—. Antes esta vista repartía pesos
+ * por persona y los ordenaba por «quién comisionó más». Ahora: un total de la
+ * casa y, por asesor, los arriendos que cerró. Sin plata y sin tendencias
+ * inventadas.
  */
 function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const { report: data } = useComisionesReport(new Date().toISOString().slice(0, 7));
@@ -103,14 +109,14 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 rounded-md bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalCommissions')}</p>
+          <p className="text-xs text-muted-foreground">Comisión de la inmobiliaria</p>
           <p className="text-lg font-bold text-success">
-            {formatCurrency(data.totalCommissions)}
+            {formatCurrency(data.comisionDeLaAgenciaCop)}
           </p>
         </div>
         <div className="p-3 rounded-md bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.agentsLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{data.agentes.length}</p>
+          <p className="text-xs text-muted-foreground">Contratos con comisión</p>
+          <p className="text-lg font-bold text-foreground">{data.contratosConComision}</p>
         </div>
         <div className="p-3 rounded-md bg-muted/50 text-center">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.closings')}</p>
@@ -118,58 +124,38 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
         </div>
       </div>
 
-      {/* Top Performers */}
+      {/* Arriendos cerrados por asesor — sin un peso atribuido. */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.topAgents')}</h4>
         <div className="space-y-2">
-          {data.agentes
-            .sort((a, b) => b.totalCommission - a.totalCommission)
-            .slice(0, 5)
-            .map((agente, index) => (
-              <div
-                key={agente.agenteId}
-                className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      index === 0
-                        ? 'bg-warning-soft text-warning'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {agente.agenteName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {agente.closedDeals} {t('inmobiliaria.reporte.closings')}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-success">
-                    {formatCurrency(agente.totalCommission)}
-                  </p>
-                  <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                    {agente.trend === 'up' && (
-                      <ArrowUp className="w-3 h-3 text-success" />
-                    )}
-                    {agente.trend === 'down' && (
-                      <ArrowDown className="w-3 h-3 text-danger" />
-                    )}
-                    {agente.trend === 'stable' && (
-                      <Minus className="w-3 h-3" />
-                    )}
-                    {t('inmobiliaria.reporte.vsPrevPeriod')}
-                  </div>
-                </div>
+          {data.agentes.slice(0, 5).map((agente, index) => (
+            <div
+              key={agente.userId}
+              className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                    index === 0 && agente.closedDeals > 0
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <p className="text-sm font-medium text-foreground font-mono">{agente.userId}</p>
               </div>
-            ))}
+              <p className="text-sm font-semibold text-foreground">
+                {agente.closedDeals} {t('inmobiliaria.reporte.closings')}
+              </p>
+            </div>
+          ))}
         </div>
+        <p className="text-xs text-muted-foreground">
+          La comisión de los asesores se liquida por fuera de Leasefy. Quién captó y quién
+          arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
+        </p>
       </div>
     </div>
   );

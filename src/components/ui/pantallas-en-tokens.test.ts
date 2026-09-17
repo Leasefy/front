@@ -171,7 +171,6 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/ActaEntregaView.tsx',
   'components/inmobiliaria/ActaEntregaViewer.tsx',
   'components/inmobiliaria/ActaEntregaForm.tsx',
-  'components/inmobiliaria/ComisionesTable.tsx',
   'components/inmobiliaria/ComisionDesglose.tsx',
   'components/inmobiliaria/VencimientosTable.tsx',
   'components/inmobiliaria/DispersionCard.tsx',
@@ -380,9 +379,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Miniatura de foto clickeable entera.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     'Paso del stepper: la celda entera es el control.',
-  'components/inmobiliaria/ComisionesTable.tsx':
-    'Disparador de orden en `<TableHead>`: envuelve la celda de cabecera y no tiene ' +
-    'chrome de botón. Cadence no tiene primitiva de sort header.',
   'components/inmobiliaria/VencimientosTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/CobroTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/PropietarioTable.tsx': 'Disparador de orden en `<TableHead>`.',

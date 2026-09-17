@@ -98,12 +98,17 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => {
     contratosSinCuotas: 0,
     avisos: [],
   }
+  // 17-09: el informe ya no le atribuye pesos a ningún asesor — la comisión es
+  // de la inmobiliaria y por asesor sólo quedan los arriendos cerrados.
   const COMISIONES = {
-    generatedAt: '2026-09-05T00:00:00.000Z', period: '2026-09',
-    totalCommissions: 900000, avgCommissionPerAgent: 450000, totalClosedDeals: 4, topAgentName: 'Ana',
+    period: '2026-09',
+    comisionDeLaAgenciaCop: 900000,
+    contratosConComision: 7,
+    totalClosedDeals: 4,
+    topAgentUserId: 'a1',
     agentes: [
-      { agenteId: 'a1', agenteName: 'Ana', closedDeals: 3, totalCommission: 600000, avgCommissionPerDeal: 200000, trend: 'up' },
-      { agenteId: 'a2', agenteName: 'Beto', closedDeals: 1, totalCommission: 300000, avgCommissionPerDeal: 300000, trend: 'stable' },
+      { userId: 'a1', closedDeals: 3 },
+      { userId: 'a2', closedDeals: 1 },
     ],
   }
   const FLUJO = {

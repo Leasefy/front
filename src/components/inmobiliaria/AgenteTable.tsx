@@ -31,9 +31,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 
-type SortField = 'name' | 'role' | 'status' | 'assignedProperties' | 'closedThisMonth' | 'commissionsThisMonth' | 'commissionSplit';
+// 🔴 17-09: la columna de comisiones por asesor se fue (la comisión del asesor
+// se paga por fuera de Leasefy). En su lugar, los arriendos del año.
+type SortField = 'name' | 'role' | 'status' | 'assignedProperties' | 'closedThisMonth' | 'closedThisYear' | 'commissionSplit';
 type SortDirection = 'asc' | 'desc';
 
 interface AgenteTableProps {
@@ -147,9 +148,9 @@ export function AgenteTable({
           aVal = a.metrics.closedThisMonth;
           bVal = b.metrics.closedThisMonth;
           break;
-        case 'commissionsThisMonth':
-          aVal = a.metrics.commissionsThisMonth;
-          bVal = b.metrics.commissionsThisMonth;
+        case 'closedThisYear':
+          aVal = a.metrics.closedThisYear;
+          bVal = b.metrics.closedThisYear;
           break;
         case 'commissionSplit':
           aVal = a.commissionSplit;
@@ -225,7 +226,7 @@ export function AgenteTable({
             </TableHead>
             <SortableHeader field="assignedProperties">{t('inmobiliaria.agente.propsShort')}</SortableHeader>
             <SortableHeader field="closedThisMonth" className="hidden md:table-cell">{t('inmobiliaria.agente.closings')}</SortableHeader>
-            <SortableHeader field="commissionsThisMonth" className="hidden md:table-cell">{t('inmobiliaria.agente.commissions')}</SortableHeader>
+            <SortableHeader field="closedThisYear" className="hidden md:table-cell">{t('inmobiliaria.agente.closingsThisYear')}</SortableHeader>
             <SortableHeader field="commissionSplit" className="hidden lg:table-cell">Split %</SortableHeader>
             <TableHead className="w-12 p-4" />
           </TableRow>
@@ -323,12 +324,12 @@ export function AgenteTable({
                   </span>
                 </TableCell>
 
-                {/* Commissions this month */}
+                {/* Arriendos del año — sin plata (17-09). */}
                 <TableCell className="p-4 hidden md:table-cell">
                   <span className="font-semibold font-mono tabular-nums text-foreground">
                     {pendiente
                       ? <span className="text-muted-foreground">—</span>
-                      : formatCurrency(agente.metrics.commissionsThisMonth)}
+                      : agente.metrics.closedThisYear}
                   </span>
                 </TableCell>
 

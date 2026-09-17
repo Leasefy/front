@@ -149,13 +149,16 @@ export type AgenteRole = 'agent' | 'coordinator' | 'director';
 // Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
 export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 
+/**
+ * 🔴 17-09 (Nico): «la comisión de los asesores va por FUERA de Leasefy». Acá
+ * ya no hay pesos por asesor —`totalCommissions` y `commissionsThisMonth` se
+ * quitaron del back y de la pantalla—: queda quién captó y quién arrendó.
+ */
 export interface AgenteMetrics {
   assignedProperties: number;
   activeLeases: number;
   closedThisMonth: number;
   closedThisYear: number;
-  totalCommissions: number;
-  commissionsThisMonth: number;
   avgDaysToClose: number;
   /**
    * PORCENTAJE de 0 a 100 (dos decimales), como lo calcula el back
@@ -1492,26 +1495,53 @@ export interface OcupacionReport {
 // Comisiones Agente Report
 // ============================================================================
 
-export interface ComisionAgente {
-  agenteId: string;
-  agenteName: string;
-  agenteAvatar?: string;
-  closedDeals: number;
-  totalCommission: number;
-  avgCommissionPerDeal: number;
-  topPropertyTitle?: string;
-  previousPeriodCommission?: number;
-  trend: 'up' | 'down' | 'stable';
+/**
+ * El informe de comisiones, desde el 17-09: la comisión es de la
+ * INMOBILIARIA (un solo total) y por asesor sólo quedan los arriendos
+ * cerrados del embudo. Ni un peso atribuido a una persona.
+ */
+export interface ComisionesAgenteReport {
+  period: string; // '2026-02'
+  /** La comisión de administración causada del mes: es de la inmobiliaria. */
+  comisionDeLaAgenciaCop: number;
+  /** Contratos que generaron comisión ese mes. */
+  contratosConComision: number;
+  /** Arriendos cerrados del embudo, por asesor. Sin pesos. */
+  agentes: { userId: string; closedDeals: number }[];
+  totalClosedDeals: number;
+  /** Quién cerró más. `null` si nadie cerró nada. */
+  topAgentUserId: string | null;
 }
 
-export interface ComisionesAgenteReport {
-  generatedAt: string;
-  period: string; // '2026-02' or '2026-Q1'
-  totalCommissions: number;
-  avgCommissionPerAgent: number;
-  totalClosedDeals: number;
-  topAgentName: string;
-  agentes: ComisionAgente[];
+/** `GET /inmobiliaria/agentes/captaciones-y-arriendos`: quién captó y quién arrendó. */
+export interface CaptacionesYArriendos {
+  desde: string;
+  hasta: string;
+  asesores: {
+    userId: string;
+    nombre: string;
+    activo: boolean;
+    captados: number;
+    arrendados: number;
+  }[];
+  sinAsesor: { captados: number; arrendados: number };
+  captaciones: {
+    consignacionId: string;
+    inmueble: string;
+    propietario: string | null;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
+  arriendos: {
+    pipelineItemId: string;
+    consignacionId: string | null;
+    inmueble: string | null;
+    inquilino: string;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
 }
 
 // ============================================================================

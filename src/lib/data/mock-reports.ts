@@ -126,13 +126,16 @@ export interface CollectionsData {
 // Agent Performance Types & Data
 // ============================================================================
 
+/**
+ * 🔴 17-09: sin `totalRevenue` por asesor. La comisión de los asesores se
+ * liquida por fuera de Leasefy y ninguna plata se le atribuye a una persona.
+ */
 export interface AgentPerformance {
   id: string;
   name: string;
   closings: number;
   avgDaysToClose: number;
   conversionRate: number;
-  totalRevenue: number;
   activeLeads: number;
 }
 
@@ -143,7 +146,8 @@ export interface AgentTeamSummary {
    * cero casos no es «0 %», es una tasa que nadie midió.
    */
   avgConversion: number | null;
-  totalRevenue: number;
+  /** La comisión de la INMOBILIARIA del período, no la de nadie en particular. */
+  comisionDeLaAgenciaCop: number;
   /** `null` sin agentes: no hay a quién promediarle los días al cierre. */
   avgDaysToClose: number | null;
 }
@@ -279,16 +283,16 @@ export const mockCollectionsData: CollectionsData = {
 
 export const mockAgentPerformanceData: AgentPerformanceData = {
   agents: [
-    { id: 'a1', name: 'Carolina Martinez', closings: 12, avgDaysToClose: 14, conversionRate: 68, totalRevenue: 48000000, activeLeads: 8 },
-    { id: 'a2', name: 'Santiago Restrepo', closings: 9, avgDaysToClose: 18, conversionRate: 52, totalRevenue: 36000000, activeLeads: 11 },
-    { id: 'a3', name: 'Daniela Ochoa', closings: 15, avgDaysToClose: 11, conversionRate: 75, totalRevenue: 62000000, activeLeads: 6 },
-    { id: 'a4', name: 'Miguel Torres', closings: 7, avgDaysToClose: 22, conversionRate: 41, totalRevenue: 28000000, activeLeads: 14 },
-    { id: 'a5', name: 'Valentina Rios', closings: 11, avgDaysToClose: 15, conversionRate: 63, totalRevenue: 44000000, activeLeads: 9 },
+    { id: 'a1', name: 'Carolina Martinez', closings: 12, avgDaysToClose: 14, conversionRate: 68, activeLeads: 8 },
+    { id: 'a2', name: 'Santiago Restrepo', closings: 9, avgDaysToClose: 18, conversionRate: 52, activeLeads: 11 },
+    { id: 'a3', name: 'Daniela Ochoa', closings: 15, avgDaysToClose: 11, conversionRate: 75, activeLeads: 6 },
+    { id: 'a4', name: 'Miguel Torres', closings: 7, avgDaysToClose: 22, conversionRate: 41, activeLeads: 14 },
+    { id: 'a5', name: 'Valentina Rios', closings: 11, avgDaysToClose: 15, conversionRate: 63, activeLeads: 9 },
   ],
   teamSummary: {
     totalClosings: 54,
     avgConversion: 59.8,
-    totalRevenue: 218000000,
+    comisionDeLaAgenciaCop: 218000000,
     avgDaysToClose: 16,
   },
 };

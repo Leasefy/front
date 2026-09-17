@@ -38,12 +38,6 @@ import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
-import {
-  AvisoDeComisionesSinAtribuir,
-  porQueLaComisionNoEsUnHecho,
-  useResumenDeComisiones,
-  type ResumenDeComisiones,
-} from '@/components/inmobiliaria/ComisionesSinAtribuir';
 
 /**
  * KPI Card Component
@@ -250,19 +244,11 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
  */
 function AgentMiniCard({
   agent,
-  resumenDeComisiones,
   t,
 }: {
   agent: Agente;
-  /** Lo que la comisión no atribuye: con él, un $0 sin camino se pinta «—». */
-  resumenDeComisiones: ResumenDeComisiones | null;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const sinCamino = porQueLaComisionNoEsUnHecho(
-    agent.metrics.commissionsThisMonth,
-    resumenDeComisiones,
-    'mes',
-  );
   return (
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-xs font-semibold">
@@ -276,20 +262,16 @@ function AgentMiniCard({
           {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
-      {sinCamino ? (
-        <span
-          className="font-heading text-sm font-semibold text-fg-subtle tabular-nums"
-          title={sinCamino}
-          aria-label={sinCamino}
-          data-testid="agente-comision-sin-camino"
-        >
-          —
-        </span>
-      ) : (
-        <span className="font-heading text-sm font-semibold text-fg tabular-nums">
-          {formatCurrency(agent.metrics.commissionsThisMonth)}
-        </span>
-      )}
+      {/* 🔴 17-09: acá iba la comisión del asesor. Se paga por fuera de
+          Leasefy y ningún inmueble tenía asesor asignado, así que era un «$0»
+          que se leía como un mal mes. Ahora: los inmuebles que tiene a cargo. */}
+      <span
+        className="font-heading text-sm font-semibold text-fg tabular-nums"
+        data-testid="agente-inmuebles"
+        title="Inmuebles a cargo"
+      >
+        {agent.metrics.assignedProperties}
+      </span>
     </div>
   );
 }
@@ -401,10 +383,6 @@ function ResumenDelNegocio() {
   const veAgentes = !permLoading && canAccess('agentes', 'view');
   const vePipeline = !permLoading && canAccess('pipeline', 'view');
   const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
-  // Lo que la comisión de los agentes no atribuye (giros sin agente asignado).
-  const { resumen: resumenDeComisiones } = useResumenDeComisiones(
-    permLoading || !canAccess('agentes', 'view'),
-  );
   const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
   const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
   const { mantenimientos } = useMantenimientos(undefined, { skip: permLoading || !canAccess('operaciones', 'view') });
@@ -623,14 +601,8 @@ function ResumenDelNegocio() {
           ) : (
             <div className="space-y-4">
               {activeAgents.slice(0, 4).map((agent) => (
-                <AgentMiniCard
-                  key={agent.id}
-                  agent={agent}
-                  resumenDeComisiones={resumenDeComisiones}
-                  t={t}
-                />
+                <AgentMiniCard key={agent.id} agent={agent} t={t} />
               ))}
-              <AvisoDeComisionesSinAtribuir resumen={resumenDeComisiones} />
             </div>
           )}
 

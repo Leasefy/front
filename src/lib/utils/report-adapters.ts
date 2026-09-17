@@ -179,8 +179,12 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
 
 /**
  * Build agent performance data from the rendimiento-agentes endpoint (has
- * activeLeads / conversionRate / avgDaysToClose) and optionally enrich with
- * totalRevenue from the comisiones endpoint.
+ * activeLeads / conversionRate / avgDaysToClose).
+ *
+ * 🔴 17-09: ya no se le atribuyen pesos a ningún asesor —su comisión se
+ * liquida por fuera de Leasefy—. Lo único que queda del informe de comisiones
+ * es la comisión de la INMOBILIARIA, que va en el resumen del equipo como lo
+ * que es: plata de la casa, no de una persona.
  */
 export function adaptAgentPerformance(
   rendimiento: RendimientoAgentesReport | null | undefined,
@@ -188,22 +192,17 @@ export function adaptAgentPerformance(
 ): AgentPerformanceData | null {
   if (!rendimiento) return null;
 
-  const commissionByAgent = new Map<string, number>(
-    (comisiones?.agentes ?? []).map((c) => [c.agenteId, c.totalCommission]),
-  );
-
   const agents = rendimiento.agentes.map((a: RendimientoAgentesReport['agentes'][number]) => ({
     id: a.userId,
     name: a.agenteName ?? a.userId,
     closings: a.completedDeals,
     avgDaysToClose: a.avgDaysToClose,
     conversionRate: a.conversionRate,
-    totalRevenue: commissionByAgent.get(a.userId) ?? 0,
     activeLeads: a.activeLeads,
   }));
 
   const totalClosings = agents.reduce((sum: number, a) => sum + a.closings, 0);
-  const totalRevenue = agents.reduce((sum: number, a) => sum + a.totalRevenue, 0);
+  const comisionDeLaAgenciaCop = comisiones?.comisionDeLaAgenciaCop ?? 0;
   // Sin agentes no hay a quién promediarle nada: «0% de conversión» y «0d al
   // cierre» acusaban a un equipo que todavía no existe.
   const avgConversion = promedioMedido(agents.map((a) => a.conversionRate));
@@ -214,7 +213,7 @@ export function adaptAgentPerformance(
     teamSummary: {
       totalClosings,
       avgConversion: avgConversion === null ? null : Math.round(avgConversion * 10) / 10,
-      totalRevenue,
+      comisionDeLaAgenciaCop,
       avgDaysToClose: avgDaysToClose === null ? null : Math.round(avgDaysToClose),
     },
   };

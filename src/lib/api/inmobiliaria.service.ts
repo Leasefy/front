@@ -45,6 +45,7 @@ import type {
   AgencyInvoicesResponse,
   CarteraReport,
   OcupacionReport,
+  CaptacionesYArriendos,
   ComisionesAgenteReport,
   RendimientoAgentesReport,
   VencimientosReport,
@@ -473,6 +474,21 @@ export const agentesApi = {
   async getLeaderboard(): Promise<Agente[]> {
     const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes/leaderboard`);
     return lista(res);
+  },
+
+  /**
+   * 🔴 17-09: quién captó y quién arrendó, SIN PLATA. Reemplaza a
+   * `GET /inmobiliaria/agentes/comisiones`, que atribuía pesos a cada asesor.
+   */
+  async captacionesYArriendos(rango?: {
+    desde?: string;
+    hasta?: string;
+  }): Promise<CaptacionesYArriendos> {
+    const q = new URLSearchParams();
+    if (rango?.desde) q.set('desde', rango.desde);
+    if (rango?.hasta) q.set('hasta', rango.hasta);
+    const cola = q.toString() ? `?${q.toString()}` : '';
+    return apiClient.get<CaptacionesYArriendos>(`${BASE}/agentes/captaciones-y-arriendos${cola}`);
   },
 };
 

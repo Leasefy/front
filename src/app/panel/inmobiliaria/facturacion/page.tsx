@@ -35,6 +35,11 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
+import { ColaDeTransmision } from '@/components/facturacion/ColaDeTransmision';
+import { EntregasYAcuse } from '@/components/facturacion/EntregasYAcuse';
+import { DocumentoSoporte } from '@/components/facturacion/DocumentoSoporte';
+import { CertificacionDelMandatario } from '@/components/facturacion/CertificacionDelMandatario';
+import { TercerosSinCorreo } from '@/components/facturacion/TercerosSinCorreo';
 import {
   mesActual,
   mesesParaElegir,
@@ -90,10 +95,31 @@ const TABS: readonly TabDef[] = [
  * clientes: dos cosas que se llaman igual y no son lo mismo. Toda esta pantalla
  * ya está detrás de ADMIN y CONTADOR, que son los dos roles que pueden tocarlo.
  */
-type PestanaDeFacturacion = FacturacionTab | 'nueva' | 'resolucion';
+/**
+ * 🔴 Y tres pestañas más con la facturación electrónica (17-09-2026), por lo
+ * mismo que «Nueva factura» y «Resolución»: no listan documentos de
+ * `FacturacionTab`, hacen otra cosa.
+ *
+ *   · `soporte` — el documento soporte de los proveedores que no facturan.
+ *   · `mandato` — la certificación del mandatario (lo que cada propietario
+ *     necesita para declarar) y los terceros a los que les falta el correo.
+ *
+ * «Electrónica (DIAN)» sí es de `FacturacionTab` y ahora tiene de dónde leer:
+ * la cola de transmisión y las entregas.
+ */
+type PestanaDeFacturacion =
+  | FacturacionTab
+  | 'nueva'
+  | 'resolucion'
+  | 'soporte'
+  | 'mandato';
 
 const esTab = (v: string): v is PestanaDeFacturacion =>
-  v === 'nueva' || v === 'resolucion' || TABS.some((x) => x.key === v);
+  v === 'nueva' ||
+  v === 'resolucion' ||
+  v === 'soporte' ||
+  v === 'mandato' ||
+  TABS.some((x) => x.key === v);
 
 function FacturacionContent() {
   const { t } = useI18n();
@@ -121,7 +147,7 @@ function FacturacionContent() {
           —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
           con sus propias palabras: dos avisos distintos sobre lo mismo, uno
           encima del otro, no los lee nadie. */}
-      {active !== 'nueva' && active !== 'resolucion' && (
+      {active === 'ventas' || active === 'compras' || active === 'notas' ? (
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -129,7 +155,7 @@ function FacturacionContent() {
           <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
-      )}
+      ) : null}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
       <Tabs
@@ -152,6 +178,12 @@ function FacturacionContent() {
                   {t(k(`tab_${x.key}`))}
                 </TabsTrigger>
               ))}
+              <TabsTrigger value="soporte" className="whitespace-nowrap">
+                {t(k('tab_soporte'))}
+              </TabsTrigger>
+              <TabsTrigger value="mandato" className="whitespace-nowrap">
+                {t(k('tab_mandato'))}
+              </TabsTrigger>
               <TabsTrigger value="resolucion" className="whitespace-nowrap">
                 {t(k('tab_resolucion'))}
               </TabsTrigger>
@@ -184,6 +216,31 @@ function FacturacionContent() {
           <TabsContent value="resolucion" className="mt-0">
             <div className="p-4">
               <ResolucionDeFacturacion />
+            </div>
+          </TabsContent>
+
+          {/* 🔴 «Electrónica (DIAN)» ya no es un vacío honesto: es la cola de
+              transmisión y las entregas. Las dos van juntas porque responden la
+              misma pregunta —«¿este documento existe ante la DIAN y le llegó al
+              cliente?»— y son dos estados distintos: se puede estar aceptado
+              por la DIAN y sin entregar. */}
+          <TabsContent value="electronica" className="mt-0">
+            <div className="space-y-6 p-4">
+              <ColaDeTransmision />
+              <EntregasYAcuse />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="soporte" className="mt-0">
+            <div className="p-4">
+              <DocumentoSoporte />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="mandato" className="mt-0">
+            <div className="space-y-6 p-4">
+              <CertificacionDelMandatario />
+              <TercerosSinCorreo />
             </div>
           </TabsContent>
 
@@ -225,7 +282,7 @@ function FacturacionContent() {
             </TabsContent>
           ))}
 
-          {TABS.filter((x) => x.key === 'compras' || x.key === 'electronica').map((tab) => (
+          {TABS.filter((x) => x.key === 'compras').map((tab) => (
             <TabsContent key={tab.key} value={tab.key} className="mt-0">
               <Table>
                 <TableHeader>

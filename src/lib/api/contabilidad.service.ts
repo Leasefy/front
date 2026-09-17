@@ -660,13 +660,18 @@ export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';
  * `numero_contrato` y `codigo_inmueble` (2026-09-16): el concepto escribe
  * «CONTRATO 854» o «COD. 127». Con el código, el contrato es el que estaba
  * vigente en ese inmueble el día del comprobante; con varios o ninguno el
- * back no adivina y queda `ninguno`.
+ * back no adivina.
+ *
+ * `solo_inmueble` (2026-09-17): el concepto dice el código de un inmueble que
+ * ese día no tenía contrato vigente —o nunca tuvo uno—. Queda colgado SÓLO del
+ * inmueble: sale en su ficha, no en la de ningún contrato.
  */
 export type AsociadoPor =
   | 'documento'
   | 'nombre'
   | 'numero_contrato'
   | 'codigo_inmueble'
+  | 'solo_inmueble'
   | 'ninguno';
 
 /** Cómo se dice, en una frase corta, por dónde quedó asociado. */
@@ -675,6 +680,8 @@ export const COMO_SE_ASOCIO: Record<AsociadoPor, string> = {
   nombre: 'por el nombre del tercero',
   numero_contrato: 'por el número de contrato del concepto',
   codigo_inmueble: 'por el código del inmueble del concepto',
+  solo_inmueble:
+    'sólo al inmueble, por el código del concepto: ese día no tenía contrato vigente',
   ninguno: 'sin contrato',
 };
 
@@ -709,6 +716,8 @@ export interface RevisionDeDocumentos {
     porNumeroDeContrato: number;
     /** «COD. 127» en el concepto: el contrato vigente de ese inmueble ese día. */
     porCodigoDeInmueble: number;
+    /** «COD. 127» de un inmueble sin contrato vigente ese día: colgado SÓLO del inmueble. */
+    soloInmueble: number;
     sinContrato: number;
   };
   /** Los motivos agrupados: 40.000 filas iguales son UNA línea del informe. */
@@ -785,8 +794,11 @@ export interface DocumentoMigradoVista {
  *   propietario de ningún contrato de la inmobiliaria.
  * - `CONCEPTO_SIN_TERCERO`: texto libre que no nombra a nadie (gastos,
  *   nómina, notas bancarias).
+ * - `SOLO_INMUEBLE`: sin contrato pero colgado de su inmueble (el código del
+ *   concepto, sin contrato vigente ese día). Sale en la ficha del inmueble.
  */
 export type MotivoSinContrato =
+  | 'SOLO_INMUEBLE'
   | 'EXPORT_SIN_TERCERO'
   | 'REFERENCIA_SIN_RESOLVER'
   | 'TERCERO_SIN_CONTRATO'

@@ -48,6 +48,8 @@ const CLASES: { clase: ClaseDeComprobante; titulo: string }[] = [
 
 /** Qué quiere decir cada motivo, dicho para quien migra. */
 export const MOTIVO_SIN_CONTRATO: Record<MotivoSinContrato, string> = {
+  SOLO_INMUEBLE:
+    "están colgados sólo de su inmueble: el concepto dice su código, pero ese día no tenía contrato vigente (o nunca tuvo uno). Salen en la ficha del inmueble",
   EXPORT_SIN_TERCERO:
     "el export no trae a quién: el concepto es sólo el tipo y el número («Factura 57521») o viene vacío",
   REFERENCIA_SIN_RESOLVER:
@@ -59,6 +61,7 @@ export const MOTIVO_SIN_CONTRATO: Record<MotivoSinContrato, string> = {
 };
 
 const ORDEN_DE_MOTIVOS: MotivoSinContrato[] = [
+  "SOLO_INMUEBLE",
   "EXPORT_SIN_TERCERO",
   "REFERENCIA_SIN_RESOLVER",
   "TERCERO_SIN_CONTRATO",

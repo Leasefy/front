@@ -38,6 +38,7 @@ import { ComprobantesSinContrato } from './ComprobantesSinContrato';
 const motivos = (
   over: Partial<ResumenSinContrato['porClase']['factura']['motivos']> = {},
 ) => ({
+  SOLO_INMUEBLE: 0,
   EXPORT_SIN_TERCERO: 0,
   REFERENCIA_SIN_RESOLVER: 0,
   TERCERO_SIN_CONTRATO: 0,
@@ -61,6 +62,7 @@ const MIGRADA: ResumenSinContrato = {
       conContrato: 28_485,
       sinContrato: 1_729,
       motivos: motivos({
+        SOLO_INMUEBLE: 29,
         EXPORT_SIN_TERCERO: 4,
         REFERENCIA_SIN_RESOLVER: 37,
         TERCERO_SIN_CONTRATO: 1_134,
@@ -142,6 +144,16 @@ describe('<ComprobantesSinContrato>', () => {
     expect(
       contenedor.querySelector('[data-testid="sin-contrato-factura-TERCERO_SIN_CONTRATO"]'),
     ).toBeNull();
+  });
+
+  it('los colgados sólo del inmueble se cuentan aparte y dicen dónde se ven', async () => {
+    sinContrato.mockResolvedValue(MIGRADA);
+    await montar();
+
+    expect(dentro('sin-contrato-ingreso-SOLO_INMUEBLE')).toContain(
+      '29 están colgados sólo de su inmueble',
+    );
+    expect(dentro('sin-contrato-ingreso-SOLO_INMUEBLE')).toContain('ficha del inmueble');
   });
 
   it('🔴 si el export no trae el cliente de las facturas, dice qué pedirle al sistema anterior', async () => {

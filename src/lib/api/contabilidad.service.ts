@@ -873,7 +873,9 @@ export type EventoContable =
   | 'RECAUDO_OTROS_TERCEROS'
   | 'INGRESO_COMISION'
   | 'IVA_GENERADO'
-  | 'GIRO_PROPIETARIO_BANCOS';
+  | 'GIRO_PROPIETARIO_BANCOS'
+  /** Opcional (2026-09-16): sin cuenta propia, el ajuste va a «otros recaudos». */
+  | 'AJUSTE_AL_PESO';
 
 export const EVENTOS_CONTABLES: readonly EventoContable[] = [
   'CARTERA_INQUILINOS',
@@ -885,6 +887,7 @@ export const EVENTOS_CONTABLES: readonly EventoContable[] = [
   'INGRESO_COMISION',
   'IVA_GENERADO',
   'GIRO_PROPIETARIO_BANCOS',
+  'AJUSTE_AL_PESO',
 ];
 
 /** `GET /asientos/faltantes`: lo que pasó sin asiento por falta de mapeo. */
@@ -921,6 +924,12 @@ export interface MapeoDeEvento {
   explicacion: string;
   lado: LadoDelEvento;
   codigoPropuesto: string;
+  /**
+   * Un evento opcional (hoy, «Ajuste al peso») no deja el mapeo incompleto ni
+   * apaga asientos: sin cuenta, su valor va a la cuenta de siempre. Sólo llega
+   * si la base tiene la migración.
+   */
+  opcional?: boolean;
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
 }

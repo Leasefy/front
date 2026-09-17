@@ -76,6 +76,7 @@ import {
 import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { useTextoDelEstado } from './textos';
 import { InteresesDelContratoSeccion } from './InteresesDelContrato';
+import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
 import { hayQueContarIntereses, interesesDelContrato } from './intereses';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
@@ -100,6 +101,8 @@ interface Props {
    * inmobiliaria y no se le muestra al cliente.
    */
   reglasDeMoraHref?: string;
+  /** El anticipo del contrato, sólo en el panel (endpoint de la inmobiliaria). */
+  conAnticipoDelContrato?: boolean;
 }
 
 export function ContratoDelEstado({
@@ -107,6 +110,7 @@ export function ContratoDelEstado({
   hoy,
   sinPaginar = false,
   reglasDeMoraHref,
+  conAnticipoDelContrato = false,
 }: Props) {
   const t = useTextoDelEstado();
   const esPropietario = contrato.rol === 'PROPIETARIO';
@@ -217,6 +221,10 @@ export function ContratoDelEstado({
           numero={contrato.numero}
           reglasDeMoraHref={reglasDeMoraHref}
         />
+      )}
+
+      {conAnticipoDelContrato && !esPropietario && (
+        <AnticipoDelContratoSeccion contractId={contrato.id} />
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">

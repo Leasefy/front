@@ -94,6 +94,11 @@ export interface PantallaProps {
    * El portal y el enlace público no lo pasan: ese motivo es interno.
    */
   reglasDeMoraHref?: string;
+  /**
+   * Muestra el anticipo del contrato (plata recibida por adelantado que se
+   * descuenta mes a mes). Sólo el panel: lo lee un endpoint de la inmobiliaria.
+   */
+  conAnticipoDelContrato?: boolean;
   className?: string;
 }
 
@@ -104,6 +109,7 @@ export function PantallaDelEstadoDeCuenta({
   hoy: hoyProp,
   sinFiltros = false,
   reglasDeMoraHref,
+  conAnticipoDelContrato = false,
   className,
 }: PantallaProps) {
   const t = useTextoDelEstado();
@@ -351,6 +357,7 @@ export function PantallaDelEstadoDeCuenta({
               sinPaginar={imprimiendo}
               nota={nota}
               reglasDeMoraHref={reglasDeMoraHref}
+              conAnticipoDelContrato={conAnticipoDelContrato}
               className={cn(
                 'rounded-none border-0 shadow-none',
                 // El recorte lo trae el back: mientras viaja, la tabla anterior

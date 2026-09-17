@@ -2289,6 +2289,33 @@
         "cancel": "Cancel",
         "save": "Save Configuration",
         "saving": "Saving..."
+      },
+      "anular": {
+        "accion": "Void charge",
+        "titulo": "Void this charge",
+        "descripcion": "The charge is not deleted: it is voided with your reason and no longer shows in Issued charges. What the tenant owes does not change. If it already had an invoice, its credit note is generated, unnumbered and not issued.",
+        "motivo": "Reason",
+        "motivoAyuda": "It is kept in the audit trail and in the credit note, if any.",
+        "faltaMotivo": "Write why you are voiding it (at least 3 letters).",
+        "cancelar": "Cancel",
+        "confirmar": "Void charge",
+        "anulando": "Voiding…",
+        "anulado": "Charge voided. What the tenant owes did not change.",
+        "conNotaGenerada": "The credit note for its invoice was generated, unnumbered: it is pending issuance.",
+        "conNotaPrevia": "Its invoice already had a credit note: no new one was created.",
+        "errores": {
+          "COBRO_CON_RECIBOS": "This charge has active cash receipts. Void the receipts first and try again.",
+          "COBRO_YA_ANULADO": "This charge was already voided. Refresh the list.",
+          "COBRO_NO_ENCONTRADO": "This charge no longer exists in your agency. Refresh the list.",
+          "MOTIVO_REQUERIDO": "Write why you are voiding it.",
+          "ANULAR_COBRO_NO_DISPONIBLE": "Voiding charges is not available yet: a database migration is missing. Nothing changed.",
+          "generico": "The charge could not be voided. Nothing changed; try again."
+        },
+        "sinPermiso": "You need permission to edit charges.",
+        "anuladoBadge": "Voided",
+        "vigentes": "Active",
+        "anulados": "Voided",
+        "sinAnulados": "There are no voided charges this month."
       }
     },
     "dispersiones": {
@@ -11402,7 +11429,6 @@
       "montoExcede": "That is over the balance. The maximum you can apply is {{monto}}.",
       "fechaLabel": "What day did it come in?",
       "fechaRequerida": "Pick the day",
-      "fechaAntesDeLaDeuda": "Pick a day from {{piso}} on: that's the earliest this receipt can be dated.",
       "fechaFutura": "It can't be after today.",
       "recalculandoInteres": "Recalculating late-payment interest for this date…",
       "medioLabel": "How did it come in?",
@@ -11465,13 +11491,30 @@
         "despues": "After this payment they still owe",
         "sinConciliar": "One of these months already has money recorded that no receipt backs. It has to be reconciled before receiving.",
         "adelanto": "Advance",
-        "hayAdelanto": "The months marked as an advance have not fallen due yet: paying them now reduces the contract debt."
+        "hayAdelanto": "The months marked as an advance have not fallen due yet: paying them now reduces the contract debt.",
+        "anticipo": "Advance",
+        "hayAnticipo": "The months marked as an advance don't go down yet: the money stays with the contract and a cash receipt takes it on each month's due date."
       },
       "descripcionAdelanto": "Nothing is past due. Anything that comes in today is an advance: it pays down the contract instalments that have not fallen due yet, starting with the closest one.",
       "pagaLoVencido": "Pay what is due",
       "adelantoDesde": "Past due today: {{vencido}}. Above that figure you are paying ahead against {{futuro}} that has not fallen due yet.",
       "sinMandato": "The property has no mandate",
-      "cuotaYCobroNoCuadran": "That month's records don't match"
+      "cuotaYCobroNoCuadran": "That month's records don't match",
+      "forma": {
+        "titulo": "How do you record the advance?",
+        "ayuda": "This payment reaches {{meses}}, which aren't due yet. Anything overdue is paid first either way.",
+        "parteDe": "part of {{mes}}",
+        "abonarTitulo": "Record it all now",
+        "abonarAyuda": "Applies {{monto}} to {{meses}} now: those installments are paid today, with their cash receipt.",
+        "anticipoTitulo": "Keep it as an advance and apply it month by month",
+        "anticipoAyuda": "{{monto}} stay as the contract's advance and no installment goes down yet. On each month's due date a cash receipt is issued automatically for that installment, until the advance reaches zero."
+      },
+      "anticipoRegistrado": "Advance recorded",
+      "emitidoConAnticipo": "{{anticipo}} stayed as the contract's advance: they're applied automatically on each month's due date.",
+      "facturasDelPago": "Invoices for {{meses}} updated: {{saldo}} left to pay.",
+      "facturasSinEmitir": "They were generated and are pending issue with the DIAN.",
+      "ajusteAlPeso": "{{valor}} were recorded as a rounding adjustment: they don't pay any installment.",
+      "facturaDeIntereses": "The interest paid ({{valor}}) was invoiced separately, unnumbered and pending issuance."
     },
     "historial": {
       "titulo": "Cash receipts",
@@ -11515,6 +11558,18 @@
       "conciliado": "Earlier payment reconciled",
       "conciliadoDesc": "Receipt {{numero}} was issued. You can make the payment now.",
       "fallo": "It could not be reconciled"
+    },
+    "anticipoDelContrato": {
+      "titulo": "Tenant's advance",
+      "ayuda": "Money received in advance that hasn't been applied to any installment yet. On each month's due date a cash receipt takes it.",
+      "saldo": "Left to apply",
+      "recibido": "Received",
+      "descontado": "Applied",
+      "entrada": "Came in as an advance",
+      "descuento": "Applied to {{mes}}",
+      "recibo": "Receipt {{numero}}",
+      "anulado": "Voided",
+      "errorAlLeer": "We could not read this contract's advance payment: we don't know whether it has a balance left to apply."
     }
   },
   "inquilinos": {

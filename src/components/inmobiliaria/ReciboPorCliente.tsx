@@ -86,6 +86,7 @@ import {
   type Imputacion,
 } from '@/lib/recibos/imputar-pago';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { esAdelantableComoAnticipo } from '@/lib/recibos/forma-del-adelanto';
 
 // ── Reglas puras (probadas solas en ReciboPorCliente.test.tsx) ───────────────
 
@@ -479,9 +480,15 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
 export interface PlanDeImputacionProps {
   cartera: CarteraDelCliente;
   plan: Imputacion;
+  /**
+   * 🔴 Caja eligió dejar el adelanto como ANTICIPO del contrato (2026-09-16):
+   * los meses futuros no bajan hoy, se descuentan el día de pago. El plan lo
+   * dice en cada renglón y la deuda de después NO los resta.
+   */
+  comoAnticipo?: boolean;
 }
 
-export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
+export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDeImputacionProps) {
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
   const k = (s: string) => `recibos.form.plan.${s}`;
@@ -497,6 +504,14 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
    */
   const hayAdelanto = plan.partes.some((parte) => porId.get(parte.id)?.vencida === false);
   const aIntereses = plan.partes.reduce((s, parte) => s + parte.aIntereses, 0);
+  const esAnticipo = (id: string) => {
+    const periodo = porId.get(id);
+    return comoAnticipo && periodo !== undefined && esAdelantableComoAnticipo(periodo);
+  };
+  // Con anticipo, esas cuotas se siguen debiendo hasta su día de pago.
+  const queda =
+    plan.deudaRestante +
+    plan.partes.filter((parte) => esAnticipo(parte.id)).reduce((s, parte) => s + parte.valorCop, 0);
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-surface-muted p-3" data-testid="plan-de-imputacion">
@@ -519,10 +534,16 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
                     {mesEnTitulo(parte.month, idioma)}
                     {periodo ? ` · ${periodo.propertyTitle}` : ''}
                   </span>
-                  {esAdelanto && (
-                    <Badge variant="default" data-testid={`plan-adelanto-${parte.month}`}>
-                      {t(k('adelanto'))}
+                  {esAnticipo(parte.id) ? (
+                    <Badge variant="default" data-testid={`plan-anticipo-${parte.month}`}>
+                      {t(k('anticipo'))}
                     </Badge>
+                  ) : (
+                    esAdelanto && (
+                      <Badge variant="default" data-testid={`plan-adelanto-${parte.month}`}>
+                        {t(k('adelanto'))}
+                      </Badge>
+                    )
                   )}
                 </span>
                 <span className="shrink-0 font-mono tabular-nums text-fg">
@@ -560,14 +581,14 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
 
       {hayAdelanto && (
         <p className="text-xs text-fg-muted" data-testid="plan-hay-adelanto">
-          {t(k('hayAdelanto'))}
+          {comoAnticipo ? t(k('hayAnticipo')) : t(k('hayAdelanto'))}
         </p>
       )}
 
       <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
         <span className="text-fg-muted">{t(k('despues'))}</span>
         <span className="font-mono font-semibold tabular-nums text-fg" data-testid="plan-deuda-restante">
-          {formatCurrency(plan.deudaRestante)}
+          {formatCurrency(queda)}
         </span>
       </div>
     </div>
@@ -586,10 +607,8 @@ export const ESPERA_DE_LA_FECHA_MS = 400;
 /** Un rechazo de la cartera pedida CON fecha: se muestra en el campo, no tapa la tabla. */
 export interface ErrorDeLaFecha {
   mensaje: string;
-  /** `FECHA_ANTERIOR_A_LA_DEUDA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
+  /** `FECHA_FUTURA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
   code?: string;
-  /** El piso que el back exige, si lo mandó. */
-  piso?: string;
 }
 
 /**
@@ -611,7 +630,7 @@ export interface ErrorDeLaFecha {
  *   · CAMBIAR LA FECHA espera `ESPERA_DE_LA_FECHA_MS` y CONSERVA la cartera
  *     que hay mientras llega la nueva (`recalculando`): la tabla no parpadea.
  *     Si esa petición falla, la cartera anterior sigue ahí y el rechazo va a
- *     `errorDeLaFecha` — el 400 del piso es un problema del campo, no de la
+ *     `errorDeLaFecha` — el 400 de la fecha es un problema del campo, no de la
  *     cartera.
  *   · SIN CARRERAS: cada petición lleva un número; la respuesta de una fecha
  *     (o de una persona) vieja que llega tarde no pisa la nueva.
@@ -688,10 +707,6 @@ export function useCarteraDelCliente(
           setErrorDeLaFecha({
             mensaje: e instanceof Error && e.message ? e.message : '',
             code: e instanceof ApiError ? e.code : undefined,
-            piso:
-              e instanceof ApiError && typeof e.detalle?.piso === 'string'
-                ? e.detalle.piso
-                : undefined,
           });
         } else {
           hayCartera.current = false;

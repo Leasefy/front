@@ -58,10 +58,21 @@
  *
  * 5. 🔴 (2026-09-16) La FECHA manda sobre la vista previa. El interés de mora
  *    se liquida hasta el día del recibo, así que al cambiar «¿Qué día entró?»
- *    la cartera se vuelve a pedir con esa fecha (`useCarteraDelCliente`), el
- *    piso del campo es el que dice el back, y no se emite mientras los números
- *    a la vista sean de otro día. Prueba en vivo en QA, contrato #69: con la
- *    fecha en 2026-08-20 el diálogo seguía mostrando el interés de hoy.
+ *    la cartera se vuelve a pedir con esa fecha (`useCarteraDelCliente`) y no
+ *    se emite mientras los números a la vista sean de otro día. Prueba en vivo
+ *    en QA, contrato #69: con la fecha en 2026-08-20 el diálogo seguía
+ *    mostrando el interés de hoy.
+ *
+ * 6. 🔴 (2026-09-16, tarde) La fecha NO tiene piso. Nico y Juan Camilo: «¡No!
+ *    El recibo de caja debe quedar con la fecha en la que se recibió». El
+ *    campo acepta cualquier día pasado; sólo el futuro sigue cerrado.
+ *
+ * 7. 🔴 (2026-09-16, tarde) Cuando el monto alcanza cuotas que todavía no
+ *    vencen, caja ELIGE la forma del adelanto (Juan Camilo): registrarlo todo
+ *    ya —abona a esas cuotas— o dejarlo como anticipo del contrato, que se
+ *    descuenta con un recibo el día de pago de cada mes. Se pregunta sólo si
+ *    el back puede guardar el anticipo (`anticipoDelContratoDisponible`); si
+ *    no, el pago se registra como siempre y no hay nada que elegir.
  *
  * ⚠️ Decisión de producto tomada al pie de la letra: el campo REFERENCIA salió
  * del formulario. Nico enumeró los campos y cerró con «y nada más». El back lo
@@ -105,10 +116,17 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
+  FormaDelAdelanto,
   NuevoReciboPorCliente,
   RespuestaDeRecibo,
   RespuestaDeReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
+import {
+  mesesQueSeAdelantan,
+  seOfreceElegirLaForma,
+  type MesQueSeAdelanta,
+} from '@/lib/recibos/forma-del-adelanto';
+import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import {
@@ -164,6 +182,23 @@ export function mediosParaElegir(
   }));
 }
 
+/**
+ * «octubre de 2026, noviembre de 2026 y parte de diciembre de 2026»: los meses
+ * que el adelanto alcanza, como los lee quien está en caja.
+ */
+export function mesesEnPalabras(
+  meses: readonly MesQueSeAdelanta[],
+  idioma: 'es' | 'en',
+  parteDe: (mes: string) => string,
+): string {
+  const nombres = meses.map((m) =>
+    m.completo ? nombreDelMes(m.month, idioma) : parteDe(nombreDelMes(m.month, idioma)),
+  );
+  if (nombres.length <= 1) return nombres.join('');
+  const y = idioma === 'en' ? ' and ' : ' y ';
+  return `${nombres.slice(0, -1).join(', ')}${y}${nombres[nombres.length - 1]}`;
+}
+
 /** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
 
@@ -197,7 +232,8 @@ export function RegistrarPagoModal({
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, locale } = useI18n();
+  const idioma = locale === 'en' ? 'en' : 'es';
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
@@ -227,6 +263,8 @@ export function RegistrarPagoModal({
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy);
   const [saludos, setSaludos] = React.useState('');
+  /** La forma del adelanto que eligió caja. Sólo viaja si se le preguntó. */
+  const [forma, setForma] = React.useState<FormaDelAdelanto>('ABONAR_A_LAS_CUOTAS');
   const [enviando, setEnviando] = React.useState(false);
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
   /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
@@ -294,6 +332,16 @@ export function RegistrarPagoModal({
     () => periodosSinConciliar(cartera, plan),
     [cartera, plan],
   );
+  /**
+   * 🔴 Lo que el pago le abona a cuotas que todavía no vencen, y si hay que
+   * preguntar cómo registrarlo. Con la forma (b) esas cuotas NO bajan: la plata
+   * queda como anticipo del contrato y el back la descuenta el día de pago.
+   */
+  const adelanto = React.useMemo(() => mesesQueSeAdelantan(cartera, plan), [cartera, plan]);
+  const ofrecerForma = seOfreceElegirLaForma(cartera, plan);
+  const mesesDelAdelanto = mesesEnPalabras(adelanto.meses, idioma, (mes) =>
+    t('recibos.form.forma.parteDe', { mes }),
+  );
 
   /**
    * El tope es TODA la deuda del contrato: lo vencido más lo que no vence.
@@ -330,38 +378,16 @@ export function RegistrarPagoModal({
           : null;
 
   /**
-   * R4 — el piso del campo de fecha: el primer día del período VENCIDO más
-   * viejo que la persona debe.
+   * Qué le pasa al día elegido, antes de preguntarle nada al servidor.
    *
-   * 🔴 Sólo cuentan las VENCIDAS. Desde que la cartera trae las cuotas futuras,
-   * tomar la primera de la lista deja un piso EN EL FUTURO cuando lo único que
-   * hay es deuda por vencer (`min` 2026-11-01 con `max` hoy): el campo queda
-   * imposible de satisfacer y el valor prellenado, fuera de rango. Por si
-   * acaso, el piso además se topa en hoy — un piso posterior al techo no es un
-   * piso, es un campo roto.
-   *
-   * Sin nada vencido (un adelanto) se cae al 1.º de enero del año en curso: un
-   * arqueo no mira más atrás, y dejar el campo sin piso es cómo un dedo de más
-   * escribe un recibo fechado en 2016.
+   * 🔴 Ya no hay «antes del piso» (2026-09-16): «el recibo de caja debe quedar
+   * con la fecha en la que se recibió». Hasta ese día el campo no dejaba fechar
+   * antes del 1.º del período vencido más viejo, y ese piso era artificial: la
+   * plata del 28 de julio entró el 28 de julio. Lo único cerrado es el futuro,
+   * que es también lo único que el back rechaza (`FECHA_FUTURA`).
    */
-  const pisoDeLaFecha = React.useMemo(() => {
-    /*
-     * 🔴 El piso lo manda el back (2026-09-16): es el MISMO que exige al emitir
-     * y en la vista previa, así que el `min` del campo no puede dejar elegir un
-     * día que el servidor rechaza. La cuenta de abajo queda sólo para un back
-     * anterior que no lo manda.
-     */
-    if (cartera?.pisoDeLaFecha) return cartera.pisoDeLaFecha;
-    const masViejoVencido = cartera?.cuotas.find((c) => c.vencida)?.month;
-    const piso = masViejoVencido
-      ? `${masViejoVencido}-01`
-      : `${hoy.slice(0, 4)}-01-01`;
-    return piso > hoy ? `${hoy.slice(0, 4)}-01-01` : piso;
-  }, [cartera, hoy]);
-
-  /** Qué le pasa al día elegido, antes de preguntarle nada al servidor. */
-  const problemaDeLaFecha: 'vacia' | 'antesDelPiso' | 'futura' | null =
-    fecha === '' ? 'vacia' : fecha < pisoDeLaFecha ? 'antesDelPiso' : fecha > hoy ? 'futura' : null;
+  const problemaDeLaFecha: 'vacia' | 'futura' | null =
+    fecha === '' ? 'vacia' : fecha > hoy ? 'futura' : null;
 
   /*
    * La vista previa sigue a la fecha sólo cuando la fecha es válida. Un día
@@ -428,6 +454,7 @@ export function RegistrarPagoModal({
       setFecha(hoy);
       setFechaDeLaVistaPrevia(null);
       setSaludos('');
+      setForma('ABONAR_A_LAS_CUOTAS');
       setErrorDelBack(null);
       setTituloDelError(null);
       setTocado(false);
@@ -452,6 +479,7 @@ export function RegistrarPagoModal({
     setFecha(hoy);
     setFechaDeLaVistaPrevia(null);
     setSaludos('');
+    setForma('ABONAR_A_LAS_CUOTAS');
     setErrorDelBack(null);
     setTituloDelError(null);
     setTocado(false);
@@ -482,24 +510,64 @@ export function RegistrarPagoModal({
         medio,
         ...(saludos.trim() ? { notas: saludos.trim() } : {}),
         idempotencyKey: llaveDeEsteRecibo(),
+        // Sólo si se le preguntó a caja: si no, el back abona a las cuotas.
+        ...(ofrecerForma ? { formaDelAdelanto: forma } : {}),
       });
 
       // Salió: el próximo recibo es otro y lleva otra llave.
       llaveDelRecibo.current = null;
 
       const numeros = res.recibos.map((r) => String(r.numero)).join(', ');
+      const anticipo = res.anticipoDelContratoCop ?? 0;
+      const saldo =
+        res.deudaRestante > 0
+          ? t('recibos.form.emitidoQuedaSaldo', {
+              monto: formatCurrency(res.totalCop),
+              saldo: formatCurrency(res.deudaRestante),
+            })
+          : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) });
+      /*
+       * 🔴 (2026-09-16) Qué quedó facturado: la factura de cada mes que tocó el
+       * pago, generada y pendiente de emitir ante la DIAN (o ya emitida), con lo
+       * que le falta. Nada se numera al recibir.
+       */
+      const facturas = res.facturas ?? [];
+      const pendientesDeEmitir = facturas.filter((f) => f.estado === 'GENERADA');
+      const lineaDeFacturas =
+        facturas.length === 0
+          ? ''
+          : ` ${t('recibos.form.facturasDelPago', {
+              meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
+              saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
+            })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
+      // Los intereses pagados con la factura del mes ya emitida: factura aparte.
+      const deIntereses = facturas.flatMap((f) => f.facturasDeIntereses ?? []);
+      const lineaDeIntereses =
+        deIntereses.length > 0
+          ? ` ${t('recibos.form.facturaDeIntereses', {
+              valor: formatCurrency(deIntereses.reduce((s, f) => s + f.totalCop, 0)),
+            })}`
+          : '';
+      // Un desfase de hasta $1.000 no abona ni queda como anticipo: se dice.
+      const lineaDelAjuste =
+        (res.ajusteAlPesoCop ?? 0) > 0
+          ? ` ${t('recibos.form.ajusteAlPeso', { valor: formatCurrency(res.ajusteAlPesoCop ?? 0) })}`
+          : '';
       toast.success(
-        res.recibos.length > 1
-          ? t('recibos.form.emitidoVarios', { numeros, count: res.recibos.length })
-          : t('recibos.form.emitido', { numero: numeros }),
+        // Con la forma (b) y nada vencido no sale ningún recibo hoy: sale el anticipo.
+        res.recibos.length === 0 && anticipo > 0
+          ? t('recibos.form.anticipoRegistrado')
+          : res.recibos.length > 1
+            ? t('recibos.form.emitidoVarios', { numeros, count: res.recibos.length })
+            : t('recibos.form.emitido', { numero: numeros }),
         {
           description:
-            res.deudaRestante > 0
-              ? t('recibos.form.emitidoQuedaSaldo', {
-                  monto: formatCurrency(res.totalCop),
-                  saldo: formatCurrency(res.deudaRestante),
-                })
-              : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) }),
+            (anticipo > 0
+              ? `${saldo} ${t('recibos.form.emitidoConAnticipo', { anticipo: formatCurrency(anticipo) })}`
+              : saldo) +
+            lineaDelAjuste +
+            lineaDeFacturas +
+            lineaDeIntereses,
         },
       );
       cerrar();
@@ -564,10 +632,13 @@ export function RegistrarPagoModal({
     cerrar,
     cobroId,
     fecha,
+    forma,
     formatCurrency,
+    idioma,
     llaveDeEsteRecibo,
     medio,
     monto,
+    ofrecerForma,
     onSubmit,
     puedeEnviar,
     saludos,
@@ -641,8 +712,7 @@ export function RegistrarPagoModal({
             <ElegirCliente
               value={tenantId}
               onChange={(id) => {
-                // Otra persona arranca de cero y a hoy: la fecha de la anterior
-                // puede quedar antes del piso de ésta.
+                // Otra persona arranca de cero y a hoy, como cualquier recibo.
                 setTenantId(id);
                 setFecha(hoy);
                 setFechaDeLaVistaPrevia(null);
@@ -826,8 +896,70 @@ export function RegistrarPagoModal({
               </div>
 
               {/* 🔴 A dónde va la plata. El punto del cambio entero. */}
-              <PlanDeImputacion cartera={cartera} plan={plan} />
+              <PlanDeImputacion
+                cartera={cartera}
+                plan={plan}
+                comoAnticipo={ofrecerForma && forma === 'ANTICIPO_DEL_CONTRATO'}
+              />
               <AvisoSinConciliar periodos={sinConciliar} />
+
+              {/*
+                🔴 La forma del adelanto (Juan Camilo, 2026-09-16). Aparece sólo
+                cuando el monto alcanza cuotas que no vencen y el back puede
+                guardar el anticipo. Cada opción dice qué pasa y cuántos meses
+                cubre, ANTES de emitir: es plata que no se ve bajar en el acto.
+              */}
+              {ofrecerForma && (
+                <div className="space-y-2" data-testid="forma-del-adelanto">
+                  <p className="text-sm font-medium text-fg">{t('recibos.form.forma.titulo')}</p>
+                  <p className="text-xs text-fg-muted">
+                    {t('recibos.form.forma.ayuda', { meses: mesesDelAdelanto })}
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label={t('recibos.form.forma.titulo')}
+                    className="space-y-2"
+                  >
+                    {(
+                      [
+                        {
+                          valor: 'ABONAR_A_LAS_CUOTAS',
+                          titulo: t('recibos.form.forma.abonarTitulo'),
+                          ayuda: t('recibos.form.forma.abonarAyuda', {
+                            monto: formatCurrency(adelanto.valorCop),
+                            meses: mesesDelAdelanto,
+                          }),
+                        },
+                        {
+                          valor: 'ANTICIPO_DEL_CONTRATO',
+                          titulo: t('recibos.form.forma.anticipoTitulo'),
+                          ayuda: t('recibos.form.forma.anticipoAyuda', {
+                            monto: formatCurrency(adelanto.valorCop),
+                          }),
+                        },
+                      ] as const
+                    ).map((o) => (
+                      <button
+                        key={o.valor}
+                        type="button"
+                        role="radio"
+                        aria-checked={forma === o.valor}
+                        onClick={() => setForma(o.valor)}
+                        className={cn(
+                          'w-full rounded-lg border p-3 text-left transition-colors',
+                          forma === o.valor
+                            ? 'border-primary bg-primary-soft'
+                            : 'border-border bg-surface hover:bg-surface-muted',
+                        )}
+                        data-testid={`forma-${o.valor}`}
+                      >
+                        <p className="text-sm font-medium text-fg">{o.titulo}</p>
+                        <p className="mt-1 text-xs text-fg-muted">{o.ayuda}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Cómo pagó */}
               <div className="space-y-2">
@@ -867,15 +999,10 @@ export function RegistrarPagoModal({
                   id="fecha-recibo"
                   type="date"
                   /*
-                   * R4 (auditoría 13-09): tenía techo (`hoy`) pero no PISO, y
-                   * un dedo de más escribía un recibo fechado en 2016. El
-                   * piso es el corte de cartera: el período más viejo que la
-                   * persona debe — no tiene sentido fechar el recibo antes de
-                   * que existiera la deuda que paga. Sin cartera (pago por
-                   * adelantado) el piso es el primer día del año en curso,
-                   * que es hasta dónde llega un arqueo razonable.
+                   * Sólo techo (`hoy`). El piso que puso R4 (auditoría 13-09)
+                   * se quitó el 2026-09-16: el recibo lleva la fecha en la que
+                   * se recibió la plata, sea cual sea.
                    */
-                  min={pisoDeLaFecha}
                   max={hoy}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
@@ -887,7 +1014,6 @@ export function RegistrarPagoModal({
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||
-                      problemaDeLaFecha === 'antesDelPiso' ||
                       problemaDeLaFecha === 'futura' ||
                       errorDeLaFecha !== null
                       ? 'border-destructive'
@@ -897,23 +1023,12 @@ export function RegistrarPagoModal({
                 {tocado && !fecha && (
                   <p className="text-xs text-destructive">{t('recibos.form.fechaRequerida')}</p>
                 )}
-                {problemaDeLaFecha === 'antesDelPiso' && (
-                  <p className="text-xs text-destructive" data-testid="fecha-antes-del-piso">
-                    {t('recibos.form.fechaAntesDeLaDeuda', {
-                      piso: formatDate(new Date(`${pisoDeLaFecha}T12:00:00`), {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      }),
-                    })}
-                  </p>
-                )}
                 {problemaDeLaFecha === 'futura' && (
                   <p className="text-xs text-destructive" data-testid="fecha-futura">
                     {t('recibos.form.fechaFutura')}
                   </p>
                 )}
-                {/* El rechazo del back sobre ESTA fecha, tal cual: dice el piso y qué hacer. */}
+                {/* El rechazo del back sobre ESTA fecha, tal cual: dice qué hacer. */}
                 {problemaDeLaFecha === null && errorDeLaFecha !== null && (
                   <p className="text-xs text-destructive" data-testid="error-de-la-fecha">
                     {errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')}

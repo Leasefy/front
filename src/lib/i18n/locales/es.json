@@ -2329,6 +2329,33 @@
         "cancel": "Cancelar",
         "save": "Guardar Configuracion",
         "saving": "Guardando..."
+      },
+      "anular": {
+        "accion": "Anular cobro",
+        "titulo": "Anular este cobro",
+        "descripcion": "El cobro no se borra: queda anulado con tu motivo y deja de salir en Cobros emitidos. Lo que debe el inquilino no cambia. Si ya tenía factura, se genera su nota crédito, sin número y sin emitir.",
+        "motivo": "Motivo",
+        "motivoAyuda": "Queda en la auditoría y en la nota crédito, si la hay.",
+        "faltaMotivo": "Escribe por qué lo anulas (al menos 3 letras).",
+        "cancelar": "Cancelar",
+        "confirmar": "Anular cobro",
+        "anulando": "Anulando…",
+        "anulado": "Cobro anulado. Lo que debe el inquilino no cambió.",
+        "conNotaGenerada": "Se generó la nota crédito de su factura, sin número: queda pendiente de emitir.",
+        "conNotaPrevia": "Su factura ya tenía nota crédito: no se creó otra.",
+        "errores": {
+          "COBRO_CON_RECIBOS": "Este cobro tiene recibos de caja vigentes. Anula primero los recibos y vuelve a intentarlo.",
+          "COBRO_YA_ANULADO": "Este cobro ya estaba anulado. Actualiza la lista.",
+          "COBRO_NO_ENCONTRADO": "Este cobro ya no existe en tu inmobiliaria. Actualiza la lista.",
+          "MOTIVO_REQUERIDO": "Escribe por qué lo anulas.",
+          "ANULAR_COBRO_NO_DISPONIBLE": "Anular cobros todavía no está disponible: falta aplicar una migración de la base. No se cambió nada.",
+          "generico": "No se pudo anular el cobro. No se cambió nada; inténtalo de nuevo."
+        },
+        "sinPermiso": "Necesitas permiso para editar cobros.",
+        "anuladoBadge": "Anulado",
+        "vigentes": "Vigentes",
+        "anulados": "Anulados",
+        "sinAnulados": "No hay cobros anulados en este mes."
       }
     },
     "dispersiones": {
@@ -11442,7 +11469,6 @@
       "montoExcede": "Se pasa del saldo. El máximo abonable es {{monto}}.",
       "fechaLabel": "¿Qué día entró?",
       "fechaRequerida": "Elige el día",
-      "fechaAntesDeLaDeuda": "Elige un día desde el {{piso}}: es lo más atrás que puede quedar fechado este recibo.",
       "fechaFutura": "No puede ser después de hoy.",
       "recalculandoInteres": "Recalculando el interés de mora a esta fecha…",
       "medioLabel": "¿Por dónde entró?",
@@ -11505,13 +11531,30 @@
         "despues": "Después de este pago sigue debiendo",
         "sinConciliar": "Uno de estos meses ya tiene plata registrada que ningún recibo respalda. Hay que conciliarla antes de recibir.",
         "adelanto": "Adelanto",
-        "hayAdelanto": "Los meses marcados como adelanto todavía no vencen: pagarlos ahora baja la deuda del contrato."
+        "hayAdelanto": "Los meses marcados como adelanto todavía no vencen: pagarlos ahora baja la deuda del contrato.",
+        "anticipo": "Anticipo",
+        "hayAnticipo": "Los meses marcados como anticipo no bajan todavía: la plata queda guardada en el contrato y se descuenta con un recibo el día de pago de cada mes."
       },
       "descripcionAdelanto": "No tiene nada vencido. Lo que entre hoy es un adelanto: baja las cuotas de su contrato que todavía no vencen, de la más próxima en adelante.",
       "pagaLoVencido": "Paga lo vencido",
       "adelantoDesde": "Vencido hoy: {{vencido}}. Por encima de esa cifra estás adelantando contra {{futuro}} que todavía no vencen.",
       "sinMandato": "Falta el mandato del inmueble",
-      "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran"
+      "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran",
+      "forma": {
+        "titulo": "¿Cómo registras el adelanto?",
+        "ayuda": "Este pago alcanza {{meses}}, que todavía no vencen. Lo vencido se paga primero en las dos formas.",
+        "parteDe": "parte de {{mes}}",
+        "abonarTitulo": "Registrar todo ya",
+        "abonarAyuda": "Abona ya {{monto}} a {{meses}}: esas cuotas quedan pagadas hoy, con su recibo de caja.",
+        "anticipoTitulo": "Dejarlo como anticipo y descontarlo mes a mes",
+        "anticipoAyuda": "{{monto}} quedan como anticipo del contrato y ninguna cuota baja todavía. El día de pago de cada mes sale solo un recibo de caja que descuenta esa cuota, hasta que el anticipo llegue a cero."
+      },
+      "anticipoRegistrado": "Anticipo registrado",
+      "emitidoConAnticipo": "Quedaron {{anticipo}} como anticipo del contrato: se descuentan solos el día de pago de cada mes.",
+      "facturasDelPago": "Facturas de {{meses}} al día: les quedan {{saldo}} por pagar.",
+      "facturasSinEmitir": "Quedaron generadas y pendientes de emitir ante la DIAN.",
+      "ajusteAlPeso": "{{valor}} quedaron como ajuste al peso: no abonan a ninguna cuota.",
+      "facturaDeIntereses": "Los intereses pagados ({{valor}}) se facturaron aparte, sin número y pendientes de emitir."
     },
     "historial": {
       "titulo": "Recibos de caja",
@@ -11555,6 +11598,18 @@
       "conciliado": "Pago anterior conciliado",
       "conciliadoDesc": "Quedó el recibo {{numero}}. Ya puedes hacer el abono.",
       "fallo": "No se pudo conciliar"
+    },
+    "anticipoDelContrato": {
+      "titulo": "Anticipo del inquilino",
+      "ayuda": "Plata recibida por adelantado que todavía no abona a ninguna cuota. El día de pago de cada mes sale un recibo de caja que la descuenta.",
+      "saldo": "Queda por descontar",
+      "recibido": "Recibido",
+      "descontado": "Descontado",
+      "entrada": "Entró como anticipo",
+      "descuento": "Descuento de {{mes}}",
+      "recibo": "Recibo {{numero}}",
+      "anulado": "Anulado",
+      "errorAlLeer": "No pudimos leer el anticipo de este contrato: no sabemos si tiene saldo por descontar."
     }
   },
   "inquilinos": {

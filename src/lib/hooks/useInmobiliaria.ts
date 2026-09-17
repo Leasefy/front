@@ -435,7 +435,7 @@ export function usePipelineItems(options?: { skip?: boolean }) {
 export function useCobros(params?: Parameters<typeof cobrosApi.getAll>[0], options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(
     () => cobrosApi.getAll(params),
-    [params?.month, params?.status, params?.propietarioId],
+    [params?.month, params?.status, params?.propietarioId, params?.anulados],
     options?.skip,
     0,
     ['cobros'],

@@ -12143,6 +12143,10 @@
     "pie": "Generado por Leasefy el {{fecha}}",
     "pagina": "Página {{n}} de {{total}}",
     "vencidoEnPlazo": "Vencido, en plazo",
-    "vencidoEnPlazoDetalle": "{{n}} vencida(s) dentro del plazo del contrato: todavía no es mora."
+    "vencidoEnPlazoDetalle": "{{n}} vencida(s) dentro del plazo del contrato: todavía no es mora.",
+    "subrogadaA": "Subrogada a {{nombre}}",
+    "pagoLaAseguradora": "Pagó {{nombre}}",
+    "deudaSubrogada": "Deuda subrogada a la aseguradora",
+    "deudaSubrogadaAyuda": "Estas cuotas quedaron pagadas para la inmobiliaria y el propietario porque las pagó una aseguradora. El inquilino le debe ese valor a ella, no a la inmobiliaria."
   }
 }

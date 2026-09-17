@@ -82,3 +82,24 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
     expect(postMock).toHaveBeenCalledWith(`${BASE}/conciliar-seguros`, {});
   });
 });
+
+describe('conciliacionBancariaApi — el lote de lo que calza exacto (17-09)', () => {
+  it('leer, armar, aprobar y reversar pegan a sus rutas con el cuerpo exacto', async () => {
+    await conciliacionBancariaApi.loteActual();
+    expect(getMock).toHaveBeenCalledWith(`${BASE}/lotes/actual`);
+
+    await conciliacionBancariaApi.armarLote();
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes`, {});
+
+    await conciliacionBancariaApi.aprobarLote('l-1');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes/l-1/aprobar`, {});
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+
+    invalidarMock.mockReset();
+    await conciliacionBancariaApi.reversarLote('l-1', 'Extracto de otra cuenta');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes/l-1/reversar`, {
+      motivo: 'Extracto de otra cuenta',
+    });
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+  });
+});

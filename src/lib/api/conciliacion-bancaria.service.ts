@@ -13,6 +13,8 @@ import type {
   DestinoDeConciliacion,
   FilaDeExtracto,
   FiltrosDeMovimientos,
+  LoteActual,
+  LoteDeConciliacion,
   MovimientoBancario,
   PaginaDeMovimientos,
   ResultadoDeCarga,
@@ -104,6 +106,34 @@ export const conciliacionBancariaApi = {
 
   async conciliarSeguros(): Promise<ResultadoDeSeguros> {
     const res = await apiClient.post<ResultadoDeSeguros>(`${BASE}/conciliar-seguros`, {});
+    invalidar('cobros');
+    return res;
+  },
+
+  // ── El lote de lo que calza EXACTO (17-09-2026) ───────────────────────────
+
+  /** El lote propuesto (esperando aprobación) y los últimos aprobados o reversados. */
+  async loteActual(): Promise<LoteActual> {
+    return apiClient.get<LoteActual>(`${BASE}/lotes/actual`);
+  },
+
+  /** Arma (o rearma) el lote de lo que calza exacto. No emite recibos. `null` si nada calza. */
+  async armarLote(): Promise<LoteDeConciliacion | null> {
+    return apiClient.post<LoteDeConciliacion | null>(`${BASE}/lotes`, {});
+  },
+
+  /** Un funcionario aprueba el lote de una vez: ahí se emiten los recibos. */
+  async aprobarLote(loteId: string): Promise<LoteDeConciliacion> {
+    const res = await apiClient.post<LoteDeConciliacion>(`${BASE}/lotes/${loteId}/aprobar`, {});
+    invalidar('cobros');
+    return res;
+  },
+
+  /** Sólo un administrador, con motivo: anula los recibos que emitió el lote. */
+  async reversarLote(loteId: string, motivo: string): Promise<LoteDeConciliacion> {
+    const res = await apiClient.post<LoteDeConciliacion>(`${BASE}/lotes/${loteId}/reversar`, {
+      motivo,
+    });
     invalidar('cobros');
     return res;
   },

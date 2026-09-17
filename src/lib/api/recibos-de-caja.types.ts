@@ -309,6 +309,11 @@ export interface NuevoReciboPorCliente {
   idempotencyKey?: string;
   /** Sólo cuando el pago alcanza cuotas que todavía no vencen. Ver `FormaDelAdelanto`. */
   formaDelAdelanto?: FormaDelAdelanto;
+  /**
+   * 🔴 D11 (17-09-2026): quién pagó, cuando NO fue el cliente. Hoy sólo una
+   * aseguradora que paga un siniestro. Sin esto pagó el cliente.
+   */
+  pagador?: { tipo: 'ASEGURADORA'; aseguradoraId: string; siniestroReferencia?: string };
 }
 
 /** A qué período fue una parte del pago, y cuánto de eso cubrió intereses. */

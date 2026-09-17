@@ -128,6 +128,13 @@ import {
 } from '@/lib/recibos/forma-del-adelanto';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
+import {
+  faltaElPagador,
+  PAGA_EL_CLIENTE,
+  pagadorParaElBack,
+  QuienPaga,
+  type QuienPagaValor,
+} from './aseguradoras/QuienPaga';
 import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import {
   AvisoSinConciliar,
@@ -265,6 +272,8 @@ export function RegistrarPagoModal({
   const [saludos, setSaludos] = React.useState('');
   /** La forma del adelanto que eligió caja. Sólo viaja si se le preguntó. */
   const [forma, setForma] = React.useState<FormaDelAdelanto>('ABONAR_A_LAS_CUOTAS');
+  /** 🔴 D11: quién paga. Casi siempre el cliente; a veces una aseguradora (siniestro). */
+  const [quienPaga, setQuienPaga] = React.useState<QuienPagaValor>(PAGA_EL_CLIENTE);
   const [enviando, setEnviando] = React.useState(false);
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
   /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
@@ -365,7 +374,8 @@ export function RegistrarPagoModal({
    */
   const puedeGuardarAFavor = cartera?.anticipoDisponible === true;
   const excedente = montoValido ? Math.max(0, monto - maximo) : 0;
-  const seExcede = excedente > 0 && !puedeGuardarAFavor;
+  // 🔴 D11: la plata de una aseguradora nunca queda a favor del inquilino.
+  const seExcede = excedente > 0 && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
 
   const errorDeMonto = !tocado
     ? null
@@ -417,6 +427,7 @@ export function RegistrarPagoModal({
     montoValido &&
     !seExcede &&
     medio !== '' &&
+    !faltaElPagador(quienPaga) &&
     problemaDeLaFecha === null &&
     carteraAlDia &&
     errorDeLaFecha === null;
@@ -455,6 +466,7 @@ export function RegistrarPagoModal({
       setFechaDeLaVistaPrevia(null);
       setSaludos('');
       setForma('ABONAR_A_LAS_CUOTAS');
+      setQuienPaga(PAGA_EL_CLIENTE);
       setErrorDelBack(null);
       setTituloDelError(null);
       setTocado(false);
@@ -480,6 +492,7 @@ export function RegistrarPagoModal({
     setFechaDeLaVistaPrevia(null);
     setSaludos('');
     setForma('ABONAR_A_LAS_CUOTAS');
+    setQuienPaga(PAGA_EL_CLIENTE);
     setErrorDelBack(null);
     setTituloDelError(null);
     setTocado(false);
@@ -511,7 +524,9 @@ export function RegistrarPagoModal({
         ...(saludos.trim() ? { notas: saludos.trim() } : {}),
         idempotencyKey: llaveDeEsteRecibo(),
         // Sólo si se le preguntó a caja: si no, el back abona a las cuotas.
-        ...(ofrecerForma ? { formaDelAdelanto: forma } : {}),
+        // 🔴 D11: la plata de una aseguradora no queda como anticipo.
+        ...(ofrecerForma && quienPaga.tipo === 'CLIENTE' ? { formaDelAdelanto: forma } : {}),
+        ...(pagadorParaElBack(quienPaga) ? { pagador: pagadorParaElBack(quienPaga) } : {}),
       });
 
       // Salió: el próximo recibo es otro y lleva otra llave.
@@ -641,6 +656,7 @@ export function RegistrarPagoModal({
     ofrecerForma,
     onSubmit,
     puedeEnviar,
+    quienPaga,
     saludos,
     sinConciliar,
     t,
@@ -909,7 +925,7 @@ export function RegistrarPagoModal({
                 guardar el anticipo. Cada opción dice qué pasa y cuántos meses
                 cubre, ANTES de emitir: es plata que no se ve bajar en el acto.
               */}
-              {ofrecerForma && (
+              {ofrecerForma && quienPaga.tipo === 'CLIENTE' && (
                 <div className="space-y-2" data-testid="forma-del-adelanto">
                   <p className="text-sm font-medium text-fg">{t('recibos.form.forma.titulo')}</p>
                   <p className="text-xs text-fg-muted">
@@ -960,6 +976,9 @@ export function RegistrarPagoModal({
                   </div>
                 </div>
               )}
+
+              {/* 🔴 D11: quién paga — el cliente o una aseguradora (siniestro). */}
+              <QuienPaga valor={quienPaga} onChange={setQuienPaga} />
 
               {/* Cómo pagó */}
               <div className="space-y-2">

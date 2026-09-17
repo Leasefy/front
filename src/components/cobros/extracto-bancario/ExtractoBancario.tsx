@@ -16,24 +16,20 @@
  * Los cuatro números de arriba estaban en mono MAYÚSCULA, un estilo que no
  * existe en ninguna otra pantalla del panel, y los movimientos eran una lista
  * de tarjetas apiladas con un «Anterior / Siguiente» propio. Ahora los KPIs son
- * los del panel y los movimientos son la tabla estándar: las pestañas y el lote
- * de seguros viven DENTRO de la tarjeta, arriba de la tabla, el vacío va dentro
+ * los del panel y los movimientos son la tabla estándar: las pestañas viven
+ * DENTRO de la tarjeta, arriba de la tabla, el vacío va dentro
  * del cuerpo —para que los encabezados se sigan viendo— y el pie es el
  * paginador del design system. La carga del archivo no se tocó.
+ *
+ * ── El lote (17-09-2026) ────────────────────────────────────────────────────
+ * «Conciliar los seguros» emitía recibos sin que nadie aprobara. Ya no existe:
+ * lo que calza EXACTO (referencia de recaudo + valor) lo arma el sistema en un
+ * lote que un funcionario aprueba de una vez (`LoteDeLoQueCalzaExacto`), y la
+ * tabla es la cola manual.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bank, ShieldCheck } from '@phosphor-icons/react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Bank } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -70,6 +66,7 @@ import type {
   ResumenDeConciliacion,
 } from '@/lib/api/conciliacion-bancaria.types';
 import { CargarExtracto } from './CargarExtracto';
+import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
 import { MovimientoFila } from './MovimientoFila';
 import { diaLegible, mensajeDe, plata } from './formato';
 
@@ -81,9 +78,7 @@ import { diaLegible, mensajeDe, plata } from './formato';
  * recortar en el cliente saldría caro. Por eso acá no va `useTablePagination`
  * —que asume la lista completa en memoria— y sí su pie, `TablePagination`.
  *
- * Arranca en 50 a propósito: «Conciliar los seguros (n)» cuenta los seguros de
- * la página, y bajarlo a 10 haría que ese número describiera cada vez menos de
- * lo que el lote realmente hace.
+ * Arranca en 50: la cola manual se revisa de a muchas líneas.
  */
 const POR_PAGINA_INICIAL = 50;
 
@@ -146,8 +141,11 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const [conCliente, setConCliente] = useState<MovimientoBancario | null>(null);
   const [clienteElegido, setClienteElegido] = useState<string | null>(null);
   const [motivo, setMotivo] = useState('');
-  const [confirmandoSeguros, setConfirmandoSeguros] = useState(false);
-  const [corriendoSeguros, setCorriendoSeguros] = useState(false);
+  /*
+   * 🔴 (17-09-2026) Sube cuando cambia el extracto: el lote de lo que calza
+   * exacto se vuelve a leer (al cargar, el back lo arma solo).
+   */
+  const [versionDelLote, setVersionDelLote] = useState(0);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -276,31 +274,6 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     }
   };
 
-  const conciliarSeguros = async () => {
-    setCorriendoSeguros(true);
-    try {
-      const r = await conciliacionBancariaApi.conciliarSeguros();
-      const partes = [
-        `${r.conciliados} ${r.conciliados === 1 ? 'conciliado' : 'conciliados'}`,
-        `${r.sinCandidatoSeguro} sin candidato seguro`,
-      ];
-      if (r.errores.length > 0) partes.push(`${r.errores.length} con error`);
-      (r.errores.length > 0 ? toast.error : toast.success)(partes.join(' · '), {
-        description: r.errores[0]?.mensaje,
-      });
-      setConfirmandoSeguros(false);
-      await cargar();
-    } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo conciliar en lote.'));
-    } finally {
-      setCorriendoSeguros(false);
-    }
-  };
-
-  const segurosEnPantalla = (movimientos ?? []).filter(
-    (m) => m.estado === 'PENDIENTE' && m.candidatos.filter((c) => c.seguro).length === 1,
-  ).length;
-
   const cambiarPestana = (v: string) => {
     setPestana(v as EstadoDelMovimientoBancario);
     setPagina(1);
@@ -325,9 +298,21 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
       {puedeConciliar && (
         <div id={idDeCarga} className={idDeCarga ? 'scroll-mt-24' : undefined}>
-          <CargarExtracto onCargado={() => void cargar()} />
+          <CargarExtracto
+            onCargado={() => {
+              void cargar();
+              setVersionDelLote((v) => v + 1);
+            }}
+          />
         </div>
       )}
+
+      {/* 🔴 Lo que calza exacto va en lote y se aprueba de una vez; la tabla
+          de abajo es la cola manual. */}
+      <LoteDeLoQueCalzaExacto
+        version={versionDelLote}
+        onCambio={() => void cargar()}
+      />
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Pestañas y lote, dentro de la tarjeta y encima de la tabla. */}
@@ -342,18 +327,10 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               ))}
             </TabsList>
           </Tabs>
-          {pestana === 'PENDIENTE' && puedeConciliar && (
-            <Button
-              variant="secondary"
-              hideArrow
-              disabled={segurosEnPantalla === 0 || corriendoSeguros}
-              onClick={() => setConfirmandoSeguros(true)}
-              data-testid="conciliar-seguros"
-              className="shrink-0"
-            >
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Conciliar los seguros ({segurosEnPantalla})
-            </Button>
+          {pestana === 'PENDIENTE' && (
+            <p className="text-caption text-fg-muted" data-testid="cola-manual">
+              Cola manual: lo que no calza exacto se concilia una por una.
+            </p>
           )}
         </div>
 
@@ -519,32 +496,6 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={confirmandoSeguros} onOpenChange={setConfirmandoSeguros}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Conciliar {segurosEnPantalla} {segurosEnPantalla === 1 ? 'movimiento seguro' : 'movimientos seguros'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se emite un recibo de caja por cada línea que tiene un solo cobro con el valor exacto y el
-              nombre o la dirección en la descripción. Lo que tenga dudas queda pendiente para que lo
-              mires tú. El lote corre sobre TODOS los movimientos pendientes, no sólo sobre los de
-              esta página.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={corriendoSeguros}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                void conciliarSeguros();
-              }}
-              disabled={corriendoSeguros}
-              data-testid="confirmar-seguros"
-            >
-              {corriendoSeguros ? 'Conciliando…' : 'Conciliar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

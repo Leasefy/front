@@ -24,9 +24,15 @@ export default function RecaudoPage() {
             por mes. Debajo de cada cifra está escrito de qué se compone.
           </p>
           {/* 17-09-2026: los estudios que pagan los solicitantes, con su recibo. */}
-          <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/estudios">
-            Estudios pagados por solicitantes
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/estudios">
+              Estudios pagados por solicitantes
+            </Link>
+            {/* D11 (17-09-2026): las aseguradoras que pagan siniestros. */}
+            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
+              Aseguradoras
+            </Link>
+          </div>
         </header>
         <Recaudo />
       </div>

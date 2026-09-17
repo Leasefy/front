@@ -220,6 +220,27 @@ export function ContratoDelEstado({
         <AnticipoDelContratoSeccion contractId={contrato.id} />
       )}
 
+      {/* 🔴 D11: la deuda subrogada, VISIBLE y SEPARADA de lo que se le debe a
+          la inmobiliaria: no suma a «resta por pagar». */}
+      {contrato.subrogacion && contrato.subrogacion.totalCop > 0 && (
+        <div
+          className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+          data-testid={`subrogacion-contrato-${contrato.numero}`}
+        >
+          <p className="text-label uppercase tracking-wide text-fg-subtle">
+            {t('estadoDeCuenta.deudaSubrogada')}
+          </p>
+          {contrato.subrogacion.aseguradoras.map((a) => (
+            <p key={a.nit} className="text-body-sm text-fg">
+              {a.nombre} · NIT {a.nit}
+              {a.siniestros.length > 0 ? ` · ${a.siniestros.join(', ')}` : ''}:{' '}
+              <span className="font-mono tabular-nums">{formatCurrency(a.valorCop)}</span>
+            </p>
+          ))}
+          <p className="text-caption text-fg-muted">{t('estadoDeCuenta.deudaSubrogadaAyuda')}</p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.totalDelContrato')}
@@ -546,6 +567,7 @@ function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
  * pago: «Sin pago» al lado de un «—» en otra columna decía lo mismo dos veces.
  */
 function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
+  const t = useTextoDelEstado();
   const doc = fila.documentoDePago;
   if (!doc && !fila.fechaDePago) {
     return <span className="text-caption text-fg-subtle">—</span>;
@@ -563,6 +585,12 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           title={doc.descripcion || undefined}
         >
           {doc.numero} · {doc.tipo}
+        </p>
+      )}
+      {/* 🔴 D11: la pagó una aseguradora — la fila lo dice, no el pie. */}
+      {fila.subrogadaA && (
+        <p className="text-caption text-fg-muted" data-testid="fila-subrogada">
+          {t('estadoDeCuenta.subrogadaA', { nombre: fila.subrogadaA.nombre })}
         </p>
       )}
     </>

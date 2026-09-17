@@ -40,6 +40,7 @@ import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
 import Link from 'next/link';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
+import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -620,11 +621,16 @@ export function DispersionDetail({
             </div>
             <div className="p-4 rounded-lg bg-success-soft text-center">
               <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
-              <p className="text-lg font-bold text-success">
-                {formatCurrency(dispersion.netToPropietario)}
+              {/* Con deducciones, lo que se gira es el neto a girar del back
+                  (entero o $0), no el neto guardado, que puede quedar en contra. */}
+              <p className="text-lg font-bold text-success" data-testid="dispersion-neto">
+                {formatCurrency(
+                  dispersion.conDeducciones ? dispersion.conDeducciones.aGirarCop : dispersion.netToPropietario,
+                )}
               </p>
             </div>
           </div>
+          <BloqueDeDeducciones bloque={dispersion.conDeducciones} propietarioId={dispersion.propietarioId} />
           {/* «Causado» no se entiende solo, y es la diferencia con lo recaudado. */}
           {dispersion.baseDelCanon !== 'RECAUDADO' && (
             <p className="text-xs text-muted-foreground" data-testid="dispersion-que-es-el-canon">

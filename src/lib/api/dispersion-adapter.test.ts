@@ -137,3 +137,29 @@ describe('adaptarDispersion', () => {
     })
   })
 })
+
+describe('las deducciones de la liquidación', () => {
+  const BLOQUE = {
+    netoDelMesCop: 900_000,
+    deducciones: [],
+    deduccionesCop: 1_100_000,
+    saldoAnteriorCop: 0,
+    netoCop: -200_000,
+    aGirarCop: 0,
+    saldoEnContraCop: 200_000,
+    compensadoCop: 900_000,
+    renglones: [],
+  }
+
+  it('pasan tal cual: el neto a girar y el saldo en contra los calcula el back', () => {
+    const d = adaptarDispersion({ ...DEL_BACK, netToPropietario: -200_000, conDeducciones: BLOQUE })
+    expect(d.conDeducciones).toEqual(BLOQUE)
+    // El guardado se conserva: la pantalla lee `conDeducciones.aGirarCop`, no lo recalcula.
+    expect(d.netToPropietario).toBe(-200_000)
+  })
+
+  it('un back anterior sin el bloque no inventa uno', () => {
+    expect(adaptarDispersion(DEL_BACK).conDeducciones).toBeUndefined()
+    expect(adaptarDispersion({ ...DEL_BACK, conDeducciones: null }).conDeducciones).toBeUndefined()
+  })
+})

@@ -188,3 +188,58 @@ describe('extracto sin movimiento', () => {
     );
   });
 });
+
+describe('extracto con deducciones', () => {
+  const conDeducciones = {
+    netoDelMesCop: 720_000,
+    deducciones: [
+      {
+        id: 'ded-1', propietarioId: 'p1', origen: 'SALDO_ANTERIOR' as const, motivo: 'Saldo en contra de agosto',
+        valorCop: 300_000, mesDesde: '2026-09', fecha: '2026-09-01', grupoId: 'g-1', valorTotalCop: 300_000,
+        participacionBps: 10_000, consignacionId: null, solicitudMantenimientoId: null,
+        tieneSoporte: false, soporteNombre: null, estado: 'EN_LIQUIDACION' as const,
+      },
+      {
+        id: 'ded-2', propietarioId: 'p1', origen: 'MANUAL' as const, motivo: 'Predial 2026',
+        valorCop: 600_000, mesDesde: '2026-09', fecha: '2026-09-02', grupoId: 'g-2', valorTotalCop: 600_000,
+        participacionBps: 10_000, consignacionId: null, solicitudMantenimientoId: null,
+        tieneSoporte: true, soporteNombre: 'predial.pdf', estado: 'EN_LIQUIDACION' as const,
+      },
+    ],
+    deduccionesCop: 900_000,
+    saldoAnteriorCop: 300_000,
+    netoCop: -180_000,
+    aGirarCop: 0,
+    saldoEnContraCop: 180_000,
+    compensadoCop: 720_000,
+    renglones: [
+      { concepto: 'Saldo en contra del mes anterior', valorCop: -300_000, motivo: 'Saldo en contra de agosto' },
+      { concepto: 'Descuento: Predial 2026', valorCop: -600_000, motivo: 'Predial 2026' },
+    ],
+  };
+
+  it('🔴 lo que recibe es el neto a girar del back, y el bloque dice el saldo en contra del mes anterior y el que pasa', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [linea()],
+        totals: { ...extracto.totals, totalNet: 720_000 },
+        conDeducciones,
+      },
+    });
+
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$0');
+    const bloque = container.querySelector('[data-testid="bloque-de-deducciones"]');
+    expect(bloque?.textContent).toContain('Saldo en contra del mes anterior');
+    expect(bloque?.textContent).toContain('Descuento: Predial 2026');
+    expect(container.querySelector('[data-testid="bloque-saldo-en-contra"]')).not.toBeNull();
+    // El soporte se puede abrir desde el extracto.
+    expect(container.querySelector('[data-testid="soporte-ded-2"]')).not.toBeNull();
+  });
+
+  it('sin deducciones el extracto se lee como siempre', async () => {
+    await render({ extracto: { ...extracto, totals: { ...extracto.totals, totalNet: 720_000 } } });
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$720.000');
+    expect(container.querySelector('[data-testid="bloque-de-deducciones"]')).toBeNull();
+  });
+});

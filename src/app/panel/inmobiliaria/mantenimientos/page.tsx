@@ -30,6 +30,8 @@ import {
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
+import type { ACargoDe } from '@/lib/types/deducciones';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -313,17 +315,57 @@ function MantenimientosContent() {
     [t, recargarMantenimientos, handleMantenimientoViewerClose]
   );
 
+  /**
+   * «Aprobar cotización» abre la pregunta de a cargo de quién queda la
+   * reparación (Nico y Juan Camilo, 2026-09-16): no se aprueba sin decirlo.
+   * Las dos puertas —la lista y el comparador del detalle— llegan acá.
+   */
+  const [cotizacionPorAprobar, setCotizacionPorAprobar] = useState<{
+    solicitudId: string;
+    quoteId: string;
+  } | null>(null);
+
   const handleApproveQuote = useCallback(async (solicitudId: string, quoteId: string) => {
-    try {
-      await mantenimientoApi.approveQuote(solicitudId, quoteId);
-      await recargarMantenimientos();
-      toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
-    } catch (error) {
-      toast.error('No se pudo aprobar la cotización', {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    }
-  }, [t, recargarMantenimientos]);
+    setCotizacionPorAprobar({ solicitudId, quoteId });
+  }, []);
+
+  const aprobarCotizacion = useCallback(
+    async (aCargoDe: ACargoDe) => {
+      if (!cotizacionPorAprobar) return;
+      try {
+        const aprobada = await mantenimientoApi.approveQuote(
+          cotizacionPorAprobar.solicitudId,
+          cotizacionPorAprobar.quoteId,
+          aCargoDe,
+        );
+        await recargarMantenimientos();
+        toast.success(
+          t(
+            aCargoDe === 'PROPIETARIO'
+              ? 'inmobiliaria.deducciones.aCargoDe.aprobadaPropietario'
+              : 'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
+          ),
+          aprobada.cargo?.avisos?.length ? { description: aprobada.cargo.avisos.join(' ') } : undefined,
+        );
+      } catch (error) {
+        toast.error('No se pudo aprobar la cotización', {
+          description: error instanceof Error ? error.message : undefined,
+        });
+        throw error;
+      }
+    },
+    [cotizacionPorAprobar, t, recargarMantenimientos],
+  );
+
+  /** La cotización que se está aprobando, para decir en el diálogo cuál es. */
+  const quoteDelDialogo = cotizacionPorAprobar
+    ? mantenimientos
+        .find((m) => m.id === cotizacionPorAprobar.solicitudId)
+        ?.quotes.find((q) => q.id === cotizacionPorAprobar.quoteId)
+    : undefined;
+  const cotizacionDelDialogo = quoteDelDialogo
+    ? { proveedor: quoteDelDialogo.providerName, valorCop: quoteDelDialogo.amount }
+    : null;
 
   /**
    * La misma transición, para quien NO espera la promesa (los botones del
@@ -619,6 +661,16 @@ function MantenimientosContent() {
         abierto={isCotizacionDialogOpen}
         onOpenChange={setIsCotizacionDialogOpen}
         onGuardar={handleGuardarCotizacion}
+      />
+
+      {/* A cargo de quién queda la reparación, antes de aprobar la cotización. */}
+      <ACargoDeDialog
+        abierto={cotizacionPorAprobar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) setCotizacionPorAprobar(null);
+        }}
+        cotizacion={cotizacionDelDialogo}
+        onConfirmar={aprobarCotizacion}
       />
 
       {/* Mantenimiento Form Sheet */}

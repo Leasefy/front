@@ -244,3 +244,79 @@ describe('tildar hasta un monto', () => {
     expect(pie?.textContent).toContain('2');
   });
 });
+
+describe('nunca un giro parcial, y las liquidaciones que se cierran en $0', () => {
+  const conCompensada = () =>
+    respuesta({
+      candidatos: [
+        ...respuesta().candidatos,
+        {
+          dispersionId: 'd-z',
+          propietarioId: 'p-z',
+          propietarioName: 'Zoila',
+          month: '2026-09',
+          netoCop: -200_000,
+          acumuladoCop: 0,
+          entraEnElCupo: false,
+          motivoDeExclusion:
+            'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.',
+          seCompensa: true,
+          saldoEnContraCop: 200_000,
+        },
+      ],
+    });
+
+  it('🔴 no hay dónde escribir un monto por propietario: se tilda entero o no se tilda', async () => {
+    await montar();
+    expect(contenedor.querySelector('[data-testid="sin-giro-parcial"]')?.textContent).toContain(
+      'se gira completo o no se gira',
+    );
+    // El único campo de texto es el tope, que sólo decide a quién tildar.
+    const campos = [...contenedor.querySelectorAll('input')].filter((i) => i.type !== 'checkbox');
+    expect(campos.map((i) => i.id)).toEqual(['tope-del-lote']);
+  });
+
+  it('una liquidación en contra se tilda, no suma, y dice cuánto pasa al mes siguiente', async () => {
+    candidatos.mockResolvedValue(conCompensada());
+    const cambios: unknown[] = [];
+    await montar((e) => cambios.push(e));
+
+    const zoila = contenedor.querySelector<HTMLElement>('[data-testid="compensable-d-z"]')!;
+    expect(zoila.textContent).toContain('se cierra en $0');
+    expect(zoila.textContent).toContain('$200.000 pasan al mes siguiente');
+    // No sale como excluida.
+    expect(texto()).not.toContain('No se gira: sus deducciones');
+
+    await tildar('d-b');
+    await act(async () => {
+      zoila.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(cambios.at(-1)).toMatchObject({ totalCop: 500_000, descubiertoCop: 0 });
+    expect((cambios.at(-1) as { dispersionIds: string[] }).dispersionIds.sort()).toEqual(['d-b', 'd-z']);
+    const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]')!.textContent;
+    expect(pie).toContain('$500.000');
+    expect(pie).toContain('cierras en $0 la liquidación de 1');
+  });
+
+  it('«Tildar hasta ese monto» incluye las que se cierran en $0 sin gastar tope', async () => {
+    candidatos.mockResolvedValue(conCompensada());
+    const cambios: unknown[] = [];
+    await montar((e) => cambios.push(e));
+
+    const tope = contenedor.querySelector('#tope-del-lote') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set?.call(tope, '500000');
+      tope.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const boton = [...contenedor.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Tildar hasta ese monto'),
+    );
+    await act(async () => {
+      boton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(cambios.at(-1)).toMatchObject({ totalCop: 500_000 });
+    expect((cambios.at(-1) as { dispersionIds: string[] }).dispersionIds.sort()).toEqual(['d-b', 'd-z']);
+  });
+});

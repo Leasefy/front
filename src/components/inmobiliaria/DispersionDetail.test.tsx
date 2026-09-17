@@ -241,3 +241,37 @@ describe('<DispersionDetail> D4 — quien aprobó no marca girada', () => {
     expect(q('dispersion-aprobador-no-gira')).toBeNull();
   });
 });
+
+describe('<DispersionDetail> — deducciones del propietario', () => {
+  const conDeducciones = {
+    netoDelMesCop: 900_000,
+    deducciones: [
+      {
+        id: 'ded-1', propietarioId: 'own1', origen: 'REPARACION' as const, motivo: 'Cambio de calentador',
+        valorCop: 1_000_000, mesDesde: '2026-07', fecha: '2026-07-02', grupoId: 'g-1', valorTotalCop: 1_000_000,
+        participacionBps: 10_000, consignacionId: 'c1', solicitudMantenimientoId: 's1',
+        tieneSoporte: false, soporteNombre: null, estado: 'EN_LIQUIDACION' as const,
+      },
+    ],
+    deduccionesCop: 1_000_000,
+    saldoAnteriorCop: 0,
+    netoCop: -100_000,
+    aGirarCop: 0,
+    saldoEnContraCop: 100_000,
+    compensadoCop: 900_000,
+    renglones: [{ concepto: 'Reparación: Cambio de calentador', valorCop: -1_000_000, motivo: 'Cambio de calentador' }],
+  };
+
+  it('🔴 el neto que se muestra es el que se gira: $0, no el guardado en contra', () => {
+    renderConProps({ ...BASE_DISPERSION, netToPropietario: -100_000, conDeducciones }, {});
+    expect(q('dispersion-neto')?.textContent).toBe('$0');
+    expect(q('bloque-de-deducciones')?.textContent).toContain('Reparación: Cambio de calentador');
+    expect(q('bloque-saldo-en-contra')).not.toBeNull();
+  });
+
+  it('sin deducciones, el neto guardado y ningún bloque', () => {
+    renderConProps(BASE_DISPERSION, {});
+    expect(q('dispersion-neto')?.textContent).toBe('$900000');
+    expect(q('bloque-de-deducciones')).toBeNull();
+  });
+});

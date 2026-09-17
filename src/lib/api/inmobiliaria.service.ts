@@ -8,6 +8,7 @@ import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import { tasaMedida } from '@/lib/tasas';
+import type { ACargoDe, CargoDeLaReparacion } from '@/lib/types/deducciones';
 import type {
   DocumentType,
   AgencyProfile,
@@ -1521,8 +1522,24 @@ export const mantenimientoApi = {
     return apiClient.post<MantenimientoQuote>(`${BASE}/mantenimiento/${id}/quote`, data);
   },
 
-  async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId }));
+  /**
+   * Aprueba una cotización diciendo A CARGO DE QUIÉN queda la reparación
+   * (Nico y Juan Camilo, 2026-09-16). El back lo exige: a cargo del
+   * PROPIETARIO le registra la deducción por el valor aprobado; a cargo del
+   * INQUILINO no le descuenta nada al propietario. `cargo.avisos` trae lo que
+   * la pantalla tiene que decir (p. ej. que el cobro al inquilino no es
+   * automático todavía).
+   */
+  async approveQuote(
+    id: string,
+    quoteId: string,
+    aCargoDe: ACargoDe,
+  ): Promise<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }> {
+    const respuesta = await apiClient.put<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }>(
+      `${BASE}/mantenimiento/${id}/select-quote`,
+      { quoteId, aCargoDe },
+    );
+    return { ...mantenimientoDelBack(respuesta), cargo: respuesta.cargo };
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {

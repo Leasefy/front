@@ -44,6 +44,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
 import { ExtractosEnviadosDelPropietario } from '@/components/inmobiliaria/ExtractosEnviadosDelPropietario';
+import { DeduccionesDelPropietario } from '@/components/inmobiliaria/deducciones/DeduccionesDelPropietario';
 import {
   DropdownList,
   DropdownListContent,
@@ -412,7 +413,7 @@ function PropietarioDetailContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
-  const [activeTab, setTab] = useState<'properties' | 'payments' | 'notes'>('properties');
+  const [activeTab, setTab] = useState<'properties' | 'payments' | 'deducciones' | 'notes'>('properties');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
@@ -892,6 +893,10 @@ function PropietarioDetailContent() {
                 ),
               },
               {
+                value: 'deducciones',
+                label: t('inmobiliaria.deducciones.tab'),
+              },
+              {
                 value: 'notes',
                 label: t('inmobiliaria.propietarios.detail.notes'),
               },
@@ -971,6 +976,25 @@ function PropietarioDetailContent() {
                     <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
                   ))}
                 </EstadoDeDatos>
+              </motion.div>
+            )}
+
+            {activeTab === 'deducciones' && (
+              <motion.div
+                key="deducciones"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {/* Los inmuebles salen de las consignaciones ya leídas: el
+                    descuento puede quedar atado a uno o a ninguno. */}
+                <DeduccionesDelPropietario
+                  propietarioId={propietario.id}
+                  inmuebles={consignaciones.map((c) => ({
+                    consignacionId: c.id,
+                    titulo: c.propertyTitle,
+                  }))}
+                />
               </motion.div>
             )}
 

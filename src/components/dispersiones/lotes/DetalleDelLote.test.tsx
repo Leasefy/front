@@ -692,3 +692,55 @@ describe('<DetalleDelLote> — cierre', () => {
     expect(boton('Aprobar').disabled).toBe(true);
   });
 });
+
+describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
+  const MOTIVO =
+    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
+
+  function conCompensada(): VistaDelLote {
+    const base = lote();
+    const l: LoteDeDispersion = {
+      ...base,
+      items: [
+        ...base.items,
+        {
+          id: 'i-4',
+          loteId: ID,
+          dispersionId: 'd-4',
+          propietarioId: 'p-4',
+          nombreTitular: 'Elena Mora',
+          documento: '43111222',
+          tipoDocumento: 'CC',
+          banco: 'Bancolombia',
+          tipoDeCuenta: 'AHORROS',
+          numeroDeCuenta: '55566677',
+          valorCop: -250_000,
+          motivoDeExclusion: MOTIVO,
+        },
+      ],
+    };
+    // El back no la cuenta como excluida: la manda aparte.
+    return vista(l, {
+      excluidos: vista(base).excluidos,
+      compensados: [
+        { propietarioId: 'p-4', nombre: 'Elena Mora', dispersionId: 'd-4', netoCop: -250_000, saldoEnContraCop: 250_000 },
+      ],
+    });
+  }
+
+  it('🔴 se ve aparte de los excluidos: $0 girado y cuánto pasa al mes siguiente', async () => {
+    await render(conCompensada());
+
+    const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
+    expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
+    expect(seccion?.textContent).toContain('Elena Mora');
+    expect(seccion?.textContent).toContain('$250.000');
+    expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
+    expect(container.textContent).toContain('Se cierra en $0');
+  });
+
+  it('sin compensados no aparece la sección', async () => {
+    await render(vista(lote()));
+    expect(container.querySelector('[data-testid="compensados-del-lote"]')).toBeNull();
+  });
+});

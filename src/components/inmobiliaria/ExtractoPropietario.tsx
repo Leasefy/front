@@ -42,6 +42,7 @@ import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
+import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -571,8 +572,12 @@ export function ExtractoPropietario({
               <CurrencyCircleDollar className="w-5 h-5" weight="fill" />
               {t('inmobiliaria.propietario.extracto.netToReceive')}
             </div>
-            <p className="text-3xl font-bold text-success">
-              {formatCurrency(extracto.totals.totalNet)}
+            {/* Con deducciones, lo que recibe es el neto a girar del back
+                (entero o $0), no el neto de las líneas. */}
+            <p className="text-3xl font-bold text-success" data-testid="extracto-neto-a-recibir">
+              {formatCurrency(
+                extracto.conDeducciones ? extracto.conDeducciones.aGirarCop : extracto.totals.totalNet,
+              )}
             </p>
           </div>
 
@@ -651,6 +656,13 @@ export function ExtractoPropietario({
           </div>
         </div>
       </div>
+
+      {/* Deducciones del mes: cada una con su soporte, y lo que se gira. */}
+      {extracto.conDeducciones && extracto.conDeducciones.deducciones.length > 0 && (
+        <div className="p-6 border-b border-border">
+          <BloqueDeDeducciones bloque={extracto.conDeducciones} propietarioId={extracto.propietarioId} />
+        </div>
+      )}
 
       {/* Actions Footer - Hide on print */}
       <div className="p-6 bg-muted/30 print:hidden">

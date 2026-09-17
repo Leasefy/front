@@ -3,6 +3,7 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
+import type { DeduccionesDeLaLiquidacion } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
@@ -716,6 +717,8 @@ export interface Dispersion {
   totalConceptosACargo: number;
   totalDeTerceros: number;
   netToPropietario: number;
+  /** Las deducciones de esta liquidación y lo que se gira. Opcional: back viejo. */
+  conDeducciones?: DeduccionesDeLaLiquidacion;
 
   // Status
   status: DispersionStatus;
@@ -773,6 +776,10 @@ export interface VistaPreviaDeDispersiones {
   vacio?: PorQueElMesVieneVacio | null;
   totalAGirar: number;
   totalComisiones: number;
+  /** Lo que se descuenta este mes por deducciones. Opcional: back anterior al 2026-09-16. */
+  totalDeducciones?: number;
+  /** Lo que queda en contra y pasa a la siguiente liquidación. */
+  totalSaldoEnContra?: number;
   propietarios: {
     propietarioId: string;
     propietarioName: string;
@@ -784,7 +791,14 @@ export interface VistaPreviaDeDispersiones {
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
+    /** Con deducciones, el neto del mes MENOS ellas: puede ser negativo. */
     netToPropietario: number;
+    /**
+     * Las deducciones del mes y lo que se gira de verdad (`aGirarCop`, entero o
+     * nada), calculados por el back con su regla única. Sin esto (back viejo),
+     * el neto es el de siempre.
+     */
+    conDeducciones?: DeduccionesDeLaLiquidacion;
     items: {
       cobroId: string | null;
       cuotaId: string | null;
@@ -972,6 +986,13 @@ export interface ExtractoPropietario {
   propietarioName: string;
   month: string;
   generatedAt: string;
+
+  /**
+   * Las deducciones del mes (reparaciones, descuentos con soporte, saldo en
+   * contra del mes anterior) y lo que se gira de verdad. Lo calcula el back con
+   * la regla única; opcional para un back anterior al 2026-09-16.
+   */
+  conDeducciones?: DeduccionesDeLaLiquidacion;
 
   lineItems: {
     /**

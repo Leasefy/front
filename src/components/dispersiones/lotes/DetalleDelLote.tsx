@@ -68,6 +68,7 @@ import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
   lotesDeDispersionApi,
   type ArchivoGenerado,
+  type ExtractosDeLosCompensados,
   type FacturacionDelLote,
   type FormatoArchivoDePagos,
   type LoteDeDispersion,
@@ -187,6 +188,55 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
               Facturación
             </Link>
             .
+          </p>
+        )}
+      </div>
+    </Banner>
+  );
+}
+
+/**
+ * 🔴 EL EXTRACTO A LOS QUE SE CERRARON EN $0.
+ *
+ * Nico y Juan Camilo (2026-09-16): el mes en que no se le gira nada, al
+ * propietario se le factura la administración igual y se le manda su extracto
+ * con las deducciones. Si alguno no salió, se dice a quién y por qué: el lote
+ * quedó pagado y el extracto se reenvía desde su ficha.
+ */
+function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
+  if (r.compensados === 0) return null;
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'No a todos los que quedaron en $0 les salió el extracto'
+          : r.enviados === 1
+            ? 'Al propietario que quedó en $0 le salió su extracto'
+            : `A los ${r.enviados} propietarios que quedaron en $0 les salió su extracto`
+      }
+    >
+      <div className="space-y-1" data-testid="extractos-de-compensados">
+        <p>
+          {r.enviados} de {r.compensados}{' '}
+          {r.compensados === 1 ? 'extracto enviado' : 'extractos enviados'}, con
+          el detalle de las deducciones que explican por qué este mes no se les
+          giró nada.
+        </p>
+        {hayFallas && (
+          <ul className="space-y-0.5">
+            {r.fallas.map((f) => (
+              <li key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
+                <span className="font-medium">{f.nombre}</span>: {f.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+        {hayFallas && (
+          <p className="text-fg-muted">
+            El lote quedó PAGADO igual. El extracto se reenvía desde la ficha de
+            cada propietario.
           </p>
         )}
       </div>
@@ -336,6 +386,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           pantalla no lo presenció. */}
       {lote.facturacion && (
         <ResultadoDeLaFacturacion r={lote.facturacion} />
+      )}
+      {lote.extractosDeCompensados && (
+        <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
       )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
@@ -505,7 +558,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           >
             Sus deducciones cubren el neto del mes: no se les gira nada y no van en el archivo del banco.
             Al marcar el lote pagado su liquidación se cierra, las deducciones quedan aplicadas y lo que
-            falte pasa solo a su siguiente liquidación.
+            falte pasa solo a su siguiente liquidación. La administración se les factura igual y a cada
+            uno le sale su extracto con el detalle de las deducciones.
           </Banner>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
@@ -1299,8 +1353,8 @@ function MarcarPagadoDialog({
             />
             <span className="text-xs text-fg-muted">
               Facturarle ahora a los propietarios: se emite la comisión de la
-              inmobiliaria sobre lo que este lote gira, con su IVA y sus
-              retenciones.{' '}
+              inmobiliaria sobre lo que este lote cierra —también a los que
+              quedan en $0—, con su IVA y sus retenciones.{' '}
               <strong className="font-medium">
                 Consume números de la resolución de la DIAN y no se deshace: una
                 factura emitida se anula con nota crédito, no se borra.
@@ -1311,8 +1365,8 @@ function MarcarPagadoDialog({
 
           <p className="text-xs text-fg-muted">
             Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
-            el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. Su estado de cuenta
-            queda con la dispersión descontada.
+            el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. A los que quedan en $0
+            les sale su extracto. Su estado de cuenta queda con la dispersión descontada.
           </p>
           {error && <Banner variant="danger">{error}</Banner>}
         </div>

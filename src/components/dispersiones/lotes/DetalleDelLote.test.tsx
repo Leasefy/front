@@ -647,6 +647,45 @@ describe('<DetalleDelLote> — cierre', () => {
     ).toContain('3 prefacturas quedan');
   });
 
+  it('🔴 a los que quedaron en $0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: {
+        compensados: 2,
+        enviados: 1,
+        fallas: [
+          {
+            propietarioId: 'p-4',
+            nombre: 'Elena Mora',
+            motivo: 'El propietario no tiene correo registrado',
+          },
+        ],
+      },
+    });
+
+    await pagar(false);
+
+    const bloque = container.querySelector('[data-testid="extractos-de-compensados"]');
+    expect(bloque?.textContent).toContain('1 de 2 extractos enviados');
+    expect(
+      container.querySelector('[data-testid="extracto-fallido-p-4"]')?.textContent,
+    ).toContain('Elena Mora: El propietario no tiene correo registrado');
+    expect(bloque?.textContent).toContain('El lote quedó PAGADO igual');
+  });
+
+  it('sin compensados en el lote no aparece el bloque de extractos', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: { compensados: 0, enviados: 0, fallas: [] },
+    });
+
+    await pagar(false);
+
+    expect(container.querySelector('[data-testid="extractos-de-compensados"]')).toBeNull();
+  });
+
   it('un back anterior sin `facturacion` no pinta ningún bloque', async () => {
     await render(listoParaPagar());
     vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(

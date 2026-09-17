@@ -98,6 +98,21 @@ export interface FacturacionDelLote {
   fallas: { mes: string; motivo: string }[];
 }
 
+/**
+ * El extracto a cada propietario que el lote cerró en $0.
+ *
+ * Nico y Juan Camilo (2026-09-16): en el mes en que se gira $0 se factura la
+ * administración y se le manda su extracto con las deducciones que explican
+ * por qué no hubo giro. 🔴 Una falla NO deshace el pago: el extracto se
+ * reenvía desde la ficha del propietario.
+ */
+export interface ExtractosDeLosCompensados {
+  /** Cuántos propietarios se cerraron en $0 con este lote. */
+  compensados: number;
+  enviados: number;
+  fallas: { propietarioId: string; nombre: string; motivo: string }[];
+}
+
 /** El lote entero, como lo devuelven `ver`, `aprobar`, `pagado` y `anular`. */
 export interface LoteDeDispersion extends LoteResumen {
   /**
@@ -113,6 +128,8 @@ export interface LoteDeDispersion extends LoteResumen {
    * `anular`, y con un back anterior a la segunda vuelta de facturación.
    */
   facturacion?: FacturacionDelLote;
+  /** Sólo en `POST /:id/pagado`, con un back del 2026-09-16 en adelante. */
+  extractosDeCompensados?: ExtractosDeLosCompensados;
 }
 
 /**

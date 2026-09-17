@@ -122,6 +122,11 @@ export interface EstadoDeCuentaDocumentoProps {
    * cliente no ve el motivo interno de «cuotas en mora sin intereses».
    */
   reglasDeMoraHref?: string;
+  /**
+   * Muestra el anticipo del contrato (plata recibida por adelantado que se
+   * descuenta mes a mes). Sólo el panel: lo lee un endpoint de la inmobiliaria.
+   */
+  conAnticipoDelContrato?: boolean;
   className?: string;
 }
 
@@ -131,6 +136,7 @@ export function EstadoDeCuentaDocumento({
   sinPaginar = false,
   nota,
   reglasDeMoraHref,
+  conAnticipoDelContrato = false,
   className,
 }: EstadoDeCuentaDocumentoProps) {
   const t = useTextoDelEstado();
@@ -227,6 +233,7 @@ export function EstadoDeCuentaDocumento({
               hoy={hoy}
               sinPaginar={sinPaginar}
               reglasDeMoraHref={reglasDeMoraHref}
+              conAnticipoDelContrato={conAnticipoDelContrato}
             />
           ))}
         </div>

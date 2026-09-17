@@ -11441,7 +11441,8 @@
       "entrada": "Entró como anticipo",
       "descuento": "Descuento de {{mes}}",
       "recibo": "Recibo {{numero}}",
-      "anulado": "Anulado"
+      "anulado": "Anulado",
+      "errorAlLeer": "No pudimos leer el anticipo de este contrato: no sabemos si tiene saldo por descontar."
     }
   },
   "inquilinos": {

@@ -11401,7 +11401,8 @@
       "entrada": "Came in as an advance",
       "descuento": "Applied to {{mes}}",
       "recibo": "Receipt {{numero}}",
-      "anulado": "Voided"
+      "anulado": "Voided",
+      "errorAlLeer": "We could not read this contract's advance payment: we don't know whether it has a balance left to apply."
     }
   },
   "inquilinos": {

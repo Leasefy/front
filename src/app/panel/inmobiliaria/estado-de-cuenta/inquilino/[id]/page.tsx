@@ -37,6 +37,9 @@ function Contenido() {
       /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
          a configurar las reglas. El portal y el enlace no lo pasan. */
       reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}
+      /* El anticipo del contrato (lo que se descuenta mes a mes) sólo se
+         lee desde el panel. */
+      conAnticipoDelContrato
       acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}

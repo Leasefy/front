@@ -69,6 +69,7 @@ interface Acumulado {
   porNombre: number;
   porNumeroDeContrato: number;
   porCodigoDeInmueble: number;
+  soloInmueble: number;
   sinContrato: number;
   migrados: number;
   /** Motivo → cuántas filas. Agrupado: 40.000 filas iguales son UNA línea. */
@@ -85,6 +86,7 @@ function acumuladoVacio(): Acumulado {
     porNombre: 0,
     porNumeroDeContrato: 0,
     porCodigoDeInmueble: 0,
+    soloInmueble: 0,
     sinContrato: 0,
     migrados: 0,
     motivos: new Map(),
@@ -109,6 +111,7 @@ function sumar(
     // `?? 0`: un back sin la regla nueva no manda estas dos claves.
     porNumeroDeContrato: acc.porNumeroDeContrato + (r.asociados.porNumeroDeContrato ?? 0),
     porCodigoDeInmueble: acc.porCodigoDeInmueble + (r.asociados.porCodigoDeInmueble ?? 0),
+    soloInmueble: acc.soloInmueble + (r.asociados.soloInmueble ?? 0),
     sinContrato: acc.sinContrato + r.asociados.sinContrato,
     migrados: acc.migrados + (r.migrados ?? 0),
     motivos,
@@ -456,6 +459,16 @@ function ResumenDeDocumentos({
           <span className="text-fg-muted">
             porque el concepto dice el código del inmueble («COD. 127») y ese
             inmueble tenía un solo contrato vigente el día del comprobante.
+          </span>
+        </p>
+        <p className="text-fg" data-testid="documentos-solo-inmueble">
+          <span className="font-mono tabular-nums">
+            {acumulado.soloInmueble.toLocaleString("es-CO")}
+          </span>{" "}
+          <span className="text-fg-muted">
+            quedaron colgados SÓLO de su inmueble: el concepto dice el código,
+            pero ese día el inmueble no tenía contrato vigente. No tienen
+            inquilino, pero salen en la ficha del inmueble.
           </span>
         </p>
         <p className="text-fg">

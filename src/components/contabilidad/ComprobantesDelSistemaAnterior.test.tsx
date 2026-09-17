@@ -373,6 +373,12 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
         documentos: [
           comprobante({ id: 'a', asociadoPor: 'numero_contrato', concepto: 'PAGO MULTA CONTRATO 847' }),
           comprobante({ id: 'b', asociadoPor: 'codigo_inmueble', concepto: 'PAGO CANON COD. 127' }),
+          comprobante({
+            id: 'c',
+            asociadoPor: 'solo_inmueble',
+            contractId: null,
+            concepto: 'PAGO CANON COD. 450',
+          }),
         ],
       }),
     )
@@ -384,6 +390,7 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     expect(marcas).toEqual([
       'Asociado por el número de contrato del concepto',
       'Asociado por el código del inmueble del concepto',
+      'Asociado sólo al inmueble, por el código del concepto: ese día no tenía contrato vigente',
     ])
   })
 

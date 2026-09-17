@@ -92,10 +92,11 @@ function revision(total: number, sinContrato: number, porReferencia = 0) {
     yaMigrados: 0,
     rechazados: 0,
     asociados: {
-      porDocumento: total - sinContrato - 2 * porReferencia,
+      porDocumento: total - sinContrato - 3 * porReferencia,
       porNombre: 0,
       porNumeroDeContrato: porReferencia,
       porCodigoDeInmueble: porReferencia,
+      soloInmueble: porReferencia,
       sinContrato,
     },
     motivos:
@@ -160,6 +161,7 @@ const NADA_GUARDADO = {
         conContrato: 0,
         sinContrato: 0,
         motivos: {
+          SOLO_INMUEBLE: 0,
           EXPORT_SIN_TERCERO: 0,
           REFERENCIA_SIN_RESOLVER: 0,
           TERCERO_SIN_CONTRATO: 0,
@@ -246,9 +248,13 @@ describe('subir los comprobantes', () => {
     expect(
       contenedor.querySelector('[data-testid="documentos-por-codigo-de-inmueble"]')?.textContent,
     ).toMatch(/^2 porque el concepto dice el código del inmueble/);
-    // «Con contrato» suma los cuatro caminos: 6 por documento + 2 + 2.
+    expect(
+      contenedor.querySelector('[data-testid="documentos-solo-inmueble"]')?.textContent,
+    ).toMatch(/^2 quedaron colgados SÓLO de su inmueble/);
+    // «Con contrato» suma los cuatro caminos con contrato: 4 por documento + 2 + 2.
+    // Los colgados sólo del inmueble NO tienen contrato y no entran.
     expect(contenedor.querySelector('[data-testid="documentos-resumen"]')?.textContent).toContain(
-      'Con contrato10',
+      'Con contrato8',
     );
   });
 

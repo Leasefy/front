@@ -5,10 +5,15 @@
  *
  *   · D9 · ¿pacta gastos de cobranza? Si no, la regla de gastos no se le cobra.
  *   · Seguro opcional que paga el inquilino: sólo con aceptación expresa (fecha
- *     y quién). Entra a su cuota como concepto aparte del canon.
+ *     y quién). Entra a su cuota como concepto aparte del canon. 🔴 Es un % DEL
+ *     CANON (Nico, 17-09), no un valor fijo: el % lo pone la inmobiliaria por
+ *     plan y la prima sube con el canon.
  *   · Póliza o afianzadora del contrato: se registra; no le cobra al inquilino.
  *   · Administración de la copropiedad: incluida en el canon, la paga el
  *     propietario, o la paga la inmobiliaria y se la descuenta al propietario.
+ *     🔴 Un contrato MIGRADO que cobra administración y no eligió ninguna se
+ *     lee como «la paga la inmobiliaria» (respaldo del 17-09): la pantalla lo
+ *     dice, y elegir cualquier otra la reemplaza.
  *
  * Todo lo decide y lo cuenta el back (`/contracts/:id/condiciones`).
  */
@@ -184,7 +189,12 @@ function SeguroOpcional({
 }: {
   datos: Condiciones;
   editable: boolean;
-  onAceptar: (body: { aceptadoPor: string; aceptadoEl: string; primaCop?: number | null }) => void;
+  onAceptar: (body: {
+    aceptadoPor: string;
+    aceptadoEl: string;
+    primaCop?: number | null;
+    pct?: number | null;
+  }) => void;
   onRetirar: () => void;
 }) {
   const s = datos.seguroOpcional;
@@ -192,6 +202,8 @@ function SeguroOpcional({
   const [quien, setQuien] = useState('');
   const [cuando, setCuando] = useState(hoy());
   const [prima, setPrima] = useState(s.oferta ? String(s.oferta.primaCop) : '');
+  /** 🔴 El % del plan manda: con él la prima la calcula el back sobre el canon. */
+  const pctDelPlan = s.oferta?.pct ?? null;
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="seguro-opcional">
       <p className="font-medium">Seguro opcional del inquilino</p>
@@ -201,8 +213,14 @@ function SeguroOpcional({
       {s.aceptado ? (
         <div className="space-y-1">
           <p>
-            <strong>{s.aceptado.nombre ?? 'Seguro opcional'}</strong>: {PESOS.format(s.aceptado.primaCop)} al mes.
+            <strong>{s.aceptado.nombre ?? 'Seguro opcional'}</strong>: {PESOS.format(s.aceptado.primaCop)} al mes
+            {s.aceptado.pct !== null ? ` (${s.aceptado.pct} % del canon)` : ''}.
           </p>
+          {s.aceptado.pct !== null && (
+            <p className="text-xs text-muted-foreground" data-testid="seguro-sigue-al-canon">
+              Es un porcentaje del canon: cuando el canon suba en el aniversario, la prima sube con él.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             Aceptado por {s.aceptado.aceptadoPor} el {s.aceptado.aceptadoEl}.
           </p>
@@ -216,9 +234,17 @@ function SeguroOpcional({
         <div className="space-y-2">
           <p className="text-xs">
             {s.oferta
-              ? `Plan ofrecido: ${s.oferta.nombre}, ${PESOS.format(s.oferta.primaCop)} al mes. No se cobra mientras el inquilino no lo acepte.`
+              ? `Plan ofrecido: ${s.oferta.nombre}, ${PESOS.format(s.oferta.primaCop)} al mes${
+                  pctDelPlan !== null ? ` (${pctDelPlan} % del canon de hoy)` : ''
+                }. No se cobra mientras el inquilino no lo acepte.`
               : 'El contrato no ofrece un plan de seguro.'}
           </p>
+          {s.oferta && pctDelPlan === null && s.porcentajeDisponible && (
+            <p className="text-xs text-muted-foreground" data-testid="seguro-sin-porcentaje">
+              Tu inmobiliaria no le puso un porcentaje del canon a este plan: se cobraría la prima fija. El porcentaje
+              se configura en Configuración → Ciclo de vida del contrato.
+            </p>
+          )}
           {editable && s.disponible && (
             <>
               <label className="flex items-center gap-2 text-xs">
@@ -235,15 +261,34 @@ function SeguroOpcional({
                     Fecha
                     <Input type="date" value={cuando} onChange={(e) => setCuando(e.target.value)} className="mt-1" />
                   </label>
-                  <label className="text-xs">
-                    Prima mensual
-                    <Input inputMode="numeric" value={prima} onChange={(e) => setPrima(e.target.value)} className="mt-1 w-32" />
-                  </label>
+                  {pctDelPlan === null ? (
+                    <label className="text-xs">
+                      Prima mensual
+                      <Input inputMode="numeric" value={prima} onChange={(e) => setPrima(e.target.value)} className="mt-1 w-32" />
+                    </label>
+                  ) : (
+                    <p className="text-xs" data-testid="seguro-prima-por-porcentaje">
+                      Prima: <strong>{PESOS.format(s.oferta?.primaCop ?? 0)}</strong> al mes ({pctDelPlan} % del
+                      canon). La calcula el sistema y sigue al canon.
+                    </p>
+                  )}
                   <Button
                     size="sm"
-                    disabled={quien.trim().length < 3 || !cuando || !(Number(prima.replace(/\D/g, '')) > 0)}
+                    disabled={
+                      quien.trim().length < 3 ||
+                      !cuando ||
+                      (pctDelPlan === null && !(Number(prima.replace(/\D/g, '')) > 0))
+                    }
                     onClick={() =>
-                      onAceptar({ aceptadoPor: quien.trim(), aceptadoEl: cuando, primaCop: Number(prima.replace(/\D/g, '')) })
+                      onAceptar(
+                        pctDelPlan === null
+                          ? {
+                              aceptadoPor: quien.trim(),
+                              aceptadoEl: cuando,
+                              primaCop: Number(prima.replace(/\D/g, '')),
+                            }
+                          : { aceptadoPor: quien.trim(), aceptadoEl: cuando },
+                      )
                     }
                     data-testid="guardar-seguro"
                   >
@@ -342,6 +387,11 @@ function Administracion({
   onGuardar: (body: { modalidad: ModalidadDeAdministracion | null; valorCop?: number | null }) => void;
 }) {
   const a = datos.administracion;
+  /*
+   * La modalidad RESUELTA, no la guardada: la pantalla muestra lo que de verdad
+   * está pasando hoy. Con el respaldo puesto, el aviso de abajo dice que no
+   * está escrito y «Guardar» lo deja por escrito con un clic.
+   */
   const [modalidad, setModalidad] = useState<ModalidadDeAdministracion | ''>(a.modalidad ?? '');
   const [valor, setValor] = useState(a.valorCop != null ? String(a.valorCop) : '');
   const habil = editable && a.disponible;
@@ -352,6 +402,13 @@ function Administracion({
       <legend className="font-medium">Administración de la copropiedad</legend>
       {a.delMandatoCop != null && a.delMandatoCop > 0 && (
         <p className="text-xs text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
+      )}
+      {a.porRespaldo && (
+        <p className="text-xs text-plan-status-yellow" data-testid="administracion-por-respaldo">
+          Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
+          <strong>«la paga la inmobiliaria»</strong>: el inquilino no la paga aparte del canon y se le descuenta al
+          propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
+        </p>
       )}
       <div className="space-y-1">
         {MODALIDADES.map((m) => (

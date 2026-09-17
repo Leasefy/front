@@ -14,6 +14,8 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
     enviarCarta: vi.fn(),
     vencidos: vi.fn(),
     extender: vi.fn(),
+    prorroga: vi.fn(),
+    registrarConstancia: vi.fn(),
   },
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -55,7 +57,7 @@ afterEach(() => {
 });
 
 describe('<IncrementosDelContrato> (17-09)', () => {
-  it('vivienda: muestra el aniversario al IPC y deja generar la carta', async () => {
+  it('vivienda: muestra el aniversario al IPC y deja ver la carta', async () => {
     api.incrementos.mockResolvedValue({
       uso: 'VIVIENDA',
       tasaAnualPactadaPct: null,
@@ -76,13 +78,56 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     expect(bloque.textContent).toContain('5.1 %');
     expect(document.querySelector('[data-testid="tasa-pactada"]')).toBeNull();
 
-    const generar = [...bloque.querySelectorAll('button')].find((b) => b.textContent === 'Generar la carta')!;
+    const generar = [...bloque.querySelectorAll('button')].find((b) => b.textContent === 'Ver y editar la carta')!;
     await act(async () => generar.click());
     expect(api.generarCarta).toHaveBeenCalledWith('c1', '2026-08-21');
     expect(document.body.textContent).toContain('Carta por revisar');
   });
 
-  it('🔴 con la carta revisada, el envío apagado deja el botón muerto y lo dice', async () => {
+  it('🔴 D6: la carta por enviar se manda con UN clic; si el correo se simula, lo dice y no hay constancia', async () => {
+    api.incrementos.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [{ ...aniversario, bandeja: { estado: 'POR_ENVIAR', diasParaElAniversario: 12, alertaRoja: false } }],
+      disponible: true,
+      envioHabilitado: true,
+      correoSaleDeVerdad: false,
+      diasAntesDeLaCarta: 30,
+    });
+    api.enviarCarta.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [aniversario],
+      disponible: true,
+      envioHabilitado: true,
+      ultimoEnvio: { resultado: 'SIMULADA', mensaje: 'No salió: EMAIL_DELIVERY_ENABLED' },
+    });
+    await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
+    expect(document.body.textContent).toContain('faltan 12 días');
+    expect(document.querySelector('[data-testid="correo-simulado"]')).not.toBeNull();
+    const enviar = document.querySelector('[data-testid="enviar-carta-2026-08-21"]') as HTMLButtonElement;
+    await act(async () => enviar.click());
+    expect(api.enviarCarta).toHaveBeenCalledWith('c1', '2026-08-21', undefined);
+    const { toast } = await import('@/components/ui/toast');
+    expect(toast.error).toHaveBeenCalledWith('La carta no salió.', expect.anything());
+  });
+
+  it('🔴 D6: llegado el aniversario sin constancia, alerta roja; y se puede registrar la constancia de otro medio', async () => {
+    api.incrementos.mockResolvedValue({
+      uso: 'VIVIENDA',
+      tasaAnualPactadaPct: null,
+      aniversarios: [{ ...aniversario, bandeja: { estado: 'VENCIDA_SIN_CONSTANCIA', diasParaElAniversario: -3, alertaRoja: true } }],
+      disponible: true,
+      envioHabilitado: true,
+    });
+    await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
+    expect(document.querySelector('[data-testid="alerta-sin-constancia-2026-08-21"]')).not.toBeNull();
+    const otroMedio = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Se entregó por otro medio')!;
+    await act(async () => otroMedio.click());
+    expect(document.querySelector('[data-testid="constancia-2026-08-21"]')).not.toBeNull();
+  });
+
+  it('sin la migración de la constancia, enviar queda muerto y lo dice', async () => {
     api.incrementos.mockResolvedValue({
       uso: 'VIVIENDA',
       tasaAnualPactadaPct: null,
@@ -93,7 +138,7 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
     const enviar = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Enviar la carta') as HTMLButtonElement;
     expect(enviar.disabled).toBe(true);
-    expect(document.body.textContent).toContain('El envío de cartas está apagado');
+    expect(document.body.textContent).toContain('Falta una actualización de la base para enviar');
   });
 
   it('local comercial: guarda la tasa pactada', async () => {
@@ -126,10 +171,11 @@ describe('<RenovarContratoVencido> (17-09)', () => {
       aviso: null,
       contratos: [{ id: 'c1', endDate: '2026-08-20', renovarPorTerminoInicialHasta: '2027-08-20' }],
     });
+    api.prorroga.mockResolvedValue({ accion: 'ALERTA_AVISO_DE_NO_RENOVACION' });
     api.extender.mockResolvedValue({ contractId: 'c1', modo: 'TERMINO_INICIAL', finAnterior: '2026-08-20', finNuevo: '2027-08-20' });
     const onRenovado = vi.fn();
     await montar(<RenovarContratoVencido contractId="c1" onRenovado={onRenovado} />);
-    expect(document.body.textContent).toContain('No se prorroga solo');
+    expect(document.body.textContent).toContain('con aviso de no renovación');
     const porDias = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Renovar por los días ocupados') as HTMLButtonElement;
     expect(porDias.disabled).toBe(true);
     const termino = [...document.querySelectorAll('button')].find((b) => b.textContent?.startsWith('Renovar por el término inicial'))!;
@@ -138,7 +184,20 @@ describe('<RenovarContratoVencido> (17-09)', () => {
     expect(onRenovado).toHaveBeenCalled();
   });
 
+  it('🔴 D5: vencido SIN aviso de no renovación no ofrece renovar (se prorroga)', async () => {
+    api.vencidos.mockResolvedValue({
+      cuantos: 1,
+      cuantosSinRenovacion: 1,
+      aviso: null,
+      contratos: [{ id: 'c1', endDate: '2026-08-20', renovarPorTerminoInicialHasta: '2027-08-20' }],
+    });
+    api.prorroga.mockResolvedValue({ accion: 'PRORROGAR' });
+    await montar(<RenovarContratoVencido contractId="c1" onRenovado={() => {}} />);
+    expect(document.querySelector('[data-testid="renovar-contrato-vencido"]')).toBeNull();
+  });
+
   it('un contrato que no está vencido no muestra nada', async () => {
+    api.prorroga.mockResolvedValue({ accion: 'NO_VENCIDO' });
     api.vencidos.mockResolvedValue({ cuantos: 0, cuantosSinRenovacion: 0, aviso: null, contratos: [] });
     await montar(<RenovarContratoVencido contractId="c1" onRenovado={() => {}} />);
     expect(document.querySelector('[data-testid="renovar-contrato-vencido"]')).toBeNull();

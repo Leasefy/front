@@ -292,3 +292,49 @@ describe('PrefacturasDelRango', () => {
     );
   });
 });
+
+describe('PrefacturasDelRango · abono y saldo de la factura (2026-09-16)', () => {
+  let host: HTMLDivElement;
+  let root: Root;
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  async function montar(filas: FacturaDelMes[]) {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<PrefacturasDelRango datos={datos({ inquilinos: filas })} />);
+    });
+  }
+
+  it('una GENERADA con un abono dice lo abonado y el saldo', async () => {
+    await montar([
+      factura({ estado: 'GENERADA', numero: null, abonadoCop: 500_000, saldoCop: 1_300_000 }),
+    ]);
+    const celda = host.querySelector('[data-testid="rango-abono-ct-1|2026-09|INQUILINO"]');
+    expect(celda?.textContent).toContain('Abonado');
+    expect(celda?.textContent).toContain('saldo');
+    expect(host.querySelector('[data-testid="rango-generada-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+  });
+
+  it('una EMITIDA pagada lo dice', async () => {
+    await montar([
+      factura({ estado: 'EMITIDA', numero: 7, numeroDian: 'FE-7', abonadoCop: 1_800_000, saldoCop: 0 }),
+    ]);
+    expect(
+      host.querySelector('[data-testid="rango-abono-ct-1|2026-09|INQUILINO"]')?.textContent,
+    ).toContain('Pagada');
+  });
+
+  it('sin factura (POR_EMITIR) o sin el dato no inventa un abono', async () => {
+    await montar([factura({ estado: 'POR_EMITIR' }), factura({ clave: 'ct-2|2026-09|INQUILINO', estado: 'GENERADA', numero: null })]);
+    expect(host.querySelector('[data-testid="rango-abono-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    expect(host.querySelector('[data-testid="rango-abono-ct-2|2026-09|INQUILINO"]')).toBeNull();
+  });
+});

@@ -1226,7 +1226,31 @@ export const cobrosApi = {
   async sendReminder(id: string): Promise<void> {
     await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },
+
+  /**
+   * Anula un cobro con motivo (nunca lo borra). La deuda de la cuota no
+   * cambia; si tenía factura, el back genera su nota crédito sin número.
+   * Errores con `code`: COBRO_CON_RECIBOS · COBRO_YA_ANULADO ·
+   * COBRO_NO_ENCONTRADO · MOTIVO_REQUERIDO · ANULAR_COBRO_NO_DISPONIBLE (503).
+   */
+  async anular(id: string, motivo: string): Promise<CobroAnulado> {
+    return apiClient.post<CobroAnulado>(`${BASE}/cobros/${id}/anular`, { motivo });
+  },
 };
+
+/** Respuesta de `POST /inmobiliaria/cobros/:id/anular`. */
+export interface CobroAnulado {
+  cobroId: string;
+  anuladoAt: string;
+  motivo: string;
+  cuotasDesvinculadas: number;
+  factura: {
+    facturaId: string;
+    estado: 'GENERADA' | 'EMITIDA';
+    notaCreditoId: string | null;
+    notaCreditoGenerada: boolean;
+  } | null;
+}
 
 // ============================================================================
 // Avalúos (agency records-by-state)

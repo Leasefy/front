@@ -148,6 +148,13 @@ export interface FacturaDelMes {
    * igual que una por emitir.
    */
   estado: 'POR_EMITIR' | 'GENERADA' | 'EMITIDA'
+  /**
+   * Lo que los recibos ya abonaron a la factura y su saldo, al día con cada
+   * pago. `null` mientras no hay factura (POR_EMITIR) o si la base no tiene
+   * la migración de facturas generadas. Puede faltar en un back viejo.
+   */
+  abonadoCop?: number | null
+  saldoCop?: number | null
   /** El consecutivo interno de la inmobiliaria. */
   numero: number | null
   /** El número autorizado por la resolución de la DIAN («FE-1042»). */

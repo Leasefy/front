@@ -2267,6 +2267,29 @@
         "cancel": "Cancelar",
         "save": "Guardar Configuracion",
         "saving": "Guardando..."
+      },
+      "anular": {
+        "accion": "Anular cobro",
+        "titulo": "Anular este cobro",
+        "descripcion": "El cobro no se borra: queda anulado con tu motivo y deja de salir en Cobros emitidos. Lo que debe el inquilino no cambia. Si ya tenía factura, se genera su nota crédito, sin número y sin emitir.",
+        "motivo": "Motivo",
+        "motivoAyuda": "Queda en la auditoría y en la nota crédito, si la hay.",
+        "faltaMotivo": "Escribe por qué lo anulas (al menos 3 letras).",
+        "cancelar": "Cancelar",
+        "confirmar": "Anular cobro",
+        "anulando": "Anulando…",
+        "anulado": "Cobro anulado. Lo que debe el inquilino no cambió.",
+        "conNotaGenerada": "Se generó la nota crédito de su factura, sin número: queda pendiente de emitir.",
+        "conNotaPrevia": "Su factura ya tenía nota crédito: no se creó otra.",
+        "errores": {
+          "COBRO_CON_RECIBOS": "Este cobro tiene recibos de caja vigentes. Anula primero los recibos y vuelve a intentarlo.",
+          "COBRO_YA_ANULADO": "Este cobro ya estaba anulado. Actualiza la lista.",
+          "COBRO_NO_ENCONTRADO": "Este cobro ya no existe en tu inmobiliaria. Actualiza la lista.",
+          "MOTIVO_REQUERIDO": "Escribe por qué lo anulas.",
+          "ANULAR_COBRO_NO_DISPONIBLE": "Anular cobros todavía no está disponible: falta aplicar una migración de la base. No se cambió nada.",
+          "generico": "No se pudo anular el cobro. No se cambió nada; inténtalo de nuevo."
+        },
+        "sinPermiso": "Necesitas permiso para editar cobros."
       }
     },
     "dispersiones": {

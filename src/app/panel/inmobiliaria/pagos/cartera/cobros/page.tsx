@@ -689,6 +689,8 @@ function CobrosContent() {
                 cobros={paginatedCobros}
                 onCobroClick={handleCobroClick}
                 onRegisterPayment={handleRegisterPaymentClick}
+                // Un cobro anulado sale de la lista: se vuelve a leer del back.
+                onCobroAnulado={() => void refetchCobros()}
                 showSummary
               />
             ) : (

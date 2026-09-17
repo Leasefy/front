@@ -2227,6 +2227,29 @@
         "cancel": "Cancel",
         "save": "Save Configuration",
         "saving": "Saving..."
+      },
+      "anular": {
+        "accion": "Void charge",
+        "titulo": "Void this charge",
+        "descripcion": "The charge is not deleted: it is voided with your reason and no longer shows in Issued charges. What the tenant owes does not change. If it already had an invoice, its credit note is generated, unnumbered and not issued.",
+        "motivo": "Reason",
+        "motivoAyuda": "It is kept in the audit trail and in the credit note, if any.",
+        "faltaMotivo": "Write why you are voiding it (at least 3 letters).",
+        "cancelar": "Cancel",
+        "confirmar": "Void charge",
+        "anulando": "Voiding…",
+        "anulado": "Charge voided. What the tenant owes did not change.",
+        "conNotaGenerada": "The credit note for its invoice was generated, unnumbered: it is pending issuance.",
+        "conNotaPrevia": "Its invoice already had a credit note: no new one was created.",
+        "errores": {
+          "COBRO_CON_RECIBOS": "This charge has active cash receipts. Void the receipts first and try again.",
+          "COBRO_YA_ANULADO": "This charge was already voided. Refresh the list.",
+          "COBRO_NO_ENCONTRADO": "This charge no longer exists in your agency. Refresh the list.",
+          "MOTIVO_REQUERIDO": "Write why you are voiding it.",
+          "ANULAR_COBRO_NO_DISPONIBLE": "Voiding charges is not available yet: a database migration is missing. Nothing changed.",
+          "generico": "The charge could not be voided. Nothing changed; try again."
+        },
+        "sinPermiso": "You need permission to edit charges."
       }
     },
     "dispersiones": {

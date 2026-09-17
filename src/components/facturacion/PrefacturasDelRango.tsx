@@ -226,6 +226,21 @@ function FilasDelMes({ filas }: { filas: FacturaDelMes[] }) {
                   Todavía no
                 </span>
               )}
+              {/* Abono y saldo de la factura: los ponen al día los recibos. */}
+              {f.estado !== 'POR_EMITIR' &&
+                typeof f.abonadoCop === 'number' &&
+                typeof f.saldoCop === 'number' && (
+                  <span
+                    className="block text-caption text-fg-muted tabular-nums"
+                    data-testid={`rango-abono-${f.clave}`}
+                  >
+                    {f.saldoCop === 0
+                      ? `Pagada · abonado ${formatCurrency(f.abonadoCop)}`
+                      : f.abonadoCop === 0
+                        ? `Sin abonos · saldo ${formatCurrency(f.saldoCop)}`
+                        : `Abonado ${formatCurrency(f.abonadoCop)} · saldo ${formatCurrency(f.saldoCop)}`}
+                  </span>
+                )}
             </TableCell>
           </TableRow>
         ))}

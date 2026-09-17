@@ -654,8 +654,29 @@ export interface DocumentoMigrado {
 
 export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';
 
-/** Cómo se resolvió el contrato de un comprobante. `ninguno` = no se resolvió. */
-export type AsociadoPor = 'documento' | 'nombre' | 'ninguno';
+/**
+ * Cómo se resolvió el contrato de un comprobante. `ninguno` = no se resolvió.
+ *
+ * `numero_contrato` y `codigo_inmueble` (2026-09-16): el concepto escribe
+ * «CONTRATO 854» o «COD. 127». Con el código, el contrato es el que estaba
+ * vigente en ese inmueble el día del comprobante; con varios o ninguno el
+ * back no adivina y queda `ninguno`.
+ */
+export type AsociadoPor =
+  | 'documento'
+  | 'nombre'
+  | 'numero_contrato'
+  | 'codigo_inmueble'
+  | 'ninguno';
+
+/** Cómo se dice, en una frase corta, por dónde quedó asociado. */
+export const COMO_SE_ASOCIO: Record<AsociadoPor, string> = {
+  documento: 'por el documento del tercero',
+  nombre: 'por el nombre del tercero',
+  numero_contrato: 'por el número de contrato del concepto',
+  codigo_inmueble: 'por el código del inmueble del concepto',
+  ninguno: 'sin contrato',
+};
 
 export interface AsociacionDeDocumento {
   contractId?: string;
@@ -681,7 +702,15 @@ export interface RevisionDeDocumentos {
   yaMigrados: number;
   rechazados: number;
   /** Cuántos quedaron colgados de un contrato, y por qué camino. */
-  asociados: { porDocumento: number; porNombre: number; sinContrato: number };
+  asociados: {
+    porDocumento: number;
+    porNombre: number;
+    /** «CONTRATO 854» en el concepto. */
+    porNumeroDeContrato: number;
+    /** «COD. 127» en el concepto: el contrato vigente de ese inmueble ese día. */
+    porCodigoDeInmueble: number;
+    sinContrato: number;
+  };
   /** Los motivos agrupados: 40.000 filas iguales son UNA línea del informe. */
   motivos: { motivo: string; filas: number[] }[];
   filas: FilaDeDocumento[];
@@ -736,6 +765,47 @@ export interface DocumentoMigradoVista {
   asociadoPor: AsociadoPor;
   /** A qué pestaña va. Viene decidido del back. */
   clase: ClaseDeComprobante;
+  /**
+   * La fila del archivo tal como llegó («$5,561,832.00», «26,766»), para
+   * auditar sin el CSV. `null` en lo migrado antes del 2026-09-16 y mientras
+   * la base no tenga la migración que la guarda.
+   */
+  datos: Record<string, unknown> | null;
+}
+
+/**
+ * Por qué un comprobante quedó sin contrato — o sea, sin inquilino ni
+ * propietario. Lo decide el back con las mismas reglas que asocian:
+ *
+ * - `EXPORT_SIN_TERCERO`: el concepto es sólo el tipo y el número («Factura
+ *   57521») o viene vacío. El export no trae a quién, y eso no se arregla acá.
+ * - `REFERENCIA_SIN_RESOLVER`: dice «CONTRATO N» o «COD. N», pero el número no
+ *   existe, o el inmueble tenía varios contratos vigentes —o ninguno— ese día.
+ * - `TERCERO_SIN_CONTRATO`: nombra a alguien que no es inquilino ni
+ *   propietario de ningún contrato de la inmobiliaria.
+ * - `CONCEPTO_SIN_TERCERO`: texto libre que no nombra a nadie (gastos,
+ *   nómina, notas bancarias).
+ */
+export type MotivoSinContrato =
+  | 'EXPORT_SIN_TERCERO'
+  | 'REFERENCIA_SIN_RESOLVER'
+  | 'TERCERO_SIN_CONTRATO'
+  | 'CONCEPTO_SIN_TERCERO';
+
+export interface SinContratoDeLaClase {
+  total: number;
+  conContrato: number;
+  sinContrato: number;
+  /** Los cuatro motivos, siempre presentes. */
+  motivos: Record<MotivoSinContrato, number>;
+}
+
+/** `GET .../migracion/documentos/sin-contrato`: lo guardado, por pestaña y por qué. */
+export interface ResumenSinContrato {
+  total: number;
+  conContrato: number;
+  sinContrato: number;
+  porClase: Record<ClaseDeComprobante, SinContratoDeLaClase>;
 }
 
 export interface PaginaDeDocumentosMigrados {
@@ -1118,6 +1188,18 @@ export const contabilidadApi = {
             page: filtros.page === undefined ? undefined : String(filtros.page),
             pageSize: filtros.pageSize === undefined ? undefined : String(filtros.pageSize),
           }),
+        );
+      },
+
+      /**
+       * Cuántos de los comprobantes YA guardados quedaron sin contrato, por
+       * pestaña (facturas, ingresos, egresos, otros) y por qué. Es lo que la
+       * pantalla de migración explica, incluido qué pedirle al sistema
+       * anterior cuando el export no trae el cliente.
+       */
+      async sinContrato(): Promise<ResumenSinContrato> {
+        return apiClient.get<ResumenSinContrato>(
+          `${BASE}/migracion/documentos/sin-contrato`,
         );
       },
 

@@ -38,6 +38,7 @@ vi.mock('@/lib/api/contabilidad.service', async () => {
   )
   return {
     CLASES_DE_COMPROBANTE: real.CLASES_DE_COMPROBANTE,
+    COMO_SE_ASOCIO: real.COMO_SE_ASOCIO,
     contabilidadApi: {
       migracion: { documentos: { porContrato: vi.fn(), porInmueble: vi.fn() } },
     },
@@ -87,6 +88,7 @@ function comprobante(over: Partial<DocumentoMigradoVista> = {}): DocumentoMigrad
     propertyId: 'p-1',
     asociadoPor: 'documento',
     clase: 'ingreso',
+    datos: null,
     ...over,
   }
 }
@@ -363,6 +365,48 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     porContrato.mockResolvedValue(respuesta())
     await montar()
     expect(container.querySelector('[data-testid="comprobantes-recortados"]')).toBeNull()
+  })
+
+  it('cada comprobante dice por dónde quedó colgado del contrato, incluidas las reglas nuevas', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({
+        documentos: [
+          comprobante({ id: 'a', asociadoPor: 'numero_contrato', concepto: 'PAGO MULTA CONTRATO 847' }),
+          comprobante({ id: 'b', asociadoPor: 'codigo_inmueble', concepto: 'PAGO CANON COD. 127' }),
+        ],
+      }),
+    )
+    await montar()
+
+    const marcas = [
+      ...container.querySelectorAll('[data-testid="comprobante-asociado-por"]'),
+    ].map((e) => e.textContent)
+    expect(marcas).toEqual([
+      'Asociado por el número de contrato del concepto',
+      'Asociado por el código del inmueble del concepto',
+    ])
+  })
+
+  it('la fila del archivo se puede ver cuando se guardó, y no se inventa cuando no', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({
+        documentos: [
+          comprobante({
+            id: 'con',
+            datos: { prefijo: 'CI', consecutivo: '26,766', debitos: '$1,008,403.00', terceroAnticipo: '' },
+          }),
+          comprobante({ id: 'sin', datos: null }),
+        ],
+      }),
+    )
+    await montar()
+
+    const filas = container.querySelectorAll('[data-testid="comprobante-fila-del-archivo"]')
+    expect(filas).toHaveLength(1)
+    expect(filas[0].textContent).toContain('26,766')
+    expect(filas[0].textContent).toContain('$1,008,403.00')
+    // Una celda vacía del archivo no se dibuja como dato.
+    expect(filas[0].textContent).not.toContain('terceroAnticipo')
   })
 
   it('un monto ilegible se muestra como «—», no como $ 0', async () => {

@@ -55,3 +55,17 @@ describe('mapeo (puro)', () => {
     expect(loQueNoSeAsienta([])).toEqual([]);
   });
 });
+
+describe('el evento opcional «Ajuste al peso» (2026-09-16)', () => {
+  it('sin cuenta no cuenta como faltante: su valor va a «otros recaudos»', () => {
+    const mapeo = {
+      eventos: [
+        evento({ evento: 'AJUSTE_AL_PESO', opcional: true }),
+        evento({ evento: 'RECIBO_CAJA' }),
+      ],
+      completo: false,
+      faltantes: ['RECIBO_CAJA' as const],
+    };
+    expect(eventosSinCuenta(mapeo)).toEqual(['RECIBO_CAJA']);
+  });
+});

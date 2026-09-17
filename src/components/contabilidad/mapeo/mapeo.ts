@@ -11,7 +11,8 @@ export const NOMBRE_DEL_LADO: Record<LadoDelEvento, string> = {
 
 /** Los eventos sin cuenta asignada. */
 export function eventosSinCuenta(mapeo: MapeoContable): EventoContable[] {
-  return mapeo.eventos.filter((e) => e.cuenta === null).map((e) => e.evento);
+  // Un evento opcional sin cuenta no es un faltante: su valor va a la de siempre.
+  return mapeo.eventos.filter((e) => e.cuenta === null && !e.opcional).map((e) => e.evento);
 }
 
 /** Los eventos vacíos que la semilla SÍ puede llenar (la agencia tiene la cuenta propuesta, activa e imputable). */

@@ -290,7 +290,14 @@ export function MapeoContable({
                   {/* La explicación en UNA línea, con el texto entero en el
                       `title`: nueve filas de tres renglones eran media
                       pantalla de párrafos (Nico, 2026-09-03). */}
-                  <p className="font-medium text-fg">{e.nombre}</p>
+                  <p className="font-medium text-fg">
+                    {e.nombre}
+                    {e.opcional && (
+                      <span className="ml-2 text-caption font-normal text-fg-muted" data-testid={`evento-opcional-${e.evento}`}>
+                        Opcional
+                      </span>
+                    )}
+                  </p>
                   <p className="truncate text-caption text-fg-muted" title={e.explicacion}>
                     {e.explicacion}
                   </p>

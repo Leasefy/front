@@ -737,50 +737,29 @@ describe('<RegistrarPagoModal> la llave del recibo (R1)', () => {
   });
 });
 
-describe('<RegistrarPagoModal> la fecha del recibo (R4)', () => {
+describe('<RegistrarPagoModal> la fecha del recibo', () => {
   /*
-   * 🔴 R4 (auditoría 13-09): el campo tenía techo (`hoy`) pero no PISO, y un
-   * dedo de más escribía un recibo fechado en 2016 — un arqueo que nunca
-   * cuadra y que nadie va a encontrar. El piso es el período más viejo que la
-   * persona debe: no tiene sentido fechar el pago antes de que existiera la
-   * deuda que paga.
+   * 🔴 Nico y Juan Camilo (2026-09-16): «¡No! El recibo de caja debe quedar con
+   * la fecha en la que se recibió». El campo tuvo un PISO (R4, auditoría
+   * 13-09): el 1.º del período vencido más viejo, o el 1.º de enero. Se quitó:
+   * queda sólo el techo, hoy.
    */
-  it('no deja fechar el recibo antes del período más viejo que se debe', async () => {
+  it('no tiene piso: sin `min`, con techo en hoy', async () => {
     carteraPorCobro.mockResolvedValue(debeTresMeses());
     await abrir({});
 
     const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
     expect(campo).toBeTruthy();
-    // `debeTresMeses` arranca en 2026-06.
-    expect(campo!.getAttribute('min')).toBe('2026-06-01');
+    expect(campo!.hasAttribute('min')).toBe(false);
     expect(campo!.getAttribute('max')).toBeTruthy();
   });
 
-  /*
-   * 🔴 Con deuda SÓLO futura, tomar el período más viejo de la lista dejaba el
-   * piso en el futuro (`min` 2026-11-01 contra un `max` de hoy): el campo
-   * quedaba imposible de satisfacer y el valor prellenado, fuera de rango.
-   */
-  it('con deuda sólo futura el piso NO se va al futuro', async () => {
+  it('con deuda sólo futura tampoco hay piso', async () => {
     carteraPorCobro.mockResolvedValue(soloDeudaFutura());
     await abrir({});
 
     const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
-    const min = campo!.getAttribute('min')!;
-    const max = campo!.getAttribute('max')!;
-    expect(min <= max).toBe(true);
-    expect(min).toBe(`${new Date().getFullYear()}-01-01`);
-  });
-
-  it('sin cartera el piso es el 1.º de enero del año en curso, no el año cero', async () => {
-    carteraPorCobro.mockResolvedValue(
-      debeTresMeses({ total: 0, vencidoCop: 0, futuroCop: 0, cuotas: [], anticipoDisponible: true }),
-    );
-    await abrir({});
-
-    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
-    const anio = new Date().getFullYear();
-    expect(campo!.getAttribute('min')).toBe(`${anio}-01-01`);
+    expect(campo!.hasAttribute('min')).toBe(false);
   });
 });
 
@@ -1121,7 +1100,6 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
       vencidoCop: 3_120_000,
       interesCop: 120_000,
       liquidadoAl: '2026-09-15',
-      pisoDeLaFecha: '2026-06-01',
     });
   const al20DeAgosto = () =>
     debeTresMeses({
@@ -1129,7 +1107,6 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
       vencidoCop: 3_050_000,
       interesCop: 50_000,
       liquidadoAl: '2026-08-20',
-      pisoDeLaFecha: '2026-06-01',
     });
   const al1DeSeptiembre = () =>
     debeTresMeses({
@@ -1137,7 +1114,6 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
       vencidoCop: 3_090_000,
       interesCop: 90_000,
       liquidadoAl: '2026-09-01',
-      pisoDeLaFecha: '2026-06-01',
     });
 
   /** Una respuesta que se resuelve cuando la prueba dice. */
@@ -1322,35 +1298,53 @@ describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
     expect(onSubmit.mock.calls[1][0]).toMatchObject({ valorCop: 1_000_000, fecha: '2026-09-15' });
   });
 
-  it('el piso lo manda el back: un día antes no se pide y el campo dice desde cuándo', async () => {
-    carteraPorCobro.mockImplementation(() =>
-      Promise.resolve({ ...aHoy(), pisoDeLaFecha: '2026-08-01' }),
+  /*
+   * 🔴 Sin piso (2026-09-16). Las cuotas empiezan en junio y antes el campo no
+   * dejaba fechar el 15 de mayo: «FECHA_ANTERIOR_A_LA_DEUDA». Ahora esa fecha
+   * se pide al back (el interés se liquida hasta ahí) y el recibo sale con ella.
+   */
+  it('🔴 un día anterior al período más viejo que se debe se pide al back y el recibo sale con esa fecha', async () => {
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      Promise.resolve(fecha ? { ...aHoy(), liquidadoAl: fecha } : aHoy()),
     );
     const onSubmit = await abrir();
     elegirMedio('efectivo');
 
-    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo')!;
-    // Las cuotas empiezan en junio, pero el piso es el que dijo el servidor.
-    expect(campo.getAttribute('min')).toBe('2026-08-01');
-
-    escribir('#fecha-recibo', '2026-07-15');
+    escribir('#fecha-recibo', '2026-05-15');
     await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-05-15']]);
+    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')).toBeNull();
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ fecha: '2026-05-15' });
+  });
+
+  it('una fecha futura no se pide ni se emite: el campo dice por qué', async () => {
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-09-16');
+    await pasaLaEspera();
+
     expect(pedidosConFecha()).toEqual([]);
-    expect(document.body.querySelector('[data-testid="fecha-antes-del-piso"]')?.textContent).toContain(
-      'recibos.form.fechaAntesDeLaDeuda',
-    );
+    expect(document.body.querySelector('[data-testid="fecha-futura"]')).toBeTruthy();
     await enviar();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('🔴 el 400 del back sobre la fecha va al campo, tal cual, y la cartera anterior se queda', async () => {
+    /*
+     * El reloj del servidor puede ir detrás del navegador justo a medianoche:
+     * el campo dejó pasar el día y el back dice que todavía no llega.
+     */
     const mensaje =
-      'El recibo no puede quedar fechado el 20 de agosto de 2026: la deuda más vieja de Jose Lopez es de septiembre de 2026.';
+      'El recibo no puede quedar fechado el 20 de agosto de 2026: todavía no llega ese día. Usa la fecha en la que se recibió la plata.';
     carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
       fecha
         ? Promise.reject(
-            new ApiError(400, mensaje, 'FECHA_ANTERIOR_A_LA_DEUDA', {
-              piso: '2026-09-01',
+            new ApiError(400, mensaje, 'FECHA_FUTURA', {
+              hoy: '2026-08-19',
               fecha,
             }),
           )

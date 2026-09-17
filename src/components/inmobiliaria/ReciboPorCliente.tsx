@@ -586,10 +586,8 @@ export const ESPERA_DE_LA_FECHA_MS = 400;
 /** Un rechazo de la cartera pedida CON fecha: se muestra en el campo, no tapa la tabla. */
 export interface ErrorDeLaFecha {
   mensaje: string;
-  /** `FECHA_ANTERIOR_A_LA_DEUDA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
+  /** `FECHA_FUTURA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
   code?: string;
-  /** El piso que el back exige, si lo mandó. */
-  piso?: string;
 }
 
 /**
@@ -611,7 +609,7 @@ export interface ErrorDeLaFecha {
  *   · CAMBIAR LA FECHA espera `ESPERA_DE_LA_FECHA_MS` y CONSERVA la cartera
  *     que hay mientras llega la nueva (`recalculando`): la tabla no parpadea.
  *     Si esa petición falla, la cartera anterior sigue ahí y el rechazo va a
- *     `errorDeLaFecha` — el 400 del piso es un problema del campo, no de la
+ *     `errorDeLaFecha` — el 400 de la fecha es un problema del campo, no de la
  *     cartera.
  *   · SIN CARRERAS: cada petición lleva un número; la respuesta de una fecha
  *     (o de una persona) vieja que llega tarde no pisa la nueva.
@@ -688,10 +686,6 @@ export function useCarteraDelCliente(
           setErrorDeLaFecha({
             mensaje: e instanceof Error && e.message ? e.message : '',
             code: e instanceof ApiError ? e.code : undefined,
-            piso:
-              e instanceof ApiError && typeof e.detalle?.piso === 'string'
-                ? e.detalle.piso
-                : undefined,
           });
         } else {
           hayCartera.current = false;

@@ -58,10 +58,14 @@
  *
  * 5. 🔴 (2026-09-16) La FECHA manda sobre la vista previa. El interés de mora
  *    se liquida hasta el día del recibo, así que al cambiar «¿Qué día entró?»
- *    la cartera se vuelve a pedir con esa fecha (`useCarteraDelCliente`), el
- *    piso del campo es el que dice el back, y no se emite mientras los números
- *    a la vista sean de otro día. Prueba en vivo en QA, contrato #69: con la
- *    fecha en 2026-08-20 el diálogo seguía mostrando el interés de hoy.
+ *    la cartera se vuelve a pedir con esa fecha (`useCarteraDelCliente`) y no
+ *    se emite mientras los números a la vista sean de otro día. Prueba en vivo
+ *    en QA, contrato #69: con la fecha en 2026-08-20 el diálogo seguía
+ *    mostrando el interés de hoy.
+ *
+ * 6. 🔴 (2026-09-16, tarde) La fecha NO tiene piso. Nico y Juan Camilo: «¡No!
+ *    El recibo de caja debe quedar con la fecha en la que se recibió». El
+ *    campo acepta cualquier día pasado; sólo el futuro sigue cerrado.
  *
  * ⚠️ Decisión de producto tomada al pie de la letra: el campo REFERENCIA salió
  * del formulario. Nico enumeró los campos y cerró con «y nada más». El back lo
@@ -197,7 +201,7 @@ export function RegistrarPagoModal({
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
@@ -330,38 +334,16 @@ export function RegistrarPagoModal({
           : null;
 
   /**
-   * R4 — el piso del campo de fecha: el primer día del período VENCIDO más
-   * viejo que la persona debe.
+   * Qué le pasa al día elegido, antes de preguntarle nada al servidor.
    *
-   * 🔴 Sólo cuentan las VENCIDAS. Desde que la cartera trae las cuotas futuras,
-   * tomar la primera de la lista deja un piso EN EL FUTURO cuando lo único que
-   * hay es deuda por vencer (`min` 2026-11-01 con `max` hoy): el campo queda
-   * imposible de satisfacer y el valor prellenado, fuera de rango. Por si
-   * acaso, el piso además se topa en hoy — un piso posterior al techo no es un
-   * piso, es un campo roto.
-   *
-   * Sin nada vencido (un adelanto) se cae al 1.º de enero del año en curso: un
-   * arqueo no mira más atrás, y dejar el campo sin piso es cómo un dedo de más
-   * escribe un recibo fechado en 2016.
+   * 🔴 Ya no hay «antes del piso» (2026-09-16): «el recibo de caja debe quedar
+   * con la fecha en la que se recibió». Hasta ese día el campo no dejaba fechar
+   * antes del 1.º del período vencido más viejo, y ese piso era artificial: la
+   * plata del 28 de julio entró el 28 de julio. Lo único cerrado es el futuro,
+   * que es también lo único que el back rechaza (`FECHA_FUTURA`).
    */
-  const pisoDeLaFecha = React.useMemo(() => {
-    /*
-     * 🔴 El piso lo manda el back (2026-09-16): es el MISMO que exige al emitir
-     * y en la vista previa, así que el `min` del campo no puede dejar elegir un
-     * día que el servidor rechaza. La cuenta de abajo queda sólo para un back
-     * anterior que no lo manda.
-     */
-    if (cartera?.pisoDeLaFecha) return cartera.pisoDeLaFecha;
-    const masViejoVencido = cartera?.cuotas.find((c) => c.vencida)?.month;
-    const piso = masViejoVencido
-      ? `${masViejoVencido}-01`
-      : `${hoy.slice(0, 4)}-01-01`;
-    return piso > hoy ? `${hoy.slice(0, 4)}-01-01` : piso;
-  }, [cartera, hoy]);
-
-  /** Qué le pasa al día elegido, antes de preguntarle nada al servidor. */
-  const problemaDeLaFecha: 'vacia' | 'antesDelPiso' | 'futura' | null =
-    fecha === '' ? 'vacia' : fecha < pisoDeLaFecha ? 'antesDelPiso' : fecha > hoy ? 'futura' : null;
+  const problemaDeLaFecha: 'vacia' | 'futura' | null =
+    fecha === '' ? 'vacia' : fecha > hoy ? 'futura' : null;
 
   /*
    * La vista previa sigue a la fecha sólo cuando la fecha es válida. Un día
@@ -641,8 +623,7 @@ export function RegistrarPagoModal({
             <ElegirCliente
               value={tenantId}
               onChange={(id) => {
-                // Otra persona arranca de cero y a hoy: la fecha de la anterior
-                // puede quedar antes del piso de ésta.
+                // Otra persona arranca de cero y a hoy, como cualquier recibo.
                 setTenantId(id);
                 setFecha(hoy);
                 setFechaDeLaVistaPrevia(null);
@@ -867,15 +848,10 @@ export function RegistrarPagoModal({
                   id="fecha-recibo"
                   type="date"
                   /*
-                   * R4 (auditoría 13-09): tenía techo (`hoy`) pero no PISO, y
-                   * un dedo de más escribía un recibo fechado en 2016. El
-                   * piso es el corte de cartera: el período más viejo que la
-                   * persona debe — no tiene sentido fechar el recibo antes de
-                   * que existiera la deuda que paga. Sin cartera (pago por
-                   * adelantado) el piso es el primer día del año en curso,
-                   * que es hasta dónde llega un arqueo razonable.
+                   * Sólo techo (`hoy`). El piso que puso R4 (auditoría 13-09)
+                   * se quitó el 2026-09-16: el recibo lleva la fecha en la que
+                   * se recibió la plata, sea cual sea.
                    */
-                  min={pisoDeLaFecha}
                   max={hoy}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
@@ -887,7 +863,6 @@ export function RegistrarPagoModal({
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||
-                      problemaDeLaFecha === 'antesDelPiso' ||
                       problemaDeLaFecha === 'futura' ||
                       errorDeLaFecha !== null
                       ? 'border-destructive'
@@ -897,23 +872,12 @@ export function RegistrarPagoModal({
                 {tocado && !fecha && (
                   <p className="text-xs text-destructive">{t('recibos.form.fechaRequerida')}</p>
                 )}
-                {problemaDeLaFecha === 'antesDelPiso' && (
-                  <p className="text-xs text-destructive" data-testid="fecha-antes-del-piso">
-                    {t('recibos.form.fechaAntesDeLaDeuda', {
-                      piso: formatDate(new Date(`${pisoDeLaFecha}T12:00:00`), {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      }),
-                    })}
-                  </p>
-                )}
                 {problemaDeLaFecha === 'futura' && (
                   <p className="text-xs text-destructive" data-testid="fecha-futura">
                     {t('recibos.form.fechaFutura')}
                   </p>
                 )}
-                {/* El rechazo del back sobre ESTA fecha, tal cual: dice el piso y qué hacer. */}
+                {/* El rechazo del back sobre ESTA fecha, tal cual: dice qué hacer. */}
                 {problemaDeLaFecha === null && errorDeLaFecha !== null && (
                   <p className="text-xs text-destructive" data-testid="error-de-la-fecha">
                     {errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')}

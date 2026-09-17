@@ -11281,7 +11281,6 @@
       "montoExcede": "Se pasa del saldo. El máximo abonable es {{monto}}.",
       "fechaLabel": "¿Qué día entró?",
       "fechaRequerida": "Elige el día",
-      "fechaAntesDeLaDeuda": "Elige un día desde el {{piso}}: es lo más atrás que puede quedar fechado este recibo.",
       "fechaFutura": "No puede ser después de hoy.",
       "recalculandoInteres": "Recalculando el interés de mora a esta fecha…",
       "medioLabel": "¿Por dónde entró?",

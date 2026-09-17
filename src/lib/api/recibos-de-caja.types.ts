@@ -253,17 +253,13 @@ export interface CarteraDelCliente {
   anticipoDisponible?: boolean;
   /**
    * 🔴 El día (`YYYY-MM-DD`) hasta el que el back liquidó el interés: la fecha
-   * pedida con `?fecha=`, o hoy (sin fecha, o con una fecha futura).
-   * Opcional: un back anterior al 2026-09-16 no lo manda.
+   * pedida con `?fecha=`, o hoy sin fecha. Opcional: un back anterior al
+   * 2026-09-16 no lo manda.
+   *
+   * (Acá viajaba `pisoDeLaFecha`. Se quitó el 2026-09-16: el recibo lleva la
+   * fecha en la que se recibió, sin piso.)
    */
   liquidadoAl?: string;
-  /**
-   * 🔴 El día más viejo que acepta un recibo de esta persona (`YYYY-MM-DD`). Es
-   * el MISMO piso que el back exige al emitir: el `min` del campo sale de acá,
-   * no de una copia de la regla. Opcional: un back anterior no lo manda y la
-   * pantalla cae a su cálculo de siempre.
-   */
-  pisoDeLaFecha?: string;
 }
 
 /**

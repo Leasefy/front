@@ -126,9 +126,9 @@ export const recibosDeCajaApi = {
    * Lo que debe una persona, del período más viejo al más nuevo.
    *
    * 🔴 `fecha` (`YYYY-MM-DD`) es la VISTA PREVIA del recibo fechado ese día: el
-   * back liquida el interés de mora hasta ahí, con la misma regla y el mismo
-   * piso que al emitir. Sin fecha, hoy. Puede fallar con 400
-   * `FECHA_ANTERIOR_A_LA_DEUDA` (trae `piso`) o `FECHA_NO_VALIDA`.
+   * back liquida el interés de mora hasta ahí, con la misma regla que al
+   * emitir. Sin fecha, hoy. Cualquier día pasado vale; puede fallar con 400
+   * `FECHA_FUTURA` o `FECHA_NO_VALIDA`.
    */
   async cartera(tenantId: string, fecha?: string): Promise<CarteraDelCliente> {
     return apiClient.get<CarteraDelCliente>(

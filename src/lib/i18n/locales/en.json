@@ -11241,7 +11241,6 @@
       "montoExcede": "That is over the balance. The maximum you can apply is {{monto}}.",
       "fechaLabel": "What day did it come in?",
       "fechaRequerida": "Pick the day",
-      "fechaAntesDeLaDeuda": "Pick a day from {{piso}} on: that's the earliest this receipt can be dated.",
       "fechaFutura": "It can't be after today.",
       "recalculandoInteres": "Recalculating late-payment interest for this date…",
       "medioLabel": "How did it come in?",

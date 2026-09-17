@@ -66,7 +66,6 @@ const CLAVES_EN_USO = [
   'form.montoExcede',
   'form.fechaLabel',
   'form.fechaRequerida',
-  'form.fechaAntesDeLaDeuda',
   'form.fechaFutura',
   'form.recalculandoInteres',
   'form.medioLabel',

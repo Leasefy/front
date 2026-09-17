@@ -7,6 +7,7 @@
  * mismo `guardar`, que sólo manda los campos cambiados.
  */
 
+import { ConfigPenalidadDeTerminacion } from '@/components/inmobiliaria/ConfigPenalidadDeTerminacion';
 import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
@@ -103,6 +104,7 @@ export function SeccionPerfil() {
           {/* Justo después de los datos de la empresa: es una decisión del
               negocio que cambia un número de todas las pantallas. */}
           <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
         </div>

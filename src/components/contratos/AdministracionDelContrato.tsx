@@ -85,6 +85,10 @@ export function AdministracionDelContrato({
     contract.diasDePlazo != null ? String(contract.diasDePlazo) : '',
   )
   const [prorratear, setProrratear] = useState(contract.prorratearPrimerMes ?? false)
+  // Penalidad por terminación en cánones (17-09). Vacío = la de la inmobiliaria.
+  const [penalidad, setPenalidad] = useState(
+    contract.penalidadTerminacionCanones != null ? String(contract.penalidadTerminacionCanones) : '',
+  )
   /*
    * 🔴 La referencia de recaudo: con qué número paga el inquilino. Vacío NO es
    * «déjalo como estaba»: es «bórrala y vuelve al consecutivo», y por eso se
@@ -155,6 +159,11 @@ export function AdministracionDelContrato({
         setError('Los días de plazo van entre 0 y 60, sin decimales.')
         return
       }
+      const canones = penalidad.trim() === '' ? null : Number(penalidad.replace(',', '.'))
+      if (canones !== null && (!Number.isFinite(canones) || canones < 0 || canones > 99)) {
+        setError('La penalidad va en cánones, entre 0 y 99.')
+        return
+      }
       const actualizado = await contractsApi.actualizarAdministracion(contract.id, {
         usoInmueble: uso === '' ? undefined : uso,
         periodicidad: periodicidad === '' ? undefined : periodicidad,
@@ -162,6 +171,10 @@ export function AdministracionDelContrato({
         // `null` = volver a heredar los días de la inmobiliaria.
         diasDePlazo: plazo,
         prorratearPrimerMes: prorratear,
+        // Sólo si cambió: con la migración sin aplicar el back responde 503.
+        ...(canones !== (contract.penalidadTerminacionCanones ?? null)
+          ? { penalidadTerminacionCanones: canones }
+          : {}),
         // Vacío se manda como `null` a propósito: borra la referencia y el
         // contrato vuelve a pagarse con su consecutivo. Guardar '' dejaría un
         // identificador que no empata con ninguna línea del extracto.
@@ -240,6 +253,15 @@ export function AdministracionDelContrato({
               : null
           }
           ausente="Los días de la inmobiliaria"
+        />
+        <Fila
+          etiqueta="Penalidad por terminar antes"
+          valor={
+            contract.penalidadTerminacionCanones != null
+              ? `${contract.penalidadTerminacionCanones} cánones`
+              : null
+          }
+          ausente="La de la inmobiliaria"
         />
         <Fila
           etiqueta="Primer mes"
@@ -441,8 +463,27 @@ export function AdministracionDelContrato({
                   data-testid="dias-de-plazo"
                 />
                 <p className="text-xs text-muted-foreground">
-                  La mora corre desde el día de pago más este plazo. Vacío = los
-                  días de la inmobiliaria.
+                  El día del vencimiento cuenta como el primero: con 3, del 1 al 3
+                  está en plazo y desde el 4 corre la mora. Vacío = los días de la
+                  inmobiliaria.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor="penalidad-canones">
+                  Penalidad por terminación anticipada (cánones)
+                </label>
+                <Input
+                  id="penalidad-canones"
+                  inputMode="decimal"
+                  value={penalidad}
+                  onChange={(e) => setPenalidad(e.target.value)}
+                  placeholder="La de la inmobiliaria"
+                  data-testid="penalidad-canones"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se le cobra al inquilino si termina antes; al propietario le llega
+                  menos la comisión. Vacío = la de la inmobiliaria.
                 </p>
               </div>
 

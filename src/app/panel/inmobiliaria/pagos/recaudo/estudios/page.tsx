@@ -15,7 +15,19 @@ import Link from 'next/link';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SectionLabel } from '@/components/ui/section-label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -28,6 +40,10 @@ function Contenido() {
   const [pagos, setPagos] = useState<PagoDeEstudio[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [cargando, setCargando] = useState(true);
+  /* 🔴 Anular pide el motivo con el diálogo del sistema de diseño: el del
+     navegador ignora el tema y algunos navegadores lo suprimen. */
+  const [anulando, setAnulando] = useState<PagoDeEstudio | null>(null);
+  const [motivo, setMotivo] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -45,12 +61,14 @@ function Contenido() {
     void cargar();
   }, [cargar]);
 
-  const anular = async (pago: PagoDeEstudio) => {
-    const motivo = window.prompt(`Motivo para anular el recibo #${pago.numeroRecibo} (el estudio no se devuelve):`);
-    if (!motivo?.trim()) return;
+  const anular = async () => {
+    const pago = anulando;
+    if (!pago || motivo.trim().length < 5) return;
     try {
       await estudiosApi.anular(pago.id, motivo.trim());
       toast.success(`Recibo #${pago.numeroRecibo} anulado`);
+      setAnulando(null);
+      setMotivo('');
       await cargar();
     } catch (e) {
       toast.error('No se pudo anular', { description: e instanceof Error ? e.message : undefined });
@@ -107,7 +125,16 @@ function Contenido() {
                   </td>
                   <td className="p-3 text-right">
                     {esAdministrador && !p.anulado && (
-                      <Button size="sm" variant="outline" hideArrow onClick={() => void anular(p)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        hideArrow
+                        onClick={() => {
+                          setAnulando(p);
+                          setMotivo('');
+                        }}
+                        data-testid={`anular-${p.id}`}
+                      >
                         Anular
                       </Button>
                     )}
@@ -118,6 +145,44 @@ function Contenido() {
           </table>
         </div>
       </EstadoDeDatos>
+
+      <AlertDialog open={anulando !== null} onOpenChange={(abierto) => !abierto && setAnulando(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Anular el recibo #{anulando?.numeroRecibo ?? ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              El estudio NO se devuelve: anular es sólo para un error de caja. Queda escrito el motivo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="motivo-anular-estudio">Motivo</Label>
+            <Textarea
+              id="motivo-anular-estudio"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Se registró dos veces el mismo pago."
+              rows={3}
+              maxLength={300}
+            />
+            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void anular();
+              }}
+              disabled={motivo.trim().length < 5}
+              data-testid="confirmar-anular-estudio"
+            >
+              Anular
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -18,7 +18,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Gavel } from '@phosphor-icons/react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -55,6 +67,10 @@ export function CobroJuridico() {
   const [nombre, setNombre] = useState('');
   const [documento, setDocumento] = useState('');
   const [abogadoElegido, setAbogadoElegido] = useState<Record<string, string>>({});
+  /* 🔴 Cerrar un caso pide el motivo con el diálogo del sistema de diseño (el
+     del navegador ignora el tema y algunos navegadores lo suprimen). */
+  const [cerrando, setCerrando] = useState<CasoJuridico | null>(null);
+  const [motivoDeCierre, setMotivoDeCierre] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -136,13 +152,15 @@ export function CobroJuridico() {
     }
   };
 
-  const cerrar = async (caso: CasoJuridico) => {
-    const motivo = window.prompt('¿Por qué se cierra el caso?');
-    if (!motivo?.trim()) return;
+  const cerrar = async () => {
+    const caso = cerrando;
+    if (!caso || motivoDeCierre.trim().length < 5) return;
     setOcupado(true);
     try {
-      await juridicoApi.cerrar(caso.id, motivo.trim());
+      await juridicoApi.cerrar(caso.id, motivoDeCierre.trim());
       toast.success('Caso cerrado');
+      setCerrando(null);
+      setMotivoDeCierre('');
       await cargar();
     } catch (e) {
       toast.error('No se pudo cerrar el caso', { description: mensaje(e, '') });
@@ -388,7 +406,10 @@ export function CobroJuridico() {
                         variant="outline"
                         hideArrow
                         disabled={ocupado}
-                        onClick={() => void cerrar(c)}
+                        onClick={() => {
+                          setCerrando(c);
+                          setMotivoDeCierre('');
+                        }}
                         data-testid={`cerrar-${c.id}`}
                       >
                         Cerrar el caso
@@ -439,6 +460,44 @@ export function CobroJuridico() {
             </ul>
           )}
         </section>
+        <AlertDialog
+          open={cerrando !== null}
+          onOpenChange={(abierto) => !abierto && setCerrando(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cerrar el caso</AlertDialogTitle>
+              <AlertDialogDescription>
+                El contrato deja de estar «en jurídico». Lo que ya se causó al abogado no se borra.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="motivo-cierre">Motivo</Label>
+              <Textarea
+                id="motivo-cierre"
+                value={motivoDeCierre}
+                onChange={(e) => setMotivoDeCierre(e.target.value)}
+                placeholder="El inquilino se puso al día y entregó el inmueble."
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-caption text-fg-muted">Entre 5 y 500 caracteres.</p>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void cerrar();
+                }}
+                disabled={ocupado || motivoDeCierre.trim().length < 5}
+                data-testid="confirmar-cerrar-caso"
+              >
+                Cerrar el caso
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </EstadoDeDatos>
   );

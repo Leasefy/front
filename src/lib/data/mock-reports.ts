@@ -3,6 +3,7 @@
  * Used by OccupancyReport, CollectionsReport, and AgentPerformanceReport.
  * All monetary amounts in COP (Colombian Pesos).
  */
+import type { BaseDeLaTasaDeRecaudo } from '@/lib/tasa-de-recaudo';
 
 // ============================================================================
 // Occupancy Report Types & Data
@@ -85,8 +86,12 @@ export interface CollectionsSummary {
   /**
    * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
    * cero casos no es «0 %», es una tasa que nadie midió.
+   *
+   * 🔴 Es la TASA DE RECAUDO del mes, medida por el back como la eligió la
+   * inmobiliaria; `baseDeLaTasa` dice con qué fórmula, para rotularla.
    */
   recoveryRate: number | null;
+  baseDeLaTasa?: BaseDeLaTasaDeRecaudo;
 }
 
 export interface CollectionsByMonth {

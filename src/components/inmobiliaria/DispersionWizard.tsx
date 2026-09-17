@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
-import type { Dispersion, PorQueElMesVieneVacio } from '@/lib/types/inmobiliaria';
+import type { CuotasTardias, Dispersion, PorQueElMesVieneVacio } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
@@ -36,6 +36,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
 import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
 import { motivoDelMesVacio } from './dispersion-mes-vacio';
+import { CuotasQueLlegaronTarde } from './CuotasQueLlegaronTarde';
 import {
   ROTULO_DEL_CANON,
   baseDeLaLiquidacion,
@@ -251,6 +252,14 @@ export function DispersionWizard({
    * `?base=`, así que es la del back por defecto: CAUSADO.
    */
   const [base, setBase] = useState<BaseDelCanon>('CAUSADO');
+  /**
+   * Los que ya tienen su liquidación del mes y tienen cuotas que llegaron
+   * tarde. Los que `seSuman` viajan en el `generate` aunque no estén en los
+   * borradores: sin su id, el back no los mira y esas cuotas no se giran nunca.
+   */
+  const [tardias, setTardias] = useState<CuotasTardias[]>([]);
+  const tardiasQueSeSuman = useMemo(() => tardias.filter((t) => t.seSuman), [tardias]);
+  const haySumables = tardiasQueSeSuman.length > 0;
 
   useEffect(() => {
     let cancelado = false;
@@ -262,6 +271,7 @@ export function DispersionWizard({
       .then((previa) => {
         if (cancelado) return;
         setYaGenerados(previa.yaGenerados);
+        setTardias(previa.tardias ?? []);
         setVacio(previa.vacio ?? null);
         setBase(baseDeLaLiquidacion(previa));
         const borradores = previa.propietarios
@@ -287,6 +297,7 @@ export function DispersionWizard({
         }));
       })
       .catch((error: unknown) => {
+        if (!cancelado) setTardias([]);
         if (!cancelado) setErrorPrevia(error);
       })
       .finally(() => {
@@ -325,20 +336,19 @@ export function DispersionWizard({
     switch (currentStep) {
       case 1:
         return Boolean(state.month);
+      // Un mes sin borradores nuevos pero con cuotas tardías que se suman
+      // también tiene qué generar: sumarlas a la liquidación que ya existe.
       case 2:
-        return state.dispersionDrafts.length > 0;
       case 3:
-        return state.dispersionDrafts.length > 0;
       case 4:
-        return state.dispersionDrafts.length > 0;
+        return state.dispersionDrafts.length > 0 || haySumables;
       case 5:
-        return state.seleccionados.length > 0;
       case 6:
-        return state.seleccionados.length > 0;
+        return state.seleccionados.length > 0 || haySumables;
       default:
         return false;
     }
-  }, [currentStep, state]);
+  }, [currentStep, state, haySumables]);
 
   /*
    * Lo que se muestra sale de los MISMOS borradores que se van a mandar: el
@@ -432,10 +442,32 @@ export function DispersionWizard({
        */
       const resultado = await dispersionesApi.generate(
         state.month,
-        state.seleccionados,
+        [
+          ...new Set([
+            ...state.seleccionados,
+            ...tardiasQueSeSuman.map((t) => t.propietarioId),
+          ]),
+        ],
       );
+      const sumadas = resultado.tardias?.sumadas ?? [];
+      const sinSumar = resultado.tardias?.sinSumar ?? [];
+      const cuotasSumadas = sumadas.reduce((n, t) => n + t.cuotas, 0);
+      const deLasTardias = [
+        sumadas.length > 0
+          ? `${cuotasSumadas === 1 ? 'Se sumó 1 cuota que llegó tarde' : `Se sumaron ${cuotasSumadas} cuotas que llegaron tarde`} a ${sumadas.length} ${sumadas.length === 1 ? 'liquidación' : 'liquidaciones'} del mes.`
+          : '',
+        sinSumar.length > 0
+          ? `${sinSumar.length} ${sinSumar.length === 1 ? 'propietario tiene' : 'propietarios tienen'} cuotas tardías que no se pudieron sumar.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
 
-      if (resultado.created === 0) {
+      if (resultado.created === 0 && sumadas.length > 0) {
+        toast.success('Cuotas sumadas a las liquidaciones del mes', {
+          description: deLasTardias,
+        });
+      } else if (resultado.created === 0) {
         toast.info('No se generó ninguna dispersión', {
           description:
             resultado.skipped > 0
@@ -448,9 +480,14 @@ export function DispersionWizard({
             // Los que quedaron fuera se dicen: sin esto, «se generaron 3» se
             // lee igual en un mes de 3 propietarios que en uno de 40 donde
             // alguien destildó 37 sin darse cuenta.
-            resultado.noElegidos > 0
-              ? `${resultado.created} para ${formatMonth(state.month)}. ${resultado.noElegidos} quedaron fuera de la selección.`
-              : `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+            [
+              resultado.noElegidos > 0
+                ? `${resultado.created} para ${formatMonth(state.month)}. ${resultado.noElegidos} quedaron fuera de la selección.`
+                : `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+              deLasTardias,
+            ]
+              .filter(Boolean)
+              .join(' '),
         });
       }
 
@@ -471,7 +508,7 @@ export function DispersionWizard({
       setIsSubmitting(false);
     }
     // El back hace la cuenta; de acá sólo viajan el mes y a quiénes.
-  }, [state.month, state.seleccionados, onComplete]);
+  }, [state.month, state.seleccionados, tardiasQueSeSuman, onComplete]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -659,11 +696,13 @@ export function DispersionWizard({
                 queNoSalio="No pudimos calcular este mes"
                 onReintentar={() => setIntentoPrevia((n) => n + 1)}
               />
-            ) : state.dispersionDrafts.length === 0 ? (
+            ) : state.dispersionDrafts.length === 0 && !haySumables ? (
               <MesSinGiros
                 motivo={motivoDelMesVacio({ mes: state.month, yaGenerados, vacio })}
               />
             ) : null}
+
+            {!cargandoPrevia && !errorPrevia && <CuotasQueLlegaronTarde tardias={tardias} />}
           </div>
         );
 
@@ -982,6 +1021,15 @@ export function DispersionWizard({
                       {sinSeleccionar === 1 ? 'queda' : 'quedan'} fuera.
                     </span>
                   </>
+                )}
+                {haySumables && (
+                  <span className="block mt-1" data-testid="confirmacion-tardias">
+                    Y a {tardiasQueSeSuman.length}{' '}
+                    {tardiasQueSeSuman.length === 1
+                      ? 'liquidación que ya existe se le suman'
+                      : 'liquidaciones que ya existen se les suman'}{' '}
+                    las cuotas que llegaron tarde.
+                  </span>
                 )}
               </p>
             </div>

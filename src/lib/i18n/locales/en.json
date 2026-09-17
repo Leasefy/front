@@ -1196,7 +1196,7 @@
         "totalProperties": "Total Properties",
         "rentedAndAvailable": "{{rented}} rented · {{available}} available",
         "monthlyCollection": "Monthly Collection",
-        "collectionRateLabel": "{{rate}} collection rate",
+        "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Commissions",
         "commissionsGenerated": "Generated this month",
         "occupancy": "Occupancy",
@@ -3865,7 +3865,7 @@
         "stats": {
           "expected": "Expected",
           "collected": "Collected",
-          "collectionRate": "{{pct}}% collection rate",
+          "collectionRate": "{{pct}}% · {{rotulo}}",
           "commission": "Agency commission",
           "netToOwners": "Net to owners",
           "occupancy": "Average occupancy",
@@ -9097,6 +9097,44 @@
       "newSoon": "Reconciliation processing is enabled with the engine (M2).",
       "uploadSoon": "Ingestion and matching connect to the engine (M2)."
     },
+    "tasaDeRecaudo": {
+      "rotulo": {
+        "CAUSADO": "Collected over amount due",
+        "EMITIDO": "Paid of amount billed"
+      },
+      "cifras": {
+        "CAUSADO": "{{numerador}} applied of {{denominador}} due",
+        "EMITIDO": "{{numerador}} paid of {{denominador}} billed"
+      },
+      "sinMedir": {
+        "CAUSADO": "No lease installments are due this month",
+        "EMITIDO": "No collections were issued this month"
+      },
+      "generico": "collection rate",
+      "ajuste": {
+        "titulo": "How do you measure your collection rate?",
+        "intro": "It is the percentage you see in the Summary, Issued collections, Collections and reports. Every screen says which of the two it used, so you never compare two different numbers under the same name.",
+        "opcion": {
+          "CAUSADO": {
+            "titulo": "Over the amount due this month",
+            "explicacion": "What was applied to this month's installments ÷ what the leases charge this month. It comes from the lease debt, whether or not a collection was issued.",
+            "ejemplo": "Example: your leases charge $10,000,000 this month and $8,000,000 has been applied to those installments. Your rate is 80%, even if you issued no collection."
+          },
+          "EMITIDO": {
+            "titulo": "Over the amount billed in collections",
+            "explicacion": "What was paid of this month's issued collections ÷ what those collections claim. Only what you already billed with a document counts.",
+            "ejemplo": "Example: you issued collections for $4,000,000 and $3,000,000 of them was paid. Your rate is 75%, even if the leases charge more this month."
+          }
+        },
+        "porDefecto": "Default",
+        "enUso": "In use",
+        "conTusNumeros": "With your {{mes}} numbers: {{tasa}} · {{cifras}}",
+        "cargando": "Loading this month's numbers…",
+        "errorNumeros": "We couldn't load this month's numbers. You can still choose.",
+        "noDisponible": "You can't change it yet: a database update is pending. Meanwhile, everything is measured over the amount due.",
+        "soloAdmin": "Only an agency administrator can change it."
+      }
+    },
     "deducciones": {
       "tab": "Deductions",
       "titulo": "Deductions",
@@ -9183,12 +9221,73 @@
         "propietario": "The owner",
         "propietarioAyuda": "It is deducted from their first unpaid payout, split among the property's owners.",
         "inquilino": "The tenant",
-        "inquilinoAyuda": "Nothing is deducted from the owner. The charge does not reach the tenant's statement automatically yet: collect it separately.",
+        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one.",
         "cancelar": "Cancel",
         "confirmar": "Approve quote",
         "aprobando": "Approving…",
         "aprobadaPropietario": "Quote approved: deducted from the owner",
-        "aprobadaInquilino": "Quote approved, paid by the tenant"
+        "aprobadaInquilino": "Quote approved, paid by the tenant",
+        "sugiereElAgente": "The agent suggests charging it to the {{quien}}. The decision is yours.",
+        "quienPropietario": "owner",
+        "quienInquilino": "tenant"
+      },
+      "propuesta": {
+        "titulo": "Agent proposal",
+        "cotizacion": "Proposes the quote from {{proveedor}} for {{valor}}.",
+        "sinCotizacion": "Asks a person to approve the repair.",
+        "sugierePropietario": "Suggests it is charged to the owner.",
+        "sugiereInquilino": "Suggests it is charged to the tenant.",
+        "aprobacionHumana": "The agent does not approve: you approve it, and with it the deduction or the charge.",
+        "revisar": "Review and approve"
+      },
+      "cargoAlInquilino": {
+        "titulo": "Charge to the tenant",
+        "detalle": "{{valor}} on the {{mes}} installment: it is on the tenant's statement.",
+        "aprobada": "Added to the tenant's statement: {{valor}} on the {{mes}} installment."
+      },
+      "deuda": {
+        "titulo": "Owes the agency",
+        "descripcion": "Deductions or negative balance with no settlement left to deduct them from: they are collected.",
+        "desde": "Since {{mes}}",
+        "sinCuentaDeCobro": "{{valor}} not yet in a collection notice",
+        "generar": "Generate collection notice",
+        "generando": "Generating…",
+        "generada": "Collection notice no. {{numero}} generated",
+        "noSeGenero": "The collection notice was not generated",
+        "verCuenta": "Collection notice no. {{numero}}",
+        "sinMigrar": "Collection notices are not available on this database yet: the debt is still shown.",
+        "queEs": "what the owner owes the agency"
+      },
+      "cartera": {
+        "titulo": "Owners who owe the agency",
+        "descripcion": "They have no settlement left to deduct their deductions or negative balance from: they are charged with a collection notice.",
+        "colPropietario": "Owner",
+        "colDebe": "Owes",
+        "colDesde": "Since",
+        "colCuenta": "Collection notice",
+        "sinCuenta": "Not generated",
+        "cuenta": "No. {{numero}}",
+        "total": "Total",
+        "queSon": "the owners who owe the agency"
+      },
+      "cuentaDeCobro": {
+        "titulo": "Collection notice",
+        "numero": "No. {{numero}}",
+        "emitida": "Issued on {{fecha}}",
+        "a": "To",
+        "de": "From",
+        "concepto": "Item",
+        "valor": "Amount",
+        "total": "Total due",
+        "estado": {
+          "VIGENTE": "Due",
+          "DESCONTADA": "Deducted later",
+          "ANULADA": "Voided"
+        },
+        "imprimir": "Print or save as PDF",
+        "volver": "Back to the owner",
+        "noEsFactura": "This document is not an electronic invoice.",
+        "queEs": "the collection notice"
       }
     },
     "tesoreria": {

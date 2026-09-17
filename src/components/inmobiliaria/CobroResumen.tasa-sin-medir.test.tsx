@@ -29,6 +29,7 @@ function mesConCobros(sobre: Partial<CobroSummary> = {}): CobroSummary {
     cobrosPaid: 3,
     cobrosPending: 7,
     cobrosLate: 0,
+    tasaDeRecaudo: null,
     ...sobre,
   };
 }
@@ -45,6 +46,7 @@ function mesSinCobros(): CobroSummary {
     cobrosPaid: 0,
     cobrosPending: 0,
     cobrosLate: 0,
+    tasaDeRecaudo: null,
   };
 }
 
@@ -123,6 +125,61 @@ describe('CobroResumen — un mes que sí se midió', () => {
     const tasa = bloqueDeTasa();
     expect(tasa.textContent).toContain('0.0%');
     expect(tasa.textContent).toMatch(/Bajo/i);
+  });
+});
+
+describe('CobroResumen — la tasa dice con qué fórmula se midió', () => {
+  /*
+   * 🔴 Para la agencia de QA esta tarjeta decía 43,6 % y el Resumen 2,2 %, las
+   * dos «Tasa de recaudo». Ahora la tasa es la de la inmobiliaria, medida en el
+   * back, y el rótulo y las dos cifras dicen cuál es.
+   */
+  it('sobre lo causado (por defecto): rótulo y cifras de las cuotas, no de los cobros', async () => {
+    await montar(
+      <CobroResumen
+        summary={mesConCobros({
+          totalExpected: 18_800_000,
+          totalCollected: 8_200_000,
+          collectionRate: 2.2478,
+          tasaDeRecaudo: {
+            base: 'CAUSADO',
+            porDefecto: true,
+            rotulo: 'Recaudo sobre lo causado',
+            definicion: '',
+            numeradorCop: 8_200_000,
+            denominadorCop: 364_795_650,
+            pct: 2.2478,
+          },
+        })}
+      />,
+    );
+    expect(bloqueDeTasa('cobros-rotulo-de-la-tasa').textContent).toBe('Recaudo sobre lo causado');
+    expect(bloqueDeTasa().textContent).toContain('2.2%');
+    expect(bloqueDeTasa('cobros-cifras-de-la-tasa').textContent).toBe('8200000 abonados de 364795650 causados');
+  });
+
+  it('sobre lo emitido: el otro rótulo, y el 43,6 % de siempre', async () => {
+    await montar(
+      <CobroResumen
+        summary={mesConCobros({
+          totalExpected: 18_800_000,
+          totalCollected: 8_200_000,
+          collectionRate: 43.617,
+          tasaDeRecaudo: {
+            base: 'EMITIDO',
+            porDefecto: false,
+            rotulo: 'Pagado de lo emitido',
+            definicion: '',
+            numeradorCop: 8_200_000,
+            denominadorCop: 18_800_000,
+            pct: 43.617,
+          },
+        })}
+      />,
+    );
+    expect(bloqueDeTasa('cobros-rotulo-de-la-tasa').textContent).toBe('Pagado de lo emitido');
+    expect(bloqueDeTasa().textContent).toContain('43.6%');
+    expect(bloqueDeTasa('cobros-cifras-de-la-tasa').textContent).toBe('8200000 pagados de 18800000 emitidos');
   });
 });
 

@@ -3,7 +3,11 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
-import type { DeduccionesDeLaLiquidacion } from './deducciones';
+import type {
+  CargoAlInquilino,
+  DeduccionesDeLaLiquidacion,
+  PropuestaDelAgente,
+} from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
@@ -11,6 +15,11 @@ import type { BankCode, AccountType } from './payment-accounts';
  * terminan llamando distinto a lo mismo.
  */
 import type { CajonDeLaCuota, EstadoDeCuota } from '@/lib/api/cartera.types';
+import type {
+  BaseDeLaTasaDeRecaudo,
+  MedidaDeLaTasa,
+  TasaDeRecaudo,
+} from '@/lib/tasa-de-recaudo';
 
 // ============================================================================
 // Propietario (Property Owner/Client)
@@ -650,6 +659,11 @@ export interface CobroSummary {
   cobrosPaid: number;
   cobrosPending: number;
   cobrosLate: number;
+  /**
+   * 🔴 La tasa de recaudo del mes, medida como la eligió la inmobiliaria y con
+   * su fórmula. `collectionRate` es su `pct`: la pantalla ya no la divide.
+   */
+  tasaDeRecaudo: TasaDeRecaudo | null;
 }
 
 // ============================================================================
@@ -756,6 +770,24 @@ export interface PorQueElMesVieneVacio {
   contratosVigentes: number;
 }
 
+/**
+ * Las cuotas que llegaron TARDE a un mes que ya tiene la liquidación de ese
+ * propietario: un contrato activado después, una tabla regenerada, la parte de
+ * un copropietario. Antes se saltaban enteras; ahora, si la liquidación sigue
+ * abierta, se le suman al generar, y si no, el back dice por qué no.
+ */
+export interface CuotasTardias {
+  propietarioId: string;
+  propietarioName: string;
+  dispersionId: string;
+  cuotas: number;
+  netoCop: number;
+  /** `true` = se le suman a su liquidación del mes al generar. */
+  seSuman: boolean;
+  /** Por qué no se pueden sumar. `null` si se suman. */
+  motivo: string | null;
+}
+
 export interface VistaPreviaDeDispersiones {
   month: string;
   /**
@@ -768,6 +800,11 @@ export interface VistaPreviaDeDispersiones {
   totalPropietarios: number;
   /** Los que ya tienen dispersión de este mes: generar los saltaría. */
   yaGenerados: number;
+  /**
+   * De los que ya tienen dispersión, los que tienen cuotas que llegaron tarde.
+   * Opcional: un back anterior no lo manda (y saltaba esas cuotas).
+   */
+  tardias?: CuotasTardias[];
   /**
    * Sin un solo borrador, la razón contada; con alguno, `null`. Opcional: un
    * back anterior al 16-09 no lo manda, y entonces la pantalla dice la frase
@@ -891,6 +928,14 @@ export interface SolicitudMantenimiento {
   completedAt?: string;
   completionNotes?: string;
   completionPhotoUrls?: string[];
+
+  /**
+   * Lo que dejó propuesto el agente de mantenimiento, esperando a una persona.
+   * Ausente con un back anterior; `null` sin propuesta.
+   */
+  propuesta?: PropuestaDelAgente | null;
+  /** El cargo vivo en el estado de cuenta del inquilino, si quedó a su cargo. */
+  cargoAlInquilino?: CargoAlInquilino | null;
 
   createdAt: string;
   updatedAt: string;
@@ -1334,6 +1379,12 @@ export interface CarteraMonthItem {
   /** Cuántas cuotas hay detrás del mes. Antes era `cobroCount`. */
   cuotas: number;
   collectionRate: number;
+  /**
+   * 🔴 La tasa del mes medida como la eligió la inmobiliaria, con su fórmula.
+   * Sobre lo emitido, `collected`/`total` NO son su numerador ni su
+   * denominador. Una respuesta de antes del 2026-09-16 no la trae.
+   */
+  tasaDeRecaudo?: TasaDeRecaudo;
 }
 
 /**
@@ -1554,6 +1605,11 @@ export interface RentabilidadReport {
   hasta: string;
   meses: number;
   generatedAt: string;
+  /**
+   * Con qué fórmula se midió `tasaDeRecaudoPct`, en las filas y en los totales.
+   * Una respuesta de antes del 2026-09-16 no la trae: era sobre lo causado.
+   */
+  medidaDeLaTasa?: MedidaDeLaTasa;
   /** Ordenadas por `netoPropietarioCop` descendente. */
   filas: RentabilidadFila[];
   totales: RentabilidadTotales;
@@ -1590,6 +1646,12 @@ export interface InmobiliariaDashboardKPIs {
   pendingCollections: number;
   lateCollections: number;
   collectionRate: number;
+  /**
+   * 🔴 La tasa de recaudo del mes medida como la eligió la inmobiliaria, con su
+   * fórmula y sus dos cifras. Una respuesta de antes del 2026-09-16 no la trae:
+   * ver `tasaDelTablero`.
+   */
+  tasaDeRecaudo?: TasaDeRecaudo;
   totalCommissions: number;
 
   // Trends (signed % change vs previous month)
@@ -2149,6 +2211,8 @@ export interface AgencyProfile {
   extractoMensualDia?: number;
   /** Renovación automática (Ley 820, arts. 20 y 22): el cron de las 00:20 propone, renueva y sube el canon. */
   renovacionAutomatica?: boolean;
+  /** Cómo mide su tasa de recaudo. `null` o ausente = sobre lo causado (por defecto). */
+  tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
@@ -2228,6 +2292,8 @@ export interface UpdateAgencyPayload {
   /** 1..28 */
   extractoMensualDia?: number;
   renovacionAutomatica?: boolean;
+  /** Cómo mide la inmobiliaria su tasa de recaudo. `null` vuelve al valor por defecto (sobre lo causado). */
+  tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */

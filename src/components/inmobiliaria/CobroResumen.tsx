@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 import { anchoDeBarra, textoDeTasa } from '@/lib/tasas';
+import { claveDelRotulo, fraseDeLasCifras } from '@/lib/tasa-de-recaudo';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -120,6 +121,16 @@ export function CobroResumen({
   };
 
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
+  /*
+   * 🔴 La tasa de esta tarjeta NO es «pagado de lo emitido» por fuerza: es la
+   * de la inmobiliaria (sobre lo causado por defecto), medida en el back. Por
+   * eso lleva su rótulo y sus dos cifras: el «Por cobrar» de al lado son los
+   * cobros emitidos, y sin decirlo parecería el denominador.
+   */
+  const tasa = summary.tasaDeRecaudo;
+  const rotuloDeLaTasa = tasa
+    ? t(claveDelRotulo(tasa.base))
+    : t('inmobiliaria.cobros.resumen.collectionRate');
 
   // Format month for display. Build the Date in LOCAL time — parsing 'YYYY-MM-01'
   // as a string is UTC and shifts to the previous month in negative-offset zones
@@ -173,7 +184,9 @@ export function CobroResumen({
         {/* Collection Rate - Hero Section */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.collectionRate')}</p>
+            <p className="text-sm text-muted-foreground mb-1" data-testid="cobros-rotulo-de-la-tasa">
+              {rotuloDeLaTasa}
+            </p>
             <div className="flex items-baseline gap-2" data-testid="cobros-tasa">
               <motion.span
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -195,6 +208,11 @@ export function CobroResumen({
                 <TrendDown className={cn('w-5 h-5', rateInfo.text)} weight="bold" />
               )}
             </div>
+            {tasa && (
+              <p className="mt-1 text-xs text-muted-foreground tabular-nums" data-testid="cobros-cifras-de-la-tasa">
+                {fraseDeLasCifras(tasa, t, formatCurrency)}
+              </p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.toCollect')}</p>

@@ -134,6 +134,7 @@ export type { AgregarCotizacionDialogProps } from './AgregarCotizacionDialog';
 // Configuracion - Company Profile & Branding (Phase 10)
 export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
 export { ConfigExtractoMensual } from './ConfigExtractoMensual';
+export { ConfigTasaDeRecaudo } from './ConfigTasaDeRecaudo';
 export { ConfigRenovacionAutomatica } from './ConfigRenovacionAutomatica';
 export { ConfigBranding } from './ConfigBranding';
 

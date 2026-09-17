@@ -1236,7 +1236,7 @@
         "totalProperties": "Propiedades Totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
         "monthlyCollection": "Recaudo del Mes",
-        "collectionRateLabel": "{{rate}} tasa de cobro",
+        "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
         "occupancy": "Ocupación",
@@ -3905,7 +3905,7 @@
         "stats": {
           "expected": "Esperado",
           "collected": "Recaudado",
-          "collectionRate": "{{pct}}% de recaudo",
+          "collectionRate": "{{pct}}% · {{rotulo}}",
           "commission": "Comisión de la inmobiliaria",
           "netToOwners": "Neto a propietarios",
           "occupancy": "Ocupación promedio",
@@ -9137,6 +9137,44 @@
       "newSoon": "El procesamiento de la conciliación se habilita con el motor (M2).",
       "uploadSoon": "La ingesta y el matching se conectan con el motor (M2)."
     },
+    "tasaDeRecaudo": {
+      "rotulo": {
+        "CAUSADO": "Recaudo sobre lo causado",
+        "EMITIDO": "Pagado de lo emitido"
+      },
+      "cifras": {
+        "CAUSADO": "{{numerador}} abonados de {{denominador}} causados",
+        "EMITIDO": "{{numerador}} pagados de {{denominador}} emitidos"
+      },
+      "sinMedir": {
+        "CAUSADO": "Los contratos no causan nada este mes",
+        "EMITIDO": "No hay cobros emitidos este mes"
+      },
+      "generico": "tasa de recaudo",
+      "ajuste": {
+        "titulo": "¿Cómo mides tu tasa de recaudo?",
+        "intro": "Es el porcentaje que ves en el Resumen, en Cobros emitidos, en Recaudo y en los reportes. Cada pantalla dice con cuál de las dos se midió, para que nunca compares dos números distintos con el mismo nombre.",
+        "opcion": {
+          "CAUSADO": {
+            "titulo": "Sobre lo causado del mes",
+            "explicacion": "Lo que entró a las cuotas del mes ÷ lo que los contratos cobran ese mes. Sale de la deuda del contrato, exista o no el cobro.",
+            "ejemplo": "Ejemplo: tus contratos cobran $10.000.000 este mes y a esas cuotas han entrado $8.000.000. Tu tasa es 80 %, aunque no hayas emitido un solo cobro."
+          },
+          "EMITIDO": {
+            "titulo": "Sobre lo emitido en cobros",
+            "explicacion": "Lo pagado de los cobros emitidos del mes ÷ lo que esos cobros reclaman. Sólo cuenta lo que ya cobraste con un documento.",
+            "ejemplo": "Ejemplo: emitiste cobros por $4.000.000 y te pagaron $3.000.000 de ellos. Tu tasa es 75 %, aunque los contratos cobren más ese mes."
+          }
+        },
+        "porDefecto": "Por defecto",
+        "enUso": "En uso",
+        "conTusNumeros": "Con tus números de {{mes}}: {{tasa}} · {{cifras}}",
+        "cargando": "Trayendo tus números del mes…",
+        "errorNumeros": "No pudimos traer tus números del mes. Puedes elegir igual.",
+        "noDisponible": "Todavía no puedes cambiarlo: falta una actualización de la base de datos. Mientras tanto, todo se mide sobre lo causado.",
+        "soloAdmin": "Sólo un administrador de la inmobiliaria puede cambiarlo."
+      }
+    },
     "deducciones": {
       "tab": "Deducciones",
       "titulo": "Deducciones",
@@ -9223,12 +9261,73 @@
         "propietario": "Del propietario",
         "propietarioAyuda": "Se le descuenta de su primera liquidación sin pagar, repartido entre los dueños del inmueble.",
         "inquilino": "Del inquilino",
-        "inquilinoAyuda": "No se le descuenta al propietario. El cobro todavía no entra solo al estado de cuenta del inquilino: cóbraselo aparte.",
+        "inquilinoAyuda": "No se le descuenta al propietario: entra a su estado de cuenta como un cargo de una sola vez, en la cuota del mes o en la siguiente sin pagar.",
         "cancelar": "Cancelar",
         "confirmar": "Aprobar cotización",
         "aprobando": "Aprobando…",
         "aprobadaPropietario": "Cotización aprobada: se le descuenta al propietario",
-        "aprobadaInquilino": "Cotización aprobada a cargo del inquilino"
+        "aprobadaInquilino": "Cotización aprobada a cargo del inquilino",
+        "sugiereElAgente": "El agente sugiere que quede a cargo del {{quien}}. La decisión es tuya.",
+        "quienPropietario": "propietario",
+        "quienInquilino": "inquilino"
+      },
+      "propuesta": {
+        "titulo": "Propuesta del agente",
+        "cotizacion": "Propone la cotización de {{proveedor}} por {{valor}}.",
+        "sinCotizacion": "Pide que una persona apruebe la reparación.",
+        "sugierePropietario": "Sugiere que quede a cargo del propietario.",
+        "sugiereInquilino": "Sugiere que quede a cargo del inquilino.",
+        "aprobacionHumana": "El agente no aprueba: la aprobación, y con ella el descuento o el cargo, la haces tú.",
+        "revisar": "Revisar y aprobar"
+      },
+      "cargoAlInquilino": {
+        "titulo": "Cargo al inquilino",
+        "detalle": "{{valor}} en su cuota de {{mes}}: entró a su estado de cuenta.",
+        "aprobada": "Entró al estado de cuenta del inquilino: {{valor}} en su cuota de {{mes}}."
+      },
+      "deuda": {
+        "titulo": "Le debe a la inmobiliaria",
+        "descripcion": "Deducciones o saldo en contra que ya no tienen ninguna liquidación de la cual descontarse: se le cobran.",
+        "desde": "Desde {{mes}}",
+        "sinCuentaDeCobro": "{{valor}} todavía sin cuenta de cobro",
+        "generar": "Generar cuenta de cobro",
+        "generando": "Generando…",
+        "generada": "Cuenta de cobro n.º {{numero}} generada",
+        "noSeGenero": "No se generó la cuenta de cobro",
+        "verCuenta": "Cuenta de cobro n.º {{numero}}",
+        "sinMigrar": "La cuenta de cobro todavía no está disponible en esta base: la deuda se ve igual.",
+        "queEs": "lo que el propietario le debe a la inmobiliaria"
+      },
+      "cartera": {
+        "titulo": "Propietarios que le deben a la inmobiliaria",
+        "descripcion": "Ya no tienen ninguna liquidación de la cual descontar sus deducciones o su saldo en contra: se les cobra con una cuenta de cobro.",
+        "colPropietario": "Propietario",
+        "colDebe": "Debe",
+        "colDesde": "Desde",
+        "colCuenta": "Cuenta de cobro",
+        "sinCuenta": "Sin generar",
+        "cuenta": "N.º {{numero}}",
+        "total": "Total",
+        "queSon": "los propietarios que le deben a la inmobiliaria"
+      },
+      "cuentaDeCobro": {
+        "titulo": "Cuenta de cobro",
+        "numero": "N.º {{numero}}",
+        "emitida": "Emitida el {{fecha}}",
+        "a": "A",
+        "de": "De",
+        "concepto": "Concepto",
+        "valor": "Valor",
+        "total": "Total a pagar",
+        "estado": {
+          "VIGENTE": "Vigente",
+          "DESCONTADA": "Descontada después",
+          "ANULADA": "Anulada"
+        },
+        "imprimir": "Imprimir o guardar PDF",
+        "volver": "Volver a la ficha",
+        "noEsFactura": "Este documento no es factura electrónica.",
+        "queEs": "la cuenta de cobro"
       }
     },
     "tesoreria": {

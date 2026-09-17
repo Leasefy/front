@@ -43,6 +43,7 @@ import type {
 } from '@/lib/types/deducciones';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { AnularDeduccionDialog } from './AnularDeduccionDialog';
+import { DeudaDelPropietario } from './DeudaDelPropietario';
 import {
   RegistrarDescuentoDialog,
   type InmuebleParaElDescuento,
@@ -79,6 +80,8 @@ export function DeduccionesDelPropietario({
   const [error, setError] = useState<unknown>(null);
   const [registrando, setRegistrando] = useState(false);
   const [aAnular, setAAnular] = useState<DeduccionDelListado | null>(null);
+  /** Registrar o anular cambia lo que debe: la deuda se vuelve a pedir. */
+  const [versionDeLaDeuda, setVersionDeLaDeuda] = useState(0);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -123,6 +126,9 @@ export function DeduccionesDelPropietario({
           </Button>
         )}
       </div>
+
+      {/* Lo que ya no tiene liquidación de la cual descontarse: se le cobra. */}
+      <DeudaDelPropietario key={versionDeLaDeuda} propietarioId={propietarioId} />
 
       {listado && !listado.disponible && (
         <p className="rounded-md border border-border bg-info-soft p-3 text-sm text-fg" data-testid="deducciones-sin-tabla">
@@ -246,6 +252,7 @@ export function DeduccionesDelPropietario({
             await deduccionesApi.registrar(propietarioId, descuento);
             toast.success(t(k('nuevo.registrado')));
             await cargar();
+            setVersionDeLaDeuda((v) => v + 1);
           } catch (e) {
             toast.error(t(k('nuevo.noSeRegistro')), { description: mensajeDe(e) });
             throw e;
@@ -265,6 +272,7 @@ export function DeduccionesDelPropietario({
             await deduccionesApi.anular(propietarioId, aAnular.grupoId, motivo);
             toast.success(t(k('anularDialogo.anulado')));
             await cargar();
+            setVersionDeLaDeuda((v) => v + 1);
           } catch (e) {
             toast.error(t(k('anularDialogo.noSeAnulo')), { description: mensajeDe(e) });
             throw e;

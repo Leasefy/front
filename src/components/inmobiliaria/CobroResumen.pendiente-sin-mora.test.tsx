@@ -70,6 +70,7 @@ describe('<CobroResumen> — Pendiente sin la mora adentro', () => {
       cobrosPaid: 4,
       cobrosPending: 0,
       cobrosLate: 5,
+      tasaDeRecaudo: null,
     });
     expect(digitos(tarjeta('inmobiliaria.cobros.resumen.pendingLabel'))).toMatch(/^0/);
     expect(digitos(tarjeta('inmobiliaria.cobros.resumen.lateLabel'))).toContain('10631082');
@@ -86,6 +87,7 @@ describe('<CobroResumen> — Pendiente sin la mora adentro', () => {
       cobrosPaid: 1,
       cobrosPending: 2,
       cobrosLate: 1,
+      tasaDeRecaudo: null,
     });
     expect(digitos(tarjeta('inmobiliaria.cobros.resumen.pendingLabel'))).toContain('5000000');
     expect(digitos(tarjeta('inmobiliaria.cobros.resumen.lateLabel'))).toContain('3000000');

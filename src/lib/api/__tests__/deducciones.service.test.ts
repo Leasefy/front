@@ -104,3 +104,30 @@ describe('deduccionesApi — lectura y anulación', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/inmobiliaria/propietarios/p1/deducciones/ded-1/soporte');
   });
 });
+
+describe('deduccionesApi — la deuda del propietario y su cuenta de cobro', () => {
+  beforeEach(() => {
+    vi.mocked(apiClient.get).mockReset();
+    vi.mocked(apiClient.post).mockReset();
+  });
+
+  it('pide la deuda del propietario, la cartera de los que deben y la cuenta de cobro a sus rutas', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({});
+    vi.mocked(apiClient.post).mockResolvedValue({});
+
+    await deduccionesApi.deuda('p1');
+    await deduccionesApi.deudasDeLaAgencia();
+    await deduccionesApi.cuentaDeCobro('p1', 'c9');
+    await deduccionesApi.generarCuentaDeCobro('p1');
+
+    expect(vi.mocked(apiClient.get).mock.calls.map((c) => c[0])).toEqual([
+      '/inmobiliaria/propietarios/p1/deuda',
+      '/inmobiliaria/deudas-de-propietarios',
+      '/inmobiliaria/propietarios/p1/cuenta-de-cobro/c9',
+    ]);
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/inmobiliaria/propietarios/p1/cuenta-de-cobro',
+      {},
+    );
+  });
+});

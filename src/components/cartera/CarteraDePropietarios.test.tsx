@@ -48,6 +48,11 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
     ),
 }))
 
+const deudasMock = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/api/deducciones.service', () => ({
+  deduccionesApi: { deudasDeLaAgencia: () => deudasMock() },
+}))
+
 import { CarteraDePropietarios } from './CarteraDePropietarios'
 
 function mes(p: Partial<MesDelPropietario> = {}): MesDelPropietario {
@@ -159,6 +164,13 @@ function escribir(input: HTMLInputElement, valor: string) {
 
 beforeEach(() => {
   carteraMock.mockReset()
+  // Por defecto nadie le debe a la inmobiliaria: la sección no aparece.
+  deudasMock.mockReset().mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    totalCop: 0,
+    propietarios: [],
+  })
 })
 
 afterEach(() => {
@@ -311,5 +323,54 @@ describe('🔴 el pie dice la base con que se liquida', () => {
     expect(pie.pieCausado).toContain('canon causado')
     expect(pie.pieCausado).toContain('lo haya pagado el inquilino o no')
     expect(pie.canonCausado).toBe('Canon causado')
+  })
+})
+
+describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
+  it('sin nadie que deba no aparece la sección', async () => {
+    conDatos(datosDe())
+    montar()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(host.querySelector('[data-testid="propietarios-que-deben"]')).toBeNull()
+  })
+
+  it('🔴 lista a quién se le cobra, cuánto, desde cuándo y con qué cuenta de cobro', async () => {
+    deudasMock.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      totalCop: 380_000,
+      propietarios: [
+        {
+          propietarioId: 'p9',
+          nombre: 'Luis Cárdenas',
+          debeCop: 300_000,
+          desde: '2026-10',
+          sinCuentaDeCobroCop: 0,
+          ultimaCuentaDeCobro: { id: 'cc-1', numero: 7, emitidaAt: '2026-10-02T15:00:00.000Z' },
+        },
+        {
+          propietarioId: 'p8',
+          nombre: 'Ana Ruiz',
+          debeCop: 80_000,
+          desde: '2026-11',
+          sinCuentaDeCobroCop: 80_000,
+          ultimaCuentaDeCobro: null,
+        },
+      ],
+    })
+    conDatos(datosDe())
+    montar()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const filas = todos('[data-testid="propietario-que-debe"]')
+    expect(filas).toHaveLength(2)
+    expect(filas[0]!.textContent).toContain('Luis Cárdenas')
+    expect(filas[0]!.querySelector('a[href$="/cuenta-de-cobro/cc-1"]')).not.toBeNull()
+    expect(filas[1]!.textContent).toContain('inmobiliaria.deducciones.cartera.sinCuenta')
+    expect($('[data-testid="total-que-deben"]').textContent).toContain(formatCurrency(380_000))
   })
 })

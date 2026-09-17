@@ -7,7 +7,7 @@ import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './man
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
-import { tasaMedida } from '@/lib/tasas';
+import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
 import type { ACargoDe, CargoDeLaReparacion } from '@/lib/types/deducciones';
 import type {
   DocumentType,
@@ -65,7 +65,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
-import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -1150,9 +1150,9 @@ export const cobrosApi = {
 
   async getSummary(month: string): Promise<CobroSummary> {
     // Backend returns { month, totalCobros, totalExpected, totalCollected,
-    // totalPending, totalLate, countByStatus } (bare or wrapped in { data }).
-    // The front CobroSummary needs collectionRate + per-status counts, so derive
-    // them here and default every field (avoids undefined.toFixed crashes).
+    // totalPending, totalLate, countByStatus, tasaDeRecaudo } (bare or wrapped
+    // in { data }). The per-status counts are derived here and every field is
+    // defaulted (avoids undefined.toFixed crashes).
     const res = await apiClient.get<Record<string, unknown> | { data: Record<string, unknown> }>(
       `${BASE}/cobros/summary?month=${month}`,
     );
@@ -1162,8 +1162,8 @@ export const cobrosApi = {
       totalCollected?: number;
       totalPending?: number;
       totalLate?: number;
-      collectionRate?: number;
       countByStatus?: Record<string, number>;
+      tasaDeRecaudo?: TasaDeRecaudo | null;
     };
     const totalExpected = raw.totalExpected ?? 0;
     const totalCollected = raw.totalCollected ?? 0;
@@ -1175,12 +1175,15 @@ export const cobrosApi = {
       totalPending: raw.totalPending ?? 0,
       totalLate: raw.totalLate ?? 0,
       /*
-       * Sin nada esperado no hay tasa: `null`, no 0. El `: 0` que había acá
-       * llegaba a la pantalla como «0.0% · Bajo ↘» en un mes sin un solo
-       * cobro. El back tampoco manda `collectionRate` hoy (su `getSummary`
-       * no lo devuelve), así que este es el único lugar donde se decide.
+       * 🔴 La tasa la mide el BACK como la eligió la inmobiliaria (sobre lo
+       * causado por defecto, o sobre lo emitido) y viaja con su fórmula. Acá
+       * se dividía `totalCollected / totalExpected` —pagado de lo emitido— y
+       * el Resumen medía sobre lo causado: 43,6 % acá y 2,2 % allá para la
+       * misma agencia, con el mismo nombre. `null` sigue siendo «no se midió»:
+       * sin tasa del back no se inventa una.
        */
-      collectionRate: raw.collectionRate ?? tasaMedida(totalCollected, totalExpected),
+      collectionRate: raw.tasaDeRecaudo?.pct ?? null,
+      tasaDeRecaudo: raw.tasaDeRecaudo ?? null,
       cobrosPaid: counts['PAID'] ?? 0,
       cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
       cobrosLate: counts['LATE'] ?? 0,
@@ -1414,6 +1417,11 @@ export const dispersionesApi = {
     skipped: number;
     /** Los del mes que quedaron fuera por la selección. */
     noElegidos: number;
+    /**
+     * Las cuotas que llegaron tarde: las que se sumaron a una liquidación
+     * abierta y las que no, con el motivo. Opcional: back anterior.
+     */
+    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[] };
   }> {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
@@ -1990,6 +1998,16 @@ export const inmobiliariaConfigApi = {
 export const inmobiliariaDashboardApi = {
   async getKPIs(): Promise<InmobiliariaDashboardKPIs> {
     return apiClient.get<InmobiliariaDashboardKPIs>(`${BASE}/analytics/kpis`);
+  },
+
+  /**
+   * Cómo mide la inmobiliaria su tasa de recaudo, si se puede cambiar, y lo que
+   * daría cada una de las dos medidas en el mes con sus números. Cambiarla es
+   * `agencyApi.updateAgency({ tasaDeRecaudoSobre })`.
+   */
+  async getTasaDeRecaudo(month?: string): Promise<ComoSeMideLaTasa> {
+    const qs = month ? `?month=${encodeURIComponent(month)}` : '';
+    return apiClient.get<ComoSeMideLaTasa>(`${BASE}/dashboard/tasa-de-recaudo${qs}`);
   },
 };
 

@@ -72,21 +72,19 @@ export function etiquetaDelContratoParaElCombo(c: {
 }): string {
   const numero = numeroDelContrato({ code: c.code ?? undefined, externalId: c.externalId });
   return (
-    [numero.principal, numero.secundario, c.propertyAddress || null, c.tenantName || null]
+    [numero.principal, c.propertyAddress || null, c.tenantName || null]
       .filter(Boolean)
       .join(' · ') || c.id
   );
 }
 
-/** «Contrato 1686 · Leasefy #111» / «Contrato #111»: el rótulo de la preparación. */
+/** «Contrato 1686» / «Contrato #111»: el rótulo de la preparación. Sin el número de Leasefy (16-09). */
 export function rotuloDelContratoPreparado(c: {
   codigo: number;
   numeroExterno?: string | null;
 }): string {
   const numero = numeroDelContrato({ code: c.codigo, externalId: c.numeroExterno });
-  return numero.secundario
-    ? `Contrato ${numero.principal} · ${numero.secundario}`
-    : `Contrato ${numero.principal}`;
+  return `Contrato ${numero.principal}`;
 }
 
 /** Entre quiénes es. Sale del contrato, que es el único que las tiene juntas. */

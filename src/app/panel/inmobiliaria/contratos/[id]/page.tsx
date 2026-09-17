@@ -362,14 +362,7 @@ function ContratoDetalleContent() {
           ) : null}
           {numero.esDeLaInmobiliaria ? (
             <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
-              {numero.principal} es el número de tu sistema anterior
-              {numero.secundario ? (
-                <>
-                  {' · '}en Leasefy es el{' '}
-                  <span className="font-mono tabular-nums">{numero.secundario.replace('Leasefy ', '')}</span>
-                </>
-              ) : null}
-              .
+              {numero.principal} es el número de tu sistema anterior.
             </p>
           ) : null}
           {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}

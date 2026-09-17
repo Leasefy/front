@@ -11908,7 +11908,6 @@
     "enlaceVencido": "Este enlace ya venció",
     "enlaceVencidoDetalle": "Pídele a tu inmobiliaria uno nuevo: los enlaces vencen para que tu información no quede abierta en internet.",
     "contrato": "Contrato {{numero}}",
-    "numeroDeLeasefy": "Leasefy #{{numero}}",
     "comoInquilino": "Inquilino del inmueble en {{direccion}}",
     "comoPropietario": "Propietario del inmueble en {{direccion}}",
     "vigente": "Vigente",

@@ -8,13 +8,14 @@
  * columna «Consecutivo contrato» del archivo que migró. Lo que estaba mal era
  * qué número mostraba la pantalla.
  *
- * Regla, la misma que ya rige para `Property.externalId` vs `code`: si el
- * contrato trae el número de la inmobiliaria, ÉSE es el principal —es el que
- * ella escribe en sus recibos y busca en su archivo—, y el nuestro se muestra
- * al lado diciendo de quién es («Leasefy #1839»). Dos números sin rótulo son
- * peor que uno: nadie sabe cuál citar.
+ * Regla: si el contrato trae el número de la inmobiliaria, ÉSE es el que se
+ * muestra —es el que ella escribe en sus recibos y busca en su archivo—.
  *
- * Sin `externalId` (contrato nativo, o migrado sin número), el principal es
+ * 🔴 Nico, 2026-09-16: «ese código de Leasefy no lo dejemos». Hasta ese día
+ * nuestro consecutivo salía al lado como «Leasefy #1839»; ya no sale en
+ * ninguna pantalla ni documento. Con `externalId` se muestra SÓLO ése.
+ *
+ * Sin `externalId` (contrato nativo, o migrado sin número), el número es
  * `#code` como siempre. Sin ninguno de los dos (un back anterior a T-0040),
  * `null`: la pantalla no dibuja nada, nunca «#0» ni «—».
  */
@@ -22,31 +23,19 @@
 import type { Contract } from '@/lib/types/contract';
 
 export interface NumeroDelContrato {
-  /** Lo que se lee grande. `null` = no hay número que mostrar. */
+  /** Lo que se lee. `null` = no hay número que mostrar. */
   principal: string | null;
-  /** El otro número, con su dueño («Leasefy #1839»). `null` si no hay dos. */
-  secundario: string | null;
-  /** Si el principal es el de la inmobiliaria y no el nuestro. */
+  /** Si el número es el de la inmobiliaria y no el nuestro. */
   esDeLaInmobiliaria: boolean;
 }
-
-/** Rótulo del consecutivo nuestro cuando va como secundario. */
-export const ROTULO_LEASEFY = 'Leasefy';
 
 export function numeroDelContrato(
   c: Pick<Contract, 'code' | 'externalId'>,
 ): NumeroDelContrato {
   const externo = typeof c.externalId === 'string' ? c.externalId.trim() : '';
+  if (externo !== '') return { principal: externo, esDeLaInmobiliaria: true };
   const nuestro = c.code != null ? `#${c.code}` : null;
-
-  if (externo !== '') {
-    return {
-      principal: externo,
-      secundario: nuestro ? `${ROTULO_LEASEFY} ${nuestro}` : null,
-      esDeLaInmobiliaria: true,
-    };
-  }
-  return { principal: nuestro, secundario: null, esDeLaInmobiliaria: false };
+  return { principal: nuestro, esDeLaInmobiliaria: false };
 }
 
 /**

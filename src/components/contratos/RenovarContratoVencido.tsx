@@ -1,11 +1,14 @@
 "use client";
 
 /**
- * Contrato vencido con el inquilino todavía adentro (Nico, 17-09): NO hay
- * prórroga automática. Se ofrecen las dos salidas y decide el funcionario:
- * renovar por los días que ocupó de más (hasta el día de entrega, prorrateado)
- * o por el término inicial. La fecha del término la calcula el back
- * (`GET /contracts/vencidos`), no esta pantalla.
+ * Contrato vencido con el inquilino todavía adentro Y aviso de NO renovación
+ * (D5, Nico 17-09 ~03:10): no se prorroga; se ofrecen las dos salidas y decide
+ * el funcionario: renovar por los días que ocupó de más (hasta el día de
+ * entrega, prorrateado) o por el término inicial. Sin aviso, el contrato se
+ * prorroga (lo dice `ProrrogaDelContrato`) y esta tarjeta no aparece.
+ *
+ * Las fechas las calcula el back (`GET /contracts/vencidos` y
+ * `GET /contracts/:id/prorroga`), no esta pantalla.
  */
 
 import { useEffect, useState } from "react";
@@ -29,10 +32,12 @@ export function RenovarContratoVencido({
 
   useEffect(() => {
     let vigente = true;
-    cicloDeVidaApi
-      .vencidos()
-      .then((r) => {
-        if (vigente) setVencido(r.contratos.find((c) => c.id === contractId) ?? null);
+    Promise.all([cicloDeVidaApi.vencidos(), cicloDeVidaApi.prorroga(contractId)])
+      .then(([r, plan]) => {
+        if (!vigente) return;
+        // Sólo con aviso de no renovación: sin aviso, se prorroga (D5).
+        const conAviso = plan.accion === 'ALERTA_AVISO_DE_NO_RENOVACION';
+        setVencido(conAviso ? (r.contratos.find((c) => c.id === contractId) ?? null) : null);
       })
       .catch(() => undefined);
     return () => {
@@ -62,8 +67,8 @@ export function RenovarContratoVencido({
       data-testid="renovar-contrato-vencido"
     >
       <p>
-        <strong>El contrato venció el {vencido.endDate}</strong> y el inquilino sigue adentro. No se
-        prorroga solo: elige cómo renovarlo.
+        <strong>El contrato venció el {vencido.endDate}</strong> con aviso de no renovación y el inquilino
+        sigue adentro. No se prorroga: elige cómo renovarlo, o termínalo.
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-xs" htmlFor="fecha-de-entrega">

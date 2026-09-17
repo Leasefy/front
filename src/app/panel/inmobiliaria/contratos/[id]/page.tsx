@@ -68,6 +68,11 @@ import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
 import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
 import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
+import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import {
+  bloqueoDelError,
+  type BloqueoPorInventario as BloqueoPorInventarioDatos,
+} from '@/lib/inventario/bloqueo-por-inventario';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -156,6 +161,8 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
+  /** Activar sin inventario actualizado del inmueble: se dice con su enlace. */
+  const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [terminarAbierto, setTerminarAbierto] = useState(false);
@@ -189,11 +196,17 @@ function ContratoDetalleContent() {
   const runAction = useCallback(
     async (key: string, op: () => Promise<unknown>, successMessage?: string) => {
       setActionError(null);
+      setBloqueoDeInventario(null);
       setPendingAction(key);
       try {
         await op();
         await refetch();
       } catch (err) {
+        const bloqueo = bloqueoDelError(err);
+        if (bloqueo) {
+          setBloqueoDeInventario(bloqueo);
+          return;
+        }
         // El motivo del back (400/409) en palabras; un 403 dice que es de permisos.
         setActionError(
           isPermissionError(err)
@@ -465,6 +478,8 @@ function ContratoDetalleContent() {
       {rejections.length > 0 && (
         <RejectionsHistory rejections={rejections} />
       )}
+
+      {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
       {actionError && (
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">

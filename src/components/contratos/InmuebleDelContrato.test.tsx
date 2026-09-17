@@ -85,6 +85,17 @@ vi.mock('@/components/inmobiliaria/InventarioDeLaConsignacion', () => ({
   },
 }))
 
+// Con el inventario por versiones, el contrato monta su COPIA fija
+// (`InventarioDelContrato`, probado aparte) y la lista de siempre queda como
+// `legado` para cuando el back no tiene la migración. Estas pruebas son las
+// del legado: el doble lo monta directo y anota con qué contrato se pidió.
+const copiaPedidaPara = vi.fn();
+vi.mock('@/components/inmobiliaria/inventario/InventarioDelContrato', () => ({
+  InventarioDelContrato: ({ contratoId, legado }: { contratoId: string; legado: React.ReactNode }) => {
+    copiaPedidaPara(contratoId);
+    return legado;
+  },
+}));
 vi.mock('@/components/inmobiliaria/ConsignacionTimeline', () => ({
   ConsignacionTimeline: (props: Record<string, unknown>) => {
     timelineProps.ultimo = props
@@ -162,6 +173,8 @@ describe('InmuebleDelContrato', () => {
 
     expect(inventarioProps.ultimo?.puedeEditar).toBe(true)
     expect(inventarioProps.ultimo?.contratoId).toBe('lease-9')
+    // Con la migración, lo que se muestra es la copia fija de ESTE contrato.
+    expect(copiaPedidaPara).toHaveBeenLastCalledWith('lease-9')
     // Ya no manda a hacer el trabajo a otra pantalla: el enlace es para VER.
     expect(container.textContent).not.toContain('se edita en la ficha del inmueble')
     // …y va DENTRO de la tarjeta del inventario, al lado del título (Nico, 13-09).

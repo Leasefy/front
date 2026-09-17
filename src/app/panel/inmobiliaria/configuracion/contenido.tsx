@@ -17,7 +17,10 @@ import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
 import { SeccionMandato } from './SeccionMandato';
+import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
+import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
+import { SeccionSedes } from './SeccionSedes';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
 import { SeccionPermisos } from './SeccionPermisos';
@@ -39,6 +42,12 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionPermisos />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
+    case 'medios-de-recibo':
+      return <SeccionMediosDeRecibo />;
+    case 'costos-de-la-plata':
+      return <SeccionCostosDeLaPlata />;
+    case 'sedes':
+      return <SeccionSedes />;
     case 'mandato':
       return <SeccionMandato />;
     case 'migracion':

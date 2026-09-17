@@ -32,6 +32,17 @@ vi.mock('@/lib/api/client', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/client')>('@/lib/api/client')
   return { ...real, apiClient: { post } }
 })
+// 🔴 Inventario del inmueble (Nico y Juan Camilo, 2026-09-16): al elegir el
+// inmueble se pregunta si su inventario permite iniciar. Acá no se exige
+// (como sin la migración del back), salvo en la prueba del bloqueo.
+const paraIniciar = vi.fn()
+vi.mock('@/lib/api/inventario-del-inmueble.service', () => ({
+  inventarioDelInmuebleApi: { paraIniciar: (id: string) => paraIniciar(id) },
+}))
+vi.mock('@/components/inmobiliaria/inventario/BloqueoPorInventario', () => ({
+  BloqueoPorInventario: ({ bloqueo }: { bloqueo: { consignacionId: string | null } }) =>
+    React.createElement('div', { 'data-testid': 'bloqueo-por-inventario' }, `inventario:${bloqueo.consignacionId}`),
+}))
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   useSearchParams: () => new URLSearchParams('modo=manual'),
@@ -169,6 +180,8 @@ async function esperar() {
 
 beforeEach(() => {
   post.mockReset()
+  paraIniciar.mockReset()
+  paraIniciar.mockResolvedValue({ exigible: false, motivoNoExigible: 'MIGRACION_PENDIENTE', consignacionId: null, vigencia: null })
   acciones.uploadPdf.mockReset()
   acciones.create.mockReset()
   acciones.createManual.mockReset()
@@ -396,6 +409,18 @@ describe('crear un contrato que el back rechaza: el motivo, al lado del campo', 
     expect(contenedor.textContent).toContain('El canon debe ser positivo · La fecha de fin es inválida')
     // No es un problema del inmueble: el campo queda limpio.
     expect(porTestId('error-propertyId')?.textContent).toBe('')
+  })
+
+  it('409 INVENTARIO_NO_VIGENTE → el bloqueo con enlace al inventario, no un mensaje suelto', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(409, 'El inmueble no tiene inventario.', 'INVENTARIO_NO_VIGENTE', {
+        motivo: 'SIN_INVENTARIO',
+        consignacionId: 'cons-9',
+      }),
+    )
+    await crearConPdf()
+    expect(porTestId('bloqueo-por-inventario')?.textContent).toBe('inventario:cons-9')
+    expect(contenedor.textContent).not.toContain('No se pudo crear el contrato')
   })
 
   it('403 → dice que es de permisos', async () => {

@@ -56,6 +56,7 @@ import {
   DownloadSimple,
   Info,
   Plugs,
+  Scales,
   TreeStructure,
   Warning,
   WarningCircle,
@@ -554,6 +555,15 @@ const DESTINOS: Destino[] = [
     icono: Plugs,
     titulo: 'Mapeo contable',
     texto: 'A qué cuenta va cada asiento automático.',
+  },
+  // 17-09: las dos piezas que el contador cierra a mano. El deterioro se
+  // aprueba CADA MES antes de asentarlo; el certificado de retenciones se
+  // emite una vez al año y fija número y fecha.
+  {
+    href: `${BASE}/deterioro`,
+    icono: Scales,
+    titulo: 'Deterioro de cartera',
+    texto: 'La provisión por edades: sugerida, editable y aprobada cada mes.',
   },
 ];
 

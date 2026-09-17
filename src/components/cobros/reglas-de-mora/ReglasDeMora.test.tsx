@@ -210,7 +210,7 @@ describe('ReglasDeMora — la tabla', () => {
     expect(celdas(filas[1]).slice(0, 5)).toEqual([
       '#1',
       'Gasto administrativo de cobranzaGasto administrativo',
-      'Pasado el día 15 del mes en que vence la cuotaDía del mes',
+      'A los 15 días de moraDías de mora',
       '10 % del canonPorcentaje de la base',
       'Hasta $ 500.000',
     ]);
@@ -220,7 +220,7 @@ describe('ReglasDeMora — la tabla', () => {
       'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, sin tope.',
     );
     expect(filas[1].getAttribute('title')).toBe(
-      'Se dispara pasado el día 15 del mes en que vence la cuota y cobra 10 % del canon, hasta $ 500.000.',
+      'Se dispara a los 15 días de mora y cobra 10 % del canon, hasta $ 500.000.',
     );
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
   });

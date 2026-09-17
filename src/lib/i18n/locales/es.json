@@ -11763,7 +11763,8 @@
       "porEdad": "Por edad",
       "porConcepto": "Por concepto",
       "porPagar": "Por pagar a propietarios",
-      "cobrosEmitidos": "Cobros emitidos"
+      "cobrosEmitidos": "Cobros emitidos",
+      "juridico": "Cobro jurídico"
     },
     "interes": {
       "columnaIntereses": "Intereses",

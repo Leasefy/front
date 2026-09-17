@@ -11723,7 +11723,8 @@
       "porEdad": "By age",
       "porConcepto": "By item",
       "porPagar": "Owed to owners",
-      "cobrosEmitidos": "Issued charges"
+      "cobrosEmitidos": "Issued charges",
+      "juridico": "Legal collection"
     },
     "interes": {
       "columnaIntereses": "Interest",

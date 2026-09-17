@@ -17,6 +17,8 @@
  * de los 0 cobros del mes» sobre $1.251 millones.
  */
 
+import type { TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
+
 export interface ResumenDeRecaudo {
   /** `YYYY-MM`. */
   month: string;
@@ -60,6 +62,14 @@ export interface ResumenDeRecaudo {
   /** Recaudado acumulado − dispersado acumulado − comisiones acumuladas, al cierre. */
   disponibleCop: number;
   porMedio: Array<{ medio: string; valorCop: number; cantidad: number }>;
+
+  // ── LA TASA ──────────────────────────────────────────────────────────────
+  /**
+   * 🔴 La tasa de recaudo del mes, medida como la eligió la inmobiliaria y con
+   * su fórmula. Antes la pantalla dividía `recaudadoCop` (la caja del mes, de
+   * cualquier período) entre la deuda: una tercera definición.
+   */
+  tasaDeRecaudo?: TasaDeRecaudo;
 }
 
 export interface PuntoDeLaSerie {
@@ -70,4 +80,6 @@ export interface PuntoDeLaSerie {
   facturadoCop: number;
   recaudadoCop: number;
   dispersadoCop: number;
+  /** La tasa de recaudo de ese mes, como la eligió la inmobiliaria. */
+  tasaDeRecaudo?: TasaDeRecaudo;
 }

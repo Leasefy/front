@@ -130,7 +130,8 @@ describe('adaptCollections — cartera de una inmobiliaria nueva', () => {
     const data = adaptCollections(
       cartera({
         items: [itemDeCartera({ cajon: 'POR_VENCER', esVencida: false })],
-        byMonth: [mes({ total: 10_000_000, collected: 10_000_000, overdue: 0 })],
+        // El back manda la tasa del mes ya medida: 100 sobre lo causado.
+        byMonth: [mes({ total: 10_000_000, collected: 10_000_000, overdue: 0, collectionRate: 100 })],
       }),
     )!;
     expect(data.summary.moraRate).toBe(0);

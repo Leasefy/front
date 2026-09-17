@@ -287,7 +287,24 @@ export function TerminarContrato({
                 </strong>{" "}
                 de {PESOS.format(vista.prorrateoDelUltimoMes.canonMensualCop)}.
               </p>
+              {vista.prorrateoDelUltimoMes.ultimoDiaCobrado && (
+                <p className="mt-1 text-xs text-muted-foreground" data-testid="ultimo-dia-cobrado">
+                  Se cobra hasta el {vista.prorrateoDelUltimoMes.ultimoDiaCobrado}
+                  {vista.prorrateoDelUltimoMes.terminaUnDiaAntes
+                    ? ": la fecha cae en el aniversario del contrato y el término vence el día anterior (D8)."
+                    : "."}
+                </p>
+              )}
             </div>
+          )}
+          {vista?.garantiaDeServiciosPendiente && (
+            <p
+              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              data-testid="garantia-de-servicios-pendiente"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              {vista.garantiaDeServiciosPendiente}
+            </p>
           )}
           {vista && !vista.prorrateoDelUltimoMes && vista.puedeTerminarse && (
             <p className="text-sm text-muted-foreground" data-testid="sin-prorrateo">

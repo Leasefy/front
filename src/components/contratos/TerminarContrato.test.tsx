@@ -226,6 +226,48 @@ describe('TerminarContrato', () => {
     expect((q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('🔴 D8: dice hasta qué día se cobra y que el aniversario termina un día antes', async () => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: true,
+      razon: null,
+      finPactado: '2026-12-05',
+      disponible: true,
+      prorrateoDelUltimoMes: {
+        mes: '2026-12',
+        diasOcupados: 4,
+        diasDelMes: 30,
+        valorCop: 400000,
+        canonMensualCop: 3000000,
+        ultimoDiaCobrado: '2026-12-04',
+        terminaUnDiaAntes: true,
+      },
+    });
+    await montar();
+    const texto = q('[data-testid="ultimo-dia-cobrado"]')?.textContent ?? '';
+    expect(texto).toContain('2026-12-04');
+    expect(texto).toContain('día anterior');
+  });
+
+  it('🔴 D10: con la garantía de servicios pendiente lo dice y no deja terminar', async () => {
+    api.vistaPreviaDeTerminacion.mockResolvedValue({
+      puedeTerminarse: false,
+      razon: 'Falta recaudar $300.000 de la garantía de servicios públicos antes de recibir el inmueble.',
+      finPactado: '2026-12-31',
+      disponible: true,
+      prorrateoDelUltimoMes: null,
+      garantiaDeServiciosPendiente:
+        'Falta recaudar $300.000 de la garantía de servicios públicos antes de recibir el inmueble.',
+    });
+    await montar();
+    expect(q('[data-testid="garantia-de-servicios-pendiente"]')?.textContent).toContain('garantía de servicios');
+    const select = q('[data-testid="motivo-de-terminacion"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'MUTUO_ACUERDO';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect((q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('sin canon no inventa un número: lo dice', async () => {
     api.vistaPreviaDeTerminacion.mockResolvedValue({
       puedeTerminarse: true,

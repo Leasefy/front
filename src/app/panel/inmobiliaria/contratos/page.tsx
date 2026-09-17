@@ -583,6 +583,8 @@ function ContratosContent() {
                         status: c.status,
                         endDate: c.endDate,
                         terminadoEn: c.terminadoEn ?? null,
+                        startDate: c.startDate ?? null,
+                        fechaDeCartera: c.fechaDeCartera ?? null,
                       });
                       return (
                         <span

@@ -349,9 +349,18 @@ export function CobroTable({
 
                 {/* Status */}
                 <TableCell className="p-4">
-                  <Badge variant={STATUS_BADGE_VARIANT[cobro.status]}>
-                    {statusLabel}
-                  </Badge>
+                  {cobro.anuladoAt ? (
+                    <span className="flex flex-col gap-0.5" data-testid={`cobro-anulado-${cobro.id}`}>
+                      <Badge variant="outline">{t('inmobiliaria.cobros.anular.anuladoBadge')}</Badge>
+                      {cobro.motivoDeLaAnulacion && (
+                        <span className="text-xs text-fg-muted">{cobro.motivoDeLaAnulacion}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <Badge variant={STATUS_BADGE_VARIANT[cobro.status]}>
+                      {statusLabel}
+                    </Badge>
+                  )}
                 </TableCell>
 
                 {/* Days Late */}

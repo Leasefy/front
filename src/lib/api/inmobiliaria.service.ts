@@ -1095,8 +1095,11 @@ export const cobrosApi = {
     status?: string;
     propietarioId?: string;
     consignacionId?: string;
+    /** `true` = sólo los ANULADOS (filtro «Anulados»). */
+    anulados?: boolean;
   }): Promise<Cobro[]> {
     const query = new URLSearchParams();
+    if (params?.anulados) query.set('anulados', 'true');
     if (params?.month) query.set('month', params.month);
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);

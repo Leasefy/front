@@ -32,6 +32,10 @@ vi.mock('@/components/ui/dialog', () => ({
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('@/components/ui/toast', () => ({ toast }));
 
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}));
+
 const api = vi.hoisted(() => ({ anular: vi.fn() }));
 vi.mock('@/lib/api/inmobiliaria.service', () => ({ cobrosApi: api }));
 
@@ -132,5 +136,39 @@ describe('<AnularCobroDialog>', () => {
       'inmobiliaria.cobros.anular.errores.generico',
     );
     expect(claveDelErrorAlAnular(new Error('red'))).toBe('inmobiliaria.cobros.anular.errores.generico');
+  });
+});
+
+describe('<CobroCard> anular y anulado (2026-09-16)', () => {
+  it('ofrece «Anular cobro» con callback, y un cobro anulado muestra su motivo sin la acción', async () => {
+    const { CobroCard } = await import('./CobroCard');
+    const base = {
+      ...COBRO,
+      status: 'pending',
+      totalAmount: 1_000_000,
+      totalWithFees: 1_000_000,
+      paidAmount: 0,
+      pendingAmount: 1_000_000,
+      lateFee: 0,
+      daysLate: 0,
+      dueDate: '2026-10-05',
+    } as unknown as Cobro;
+    await act(async () => {
+      raiz.render(<CobroCard cobro={base} onCobroAnulado={() => undefined} />);
+    });
+    expect(contenedor.querySelector('[data-testid="anular-cobro-cobro-1"]')).not.toBeNull();
+
+    await act(async () => {
+      raiz.render(
+        <CobroCard
+          cobro={{ ...base, anuladoAt: '2026-09-16T12:00:00.000Z', motivoDeLaAnulacion: 'Se generó por error' }}
+          onCobroAnulado={() => undefined}
+        />,
+      );
+    });
+    expect(contenedor.querySelector('[data-testid="anular-cobro-cobro-1"]')).toBeNull();
+    expect(contenedor.querySelector('[data-testid="cobro-anulado-cobro-1"]')?.textContent).toContain(
+      'Se generó por error',
+    );
   });
 });

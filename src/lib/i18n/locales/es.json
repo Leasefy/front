@@ -2289,7 +2289,11 @@
           "ANULAR_COBRO_NO_DISPONIBLE": "Anular cobros todavía no está disponible: falta aplicar una migración de la base. No se cambió nada.",
           "generico": "No se pudo anular el cobro. No se cambió nada; inténtalo de nuevo."
         },
-        "sinPermiso": "Necesitas permiso para editar cobros."
+        "sinPermiso": "Necesitas permiso para editar cobros.",
+        "anuladoBadge": "Anulado",
+        "vigentes": "Vigentes",
+        "anulados": "Anulados",
+        "sinAnulados": "No hay cobros anulados en este mes."
       }
     },
     "dispersiones": {

@@ -601,6 +601,10 @@ export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: 
 export type CobroStatus = 'pending' | 'paid' | 'partial' | 'late' | 'defaulted';
 
 export interface Cobro {
+  /** Con fecha = cobro ANULADO (nunca se borra). Sólo llega con el filtro «Anulados». */
+  anuladoAt?: string | null;
+  /** Por qué se anuló. */
+  motivoDeLaAnulacion?: string | null;
   id: string;
   leaseId: string;
   consignacionId: string;

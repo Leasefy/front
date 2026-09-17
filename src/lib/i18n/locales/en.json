@@ -2249,7 +2249,11 @@
           "ANULAR_COBRO_NO_DISPONIBLE": "Voiding charges is not available yet: a database migration is missing. Nothing changed.",
           "generico": "The charge could not be voided. Nothing changed; try again."
         },
-        "sinPermiso": "You need permission to edit charges."
+        "sinPermiso": "You need permission to edit charges.",
+        "anuladoBadge": "Voided",
+        "vigentes": "Active",
+        "anulados": "Voided",
+        "sinAnulados": "There are no voided charges this month."
       }
     },
     "dispersiones": {

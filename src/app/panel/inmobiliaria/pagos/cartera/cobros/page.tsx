@@ -99,6 +99,8 @@ function CobrosContent() {
     propietarioId: undefined,
     search: undefined,
   });
+  // Filtro «Anulados»: un cobro anulado nunca se borra; acá se ve con su motivo.
+  const [verAnulados, setVerAnulados] = useState(false);
 
   // Fetch cobros from API
   const {
@@ -111,6 +113,7 @@ function CobrosContent() {
     month: filters.month,
     status: filters.status === 'all' ? undefined : filters.status,
     propietarioId: filters.propietarioId,
+    anulados: verAnulados || undefined,
   });
 
   // Fetch summary from API
@@ -651,6 +654,15 @@ function CobrosContent() {
             <span className="text-xs text-fg-muted tabular-nums">
               {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
             </span>
+            <SegmentedControl
+              aria-label={t('inmobiliaria.cobros.anular.anulados')}
+              value={verAnulados ? 'anulados' : 'vigentes'}
+              onChange={(v) => setVerAnulados(v === 'anulados')}
+              options={[
+                { value: 'vigentes', label: t('inmobiliaria.cobros.anular.vigentes') },
+                { value: 'anulados', label: t('inmobiliaria.cobros.anular.anulados') },
+              ]}
+            />
           </div>
         </div>
 
@@ -688,9 +700,9 @@ function CobrosContent() {
               <CobroTable
                 cobros={paginatedCobros}
                 onCobroClick={handleCobroClick}
-                onRegisterPayment={handleRegisterPaymentClick}
+                onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
                 // Un cobro anulado sale de la lista: se vuelve a leer del back.
-                onCobroAnulado={() => void refetchCobros()}
+                onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
                 showSummary
               />
             ) : (
@@ -700,7 +712,8 @@ function CobrosContent() {
                     key={cobro.id}
                     cobro={cobro}
                     onClick={handleCobroClick}
-                    onRegisterPayment={handleRegisterPaymentClick}
+                    onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
+                    onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
                   />
                 ))}
               </div>
@@ -735,13 +748,17 @@ function CobrosContent() {
               */}
               <div className="space-y-1.5">
                 <p className="text-base font-semibold text-fg">
-                  {copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments')}
+                  {verAnulados
+                    ? t('inmobiliaria.cobros.anular.sinAnulados')
+                    : (copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments'))}
                 </p>
-                <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-                  {copyDeMigracion?.detalle ?? t('inmobiliaria.cobros.noPaymentsDesc')}
-                </p>
+                {!verAnulados && (
+                  <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
+                    {copyDeMigracion?.detalle ?? t('inmobiliaria.cobros.noPaymentsDesc')}
+                  </p>
+                )}
               </div>
-              {copyDeMigracion && (
+              {copyDeMigracion && !verAnulados && (
                 <Button asChild hideArrow>
                   <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
                 </Button>

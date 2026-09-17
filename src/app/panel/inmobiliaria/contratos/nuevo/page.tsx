@@ -1,5 +1,6 @@
 'use client';
 
+import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -806,7 +807,7 @@ function NuevoContratoContent() {
             <Field
               label="Días de plazo antes de la mora"
               error={validation.diasDePlazo}
-              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+              hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
             >
               <Input
                 type="number"
@@ -842,11 +843,10 @@ function NuevoContratoContent() {
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
             <div className="space-y-1">
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
-                Prorratear el primer mes
+                {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground">
-                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
-                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
             </div>
             <Switch

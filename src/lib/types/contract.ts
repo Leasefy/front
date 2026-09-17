@@ -502,6 +502,8 @@ export interface Contract {
   referenciaDeRecaudo?: string | null;
   prorratearPrimerMes?: boolean;
   diasDePlazo?: number | null;
+  /** Desde qué día se cobra (`'YYYY-MM-DD'`). Nunca antes de `startDate`. */
+  fechaDeCartera?: string | null;
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.

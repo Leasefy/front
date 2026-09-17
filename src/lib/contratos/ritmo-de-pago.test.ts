@@ -61,3 +61,23 @@ describe('diasDePlazoQueRigen — contrato → inmobiliaria, como el back', () =
     expect(diasDePlazoQueRigen({ diasDePlazo: null }, null)).toBeNull()
   })
 })
+
+describe('ritmoDePago — los dos modos del 16-09', () => {
+  it('prorrateado: se genera el 1, aunque el día pactado diga otra cosa', () => {
+    expect(
+      ritmoDePago(
+        { prorratearPrimerMes: true, paymentDueDay: 21, fechaDeCartera: '2026-08-21', diasDePlazo: 3 },
+        null,
+      ),
+    ).toBe('Se genera el 1 de cada mes, con 3 días de plazo.')
+  })
+
+  it('fecha a fecha: vence el día de la fecha de cartera (o de inicio)', () => {
+    expect(
+      ritmoDePago({ prorratearPrimerMes: false, paymentDueDay: 5, fechaDeCartera: '2026-08-20', diasDePlazo: 3 }, null),
+    ).toBe('Va fecha a fecha: vence el 20 de cada mes, con 3 días de plazo.')
+    expect(
+      ritmoDePago({ prorratearPrimerMes: false, startDate: '2026-08-07T00:00:00.000Z', diasDePlazo: null }, { diasDePlazo: 2 }),
+    ).toBe('Va fecha a fecha: vence el 7 de cada mes, con 2 días de plazo (los de tu inmobiliaria).')
+  })
+})

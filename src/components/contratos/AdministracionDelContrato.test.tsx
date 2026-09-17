@@ -214,13 +214,13 @@ describe('los términos de cobro del contrato', () => {
   it('en lectura, dice el plazo propio o que hereda los días de la inmobiliaria', () => {
     render(contrato({ diasDePlazo: null, prorratearPrimerMes: false }))
     expect(document.body.textContent).toContain('Los días de la inmobiliaria')
-    expect(document.body.textContent).toContain('Mes completo')
+    expect(document.body.textContent).toContain('Fecha a fecha, sin prorrateo')
 
     act(() => root.unmount())
     root = createRoot(container)
     render(contrato({ diasDePlazo: 3, prorratearPrimerMes: true }))
     expect(document.body.textContent).toContain('3 días')
-    expect(document.body.textContent).toContain('Prorrateado por días')
+    expect(document.body.textContent).toContain('Prorrateado: se genera el 1, base 30')
   })
 
   it('guardar manda diasDePlazo (vacío = null) y prorratearPrimerMes', async () => {

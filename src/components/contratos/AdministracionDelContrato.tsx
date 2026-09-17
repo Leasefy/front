@@ -13,6 +13,7 @@
  * PATCH /contracts/:id/administracion, no por el PATCH que edita el canon.
  */
 
+import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
@@ -242,7 +243,7 @@ export function AdministracionDelContrato({
         />
         <Fila
           etiqueta="Primer mes"
-          valor={contract.prorratearPrimerMes ? 'Prorrateado por días' : 'Mes completo'}
+          valor={contract.prorratearPrimerMes ? 'Prorrateado: se genera el 1, base 30' : 'Fecha a fecha, sin prorrateo'}
           ausente=""
         />
         {/*
@@ -475,10 +476,9 @@ export function AdministracionDelContrato({
                   data-testid="prorratear-primer-mes"
                 />
                 <span>
-                  Prorratear el primer mes
-                  <span className="block text-xs text-muted-foreground">
-                    El primer cobro sale por los días ocupados, no por el mes
-                    completo.
+                  {PREGUNTA_DEL_PRORRATEO}
+                  <span className="block text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                    {prorratear ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
                   </span>
                 </span>
               </label>

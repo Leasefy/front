@@ -198,7 +198,7 @@ function PSEMockContent() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-fg-subtle uppercase tracking-wide font-medium mb-0.5">Pago a</p>
-            <p className="text-base font-bold text-fg">Leasify</p>
+            <p className="text-base font-bold text-fg">Leasefy</p>
             <p className="text-sm text-fg-muted mt-0.5">Plan {planName}</p>
           </div>
           <div className="text-right shrink-0">

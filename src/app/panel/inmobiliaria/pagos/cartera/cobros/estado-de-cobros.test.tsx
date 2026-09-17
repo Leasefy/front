@@ -39,6 +39,7 @@ const RESUMEN: CobroSummary = {
   cobrosPaid: 5,
   cobrosPending: 4,
   cobrosLate: 2,
+  tasaDeRecaudo: null,
 };
 
 describe('conteosDePestanas (C3)', () => {

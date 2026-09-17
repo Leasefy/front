@@ -1196,7 +1196,7 @@
         "totalProperties": "Total Properties",
         "rentedAndAvailable": "{{rented}} rented · {{available}} available",
         "monthlyCollection": "Monthly Collection",
-        "collectionRateLabel": "{{rate}} collection rate",
+        "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Commissions",
         "commissionsGenerated": "Generated this month",
         "occupancy": "Occupancy",
@@ -3842,7 +3842,7 @@
         "stats": {
           "expected": "Expected",
           "collected": "Collected",
-          "collectionRate": "{{pct}}% collection rate",
+          "collectionRate": "{{pct}}% · {{rotulo}}",
           "commission": "Agency commission",
           "netToOwners": "Net to owners",
           "occupancy": "Average occupancy",
@@ -9073,6 +9073,44 @@
       "new": "New reconciliation",
       "newSoon": "Reconciliation processing is enabled with the engine (M2).",
       "uploadSoon": "Ingestion and matching connect to the engine (M2)."
+    },
+    "tasaDeRecaudo": {
+      "rotulo": {
+        "CAUSADO": "Collected over amount due",
+        "EMITIDO": "Paid of amount billed"
+      },
+      "cifras": {
+        "CAUSADO": "{{numerador}} applied of {{denominador}} due",
+        "EMITIDO": "{{numerador}} paid of {{denominador}} billed"
+      },
+      "sinMedir": {
+        "CAUSADO": "No lease installments are due this month",
+        "EMITIDO": "No collections were issued this month"
+      },
+      "generico": "collection rate",
+      "ajuste": {
+        "titulo": "How do you measure your collection rate?",
+        "intro": "It is the percentage you see in the Summary, Issued collections, Collections and reports. Every screen says which of the two it used, so you never compare two different numbers under the same name.",
+        "opcion": {
+          "CAUSADO": {
+            "titulo": "Over the amount due this month",
+            "explicacion": "What was applied to this month's installments ÷ what the leases charge this month. It comes from the lease debt, whether or not a collection was issued.",
+            "ejemplo": "Example: your leases charge $10,000,000 this month and $8,000,000 has been applied to those installments. Your rate is 80%, even if you issued no collection."
+          },
+          "EMITIDO": {
+            "titulo": "Over the amount billed in collections",
+            "explicacion": "What was paid of this month's issued collections ÷ what those collections claim. Only what you already billed with a document counts.",
+            "ejemplo": "Example: you issued collections for $4,000,000 and $3,000,000 of them was paid. Your rate is 75%, even if the leases charge more this month."
+          }
+        },
+        "porDefecto": "Default",
+        "enUso": "In use",
+        "conTusNumeros": "With your {{mes}} numbers: {{tasa}} · {{cifras}}",
+        "cargando": "Loading this month's numbers…",
+        "errorNumeros": "We couldn't load this month's numbers. You can still choose.",
+        "noDisponible": "You can't change it yet: a database update is pending. Meanwhile, everything is measured over the amount due.",
+        "soloAdmin": "Only an agency administrator can change it."
+      }
     },
     "deducciones": {
       "tab": "Deductions",

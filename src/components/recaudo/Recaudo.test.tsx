@@ -48,7 +48,22 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
     ),
 }));
 
-import { Recaudo, mesSinMovimiento, porcentajeRecaudado, serieParaLaTabla } from './Recaudo';
+import { Recaudo, mesSinMovimiento, porcentajeRecaudado, serieParaLaTabla, sinTasaQueMedir } from './Recaudo';
+import type { TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
+
+/** La tasa como la manda el back (`dashboard/tasa-de-recaudo.ts`). */
+function tasa(over: Partial<TasaDeRecaudo> = {}): TasaDeRecaudo {
+  return {
+    base: 'CAUSADO',
+    porDefecto: true,
+    rotulo: 'Recaudo sobre lo causado',
+    definicion: '',
+    numeradorCop: 0,
+    denominadorCop: 0,
+    pct: null,
+    ...over,
+  };
+}
 
 const HOY = mesActual();
 const ANTERIOR = sumarMeses(HOY, -1);
@@ -139,13 +154,14 @@ beforeEach(() => {
   resumenMock.mockReset();
   serieMock.mockReset();
   serieMock.mockResolvedValue([
-    { month: ANTERIOR, deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+    { month: ANTERIOR, deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0, tasaDeRecaudo: tasa() },
     {
       month: HOY,
       deudaDelMesCop: 3_000_000,
       facturadoCop: 3_000_000,
       recaudadoCop: 1_500_000,
       dispersadoCop: 1_000_000,
+      tasaDeRecaudo: tasa({ numeradorCop: 1_500_000, denominadorCop: 3_000_000, pct: 50 }),
     },
   ]);
 });
@@ -244,6 +260,9 @@ describe('Recaudo', () => {
     expect(filas[0].getAttribute('aria-current')).toBe('true');
     expect(filas[0].textContent).toContain('$ 3.000.000');
     expect(filas[0].textContent).toContain('50 %');
+    // La columna dice con qué fórmula se midió, no «% recaudado».
+    expect($('[data-testid="rotulo-de-la-tasa"]').textContent).toBe('Recaudo sobre lo causado');
+    expect(filas[1].textContent).toContain('Sin deuda');
     // Un mes sin facturar no tiene porcentaje: «0 %» diría que no se cobró.
     expect(filas[1].getAttribute('aria-current')).toBeNull();
 
@@ -304,12 +323,21 @@ describe('Recaudo', () => {
 });
 
 describe('los helpers de la tabla', () => {
-  it('🔴 el porcentaje se mide contra lo que el mes HACE DEBER, no contra lo facturado', () => {
-    // Era `facturadoCop` (los cobros emitidos) y daba «Sin facturar» sobre
-    // meses con miles de millones de deuda: hablaba del papeleo, no del negocio.
-    expect(porcentajeRecaudado({ deudaDelMesCop: 0, recaudadoCop: 0 })).toBeNull();
-    expect(porcentajeRecaudado({ deudaDelMesCop: 3_000_000, recaudadoCop: 1_500_000 })).toBe(50);
-    expect(porcentajeRecaudado({ deudaDelMesCop: 3, recaudadoCop: 1 })).toBe(33);
+  it('🔴 el porcentaje es la tasa que midió el back: la pantalla no divide la caja entre la deuda', () => {
+    // Dividía `recaudadoCop` (la caja del mes, de cualquier período) entre la
+    // deuda: una tercera «tasa de recaudo» que no cuadraba con ninguna otra.
+    expect(porcentajeRecaudado({ tasaDeRecaudo: tasa() })).toBeNull();
+    expect(porcentajeRecaudado({ tasaDeRecaudo: tasa({ pct: 50 }) })).toBe(50);
+    expect(porcentajeRecaudado({ tasaDeRecaudo: tasa({ pct: 33.33 }) })).toBe(33);
+    // Una respuesta vieja sin la tasa no se inventa un número.
+    expect(porcentajeRecaudado({})).toBeNull();
+  });
+
+  it('sin contra qué medir dice por qué, según la fórmula de la inmobiliaria', () => {
+    expect(sinTasaQueMedir({ tasaDeRecaudo: tasa() })).toBe('Sin deuda');
+    expect(
+      sinTasaQueMedir({ tasaDeRecaudo: tasa({ base: 'EMITIDO', rotulo: 'Pagado de lo emitido' }) }),
+    ).toBe('Sin cobros');
   });
 
   it('la serie se ordena del mes más reciente al más viejo sin mutar la original', () => {

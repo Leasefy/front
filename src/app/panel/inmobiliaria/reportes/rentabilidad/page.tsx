@@ -29,6 +29,7 @@ import { SegmentedControl, Stat, StatStrip } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,6 +181,12 @@ function RentabilidadContent() {
 
   const fichaDe = (f: RentabilidadFila) => `/panel/inmobiliaria/inmuebles/${f.consignacionId}`;
   const totales = report?.totales;
+  /*
+   * Con qué fórmula se midió la tasa de las filas y de los totales: la de la
+   * inmobiliaria. Una respuesta de antes del 2026-09-16 no la trae, y ésa medía
+   * sobre lo causado.
+   */
+  const rotuloDeLaTasa = t(claveDelRotulo(report?.medidaDeLaTasa?.base ?? BASE_POR_DEFECTO));
   const meses = report?.meses ?? mesesEntre(consulta.desde, consulta.hasta);
 
   return (
@@ -327,6 +334,7 @@ function RentabilidadContent() {
                 pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', {
                   maximumFractionDigits: 1,
                 }),
+                rotulo: rotuloDeLaTasa,
               })}
               deltaDirection={totales.tasaDeRecaudoPct >= 95 ? 'up' : totales.enMoraCop > 0 ? 'down' : 'neutral'}
               compact
@@ -489,7 +497,7 @@ function RentabilidadContent() {
                     <TableCell
                       numeric
                       className="whitespace-nowrap"
-                      title={`${formatearPct(f.tasaDeRecaudoPct, locale)} · ${formatCurrency(f.enMoraCop)} en mora`}
+                      title={`${formatearPct(f.tasaDeRecaudoPct, locale)} ${rotuloDeLaTasa} · ${formatCurrency(f.enMoraCop)} en mora`}
                     >
                       <div className="flex flex-col items-end gap-1">
                         <span className="font-mono text-sm tabular-nums text-fg">

@@ -35,6 +35,7 @@ import {
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
 import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 import {
@@ -354,13 +355,16 @@ function ResumenDelNegocio() {
   };
 
   /*
-   * El back manda `collectionRate` y `occupancyRate` ya en 0 cuando no hay
-   * denominador (su `expectedRevenue > 0 ? … : 0`), así que el número solo no
-   * alcanza para saber si se midió algo. El denominador SÍ viaja en el mismo
-   * payload: con él acá se rehace la cuenta y el «no se midió» queda en null.
-   * Sin esto, una inmobiliaria sin un inmueble leía «0.0% de ocupación».
+   * 🔴 La tasa de recaudo la mide el BACK, como la eligió la inmobiliaria
+   * (sobre lo causado por defecto, o sobre lo emitido), y viaja con su
+   * fórmula y `pct: null` cuando no hubo contra qué medir. Acá se rehacía
+   * `collectedRevenue / expectedRevenue` y Cobros emitidos dividía otra cosa:
+   * 2,2 % y 43,6 % para la misma agencia, con el mismo nombre. Ahora el número
+   * se pinta con su rótulo, y la pantalla no divide nada.
    */
-  const tasaDeRecaudo = tasaMedida(kpis.collectedRevenue, kpis.expectedRevenue);
+  const tasa = tasaDelTablero(kpis);
+  const tasaDeRecaudo = tasa.pct;
+  const rotuloDeLaTasa = t(claveDelRotulo(tasa.base));
   /*
    * 🔴 La ocupación se mide contra el CATÁLOGO, no contra todo el portafolio
    * (Nico, 2026-09-12: «esa tasa de ocupación se debe medir contra el inmueble
@@ -476,6 +480,7 @@ function ResumenDelNegocio() {
           value={formatCurrency(kpis.collectedRevenue)}
           subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
             rate: textoDeTasa(tasaDeRecaudo),
+            rotulo: rotuloDeLaTasa,
           })}
           trend={
             hayConQueComparar(kpis.collectedRevenue, kpis.collectionTrend)
@@ -790,7 +795,9 @@ function ResumenDelNegocio() {
         {/* Collection Rate Progress */}
         <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
-            <MonoLabel>{t('inmobiliaria.dashboard.financial.collectionRate')}</MonoLabel>
+            {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
+                emitido» son dos números distintos. */}
+            <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
             <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
               {textoDeTasa(tasaDeRecaudo)}
             </span>
@@ -802,6 +809,9 @@ function ResumenDelNegocio() {
               style={{ width: anchoDeBarra(tasaDeRecaudo) }}
             />
           </div>
+          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+            {fraseDeLasCifras(tasa, t, formatCurrency)}
+          </p>
         </div>
       </div>
     </div>

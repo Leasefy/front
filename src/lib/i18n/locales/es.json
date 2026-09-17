@@ -1236,7 +1236,7 @@
         "totalProperties": "Propiedades Totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
         "monthlyCollection": "Recaudo del Mes",
-        "collectionRateLabel": "{{rate}} tasa de cobro",
+        "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
         "occupancy": "Ocupación",
@@ -3882,7 +3882,7 @@
         "stats": {
           "expected": "Esperado",
           "collected": "Recaudado",
-          "collectionRate": "{{pct}}% de recaudo",
+          "collectionRate": "{{pct}}% · {{rotulo}}",
           "commission": "Comisión de la inmobiliaria",
           "netToOwners": "Neto a propietarios",
           "occupancy": "Ocupación promedio",
@@ -9113,6 +9113,44 @@
       "new": "Nueva conciliación",
       "newSoon": "El procesamiento de la conciliación se habilita con el motor (M2).",
       "uploadSoon": "La ingesta y el matching se conectan con el motor (M2)."
+    },
+    "tasaDeRecaudo": {
+      "rotulo": {
+        "CAUSADO": "Recaudo sobre lo causado",
+        "EMITIDO": "Pagado de lo emitido"
+      },
+      "cifras": {
+        "CAUSADO": "{{numerador}} abonados de {{denominador}} causados",
+        "EMITIDO": "{{numerador}} pagados de {{denominador}} emitidos"
+      },
+      "sinMedir": {
+        "CAUSADO": "Los contratos no causan nada este mes",
+        "EMITIDO": "No hay cobros emitidos este mes"
+      },
+      "generico": "tasa de recaudo",
+      "ajuste": {
+        "titulo": "¿Cómo mides tu tasa de recaudo?",
+        "intro": "Es el porcentaje que ves en el Resumen, en Cobros emitidos, en Recaudo y en los reportes. Cada pantalla dice con cuál de las dos se midió, para que nunca compares dos números distintos con el mismo nombre.",
+        "opcion": {
+          "CAUSADO": {
+            "titulo": "Sobre lo causado del mes",
+            "explicacion": "Lo que entró a las cuotas del mes ÷ lo que los contratos cobran ese mes. Sale de la deuda del contrato, exista o no el cobro.",
+            "ejemplo": "Ejemplo: tus contratos cobran $10.000.000 este mes y a esas cuotas han entrado $8.000.000. Tu tasa es 80 %, aunque no hayas emitido un solo cobro."
+          },
+          "EMITIDO": {
+            "titulo": "Sobre lo emitido en cobros",
+            "explicacion": "Lo pagado de los cobros emitidos del mes ÷ lo que esos cobros reclaman. Sólo cuenta lo que ya cobraste con un documento.",
+            "ejemplo": "Ejemplo: emitiste cobros por $4.000.000 y te pagaron $3.000.000 de ellos. Tu tasa es 75 %, aunque los contratos cobren más ese mes."
+          }
+        },
+        "porDefecto": "Por defecto",
+        "enUso": "En uso",
+        "conTusNumeros": "Con tus números de {{mes}}: {{tasa}} · {{cifras}}",
+        "cargando": "Trayendo tus números del mes…",
+        "errorNumeros": "No pudimos traer tus números del mes. Puedes elegir igual.",
+        "noDisponible": "Todavía no puedes cambiarlo: falta una actualización de la base de datos. Mientras tanto, todo se mide sobre lo causado.",
+        "soloAdmin": "Sólo un administrador de la inmobiliaria puede cambiarlo."
+      }
     },
     "deducciones": {
       "tab": "Deducciones",

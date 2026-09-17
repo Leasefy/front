@@ -20,6 +20,7 @@ import type {
   FlujoCajaReport,
 } from '@/lib/types/inmobiliaria';
 import { promedioMedido, tasaMedida } from '@/lib/tasas';
+import { BASE_POR_DEFECTO, tasaOLaDeAntes } from '@/lib/tasa-de-recaudo';
 import type {
   OccupancyData,
   CollectionsData,
@@ -123,12 +124,21 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
   const totalCollected = currentMonth?.collected ?? 0;
   const moraRate = tasaMedida(totalLate, totalExpected);
   /*
-   * `collectionRate` del mes ya viene del back en 0 cuando no hubo cobros, y
-   * un 0 acá caía en la banda verde «óptima» del gráfico: afirmaba una
-   * cartera sana sobre una cartera inexistente. Sin mes, no hay recuperación.
+   * 🔴 La tasa de recaudo del mes la mide el BACK, como la eligió la
+   * inmobiliaria, y viaja con su fórmula. Acá se dividía `collected / total`
+   * —siempre sobre lo causado— aunque la inmobiliaria midiera sobre lo emitido.
+   * Sin mes, o sin contra qué medir, no hay tasa: null, no la banda verde.
    */
-  const recoveryRate =
-    currentMonth === undefined ? null : tasaMedida(currentMonth.collected, currentMonth.total);
+  const tasaDelMes =
+    currentMonth === undefined
+      ? null
+      : tasaOLaDeAntes({
+          tasaDeRecaudo: currentMonth.tasaDeRecaudo,
+          pctViejo: currentMonth.collectionRate,
+          numeradorCop: currentMonth.collected,
+          denominadorCop: currentMonth.total,
+        });
+  const recoveryRate = tasaDelMes?.pct ?? null;
 
   return {
     summary: {
@@ -138,6 +148,7 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       moraRate: moraRate === null ? null : Math.round(moraRate * 10) / 10,
       avgDaysLate: avgDaysLate === null ? null : Math.round(avgDaysLate),
       recoveryRate: recoveryRate === null ? null : Math.round(recoveryRate * 10) / 10,
+      baseDeLaTasa: tasaDelMes?.base ?? BASE_POR_DEFECTO,
     },
     byMonth: byMonth.map((m: CarteraMonthItem) => ({
       month: formatMonthLabel(m.month),

@@ -131,19 +131,26 @@ export function mesSinMovimiento(r: ResumenDeRecaudo): boolean {
 }
 
 /**
- * Qué parte de lo que el mes HACE DEBER llegó, en entero.
+ * La tasa de recaudo del mes, en entero, como la midió el BACK.
  *
- * 🔴 El denominador era `facturadoCop` —los cobros emitidos—, y con 0 cobros
- * daba «Sin facturar» sobre meses con miles de millones de deuda: el
- * porcentaje hablaba del papeleo, no del negocio. Ahora es `deudaDelMesCop`,
- * que existe desde que se firma cada contrato.
+ * 🔴 Esta pantalla dividía `recaudadoCop` —la plata que entró por caja en el
+ * mes, de cualquier período— entre `deudaDelMesCop`: una tercera definición
+ * de «tasa de recaudo» que no cuadraba ni con el Resumen ni con Cobros
+ * emitidos. Ahora es la de la inmobiliaria (sobre lo causado por defecto, o
+ * sobre lo emitido), calculada en `dashboard/tasa-de-recaudo.ts` del back, y
+ * la columna dice con qué fórmula.
  *
- * `null` cuando el mes no hace deber nada: un 0 % sobre $0 afirma que no se
+ * `null` cuando no hubo contra qué medir: un 0 % sobre $0 afirma que no se
  * recaudó, y no había nada que recaudar.
  */
-export function porcentajeRecaudado(p: Pick<PuntoDeLaSerie, 'deudaDelMesCop' | 'recaudadoCop'>): number | null {
-  if (p.deudaDelMesCop <= 0) return null;
-  return Math.round((p.recaudadoCop / p.deudaDelMesCop) * 100);
+export function porcentajeRecaudado(p: Pick<PuntoDeLaSerie, 'tasaDeRecaudo'>): number | null {
+  const pct = p.tasaDeRecaudo?.pct;
+  return pct === null || pct === undefined ? null : Math.round(pct);
+}
+
+/** Lo que dice la celda cuando no hubo contra qué medir, según la fórmula. */
+export function sinTasaQueMedir(p: Pick<PuntoDeLaSerie, 'tasaDeRecaudo'>): string {
+  return p.tasaDeRecaudo?.base === 'EMITIDO' ? 'Sin cobros' : 'Sin deuda';
 }
 
 /** La serie para la tabla: el mes más reciente arriba, que es el que se mira. */
@@ -159,6 +166,9 @@ export function Recaudo() {
   const puedeAvanzar = !esFuturo(siguiente);
 
   const puntos = useMemo(() => serieParaLaTabla(serie ?? []), [serie]);
+  // Con qué fórmula se midió la columna: la del mes en foco, o la de la serie.
+  const rotuloDeLaTasa =
+    resumen?.tasaDeRecaudo?.rotulo ?? puntos[0]?.tasaDeRecaudo?.rotulo ?? 'Tasa de recaudo';
   const totalDeRecibos = useMemo(
     () =>
       (resumen?.porMedio ?? []).reduce(
@@ -347,7 +357,11 @@ export function Recaudo() {
                         en $0 en toda la serie de la inmobiliaria migrada. */}
                     <TableHead className="whitespace-nowrap text-right">Se debe</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Recaudado</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">% recaudado</TableHead>
+                    {/* 🔴 El nombre de la fórmula, no «% recaudado»: «Recaudo sobre lo
+                        causado» y «Pagado de lo emitido» son dos números distintos. */}
+                    <TableHead className="whitespace-nowrap text-right" data-testid="rotulo-de-la-tasa">
+                      {rotuloDeLaTasa}
+                    </TableHead>
                     <TableHead className="whitespace-nowrap text-right">Dispersado</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -386,8 +400,8 @@ export function Recaudo() {
                             {formatCurrency(p.recaudadoCop)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {/* Sin deuda no hay porcentaje: un «0 %» diría que no se recaudó. */}
-                            {pct === null ? 'Sin deuda' : `${pct} %`}
+                            {/* Sin contra qué medir no hay porcentaje: un «0 %» diría que no se recaudó. */}
+                            {pct === null ? sinTasaQueMedir(p) : `${pct} %`}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {formatCurrency(p.dispersadoCop)}

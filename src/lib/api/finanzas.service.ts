@@ -15,6 +15,9 @@ import {
   type CambiosDeCostos,
   type CambiosDeLaSede,
   type CertificadoDeRetenciones,
+  type CatalogoDeRubros,
+  type ComparacionDelPresupuesto,
+  type CuadreDeTerceros,
   type CodigoSinMigrar,
   type CostosDeLaPlata,
   type CriterioDeRetencion,
@@ -25,7 +28,10 @@ import {
   type MediosDeRecibo,
   type NuevaDevolucion,
   type NuevaSede,
+  type NuevoPresupuesto,
   type NuevaTasaDeUsura,
+  type PresupuestoCargado,
+  type PresupuestoDelMes,
   type PropuestaDeDeterioro,
   type ProvisionAprobada,
   type ProvisionDeCartera,
@@ -163,4 +169,31 @@ export const finanzasApi = {
       dispersionNuevaId,
       fecha,
     }),
+
+  // ── 10. Cuadre diario de la plata de terceros ───────────────────────────
+  /** Permiso `dispersiones:view`. Sin `fecha`, hoy en Bogotá. */
+  cuadre: (fecha?: string) =>
+    apiClient.get<CuadreDeTerceros>(`${BASE}/cuadre${query({ fecha })}`),
+
+  // ── 11. Presupuesto por mes y rubro ─────────────────────────────────────
+  /** Permiso `reportes:view`. Qué rubro se puede comparar y cuál no. */
+  rubros: () => apiClient.get<CatalogoDeRubros>(`${BASE}/presupuesto/rubros`),
+
+  /** Permiso `reportes:view`. Lo cargado de un mes, tal como está. */
+  presupuesto: (mes: string, sedeId?: string | null) =>
+    apiClient.get<PresupuestoDelMes>(`${BASE}/presupuesto${query({ mes, sedeId })}`),
+
+  /** Permiso `reportes:view`. Presupuesto vs. real vs. el año anterior. */
+  comparacionDelPresupuesto: (mes: string, sedeId?: string | null) =>
+    apiClient.get<ComparacionDelPresupuesto>(
+      `${BASE}/presupuesto/comparacion${query({ mes, sedeId })}`,
+    ),
+
+  /** Permiso `reportes:edit`. Pisa, no acumula. 503 `PRESUPUESTO_SIN_MIGRAR`. */
+  guardarPresupuesto: (presupuesto: NuevoPresupuesto) =>
+    apiClient.put<PresupuestoCargado>(`${BASE}/presupuesto`, presupuesto),
+
+  /** Permiso `reportes:edit`. */
+  borrarPresupuesto: (id: string) =>
+    apiClient.delete<void>(`${BASE}/presupuesto/${encodeURIComponent(id)}`),
 };

@@ -38,6 +38,7 @@ export const CODIGOS_SIN_MIGRAR = [
   'GIROS_DEVUELTOS_SIN_MIGRAR',
   'CERTIFICADOS_SIN_MIGRAR',
   'COSTOS_SIN_MIGRAR',
+  'PRESUPUESTO_SIN_MIGRAR',
 ] as const;
 
 export type CodigoSinMigrar = (typeof CODIGOS_SIN_MIGRAR)[number];
@@ -486,4 +487,114 @@ export interface Regiro {
     /** Por qué la fecha del egreso quedó así. Se muestra tal cual. */
     motivo: string;
   };
+}
+
+// ── 10. El cuadre DIARIO de la plata de terceros (segunda tanda, 17-09) ─────
+
+/**
+ * `saldo de la cuenta de recaudo = recaudado y no girado + anticipos del
+ * inquilino + garantías de servicios + partidas por identificar`.
+ *
+ * 🔴 `diferenciaCop` es `null` cuando NO hay extracto cargado: eso es «no se
+ * pudo cuadrar», y NO es lo mismo que cuadrar en cero. La pantalla tiene que
+ * distinguirlos.
+ */
+export interface CuadreDeTerceros {
+  fecha: string;
+  saldoDeLaCuentaCop: number;
+  recaudadoYNoGiradoCop: number;
+  anticiposDelInquilinoCop: number;
+  garantiasDeServiciosCop: number;
+  partidasPorIdentificarCop: number;
+  partidasPorIdentificar: number;
+  /** 🚨 Entradas de plata marcadas IGNORADAS: se denuncian, no se suman. */
+  entradasIgnoradasCop: number;
+  entradasIgnoradas: number;
+  /** Referencia para explicar una diferencia a favor. NO entra en la identidad. */
+  comisionRetenidaCop: number;
+  haySaldoDelBanco: boolean;
+  plataDeTercerosCop: number;
+  diferenciaCop: number | null;
+  cuadra: boolean;
+  /** 🚨 Lo único de esta pantalla que se pinta en rojo. */
+  faltaPlataDeTerceros: boolean;
+  explicaciones: string[];
+  avisos: string[];
+  detalle: {
+    recaudadoCop: number;
+    giradoCop: number;
+    movimientosDelExtracto: number;
+    garantiasVivas: number;
+  };
+}
+
+// ── 11. Presupuesto por mes y rubro ────────────────────────────────────────
+
+export type FuenteDelReal =
+  | 'COMISION_CAUSADA'
+  | 'RECARGOS_RECAUDADOS'
+  | 'COSTOS_DE_LA_PLATA'
+  | 'SIN_FUENTE';
+
+export interface RubroDelPresupuesto {
+  rubro: string;
+  nombre: string;
+  naturaleza: 'INGRESO' | 'COSTO';
+  fuenteDelReal: FuenteDelReal;
+  /** 🔴 No nulo = se presupuesta pero NO se puede comparar. Se MUESTRA. */
+  motivoSinReal: string | null;
+}
+
+export interface CatalogoDeRubros {
+  rubros: RubroDelPresupuesto[];
+}
+
+export interface PresupuestoCargado {
+  id: string;
+  mes: string;
+  rubro: string;
+  valorCop: number;
+  sedeId: string | null;
+  notas: string | null;
+}
+
+export interface PresupuestoDelMes extends PuedeFaltarLaMigracion {
+  mes: string;
+  filas: PresupuestoCargado[];
+}
+
+export interface FilaDelPresupuesto {
+  rubro: string;
+  nombre: string;
+  naturaleza: 'INGRESO' | 'COSTO';
+  presupuestoCop: number | null;
+  /** 🔴 `null` = no hay de dónde sacar el real. NUNCA se pinta como `0`. */
+  realCop: number | null;
+  anioAnteriorCop: number | null;
+  contraPresupuestoCop: number | null;
+  variacionAnualPct: number | null;
+  motivoSinReal: string | null;
+}
+
+export interface ComparacionDelPresupuesto {
+  disponible: boolean;
+  sedeId: string | null;
+  mes: string;
+  mesDelAnioAnterior: string;
+  filas: FilaDelPresupuesto[];
+  totales: {
+    presupuestoCop: number;
+    realCop: number;
+    anioAnteriorCop: number;
+    rubrosSinReal: number;
+  };
+  avisos: string[];
+}
+
+export interface NuevoPresupuesto {
+  mes: string;
+  rubro: string;
+  valorCop: number;
+  sedeId?: string;
+  notas?: string;
 }

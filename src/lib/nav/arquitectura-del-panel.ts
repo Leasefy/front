@@ -208,6 +208,8 @@ export interface PantallaDelPanel {
   exact?: boolean;
   /** AGENCY_MODULES key que la gobierna ('view'); null = sin gate de módulo. */
   module: string | null;
+  /** Alternativas: alcanza con ver UNO (ver `NavItemWithModule.modulos`). */
+  modulos?: readonly string[];
   /** Roles permitidos además de isAdmin. */
   roles?: readonly AgencyRole[];
   /**
@@ -333,7 +335,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Postulaciones pasa al «más». Ninguna puerta se pierde —el sheet las
       // lista todas— y mover la fila sin mover el móvil sería tener dos menús
       // que no coinciden.
-      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
+      // 🔴 Desde el 17-09-2026 la agenda también es del ASESOR COMERCIAL
+      // (`pipeline`): lo que la llena son las visitas de sus prospectos. El back
+      // le muestra sólo visitas y tareas si no ve contratos. `scope: 'comercial'`
+      // sumado a lo que ya tenía: el encuadre por rol la sigue dejando al
+      // contador (administración) y al asesor (comercial).
+      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', modulos: ['operaciones', 'pipeline'], scope: 'administracion' },
       // Avalúos se mudó a «Agentes IA» (2026-09-16): Inmuebles se queda sin
       // secciones y `SeccionesDelModulo` no dibuja el riel de una sola card.
       { key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles' },
@@ -582,6 +589,7 @@ export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
     href: m.href,
     icon: m.icon,
     module: m.module,
+    modulos: m.modulos,
     roles: m.roles,
     scope: m.scope,
     ia: m.ia,

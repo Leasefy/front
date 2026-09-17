@@ -428,6 +428,13 @@ function PropietarioDetailContent() {
   const { canAccess } = usePermissions();
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
+  /*
+   * 🔴 La PLATA del propietario (su cuenta, sus giros, sus deducciones y su
+   * extracto) pide `dispersiones:view` desde el 17-09-2026. El asesor comercial
+   * capta al propietario pero no ve su plata (Nico: «nada de operaciones»): la
+   * ficha no le ofrece lo que el back le va a negar.
+   */
+  const veLaPlata = canAccess('dispersiones', 'view');
 
   // Fetch propietario and keep local state for updates
   const {
@@ -729,10 +736,12 @@ function PropietarioDetailContent() {
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-52">
-              <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
-                <FileText className="w-4 h-4" />
-                <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
-              </DropdownListItem>
+              {veLaPlata && (
+                <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
+                  <FileText className="w-4 h-4" />
+                  <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
+                </DropdownListItem>
+              )}
               <DropdownListItem onSelect={() => void handleExport()} disabled={isExporting} data-testid="accion-exportar">
                 <Download className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
@@ -848,14 +857,26 @@ function PropietarioDetailContent() {
             }}
           />
 
-          {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
-          <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
+          {veLaPlata ? (
+            <>
+              {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
+              <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
 
-          {/* Bank Info */}
-          <PropietarioBankInfo
-            bankAccount={propietario.bankAccount}
-            onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
-          />
+              {/* Bank Info */}
+              <PropietarioBankInfo
+                bankAccount={propietario.bankAccount}
+                onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
+              />
+            </>
+          ) : (
+            <div
+              className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+              data-testid="propietario-plata-oculta"
+            >
+              La cuenta bancaria, los giros, las deducciones y el extracto de este propietario no hacen parte de
+              tu rol. Si los necesitas, pídele a un administrador el permiso de ver dispersiones.
+            </div>
+          )}
         </div>
 
         {/* Right Column - Properties & Payments */}
@@ -880,22 +901,26 @@ function PropietarioDetailContent() {
                   </span>
                 ),
               },
-              {
-                value: 'payments',
-                ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
-                label: (
-                  <span className="flex items-center gap-2">
-                    {t('inmobiliaria.propietarios.detail.payments')}
-                    {!cargandoDispersiones && !errorDispersiones && (
-                      <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
-                    )}
-                  </span>
-                ),
-              },
-              {
-                value: 'deducciones',
-                label: t('inmobiliaria.deducciones.tab'),
-              },
+              ...(veLaPlata
+                ? [
+                    {
+                      value: 'payments' as const,
+                      ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
+                      label: (
+                        <span className="flex items-center gap-2">
+                          {t('inmobiliaria.propietarios.detail.payments')}
+                          {!cargandoDispersiones && !errorDispersiones && (
+                            <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                          )}
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'deducciones' as const,
+                      label: t('inmobiliaria.deducciones.tab'),
+                    },
+                  ]
+                : []),
               {
                 value: 'notes',
                 label: t('inmobiliaria.propietarios.detail.notes'),
@@ -945,7 +970,7 @@ function PropietarioDetailContent() {
               </motion.div>
             )}
 
-            {activeTab === 'payments' && (
+            {veLaPlata && activeTab === 'payments' && (
               <motion.div
                 key="payments"
                 initial={{ opacity: 0, y: 10 }}
@@ -979,7 +1004,7 @@ function PropietarioDetailContent() {
               </motion.div>
             )}
 
-            {activeTab === 'deducciones' && (
+            {veLaPlata && activeTab === 'deducciones' && (
               <motion.div
                 key="deducciones"
                 initial={{ opacity: 0, y: 10 }}

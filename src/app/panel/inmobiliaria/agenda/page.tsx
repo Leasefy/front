@@ -73,7 +73,9 @@ function AgendaContent() {
   // veían «Pedir cita», «Nueva tarea» y Confirmar/Rechazar/Cancelar, y cada clic
   // terminaba en un 403 sin explicación. Si no se puede, no se dibuja.
   const { canAccess } = usePermissions();
-  const puedeEditar = canAccess('operaciones', 'edit');
+  // Desde el 17-09-2026 el asesor comercial también la escribe (`pipeline:edit`):
+  // sus citas y tareas. El back acepta cualquiera de los dos.
+  const puedeEditar = canAccess('operaciones', 'edit') || canAccess('pipeline', 'edit');
 
   const [data, setData] = useState<AgendaListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -423,7 +425,9 @@ export default function AgendaPage() {
     // El sidebar (`arquitectura-del-panel.ts`) ofrece esta pantalla a TODOS
     // los roles de agencia y el back la sirve con `operaciones:view`. Con
     // `adminOnly` el enlace existía y al tocarlo te sacaba, sin decir nada.
-    <PageGuard module="operaciones">
+    // Operación o el asesor comercial (`pipeline`, 17-09-2026): a quien no ve
+    // contratos el back le sirve sólo visitas y tareas.
+    <PageGuard modulos={['operaciones', 'pipeline']}>
       <AgendaContent />
     </PageGuard>
   );

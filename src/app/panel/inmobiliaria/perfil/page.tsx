@@ -81,7 +81,7 @@ export function oNulo(valor: string): string | null {
 
 const AGENCY_ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
-  AGENTE: 'Agente',
+  AGENTE: 'Asesor comercial',
   CONTADOR: 'Contador',
   VIEWER: 'Visualizador',
 };

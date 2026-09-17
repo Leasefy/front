@@ -22,7 +22,7 @@ const PENDING_NAME_KEY = 'pending-invitation-name';
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
   AGENT: 'Agente',
-  AGENTE: 'Agente',
+  AGENTE: 'Asesor comercial',
   CONTADOR: 'Contador',
   VIEWER: 'Observador',
 };

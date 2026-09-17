@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
 import { TablePagination } from '@/components/ui/pagination';
 import {
@@ -69,6 +70,13 @@ type ViewMode = 'grid' | 'table';
  * Route: /panel/inmobiliaria/inmuebles
  */
 function PortafolioContent() {
+  /*
+   * 🔴 El asesor comercial (sin `contratos:view`) ve sólo los inmuebles
+   * DISPONIBLES: el back ya no le manda los arrendados (17-09-2026). Se dice
+   * arriba para que el número del portafolio no se lea como «faltan casas».
+   */
+  const { canAccess: puedeElMiembro, isLoading: cargandoPermisos } = usePermissions();
+  const soloDisponibles = !cargandoPermisos && !puedeElMiembro('contratos', 'view');
   const { t } = useI18n();
   const router = useRouter();
   // `useApiData` captura el fallo en su estado y NO lo relanza: si sólo tomas
@@ -445,6 +453,11 @@ function PortafolioContent() {
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.portafolio.subtitle')}
           </p>
+          {soloDisponibles && (
+            <p className="text-xs text-fg-muted" data-testid="portafolio-solo-disponibles">
+              Ves los inmuebles disponibles. Los arrendados son operación de un contrato en curso y no hacen parte de tu rol.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido

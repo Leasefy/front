@@ -380,6 +380,11 @@ export interface InventoryItem {
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   notes?: string;
   photoUrl?: string;
+  /**
+   * Dónde está («Cocina», «Alcoba principal»). Sólo lo usa el inventario por
+   * versiones del inmueble; la lista vieja de la consignación no lo acepta.
+   */
+  espacio?: string;
 }
 
 export interface ConsignacionFormData {

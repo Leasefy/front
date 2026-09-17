@@ -285,6 +285,12 @@ export function ActaEntregaView({
                           <span className="font-medium text-fg text-sm">
                             {item.name}
                           </span>
+                          {/* El espacio del inventario por versiones («Cocina»). */}
+                          {item.espacio && (
+                            <span className="block text-xs text-fg-muted" data-testid="item-espacio">
+                              {item.espacio}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="py-3 px-2 text-center">
                           <span className="text-fg-muted text-sm">
@@ -387,6 +393,7 @@ export function ActaEntregaView({
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-medium text-fg">{item.name}</p>
+                        {item.espacio && <p className="text-xs text-fg-muted">{item.espacio}</p>}
                         <p className="text-sm text-fg-muted">
                           {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>

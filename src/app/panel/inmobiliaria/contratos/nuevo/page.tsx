@@ -80,6 +80,13 @@ import type {
   BorradorDeContrato,
   UsoDelInmueble,
 } from '@/lib/api/contratos-plantilla.service';
+import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
+import {
+  bloqueoDeLaConsulta,
+  bloqueoDelError,
+  type BloqueoPorInventario as BloqueoPorInventarioDatos,
+} from '@/lib/inventario/bloqueo-por-inventario';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -169,6 +176,13 @@ function NuevoContratoContent() {
   // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
   // selector y se borra apenas se elige otro inmueble.
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
+  /**
+   * 🔴 Nico y Juan Camilo, 2026-09-16: iniciar un contrato exige el inventario
+   * del inmueble completo y actualizado. Se pregunta al elegir el inmueble
+   * (para no dejar llenar todo el formulario en vano) y se vuelve a leer del
+   * 409 del back al crear, que es quien decide.
+   */
+  const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
   // se registraba en ningún lado, así que meses después nadie sabía a quién
@@ -400,6 +414,24 @@ function NuevoContratoContent() {
 
   const isValid = Object.keys(validation).length === 0 && respaldoValido;
 
+  const inmuebleParaIniciar = (esManual ? partes.propertyId : property?.id) || null;
+  useEffect(() => {
+    setBloqueoDeInventario(null);
+    if (!inmuebleParaIniciar) return;
+    let vivo = true;
+    inventarioDelInmuebleApi
+      .paraIniciar(inmuebleParaIniciar)
+      .then((r) => {
+        if (vivo) setBloqueoDeInventario(bloqueoDeLaConsulta(r));
+      })
+      .catch(() => {
+        /* Sin respuesta no se bloquea acá: al crear, el back decide. */
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [inmuebleParaIniciar]);
+
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -507,6 +539,12 @@ function NuevoContratoContent() {
        *   - postulación que ya tiene contrato → se recupera y se redirige;
        *   - el resto → el motivo del back en palabras.
        */
+      const bloqueo = bloqueoDelError(err);
+      if (bloqueo) {
+        setBloqueoDeInventario(bloqueo);
+        setSubmitError(null);
+        return;
+      }
       const ocupado = inmuebleOcupado(err);
       if (ocupado && esManual) {
         setErrorDeInmueble(ocupado);
@@ -895,6 +933,8 @@ function NuevoContratoContent() {
           </div>
         )}
 
+        {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
+
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
@@ -907,7 +947,7 @@ function NuevoContratoContent() {
           <Button
             type="submit"
             hideArrow
-            disabled={!isValid || actions.isSubmitting}
+            disabled={!isValid || actions.isSubmitting || bloqueoDeInventario !== null}
             className="gap-2"
           >
             {actions.isSubmitting ? (

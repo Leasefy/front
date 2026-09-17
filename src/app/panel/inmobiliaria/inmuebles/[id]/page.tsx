@@ -48,7 +48,7 @@ import {
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
-import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
+import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
@@ -637,7 +637,9 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <InventarioDeLaConsignacion
+            {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
+                por versiones; sin la migración del back monta la tarjeta de siempre. */}
+            <InventarioDelInmueble
               consignacion={consignacion}
               puedeEditar={puedeEditarInventario}
               copiaLocal={copiaLocal}

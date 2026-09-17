@@ -34,6 +34,7 @@ import { useSinSenal } from '@/lib/hooks/use-sin-senal';
 import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { rutaDeLaFichaDelContrato } from '@/lib/inventario/copia-de-inmueble';
 import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
+import { InventarioDelContrato } from '@/components/inmobiliaria/inventario/InventarioDelContrato';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
@@ -142,14 +143,22 @@ export function InmuebleDelContrato({
       {/* El enlace al inmueble va DENTRO de la tarjeta, al lado del título: ya
           no manda a hacer el trabajo allá, es para ver el resto del inmueble
           (fotos, propietario, visitas). Suelto debajo parecía de otra cosa. */}
-      <InventarioDeLaConsignacion
-        consignacion={consignacion}
-        puedeEditar={puedeEditar}
+      {/* 🔴 Nico y Juan Camilo, 2026-09-16: el contrato muestra la COPIA fija
+          del inventario con el que se inició (sólo lectura). Sin la migración
+          del back, lo de siempre: la lista editable de la consignación. */}
+      <InventarioDelContrato
         contratoId={contratoId}
-        copiaLocal={copiaLocal}
-        sinSenal={sinSenal}
-        onActualizada={setReciente}
-        enlaceAlInmueble={{ href: fichaDelInmueble, testid: 'ver-el-inmueble' }}
+        legado={
+          <InventarioDeLaConsignacion
+            consignacion={consignacion}
+            puedeEditar={puedeEditar}
+            contratoId={contratoId}
+            copiaLocal={copiaLocal}
+            sinSenal={sinSenal}
+            onActualizada={setReciente}
+            enlaceAlInmueble={{ href: fichaDelInmueble, testid: 'ver-el-inmueble' }}
+          />
+        }
       />
 
       <ConsignacionTimeline consignacion={consignacion} titulo="Historial del inmueble" />

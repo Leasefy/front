@@ -540,6 +540,14 @@ export function RegistrarPagoModal({
               meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
               saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
             })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
+      // Los intereses pagados con la factura del mes ya emitida: factura aparte.
+      const deIntereses = facturas.flatMap((f) => f.facturasDeIntereses ?? []);
+      const lineaDeIntereses =
+        deIntereses.length > 0
+          ? ` ${t('recibos.form.facturaDeIntereses', {
+              valor: formatCurrency(deIntereses.reduce((s, f) => s + f.totalCop, 0)),
+            })}`
+          : '';
       // Un desfase de hasta $1.000 no abona ni queda como anticipo: se dice.
       const lineaDelAjuste =
         (res.ajusteAlPesoCop ?? 0) > 0
@@ -558,7 +566,8 @@ export function RegistrarPagoModal({
               ? `${saldo} ${t('recibos.form.emitidoConAnticipo', { anticipo: formatCurrency(anticipo) })}`
               : saldo) +
             lineaDelAjuste +
-            lineaDeFacturas,
+            lineaDeFacturas +
+            lineaDeIntereses,
         },
       );
       cerrar();

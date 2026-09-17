@@ -1521,3 +1521,35 @@ describe('<RegistrarPagoModal> el ajuste al peso (2026-09-16)', () => {
     expect(descripcion).toContain('recibos.form.ajusteAlPeso');
   });
 });
+
+describe('<RegistrarPagoModal> la factura de intereses aparte (2026-09-16)', () => {
+  it('si los intereses se facturaron aparte, el aviso lo dice', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({
+      ...RESPUESTA,
+      facturas: [
+        {
+          facturaId: 'f-1',
+          contractId: 'ct1',
+          mes: '2026-06',
+          estado: 'EMITIDA',
+          numero: 41,
+          totalCop: 1_000_000,
+          netoCop: 1_000_000,
+          abonadoCop: 1_000_000,
+          saldoCop: 0,
+          generadaAhora: false,
+          facturasDeIntereses: [
+            { facturaId: 'fi-1', reciboDeCajaId: 'r-1', totalCop: 12_000, estado: 'GENERADA', generadaAhora: true },
+          ],
+        },
+      ],
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.facturaDeIntereses');
+  });
+});

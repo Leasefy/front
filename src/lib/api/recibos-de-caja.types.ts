@@ -369,7 +369,18 @@ export interface RespuestaDeReciboPorCliente {
 }
 
 /** Una factura de un mes que el pago tocó. */
+/** Una factura APARTE de los intereses que pagó un recibo (la del mes ya estaba emitida). */
+export interface FacturaDeInteresesDelPago {
+  facturaId: string;
+  reciboDeCajaId: string;
+  totalCop: number;
+  estado: 'GENERADA' | 'EMITIDA';
+  generadaAhora: boolean;
+}
+
 export interface FacturaDelPago {
+  /** Vacío si no hubo intereses por facturar aparte; ausente en un back viejo. */
+  facturasDeIntereses?: FacturaDeInteresesDelPago[];
   facturaId: string;
   contractId: string;
   mes: string;

@@ -11491,7 +11491,8 @@
       "emitidoConAnticipo": "Quedaron {{anticipo}} como anticipo del contrato: se descuentan solos el día de pago de cada mes.",
       "facturasDelPago": "Facturas de {{meses}} al día: les quedan {{saldo}} por pagar.",
       "facturasSinEmitir": "Quedaron generadas y pendientes de emitir ante la DIAN.",
-      "ajusteAlPeso": "{{valor}} quedaron como ajuste al peso: no abonan a ninguna cuota."
+      "ajusteAlPeso": "{{valor}} quedaron como ajuste al peso: no abonan a ninguna cuota.",
+      "facturaDeIntereses": "Los intereses pagados ({{valor}}) se facturaron aparte, sin número y pendientes de emitir."
     },
     "historial": {
       "titulo": "Recibos de caja",

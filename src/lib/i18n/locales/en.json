@@ -11451,7 +11451,8 @@
       "emitidoConAnticipo": "{{anticipo}} stayed as the contract's advance: they're applied automatically on each month's due date.",
       "facturasDelPago": "Invoices for {{meses}} updated: {{saldo}} left to pay.",
       "facturasSinEmitir": "They were generated and are pending issue with the DIAN.",
-      "ajusteAlPeso": "{{valor}} were recorded as a rounding adjustment: they don't pay any installment."
+      "ajusteAlPeso": "{{valor}} were recorded as a rounding adjustment: they don't pay any installment.",
+      "facturaDeIntereses": "The interest paid ({{valor}}) was invoiced separately, unnumbered and pending issuance."
     },
     "historial": {
       "titulo": "Cash receipts",

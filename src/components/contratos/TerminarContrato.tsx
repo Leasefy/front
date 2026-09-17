@@ -72,6 +72,8 @@ export function TerminarContrato({
   const [terminadoEn, setTerminadoEn] = useState(hoyComoInput);
   const [motivo, setMotivo] = useState("");
   const [nota, setNota] = useState("");
+  /** La penalidad pactada, sólo dígitos. Vacío = no hay. */
+  const [penalidad, setPenalidad] = useState("");
   const [vista, setVista] = useState<VistaPreviaDeTerminacion | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -109,8 +111,10 @@ export function TerminarContrato({
 
   const elegido = motivos.find((m) => m.codigo === motivo);
   const faltaNota = elegido?.exigeNota === true && nota.trim().length === 0;
+  const penalidadCop = penalidad.trim() === "" ? null : Number(penalidad.replace(/\D/g, ""));
+  const penalidadInvalida = penalidadCop !== null && !(penalidadCop > 0);
   const puedeConfirmar =
-    !guardando && !!terminadoEn && !!motivo && !faltaNota && vista?.puedeTerminarse !== false;
+    !guardando && !!terminadoEn && !!motivo && !faltaNota && !penalidadInvalida && vista?.puedeTerminarse !== false;
 
   async function confirmar() {
     setGuardando(true);
@@ -119,6 +123,7 @@ export function TerminarContrato({
         terminadoEn,
         motivo,
         nota: nota.trim() || undefined,
+        penalidadCop: penalidadCop ?? undefined,
       });
       toast.success(`Contrato terminado el ${r.terminadoEn}.`, {
         description: r.inmuebleLiberado
@@ -204,6 +209,26 @@ export function TerminarContrato({
             />
           </div>
 
+          {/* Regla 9 (16-09): la penalidad pactada entra como un cobro más, en la cuota del último mes. */}
+          <div className="space-y-1.5">
+            <Label htmlFor="penalidad">Penalidad pactada (opcional)</Label>
+            <Input
+              id="penalidad"
+              inputMode="numeric"
+              placeholder="$ 0"
+              value={penalidad}
+              onChange={(e) => setPenalidad(e.target.value.replace(/[^\d]/g, ""))}
+              data-testid="penalidad-de-terminacion"
+            />
+            <p className="text-xs text-muted-foreground">
+              {penalidadInvalida
+                ? "La penalidad tiene que ser mayor que cero."
+                : penalidadCop
+                  ? `Se le cobra al inquilino ${PESOS.format(penalidadCop)} una sola vez, en la cuota del último mes.`
+                  : "Si el contrato pacta una penalidad por terminar antes, se le cobra al inquilino una sola vez, en la cuota del último mes."}
+            </p>
+          </div>
+
           {/* Lo que va a quedar cobrado. El número, antes de confirmar. */}
           {vista?.prorrateoDelUltimoMes && (
             <div
@@ -212,8 +237,10 @@ export function TerminarContrato({
             >
               <p className="font-medium">Último mes ({vista.prorrateoDelUltimoMes.mes})</p>
               <p className="text-muted-foreground">
-                Se cobran {vista.prorrateoDelUltimoMes.diasOcupados} de{" "}
-                {vista.prorrateoDelUltimoMes.diasDelMes} días:{" "}
+                {/* Mes comercial de 30 (16-09): «20 días de 30». Fecha a fecha, el período completo. */}
+                {vista.prorrateoDelUltimoMes.diasOcupados >= vista.prorrateoDelUltimoMes.diasDelMes
+                  ? "Se cobra el período completo: "
+                  : `Se cobran ${vista.prorrateoDelUltimoMes.diasOcupados} días de ${vista.prorrateoDelUltimoMes.diasDelMes}: `}
                 <strong className="text-foreground">
                   {PESOS.format(vista.prorrateoDelUltimoMes.valorCop)}
                 </strong>{" "}

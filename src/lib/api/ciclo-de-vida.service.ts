@@ -87,7 +87,13 @@ export const cicloDeVidaApi = {
 
   terminar: (
     contractId: string,
-    body: { terminadoEn: string; motivo: string; nota?: string },
+    body: {
+      terminadoEn: string;
+      motivo: string;
+      nota?: string;
+      /** La penalidad pactada, en pesos enteros. Entra como cargo de una vez (16-09). */
+      penalidadCop?: number;
+    },
   ) =>
     apiClient.post<ResultadoDeTerminacion>(
       `/contracts/${contractId}/terminar`,

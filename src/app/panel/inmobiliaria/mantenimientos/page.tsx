@@ -16,6 +16,7 @@ import type {
   NuevaCotizacion,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import {
   useMantenimientos,
   useConsignaciones,
@@ -139,7 +140,7 @@ function StatCard({
  * Route: /panel/inmobiliaria/mantenimientos
  */
 function MantenimientosContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   /*
    * Quién puede MOVER una solicitud y quién sólo puede mirarla.
    *
@@ -339,13 +340,22 @@ function MantenimientosContent() {
           aCargoDe,
         );
         await recargarMantenimientos();
+        // Con el cargo puesto en su cuota se dice dónde quedó; sin él (base
+        // sin la migración), los avisos del back dicen que se cobra aparte.
+        const cargoAlInquilino = aprobada.cargo?.cargoAlInquilino;
+        const descripcion = cargoAlInquilino
+          ? t('inmobiliaria.deducciones.cargoAlInquilino.aprobada', {
+              valor: formatCurrency(cargoAlInquilino.valorCop),
+              mes: mesEnTitulo(cargoAlInquilino.mes, locale === 'en' ? 'en' : 'es'),
+            })
+          : aprobada.cargo?.avisos?.join(' ');
         toast.success(
           t(
             aCargoDe === 'PROPIETARIO'
               ? 'inmobiliaria.deducciones.aCargoDe.aprobadaPropietario'
               : 'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
           ),
-          aprobada.cargo?.avisos?.length ? { description: aprobada.cargo.avisos.join(' ') } : undefined,
+          descripcion ? { description: descripcion } : undefined,
         );
       } catch (error) {
         toast.error('No se pudo aprobar la cotización', {
@@ -354,7 +364,7 @@ function MantenimientosContent() {
         throw error;
       }
     },
-    [cotizacionPorAprobar, t, recargarMantenimientos],
+    [cotizacionPorAprobar, t, locale, recargarMantenimientos],
   );
 
   /** La cotización que se está aprobando, para decir en el diálogo cuál es. */
@@ -366,6 +376,17 @@ function MantenimientosContent() {
   const cotizacionDelDialogo = quoteDelDialogo
     ? { proveedor: quoteDelDialogo.providerName, valorCop: quoteDelDialogo.amount }
     : null;
+  /** La sugerencia del agente, si la dejó para esta misma cotización (o sin cotización). */
+  const propuestaDelDialogo = cotizacionPorAprobar
+    ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)?.propuesta
+    : undefined;
+  const sugerenciaDelDialogo =
+    propuestaDelDialogo &&
+    !propuestaDelDialogo.atendidaAt &&
+    (propuestaDelDialogo.quoteId === null ||
+      propuestaDelDialogo.quoteId === cotizacionPorAprobar?.quoteId)
+      ? propuestaDelDialogo.aCargoDeSugerido
+      : null;
 
   /**
    * La misma transición, para quien NO espera la promesa (los botones del
@@ -670,6 +691,7 @@ function MantenimientosContent() {
           if (!abierto) setCotizacionPorAprobar(null);
         }}
         cotizacion={cotizacionDelDialogo}
+        sugerencia={sugerenciaDelDialogo}
         onConfirmar={aprobarCotizacion}
       />
 

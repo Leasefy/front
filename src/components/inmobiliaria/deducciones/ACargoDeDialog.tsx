@@ -8,11 +8,13 @@
  *
  * · Del PROPIETARIO: el back le registra la deducción por el valor aprobado,
  *   repartida entre los dueños del inmueble, en la misma operación.
- * · Del INQUILINO: no se le descuenta nada al propietario. 🔴 El cobro al
- *   inquilino todavía NO entra solo a su estado de cuenta, y el diálogo lo dice
- *   antes de aprobar: callarlo sería dejar una reparación sin cobrar a nadie.
+ * · Del INQUILINO: no se le descuenta nada al propietario y la reparación
+ *   entra a su estado de cuenta como un cargo de una sola vez, en la cuota del
+ *   mes de la aprobación o en la siguiente sin pagar.
  *
- * No hay opción preseleccionada: la decisión se toma a propósito.
+ * No hay opción preseleccionada: la decisión se toma a propósito. Si el agente
+ * de mantenimiento dejó una sugerencia, se dice —«el agente propone, una
+ * persona aprueba»—, pero tampoco se preselecciona.
  */
 
 import { useEffect, useState } from 'react';
@@ -40,11 +42,14 @@ export function ACargoDeDialog({
   abierto,
   onOpenChange,
   cotizacion,
+  sugerencia = null,
   onConfirmar,
 }: {
   abierto: boolean;
   onOpenChange: (abierto: boolean) => void;
   cotizacion: CotizacionPorAprobar | null;
+  /** A cargo de quién sugiere el agente. Sólo se dice; decide la persona. */
+  sugerencia?: ACargoDe | null;
   /** Se espera: si el back rechaza, el diálogo queda abierto. */
   onConfirmar: (aCargoDe: ACargoDe) => Promise<void>;
 }) {
@@ -90,6 +95,17 @@ export function ACargoDeDialog({
             </DialogDescription>
           )}
         </DialogHeader>
+
+        {sugerencia && (
+          <p
+            className="rounded-md border border-border bg-info-soft px-3 py-2 text-xs text-fg"
+            data-testid="a-cargo-de-sugerencia"
+          >
+            {t(k('sugiereElAgente'), {
+              quien: t(k(sugerencia === 'PROPIETARIO' ? 'quienPropietario' : 'quienInquilino')),
+            })}
+          </p>
+        )}
 
         <div role="radiogroup" aria-label={t(k('titulo'))} className="space-y-3">
           {opciones.map((o) => (

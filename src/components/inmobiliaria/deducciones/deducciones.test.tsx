@@ -17,8 +17,11 @@ import { act } from 'react';
 import type {
   DeduccionDelListado,
   DeduccionesDeLaLiquidacion,
+  DeudaDelPropietario as DeudaDelPropietarioTipo,
   ListadoDeDeducciones,
 } from '@/lib/types/deducciones';
+
+type DeudaDelPropietario = DeudaDelPropietarioTipo;
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -49,6 +52,8 @@ const api = vi.hoisted(() => ({
   registrar: vi.fn(),
   anular: vi.fn(),
   urlDelSoporte: vi.fn(),
+  deuda: vi.fn(),
+  generarCuentaDeCobro: vi.fn(),
 }));
 vi.mock('@/lib/api/deducciones.service', () => ({ deduccionesApi: api }));
 
@@ -67,7 +72,25 @@ beforeEach(() => {
   api.listar.mockReset();
   api.registrar.mockReset();
   api.anular.mockReset();
+  api.generarCuentaDeCobro.mockReset();
+  // Por defecto no debe nada: el bloque de la deuda no aparece.
+  api.deuda.mockReset().mockResolvedValue(sinDeuda());
 });
+
+function sinDeuda(): DeudaDelPropietario {
+  return {
+    disponible: true,
+    motivo: null,
+    propietarioId: 'p1',
+    debeCop: 0,
+    desde: null,
+    ultimoMesConLiquidacion: '2026-10',
+    renglones: [],
+    sinCuentaDeCobroCop: 0,
+    cuentasDeCobro: [],
+    cuentaDeCobroDisponible: true,
+  };
+}
 
 afterEach(() => {
   act(() => raiz.unmount());
@@ -411,5 +434,92 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
     expect(porTestId('bloque-saldo-en-contra').textContent).toContain(
       '$150.000 pasan a su siguiente liquidación',
     );
+  });
+});
+
+describe('<DeduccionesDelPropietario> — lo que le debe a la inmobiliaria', () => {
+  const vacio: ListadoDeDeducciones = {
+    disponible: true,
+    motivo: null,
+    deducciones: [],
+    totales: { pendienteCop: 0, enLiquidacionCop: 0, saldoEnContraCop: 0 },
+  };
+
+  function debe(extra: Partial<DeudaDelPropietario> = {}): DeudaDelPropietario {
+    return {
+      ...sinDeuda(),
+      debeCop: 300_000,
+      desde: '2026-10',
+      ultimoMesConLiquidacion: null,
+      sinCuentaDeCobroCop: 300_000,
+      renglones: [
+        {
+          id: 'd-1',
+          grupoId: 'g-1',
+          origen: 'SALDO_ANTERIOR',
+          motivo: 'Saldo en contra de la liquidación de 2026-09',
+          valorCop: 300_000,
+          fecha: '2026-09-05',
+          mesDesde: '2026-10',
+          tieneSoporte: false,
+        },
+      ],
+      ...extra,
+    };
+  }
+
+  it('sin deuda no aparece el bloque', async () => {
+    api.listar.mockResolvedValue(vacio);
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+    expect(document.body.querySelector('[data-testid="deuda-del-propietario"]')).toBeNull();
+  });
+
+  it('🔴 con deuda se ve cuánto debe, desde cuándo y de qué, y se genera la cuenta de cobro', async () => {
+    api.listar.mockResolvedValue(vacio);
+    api.deuda.mockResolvedValueOnce(debe()).mockResolvedValueOnce(
+      debe({
+        sinCuentaDeCobroCop: 0,
+        cuentasDeCobro: [{ id: 'cc-1', numero: 7, emitidaAt: '2026-10-02T15:00:00.000Z' }],
+      }),
+    );
+    api.generarCuentaDeCobro.mockResolvedValue({ id: 'cc-1', numero: 7 });
+
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+
+    const bloque = porTestId('deuda-del-propietario');
+    expect(bloque.textContent).toContain('Le debe a la inmobiliaria');
+    expect(porTestId('deuda-total').textContent).toContain('300.000');
+    expect(bloque.textContent).toContain('Saldo en contra del mes anterior');
+
+    await clic(porTestId('generar-cuenta-de-cobro'));
+
+    expect(api.generarCuentaDeCobro).toHaveBeenCalledWith('p1');
+    expect(toast.success).toHaveBeenCalledWith('Cuenta de cobro n.º 7 generada');
+    const enlace = porTestId<HTMLAnchorElement>('cuenta-de-cobro-7');
+    expect(enlace.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/propietarios/p1/cuenta-de-cobro/cc-1',
+    );
+    expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
+  });
+
+  it('sin permiso de dispersiones:create ve la deuda pero no la cuenta de cobro por generar', async () => {
+    negadas.add('dispersiones:create');
+    api.listar.mockResolvedValue(vacio);
+    api.deuda.mockResolvedValue(debe());
+
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+
+    expect(porTestId('deuda-total').textContent).toContain('300.000');
+    expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
+  });
+
+  it('sin la migración de la cuenta de cobro lo dice y no ofrece generarla', async () => {
+    api.listar.mockResolvedValue(vacio);
+    api.deuda.mockResolvedValue(debe({ cuentaDeCobroDisponible: false }));
+
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+
+    expect(porTestId('cuenta-de-cobro-sin-migrar').textContent).toContain('todavía no está disponible');
+    expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
   });
 });

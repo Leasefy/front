@@ -62,6 +62,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { PropietariosQueDeben } from '@/components/cartera/PropietariosQueDeben'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraConPropietarios } from '@/lib/hooks/use-cartera'
@@ -274,6 +275,9 @@ export function CarteraDePropietarios() {
             </div>
           )}
         </section>
+
+        {/* El otro sentido: los que le deben a la inmobiliaria (se les cobra). */}
+        <PropietariosQueDeben />
 
         {/*
           🔴 El pie tiene que decir la base que de verdad se usa. Sin dispersión

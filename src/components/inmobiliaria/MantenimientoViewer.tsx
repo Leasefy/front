@@ -59,6 +59,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
+import { PropuestaYCargoDeLaReparacion } from '@/components/inmobiliaria/deducciones/PropuestaYCargoDeLaReparacion';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -647,6 +648,13 @@ export function MantenimientoViewer({
               }
             />
           </div>
+
+          {/* Lo que propuso el agente (una persona aprueba) y el cargo que
+              quedó en el estado de cuenta del inquilino. */}
+          <PropuestaYCargoDeLaReparacion
+            solicitud={solicitud}
+            onRevisar={onApproveQuote ? (_id, quoteId) => handleSelectQuote(quoteId) : undefined}
+          />
 
           {/* Quotations Section */}
           {(solicitud.status === 'quoted' ||

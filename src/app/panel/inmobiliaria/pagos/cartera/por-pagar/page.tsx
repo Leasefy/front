@@ -15,6 +15,7 @@ import { SectionLabel } from '@/components/ui/section-label'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraDePropietarios } from '@/components/cartera/CarteraDePropietarios'
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
+import { QUE_ES_EL_CANON_CAUSADO, ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon'
 
 export default function CarteraPorPagarPage() {
   return (
@@ -23,8 +24,16 @@ export default function CarteraPorPagarPage() {
         <header className="space-y-1.5">
           <SectionLabel>Pagos · propietarios</SectionLabel>
           <h1 className="text-h2 text-fg">Por pagar a propietarios</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Lo que hay que girarle a cada propietario, mes a mes: lo recaudado a su nombre menos
+          {/*
+            🔴 Decía «lo recaudado a su nombre», y la liquidación del
+            propietario no sale de lo recaudado: es lo que el contrato cobra
+            (base CAUSADO) con sus deducciones — confirmado por Juan Camilo el
+            2026-09-16, y es lo que calcula `CarteraDePropietarios`. Mismos
+            rótulos que el resto (`base-del-canon.ts`); ningún número cambia.
+          */}
+          <p className="max-w-2xl text-sm text-muted-foreground" data-testid="que-se-le-debe">
+            Lo que hay que girarle a cada propietario, mes a mes: el{' '}
+            {ROTULO_DEL_CANON.CAUSADO.toLowerCase()} a su nombre ({QUE_ES_EL_CANON_CAUSADO}) menos
             la comisión y lo que se le cobra a él.
           </p>
         </header>

@@ -106,6 +106,22 @@ describe('<ReglasDeMoraDelContrato>', () => {
     expect(container.querySelector('[data-testid="propio-honorario"]')).toBeNull()
   })
 
+  it('🔴 D9: sin gastos de cobranza pactados lo dice, y un ajuste no borra la marca', async () => {
+    delContrato.mockResolvedValue([fila({ noPactada: true })])
+    // El PUT del ajuste no trae la marca: la pantalla no la puede perder.
+    ajustar.mockResolvedValue(fila({ aplica: false, esPropio: true }))
+    await render()
+
+    expect(container.querySelector('[data-testid="no-pactada-honorario"]')?.textContent).toContain(
+      'no pacta gastos de cobranza',
+    )
+    const sw = container.querySelector<HTMLButtonElement>('[data-testid="aplica-honorario"]')!
+    await act(async () => {
+      sw.click()
+    })
+    expect(container.querySelector('[data-testid="no-pactada-honorario"]')).not.toBeNull()
+  })
+
   it('apagar el interruptor manda aplica: false y la fila lo dice', async () => {
     delContrato.mockResolvedValue([fila()])
     ajustar.mockResolvedValue(fila({ aplica: false, esPropio: true }))

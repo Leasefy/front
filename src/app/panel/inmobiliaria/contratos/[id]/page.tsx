@@ -62,7 +62,9 @@ import { EscenarioTributario } from '@/components/contratos/EscenarioTributario'
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
-import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
+import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato';
+import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
+import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaDeServiciosDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
@@ -188,10 +190,12 @@ function ContratoDetalleContent() {
           status: (contract?.status ?? 'draft') as ContractStatus,
           endDate: contract?.endDate ?? null,
           terminadoEn: contract?.terminadoEn ?? null,
+          startDate: contract?.startDate ?? null,
+          fechaDeCartera: contract?.fechaDeCartera ?? null,
         },
         new Date(`${hoy}T12:00:00.000Z`),
       ),
-    [contract?.status, contract?.endDate, contract?.terminadoEn, hoy],
+    [contract?.status, contract?.endDate, contract?.terminadoEn, contract?.startDate, contract?.fechaDeCartera, hoy],
   );
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -609,11 +613,20 @@ function ContratoDetalleContent() {
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/*
-                🔴 Qué va a pasar cuando venza: se renueva sola por el mismo
-                término con el canon incrementado si nadie avisa tres meses
-                antes (Ley 820, arts. 20 y 22). Nico, 2026-09-12.
+                🔴 D5 (Nico, 17-09): qué pasa cuando venza. Sin aviso de no
+                renovación se prorroga por el mismo término (vivienda, Ley 820
+                art. 6) o lo pactado / mes a mes (comercial); con aviso queda en
+                alerta para que una persona decida.
               */}
-              <RenovacionDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <ProrrogaDelContrato
+                contract={contract}
+                puedeEditar={canEditContracts && !esTerminado}
+                onCambio={() => void refetch()}
+              />
+              {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
+              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              {/* D10: la garantía de servicios públicos (anticipo del inquilino). */}
+              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
@@ -746,6 +759,10 @@ function ContratoDetalleContent() {
               <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/* Se pactan antes de firmar: gastos de cobranza, seguro opcional, póliza, administración. */}
+              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+              {/* D10 al INICIO: la garantía se exige antes de activar, así que se registra acá. */}
+              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}

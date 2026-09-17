@@ -8,6 +8,7 @@
  */
 
 import { ConfigPenalidadDeTerminacion } from '@/components/inmobiliaria/ConfigPenalidadDeTerminacion';
+import { ConfigCicloDeVidaDelContrato } from '@/components/inmobiliaria/ConfigCicloDeVidaDelContrato';
 import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
@@ -105,6 +106,7 @@ export function SeccionPerfil() {
               negocio que cambia un número de todas las pantallas. */}
           <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
         </div>

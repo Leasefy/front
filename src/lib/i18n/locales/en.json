@@ -1007,7 +1007,12 @@
       "porAprobar": "To approve",
       "origenesDeLeads": "Sources",
       "portalesDePublicacion": "Portals",
-      "requisitosDePostulacion": "Requirements"
+      "requisitosDePostulacion": "Requirements",
+      "calceDeLeads": "Match",
+      "visitasDelPipeline": "Visits",
+      "reclamosDeCandidatos": "Claims",
+      "invitacionesAFirmar": "Signatures",
+      "listasRestrictivas": "Lists"
     },
     "piloto": {
       "titulo": "Autopilot",

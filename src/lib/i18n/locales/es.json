@@ -1007,7 +1007,12 @@
       "porAprobar": "Por aprobar",
       "origenesDeLeads": "Orígenes",
       "portalesDePublicacion": "Portales",
-      "requisitosDePostulacion": "Requisitos"
+      "requisitosDePostulacion": "Requisitos",
+      "calceDeLeads": "Calce",
+      "visitasDelPipeline": "Visitas",
+      "reclamosDeCandidatos": "Reclamos",
+      "invitacionesAFirmar": "Firmas",
+      "listasRestrictivas": "Listas"
     },
     "piloto": {
       "titulo": "Piloto automático",

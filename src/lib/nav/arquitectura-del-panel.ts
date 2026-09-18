@@ -35,6 +35,9 @@ import {
   HandCoins,
   CloudArrowUp,
   Files,
+  CalendarCheck,
+  Signature,
+  ShieldWarning,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -330,6 +333,15 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // pipeline y NO de Reportes a propósito: la decide el comercial con
           // sus leads en la mano, y el asesor no tiene `reportes`.
           { labelKey: 'inmobiliaria.nav.origenesDeLeads', href: r('/pipeline/origenes'), icon: TrendUp, module: 'pipeline', scope: 'comercial' },
+          // G-02 (18-09-2026): qué se le manda a cada lead y a quién le calza
+          // un inmueble que se libera. Cuelga del pipeline porque la entrada es
+          // un LEAD, no un inquilino con preferencias guardadas.
+          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/calce'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
+          // E-03 y D-02: las visitas con lo que les falta (asesor y aviso al
+          // inquilino). Va acá y no en Agenda porque lo que se hace en esta
+          // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
+          // siendo el calendario.
+          { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
         ],
       },
       // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
@@ -386,6 +398,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // que saber qué papeles pedir) y se EDITA con `configuracion:edit`,
           // que la pantalla verifica y el back exige de nuevo.
           { labelKey: 'inmobiliaria.nav.requisitosDePostulacion', href: r('/postulaciones/requisitos'), icon: Files, module: 'pipeline', scope: 'comercial' },
+          // F-07: el canal del candidato rechazado para pedir detalle o
+          // corregir un dato. Nunca se le dice el puntaje.
+          { labelKey: 'inmobiliaria.nav.reclamosDeCandidatos', href: r('/postulaciones/reclamos'), icon: ChatCircleText, module: 'pipeline', scope: 'comercial' },
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', scope: 'administracion', ia: true },
         ],
       },
@@ -407,6 +422,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
+          // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
+          // recordatorio toca y qué se venció — y que el inmueble SIGUE
+          // reservado hasta que alguien cancele.
+          { labelKey: 'inmobiliaria.nav.invitacionesAFirmar', href: r('/contratos/firmas'), icon: Signature, module: 'contratos' },
           // Retención (el agente Laura: tablero, riesgo de salida y decisiones
           // por aprobar) NO está en el catálogo a propósito: no va a producción
           // todavía (Nico, 2026-09-03). Las tres rutas siguen existiendo bajo
@@ -524,6 +543,13 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     labelKey: 'inmobiliaria.nav.secDirectorio',
     modulos: [
       { key: 'propietarios', labelKey: 'inmobiliaria.nav.propietarios', href: r('/propietarios'), icon: UserCircle, module: 'propietarios', scope: 'administracion' },
+      // C-06 (18-09-2026): las listas restrictivas y la BANDEJA de terceros que
+      // operan sin haberse verificado. Va como FILA y no como sub-pantalla de
+      // Propietarios porque aplica a TODOS los terceros —propietarios,
+      // inquilinos, codeudores y proveedores—, y colgarla de uno solo la
+      // escondería para los demás. `module: 'clientes'`, que es el permiso con
+      // el que se crean los terceros.
+      { key: 'listas-restrictivas', labelKey: 'inmobiliaria.nav.listasRestrictivas', href: r('/clientes/listas'), icon: ShieldWarning, module: 'clientes', scope: 'administracion' },
       // El permiso es `contratos` porque de ahí sale el dato.
       { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', scope: 'administracion' },
       { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', scope: 'general', exact: true },

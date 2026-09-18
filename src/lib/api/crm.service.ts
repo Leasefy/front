@@ -78,6 +78,8 @@ export interface EntraUnLeadInput {
   telefono?: string
   correo?: string
   notas?: string
+  /** Cuánto puede pagar al mes, dicho por él. Sin esto se deduce del inmueble. */
+  presupuestoCop?: number
   agenteUserId?: string
 }
 
@@ -385,6 +387,45 @@ export const visitasApi = {
       }[]
     }>(`${BASE}/visitas/recordatorios${marcar ? '?marcar=true' : ''}`),
 
+  porAtender: () =>
+    apiClient.get<{
+      disponible: boolean
+      motivo: string | null
+      horasDeAvisoAlInquilino?: number
+      visitas: {
+        visitId: string
+        status: string
+        visitaEn: string
+        comoSeLee: string
+        quien: string | null
+        correo: string | null
+        telefono: string | null
+        inmueble: {
+          id: string
+          title: string
+          neighborhood: string | null
+          city: string
+        } | null
+        asesorUserId: string | null
+        confirmadaEl: string | null
+        noShow: boolean
+        /** E-03: sin asesor la visita no se confirma. */
+        faltaElAsesor: boolean
+        /** D-02: hay alguien viviendo adentro. */
+        ocupado: boolean
+        faltaElAvisoAlInquilino: {
+          code: string
+          message: string
+          avisarAntesDe: string
+        } | null
+      }[]
+    }>(`${BASE}/visitas/por-atender`),
+
+  noShows: (desde?: string) =>
+    apiClient.get<
+      { visitId: string; noShowEl: string; noShowNota: string | null }[]
+    >(`${BASE}/visitas/no-shows${desde ? `?desde=${desde}` : ''}`),
+
   sePuedeMostrar: (propertyId: string) =>
     apiClient.get<{
       puede: boolean
@@ -536,6 +577,8 @@ export const matchingApi = {
     apiClient.get<{
       lead: { pipelineItemId: string; nombre: string; correo: string | null }
       busca: { presupuestoCop: number | null; topeAsegurableCop: number | null }
+      /** `true` = lo dijo el interesado; `false` = se dedujo del inmueble. */
+      presupuestoDicho: boolean
       falta: { code: string; message: string } | null
       opciones: {
         propertyId: string
@@ -603,8 +646,15 @@ export interface ConsultaDeListas {
   nombre: string
   documento: string | null
   proveedor: string
-  resultado: 'LIBRE' | 'COINCIDENCIA' | 'ERROR'
-  estado: 'BLOQUEADO' | 'LIBERADO' | 'CONFIRMADO' | 'SIN_BLOQUEO'
+  /** `SIN_LISTA` = no había con qué comparar; `ERROR` = había y falló. */
+  resultado: 'LIBRE' | 'COINCIDENCIA' | 'ERROR' | 'SIN_LISTA'
+  /** 🔴 `SIN_VERIFICAR` opera y va a la bandeja; sólo `BLOQUEADO` frena. */
+  estado:
+    | 'BLOQUEADO'
+    | 'LIBERADO'
+    | 'CONFIRMADO'
+    | 'SIN_BLOQUEO'
+    | 'SIN_VERIFICAR'
   coincidencias: { lista: string; nombreEnLaLista: string; parecido: number }[] | null
   motivoDeLaRevision: string | null
   createdAt: string
@@ -661,10 +711,76 @@ export const captacionApi = {
     apiClient.get<{
       disponible: boolean
       motivo: string | null
-      /** 🔴 Hoy siempre `false`: no hay proveedor contratado. */
-      proveedorContratado: boolean
+      /** Sin lista cargada nada se verifica y nada se bloquea. */
+      hayListaCargada: boolean
+      /** 🔴 La bandeja: cuántos terceros operan sin haberse verificado. */
+      sinVerificar: number
       consultas: ConsultaDeListas[]
     }>(`${BASE}/captacion/listas${estado ? `?estado=${estado}` : ''}`),
+
+  listasCargadas: () =>
+    apiClient.get<{
+      disponible: boolean
+      motivo: string | null
+      listas: {
+        id: string
+        agencyId: string | null
+        lista: string
+        etiqueta: string | null
+        vigenteDesde: string
+        filas: number
+        fuente: string | null
+        activa: boolean
+      }[]
+    }>(`${BASE}/captacion/listas/cargadas`),
+
+  cargarLista: (body: {
+    lista: string
+    etiqueta?: string
+    vigenteDesde: string
+    fuente?: string
+    global?: boolean
+    filas: { nombre: string; documento?: string; detalle?: string }[]
+  }) =>
+    apiClient.post<{
+      lista: { id: string; lista: string; filas: number }
+      revisados: { revisados: number; bloqueados: number; liberados: number }
+    }>(`${BASE}/captacion/listas/cargadas`, body),
+
+  revisarSinVerificar: () =>
+    apiClient.post<{
+      revisados: number
+      bloqueados: number
+      liberados: number
+    }>(`${BASE}/captacion/listas/revisar-sin-verificar`, {}),
+
+  previsualizarVenta: (
+    consignacionId: string,
+    body: {
+      comprador: 'EL_INQUILINO' | 'UN_TERCERO'
+      fechaDeLaEscritura: string
+      precioDeVentaCop?: number
+    },
+  ) =>
+    apiClient.post<{
+      camino: {
+        comprador: string
+        que: 'TERMINAR' | 'CAMBIAR_DE_PROPIETARIO'
+        porQue: string
+        elInquilino: string
+      }
+      comision: {
+        precioDeVentaCop: number
+        porcentaje: number
+        comisionCop: number
+        pactada: boolean
+      } | null
+      falta: { code: string; message: string } | null
+      sePuedeRegistrarLaComision: boolean
+    }>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/previsualizar`,
+      body,
+    ),
 
   consultarListas: (body: {
     tipo: 'PROPIETARIO' | 'INQUILINO' | 'CODEUDOR' | 'PROVEEDOR' | 'CONTACTO'

@@ -51,6 +51,11 @@ import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropie
 import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+// 🔴 C-05 y la firma del mandato (18-09-2026): los papeles que hacen falta
+// antes de publicar y antes del primer giro, y la firma en sus dos formas.
+// Va al lado del inventario porque es el mismo tipo de dato: lo que el mandato
+// necesita para poder operar.
+import { MandatoDelInmueble } from '@/components/inmobiliaria/captacion/MandatoDelInmueble';
 import { ModalidadDelMandato } from '@/components/inmobiliaria/mandato/ModalidadDelMandato';
 import {
   RetiroDeLaAdministracionDialog,
@@ -681,6 +686,18 @@ function ConsignacionDetailContent() {
               copiaLocal={copiaLocal}
               sinSenal={sinSenal}
               onActualizada={setConsignacionData}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+          >
+            <MandatoDelInmueble
+              consignacionId={consignacion.id}
+              propietarioNombre={propietario?.name ?? null}
+              puedeEditar={puedeEditarInventario}
             />
           </motion.div>
 

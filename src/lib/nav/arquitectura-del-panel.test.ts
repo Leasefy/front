@@ -205,7 +205,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 23 módulos en 5 grupos con nombre (+ Inicio y Chat = 25 filas)', () => {
+  it('el sidebar tiene 24 módulos en 5 grupos con nombre (+ Inicio y Chat = 26 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -218,9 +218,13 @@ describe('arquitectura del panel — sidebar', () => {
     // cuentas de cada inmobiliaria): va como FILA hermana de Inmuebles y no
     // como su sub-pantalla justamente por la regla de abajo — el riel no se
     // dibuja con una card sola, así que una única sub-pantalla de Inmuebles
-    // quedaría inalcanzable desde el menú.
+    // quedaría inalcanzable desde el menú. Eran 23 hasta que entró «Listas»
+    // (C-06, 18-09-2026): va como fila y no como sub-pantalla de Propietarios
+    // porque las listas restrictivas aplican a TODOS los terceros —propietarios,
+    // inquilinos, codeudores y proveedores— y colgarla de uno solo la
+    // escondería para los demás.
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(5);
-    expect(modulos).toHaveLength(23);
+    expect(modulos).toHaveLength(24);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -494,7 +498,13 @@ describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09
     expect(contratos?.module).toBe('contratos');
     expect(contratos?.scope).toBe('administracion');
     expect(contratos?.dataTourTarget).toBe('sidebar-contratos');
-    expect(contratos?.pantallas?.map((p) => p.href)).toEqual([`${PANEL}/contratos/renovaciones`]);
+    // «Firmas» entró el 18-09-2026 (A-13: la invitación vence a los 7 días).
+    // Lo que este test sostiene es que mudar de grupo no le cambió el permiso
+    // ni el encuadre, no cuántas pantallas tiene.
+    expect(contratos?.pantallas?.map((p) => p.href)).toEqual([
+      `${PANEL}/contratos/renovaciones`,
+      `${PANEL}/contratos/firmas`,
+    ]);
   });
 
   /*
@@ -863,6 +873,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // Soportes, así que el riel se dibujaba: no hace falta volverla fila.
     expect(secciones('postulaciones')).toEqual([
       '/postulaciones/requisitos',
+      '/postulaciones/reclamos',
       '/postulaciones/soportes',
     ]);
     expect(secciones('pagos')).toEqual(['/pagos/recaudo', '/pagos/cartera', '/pagos/liquidaciones', '/pagos/dispersiones']);

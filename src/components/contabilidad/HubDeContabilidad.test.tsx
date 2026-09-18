@@ -19,7 +19,7 @@ import { ApiError } from '@/lib/api/client';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, toastMock } = vi.hoisted(() => ({
+const { api, gastos, exogena, toastMock } = vi.hoisted(() => ({
   api: {
     puc: { listar: vi.fn() },
     asientos: {
@@ -29,13 +29,30 @@ const { api, toastMock } = vi.hoisted(() => ({
       reprocesar: vi.fn(),
     },
     reportes: { balanceDePrueba: vi.fn() },
+    mapeo: { rubros: vi.fn() },
   },
+  /*
+   * Las dos piezas del 18-09 que la portada consulta. Van mockeadas aunque el
+   * test que las usa sea uno: sin esto, `gastosApi` y `exogenaApi` reales pegan
+   * al `apiClient` y las OTRAS ocho pruebas de este archivo se caen por una
+   * petición que no tiene nada que ver con lo que están probando.
+   */
+  gastos: { facturas: { listar: vi.fn() }, lotes: { listar: vi.fn() } },
+  exogena: { resumen: vi.fn() },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
 vi.mock('@/lib/api/contabilidad.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/contabilidad.service')>()),
   contabilidadApi: api,
+}));
+vi.mock('@/lib/api/gastos.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/gastos.service')>()),
+  gastosApi: gastos,
+}));
+vi.mock('@/lib/api/exogena.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/exogena.service')>()),
+  exogenaApi: exogena,
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
@@ -100,6 +117,29 @@ beforeEach(() => {
   api.asientos.faltantes.mockReset().mockResolvedValue(SIN_FALTANTES);
   api.asientos.reprocesar.mockReset();
   api.reportes.balanceDePrueba.mockReset().mockResolvedValue({ cuadra: true, diferenciaCop: 0 });
+  // Las cuatro del 18-09, en «nada que reportar»: cada prueba las pisa si le
+  // interesan. `disponible: false` = la pieza todavía no existe ⇒ sin alerta.
+  api.mapeo.rubros
+    .mockReset()
+    .mockResolvedValue({ disponible: true, motivo: null, completo: true, faltantes: [], rubros: [] });
+  gastos.facturas.listar.mockReset().mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    total: 0,
+    limite: 1,
+    desplazamiento: 0,
+    totales: { subtotalCop: 0, ivaCop: 0, retencionesCop: 0, totalCop: 0, netoCop: 0 },
+    facturas: [],
+  });
+  gastos.lotes.listar
+    .mockReset()
+    .mockResolvedValue({ disponible: true, motivo: null, total: 0, lotes: [] });
+  exogena.resumen.mockReset().mockResolvedValue({
+    anio: new Date().getFullYear() - 1,
+    formatos: [],
+    disponible: true,
+    cuantiasMenores: { activa: false, topeCop: 0, nit: '222222222', filas: 0 },
+  });
   toastMock.success.mockReset();
   toastMock.error.mockReset();
   toastMock.warning.mockReset();
@@ -219,5 +259,197 @@ describe('HubDeContabilidad — CT2: reprocesar pide confirmación', () => {
     expect(toastMock.error).toHaveBeenCalledTimes(1);
     expect(toastMock.success).not.toHaveBeenCalled();
     expect($('[data-testid="confirmar-reproceso-dialogo"]')).not.toBeNull();
+  });
+});
+
+/**
+ * Las cuatro alertas y los cuatro destinos del 18-09 (§8).
+ *
+ * 🔴 La regla que este bloque protege: una pieza que todavía NO EXISTE
+ * (`disponible: false`) no genera alerta **y tampoco entra a «No pude revisar
+ * todo el libro»**. No hay nada que revisar, y un renglón rojo por una migración
+ * que falta entrena a ignorar los renglones rojos — que es exactamente lo que
+ * CT1 quería evitar. Un FALLO real (500, red caída) sí entra: ahí «no hay
+ * alertas» deja de significar «está todo en orden».
+ */
+describe('HubDeContabilidad — la contabilidad completa del 18-09', () => {
+  it('ofrece los cuatro destinos nuevos', async () => {
+    await montar();
+    const enlaces = [...document.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    expect(enlaces).toContain('/panel/inmobiliaria/contabilidad/estados-financieros');
+    expect(enlaces).toContain('/panel/inmobiliaria/contabilidad/gastos');
+    expect(enlaces).toContain('/panel/inmobiliaria/contabilidad/egresos');
+    expect(enlaces).toContain('/panel/inmobiliaria/contabilidad/exogena');
+  });
+
+  it('«Para el contador» nombra los informes nuevos', async () => {
+    await montar();
+    expect($('[data-testid="ir-al-pyg"]')).not.toBeNull();
+    expect($('[data-testid="ir-al-balance-general"]')).not.toBeNull();
+    expect($('[data-testid="ir-al-mayor"]')).not.toBeNull();
+    expect($('[data-testid="ir-a-terceros"]')).not.toBeNull();
+    expect($('[data-testid="ir-a-la-exogena"]')).not.toBeNull();
+  });
+
+  it('con todo en orden no aparece ninguna de las cuatro alertas', async () => {
+    await montar();
+    expect($('[data-testid="alerta-rubros-incompletos"]')).toBeNull();
+    expect($('[data-testid="alerta-facturas-sin-causar"]')).toBeNull();
+    expect($('[data-testid="alerta-lotes-por-aprobar"]')).toBeNull();
+    expect($('[data-testid="alerta-exogena-sin-visto-bueno"]')).toBeNull();
+  });
+
+  it('el mapeo de rubros incompleto alerta con los NOMBRES de los rubros', async () => {
+    api.mapeo.rubros.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      completo: false,
+      faltantes: ['nomina'],
+      rubros: [
+        {
+          rubro: 'nomina',
+          nombre: 'Nómina',
+          naturaleza: 'COSTO',
+          fuenteDelReal: 'CUENTAS_DEL_PUC',
+          motivoSinReal: null,
+          sugerido: true,
+          cuentas: [],
+          propuestas: [],
+          codigosPropuestos: ['5105'],
+        },
+      ],
+    });
+
+    await montar();
+
+    const alerta = $('[data-testid="alerta-rubros-incompletos"]')!.textContent!;
+    expect(alerta).toContain('Nómina');
+    expect(alerta).toContain('«—»');
+  });
+
+  it('las facturas sin causar alertan con su plata', async () => {
+    gastos.facturas.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 3,
+      limite: 1,
+      desplazamiento: 0,
+      totales: {
+        subtotalCop: 0,
+        ivaCop: 0,
+        retencionesCop: 0,
+        totalCop: 1_200_000,
+        netoCop: 0,
+      },
+      facturas: [],
+    });
+
+    await montar();
+
+    const alerta = $('[data-testid="alerta-facturas-sin-causar"]')!.textContent!;
+    expect(alerta).toContain('3 facturas de proveedor sin causar');
+    expect(alerta).toContain('no está en el libro');
+  });
+
+  it('🔴 los lotes por aprobar dicen que los aprueba OTRA persona', async () => {
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 2,
+      lotes: [
+        { id: 'l1', estado: 'BORRADOR', totalCop: 12_480_000, cantidad: 9, egresos: [] },
+        { id: 'l2', estado: 'PAGADO', totalCop: 999, cantidad: 1, egresos: [] },
+      ],
+    });
+
+    await montar();
+
+    const alerta = $('[data-testid="alerta-lotes-por-aprobar"]')!.textContent!;
+    // Sólo el BORRADOR cuenta: el PAGADO ya pasó por ahí.
+    expect(alerta).toContain('1 lote de egresos espera aprobación');
+    expect(alerta).toContain('distinto de quien lo armó');
+  });
+
+  it('la exógena sin visto bueno alerta del año ANTERIOR, no del actual', async () => {
+    const anioPasado = new Date().getFullYear() - 1;
+    exogena.resumen.mockResolvedValue({
+      anio: anioPasado,
+      disponible: true,
+      cuantiasMenores: { activa: false, topeCop: 0, nit: '222222222', filas: 0 },
+      formatos: [
+        {
+          formato: '1001',
+          nombre: 'Pagos',
+          filas: 128,
+          totalCop: 1,
+          estado: 'GENERADA',
+          aprobadoPorUserId: null,
+          aprobadoAt: null,
+          observaciones: null,
+          bloqueos: ['12 movimientos sin tercero.'],
+          avisos: [],
+          necesitaContador: true,
+        },
+        // Uno vacío no cuenta: no se presenta y no hay qué aprobar.
+        {
+          formato: '1003',
+          nombre: 'Retenciones',
+          filas: 0,
+          totalCop: 0,
+          estado: 'GENERADA',
+          aprobadoPorUserId: null,
+          aprobadoAt: null,
+          observaciones: null,
+          bloqueos: [],
+          avisos: [],
+          necesitaContador: true,
+        },
+      ],
+    });
+
+    await montar();
+
+    expect(exogena.resumen).toHaveBeenCalledWith(anioPasado);
+    const alerta = $('[data-testid="alerta-exogena-sin-visto-bueno"]')!.textContent!;
+    expect(alerta).toContain('1 formato de exógena');
+    expect(alerta).toContain(String(anioPasado));
+    expect(alerta).toContain('sin tercero');
+  });
+
+  it('🔴 una pieza sin migrar no alerta NI se reporta como revisión caída', async () => {
+    api.mapeo.rubros.mockResolvedValue({
+      disponible: false,
+      motivo: 'Falta la migración 49.',
+      completo: false,
+      faltantes: [],
+      rubros: [],
+    });
+    gastos.facturas.listar.mockResolvedValue({
+      disponible: false,
+      motivo: 'Falta la migración 50.',
+      total: 0,
+      limite: 1,
+      desplazamiento: 0,
+      totales: { subtotalCop: 0, ivaCop: 0, retencionesCop: 0, totalCop: 0, netoCop: 0 },
+      facturas: [],
+    });
+
+    await montar();
+
+    expect($('[data-testid="alerta-rubros-incompletos"]')).toBeNull();
+    expect($('[data-testid="alerta-facturas-sin-causar"]')).toBeNull();
+    // Y la portada NO dice que no pudo revisar: no hay nada que revisar.
+    expect($('[data-testid="revisiones-caidas"]')).toBeNull();
+  });
+
+  it('🔴 un FALLO de una de las cuatro sí entra a «no pude revisar todo»', async () => {
+    gastos.lotes.listar.mockRejectedValue(new Error('se cayó'));
+
+    await montar();
+
+    const caidas = $('[data-testid="revisiones-caidas"]')!.textContent!;
+    expect(caidas).toContain('esperando aprobación');
+    expect($('[data-testid="no-cargo-lotes"]')).not.toBeNull();
+    expect($('[data-testid="reintentar-lotes"]')).not.toBeNull();
   });
 });

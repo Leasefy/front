@@ -1382,7 +1382,11 @@
         "costosDeLaPlata": "Cost of moving money",
         "costosDeLaPlataDesc": "The 4x1000 tax and the payment gateway, and who absorbs them",
         "sedes": "Branches",
-        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch"
+        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch",
+        "avisos": "Automatic notices",
+        "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off.",
+        "bitacora": "Money log",
+        "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts."
       },
       "notifications": {
         "title": "Notifications",
@@ -9332,7 +9336,18 @@
         "aprobadaInquilino": "Quote approved, paid by the tenant",
         "sugiereElAgente": "The agent suggests charging it to the {{quien}}. The decision is yours.",
         "quienPropietario": "owner",
-        "quienInquilino": "tenant"
+        "quienInquilino": "tenant",
+        "compartida": "Shared",
+        "compartidaAyuda": "Split by the percentage you agree: the owner is asked to approve their share and the tenant is charged theirs.",
+        "inmobiliaria": "The agency pays",
+        "inmobiliariaAyuda": "Own expense: your provider's warranty or an agency mistake. Nothing is deducted from the owner or charged to the tenant.",
+        "inmobiliariaMotivo": "Why is the agency paying for it?",
+        "repartoInquilino": "Percentage charged to the tenant (%)",
+        "repartoResumen": "Tenant {{inquilino}}% ({{valorInquilino}}) · Owner {{propietario}}% ({{valorPropietario}}). The leftover peso goes to the owner.",
+        "quienCompartida": "owner and tenant, shared",
+        "quienInmobiliaria": "the agency",
+        "aprobadaCompartida": "Quote approved: shared between owner and tenant",
+        "aprobadaInmobiliaria": "Quote approved: the agency covers it"
       },
       "propuesta": {
         "titulo": "Agent proposal",

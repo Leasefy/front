@@ -34,7 +34,10 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
 import { BandejaDeAprobacionesDelPropietario } from '@/components/inmobiliaria/deducciones/BandejaDeAprobacionesDelPropietario';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
-import type { ACargoDe, EmergenciaDeLaReparacion } from '@/lib/types/deducciones';
+import type {
+  EmergenciaDeLaReparacion,
+  LoQueSeAprueba,
+} from '@/lib/types/deducciones';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -336,7 +339,7 @@ function MantenimientosContent() {
   const [versionDeAprobaciones, setVersionDeAprobaciones] = useState(0);
 
   const aprobarCotizacion = useCallback(
-    async (aCargoDe: ACargoDe, emergencia?: EmergenciaDeLaReparacion) => {
+    async (lo: LoQueSeAprueba, emergencia?: EmergenciaDeLaReparacion) => {
       if (!cotizacionPorAprobar) return;
       try {
         /*
@@ -354,7 +357,7 @@ function MantenimientosContent() {
           : await mantenimientoApi.approveQuote(
               cotizacionPorAprobar.solicitudId,
               cotizacionPorAprobar.quoteId,
-              aCargoDe,
+              lo,
             );
         await recargarMantenimientos();
         setVersionDeAprobaciones((v) => v + 1);
@@ -373,12 +376,19 @@ function MantenimientosContent() {
               mes: mesEnTitulo(cargoAlInquilino.mes, locale === 'en' ? 'en' : 'es'),
             })
           : aprobada.cargo?.avisos?.join(' ');
+        /*
+         * 🔴 H-03: cada forma tiene su frase. Con una sola («aprobada») la
+         * persona no sabría si quedó compartida o a cargo de la inmobiliaria,
+         * que es justo lo que acaba de decidir.
+         */
+        const cerrada = {
+          PROPIETARIO: 'inmobiliaria.deducciones.aCargoDe.aprobadaPropietario',
+          INQUILINO: 'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
+          COMPARTIDA: 'inmobiliaria.deducciones.aCargoDe.aprobadaCompartida',
+          INMOBILIARIA: 'inmobiliaria.deducciones.aCargoDe.aprobadaInmobiliaria',
+        } as const;
         toast.success(
-          t(
-            aCargoDe === 'PROPIETARIO'
-              ? 'inmobiliaria.deducciones.aCargoDe.aprobadaPropietario'
-              : 'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
-          ),
+          t(cerrada[lo.aCargoDe]),
           descripcion ? { description: descripcion } : undefined,
         );
       } catch (error) {

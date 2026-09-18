@@ -116,6 +116,38 @@ export interface NuevoDescuento {
 export type ACargoDe = 'PROPIETARIO' | 'INQUILINO';
 
 /**
+ * 🔴 H-03 (18-09-2026): a cargo de quién queda una REPARACIÓN. Son CUATRO.
+ *
+ * Es un tipo APARTE de `ACargoDe` a propósito: `ACargoDe` es de las
+ * DEDUCCIONES del propietario, donde sólo caben las dos de siempre (una
+ * deducción compartida no existe: o se le descuenta al propietario o no).
+ * Mezclarlos obligaría a que cada pantalla de deducciones supiera qué hacer
+ * con `COMPARTIDA`, que no significa nada ahí.
+ */
+export const A_CARGO_DE_LA_REPARACION = [
+  'PROPIETARIO',
+  'INQUILINO',
+  'COMPARTIDA',
+  'INMOBILIARIA',
+] as const;
+
+export type ACargoDeLaReparacion = (typeof A_CARGO_DE_LA_REPARACION)[number];
+
+/** Los dos porcentajes de una reparación compartida. Suman 100. */
+export interface PorcentajesDelReparto {
+  propietarioPct: number;
+  inquilinoPct: number;
+}
+
+/** Lo que la pantalla manda al aprobar una cotización. */
+export interface LoQueSeAprueba {
+  aCargoDe: ACargoDeLaReparacion;
+  porcentajes?: PorcentajesDelReparto | null;
+  motivoInmobiliaria?: string | null;
+  proveedorId?: string | null;
+}
+
+/**
  * El cargo de una sola vez que una reparación a cargo del inquilino dejó en su
  * cuota del mes (Nico y Juan Camilo, 2026-09-16). La cartera, el estado de
  * cuenta, el recibo de caja y la prefactura lo leen como un renglón más.

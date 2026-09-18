@@ -8,7 +8,10 @@ import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
-import type { ACargoDe, CargoDeLaReparacion } from '@/lib/types/deducciones';
+import type {
+  CargoDeLaReparacion,
+  LoQueSeAprueba,
+} from '@/lib/types/deducciones';
 import type {
   DocumentType,
   AgencyProfile,
@@ -1585,22 +1588,54 @@ export const mantenimientoApi = {
 
   /**
    * Aprueba una cotización diciendo A CARGO DE QUIÉN queda la reparación
-   * (Nico y Juan Camilo, 2026-09-16). El back lo exige: a cargo del
-   * PROPIETARIO le registra la deducción por el valor aprobado; a cargo del
-   * INQUILINO no le descuenta nada al propietario. `cargo.avisos` trae lo que
-   * la pantalla tiene que decir (p. ej. que el cobro al inquilino no es
-   * automático todavía).
+   * (Nico y Juan Camilo, 2026-09-16). El back lo exige.
+   *
+   * 🔴 H-03 (18-09-2026): son CUATRO formas, no dos. `COMPARTIDA` viaja con
+   * los dos porcentajes (suman 100) e `INMOBILIARIA` con el motivo — el back
+   * los exige y la base los tiene en un CHECK, así que mandarlos a medias es
+   * un 400 con el motivo en español.
+   *
+   * `cargo.reparto` vuelve con cuánto le tocó a cada lado, en pesos, y
+   * `cargo.avisos` con lo que la pantalla tiene que decir.
    */
   async approveQuote(
     id: string,
     quoteId: string,
-    aCargoDe: ACargoDe,
+    lo: LoQueSeAprueba,
   ): Promise<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }> {
     const respuesta = await apiClient.put<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }>(
       `${BASE}/mantenimiento/${id}/select-quote`,
-      { quoteId, aCargoDe },
+      {
+        quoteId,
+        aCargoDe: lo.aCargoDe,
+        ...(lo.porcentajes
+          ? {
+              propietarioPct: lo.porcentajes.propietarioPct,
+              inquilinoPct: lo.porcentajes.inquilinoPct,
+            }
+          : {}),
+        ...(lo.motivoInmobiliaria
+          ? { motivoInmobiliaria: lo.motivoInmobiliaria }
+          : {}),
+        ...(lo.proveedorId ? { proveedorId: lo.proveedorId } : {}),
+      },
     );
     return { ...mantenimientoDelBack(respuesta), cargo: respuesta.cargo };
+  },
+
+  /**
+   * 🔴 H-05: el problema volvió dentro de la garantía. Crea una solicitud
+   * NUEVA atada a ésta, SIN COSTO para el propietario ni el inquilino.
+   */
+  async reabrirPorGarantia(
+    id: string,
+    descripcion?: string,
+  ): Promise<SolicitudMantenimiento> {
+    const respuesta = await apiClient.post<SolicitudMantenimiento>(
+      `${BASE}/mantenimiento/${id}/reabrir-por-garantia`,
+      descripcion ? { descripcion } : {},
+    );
+    return mantenimientoDelBack(respuesta);
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {

@@ -1,10 +1,11 @@
 /**
  * Default preferences and helper data for the AI Beta platform settings.
  *
- * All agents default to 'ask_first' (safest). Values are calibrated
+ * All agents default to SOMBRA (`manual`), the safest. Values are calibrated
  * for the Colombian residential rental market.
  */
 
+import { NIVEL_POR_DEFECTO } from '@/lib/types/beta-chat';
 import type { BetaPreferences, AutonomyLevel, AgentType } from '@/lib/types/beta-chat';
 
 // ============================================================================
@@ -19,24 +20,34 @@ export interface AutonomyLevelOption {
   icon: string;
 }
 
+/**
+ * 🔴 LOS TRES NIVELES, con los nombres que pidió Nico (17/18-09-2026):
+ * «tenemos 3 niveles: sombra, copilot y automático; el usuario define».
+ *
+ * Van del MÁS PRUDENTE al menos: el primero de la lista es el que la gente
+ * elige por inercia, y ése tiene que ser Sombra.
+ *
+ * ⚠️ Los `id` NO cambian (`manual`/`ask_first`/`auto`): son lo que ya está
+ * guardado. Ver `AutonomyLevel` en `beta-chat.ts`.
+ */
 export const AUTONOMY_LEVELS: AutonomyLevelOption[] = [
   {
-    id: 'auto',
-    label: 'Automatico',
-    description: 'El agente actua sin consultar',
-    icon: 'Lightning',
+    id: 'manual',
+    label: 'Sombra',
+    description: 'Analiza y propone. No escribe ni llama a nadie.',
+    icon: 'Eye',
   },
   {
     id: 'ask_first',
-    label: 'Preguntar primero',
-    description: 'El agente consulta antes de actuar',
+    label: 'Copilot',
+    description: 'Prepara todo y una persona aprueba antes de que salga.',
     icon: 'ChatCircle',
   },
   {
-    id: 'manual',
-    label: 'Manual',
-    description: 'Deshabilitado — tu tomas las acciones',
-    icon: 'Hand',
+    id: 'auto',
+    label: 'Automático',
+    description: 'Actúa solo, dentro de la política que dejaste aprobada.',
+    icon: 'Lightning',
   },
 ];
 
@@ -62,7 +73,12 @@ const AGENT_TYPES: AgentType[] = [
 function createDefaultAutonomy(): Record<AgentType, AutonomyLevel> {
   const record = {} as Record<AgentType, AutonomyLevel>;
   for (const agent of AGENT_TYPES) {
-    record[agent] = 'ask_first';
+    /*
+     * 🔴 SOMBRA por defecto (Nico, 18-09-2026): «sin elección del usuario,
+     * nunca automático». Antes era `ask_first`, que ya preparaba mensajes
+     * reales esperando un clic.
+     */
+    record[agent] = NIVEL_POR_DEFECTO;
   }
   return record;
 }

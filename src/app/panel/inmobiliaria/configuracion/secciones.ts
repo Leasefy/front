@@ -62,6 +62,8 @@ export type SeccionId =
   | 'mandato'
   | 'integraciones'
   | 'migracion'
+  | 'avisos'
+  | 'bitacora'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -232,6 +234,34 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.preferencias',
     descKey: 'inmobiliaria.config.tabs.preferenciasDesc',
     icon: Globe,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 Los avisos automáticos (18-09-2026): qué le llega solo a los clientes
+     * de la inmobiliaria. Es de ADMIN, como seguridad: decidir qué correos
+     * salen a nombre de la inmobiliaria no es del asesor ni del auxiliar.
+     */
+    id: 'avisos',
+    grupo: 'sistema',
+    slug: 'avisos',
+    labelKey: 'inmobiliaria.config.tabs.avisos',
+    descKey: 'inmobiliaria.config.tabs.avisosDesc',
+    icon: Bell,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 La bitácora de plata (18-09-2026). De ADMIN: Nico la pidió «visible
+     * para el DUEÑO de la inmobiliaria», y de los siete roles sólo el
+     * administrador tiene `configuracion:view` por defecto.
+     */
+    id: 'bitacora',
+    grupo: 'sistema',
+    slug: 'bitacora',
+    labelKey: 'inmobiliaria.config.tabs.bitacora',
+    descKey: 'inmobiliaria.config.tabs.bitacoraDesc',
+    icon: Shield,
     gate: { tipo: 'admin' },
   },
   {

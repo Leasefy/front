@@ -31,6 +31,15 @@ export interface ResultadoDeCarga {
    * no tiene la migración del lote.
    */
   lote?: LoteDeConciliacion | null;
+  /**
+   * 🔴 (18-09-2026) Lo que hay que mirar aunque la carga haya entrado: un extracto
+   * sin cuenta declarada, o de una cuenta que ningún convenio de recaudo nombra,
+   * no se puede proteger de que el mismo pago entre además por el archivo del
+   * banco. Opcional: un back sin desplegar no lo manda.
+   */
+  avisos?: string[];
+  /** Por dónde entra esa cuenta. `SIN_DEFINIR` = como hoy, por extracto. */
+  viaDeEntrada?: 'ARCHIVO' | 'EXTRACTO' | 'SIN_DEFINIR';
 }
 
 /**

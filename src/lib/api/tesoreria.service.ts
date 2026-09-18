@@ -16,6 +16,7 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   CalendarioDelAnio,
+  CuentaDeclarada,
   ConfiguracionDeTesoreria,
   DetalleDelArchivo,
   GuardarConvenio,
@@ -206,6 +207,16 @@ export const tesoreriaApi = {
     );
     invalidar('dispersiones');
     return r;
+  },
+
+  /**
+   * 🔴 Las cuentas con camino de entrada declarado. La pantalla del extracto las
+   * ofrece en vez de pedir que alguien teclee un número: si una cuenta recauda
+   * por ARCHIVO, cargar su extracto responde 409, y eso no se puede descubrir
+   * apretando el botón.
+   */
+  cuentasDeclaradas(): Promise<CuentaDeclarada[]> {
+    return apiClient.get<CuentaDeclarada[]>(`${BASE}/cuentas`);
   },
 
   // ── El portal del propietario ─────────────────────────────────────────────

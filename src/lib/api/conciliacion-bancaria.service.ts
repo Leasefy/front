@@ -46,11 +46,23 @@ export function filaParaElBack(fila: FilaDeExtracto): Record<string, unknown> {
 }
 
 export const conciliacionBancariaApi = {
-  async cargarExtracto(nombreArchivo: string, filas: FilaDeExtracto[]): Promise<ResultadoDeCarga> {
-    const res = await apiClient.post<ResultadoDeCarga>(`${BASE}/extracto`, {
+  /**
+   * 🔴 `cuentaBancaria` (18-09-2026) es lo que le permite al back impedir que el
+   * mismo pago entre por el extracto Y por el archivo de recaudo del convenio.
+   * Va sólo si se sabe: sin ella el extracto entra como siempre y la respuesta
+   * avisa que no se pudo proteger.
+   */
+  async cargarExtracto(
+    nombreArchivo: string,
+    filas: FilaDeExtracto[],
+    cuentaBancaria?: string,
+  ): Promise<ResultadoDeCarga> {
+    const cuerpo: Record<string, unknown> = {
       nombreArchivo,
       filas: filas.map(filaParaElBack),
-    });
+    };
+    if (cuentaBancaria) cuerpo.cuentaBancaria = cuentaBancaria;
+    const res = await apiClient.post<ResultadoDeCarga>(`${BASE}/extracto`, cuerpo);
     invalidar('cobros');
     return res;
   },

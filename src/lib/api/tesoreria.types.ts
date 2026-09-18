@@ -14,6 +14,16 @@ export type TipoDeArchivoDeRecaudo = 'ANCHO_FIJO' | 'DELIMITADO';
 
 export type AlgoritmoDeDv = 'NINGUNO' | 'MODULO_10' | 'MODULO_11';
 
+/**
+ * 🔴 UN CAMINO DE ENTRADA POR CUENTA (18-09-2026). La plata de una cuenta entra
+ * por el `ARCHIVO` del convenio o por el `EXTRACTO` bancario, nunca por los dos:
+ * son la misma plata vista dos veces y el mismo pago quedaría dos veces en la
+ * cola. `SIN_DEFINIR` = ningún convenio nombra esa cuenta, y se comporta como
+ * hoy (entra por extracto).
+ */
+export type ViaDeEntrada = 'ARCHIVO' | 'EXTRACTO';
+export type ViaResuelta = ViaDeEntrada | 'SIN_DEFINIR';
+
 /** Ancho fijo: un tramo de la línea (1-based). Delimitado: una columna (0-based). */
 export type UbicacionDelCampo = { desde: number; largo: number } | { indice: number };
 
@@ -39,6 +49,11 @@ export interface Convenio {
   referenciaLargo: number | null;
   referenciaPrefijo: string | null;
   referenciaDv: AlgoritmoDeDv;
+  /** La cuenta a la que el banco le consigna. `null` = el convenio no lo dice. */
+  cuentaBancaria: string | null;
+  viaDeEntrada: ViaDeEntrada;
+  /** Qué significa esa vía, en palabras. */
+  viaDeEntradaNombre: string;
   /** Cómo se vería la referencia del contrato 1850 con este convenio. */
   ejemploDeReferencia: string;
   avisos: string[];
@@ -70,6 +85,7 @@ export interface ListaDeConvenios {
   tipos: { valor: TipoDeArchivoDeRecaudo; nombre: string }[];
   formatosDeFecha: string[];
   presets: PresetDeConvenio[];
+  viasDeEntrada: { valor: ViaDeEntrada; nombre: string }[];
 }
 
 export interface GuardarConvenio {
@@ -88,6 +104,8 @@ export interface GuardarConvenio {
   referenciaLargo?: number;
   referenciaPrefijo?: string;
   referenciaDv?: AlgoritmoDeDv;
+  cuentaBancaria?: string;
+  viaDeEntrada?: ViaDeEntrada;
   activo?: boolean;
 }
 
@@ -124,6 +142,9 @@ export interface PreviaDelRecaudo {
   validas: number;
   rechazadas: FilaRechazadaDelRecaudo[];
   avisos: string[];
+  /** `false` = importarlo va a responder 409: esa cuenta entra por extracto. */
+  puedeImportarse: boolean;
+  viaDeEntrada: ViaResuelta;
   muestra: FilaLeidaDelRecaudo[];
 }
 
@@ -354,4 +375,13 @@ export interface MisCertificados {
   certificados: CertificadoDelPropietario[];
   /** Por qué la lista está vacía. `null` cuando hay certificados. */
   motivo: string | null;
+}
+
+// ── 7. Las cuentas con camino de entrada declarado ──────────────────────────
+
+export interface CuentaDeclarada {
+  cuenta: string;
+  via: ViaDeEntrada;
+  convenio: string;
+  banco: string;
 }

@@ -170,6 +170,17 @@ function ConveniosGuardados({ convenios }: { convenios: Convenio[] }) {
                   <dt className="text-fg">Dígito de verificación</dt>
                   <dd>{c.referenciaDv === 'NINGUNO' ? 'sin dígito' : c.referenciaDv}</dd>
                 </div>
+                {/* 🔴 (18-09) Una cuenta tiene UN camino de entrada. Se muestra
+                    acá porque marcarla como «por archivo» deja de aceptar su
+                    extracto, y eso no puede ser una sorpresa. */}
+                <div>
+                  <dt className="text-fg">Cuenta que recauda</dt>
+                  <dd>{c.cuentaBancaria ?? 'sin declarar'}</dd>
+                </div>
+                <div>
+                  <dt className="text-fg">Entra por</dt>
+                  <dd>{c.viaDeEntradaNombre}</dd>
+                </div>
               </dl>
               {/* 🔴 El ejemplo es lo que permite comparar contra el volante que
                   entregó el banco SIN importar un archivo. */}
@@ -255,7 +266,7 @@ function ImportarArchivo({
     <section className="space-y-4">
       <TituloDeBloque
         titulo="Importar el archivo del banco"
-        explicacion="Cada línea se vuelve un movimiento bancario y entra al MISMO lote de lo que calza exacto que ya apruebas en Conciliación. Esta pantalla no emite ningún recibo: los emite quien aprueba el lote."
+        explicacion="Cada línea se vuelve un movimiento bancario y entra al MISMO lote de lo que calza exacto que ya apruebas en Conciliación. Esta pantalla no emite ningún recibo: los emite quien aprueba el lote. Y si la cuenta de este convenio está marcada para entrar por EXTRACTO, su archivo no se importa: el mismo pago quedaría dos veces."
       />
 
       <div className="space-y-4 rounded-lg border border-border bg-surface p-5">
@@ -304,7 +315,7 @@ function ImportarArchivo({
 
         {previa ? <Previa previa={previa} /> : null}
 
-        {previa && previa.validas > 0 ? (
+        {previa && previa.validas > 0 && previa.puedeImportarse ? (
           <Button
             onClick={() => void importar()}
             disabled={importando}

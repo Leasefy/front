@@ -107,6 +107,9 @@ const CONVENIOS: ListaDeConvenios = {
       referenciaLargo: 10,
       referenciaPrefijo: null,
       referenciaDv: 'MODULO_10',
+      cuentaBancaria: '001-234567-89',
+      viaDeEntrada: 'ARCHIVO',
+      viaDeEntradaNombre: 'Archivo de recaudo del convenio',
       ejemploDeReferencia: '00000018507',
       avisos: [],
       createdAt: '2026-09-01T00:00:00.000Z',
@@ -116,6 +119,7 @@ const CONVENIOS: ListaDeConvenios = {
   tipos: [],
   formatosDeFecha: [],
   presets: [],
+  viasDeEntrada: [],
 };
 
 describe('🔴 el recaudo bancario no dice «importado» cuando no importó', () => {
@@ -136,6 +140,8 @@ describe('🔴 el recaudo bancario no dice «importado» cuando no importó', ()
       validas: 3,
       rechazadas: [],
       avisos: [],
+      puedeImportarse: true,
+      viaDeEntrada: 'ARCHIVO',
       muestra: [],
     });
 
@@ -172,6 +178,48 @@ describe('🔴 el recaudo bancario no dice «importado» cuando no importó', ()
     await pintar(<RecaudoBancarioPanel />);
     expect(contenedor.textContent).toContain('00000018507');
     expect(contenedor.textContent).toContain('volante');
+  });
+
+  it('🔴 la tarjeta del convenio dice la cuenta y por dónde entra', async () => {
+    h.listarConvenios.mockResolvedValue(CONVENIOS);
+    await pintar(<RecaudoBancarioPanel />);
+    expect(contenedor.textContent).toContain('001-234567-89');
+    expect(contenedor.textContent).toContain('Archivo de recaudo del convenio');
+  });
+
+  it('🔴 si la cuenta entra por EXTRACTO, la previa NO ofrece importar', async () => {
+    h.listarConvenios.mockResolvedValue(CONVENIOS);
+    h.previa.mockResolvedValue({
+      convenio: { id: 'c-1', nombre: 'Recaudo', banco: 'Bancolombia' },
+      huella: 'abc',
+      yaImportado: null,
+      lineas: 1,
+      omitidas: 0,
+      totalCop: 1_000_000,
+      validas: 1,
+      rechazadas: [],
+      avisos: ['El convenio «Recaudo» está marcado para que su cuenta entre por EXTRACTO.'],
+      puedeImportarse: false,
+      viaDeEntrada: 'EXTRACTO',
+      muestra: [],
+    });
+    await pintar(<RecaudoBancarioPanel />);
+    const input = contenedor.querySelector<HTMLInputElement>(
+      '[data-testid="archivo-de-recaudo"]',
+    );
+    const archivo = new File(['x'], 'r.txt', { type: 'text/plain' });
+    Object.defineProperty(archivo, 'text', { value: () => Promise.resolve('x') });
+    Object.defineProperty(input!, 'files', { value: [archivo] });
+    await act(async () => {
+      input!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // Las líneas se ven, pero el botón NO existe: importarlo daría 409.
+    expect(contenedor.querySelector('[data-testid="previa-del-recaudo"]')).not.toBeNull();
+    expect(contenedor.querySelector('[data-testid="importar-recaudo"]')).toBeNull();
+    expect(contenedor.textContent).toContain('EXTRACTO');
   });
 
   it('sin la migración lo dice y no ofrece importar', async () => {

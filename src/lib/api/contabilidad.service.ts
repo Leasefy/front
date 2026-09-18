@@ -29,6 +29,23 @@
  * Por eso `soloClaves()` filtra cada cuerpo contra la lista de su DTO, y por
  * eso el test de este archivo compara esas listas contra copias escritas a
  * mano de los DTOs, no contra sí mismas.
+ *
+ * ── Lo que se agregó el 18-09 (contrato de la contabilidad completa) ────────
+ *
+ * Dos piezas, las dos colgadas de `/mapeo` porque es el mismo controller:
+ *
+ *   §2 Eventos de gasto  → `MapeoContable.eventosDeGasto` y los siete valores
+ *                          nuevos del enum. `hayEventosDeGasto: false` (o
+ *                          ausente) = la base no los tiene y el bloque se
+ *                          muestra explicando qué falta, sin editar.
+ *   §1 Rubros del P&G    → `mapeo.rubros()` y compañía: qué cuenta del PUC es
+ *                          cada rubro del presupuesto, que es lo que cierra el
+ *                          «—» del real en `finanzas/presupuesto`.
+ *
+ * Las otras tres piezas del contrato viven en archivos propios porque son otros
+ * controllers: `gastos.service.ts` (facturas de proveedor y egresos),
+ * `estados-financieros.service.ts` (P&G, balance, mayor, terceros) y
+ * `exogena.service.ts`.
  */
 
 import { apiClient } from './client';
@@ -864,7 +881,7 @@ export interface HistoriaDeComprobantes {
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
 /** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
-export type EventoContable =
+export type EventoDeRecaudoOGiro =
   | 'CARTERA_INQUILINOS'
   | 'RECIBO_BANCOS'
   | 'RECIBO_CAJA'
@@ -877,7 +894,30 @@ export type EventoContable =
   /** Opcional (2026-09-16): sin cuenta propia, el ajuste va a «otros recaudos». */
   | 'AJUSTE_AL_PESO';
 
-export const EVENTOS_CONTABLES: readonly EventoContable[] = [
+/**
+ * Los SIETE valores nuevos del enum `EventoContable` (migración 49, contrato
+ * del 18-09 §2): los que necesita la factura de proveedor para causarse y el
+ * egreso para pagarse.
+ *
+ * 🔴 Van aparte de los de recaudo y giro a propósito. `GET /mapeo` los devuelve
+ * en `eventosDeGasto` con su propio `completoGastos`, porque el mapeo de
+ * recaudo puede estar completo —y los recibos asentándose— mientras el de gasto
+ * está vacío. Meterlos en la misma lista haría que la inmobiliaria que nunca
+ * registró una factura de proveedor viera su paso 5 «incompleto» de un día para
+ * otro, sin haber cambiado nada.
+ */
+export type EventoDeGasto =
+  | 'GASTO_SIN_RUBRO'
+  | 'IVA_DESCONTABLE'
+  | 'GASTO_POR_PAGAR'
+  | 'RETEFUENTE_PRACTICADA'
+  | 'RETEIVA_PRACTICADA'
+  | 'RETEICA_PRACTICADA'
+  | 'EGRESO_BANCOS';
+
+export type EventoContable = EventoDeRecaudoOGiro | EventoDeGasto;
+
+export const EVENTOS_CONTABLES: readonly EventoDeRecaudoOGiro[] = [
   'CARTERA_INQUILINOS',
   'RECIBO_BANCOS',
   'RECIBO_CAJA',
@@ -889,6 +929,23 @@ export const EVENTOS_CONTABLES: readonly EventoContable[] = [
   'GIRO_PROPIETARIO_BANCOS',
   'AJUSTE_AL_PESO',
 ];
+
+export const EVENTOS_DE_GASTO: readonly EventoDeGasto[] = [
+  'GASTO_SIN_RUBRO',
+  'IVA_DESCONTABLE',
+  'GASTO_POR_PAGAR',
+  'RETEFUENTE_PRACTICADA',
+  'RETEIVA_PRACTICADA',
+  'RETEICA_PRACTICADA',
+  'EGRESO_BANCOS',
+];
+
+/**
+ * El 400 de mandar un evento de gasto con el enum sin migrar. El mismo que ya
+ * da `AJUSTE_AL_PESO`: no escribe nada, así que el resto del PUT se pierde
+ * entero y la pantalla tiene que decir por qué.
+ */
+export const EVENTO_SIN_MIGRACION = 'EVENTO_SIN_MIGRACION';
 
 /** `GET /asientos/faltantes`: lo que pasó sin asiento por falta de mapeo. */
 export interface AsientosFaltantes {
@@ -938,6 +995,20 @@ export interface MapeoContable {
   eventos: MapeoDeEvento[];
   completo: boolean;
   faltantes: EventoContable[];
+  /**
+   * Los siete de gasto (migración 49). `undefined` en un back anterior al
+   * 18-09: ausente ⇒ no se afirma nada y el bloque no se dibuja, nunca una
+   * lista vacía que se lea como «no falta ninguno».
+   */
+  eventosDeGasto?: MapeoDeEvento[];
+  completoGastos?: boolean;
+  faltantesGastos?: EventoContable[];
+  /**
+   * `false` = la base no tiene los valores nuevos del enum. El bloque de gasto
+   * se muestra explicando qué falta y NO editable: un `PUT` con uno de esos
+   * eventos devuelve 400 `EVENTO_SIN_MIGRACION` y no escribe nada.
+   */
+  hayEventosDeGasto?: boolean;
 }
 
 /** `EntradaDeMapeoDto`. */
@@ -954,6 +1025,90 @@ export interface ResultadoDeSemillaDeMapeo {
   yaEstaban: EventoContable[];
   sinCuenta: { evento: EventoContable; codigo: string }[];
   mapeo: MapeoContable;
+}
+
+// ── Mapeo rubro del P&G → cuentas del PUC ──────────────────────────────────
+
+/**
+ * El mapeo que cierra el «—» del presupuesto (contrato del 18-09, §1).
+ *
+ * Hoy `finanzas/presupuesto` muestra guion en el real de `gastos` y `nomina`
+ * porque nadie dijo qué cuenta del PUC es cada rubro. Esto lo dice: un rubro a
+ * UNA O VARIAS cuentas, y puede ser una cuenta MAYOR (no imputable) — el real
+ * suma la cuenta y todas sus hijas. Es lo que un contador espera cuando dice
+ * «gastos = todo el 51».
+ *
+ * 🔴 `naturaleza` NO se configura: la dice el PUC (clase 4 → INGRESO, 5/6/7 →
+ * COSTO). Un rubro mapeado a cuentas de clases distintas devuelve `MIXTO` y un
+ * aviso, en vez de elegir una por su cuenta.
+ */
+export type NaturalezaDelRubro = 'INGRESO' | 'COSTO' | 'MIXTO';
+
+/**
+ * De dónde sale el real de un rubro. Los tres primeros son fuentes propias que
+ * el mapeo del PUC NO reemplaza: siguen midiéndose donde se medían, y lo del
+ * libro va al lado como segunda lectura para que el contador vea si el libro y
+ * la operación dicen lo mismo.
+ */
+export type FuenteDelReal =
+  | 'COMISION_CAUSADA'
+  | 'RECARGOS_RECAUDADOS'
+  | 'COSTOS_DE_LA_PLATA'
+  | 'CUENTAS_DEL_PUC'
+  | 'SIN_FUENTE';
+
+export interface CuentaDelRubro {
+  id: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable;
+  /** `false` = es una cuenta mayor: el real suma ella y todas sus hijas. */
+  imputable: boolean;
+}
+
+export interface MapeoDeRubro {
+  rubro: string;
+  nombre: string;
+  naturaleza: NaturalezaDelRubro;
+  fuenteDelReal: FuenteDelReal;
+  /** Por qué este rubro no tiene real. `null` = lo tiene. */
+  motivoSinReal: string | null;
+  /** `true` = está en el catálogo; `false` = lo inventó la inmobiliaria. */
+  sugerido: boolean;
+  cuentas: CuentaDelRubro[];
+  /** Las cuentas del preset que SÍ existen en el plan de esta agencia. */
+  propuestas: CuentaDelRubro[];
+  /** Los códigos que el preset propone, existan o no. */
+  codigosPropuestos: string[];
+}
+
+export interface MapeoDeRubros {
+  /** `false` = falta la migración 49 (`mapeos_de_rubro`). Se ve, no se guarda. */
+  disponible: boolean;
+  /** El texto del 503, con el nombre de la migración. */
+  motivo: string | null;
+  /** ¿Todos los rubros SUGERIDOS tienen cuenta? */
+  completo: boolean;
+  faltantes: string[];
+  rubros: MapeoDeRubro[];
+}
+
+/** `GuardarMapeoDeRubroDto`. La lista REEMPLAZA el juego completo del rubro. */
+export const CLAVES_DE_MAPEO_DE_RUBRO = ['rubro', 'cuentaIds'] as const;
+
+export interface MapeoDeRubroNuevo {
+  rubro: string;
+  /** Vacía = deja el rubro sin mapear (no es un borrado del rubro). */
+  cuentaIds: string[];
+}
+
+/** Respuesta de `POST /mapeo/rubros/sembrar`. No pisa lo ya asignado. */
+export interface ResultadoDeSembrarRubros {
+  asignados: string[];
+  yaEstaban: string[];
+  /** Los rubros cuyo preset no existe en el plan de la agencia, con sus códigos. */
+  sinCuenta: { rubro: string; codigos: string[] }[];
+  mapeo: MapeoDeRubros;
 }
 
 // ══ API ═════════════════════════════════════════════════════════════════════
@@ -1155,6 +1310,32 @@ export const contabilidadApi = {
     /** Asigna las cuentas propuestas a los eventos vacíos; no pisa lo asignado. */
     async sembrar(): Promise<ResultadoDeSemillaDeMapeo> {
       return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/semilla`, {});
+    },
+
+    /** Los rubros del P&G con sus cuentas del PUC y las que el preset propone. */
+    async rubros(): Promise<MapeoDeRubros> {
+      return apiClient.get<MapeoDeRubros>(`${BASE}/mapeo/rubros`);
+    },
+
+    /**
+     * REEMPLAZA el juego completo de cuentas de un rubro. Una lista vacía lo
+     * deja sin mapear — no es lo mismo que borrarlo, que es `borrarRubro`.
+     */
+    async guardarRubro(entrada: MapeoDeRubroNuevo): Promise<MapeoDeRubros> {
+      return apiClient.put<MapeoDeRubros>(
+        `${BASE}/mapeo/rubros`,
+        soloClaves(entrada, CLAVES_DE_MAPEO_DE_RUBRO),
+      );
+    },
+
+    /** Asigna el preset a los rubros vacíos; no pisa lo asignado. */
+    async sembrarRubros(): Promise<ResultadoDeSembrarRubros> {
+      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/sembrar`, {});
+    },
+
+    /** 204. Saca el rubro del mapeo, con sus cuentas. */
+    async borrarRubro(rubro: string): Promise<void> {
+      return apiClient.delete<void>(`${BASE}/mapeo/rubros/${encodeURIComponent(rubro)}`);
     },
   },
 

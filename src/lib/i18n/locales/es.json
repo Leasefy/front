@@ -1413,7 +1413,9 @@
         "costosDeLaPlata": "Costos de la plata",
         "costosDeLaPlataDesc": "El 4x1000 y la pasarela, y a quién se le trasladan",
         "sedes": "Sedes",
-        "sedesDesc": "Los centros de costo: el tablero y el deterioro se miran por sede"
+        "sedesDesc": "Los centros de costo: el tablero y el deterioro se miran por sede",
+        "avisos": "Avisos automáticos",
+        "avisosDesc": "Qué les llega solo a tus inquilinos y propietarios. Todo arranca apagado."
       },
       "notifications": {
         "title": "Notificaciones",

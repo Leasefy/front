@@ -62,6 +62,7 @@ export type SeccionId =
   | 'mandato'
   | 'integraciones'
   | 'migracion'
+  | 'avisos'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -232,6 +233,20 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.preferencias',
     descKey: 'inmobiliaria.config.tabs.preferenciasDesc',
     icon: Globe,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 Los avisos automáticos (18-09-2026): qué le llega solo a los clientes
+     * de la inmobiliaria. Es de ADMIN, como seguridad: decidir qué correos
+     * salen a nombre de la inmobiliaria no es del asesor ni del auxiliar.
+     */
+    id: 'avisos',
+    grupo: 'sistema',
+    slug: 'avisos',
+    labelKey: 'inmobiliaria.config.tabs.avisos',
+    descKey: 'inmobiliaria.config.tabs.avisosDesc',
+    icon: Bell,
     gate: { tipo: 'admin' },
   },
   {

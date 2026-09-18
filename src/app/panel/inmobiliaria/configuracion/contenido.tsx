@@ -8,6 +8,7 @@
  * `/configuracion/ia` y el legado `?tab=`) no puedan divergir.
  */
 
+import { SeccionAvisos } from './SeccionAvisos';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -54,6 +55,9 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionMigracion />;
     case 'integraciones':
       return <SeccionIntegraciones />;
+    // 🔴 18-09-2026: qué le llega SOLO a tus clientes. Todo arranca apagado.
+    case 'avisos':
+      return <SeccionAvisos />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':

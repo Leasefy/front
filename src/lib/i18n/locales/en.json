@@ -1373,7 +1373,9 @@
         "costosDeLaPlata": "Cost of moving money",
         "costosDeLaPlataDesc": "The 4x1000 tax and the payment gateway, and who absorbs them",
         "sedes": "Branches",
-        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch"
+        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch",
+        "avisos": "Automatic notices",
+        "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off."
       },
       "notifications": {
         "title": "Notifications",

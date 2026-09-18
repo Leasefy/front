@@ -1004,7 +1004,10 @@
       "agentesIa": "Agentes IA",
       "automatizacionIa": "Automatización IA",
       "riesgo": "Riesgo",
-      "porAprobar": "Por aprobar"
+      "porAprobar": "Por aprobar",
+      "origenesDeLeads": "Orígenes",
+      "portalesDePublicacion": "Portales",
+      "requisitosDePostulacion": "Requisitos"
     },
     "piloto": {
       "titulo": "Piloto automático",

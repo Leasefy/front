@@ -205,7 +205,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 22 módulos en 5 grupos con nombre (+ Inicio y Chat = 24 filas)', () => {
+  it('el sidebar tiene 23 módulos en 5 grupos con nombre (+ Inicio y Chat = 25 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -213,9 +213,14 @@ describe('arquitectura del panel — sidebar', () => {
     // pantallas que eran secciones de otro módulo pasaron a ser filas, más la
     // del equipo de pagos, que no tenía ninguna. Conciliación ya era fila: sólo
     // cambió de grupo. La propuesta original contaba 21 porque incluía
-    // «Ayuda», que en el panel no existe como fila: no se inventa.
+    // «Ayuda», que en el panel no existe como fila: no se inventa. Eran 22
+    // hasta que entró «Portales» (18-09-2026, publicación a portales con las
+    // cuentas de cada inmobiliaria): va como FILA hermana de Inmuebles y no
+    // como su sub-pantalla justamente por la regla de abajo — el riel no se
+    // dibuja con una card sola, así que una única sub-pantalla de Inmuebles
+    // quedaría inalcanzable desde el menú.
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(5);
-    expect(modulos).toHaveLength(22);
+    expect(modulos).toHaveLength(23);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -853,7 +858,13 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     const secciones = (key: string) => (modulos.find((m) => m.key === key)!.pantallas ?? []).map((p) => p.href.replace(PANEL, ''));
     // Inmuebles se queda sin secciones: el riel no se dibuja con una card sola.
     expect(secciones('inmuebles')).toEqual([]);
-    expect(secciones('postulaciones')).toEqual(['/postulaciones/soportes']);
+    // Requisitos entró el 18-09-2026 (F-05: «los requisitos por tipo de
+    // inquilino los define cada inmobiliaria»). Postulaciones ya tenía
+    // Soportes, así que el riel se dibujaba: no hace falta volverla fila.
+    expect(secciones('postulaciones')).toEqual([
+      '/postulaciones/requisitos',
+      '/postulaciones/soportes',
+    ]);
     expect(secciones('pagos')).toEqual(['/pagos/recaudo', '/pagos/cartera', '/pagos/liquidaciones', '/pagos/dispersiones']);
     expect(secciones('reportes')).toEqual(['/reportes/resumen', '/reportes/rentabilidad']);
     // Dinero sin Conciliación sigue con más de una fila (R3).

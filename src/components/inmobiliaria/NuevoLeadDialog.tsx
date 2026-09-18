@@ -13,6 +13,22 @@
  * opcional. Un 400 que explica se muestra al lado de su campo, con el
  * mensaje; nunca un «Intenta de nuevo» sobre algo que no se va a arreglar
  * reintentando.
+ *
+ * ── 🔴 B-07 (18-09-2026): el ORIGEN es obligatorio ─────────────────────────
+ *
+ * «Origen obligatorio de una lista.» Sin él la inmobiliaria paga tres portales
+ * y no puede decir cuál le trajo un contrato, que es la pregunta por la que el
+ * campo existe (ver `/panel/inmobiliaria/pipeline/origenes`).
+ *
+ * El diálogo manda el lead por `leadsApi.entra`, que además une el CONTACTO
+ * (B-04, por documento o teléfono) y ASIGNA el asesor (B-01, el del inmueble o
+ * el del turno). Si esa parte del CRM todavía no está habilitada —la migración
+ * `20260918160000` sin aplicar, 503— cae al camino de siempre
+ * (`pipelineApi.create`) y el diálogo se comporta EXACTAMENTE como hoy: el
+ * origen queda en gris con su porqué, y nada se rompe.
+ *
+ * Por eso el teléfono ya no dice «opcional» cuando el CRM está habilitado:
+ * hace falta el documento o el teléfono para poder unir el duplicado.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -35,6 +51,8 @@ import {
 import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
 import { pipelineApi } from '@/lib/api/inmobiliaria.service';
+import { leadsApi } from '@/lib/api/crm.service';
+import { useCrm } from '@/lib/hooks/use-crm';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
 type Campo = 'consignacionId' | 'candidateName' | 'candidateEmail' | 'candidatePhone';
@@ -55,6 +73,29 @@ const MENSAJE_DEL_CAMPO: Record<Campo, string> = {
 };
 
 const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Cómo se lee cada origen. Los propios de la inmobiliaria salen legibles. */
+const NOMBRE_DEL_ORIGEN: Record<string, string> = {
+  FINCARAIZ: 'Fincaraíz',
+  METROCUADRADO: 'Metrocuadrado',
+  MERCADO_LIBRE: 'Mercado Libre',
+  SITIO_PROPIO: 'Sitio propio',
+  WHATSAPP: 'WhatsApp',
+  LLAMADA: 'Llamada',
+  REFERIDO: 'Referido',
+  PORTERIA: 'Portería',
+  OTRO: 'Otro',
+};
+
+export function nombreDelOrigen(codigo: string): string {
+  return (
+    NOMBRE_DEL_ORIGEN[codigo] ??
+    codigo
+      .split('_')
+      .map((p) => p.charAt(0) + p.slice(1).toLowerCase())
+      .join(' ')
+  );
+}
 
 /**
  * Traduce el rechazo del back a algo que se pueda leer al lado del campo.
@@ -107,10 +148,18 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [origen, setOrigen] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErroresDelLead>({ porCampo: {} });
   // `enviando` llega en el render siguiente: un doble clic mandaba dos leads.
   const enviandoAhora = useRef(false);
+
+  // La lista de orígenes de ESTA inmobiliaria. Con el CRM sin habilitar queda
+  // en `noHabilitado` y el campo se muestra en gris con su porqué.
+  const configuracion = useCrm(() => leadsApi.configuracion(), [], []);
+  const origenes = configuracion.datos?.origenesDeLead ?? [];
+  const conCrm = configuracion.noHabilitado === null && origenes.length > 0;
 
   useEffect(() => {
     if (!abierto) return;
@@ -118,11 +167,22 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     setNombre('');
     setCorreo('');
     setTelefono('');
+    setDocumento('');
+    setOrigen('');
     setErrores({ porCampo: {} });
   }, [abierto]);
 
   const correoMalo = correo.trim() !== '' && !CORREO_VALIDO.test(correo.trim());
-  const listo = consignacionId !== '' && nombre.trim() !== '' && !correoMalo;
+  // 🔴 Con el CRM habilitado hacen falta el ORIGEN (B-07) y una llave de
+  // contacto (B-04): sin documento ni teléfono no hay contra qué unir el
+  // duplicado, y el back lo rechaza con `CONTACTO_SIN_LLAVE`.
+  const faltaLlave =
+    conCrm && documento.trim() === '' && telefono.trim() === '';
+  const listo =
+    consignacionId !== '' &&
+    nombre.trim() !== '' &&
+    !correoMalo &&
+    (!conCrm || (origen !== '' && !faltaLlave));
   const elegida = consignaciones.find((c) => c.id === consignacionId);
 
   const guardar = async () => {
@@ -131,15 +191,35 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
     setEnviando(true);
     setErrores({ porCampo: {} });
     try {
-      await pipelineApi.create({
-        consignacionId,
-        candidateName: nombre.trim(),
-        ...(correo.trim() ? { candidateEmail: correo.trim() } : {}),
-        ...(telefono.trim() ? { candidatePhone: telefono.trim() } : {}),
-      });
-      toast.success('Lead cargado', {
-        description: `${nombre.trim()} entró al pipeline como «Interesado».`,
-      });
+      if (conCrm) {
+        const r = await leadsApi.entra({
+          consignacionId,
+          origen,
+          nombre: nombre.trim(),
+          ...(correo.trim() ? { correo: correo.trim() } : {}),
+          ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
+          ...(documento.trim() ? { documento: documento.trim() } : {}),
+        });
+        toast.success('Lead cargado', {
+          description: r.contactoUnido
+            ? // B-07: «el duplicado se une al contacto existente y se avisa al
+              // asesor dueño». El aviso es éste.
+              `${nombre.trim()} ya era contacto de la inmobiliaria (se reconoció por ${
+                r.seReconocioPor === 'DOCUMENTO' ? 'el documento' : 'el teléfono'
+              }): la oportunidad nueva quedó en su historial.`
+            : `${nombre.trim()} entró al pipeline como «Interesado».`,
+        });
+      } else {
+        await pipelineApi.create({
+          consignacionId,
+          candidateName: nombre.trim(),
+          ...(correo.trim() ? { candidateEmail: correo.trim() } : {}),
+          ...(telefono.trim() ? { candidatePhone: telefono.trim() } : {}),
+        });
+        toast.success('Lead cargado', {
+          description: `${nombre.trim()} entró al pipeline como «Interesado».`,
+        });
+      }
       onCreado();
     } catch (error) {
       setErrores(erroresDelLead(error));
@@ -193,6 +273,40 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             </div>
           )}
 
+          {/* 🔴 B-07: el origen, de la lista de la inmobiliaria. */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-origen">
+              ¿De dónde vino?
+            </label>
+            {conCrm ? (
+              <>
+                <Select value={origen} onValueChange={setOrigen}>
+                  <SelectTrigger id="nuevo-lead-origen" className="w-full">
+                    <span className="truncate">
+                      {origen ? nombreDelOrigen(origen) : 'Escoge el origen'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {origenes.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {nombreDelOrigen(o)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-fg-subtle">
+                  Con esto se sabe qué portal vale la pena pagar.
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-fg-subtle" data-testid="origen-no-habilitado">
+                {configuracion.noHabilitado
+                  ? `Próximamente: ${configuracion.noHabilitado}`
+                  : 'Cargando los orígenes…'}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-nombre">
               Nombre
@@ -240,6 +354,31 @@ export function NuevoLeadDialog({ abierto, consignaciones, onCerrar, onCreado }:
             />
             {errorDe('candidatePhone')}
           </div>
+
+          {conCrm ? (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-fg" htmlFor="nuevo-lead-documento">
+                Documento{' '}
+                <span className="font-normal text-fg-subtle">
+                  (o el teléfono, hace falta uno)
+                </span>
+              </label>
+              <Input
+                id="nuevo-lead-documento"
+                value={documento}
+                onChange={(e) => setDocumento(e.target.value)}
+                placeholder="1.017.234.567"
+                maxLength={40}
+                data-testid="nuevo-lead-documento"
+              />
+              {faltaLlave ? (
+                <p className="text-xs text-danger" role="alert" data-testid="falta-llave">
+                  Escribe el documento o el teléfono: sin uno de los dos no se
+                  puede saber si esta persona ya es contacto de la inmobiliaria.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {errores.general && (
             <p className="text-sm text-danger" role="alert" data-testid="nuevo-lead-error">

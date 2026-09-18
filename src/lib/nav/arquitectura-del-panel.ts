@@ -33,6 +33,8 @@ import {
   ArrowLineDown,
   ArrowLineUp,
   HandCoins,
+  CloudArrowUp,
+  Files,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -320,7 +322,16 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     key: 'captacion',
     labelKey: 'inmobiliaria.nav.secCaptacion',
     modulos: [
-      { key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial' },
+      {
+        key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial',
+        pantallas: [
+          // 🔴 B-07 (18-09-2026): «informe por origen (leads y arriendos por
+          // portal) para saber qué portal vale la pena pagar». Cuelga del
+          // pipeline y NO de Reportes a propósito: la decide el comercial con
+          // sus leads en la mano, y el asesor no tiene `reportes`.
+          { labelKey: 'inmobiliaria.nav.origenesDeLeads', href: r('/pipeline/origenes'), icon: TrendUp, module: 'pipeline', scope: 'comercial' },
+        ],
+      },
       // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
       // interna: la sección de agenda la debemos llevar para la sección de
       // captación y arriendo»). Va detrás de Pipeline porque lo que llena la
@@ -344,6 +355,16 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Avalúos se mudó a «Agentes IA» (2026-09-16): Inmuebles se queda sin
       // secciones y `SeccionesDelModulo` no dibuja el riel de una sola card.
       { key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles' },
+      // «Se publica y despublica desde Leasefy con las cuentas que cada
+      // inmobiliaria ya paga, mostrando el estado de cada publicación» (Nico,
+      // 17-09-2026). Hoy ningún portal de afuera publica solo y la pantalla lo
+      // dice sin rodeos.
+      //
+      // 🔴 Va como FILA hermana de Inmuebles y NO como su sub-pantalla:
+      // `SeccionesDelModulo` no dibuja el riel con una sola card (decisión del
+      // 2026-09-16), así que una única sub-pantalla quedaría inalcanzable desde
+      // el menú. Mismo `module` y mismo `scope`: no abre ni cierra puertas.
+      { key: 'portales', labelKey: 'inmobiliaria.nav.portalesDePublicacion', href: r('/inmuebles/portales'), icon: CloudArrowUp, module: 'portafolio', scope: 'comercial' },
       {
         key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: 'portafolio', scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
         // Matching y Asegurabilidad se mudaron a «Agentes IA» (2026-09-16).
@@ -360,6 +381,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // puertas).
           // { key: 'estudio', labelKey: 'inmobiliaria.ai.nav.estudio', href: r('/postulaciones/estudio'), icon: ShieldCheck, module: 'estudio', scope: 'comercial', agente: 'estudio' },
           // Era una fila de Administración (la ve el CONTADOR); conserva ese encuadre.
+          // 🔴 F-05 (18-09-2026): «los requisitos por tipo de inquilino los
+          // define cada inmobiliaria». Se LEE con `pipeline` (el asesor tiene
+          // que saber qué papeles pedir) y se EDITA con `configuracion:edit`,
+          // que la pantalla verifica y el back exige de nuevo.
+          { labelKey: 'inmobiliaria.nav.requisitosDePostulacion', href: r('/postulaciones/requisitos'), icon: Files, module: 'pipeline', scope: 'comercial' },
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', scope: 'administracion', ia: true },
         ],
       },

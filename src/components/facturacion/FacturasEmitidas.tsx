@@ -46,6 +46,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CorregirFactura } from './CorregirFactura'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
@@ -56,6 +57,7 @@ import {
   type ConceptoDeNotaCredito,
   type FacturaEmitida,
   type FacturasEmitidasDelMes,
+  type NotaCreditoDeLaFactura,
 } from '@/lib/api/facturacion-por-mes.service'
 
 const pesos = (v: number) => `$${v.toLocaleString('es-CO')}`
@@ -135,8 +137,19 @@ export function FacturasEmitidas({ mes, vista }: Props) {
   }
 
   const facturas = datos?.facturas ?? []
-  const conNota = facturas.filter((f) => f.notaCredito !== null)
-  const filas = vista === 'ventas' ? facturas : conNota
+  /*
+   * 🔴 «Notas» lista TODAS las notas crédito de cada factura, no una sola.
+   * Desde el 17-09 una factura puede tener varias PARCIALES además de la total,
+   * y una pestaña que muestra sólo la primera esconde plata que ya se acreditó.
+   */
+  const notas = facturas.flatMap((f) =>
+    (f.notasCredito ?? (f.notaCredito ? [f.notaCredito] : [])).map((n) => ({
+      factura: f,
+      nota: n,
+    })),
+  )
+  const filas: (FacturaEmitida | { factura: FacturaEmitida; nota: NotaCreditoDeLaFactura })[] =
+    vista === 'ventas' ? facturas : notas
 
   return (
     <div className="space-y-3">
@@ -212,7 +225,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filas.map((f) =>
+            {facturas.map((f) =>
               vista === 'ventas' ? (
                 <TableRow key={f.id} data-testid={`factura-${f.numero}`}>
                   <TableCell className="tabular-nums">{f.numero}</TableCell>
@@ -258,38 +271,47 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                         {f.anulacion.explicacion}
                       </span>
                     )}
+                    {/* 🔴 Y las dos correcciones nuevas del 17-09: acreditar
+                        una PARTE y cobrar de más. Se ofrecen sólo cuando el
+                        back dice que se puede. */}
+                    <span className="mt-1 block">
+                      <CorregirFactura factura={f} onHecho={cargar} />
+                    </span>
                   </TableCell>
                 </TableRow>
-              ) : (
-                <TableRow key={f.id} data-testid={`nota-${f.notaCredito?.numero ?? ''}`}>
+              ) : null,
+            )}
+            {vista === 'notas' &&
+              notas.map(({ factura: f, nota }) => (
+                <TableRow key={nota.id} data-testid={`nota-${nota.numero}`}>
                   <TableCell className="tabular-nums">
-                    {f.notaCredito?.numero}
+                    {nota.numero}
+                    {nota.parcial && (
+                      <span className="block text-caption text-fg-muted">
+                        Parcial
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {f.numeroDian ?? `N.º ${f.numero}`}
                   </TableCell>
                   <TableCell className="max-w-[22rem]">
                     <span className="block">
-                      {f.notaCredito
-                        ? NOMBRE_DEL_CONCEPTO[f.notaCredito.concepto]
-                        : ''}
+                      {NOMBRE_DEL_CONCEPTO[nota.concepto]}
                     </span>
                     <span className="text-caption text-fg-muted">
-                      {f.notaCredito?.motivo}
+                      {nota.motivo}
                     </span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {pesos(f.notaCredito?.valorCop ?? 0)}
+                    {pesos(nota.valorCop)}
                   </TableCell>
-                  <TableCell>
-                    {fechaLegible(f.notaCredito?.createdAt ?? null)}
-                  </TableCell>
+                  <TableCell>{fechaLegible(nota.createdAt)}</TableCell>
                   <TableCell className="max-w-[20rem] text-caption text-fg-muted">
-                    {f.notaCredito?.notaContable ?? 'Se está registrando…'}
+                    {nota.notaContable ?? 'Se está registrando…'}
                   </TableCell>
                 </TableRow>
-              ),
-            )}
+              ))}
           </TableBody>
         </Table>
       </EstadoDeDatos>

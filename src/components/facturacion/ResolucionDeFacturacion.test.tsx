@@ -57,6 +57,9 @@ function respuesta(
         numero: '18764003394379',
         fechaResolucion: '2026-01-15T00:00:00.000Z',
         prefijo: 'FE',
+        // `null` = numera cualquier tipo, que es lo de hoy (17-09-2026).
+        tipoDeDocumento: null,
+        tipoNombre: 'Cualquier tipo de documento',
         desde: 1,
         hasta: 5000,
         vigenteDesde: '2026-01-15T00:00:00.000Z',
@@ -83,6 +86,23 @@ function respuesta(
       disponibles: 3801,
       siguiente: 'FE-1200',
     },
+    porTipoDisponible: true,
+    porTipo: [
+      {
+        tipo: 'CANON_INQUILINO',
+        nombre: 'Canon del inquilino',
+        resolucionId: 'res-1',
+        resolucionNumero: '18764003394379',
+        prefijo: 'FE',
+        puedeNumerar: true,
+        porLaGeneral: true,
+        disponibles: 3801,
+        siguiente: 'FE-1200',
+        explicacion: null,
+      },
+    ],
+    umbrales: { numeros: 100, dias: 30 },
+    avisos: [],
     ...over,
   };
 }

@@ -39,6 +39,12 @@
  */
 
 import { apiClient } from './client'
+import type {
+  AvisoDeLaResolucion,
+  EstadoDeLaCorreccion,
+  ResolucionPorTipo,
+  TipoDeDocumento,
+} from './facturacion-electronica.service'
 
 const BASE = '/inmobiliaria/facturacion'
 
@@ -359,6 +365,13 @@ export interface ResolucionDeFacturacion {
   numero: string
   fechaResolucion: string
   prefijo: string
+  /**
+   * 🔴 Qué TIPO de documento numera (17-09-2026). `null` = cualquiera, que es
+   * lo que hacen las resoluciones ya cargadas: esta tanda no le cambia la
+   * numeración a nadie.
+   */
+  tipoDeDocumento: TipoDeDocumento | null
+  tipoNombre: string
   desde: number
   hasta: number
   vigenteDesde: string
@@ -376,6 +389,13 @@ export interface ResolucionDeFacturacion {
 export interface ResolucionesDeLaAgencia {
   resoluciones: ResolucionDeFacturacion[]
   vigente: EstadoDeLaResolucion
+  /** `false` sin la migración 20260918000000: no se puede elegir tipo. */
+  porTipoDisponible: boolean
+  /** Con qué resolución se numera hoy cada tipo de documento. */
+  porTipo: ResolucionPorTipo[]
+  umbrales: { numeros: number; dias: number }
+  /** Qué hay que avisar hoy: rango por agotarse, vencimiento cerca, bloqueos. */
+  avisos: AvisoDeLaResolucion[]
 }
 
 /** Lo que se manda para cargar una resolución. Las fechas van «YYYY-MM-DD». */
@@ -388,6 +408,8 @@ export interface NuevaResolucion {
   vigenteDesde: string
   vigenteHasta: string
   ultimoNumeroUsado?: number
+  /** Ausente = numera cualquier tipo (una sola resolución para todo). */
+  tipoDeDocumento?: TipoDeDocumento
 }
 
 // ══ Llamadas ════════════════════════════════════════════════════════════════
@@ -436,6 +458,8 @@ export interface NotaCreditoDeLaFactura {
   concepto: ConceptoDeNotaCredito
   motivo: string
   valorCop: number
+  /** `true` = acredita sólo una parte de la factura (17-09-2026). */
+  parcial: boolean
   /** Qué pasó en el libro, o por qué no pasó nada. */
   notaContable: string | null
   createdAt: string
@@ -458,14 +482,21 @@ export interface FacturaEmitida {
   totalCop: number
   netoCop: number
   createdAt: string
+  /** La nota TOTAL, si la tiene. Es lo que la pantalla leía antes. */
   notaCredito: NotaCreditoDeLaFactura | null
+  /** 🔴 TODAS sus notas, incluidas las PARCIALES (17-09-2026). */
+  notasCredito: NotaCreditoDeLaFactura[]
   anulacion: EstadoDeLaAnulacion
+  /** Qué se le puede hacer hoy: anular, acreditar en parte o cobrar de más. */
+  correccion: EstadoDeLaCorreccion
 }
 
 export interface FacturasEmitidasDelMes {
   mes: string
   /** `false` = esta base todavía no tiene la tabla de notas crédito. */
   anulacionDisponible: boolean
+  /** `false` sin la migración 20260918000000: sólo existe la nota TOTAL. */
+  notaParcialDisponible: boolean
   facturas: FacturaEmitida[]
 }
 
@@ -516,6 +547,9 @@ export const facturacionPorMesService = {
       vigenteHasta: datos.vigenteHasta,
       ...(typeof datos.ultimoNumeroUsado === 'number'
         ? { ultimoNumeroUsado: datos.ultimoNumeroUsado }
+        : {}),
+      ...(datos.tipoDeDocumento
+        ? { tipoDeDocumento: datos.tipoDeDocumento }
         : {}),
     }),
 

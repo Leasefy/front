@@ -74,6 +74,12 @@ import {
   type ResolucionDeFacturacion as Resolucion,
   type ResolucionesDeLaAgencia,
 } from '@/lib/api/facturacion-por-mes.service'
+import {
+  NOMBRE_DEL_TIPO,
+  TIPOS_EN_ORDEN,
+  type TipoDeDocumento,
+} from '@/lib/api/facturacion-electronica.service'
+import { NumeracionPorTipo } from './NumeracionPorTipo'
 
 /** El tope del back (`AnularResolucionDto`). */
 export const MAX_MOTIVO_DE_ANULACION = 500
@@ -88,6 +94,12 @@ interface Formulario {
   vigenteDesde: string
   vigenteHasta: string
   ultimoNumeroUsado: string
+  /**
+   * 🔴 Qué TIPO de documento numera (17-09-2026). Vacío = cualquiera, que es lo
+   * que hacen las resoluciones ya cargadas: no hay valor por defecto, porque
+   * elegir uno le cambiaría la numeración a quien no pidió nada.
+   */
+  tipoDeDocumento: string
 }
 
 const VACIO: Formulario = {
@@ -99,6 +111,7 @@ const VACIO: Formulario = {
   vigenteDesde: '',
   vigenteHasta: '',
   ultimoNumeroUsado: '',
+  tipoDeDocumento: '',
 }
 
 export function ResolucionDeFacturacion() {
@@ -168,6 +181,9 @@ export function ResolucionDeFacturacion() {
         vigenteHasta: form.vigenteHasta,
         ...(form.ultimoNumeroUsado !== ''
           ? { ultimoNumeroUsado: Number(form.ultimoNumeroUsado) }
+          : {}),
+        ...(form.tipoDeDocumento !== ''
+          ? { tipoDeDocumento: form.tipoDeDocumento as TipoDeDocumento }
           : {}),
       })
       toast.success('Resolución cargada')
@@ -253,6 +269,8 @@ export function ResolucionDeFacturacion() {
         </div>
       )}
 
+      {datos && <NumeracionPorTipo datos={datos} />}
+
       <EstadoDeDatos
         cargando={cargando}
         error={error}
@@ -281,6 +299,7 @@ export function ResolucionDeFacturacion() {
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Resolución</TableHead>
                     <TableHead className="whitespace-nowrap">Prefijo</TableHead>
+                    <TableHead className="whitespace-nowrap">Numera</TableHead>
                     <TableHead className="whitespace-nowrap">Rango</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Usados</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Disponibles</TableHead>
@@ -292,7 +311,7 @@ export function ResolucionDeFacturacion() {
                 <TableBody>
                   {datos.resoluciones.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="p-0">
+                      <TableCell colSpan={9} className="p-0">
                         <SinDatos
                           queSon="resoluciones de facturación"
                           icono={Certificate}
@@ -311,6 +330,9 @@ export function ResolucionDeFacturacion() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted">
                           {r.prefijo || '—'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-fg-muted">
+                          {r.tipoNombre ?? 'Cualquier tipo de documento'}
                         </TableCell>
                         <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                           {r.desde}–{r.hasta}
@@ -404,6 +426,29 @@ export function ResolucionDeFacturacion() {
               Déjalo vacío si tu resolución no tiene prefijo.
             </p>
           </div>
+          {datos?.porTipoDisponible && (
+            <div className="space-y-1.5">
+              <Label htmlFor="resolucion-tipo">Qué documento numera</Label>
+              <select
+                id="resolucion-tipo"
+                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                value={form.tipoDeDocumento}
+                onChange={(e) => campo('tipoDeDocumento')(e.target.value)}
+                data-testid="resolucion-campo-tipo"
+              >
+                <option value="">Cualquier tipo de documento</option>
+                {TIPOS_EN_ORDEN.map((t) => (
+                  <option key={t} value={t}>
+                    {NOMBRE_DEL_TIPO[t]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-caption text-fg-muted">
+                La DIAN autoriza un prefijo y un rango por tipo de documento.
+                Déjalo en «cualquiera» si tienes una sola resolución para todo.
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
             <Input

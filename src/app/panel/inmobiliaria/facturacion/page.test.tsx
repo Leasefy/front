@@ -47,6 +47,27 @@ vi.mock('@/components/facturacion/FacturasEmitidas', () => ({
   ),
 }));
 
+/*
+ * 🔴 Y los cinco de la facturación electrónica (17-09-2026), por lo mismo:
+ * cada uno pide datos al back y tiene su propia prueba. Acá se reemplazan por
+ * un marcador para que lo que se fije siga siendo la TARJETA.
+ */
+vi.mock('@/components/facturacion/ColaDeTransmision', () => ({
+  ColaDeTransmision: () => <div data-testid="cola-simulada" />,
+}));
+vi.mock('@/components/facturacion/EntregasYAcuse', () => ({
+  EntregasYAcuse: () => <div data-testid="entregas-simulada" />,
+}));
+vi.mock('@/components/facturacion/DocumentoSoporte', () => ({
+  DocumentoSoporte: () => <div data-testid="soporte-simulado" />,
+}));
+vi.mock('@/components/facturacion/CertificacionDelMandatario', () => ({
+  CertificacionDelMandatario: () => <div data-testid="certificacion-simulada" />,
+}));
+vi.mock('@/components/facturacion/TercerosSinCorreo', () => ({
+  TercerosSinCorreo: () => <div data-testid="sin-correo-simulado" />,
+}));
+
 import FacturacionPage from './page';
 
 const K = 'inmobiliaria.facturacion.';
@@ -97,11 +118,15 @@ describe('/panel/inmobiliaria/facturacion', () => {
   });
 
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
-    // En «Electrónica», que es la que sigue dibujando la tabla acá dentro.
-    const electronica = qa('[role="tab"]').find(
-      (t) => t.textContent === `${K}tab_electronica`,
+    /*
+     * 🔴 En «Compras», que desde el 17-09 es la ÚNICA que sigue dibujando la
+     * tabla acá dentro: «Electrónica» ya tiene motor (la cola de transmisión y
+     * las entregas) y pinta sus propias tablas.
+     */
+    const compras = qa('[role="tab"]').find(
+      (t) => t.textContent === `${K}tab_compras`,
     )!;
-    await activarPestana(electronica);
+    await activarPestana(compras);
     const tarjeta = q('[data-testid="facturacion-tarjeta"]');
     expect(tarjeta).not.toBeNull();
 
@@ -120,19 +145,42 @@ describe('/panel/inmobiliaria/facturacion', () => {
       `${K}tab_compras`,
       `${K}tab_electronica`,
       `${K}tab_notas`,
+      // El documento soporte y el mandato: no listan documentos de
+      // `FacturacionTab`, hacen otra cosa (17-09-2026).
+      `${K}tab_soporte`,
+      `${K}tab_mandato`,
       // La resolución de la DIAN: el permiso con el que se numera. Va última
       // porque se toca una vez al año, no todos los meses.
       `${K}tab_resolucion`,
     ]);
   });
 
+  it('🔴 «Electrónica», «Documento soporte» y «Mandato» tienen motor: ya no hay vacío', async () => {
+    const ir = async (tab: string) =>
+      activarPestana(
+        qa('[role="tab"]').find((t) => t.textContent === `${K}tab_${tab}`)!,
+      );
+
+    await ir('electronica');
+    // La cola de transmisión Y las entregas: son dos estados distintos y las
+    // dos viven en la misma pestaña.
+    expect(q('[data-testid="cola-simulada"]')).not.toBeNull();
+    expect(q('[data-testid="entregas-simulada"]')).not.toBeNull();
+
+    await ir('soporte');
+    expect(q('[data-testid="soporte-simulado"]')).not.toBeNull();
+
+    await ir('mandato');
+    expect(q('[data-testid="certificacion-simulada"]')).not.toBeNull();
+    expect(q('[data-testid="sin-correo-simulado"]')).not.toBeNull();
+  });
+
   it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', async () => {
-    // Se mira en «Electrónica»: es la que sigue sin listado. «Ventas» y
-    // «Notas» ya leen del back y pintan su propia tabla.
-    const electronica = qa('[role="tab"]').find(
-      (t) => t.textContent === `${K}tab_electronica`,
+    // Se mira en «Compras»: desde el 17-09 es la única sin listado propio.
+    const compras = qa('[role="tab"]').find(
+      (t) => t.textContent === `${K}tab_compras`,
     )!;
-    await activarPestana(electronica);
+    await activarPestana(compras);
     expect(qa('thead th')).toHaveLength(7);
 
     const celda = q('tbody td');
@@ -142,7 +190,7 @@ describe('/panel/inmobiliaria/facturacion', () => {
     const vacio = celda!.querySelector('[data-testid="sin-datos"]');
     expect(vacio).not.toBeNull();
     // La descripción de la pestaña vive en el vacío, no en una franja aparte.
-    expect(vacio!.textContent).toContain(`${K}desc_electronica`);
+    expect(vacio!.textContent).toContain(`${K}desc_compras`);
   });
 
   it('🔴 «Ventas» y «Notas» listan lo emitido, con su selector de mes', async () => {
@@ -173,10 +221,10 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Las seis pestañas y, en el vacío, la salida a lo ya emitido (F4): un
+    // Las ocho pestañas y, en el vacío, la salida a lo ya emitido (F4): un
     // botón que hace algo, no uno decorativo.
     const botones = qa('button');
-    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(6);
+    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(8);
     // En «Ventas» ya no hay botón suelto: la pestaña lista de verdad.
     expect(
       botones
@@ -198,25 +246,6 @@ describe('/panel/inmobiliaria/facturacion', () => {
       const pestana = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_${tab}`)!;
       await activarPestana(pestana);
     }
-
-    it.each(['electronica'])(
-      '🔴 %s: dice que el listado llega con el motor DIAN',
-      async (tab) => {
-        await ir(tab);
-        const vacio = q('[data-testid="sin-datos"]')!;
-        expect((vacio.textContent ?? '').toLowerCase()).not.toContain('no tienes');
-        expect(vacio.textContent).toContain('llega con el motor DIAN');
-        expect(vacio.textContent).toContain('Nueva factura');
-      },
-    );
-
-    it('«Ver las facturas emitidas» lleva a «Nueva factura», donde sí están', async () => {
-      await ir('electronica');
-      await act(async () => {
-        (q('[data-testid="facturacion-ver-emitidas-electronica"]') as HTMLButtonElement).click();
-      });
-      expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
-    });
 
     it('Compras tampoco dice «no tienes»: manda a cuentas por pagar, que es donde viven', async () => {
       await ir('compras');

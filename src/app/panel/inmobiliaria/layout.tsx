@@ -77,7 +77,7 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus, modulosPagos } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   const router = useRouter();
   // Upgrade CTA only when the agency is NOT on a paid plan (i.e. on the
@@ -130,11 +130,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     canAccess,
     isAdmin,
     agencyRole,
+    // 🔴 Los módulos de PAGO (Nómina, hoy). No son un permiso: es si la
+    // inmobiliaria los compró. Vacío mientras no llegue la respuesta — el gate
+    // falla cerrado, ver `agency-nav-filter.ts`.
+    modulosPagos,
     // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
     // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
     // reintentar. Borrarlos se lee como «esto no existe».
     agentUnverified: agentAccessStatus === 'sin-verificar',
-  }), [canAccess, isAdmin, agencyRole, agentAccessStatus]);
+  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, modulosPagos]);
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════

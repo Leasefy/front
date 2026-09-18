@@ -24,6 +24,15 @@ export type NavItemWithModule = NavItem & {
    * Sin `scope` la fila es transversal y no se recorta.
    */
   scope?: BusinessModule;
+  /**
+   * 🔴 Módulo de PAGO que gobierna esta fila (17-09-2026). Hoy sólo `nomina`.
+   *
+   * No es un permiso: un administrador tiene todos los permisos y aun así no ve
+   * Nómina si su inmobiliaria no la compró. Por eso es un eje aparte de `module`
+   * y de `roles`, y **falla cerrado**: si la lista de módulos prendidos no llegó,
+   * la fila no se muestra.
+   */
+  moduloPago?: string;
 };
 
 export interface NavFilterContext {
@@ -46,6 +55,16 @@ export interface NavFilterContext {
    * reintentar, que es la verdad. Ver `agent-module-access.ts`.
    */
   agentUnverified?: boolean;
+  /**
+   * Los módulos de PAGO prendidos para esta inmobiliaria, tal como los devuelve
+   * `GET /inmobiliaria/agency/my-permissions`. `undefined` = todavía no llegó, y
+   * se trata como vacío: una fila de un módulo de pago NO se muestra hasta que
+   * se sepa que está comprado.
+   *
+   * 🔴 No se cachea ni se adivina: mostrar la fila «por si acaso» lleva a una
+   * pantalla que responde 402, que es peor que no mostrarla.
+   */
+  modulosPagos?: readonly string[];
 }
 
 /**
@@ -69,9 +88,21 @@ export interface NavFilterContext {
  * los tres lugares.
  */
 export function pasaGateDeFila(
-  fila: { module?: string | null; modulos?: readonly string[]; roles?: readonly string[] },
+  fila: {
+    module?: string | null;
+    modulos?: readonly string[];
+    roles?: readonly string[];
+    moduloPago?: string;
+  },
   ctx: NavFilterContext,
 ): boolean {
+  // 🔴 El módulo de PAGO se mira PRIMERO y falla cerrado: sin la lista, la fila
+  // no se muestra. Es lo que hace que una inmobiliaria que no compró Nómina no
+  // la vea en el menú ni un segundo mientras cargan los permisos.
+  if (fila.moduloPago) {
+    const prendidos = ctx.modulosPagos ?? [];
+    if (!prendidos.includes(fila.moduloPago)) return false;
+  }
   // Alguno de varios módulos (la agenda): alcanza con uno.
   if (fila.modulos && fila.modulos.length > 0) {
     if (!fila.modulos.some((m) => ctx.canAccess(m, 'view'))) return false;

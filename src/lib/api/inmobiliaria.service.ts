@@ -114,6 +114,16 @@ export interface MemberPermissionsResponse {
   effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
   usingDefaults: boolean;
   note?: string;
+  /**
+   * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
+   *
+   * Sólo lo trae `GET /inmobiliaria/agency/my-permissions`; el endpoint que un
+   * admin usa para ver los permisos de OTRO miembro NO lo lleva, porque un
+   * entitlement de pago no se edita desde la agencia. Opcional en el tipo para
+   * que las respuestas de un back sin desplegar no rompan nada: ausente se lee
+   * como ninguno.
+   */
+  modulosPagos?: string[];
 }
 
 // ============================================================================

@@ -174,7 +174,7 @@ function ContenidoDeProveedores() {
           error={error}
           vacio={!cargando && !error && visibles.length === 0}
           queEs="los proveedores"
-          onReintentar={() => void cargar()}
+          onReintentar={cargar}
           esqueleto={<EsqueletoTabla columnas={3} filas={5} />}
           cuandoVacio={
             <div className="rounded-lg border border-dashed border-border p-8 text-center">

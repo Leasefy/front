@@ -117,7 +117,7 @@ export function SeccionSlaDePqrs() {
         cargando={cargando}
         error={error}
         queEs="el tiempo máximo de las PQRS"
-        onReintentar={() => void cargar()}
+        onReintentar={cargar}
         esqueleto={<EsqueletoDeSeccion filas={4} />}
       >
         <div />

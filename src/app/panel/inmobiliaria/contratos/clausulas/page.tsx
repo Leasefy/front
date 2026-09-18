@@ -120,7 +120,7 @@ function ContenidoDeClausulas() {
           error={error}
           vacio={!cargando && !error && (clausulas?.length ?? 0) === 0}
           queEs="las cláusulas propias"
-          onReintentar={() => void cargar()}
+          onReintentar={cargar}
           esqueleto={<EsqueletoTabla columnas={2} filas={3} />}
           cuandoVacio={
             <div className="rounded-lg border border-dashed border-border p-8 text-center">

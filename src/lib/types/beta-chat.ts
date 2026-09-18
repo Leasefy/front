@@ -423,7 +423,26 @@ export interface DailyBriefing {
 // ============================================================================
 
 /** Autonomy level for each agent type */
+/**
+ * 🔴 LOS TRES NIVELES DE AUTONOMÍA (Nico, 17/18-09-2026): «tenemos 3 niveles:
+ * SOMBRA, COPILOT y AUTOMÁTICO; el usuario define», con SOMBRA por defecto.
+ *
+ * Los identificadores siguen siendo `manual` / `ask_first` / `auto` a
+ * propósito: son lo que ya está guardado en las preferencias de la gente y en
+ * `agent.agency_settings`. Renombrar el VALOR obligaría a migrar lo guardado y
+ * dejaría a quien no migre en un nivel que el código no reconoce — y el que no
+ * se reconoce nunca puede resolverse como «automático».
+ *
+ * Lo que cambia son los NOMBRES que se ven y el orden en que se ofrecen:
+ *
+ *   · `manual`    → **Sombra**: analiza y propone, no escribe ni llama.
+ *   · `ask_first` → **Copilot**: prepara y una persona aprueba antes de salir.
+ *   · `auto`      → **Automático**: actúa solo, dentro de la política.
+ */
 export type AutonomyLevel = 'auto' | 'ask_first' | 'manual';
+
+/** El nivel por defecto: SOMBRA. «Sin elección del usuario, nunca automático.» */
+export const NIVEL_POR_DEFECTO: AutonomyLevel = 'manual';
 
 /** Communication tone preference */
 export type CommunicationTone = 'formal' | 'professional' | 'casual';

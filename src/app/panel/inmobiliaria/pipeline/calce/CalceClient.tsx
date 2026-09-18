@@ -28,6 +28,7 @@ import { useState } from 'react'
 import { MagicWand } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -51,6 +52,20 @@ function pesos(n: number | null | undefined): string {
 
 export function CalceClient() {
   const [leadId, setLeadId] = useState('')
+  // Los leads del tablero, para poder elegir por NOMBRE en vez de por UUID.
+  // Si la consulta falla, la lista queda vacía y el selector lo dice: no se
+  // vuelve a caer en pedir un id a mano.
+  const { pipelineItems } = usePipelineItems()
+  const leadsDelTablero = pipelineItems ?? []
+  // Los inmuebles salen de los mismos items, sin repetir: es lo que la
+  // inmobiliaria tiene en el tablero, que es de donde se libera uno.
+  const inmuebles = Array.from(
+    new Map(
+      leadsDelTablero
+        .filter((l) => l.propertyId)
+        .map((l) => [l.propertyId, { id: l.propertyId, titulo: l.propertyTitle || l.propertyAddress }]),
+    ).values(),
+  )
   const [propertyId, setPropertyId] = useState('')
 
   const config = useCrm(() => matchingApi.pesos(), [], [])
@@ -75,7 +90,7 @@ export function CalceClient() {
   const leads = delInmueble.datos?.leads ?? []
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Calce</h1>
         <p className="text-muted-foreground text-sm">
@@ -118,21 +133,42 @@ export function CalceClient() {
       <Card>
         <CardHeader className="space-y-3">
           <CardTitle className="text-base">Qué le mando a este lead</CardTitle>
+          {/*
+            🔴 Antes esto era un campo de texto que decía «pega el id de la
+            tarjeta del tablero». Nadie tiene a la mano el UUID de un lead: para
+            usarlo había que abrir el tablero, abrir la tarjeta, sacar el id de
+            la URL y volver. Eso no es una pantalla, es un endpoint con un
+            formulario encima. Ahora se elige por NOMBRE, que es como una
+            persona piensa en un lead.
+          */}
           <div className="space-y-1">
-            <Label htmlFor="lead-id">Id del lead</Label>
-            <Input
+            <Label htmlFor="lead-id">¿De quién?</Label>
+            <select
               id="lead-id"
               value={leadId}
               onChange={(e) => setLeadId(e.target.value)}
-              placeholder="Pega el id de la tarjeta del tablero"
               data-testid="input-lead"
-            />
+              disabled={leadsDelTablero.length === 0}
+              className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
+            >
+              <option value="">
+                {leadsDelTablero.length === 0
+                  ? 'Todavía no hay leads en el tablero'
+                  : 'Elige un interesado…'}
+              </option>
+              {leadsDelTablero.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.candidateName}
+                  {l.propertyTitle ? ` · ${l.propertyTitle}` : ''}
+                </option>
+              ))}
+            </select>
           </div>
         </CardHeader>
         <CardContent>
           {!leadId.trim() ? (
             <p className="text-muted-foreground text-sm">
-              Pega el id de un lead para ver qué le calza.
+              Elige un interesado y te muestro qué inmuebles le calzan, y por qué.
             </p>
           ) : delLead.noHabilitado ? (
             <p
@@ -229,20 +265,32 @@ export function CalceClient() {
             Se liberó este inmueble: ¿a quién le sirve?
           </CardTitle>
           <div className="space-y-1">
-            <Label htmlFor="property-id">Id del inmueble</Label>
-            <Input
+            <Label htmlFor="property-id">¿Cuál inmueble se liberó?</Label>
+            <select
               id="property-id"
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
-              placeholder="Pega el id del inmueble"
               data-testid="input-inmueble"
-            />
+              disabled={inmuebles.length === 0}
+              className="border-border bg-background h-10 w-full rounded-md border px-3 text-sm"
+            >
+              <option value="">
+                {inmuebles.length === 0
+                  ? 'Todavía no hay inmuebles en el tablero'
+                  : 'Elige un inmueble…'}
+              </option>
+              {inmuebles.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.titulo}
+                </option>
+              ))}
+            </select>
           </div>
         </CardHeader>
         <CardContent>
           {!propertyId.trim() ? (
             <p className="text-muted-foreground text-sm">
-              Pega el id de un inmueble para ver a qué leads abiertos les calza.
+              Elige un inmueble y te muestro a qué interesados abiertos les sirve.
             </p>
           ) : (
             <EstadoDeDatos

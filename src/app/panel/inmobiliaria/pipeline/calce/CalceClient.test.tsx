@@ -18,6 +18,31 @@ const { api } = vi.hoisted(() => ({
   },
 }))
 
+/*
+ * Desde el glow-up del 18-09 el lead y el inmueble se ELIGEN por nombre, no se
+ * pegan como UUID: la pantalla pedía «pega el id de la tarjeta del tablero», que
+ * obligaba a abrir el tablero, abrir la tarjeta y sacar el id de la URL.
+ * El selector necesita de dónde elegir, así que se moquea el tablero. Las
+ * reglas que este archivo asegura no cambiaron: siguen siendo sobre el
+ * RESULTADO del calce, no sobre cómo se escoge.
+ */
+vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  usePipelineItems: () => ({
+    pipelineItems: [
+      {
+        id: 'p-1',
+        propertyId: 'inm-9',
+        propertyTitle: 'Apartamento en Envigado',
+        propertyAddress: 'Cra 43 #30-12',
+        candidateName: 'Marta Gómez',
+      },
+    ],
+    isLoading: false,
+    errorCrudo: null,
+    refetch: vi.fn(),
+  }),
+}))
+
 vi.mock('@/lib/api/crm.service', async () => {
   const real =
     await vi.importActual<typeof import('@/lib/api/crm.service')>(
@@ -56,16 +81,21 @@ async function pintar() {
   })
 }
 const $ = (sel: string) => contenedor.querySelector(sel)
+/**
+ * Elige en el selector. Antes escribía en un `<input>`; desde el 18-09 el lead y
+ * el inmueble se ESCOGEN, y un `<select>` necesita su propio setter —el del
+ * prototipo de HTMLInputElement no le sirve— y un evento `change`, no `input`.
+ */
 async function escribir(sel: string, valor: string) {
-  const el = contenedor.querySelector<HTMLInputElement>(sel)
+  const el = contenedor.querySelector<HTMLSelectElement>(sel)
   if (!el) throw new Error(`no existe ${sel}`)
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
+      HTMLSelectElement.prototype,
       'value',
     )?.set
     setter?.call(el, valor)
-    el.dispatchEvent(new Event('input', { bubbles: true }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
   })
 }
 

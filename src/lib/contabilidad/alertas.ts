@@ -8,8 +8,24 @@
  *   NO_CUADRA         ← `GET /reportes/balance-de-prueba` (cuadra false)
  *   MES_SIN_CERRAR    ← `GET /asientos` del mes anterior + `GET /asientos/cierre`
  *
+ * Y las cuatro del contrato del 18-09 (§8, la portada):
+ *
+ *   RUBROS_INCOMPLETOS ← `GET /mapeo/rubros` (completo false)
+ *   FACTURAS_SIN_CAUSAR← `GET /gastos/facturas?estado=BORRADOR`
+ *   LOTES_POR_APROBAR  ← `GET /egresos/lotes` (BORRADOR o ESPERANDO_APROBACION)
+ *   EXOGENA_SIN_VISTO  ← `GET /exogena?anio=` (formatos con filas y sin APROBADA)
+ *
  * Regla de Nico para toda alerta: qué pasó con el número · qué hacer · botón.
  * `describirAlerta` produce exactamente eso; la pantalla sólo lo pinta.
+ *
+ * ── Ninguna alerta sale de un `null` ────────────────────────────────────────
+ *
+ * Las cuatro nuevas viven en migraciones sin aplicar, así que sus consultas
+ * pueden responder `disponible: false` o fallar. En los dos casos la entrada
+ * llega `null` y NO se genera alerta: una portada que no pudo preguntar no
+ * grita. Lo que sí hace la portada es decir qué revisión no cargó — para eso
+ * está `REVISIONES` en `HubDeContabilidad.tsx`, porque «no hay alertas» sólo
+ * significa «está todo bien» si se pudo revisar.
  */
 
 import type { AsientosFaltantes, Cierre, EventoContable } from '@/lib/api/contabilidad.service';
@@ -25,11 +41,47 @@ export interface MesAnterior {
   asientos: number;
 }
 
+/** Lo que la portada sabe del mapeo de rubros del P&G (contrato 18-09, §1). */
+export interface EstadoDeRubros {
+  /** ¿Todos los rubros sugeridos tienen cuenta? */
+  completo: boolean;
+  /** Los nombres de los que faltan, para decirlos. */
+  faltantes: string[];
+}
+
+/** Lo que la portada sabe de las facturas de proveedor (§3). */
+export interface EstadoDeFacturas {
+  /** Cuántas están en BORRADOR: registradas y sin asiento. */
+  sinCausar: number;
+  /** Cuánto suman, para que el número tenga peso. */
+  totalCop: number;
+}
+
+/** Lo que la portada sabe de los lotes de egreso (§4). */
+export interface EstadoDeLotes {
+  porAprobar: number;
+  totalCop: number;
+}
+
+/** Lo que la portada sabe de la exógena del año cerrado (§6). */
+export interface EstadoDeExogena {
+  anio: number;
+  /** Formatos con filas y sin visto bueno del contador. */
+  sinVistoBueno: number;
+  /** De esos, cuántos además tienen algo que impide presentarlos. */
+  conBloqueos: number;
+}
+
 export interface EntradaDeAlertas {
   faltantes: AsientosFaltantes | null;
   balance: { cuadra: boolean; diferenciaCop: number } | null;
   cierre: Cierre | null;
   mesAnterior: MesAnterior | null;
+  /** Las cuatro del 18-09. `null`/ausente = no se pudo preguntar: no hay alerta. */
+  rubros?: EstadoDeRubros | null;
+  facturas?: EstadoDeFacturas | null;
+  lotes?: EstadoDeLotes | null;
+  exogena?: EstadoDeExogena | null;
 }
 
 export type AlertaContable =
@@ -44,7 +96,11 @@ export type AlertaContable =
     }
   | { tipo: 'MAPEO_INCOMPLETO'; eventosSinCuenta: EventoContable[] }
   | { tipo: 'NO_CUADRA'; diferenciaCop: number }
-  | { tipo: 'MES_SIN_CERRAR'; mes: string; hasta: string; asientos: number };
+  | { tipo: 'MES_SIN_CERRAR'; mes: string; hasta: string; asientos: number }
+  | { tipo: 'RUBROS_INCOMPLETOS'; faltantes: string[] }
+  | { tipo: 'FACTURAS_SIN_CAUSAR'; sinCausar: number; totalCop: number }
+  | { tipo: 'LOTES_POR_APROBAR'; porAprobar: number; totalCop: number }
+  | { tipo: 'EXOGENA_SIN_VISTO_BUENO'; anio: number; sinVistoBueno: number; conBloqueos: number };
 
 /**
  * Qué alertas corresponden a lo que se sabe. Lo que no llegó (`null`) no
@@ -80,6 +136,45 @@ export function alertasDeContabilidad(entrada: EntradaDeAlertas): AlertaContable
     if (frontera === null || frontera < m.hasta) {
       alertas.push({ tipo: 'MES_SIN_CERRAR', mes: m.mes, hasta: m.hasta, asientos: m.asientos });
     }
+  }
+
+  // ── Las cuatro del contrato del 18-09 ──────────────────────────────────
+  //
+  // Van después de las de siempre a propósito: un libro que no cuadra o
+  // movimientos sin asentar son más graves que un mapeo a medio hacer, y la
+  // portada se lee de arriba abajo.
+
+  const r = entrada.rubros;
+  if (r && !r.completo && r.faltantes.length > 0) {
+    alertas.push({ tipo: 'RUBROS_INCOMPLETOS', faltantes: r.faltantes });
+  }
+
+  const facturas = entrada.facturas;
+  if (facturas && facturas.sinCausar > 0) {
+    alertas.push({
+      tipo: 'FACTURAS_SIN_CAUSAR',
+      sinCausar: facturas.sinCausar,
+      totalCop: facturas.totalCop,
+    });
+  }
+
+  const lotes = entrada.lotes;
+  if (lotes && lotes.porAprobar > 0) {
+    alertas.push({
+      tipo: 'LOTES_POR_APROBAR',
+      porAprobar: lotes.porAprobar,
+      totalCop: lotes.totalCop,
+    });
+  }
+
+  const exogena = entrada.exogena;
+  if (exogena && exogena.sinVistoBueno > 0) {
+    alertas.push({
+      tipo: 'EXOGENA_SIN_VISTO_BUENO',
+      anio: exogena.anio,
+      sinVistoBueno: exogena.sinVistoBueno,
+      conBloqueos: exogena.conBloqueos,
+    });
   }
 
   return alertas;
@@ -168,5 +263,44 @@ export function describirAlerta(
         accion: { tipo: 'cerrar-mes', label: 'Cerrar el mes', hasta: alerta.hasta },
       };
     }
+    case 'RUBROS_INCOMPLETOS':
+      return {
+        clave: 'rubros-incompletos',
+        severidad: 'info',
+        titulo: `${plural(alerta.faltantes.length, 'rubro del P&G', 'rubros del P&G')} sin cuenta del PUC`,
+        // La consecuencia visible, no la abstracta: el guion que ya se ve.
+        detalle: `Sin cuenta, el real de ${alerta.faltantes.slice(0, 3).join(', ')}${alerta.faltantes.length > 3 ? ' y otros' : ''} sale en «—» en el presupuesto y en el P&G. El preset propone una cuenta para casi todos.`,
+        accion: { tipo: 'ir', label: 'Mapear los rubros', href: `${BASE}/mapeo?parte=rubros` },
+      };
+    case 'FACTURAS_SIN_CAUSAR':
+      return {
+        clave: 'facturas-sin-causar',
+        severidad: 'warning',
+        titulo: `${plural(alerta.sinCausar, 'factura de proveedor', 'facturas de proveedor')} sin causar por ${formatoDeMonto(alerta.totalCop)}`,
+        detalle:
+          'Una factura registrada y sin causar no está en el libro: no aparece en el P&G ni en la exógena, y el proveedor ya está esperando el pago.',
+        accion: { tipo: 'ir', label: 'Ver las facturas', href: `${BASE}/gastos?estado=BORRADOR` },
+      };
+    case 'LOTES_POR_APROBAR':
+      return {
+        clave: 'lotes-por-aprobar',
+        severidad: 'warning',
+        titulo: `${plural(alerta.porAprobar, 'lote de egresos espera', 'lotes de egresos esperan')} aprobación por ${formatoDeMonto(alerta.totalCop)}`,
+        // Quién puede aprobar es parte del «qué hacer»: el que armó el lote no.
+        detalle:
+          'Hasta que otra persona lo apruebe no sale el archivo para el banco y los proveedores no cobran. Lo tiene que aprobar alguien distinto de quien lo armó.',
+        accion: { tipo: 'ir', label: 'Ver los lotes', href: `${BASE}/egresos` },
+      };
+    case 'EXOGENA_SIN_VISTO_BUENO':
+      return {
+        clave: 'exogena-sin-visto-bueno',
+        severidad: alerta.conBloqueos > 0 ? 'warning' : 'info',
+        titulo: `${plural(alerta.sinVistoBueno, 'formato de exógena', 'formatos de exógena')} de ${alerta.anio} sin el visto bueno del contador`,
+        detalle:
+          alerta.conBloqueos > 0
+            ? `${plural(alerta.conBloqueos, 'tiene', 'tienen')} algo que impide presentarlos: movimientos sin tercero o cuentas sin concepto. Eso se arregla antes del visto bueno.`
+            : 'Los formatos ya cuadran contra el libro. Falta que el contador los revise y deje constancia de quién y cuándo.',
+        accion: { tipo: 'ir', label: 'Ver la exógena', href: `${BASE}/exogena?anio=${alerta.anio}` },
+      };
   }
 }

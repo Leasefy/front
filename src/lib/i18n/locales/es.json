@@ -9363,7 +9363,18 @@
         "aprobadaInquilino": "Cotización aprobada a cargo del inquilino",
         "sugiereElAgente": "El agente sugiere que quede a cargo del {{quien}}. La decisión es tuya.",
         "quienPropietario": "propietario",
-        "quienInquilino": "inquilino"
+        "quienInquilino": "inquilino",
+        "compartida": "Compartida",
+        "compartidaAyuda": "Se parte por el porcentaje que pactes: al propietario se le pide su parte y al inquilino se le cobra la suya.",
+        "inmobiliaria": "De la inmobiliaria",
+        "inmobiliariaAyuda": "Gasto propio: garantía de tu proveedor o un error de la inmobiliaria. No se le descuenta al propietario ni se le cobra al inquilino.",
+        "inmobiliariaMotivo": "¿Por qué la asume la inmobiliaria?",
+        "repartoInquilino": "Porcentaje a cargo del inquilino (%)",
+        "repartoResumen": "Inquilino {{inquilino}} % ({{valorInquilino}}) · Propietario {{propietario}} % ({{valorPropietario}}). El peso que sobra va al propietario.",
+        "quienCompartida": "propietario y el inquilino, compartida",
+        "quienInmobiliaria": "de la inmobiliaria",
+        "aprobadaCompartida": "Cotización aprobada: compartida entre el propietario y el inquilino",
+        "aprobadaInmobiliaria": "Cotización aprobada: la asume la inmobiliaria"
       },
       "propuesta": {
         "titulo": "Propuesta del agente",

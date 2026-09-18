@@ -168,7 +168,9 @@ describe('M3 — aprobar una cotización', () => {
       document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-confirmar"]')!.click()
     })
 
-    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', 'PROPIETARIO')
+    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', {
+      aCargoDe: 'PROPIETARIO',
+    })
     expect(h.toast.error).toHaveBeenCalledWith('No se pudo aprobar la cotización', {
       description: 'La cotización ya no está vigente',
     })
@@ -197,7 +199,9 @@ describe('M3 — aprobar una cotización', () => {
       document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-confirmar"]')!.click()
     })
 
-    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', 'INQUILINO')
+    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', {
+      aCargoDe: 'INQUILINO',
+    })
     expect(h.toast.success).toHaveBeenCalledWith(
       'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
       { description: 'El cobro todavía no entra solo al estado de cuenta del inquilino.' },

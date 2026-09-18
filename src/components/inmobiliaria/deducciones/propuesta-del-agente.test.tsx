@@ -220,7 +220,8 @@ describe('<ACargoDeDialog> — la sugerencia del agente', () => {
     await act(async () => {
       (q('a-cargo-de-confirmar') as HTMLButtonElement).click();
     });
-    expect(onConfirmar).toHaveBeenCalledWith('PROPIETARIO');
+    // H-03: el diálogo devuelve un objeto (ver `LoQueSeAprueba`).
+    expect(onConfirmar).toHaveBeenCalledWith({ aCargoDe: 'PROPIETARIO' });
   });
 
   it('sin sugerencia no dice nada del agente', async () => {

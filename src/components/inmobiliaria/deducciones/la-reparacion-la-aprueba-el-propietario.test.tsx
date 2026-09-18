@@ -99,6 +99,23 @@ afterEach(() => {
 
 const q = (testid: string) => document.body.querySelector(`[data-testid="${testid}"]`);
 
+/**
+ * Escribe en un `input`/`textarea` controlado por React.
+ *
+ * 🔴 Asignar `.value` directo NO alcanza: React guarda el valor anterior en el
+ * nodo y, al ver el mismo, se traga el evento. Hay que llamar al setter del
+ * prototipo, que es lo que React vigila.
+ */
+const cambiar = (el: HTMLInputElement | HTMLTextAreaElement, valor: string) => {
+  const proto =
+    el instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!;
+  setter.call(el, valor);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 describe('en el panel: dónde está la aprobación del propietario', () => {
   it('pendiente: dice que espera al propietario', async () => {
     await act(async () => {
@@ -200,7 +217,13 @@ describe('<ACargoDeDialog> — la excepción de emergencia', () => {
     await act(async () => {
       (q('a-cargo-de-confirmar') as HTMLButtonElement).click();
     });
-    expect(onConfirmar).toHaveBeenCalledWith('PROPIETARIO', { motivo: 'Fuga de gas', soporte: archivo });
+    // 🔴 H-03 (18-09-2026): el diálogo devuelve un OBJETO, no un string —
+    // una compartida viaja con sus dos porcentajes y la de la inmobiliaria
+    // con su motivo. Las dos de siempre van sin nada colgado.
+    expect(onConfirmar).toHaveBeenCalledWith(
+      { aCargoDe: 'PROPIETARIO' },
+      { motivo: 'Fuga de gas', soporte: archivo },
+    );
   });
 });
 
@@ -253,5 +276,105 @@ describe('en el portal del propietario: «Aprobar reparaciones»', () => {
       raiz.render(<AprobarReparacionesPage />);
     });
     expect(q('aprobaciones-vacio')).not.toBeNull();
+  });
+});
+
+/**
+ * 🔴 H-03 (18-09-2026): «sí existen COMPARTIDA con % por lado y A CARGO DE LA
+ * INMOBILIARIA (garantía de su proveedor o error suyo = gasto propio)».
+ *
+ * Nico lo señaló mirando esta pantalla: sólo ofrecía dos formas aunque la base
+ * admitía las cuatro. Lo que este bloque fija es que las dos nuevas EXISTEN y
+ * que no se pueden confirmar a medias — que es como se llega a un 400 después
+ * de que la persona ya escribió todo.
+ */
+describe('<ACargoDeDialog> — las cuatro formas (H-03)', () => {
+  const abrir = async (onConfirmar = vi.fn(() => Promise.resolve())) => {
+    await act(async () => {
+      raiz.render(
+        <ACargoDeDialog
+          abierto
+          onOpenChange={vi.fn()}
+          cotizacion={{ proveedor: 'Plomería Rápida', valorCop: 200_001 }}
+          onConfirmar={onConfirmar}
+        />,
+      );
+    });
+    return onConfirmar;
+  };
+
+  it('ofrece las CUATRO, no dos', async () => {
+    await abrir();
+    for (const forma of ['PROPIETARIO', 'INQUILINO', 'COMPARTIDA', 'INMOBILIARIA']) {
+      expect(q(`a-cargo-de-${forma}`)).toBeTruthy();
+    }
+  });
+
+  it('🔴 compartida: manda los DOS porcentajes y el del propietario sale de restar', async () => {
+    const onConfirmar = await abrir();
+    await act(async () => {
+      (q('a-cargo-de-COMPARTIDA') as HTMLButtonElement).click();
+    });
+    const pct = q('reparto-inquilino') as HTMLInputElement;
+    expect(pct).toBeTruthy();
+    await act(async () => {
+      cambiar(pct, '40');
+    });
+    // El resumen dice los dos lados EN PESOS antes de aprobar.
+    expect(q('reparto-resumen')?.textContent).toContain('40');
+    expect(q('reparto-resumen')?.textContent).toContain('60');
+
+    await act(async () => {
+      (q('a-cargo-de-confirmar') as HTMLButtonElement).click();
+    });
+    // Sin emergencia se llama con UN argumento: el segundo sólo viaja cuando
+    // hay motivo y soporte.
+    expect(onConfirmar).toHaveBeenCalledWith({
+      aCargoDe: 'COMPARTIDA',
+      porcentajes: { propietarioPct: 60, inquilinoPct: 40 },
+    });
+  });
+
+  it('🔴 un reparto de 0 % o 100 % NO se puede confirmar: para eso están las otras formas', async () => {
+    const onConfirmar = await abrir();
+    await act(async () => {
+      (q('a-cargo-de-COMPARTIDA') as HTMLButtonElement).click();
+    });
+    for (const valor of ['0', '100']) {
+      await act(async () => {
+        cambiar(q('reparto-inquilino') as HTMLInputElement, valor);
+      });
+      expect((q('a-cargo-de-confirmar') as HTMLButtonElement).disabled).toBe(true);
+    }
+    expect(onConfirmar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 a cargo de la inmobiliaria EXIGE el motivo: es plata propia', async () => {
+    const onConfirmar = await abrir();
+    await act(async () => {
+      (q('a-cargo-de-INMOBILIARIA') as HTMLButtonElement).click();
+    });
+    expect((q('a-cargo-de-confirmar') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => {
+      cambiar(q('motivo-inmobiliaria-texto') as HTMLTextAreaElement, 'Garantía del proveedor.');
+    });
+    await act(async () => {
+      (q('a-cargo-de-confirmar') as HTMLButtonElement).click();
+    });
+    expect(onConfirmar).toHaveBeenCalledWith({
+      aCargoDe: 'INMOBILIARIA',
+      motivoInmobiliaria: 'Garantía del proveedor.',
+    });
+  });
+
+  it('las dos de siempre NO mandan porcentajes ni motivo colgados', async () => {
+    const onConfirmar = await abrir();
+    await act(async () => {
+      (q('a-cargo-de-INQUILINO') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      (q('a-cargo-de-confirmar') as HTMLButtonElement).click();
+    });
+    expect(onConfirmar).toHaveBeenCalledWith({ aCargoDe: 'INQUILINO' });
   });
 });

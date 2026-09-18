@@ -101,4 +101,34 @@ describe('<EstudioPagadoALaInmobiliaria>', () => {
     expect(q('estudio-sin-pago')).not.toBeNull();
     expect(q('estudio-registrar')).toBeNull();
   });
+
+  it('🔴 el estudio vale 60 días (Nico, 17-09): la pantalla lo dice', async () => {
+    permisos.valor = { canAccess: () => true };
+    api.vigente.mockResolvedValue({
+      vigente: false,
+      numeroRecibo: null,
+      pagadoEl: null,
+      vigenteHasta: null,
+      vigenciaDias: 60,
+    });
+    await act(async () => {
+      raiz.render(<EstudioPagadoALaInmobiliaria applicationId="app-1" />);
+    });
+    expect(q('estudio-sin-pago')?.textContent).toContain('60 días');
+  });
+
+  it('si la inmobiliaria le puso otra vigencia, la pantalla dice la suya', async () => {
+    permisos.valor = { canAccess: () => true };
+    api.vigente.mockResolvedValue({
+      vigente: false,
+      numeroRecibo: null,
+      pagadoEl: null,
+      vigenteHasta: null,
+      vigenciaDias: 90,
+    });
+    await act(async () => {
+      raiz.render(<EstudioPagadoALaInmobiliaria applicationId="app-1" />);
+    });
+    expect(q('estudio-sin-pago')?.textContent).toContain('90 días');
+  });
 });

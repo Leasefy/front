@@ -66,7 +66,7 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
         referencia: referencia.trim() || undefined,
       });
       toast.success(`Recibo #${pago.numeroRecibo} del estudio`, {
-        description: `Factura generada por ${formatCurrency(pago.factura.totalCop)}. Le sirve hasta el ${dia(pago.vigenteHasta)}.`,
+        description: `Factura generada por ${formatCurrency(pago.factura.totalCop)}. Le sirve ${pago.diasQueLeQuedan} días, hasta el ${dia(pago.vigenteHasta)}.`,
       });
       setAbierto(false);
       await cargar();
@@ -92,7 +92,8 @@ export function EstudioPagadoALaInmobiliaria({ applicationId }: { applicationId:
         </p>
       ) : (
         <p className="text-xs text-fg-muted" data-testid="estudio-sin-pago">
-          No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante y no se devuelve.
+          No tiene un estudio pagado y vigente acá. El estudio lo paga el solicitante, no se devuelve y le sirve{' '}
+          {estado?.vigenciaDias ?? 60} días para cualquier inmueble de la inmobiliaria.
         </p>
       )}
       {!estado?.vigente && puedeCobrar && !abierto && (

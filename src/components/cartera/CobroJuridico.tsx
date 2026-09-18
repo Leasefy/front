@@ -4,13 +4,18 @@
  * 🔴 COBRO JURÍDICO en pantalla (Nico, 17-09-2026).
  *
  *   · los ABOGADOS de la inmobiliaria (se registran acá);
- *   · lo PACTADO por defecto: si los honorarios los paga el inquilino, el % de
- *     lo recaudado y el tope;
+ *   · lo PACTADO por defecto: si los honorarios los paga el inquilino, el % DE
+ *     LA DEUDA y el tope;
  *   · los SUGERIDOS: 90 días o más de mora y sin póliza. El sistema sugiere;
  *     pasar el caso lo hace una persona, eligiendo abogado;
  *   · los CASOS en jurídico, con lo que se le debe al abogado, la bandera por
  *     contrato («pacta honorarios») y el cierre con motivo;
  *   · los HONORARIOS: la cuenta por pagar al abogado, marcable como pagada.
+ *
+ * 🔴 SEGUNDA VUELTA (Nico, 17-09): el honorario entra al ESTADO DE CUENTA del
+ * inquilino cuando el caso pasa a jurídico —un cargo de una vez, sin IVA y sin
+ * mora—, no con cada recibo. Si el caso se cierra SIN COBRO, ese cargo se anula
+ * con motivo: por eso el diálogo de cerrar tiene la casilla.
  *
  * Permisos: `cobros:view` para ver; `cobros:edit` para mover.
  */
@@ -71,6 +76,8 @@ export function CobroJuridico() {
      del navegador ignora el tema y algunos navegadores lo suprimen). */
   const [cerrando, setCerrando] = useState<CasoJuridico | null>(null);
   const [motivoDeCierre, setMotivoDeCierre] = useState('');
+  /** 🔴 «Se cerró sin cobro»: el cargo sale del estado de cuenta del inquilino. */
+  const [sinCobro, setSinCobro] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -157,10 +164,15 @@ export function CobroJuridico() {
     if (!caso || motivoDeCierre.trim().length < 5) return;
     setOcupado(true);
     try {
-      await juridicoApi.cerrar(caso.id, motivoDeCierre.trim());
-      toast.success('Caso cerrado');
+      await juridicoApi.cerrar(caso.id, motivoDeCierre.trim(), sinCobro);
+      toast.success(
+        sinCobro
+          ? 'Caso cerrado sin cobro: los honorarios salieron del estado de cuenta del inquilino.'
+          : 'Caso cerrado',
+      );
       setCerrando(null);
       setMotivoDeCierre('');
+      setSinCobro(false);
       await cargar();
     } catch (e) {
       toast.error('No se pudo cerrar el caso', { description: mensaje(e, '') });
@@ -212,8 +224,10 @@ export function CobroJuridico() {
             Honorarios del abogado
           </p>
           <p className="mt-1 text-body-sm text-fg-muted">
-            Los honorarios van a cargo del inquilino SÓLO si el contrato lo pacta. Son un porcentaje de lo que se
-            RECAUDE, con tope, y son del abogado: quedan como cuenta por pagar, no como ingreso de la inmobiliaria.
+            Los honorarios van a cargo del inquilino SÓLO si el contrato lo pacta. Al pasar el caso entran a su estado
+            de cuenta como un cobro más —de una sola vez, sin IVA y sin intereses de mora—, calculado como un
+            porcentaje de la deuda, con tope. Son del abogado: quedan como cuenta por pagar, no como ingreso de la
+            inmobiliaria ni del propietario.
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="text-sm">
@@ -231,7 +245,7 @@ export function CobroJuridico() {
               </select>
             </label>
             <label className="text-sm">
-              <span className="block text-xs text-fg-muted">% de lo recaudado</span>
+              <span className="block text-xs text-fg-muted">% de la deuda al pasar</span>
               <input
                 className="mt-1 w-28 rounded-md border border-border bg-surface p-2 text-sm"
                 inputMode="decimal"
@@ -383,7 +397,7 @@ export function CobroJuridico() {
                   <span>
                     {c.abogado.nombre} · desde el {dia(c.pasadoAt)} ·{' '}
                     {c.pactaHonorarios
-                      ? `honorarios ${c.honorariosPct} % de lo recaudado${c.honorariosTopeCop ? ` (tope ${formatCurrency(c.honorariosTopeCop)})` : ''}`
+                      ? `honorarios ${c.honorariosPct} % de la deuda${c.honorariosTopeCop ? ` (tope ${formatCurrency(c.honorariosTopeCop)})` : ''}`
                       : 'sin honorarios a cargo del inquilino'}
                     {c.honorariosCausadosCop > 0
                       ? ` · causados ${formatCurrency(c.honorariosCausadosCop)}`
@@ -409,6 +423,7 @@ export function CobroJuridico() {
                         onClick={() => {
                           setCerrando(c);
                           setMotivoDeCierre('');
+                          setSinCobro(false);
                         }}
                         data-testid={`cerrar-${c.id}`}
                       >
@@ -426,7 +441,7 @@ export function CobroJuridico() {
         <section className="rounded-lg border border-border bg-surface p-4" data-testid="honorarios">
           <p className="text-body font-semibold text-fg">Por pagar a los abogados</p>
           <p className="mt-1 text-body-sm text-fg-muted">
-            Lo que se causó con cada recibo del contrato en jurídico. Es plata del abogado: no es ingreso de la
+            Lo que se le cargó al inquilino al pasar cada caso a jurídico. Es plata del abogado: no es ingreso de la
             inmobiliaria ni del propietario.
           </p>
           {porPagar.length === 0 ? (
@@ -440,8 +455,12 @@ export function CobroJuridico() {
                   data-testid={`honorario-${h.id}`}
                 >
                   <span>
-                    {h.abogado.nombre} · {formatCurrency(h.honorarioCop)} (de {formatCurrency(h.recaudoCop)}{' '}
-                    recaudados) · {dia(h.createdAt)}
+                    {h.abogado.nombre} · {formatCurrency(h.honorarioCop)} (sobre{' '}
+                    {formatCurrency(h.baseCop)}{' '}
+                    {h.origen === 'AL_PASAR' ? 'de deuda al pasar' : 'recaudados'}) · {dia(h.createdAt)}
+                    {h.origen === 'AL_PASAR' && h.conceptoDeUnaVezId ? (
+                      <span className="text-fg-muted"> · cargado al estado de cuenta del inquilino</span>
+                    ) : null}
                   </span>
                   {puedeMover && (
                     <Button
@@ -462,13 +481,19 @@ export function CobroJuridico() {
         </section>
         <AlertDialog
           open={cerrando !== null}
-          onOpenChange={(abierto) => !abierto && setCerrando(null)}
+          onOpenChange={(abierto) => {
+            if (!abierto) {
+              setCerrando(null);
+              setSinCobro(false);
+            }
+          }}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Cerrar el caso</AlertDialogTitle>
               <AlertDialogDescription>
-                El contrato deja de estar «en jurídico». Lo que ya se causó al abogado no se borra.
+                El contrato deja de estar «en jurídico». Lo que ya se causó al abogado no se borra, salvo que marques
+                que se cerró sin cobro.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
@@ -482,6 +507,20 @@ export function CobroJuridico() {
                 maxLength={500}
               />
               <p className="text-caption text-fg-muted">Entre 5 y 500 caracteres.</p>
+              <label className="flex items-start gap-2 text-body-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={sinCobro}
+                  onChange={(e) => setSinCobro(e.target.checked)}
+                  data-testid="cerrar-sin-cobro"
+                />
+                <span>
+                  <strong>Se cerró SIN COBRO.</strong> Los honorarios salen del estado de cuenta del inquilino (se
+                  anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o
+                  un cobro encima no se puede: se corrige con una nota crédito.
+                </span>
+              </label>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>

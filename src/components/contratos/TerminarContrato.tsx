@@ -288,11 +288,15 @@ export function TerminarContrato({
                 de {PESOS.format(vista.prorrateoDelUltimoMes.canonMensualCop)}.
               </p>
               {vista.prorrateoDelUltimoMes.ultimoDiaCobrado && (
+                /*
+                 * 🔴 La fecha del acta es LITERAL (Nico, 17-09, segunda vuelta):
+                 * «si el acta dice que entrega el 5, se cobra hasta el 5
+                 * inclusive». D8 —terminar un día antes— es la regla del
+                 * TÉRMINO del contrato, no la de la entrega.
+                 */
                 <p className="mt-1 text-xs text-muted-foreground" data-testid="ultimo-dia-cobrado">
-                  Se cobra hasta el {vista.prorrateoDelUltimoMes.ultimoDiaCobrado}
-                  {vista.prorrateoDelUltimoMes.terminaUnDiaAntes
-                    ? ": la fecha cae en el aniversario del contrato y el término vence el día anterior (D8)."
-                    : "."}
+                  Se cobra hasta el {vista.prorrateoDelUltimoMes.ultimoDiaCobrado} inclusive: la fecha del acta se
+                  cobra completa, porque ese día ocupó el inmueble.
                 </p>
               )}
             </div>

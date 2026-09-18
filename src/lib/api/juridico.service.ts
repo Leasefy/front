@@ -3,8 +3,13 @@
  *
  * «Los abogados se registran por inmobiliaria. UNA persona pasa el caso a
  * jurídico; el sistema lo SUGIERE desde el día 90 sin póliza. Los honorarios
- * van a cargo del inquilino sólo si el contrato lo pacta, son un % de lo
- * RECAUDADO con tope, y son del ABOGADO: cuenta por pagar, no ingreso.»
+ * van a cargo del inquilino sólo si el contrato lo pacta.»
+ *
+ * 🔴 SEGUNDA VUELTA (17-09): los honorarios «entran como un cobro más en el
+ * estado de cuenta del inquilino cuando el caso pasa a jurídico: un cargo de
+ * una vez, SIN IVA y SIN MORA, que sigue siendo DEL ABOGADO. Si el caso se
+ * cierra sin cobro, el cargo se anula con motivo». Ya no se liquidan por
+ * recibo: la base es la DEUDA al pasar, con el tope del caso.
  *
  *   GET/POST/PATCH /inmobiliaria/juridico/abogados
  *   GET/PUT        /inmobiliaria/juridico/configuracion
@@ -73,10 +78,15 @@ export interface HonorarioJuridico {
   casoId: string;
   contractId: string;
   abogado: { id: string; nombre: string };
-  reciboId: string;
-  recaudoCop: number;
+  /** `AL_PASAR` (el de hoy) o `RECAUDO` (las filas de antes). */
+  origen: string;
+  /** La base del %: la deuda al pasar, o el recaudo en las filas viejas. */
+  baseCop: number;
   honorarioCop: number;
   estado: 'POR_PAGAR_AL_ABOGADO' | 'PAGADO_AL_ABOGADO' | 'ANULADO';
+  /** El cargo que quedó en el estado de cuenta del inquilino. */
+  conceptoDeUnaVezId: string | null;
+  reciboId: string | null;
   pagadoAt: string | null;
   createdAt: string;
 }
@@ -148,8 +158,15 @@ export const juridicoApi = {
     return res;
   },
 
-  async cerrar(casoId: string, motivo: string): Promise<CasoJuridico> {
-    const res = await apiClient.post<CasoJuridico>(`${BASE}/casos/${casoId}/cerrar`, { motivo });
+  /**
+   * 🔴 `sinCobro` saca el cargo del estado de cuenta del inquilino (se anula
+   * con este motivo) y el honorario deja de ser cuenta por pagar al abogado.
+   */
+  async cerrar(casoId: string, motivo: string, sinCobro = false): Promise<CasoJuridico> {
+    const res = await apiClient.post<CasoJuridico>(`${BASE}/casos/${casoId}/cerrar`, {
+      motivo,
+      ...(sinCobro ? { sinCobro: true } : {}),
+    });
     invalidar('cobros');
     return res;
   },

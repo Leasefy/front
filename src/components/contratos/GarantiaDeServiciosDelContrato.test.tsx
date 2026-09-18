@@ -41,6 +41,10 @@ function datos(overrides: Partial<GarantiaDeServicios> = {}): GarantiaDeServicio
     disponible: true,
     momento: 'ENTREGA',
     topeCop: null,
+    topePeriodos: 2,
+    mesesDelPromedio: 6,
+    valorSugeridoCop: null,
+    topeEfectivoCop: null,
     avisoDelTope: 'Sin tope configurado: … un abogado debe validar el tope legal.',
     garantia: null,
     cuenta: null,
@@ -101,6 +105,12 @@ async function escribir(input: HTMLInputElement, valor: string) {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, valor);
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
+}
+
+async function escribirFactura(i: number, servicio: string, periodo: string, valor: string) {
+  await escribir($(`factura-servicio-${i}`) as HTMLInputElement, servicio);
+  await escribir($(`factura-periodo-${i}`) as HTMLInputElement, periodo);
+  await escribir($(`factura-valor-${i}`) as HTMLInputElement, valor);
 }
 
 describe('promedioMensual (la misma cuenta del back)', () => {
@@ -213,5 +223,42 @@ describe('<GarantiaDeServiciosDelContrato> (D10)', () => {
     await montar(false);
     expect($('garantia-cuenta')).not.toBeNull();
     expect($('nuevo-movimiento-de-garantia')).toBeNull();
+  });
+
+  it('🔴 el promedio son los ÚLTIMOS 6 MESES, no todos los digitados (17-09)', () => {
+    const viejas = Array.from({ length: 6 }, (_, k) => ({
+      servicio: 'Energía',
+      periodo: `2026-0${k + 1}`,
+      valorCop: 100_000,
+    }));
+    const nuevas = Array.from({ length: 6 }, (_, k) => ({
+      servicio: 'Energía',
+      periodo: `2026-${String(k + 7).padStart(2, '0')}`,
+      valorCop: 300_000,
+    }));
+    // Promediando los doce daría 200.000: la tarifa de hace un año arrastraba.
+    expect(promedioMensual([...viejas, ...nuevas], 6)).toBe(300_000);
+    // Con menos de seis, se promedian los que haya.
+    expect(promedioMensual(nuevas.slice(0, 2), 6)).toBe(300_000);
+    // Y el orden en que se digitan no cambia nada.
+    expect(promedioMensual([...nuevas].reverse(), 6)).toBe(
+      promedioMensual(nuevas, 6),
+    );
+  });
+
+  it('🔴 el tope son 2 períodos de facturación: lo dice y frena el registro', async () => {
+    api.garantiaDeServicios.mockResolvedValue(
+      datos({ topeCop: null, topePeriodos: 2, mesesDelPromedio: 6 }),
+    );
+    await montar();
+
+    // Dos meses de $200.000: sugerido 200.000, tope 400.000.
+    await escribirFactura(0, 'Energía', '2026-08', '200000');
+    await act(async () => ($('agregar-factura') as HTMLElement).click());
+    await escribirFactura(1, 'Energía', '2026-09', '200000');
+
+    expect($('garantia-sugerido')!.textContent).toContain('últimos 6 meses');
+    expect($('garantia-tope')!.textContent).toContain('2 períodos de facturación');
+    expect($('garantia-sobre-el-tope')).toBeNull();
   });
 });

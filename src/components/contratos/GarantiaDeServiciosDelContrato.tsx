@@ -7,6 +7,8 @@
  *   · Es plata del INQUILINO: se guarda para pagar las facturas de servicios
  *     que lleguen después de la entrega y se le devuelve el resto; si no
  *     alcanza, la diferencia se le cobra como concepto.
+ *   · 🔴 El valor sugerido es el promedio mensual de los ÚLTIMOS 6 MESES y el
+ *     tope por defecto son 2 PERÍODOS de facturación (Nico, 17-09).
  *   · El valor es el promedio de las últimas facturas (digitadas o el promedio
  *     directo) y siempre con soporte.
  *   · Cuándo se exige lo dice la inmobiliaria: al INICIO (antes de activar) o a
@@ -53,15 +55,30 @@ function hoy(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** El mismo promedio del back: se suman las del mismo período y se promedian los períodos. */
-export function promedioMensual(facturas: FacturaDeServicio[]): number | null {
+/**
+ * El MISMO promedio del back (`promedioDeLasFacturas`): se suman las facturas
+ * del mismo período y se promedian los `meses` períodos MÁS RECIENTES.
+ *
+ * 🔴 Que sean los más recientes es la corrección del 17-09: con dos años de
+ * facturas digitadas el promedio arrastraba tarifas viejas y la garantía
+ * quedaba corta. `meses` llega del back (`mesesDelPromedio`, hoy 6) para que
+ * las dos cuentas no se puedan separar.
+ */
+export function promedioMensual(
+  facturas: FacturaDeServicio[],
+  meses = 6,
+): number | null {
   const porPeriodo = new Map<string, number>();
   for (const f of facturas) {
     if (!/^\d{4}-\d{2}$/.test(f.periodo) || !(f.valorCop > 0)) continue;
     porPeriodo.set(f.periodo, (porPeriodo.get(f.periodo) ?? 0) + f.valorCop);
   }
   if (porPeriodo.size === 0) return null;
-  return Math.round([...porPeriodo.values()].reduce((s, v) => s + v, 0) / porPeriodo.size);
+  const ultimos = [...porPeriodo.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, Math.max(1, meses))
+    .map(([, v]) => v);
+  return Math.round(ultimos.reduce((s, v) => s + v, 0) / ultimos.length);
 }
 
 export function GarantiaDeServiciosDelContrato({
@@ -149,7 +166,9 @@ export function GarantiaDeServiciosDelContrato({
         datos.disponible &&
         puedeEditar && (
           <RegistrarGarantia
-            topeCop={datos.topeCop}
+            topeCop={datos.topeEfectivoCop ?? datos.topeCop}
+            topePeriodos={datos.topePeriodos}
+            mesesDelPromedio={datos.mesesDelPromedio}
             onRegistrar={async (body) => {
               try {
                 setDatos(await cicloDeVidaApi.registrarGarantia(contractId, body));
@@ -257,9 +276,15 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
 
 function RegistrarGarantia({
   topeCop,
+  topePeriodos,
+  mesesDelPromedio,
   onRegistrar,
 }: {
   topeCop: number | null;
+  /** 🔴 El tope en períodos de facturación (por defecto 2). */
+  topePeriodos: number;
+  /** Cuántos meses entran al promedio sugerido (6). */
+  mesesDelPromedio: number;
   onRegistrar: (body: { valorCop?: number | null; facturas?: FacturaDeServicio[]; nota?: string; soporte: File }) => Promise<boolean>;
 }) {
   const [forma, setForma] = useState<'FACTURAS' | 'PROMEDIO'>('FACTURAS');
@@ -278,8 +303,19 @@ function RegistrarGarantia({
         .filter((f) => f.servicio && /^\d{4}-\d{2}$/.test(f.periodo) && f.valorCop > 0),
     [facturas],
   );
-  const valor = forma === 'FACTURAS' ? promedioMensual(validas) : soloDigitos(promedio) || null;
-  const pasaElTope = valor != null && topeCop != null && valor > topeCop;
+  const sugerido = promedioMensual(validas, mesesDelPromedio);
+  const valor = forma === 'FACTURAS' ? sugerido : soloDigitos(promedio) || null;
+  /*
+   * 🔴 El tope que aplica: el más bajo entre el de pesos de la inmobiliaria y
+   * `topePeriodos × promedio`. Con el valor digitado a mano no hay promedio, y
+   * entonces sólo aplica el de pesos — la misma regla que `topeEfectivoCop`.
+   */
+  const topeQueAplica =
+    forma === 'FACTURAS' && sugerido != null
+      ? Math.min(topeCop ?? Number.MAX_SAFE_INTEGER, sugerido * topePeriodos)
+      : topeCop;
+  const pasaElTope =
+    valor != null && topeQueAplica != null && topeQueAplica < Number.MAX_SAFE_INTEGER && valor > topeQueAplica;
   const listo = valor != null && valor > 0 && soporte != null && !pasaElTope && !enviando;
 
   return (
@@ -346,7 +382,8 @@ function RegistrarGarantia({
             Agregar factura
           </Button>
           <p className="text-xs text-muted-foreground">
-            Se suman las facturas del mismo mes y se promedian los meses.
+            Se suman las facturas del mismo mes y se promedian los{' '}
+            <strong>últimos {mesesDelPromedio} meses</strong>. Digita más si quieres, que sólo entran esos.
           </p>
         </div>
       ) : (
@@ -358,11 +395,25 @@ function RegistrarGarantia({
 
       <p className="text-xs">
         Valor de la garantía: <strong data-testid="garantia-valor-calculado">{valor ? PESOS.format(valor) : '—'}</strong>
-        {topeCop != null && <span className="text-muted-foreground"> · tope {PESOS.format(topeCop)}</span>}
+        {sugerido != null && (
+          <span className="text-muted-foreground" data-testid="garantia-sugerido">
+            {' '}
+            · sugerido {PESOS.format(sugerido)} (promedio de los últimos {mesesDelPromedio} meses)
+          </span>
+        )}
+        {topeQueAplica != null && topeQueAplica < Number.MAX_SAFE_INTEGER && (
+          <span className="text-muted-foreground" data-testid="garantia-tope">
+            {' '}
+            · tope {PESOS.format(topeQueAplica)}
+            {forma === 'FACTURAS' && sugerido != null && topeQueAplica === sugerido * topePeriodos
+              ? ` (${topePeriodos} ${topePeriodos === 1 ? 'período' : 'períodos'} de facturación)`
+              : ''}
+          </span>
+        )}
       </p>
       {pasaElTope && (
         <p className="text-xs text-destructive" data-testid="garantia-sobre-el-tope">
-          Pasa el tope de la inmobiliaria.
+          Pasa el tope: no se puede registrar por ese valor.
         </p>
       )}
 

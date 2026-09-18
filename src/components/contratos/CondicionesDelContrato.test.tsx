@@ -43,8 +43,10 @@ function condiciones(overrides: Partial<Condiciones> = {}): Condiciones {
     gastosDeCobranza: { disponible: true, delContrato: null, deLaAgencia: null, resuelto: null },
     seguroOpcional: {
       disponible: true,
-      oferta: { plan: 'BASIC', nombre: 'Seguro básico', primaCop: 45_000 },
+      porcentajeDisponible: true,
+      oferta: { plan: 'BASIC', nombre: 'Seguro básico', primaCop: 45_000, pct: null },
       aceptado: null,
+      pctPorPlan: {},
     },
     poliza: {
       disponible: true,
@@ -54,7 +56,14 @@ function condiciones(overrides: Partial<Condiciones> = {}): Condiciones {
       vigenciaDesde: null,
       vigenciaHasta: null,
     },
-    administracion: { disponible: true, modalidad: null, valorCop: null, delMandatoCop: 250_000 },
+    administracion: {
+      disponible: true,
+      modalidad: null,
+      modalidadElegida: null,
+      porRespaldo: false,
+      valorCop: null,
+      delMandatoCop: 250_000,
+    },
     ...overrides,
   };
 }
@@ -115,13 +124,16 @@ describe('<CondicionesDelContrato> (17-09)', () => {
       condiciones({
         seguroOpcional: {
           disponible: true,
-          oferta: { plan: 'BASIC', nombre: 'Seguro básico', primaCop: 45_000 },
+          porcentajeDisponible: true,
+          oferta: { plan: 'BASIC', nombre: 'Seguro básico', primaCop: 45_000, pct: null },
           aceptado: {
             nombre: 'Seguro básico',
             primaCop: 45_000,
+            pct: null,
             aceptadoEl: '2026-09-17',
             aceptadoPor: 'Ana Díaz',
           },
+          pctPorPlan: {},
         },
       }),
     );
@@ -165,6 +177,8 @@ describe('<CondicionesDelContrato> (17-09)', () => {
         administracion: {
           disponible: true,
           modalidad: 'LA_PAGA_LA_INMOBILIARIA',
+          modalidadElegida: 'LA_PAGA_LA_INMOBILIARIA',
+          porRespaldo: false,
           valorCop: 300_000,
           delMandatoCop: 250_000,
         },
@@ -194,7 +208,13 @@ describe('<CondicionesDelContrato> (17-09)', () => {
     api.condiciones.mockResolvedValue(
       condiciones({
         gastosDeCobranza: { disponible: false, delContrato: null, deLaAgencia: null, resuelto: null },
-        seguroOpcional: { disponible: false, oferta: null, aceptado: null },
+        seguroOpcional: {
+        disponible: false,
+        porcentajeDisponible: false,
+        oferta: null,
+        aceptado: null,
+        pctPorPlan: {},
+      },
         poliza: {
           disponible: false,
           aseguradora: null,
@@ -203,7 +223,14 @@ describe('<CondicionesDelContrato> (17-09)', () => {
           vigenciaDesde: null,
           vigenciaHasta: null,
         },
-        administracion: { disponible: false, modalidad: null, valorCop: null, delMandatoCop: null },
+        administracion: {
+          disponible: false,
+          modalidad: null,
+          modalidadElegida: null,
+          porRespaldo: false,
+          valorCop: null,
+          delMandatoCop: null,
+        },
       }),
     );
     await montar();
@@ -218,5 +245,65 @@ describe('<CondicionesDelContrato> (17-09)', () => {
     expect($('condiciones-del-contrato')).not.toBeNull();
     expect($('acepta-seguro')).toBeNull();
     expect($('guardar-administracion')).toBeNull();
+  });
+
+  it('🔴 el seguro opcional es un % del canon: no se digita la prima, y lo dice', async () => {
+    api.condiciones.mockResolvedValue(
+      condiciones({
+        seguroOpcional: {
+          disponible: true,
+          porcentajeDisponible: true,
+          oferta: { plan: 'BASIC', nombre: 'Seguro básico', primaCop: 30_000, pct: 1.5 },
+          aceptado: null,
+          pctPorPlan: { BASIC: 1.5 },
+        },
+      }),
+    );
+    api.aceptarSeguroOpcional.mockResolvedValue(condiciones());
+    await montar();
+
+    expect(container!.textContent).toContain('1.5 % del canon de hoy');
+    await act(async () => ($('acepta-seguro') as HTMLInputElement).click());
+    // Con % no se digita la prima: la calcula el sistema.
+    expect($('seguro-prima-por-porcentaje')).toBeTruthy();
+    await escribir($('seguro-quien') as HTMLInputElement, 'Ana Díaz');
+    await act(async () => ($('guardar-seguro') as HTMLButtonElement).click());
+    expect(api.aceptarSeguroOpcional).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ aceptadoPor: 'Ana Díaz' }),
+    );
+    const cuerpo = api.aceptarSeguroOpcional.mock.calls[0][1] as Record<string, unknown>;
+    expect('primaCop' in cuerpo).toBe(false);
+  });
+
+  it('sin % configurado se sigue digitando la prima fija, como hasta hoy', async () => {
+    api.condiciones.mockResolvedValue(condiciones());
+    await montar();
+    await act(async () => ($('acepta-seguro') as HTMLInputElement).click());
+    expect($('seguro-prima-por-porcentaje')).toBeNull();
+    expect(container!.textContent).toContain('no le puso un porcentaje del canon');
+  });
+
+  it('🔴 un migrado con administración se lee como «la paga la inmobiliaria», y lo dice', async () => {
+    api.condiciones.mockResolvedValue(
+      condiciones({
+        administracion: {
+          disponible: true,
+          modalidad: 'LA_PAGA_LA_INMOBILIARIA',
+          modalidadElegida: null,
+          porRespaldo: true,
+          valorCop: 250_000,
+          delMandatoCop: 250_000,
+        },
+      }),
+    );
+    await montar();
+    const aviso = $('administracion-por-respaldo');
+    expect(aviso).toBeTruthy();
+    expect(aviso!.textContent).toContain('viene del sistema anterior');
+    // La casilla marcada es la que de verdad está rigiendo hoy, para que
+    // «Guardar» la deje por escrito con un clic.
+    expect(($('modalidad-LA_PAGA_LA_INMOBILIARIA') as HTMLInputElement).checked).toBe(true);
+    expect(($('modalidad-HOY') as HTMLInputElement).checked).toBe(false);
   });
 });

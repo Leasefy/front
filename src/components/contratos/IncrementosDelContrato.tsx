@@ -198,6 +198,18 @@ export function IncrementosDelContrato({
               onEnviar={(contenido) =>
                 void accion(() => cicloDeVidaApi.enviarCarta(contractId, a.desde, contenido), "Carta enviada.")
               }
+              onVerSoporte={() =>
+                void (async () => {
+                  try {
+                    const { url } = await cicloDeVidaApi.soporteDeLaConstancia(contractId, a.desde);
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  } catch (e) {
+                    toast.error("No se pudo abrir el soporte.", {
+                      description: mensajeDelFallo(e, "Intenta de nuevo."),
+                    });
+                  }
+                })()
+              }
               onConstancia={(body) =>
                 void accion(
                   () => cicloDeVidaApi.registrarConstancia(contractId, a.desde, body),
@@ -229,6 +241,7 @@ function Aniversario({
   onRevisar,
   onEnviar,
   onConstancia,
+  onVerSoporte,
 }: {
   a: AniversarioDelContrato;
   comercial: boolean;
@@ -238,7 +251,14 @@ function Aniversario({
   onGenerarCarta: () => void;
   onRevisar: (contenido?: string) => void;
   onEnviar: (contenido?: string) => void;
-  onConstancia: (body: { medio: "FISICO" | "WHATSAPP" | "OTRO"; fecha: string; nota: string }) => void;
+  onConstancia: (body: {
+    medio: "FISICO" | "WHATSAPP" | "OTRO";
+    fecha: string;
+    nota: string;
+    /** 🔴 OPCIONAL (Nico, 17-09): la constancia vale igual sin adjunto. */
+    soporte?: File | null;
+  }) => void;
+  onVerSoporte: () => void;
 }) {
   const [porcentaje, setPorcentaje] = useState("");
   const [texto, setTexto] = useState(a.carta?.contenido ?? "");
@@ -246,6 +266,7 @@ function Aniversario({
   const [medio, setMedio] = useState<"FISICO" | "WHATSAPP" | "OTRO">("FISICO");
   const [fecha, setFecha] = useState("");
   const [nota, setNota] = useState("");
+  const [soporte, setSoporte] = useState<File | null>(null);
   useEffect(() => setTexto(a.carta?.contenido ?? ""), [a.carta?.contenido]);
   const sube = a.origen !== null && a.canonNuevoCop !== a.canonAnteriorCop;
   const enviada = a.carta?.estado === "ENVIADA";
@@ -269,6 +290,19 @@ function Aniversario({
         {sube ? ORIGEN[a.origen as string] : a.motivo}
         {a.carta && ` · ${CARTA[a.carta.estado]}`}
         {enviada && a.carta?.enviadaAt && ` el ${a.carta.enviadaAt.slice(0, 10)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
+        {enviada && a.carta?.soporteNombre && (
+          <>
+            {" · "}
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={onVerSoporte}
+              data-testid={`ver-soporte-constancia-${a.desde}`}
+            >
+              soporte: {a.carta.soporteNombre}
+            </button>
+          </>
+        )}
       </p>
 
       {a.bandeja?.alertaRoja && (
@@ -370,14 +404,31 @@ function Aniversario({
                 Cómo se entregó
                 <Input value={nota} onChange={(e) => setNota(e.target.value)} className="mt-1 w-64" placeholder="A quién, guía de envío…" />
               </label>
+              {/* 🔴 El soporte es OPCIONAL (Nico, 17-09): una entrega en
+                  portería sin papel también vale como constancia. */}
+              <label className="text-xs">
+                Soporte (opcional)
+                <Input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
+                  className="mt-1"
+                  data-testid={`constancia-soporte-${a.desde}`}
+                />
+              </label>
               <Button
                 size="sm"
                 variant="outline"
                 disabled={!fecha || nota.trim().length < 3}
-                onClick={() => onConstancia({ medio, fecha, nota: nota.trim() })}
+                onClick={() => onConstancia({ medio, fecha, nota: nota.trim(), soporte })}
+                data-testid={`registrar-constancia-${a.desde}`}
               >
                 Registrar constancia
               </Button>
+              <p className="w-full text-xs text-muted-foreground">
+                La guía del correo certificado o el acta de entrega ayudan, pero no son obligatorias: con la fecha, el
+                medio y quién la entregó la constancia ya vale.
+              </p>
             </div>
           )}
         </div>

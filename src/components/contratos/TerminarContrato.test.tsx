@@ -226,26 +226,29 @@ describe('TerminarContrato', () => {
     expect((q('[data-testid="confirmar-terminacion"]') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('🔴 D8: dice hasta qué día se cobra y que el aniversario termina un día antes', async () => {
+  it('🔴 la fecha del acta se cobra INCLUSIVE: D8 es la regla del término, no la de la entrega (17-09)', async () => {
     api.vistaPreviaDeTerminacion.mockResolvedValue({
       puedeTerminarse: true,
       razon: null,
-      finPactado: '2026-12-05',
+      finPactado: '2026-12-31',
       disponible: true,
       prorrateoDelUltimoMes: {
         mes: '2026-12',
-        diasOcupados: 4,
+        // El contrato empezó un día 5: antes esto se cobraba hasta el 4.
+        diasOcupados: 5,
         diasDelMes: 30,
-        valorCop: 400000,
+        valorCop: 500000,
         canonMensualCop: 3000000,
-        ultimoDiaCobrado: '2026-12-04',
-        terminaUnDiaAntes: true,
+        ultimoDiaCobrado: '2026-12-05',
+        terminaUnDiaAntes: false,
       },
     });
     await montar();
     const texto = q('[data-testid="ultimo-dia-cobrado"]')?.textContent ?? '';
-    expect(texto).toContain('2026-12-04');
-    expect(texto).toContain('día anterior');
+    expect(texto).toContain('2026-12-05');
+    expect(texto).toContain('inclusive');
+    expect(texto).not.toContain('día anterior');
+    expect(q('[data-testid="prorrateo-del-ultimo-mes"]')?.textContent).toContain('5 días de 30');
   });
 
   it('🔴 D10: con la garantía de servicios pendiente lo dice y no deja terminar', async () => {

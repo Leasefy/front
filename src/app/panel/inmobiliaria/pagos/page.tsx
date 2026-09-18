@@ -187,6 +187,31 @@ function PagosHome() {
           >
             Cuadre del día
           </Link>
+          {/* 🔴 Tesorería (18-09): el recaudo por convenio con el banco, el
+              traslado de la comisión a la cuenta propia y la plata pendiente de
+              aplicar. Van como enlace y no como card por el mismo motivo que el
+              cuadre: esta pantalla es la deuda del mes de los inquilinos. */}
+          <Link
+            href="/panel/inmobiliaria/pagos/recaudo-bancario"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-al-recaudo-bancario"
+          >
+            Recaudo del banco
+          </Link>
+          <Link
+            href="/panel/inmobiliaria/pagos/traslados"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-a-traslados-de-comision"
+          >
+            Traslado de la comisión
+          </Link>
+          <Link
+            href="/panel/inmobiliaria/pagos/pendientes"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-a-pendientes-de-aplicar"
+          >
+            Pendiente de aplicar
+          </Link>
         </div>
       </header>
 

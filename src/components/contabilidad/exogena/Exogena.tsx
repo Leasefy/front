@@ -30,6 +30,14 @@
  * `PENDIENTE_DE_CONFIRMAR` — un asterisco al pie de una tabla de 128 filas no lo
  * lee nadie.
  *
+ * ── La pestaña «Configuración» (contrato del 19-09, §2) ────────────────────
+ *
+ * Lo que decide la inmobiliaria vive aparte de lo que se presenta: los dos
+ * interruptores (giros al 1001, saldo de 2815 en el 1009) y el tope de
+ * cuantías menores. Es una PESTAÑA y no un bloque más al pie porque cambia lo
+ * que los seis formatos de la otra pestaña calculan — mezclarlos haría que
+ * alguien mueva un interruptor buscando un botón de descarga.
+ *
  * ── Sin la migración 52 se calcula y se descarga, pero no se aprueba ───────
  *
  * Los formatos salen igual: lo que no se puede es guardar el mapeo de conceptos
@@ -62,6 +70,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -90,13 +99,17 @@ import { Monto } from '../Monto';
 import { AccionConMotivo, Bloqueos, Nota, VistoBuenoDelContador } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 import { ConceptosDeExogena } from './ConceptosDeExogena';
+import { ConfiguracionDeExogena } from './ConfiguracionDeExogena';
 
 /** Cuántas filas del formato se dibujan: un 1647 tiene 1.733. */
 const FILAS_EN_PANTALLA = 50;
 
+type ParteDeLaExogena = 'formatos' | 'configuracion';
+
 export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const anios = useMemo(() => aniosDeExogena(new Date().getFullYear()), []);
   const [anio, setAnio] = useState(() => anioInicial ?? anios[0]);
+  const [parte, setParte] = useState<ParteDeLaExogena>('formatos');
 
   const [resumen, setResumen] = useState<ResumenDeExogena | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -245,6 +258,17 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         </p>
       </section>
 
+      <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeLaExogena)}>
+        <TabsList variant="underline" className="justify-start">
+          <TabsTrigger value="formatos" data-testid="parte-formatos">
+            Los formatos
+          </TabsTrigger>
+          <TabsTrigger value="configuracion" data-testid="parte-configuracion">
+            Configuración
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="formatos" className="space-y-6 pt-5">
       {!resumen.disponible ? (
         <Nota testId="exogena-sin-migracion">
           <p>
@@ -467,6 +491,13 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
 
       {/* ── El mapeo cuenta → concepto ────────────────────────────────── */}
       <ConceptosDeExogena anio={anio} onGuardado={cargar} />
+        </TabsContent>
+
+        {/* 🔴 Lo que la inmobiliaria DECIDE, separado de lo que presenta. */}
+        <TabsContent value="configuracion" className="pt-5">
+          <ConfiguracionDeExogena anio={anio} />
+        </TabsContent>
+      </Tabs>
 
       {/* ── Diálogos ─────────────────────────────────────────────────── */}
       <AlertDialog

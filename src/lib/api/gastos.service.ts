@@ -25,18 +25,17 @@
  * de este archivo compara esas listas contra copias escritas a mano del
  * contrato — no contra sí mismas.
  *
- * 🔴 Los TOTALES son el caso delicado y el contrato terminó distinto de como
- * empezó. Decía que el cliente mandaba `totalCop` y el back lo comparaba (400
- * `TOTALES_NO_CUADRAN`); el back quedó implementado liquidando TODO de las
- * líneas y las retenciones, `CrearFacturaDeProveedorDto` **no declara ningún
- * total** y ese código de error no existe. Así que **nada de** `totalCop`,
- * `subtotalCop`, `ivaCop`, `ivaDescontableCop` ni `netoCop` viaja: se leen de la
- * respuesta y de `previsualizar`.
+ * 🔴 De los totales viaja UNO, y no es un dato: es un CONTROL. `totalCop` es lo
+ * que dice el PAPEL, va opcional, y si no coincide con lo que suman las líneas el
+ * back responde 400 `TOTALES_NO_CUADRAN` **sin registrar nada**. El resto
+ * —`subtotalCop`, `ivaCop`, `ivaDescontableCop`, `netoCop`— los liquida el back y
+ * sólo se leen, de la respuesta o de `previsualizar`.
  *
- * Lo que la pantalla pierde con eso, y hay que decirlo: ya no hay nadie del otro
- * lado verificando que las líneas sumen lo que dice el papel. El total del papel
- * se sigue pidiendo como control local y el aviso de descuadre es más fuerte, no
- * menos — porque ahora es el único.
+ * Por qué ese control existiendo todos los demás: es el único que compara contra
+ * algo de AFUERA del sistema. Las identidades de la partida doble y los CHECK de
+ * la base verifican que las cuentas cuadren ENTRE ELLAS, y una línea de
+ * $4.000.000 tecleada donde iban $400.000 cuadra perfectamente consigo misma. El
+ * papel del proveedor es el único testigo independiente.
  *
  * ── `disponible: false` en vez de una pantalla en blanco ────────────────────
  *
@@ -46,7 +45,7 @@
  * migración, en vez de caerse — el mismo trato que ya usa finanzas.
  */
 
-import { apiClient } from './client';
+import { apiClient, ApiError } from './client';
 import { soloClaves } from './contabilidad.service';
 
 const BASE = '/inmobiliaria/contabilidad';
@@ -214,22 +213,18 @@ export interface LineaNueva {
 /**
  * `CrearFacturaDeProveedorDto`.
  *
- * 🔴 **NINGÚN total viaja, `totalCop` incluido.** El contrato del 18-09 decía
- * que el cliente mandaba `totalCop` y el back lo comparaba (400
- * `TOTALES_NO_CUADRAN`); el back quedó implementado de otra forma: liquida TODO
- * de las líneas y las retenciones, y ese código de error no existe. Verificado
- * contra `CrearFacturaDeProveedorDto` y `liquidar-factura-de-proveedor.ts`.
+ * 🔴 `totalCop` es el ÚNICO total que viaja, y viaja como CONTROL: el back lo
+ * compara con lo que suman las líneas y, si no coinciden, responde 400
+ * `TOTALES_NO_CUADRAN` sin registrar nada. Es opcional — sin él el control no
+ * corre — y la pantalla lo manda siempre que la persona lo haya escrito.
  *
- * Mandar `totalCop` igual no sería «un campo de más que el back ignora»: con
- * `forbidNonWhitelisted: true` es un 400 y con él la factura entera — el mismo
- * defecto que el `propertyType`/`type` de la importación de inmuebles, que
+ * Los demás (`subtotalCop`, `ivaCop`, `ivaDescontableCop`, `netoCop`) NO están:
+ * los liquida el back. Mandar uno de esos no sería «un campo que el back ignora»:
+ * con `forbidNonWhitelisted: true` es un 400 y con él la factura entera — el
+ * mismo defecto que el `propertyType`/`type` de la importación de inmuebles, que
  * estuvo seis unidades de trabajo rompiendo cada request con los dos repos en
- * verde porque cada lado mockeaba al otro.
- *
- * Consecuencia para la pantalla, y hay que decirla: el total del papel se sigue
- * pidiendo, pero como CONTROL LOCAL. Nadie del otro lado lo verifica, así que si
- * las líneas no suman lo que dice la factura, el libro queda con lo que suman
- * las líneas y en silencio. Por eso el aviso es más fuerte, no menos.
+ * verde porque cada lado mockeaba al otro. Esta lista está verificada contra el
+ * DTO real, no contra el texto del contrato.
  */
 export const CLAVES_DE_CREAR_FACTURA = [
   'tipo',
@@ -250,6 +245,7 @@ export const CLAVES_DE_CREAR_FACTURA = [
   'retefuenteCop',
   'reteivaCop',
   'reteicaCop',
+  'totalCop',
   'causar',
 ] as const;
 
@@ -272,8 +268,59 @@ export interface FacturaNueva {
   retefuenteCop?: number;
   reteivaCop?: number;
   reteicaCop?: number;
+  /**
+   * 🔴 El total que dice el PAPEL, como control. Opcional: sin él el back no
+   * compara nada. Con él, un descuadre es 400 `TOTALES_NO_CUADRAN` y la factura
+   * NO se registra.
+   */
+  totalCop?: number;
   /** Registra y causa en un solo paso. */
   causar?: boolean;
+}
+
+/**
+ * El 400 de que el papel y las líneas no digan lo mismo.
+ *
+ * 🔴 Es el único control que compara contra algo de AFUERA del sistema. Las
+ * identidades de la partida doble verifican que las cuentas cuadren entre ellas;
+ * una línea de $4.000.000 tecleada donde iban $400.000 cuadra perfectamente
+ * consigo misma y pasa todos los demás controles.
+ */
+export const TOTALES_NO_CUADRAN = 'TOTALES_NO_CUADRAN';
+
+/** Los cuatro números que el 400 trae en el cuerpo, para poder mostrarlos. */
+export interface TotalesQueNoCuadran {
+  totalDeLaFacturaCop: number;
+  totalDeLasLineasCop: number;
+  subtotalCop: number;
+  ivaCop: number;
+}
+
+/**
+ * Lee los cuatro números del 400, o `null` si el error no es ése.
+ *
+ * Se validan uno por uno en vez de castear el cuerpo entero: un back anterior
+ * puede mandar el `code` sin los números, y ahí es mejor caer al mensaje del back
+ * que pintar cuatro `undefined` formateados como `$NaN`.
+ */
+export function totalesQueNoCuadran(error: unknown): TotalesQueNoCuadran | null {
+  if (!(error instanceof ApiError) || error.code !== TOTALES_NO_CUADRAN) return null;
+  const d = error.detalle ?? {};
+  const numero = (clave: keyof TotalesQueNoCuadran): number | null =>
+    typeof d[clave] === 'number' && Number.isFinite(d[clave]) ? (d[clave] as number) : null;
+  const totalDeLaFacturaCop = numero('totalDeLaFacturaCop');
+  const totalDeLasLineasCop = numero('totalDeLasLineasCop');
+  const subtotalCop = numero('subtotalCop');
+  const ivaCop = numero('ivaCop');
+  if (
+    totalDeLaFacturaCop === null ||
+    totalDeLasLineasCop === null ||
+    subtotalCop === null ||
+    ivaCop === null
+  ) {
+    return null;
+  }
+  return { totalDeLaFacturaCop, totalDeLasLineasCop, subtotalCop, ivaCop };
 }
 
 /** `AnularDto`: un solo campo. Un asiento no se borra, se reversa con motivo. */

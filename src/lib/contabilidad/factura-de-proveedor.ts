@@ -169,9 +169,13 @@ export function problemasDeLaFactura(borrador: BorradorDeFactura): string[] {
   }
 
   if (borrador.totalCop === null || borrador.totalCop <= 0) {
-    // Se pide aunque no viaje: es el doble ingreso del monto contra el que se
-    // compara la suma de las líneas, y es el único control que queda.
-    problemas.push('Falta el total que dice la factura: con él se verifica que las líneas sumen bien.');
+    /*
+     * El DTO lo declara OPCIONAL —sin él el back no compara nada— y esta pantalla
+     * lo exige igual: es el doble ingreso del monto, el control contra la
+     * transposición de dígitos, y el único que mira algo de afuera del sistema.
+     * Dejarlo opcional acá sería ofrecer saltarse el único testigo independiente.
+     */
+    problemas.push('Falta el total que dice la factura: con él el back verifica que las líneas sumen bien.');
   }
 
   const retenciones = sumaDeRetenciones(borrador);
@@ -191,12 +195,10 @@ export function problemasDeLaFactura(borrador: BorradorDeFactura): string[] {
  * El aviso de que el papel y las líneas no dicen lo mismo, con LOS DOS números.
  * `null` cuando cuadran o cuando todavía no hay total escrito.
  *
- * 🔴 No bloquea, y NADIE MÁS lo va a mirar: el total del papel no viaja al back.
- * Si se registra así, la factura queda por lo que suman las líneas y el libro
- * cuadra contra un papel que dice otra cosa. El aviso lo dice con esas palabras y
- * nombra el arreglo —la base o el IVA de una línea—, porque el caso legítimo
- * existe: un proveedor puede haber calculado el IVA distinto, y para eso la línea
- * acepta el IVA en pesos.
+ * No bloquea el envío: el back es el que rechaza (400 `TOTALES_NO_CUADRAN`, sin
+ * registrar nada), y el caso legítimo existe — un proveedor puede haber calculado
+ * el IVA distinto, y para eso la línea acepta el IVA en pesos. El aviso nombra el
+ * arreglo y anticipa el rechazo, en vez de dejar que se descubra al enviar.
  */
 export function avisoDeTotalQueNoCuadra(
   borrador: BorradorDeFactura,
@@ -209,8 +211,8 @@ export function avisoDeTotalQueNoCuadra(
   return (
     `La factura dice ${formatoDeMonto(borrador.totalCop)} y las líneas suman ` +
     `${formatoDeMonto(calculado)}: ${formatoDeMonto(Math.abs(diferencia))} de diferencia. ` +
-    'El total del papel no se le manda al back, así que si la registrás así va a quedar ' +
-    `por ${formatoDeMonto(calculado)} y nadie más lo va a notar. Revisá la base o el IVA de cada línea.`
+    'Así el back la va a rechazar sin registrar nada (TOTALES_NO_CUADRAN). ' +
+    'Revisá la base o el IVA de cada línea; si el proveedor calculó el IVA distinto, el que manda es el del papel.'
   );
 }
 

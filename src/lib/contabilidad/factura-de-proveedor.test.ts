@@ -173,7 +173,7 @@ describe('problemasDeLaFactura', () => {
   it('sin total escrito lo pide, y dice para qué sirve', () => {
     const problemas = problemasDeLaFactura(borrador({ totalCop: null }));
     const delTotal = problemas.find((p) => p.includes('total que dice la factura'))!;
-    expect(delTotal).toContain('se verifica que las líneas sumen bien');
+    expect(delTotal).toContain('el back verifica que las líneas sumen bien');
   });
 });
 
@@ -196,16 +196,17 @@ describe('avisoDeTotalQueNoCuadra', () => {
   });
 
   /*
-   * 🔴 El contrato decía que el back rechazaba con `TOTALES_NO_CUADRAN`. Quedó
-   * implementado de otra forma: el total del papel NO viaja y nadie lo verifica.
-   * El aviso tiene que decir ESO —que si se registra así, la factura queda por lo
-   * que suman las líneas y nadie lo nota— y no prometer un 400 que no existe.
+   * El aviso anticipa el rechazo del back en vez de dejar que se descubra al
+   * enviar, y nombra el arreglo. También nombra el caso legítimo —un proveedor
+   * que calculó el IVA distinto— porque si no, la salida obvia sería «cambiá el
+   * total del papel», que es justo lo que no hay que hacer.
    */
-  it('🔴 dice que el back NO lo verifica y con cuánto va a quedar la factura', () => {
+  it('anticipa el rechazo del back y nombra el arreglo', () => {
     const aviso = avisoDeTotalQueNoCuadra(borrador({ totalCop: 475_900 }), pesos)!;
-    expect(aviso).toContain('no se le manda al back');
-    expect(aviso).toContain('nadie más lo va a notar');
-    expect(aviso).not.toContain('TOTALES_NO_CUADRAN');
+    expect(aviso).toContain('TOTALES_NO_CUADRAN');
+    expect(aviso).toContain('sin registrar nada');
+    expect(aviso).toContain('la base o el IVA');
+    expect(aviso).toContain('el que manda es el del papel');
   });
 });
 

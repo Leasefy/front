@@ -12,17 +12,17 @@
  *
  * ── 🔴 Lo que NO se manda, y es la mitad del valor de este archivo ──────────
  *
- * **Ningún total viaja, `totalCop` incluido.** El contrato del 18-09 decía que el
- * cliente lo mandaba y el back comparaba (400 `TOTALES_NO_CUADRAN`); el back
- * quedó implementado liquidando todo de las líneas, `CrearFacturaDeProveedorDto`
- * no declara ningún total y ese código no existe. La copia a mano de abajo está
- * verificada contra el DTO real, no contra la versión del contrato.
+ * De los totales viaja UNO: `totalCop`, que no es un dato sino un CONTROL — el
+ * total del papel, que el back compara con lo que suman las líneas (400
+ * `TOTALES_NO_CUADRAN` sin registrar nada). Los otros cuatro los liquida el back
+ * y mandarlos sería un 400 del request entero.
  *
- * Esto es exactamente el defecto del `propertyType`/`type` de la importación de
- * inmuebles: una clave de más es un 400 del request ENTERO, y estuvo seis
- * unidades de trabajo rompiendo cada llamada con los dos repos en verde porque
- * cada lado mockeaba al otro. El test pone los totales en el objeto de entrada a
- * propósito, para comprobar que se caen en el camino.
+ * Ése es el defecto del `propertyType`/`type` de la importación de inmuebles: una
+ * clave de más rompe la llamada completa, y estuvo seis unidades de trabajo
+ * haciéndolo con los dos repos en verde porque cada lado mockeaba al otro. Por eso
+ * la copia de abajo está verificada contra el DTO REAL del back, y el test pone
+ * los totales calculados en el objeto de entrada a propósito, para comprobar que
+ * se caen en el camino.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -38,10 +38,21 @@ const { clienteMock } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('./client', () => ({ apiClient: clienteMock }));
+/*
+ * `ApiError` REAL y `apiClient` mockeado: el servicio construye el error de
+ * `totalesQueNoCuadran` con `instanceof ApiError`, así que una clase inventada en
+ * el mock haría que esa función devolviera `null` siempre y el test pasaría
+ * probando nada.
+ */
+vi.mock('./client', async () => {
+  const actual = await vi.importActual<typeof import('./client')>('./client');
+  return { ...actual, apiClient: clienteMock };
+});
 
+import { ApiError } from './client';
 import {
   gastosApi,
+  totalesQueNoCuadran,
   CLAVES_DE_CREAR_FACTURA,
   CLAVES_DE_LINEA_DE_FACTURA,
   CLAVES_DE_CREAR_EGRESO,
@@ -67,8 +78,8 @@ beforeEach(() => {
 
 /**
  * `CrearFacturaDeProveedorDto`, copiado del DTO REAL del back
- * (`inmobiliaria/contabilidad/gastos/dto/index.ts`). 🔴 Sin ningún total: el
- * back los liquida de las líneas y las retenciones.
+ * (`inmobiliaria/contabilidad/gastos/dto/index.ts`). 🔴 Con `totalCop` —el
+ * control— y sin los cuatro totales que el back liquida.
  */
 const DTO_CREAR_FACTURA = [
   'tipo',
@@ -89,6 +100,7 @@ const DTO_CREAR_FACTURA = [
   'retefuenteCop',
   'reteivaCop',
   'reteicaCop',
+  'totalCop',
   'causar',
 ];
 
@@ -141,15 +153,10 @@ describe('las listas de claves son las del DTO del contrato', () => {
     expect([...CLAVES_DE_CONCILIAR]).toEqual(['movimientoBancarioId']);
   });
 
-  it('🔴 NINGÚN total viaja en el cuerpo de la factura, `totalCop` incluido', () => {
-    for (const total of [
-      'totalCop',
-      'subtotalCop',
-      'ivaCop',
-      'ivaDescontableCop',
-      'netoCop',
-    ]) {
-      expect(CLAVES_DE_CREAR_FACTURA, total).not.toContain(total);
+  it('🔴 de los totales viaja SÓLO el control; los liquidados no', () => {
+    expect(CLAVES_DE_CREAR_FACTURA).toContain('totalCop');
+    for (const liquidado of ['subtotalCop', 'ivaCop', 'ivaDescontableCop', 'netoCop']) {
+      expect(CLAVES_DE_CREAR_FACTURA, liquidado).not.toContain(liquidado);
     }
   });
 });
@@ -216,8 +223,9 @@ describe('facturas.registrar', () => {
     ],
     retefuenteCop: 10_000,
     reteicaCop: 3_040,
-    // Lo que el back liquida y el cliente NO manda — `totalCop` incluido:
+    // El control, que SÍ viaja:
     totalCop: 476_000,
+    // Lo que el back liquida y el cliente NO manda:
     subtotalCop: 400_000,
     ivaCop: 76_000,
     ivaDescontableCop: 76_000,
@@ -226,7 +234,7 @@ describe('facturas.registrar', () => {
     id: 'no-deberia-viajar',
   } as unknown as FacturaNueva;
 
-  it('🔴 deja afuera TODOS los totales y el estado', async () => {
+  it('🔴 manda el control y deja afuera los totales liquidados y el estado', async () => {
     await gastosApi.facturas.registrar(conBasura);
     const [ruta, cuerpo] = clienteMock.post.mock.calls[0];
     expect(ruta).toBe(`${BASE}/gastos/facturas`);
@@ -244,9 +252,9 @@ describe('facturas.registrar', () => {
         'lineas',
         'retefuenteCop',
         'reteicaCop',
+        'totalCop',
       ].sort(),
     );
-    expect('totalCop' in (cuerpo as object)).toBe(false);
   });
 
   it('filtra también cada línea a las claves de su DTO', async () => {
@@ -441,5 +449,56 @@ describe('lotes', () => {
     expect(clienteMock.post).toHaveBeenCalledWith(`${BASE}/egresos/lotes/l1/pagado`, {
       fecha: '2026-09-20',
     });
+  });
+});
+
+/**
+ * 🔴 `totalesQueNoCuadran` — leer los cuatro números del 400.
+ *
+ * El cuerpo del error llega entero en `ApiError.detalle` (ver `client.ts`), y de
+ * ahí se saca lo que la pantalla necesita para encontrar el renglón mal
+ * digitado. Se validan uno por uno y no se castea el cuerpo: un back anterior
+ * puede mandar el `code` sin los números, y ahí es mejor caer al mensaje del
+ * back que pintar cuatro `$NaN`.
+ */
+describe('totalesQueNoCuadran', () => {
+  const cuerpo = {
+    code: 'TOTALES_NO_CUADRAN',
+    message: 'El total que dice la factura es $475.900 y las líneas suman $476.000…',
+    totalDeLaFacturaCop: 475_900,
+    totalDeLasLineasCop: 476_000,
+    subtotalCop: 400_000,
+    ivaCop: 76_000,
+  };
+
+  it('saca los cuatro números del cuerpo del 400', () => {
+    const error = new ApiError(400, cuerpo.message, cuerpo.code, cuerpo);
+    expect(totalesQueNoCuadran(error)).toEqual({
+      totalDeLaFacturaCop: 475_900,
+      totalDeLasLineasCop: 476_000,
+      subtotalCop: 400_000,
+      ivaCop: 76_000,
+    });
+  });
+
+  it('otro error, aunque sea 400, no es un descuadre', () => {
+    expect(
+      totalesQueNoCuadran(new ApiError(400, 'otra cosa', 'FACTURA_DE_PROVEEDOR_REPETIDA', {})),
+    ).toBeNull();
+    expect(totalesQueNoCuadran(new Error('sin red'))).toBeNull();
+    expect(totalesQueNoCuadran(null)).toBeNull();
+  });
+
+  it('🔴 el código sin los números devuelve null: mejor el mensaje del back que cuatro $NaN', () => {
+    const error = new ApiError(400, cuerpo.message, cuerpo.code, { code: cuerpo.code });
+    expect(totalesQueNoCuadran(error)).toBeNull();
+  });
+
+  it('un número que no es número tampoco pasa', () => {
+    const error = new ApiError(400, cuerpo.message, cuerpo.code, {
+      ...cuerpo,
+      totalDeLasLineasCop: 'muchos',
+    });
+    expect(totalesQueNoCuadran(error)).toBeNull();
   });
 });

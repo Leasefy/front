@@ -2,11 +2,15 @@
  * El formulario de la factura de proveedor.
  *
  * 🔴 Lo que este archivo protege, y es la decisión más delicada de la pantalla:
- * **ningún total viaja al back, `totalCop` incluido.**
- * `CrearFacturaDeProveedorDto` no lo declara, y con `forbidNonWhitelisted` una
- * clave de más es un 400 que tira la factura entera. El total del papel se pide
- * igual, como doble ingreso del monto — y como el back ya no lo verifica, el
- * aviso de descuadre es el único control que queda.
+ * **el total del papel viaja como CONTROL y se controla dos veces.** `totalCop`
+ * va al back, que compara con lo que suman las líneas y responde 400
+ * `TOTALES_NO_CUADRAN` sin registrar nada; la pantalla además lo comprueba
+ * localmente mientras se escribe. Los dos no se estorban — el local atrapa el
+ * error antes del viaje, el del servidor es el que decide — y cuando los dos
+ * aparecen el del back va arriba, porque es el que ya rechazó la factura.
+ *
+ * Los OTROS cuatro totales no viajan: los liquida el back, y una clave de más es
+ * un 400 del request entero (`forbidNonWhitelisted`).
  *
  * Y dos más: que la liquidación la pide el BACK (`previsualizar`, que es el que
  * sabe el perfil tributario del proveedor), y que si esa liquidación llega con
@@ -40,6 +44,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
 }));
 
+import { ApiError } from '@/lib/api/client';
 import { FormularioDeFactura } from './FormularioDeFactura';
 
 let container: HTMLDivElement;
@@ -175,7 +180,7 @@ describe('<FormularioDeFactura>', () => {
     expect((q('registrar-factura') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('🔴 NO manda ningún total: el DTO no los declara y sería un 400', async () => {
+  it('🔴 manda el total del papel como control, y NINGÚN total liquidado', async () => {
     await pintar();
     await llenarTodo();
 
@@ -186,15 +191,35 @@ describe('<FormularioDeFactura>', () => {
     });
 
     const [cuerpo] = gastos.facturas.registrar.mock.calls[0];
+    expect((cuerpo as { totalCop?: number }).totalCop).toBe(476_000);
     const claves = Object.keys(cuerpo as object);
-    for (const total of ['totalCop', 'subtotalCop', 'ivaCop', 'netoCop']) {
-      expect(claves, total).not.toContain(total);
+    for (const liquidado of ['subtotalCop', 'ivaCop', 'ivaDescontableCop', 'netoCop']) {
+      expect(claves, liquidado).not.toContain(liquidado);
     }
-    // Lo que sí viaja: las líneas y las retenciones declaradas.
     expect(claves).toContain('lineas');
   });
 
-  it('🔴 avisa de la diferencia con los DOS números y dice que nadie más la mira', async () => {
+  /*
+   * El DTO lo declara opcional: sin él el back no compara nada. Mandar un `0`
+   * porque el campo está vacío haría fallar cada factura, así que la clave se
+   * omite. (Esta pantalla igual exige el total, así que el caso sólo se alcanza
+   * por el camino de «registrar y causar» con el campo recién borrado.)
+   */
+  it('sin total escrito NO manda la clave, en vez de mandar un cero', async () => {
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      escribir('factura-total', '');
+      await Promise.resolve();
+    });
+
+    // Con el campo vacío el botón queda apagado, que es el comportamiento: el
+    // total es obligatorio en esta pantalla aunque el DTO lo acepte ausente.
+    expect((q('registrar-factura') as HTMLButtonElement).disabled).toBe(true);
+    expect(q('problemas-de-la-factura')!.textContent).toContain('total que dice la factura');
+  });
+
+  it('🔴 avisa localmente con los DOS números y anticipa el rechazo del back', async () => {
     await pintar();
     await llenarTodo();
     // El papel dice 475.900 y las líneas suman 476.000.
@@ -206,11 +231,61 @@ describe('<FormularioDeFactura>', () => {
     const aviso = q('aviso-total-no-cuadra')!.textContent!;
     expect(aviso).toContain('475.900');
     expect(aviso).toContain('476.000');
-    expect(aviso).toContain('no se le manda al back');
-    expect(aviso).toContain('nadie más lo va a notar');
-    // El aviso NO bloquea: el caso legítimo existe y la decisión es de quien
-    // tiene el papel en la mano.
+    expect(aviso).toContain('TOTALES_NO_CUADRAN');
+    // El aviso NO bloquea el envío: el caso legítimo existe (un proveedor que
+    // calculó el IVA distinto) y el back es el que decide.
     expect((q('registrar-factura') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  /*
+   * 🔴 El 400 del back es la autoridad y trae cuatro números que la pantalla no
+   * tiene: el subtotal y el IVA con los que ÉL liquidó. Se muestran, y no como un
+   * toast que se va en cinco segundos — hay que poder mirarlos mientras se busca
+   * el renglón mal digitado.
+   */
+  it('🔴 el 400 TOTALES_NO_CUADRAN se muestra con sus cuatro números', async () => {
+    gastos.facturas.registrar.mockRejectedValue(
+      new ApiError(400, 'El total que dice la factura…', 'TOTALES_NO_CUADRAN', {
+        code: 'TOTALES_NO_CUADRAN',
+        totalDeLaFacturaCop: 475_900,
+        totalDeLasLineasCop: 476_000,
+        subtotalCop: 400_000,
+        ivaCop: 76_000,
+      }),
+    );
+
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      (q('registrar-factura') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const cartel = q('descuadre-del-back')!.textContent!;
+    expect(cartel).toContain('475.900');
+    expect(cartel).toContain('476.000');
+    expect(cartel).toContain('400.000');
+    expect(cartel).toContain('76.000');
+    expect(cartel).toContain('No se registró nada');
+    // Y el diálogo sigue abierto: no se pierde lo digitado.
+    expect(q('formulario-de-factura')).not.toBeNull();
+    expect(cerrar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un fallo que NO es descuadre no deja el cartel del descuadre pegado', async () => {
+    gastos.facturas.registrar.mockRejectedValue(new Error('sin red'));
+
+    await pintar();
+    await llenarTodo();
+    await act(async () => {
+      (q('registrar-factura') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(q('descuadre-del-back')).toBeNull();
+    expect(toastMock.error).toHaveBeenCalled();
   });
 
   it('elegir un proveedor del registro copia sus datos y dice que quedan congelados', async () => {

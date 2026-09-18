@@ -13,18 +13,21 @@
  * documento tributario no cambia porque alguien editó una ficha, y el back los
  * guarda copiados por eso mismo.
  *
- * ── 🔴 El total del papel se pide, pero NO viaja ────────────────────────────
+ * ── 🔴 El total del papel es un CONTROL, y se controla dos veces ────────────
  *
- * `CrearFacturaDeProveedorDto` no declara ningún total: el back liquida de las
- * líneas y las retenciones. Mandar `totalCop` sería un 400 que tira la factura
- * entera (`forbidNonWhitelisted`).
+ * `totalCop` es lo que dice el papel y viaja al back, que lo compara con lo que
+ * suman las líneas: si no coinciden es 400 `TOTALES_NO_CUADRAN` y **no se
+ * registra nada**. Es el único control que compara contra algo de AFUERA del
+ * sistema — una línea de $4.000.000 tecleada donde iban $400.000 cuadra
+ * perfectamente consigo misma y pasa todos los demás.
  *
- * Igual se pide, y es a propósito: es el doble ingreso del monto contra el que se
- * compara la suma de las líneas — el control clásico contra la transposición de
- * dígitos. Y como el back ya no lo verifica, ese aviso es el ÚNICO que hay: si se
- * registra descuadrado, la factura queda por lo que suman las líneas y el libro
- * cuadra contra un papel que dice otra cosa. La cuenta y el texto están en
- * `lib/contabilidad/factura-de-proveedor.ts`.
+ * La pantalla lo comprueba ADEMÁS localmente, y los dos no se estorban: el aviso
+ * local aparece mientras se escribe, con el papel todavía en la mano; el 400 es
+ * la autoridad y se muestra con los cuatro números que manda el back (el total
+ * del papel, el de las líneas, el subtotal y el IVA). Ni el aviso local bloquea
+ * el envío —el caso legítimo existe: un proveedor que calculó el IVA distinto, y
+ * para eso la línea acepta el IVA en pesos— ni el 400 se traduce a una frase
+ * propia cuando el back ya mandó los números.
  *
  * ── Qué le falta se dice en palabras, no con un botón gris ──────────────────
  *
@@ -65,8 +68,10 @@ import {
   TIPOS_DE_FACTURA,
   type FacturaDeProveedor,
   type FacturaNueva,
+  totalesQueNoCuadran,
   type LiquidacionDeFactura,
   type TipoDeFacturaDeProveedor,
+  type TotalesQueNoCuadran,
 } from '@/lib/api/gastos.service';
 import type { CuentaPuc } from '@/lib/api/contabilidad.service';
 import type { ProveedorNoObligado } from '@/lib/api/facturacion-electronica.service';
@@ -141,6 +146,12 @@ export function FormularioDeFactura({
    * del proveedor. Nunca se muestran las dos como si fueran lo mismo.
    */
   const [liquidacion, setLiquidacion] = useState<LiquidacionDeFactura | null>(null);
+  /**
+   * Los cuatro números del 400 `TOTALES_NO_CUADRAN`. `null` = no hubo, o el
+   * último intento fue por otra cosa. Se limpia al empezar cada envío: dejarlo
+   * pegado haría que un fallo de red pareciera un descuadre.
+   */
+  const [descuadreDelBack, setDescuadreDelBack] = useState<TotalesQueNoCuadran | null>(null);
 
   const borrador: BorradorDeFactura = {
     proveedorNombre,
@@ -232,6 +243,7 @@ export function FormularioDeFactura({
 
   const guardar = async (causar: boolean) => {
     setGuardando(true);
+    setDescuadreDelBack(null);
     try {
       const cuerpo: FacturaNueva = {
         tipo,
@@ -253,11 +265,11 @@ export function FormularioDeFactura({
         reteivaCop: reteiva,
         reteicaCop: reteica,
         /*
-         * 🔴 `totalCop` NO va: `CrearFacturaDeProveedorDto` no lo declara y con
-         * `forbidNonWhitelisted` sería un 400 que tira la factura entera. El
-         * total del papel es un control LOCAL —ver `avisoDeTotalQueNoCuadra`— y
-         * el back liquida de las líneas.
+         * 🔴 El total del papel, como CONTROL. Va sólo si la persona lo escribió:
+         * el DTO lo declara opcional y sin él el back no compara nada — mandar un
+         * `0` porque el campo está vacío haría fallar cada factura.
          */
+        ...(totalDelPapel !== null ? { totalCop: totalDelPapel } : {}),
         ...(causar ? { causar: true } : {}),
       };
       const factura = await gastosApi.facturas.registrar(cuerpo);
@@ -269,6 +281,13 @@ export function FormularioDeFactura({
       onRegistrada(factura, causar);
       onCerrar();
     } catch (e) {
+      /*
+       * 🔴 El 400 del control del total se muestra APARTE y no como un toast que
+       * se va en cinco segundos: trae los cuatro números que hacen falta para
+       * encontrar el renglón mal digitado, y hay que poder mirarlos mientras se
+       * corrige. El toast igual sale, con el mensaje del back.
+       */
+      setDescuadreDelBack(totalesQueNoCuadran(e));
       // El diálogo queda abierto: no se pierde lo digitado.
       toast.error(mensajeDeContabilidad(e, 'No se pudo registrar la factura.'));
     } finally {
@@ -717,6 +736,33 @@ export function FormularioDeFactura({
                   <p key={n}>{n}</p>
                 ))}
               </Nota>
+            ) : null}
+
+            {/* 🔴 El 400 del back: la autoridad, con sus cuatro números. Va
+                ARRIBA del aviso local — cuando los dos aparecen, el que importa
+                es el que ya rechazó la factura. */}
+            {descuadreDelBack ? (
+              <div
+                className="space-y-1 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm text-fg"
+                role="alert"
+                data-testid="descuadre-del-back"
+              >
+                <p className="font-medium">
+                  El back rechazó la factura: el papel y las líneas no dicen lo mismo
+                </p>
+                <p>
+                  La factura dice{' '}
+                  <Monto valor={descuadreDelBack.totalDeLaFacturaCop} className="text-sm" /> y las
+                  líneas suman{' '}
+                  <Monto valor={descuadreDelBack.totalDeLasLineasCop} className="text-sm" /> —
+                  subtotal <Monto valor={descuadreDelBack.subtotalCop} className="text-sm" /> más IVA{' '}
+                  <Monto valor={descuadreDelBack.ivaCop} className="text-sm" />.
+                </p>
+                <p className="text-fg-muted">
+                  No se registró nada. Revisá la base o el IVA de cada renglón; si el proveedor
+                  calculó el IVA distinto, el que manda es el del papel.
+                </p>
+              </div>
             ) : null}
 
             {avisoDelTotal ? (

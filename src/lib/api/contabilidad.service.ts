@@ -1391,9 +1391,12 @@ export const contabilidadApi = {
     async reabrir(hasta: string | null, motivo: string): Promise<ResultadoDeReapertura> {
       return apiClient.post<ResultadoDeReapertura>(
         `${BASE}/asientos/reabrir`,
-        // `hasta: null` no viaja: el DTO es `@IsOptional() @IsDateString()` y
-        // un `null` explícito falla la validación. Ausente = reabrir todo, que
-        // es exactamente lo que el back hace con `dto.hasta` vacío.
+        // `hasta: null` se convierte en AUSENTE en vez de viajar como `null`.
+        // Las dos formas funcionan —`@IsOptional()` de class-validator se
+        // saltea la validación con `null` igual que con `undefined`, y el
+        // servicio hace `dto.hasta ? … : null`—, pero la ausencia es la que el
+        // DTO documenta («sin esto se reabre todo») y la que no depende de ese
+        // detalle de la librería.
         soloClaves({ hasta: hasta ?? undefined, motivo }, CLAVES_DE_REABRIR),
       );
     },

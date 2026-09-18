@@ -60,6 +60,17 @@ export default function ReglasDeMoraPage() {
             pasados los días de plazo y después, si la regla existe, el gasto administrativo. Lo que
             cada una agrega queda como línea propia en el estado de cuenta del inquilino.
           </p>
+          {/* 🔴 El techo (17-09). El interés que se configura acá no puede pasar
+              de la usura del mes en que corre (art. 884 del Código de Comercio),
+              y esa serie se carga en su propia pantalla: sin ella el interés
+              sale SIN topear. Por eso el enlace vive al lado de las reglas. */}
+          <Link
+            href="/panel/inmobiliaria/pagos/cartera/usura"
+            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="ir-a-la-usura"
+          >
+            Ver la tasa de usura que las topea
+          </Link>
         </header>
 
         <ReglasDeMora />

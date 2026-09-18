@@ -54,8 +54,10 @@ import {
   BookOpenText,
   ChartBar,
   DownloadSimple,
+  Certificate,
   Info,
   Plugs,
+  Scales,
   TreeStructure,
   Warning,
   WarningCircle,
@@ -518,6 +520,30 @@ function ParaElContador() {
         >
           Estado de cuenta
         </Link>
+        {/* Las tres pantallas de la lógica financiera del 17-09. Van acá como
+            enlaces y no como cards: el hub es el LIBRO, y estas tres son
+            trabajo del contador que cuelga de él, no otro libro. */}
+        <Link
+          href={`${BASE}/deterioro`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-al-deterioro"
+        >
+          Deterioro de cartera
+        </Link>
+        <Link
+          href={`${BASE}/certificados`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-a-certificados"
+        >
+          Certificados de retención
+        </Link>
+        <Link
+          href={`${BASE}/presupuesto`}
+          className="text-caption text-primary hover:underline"
+          data-testid="ir-al-presupuesto"
+        >
+          Presupuesto
+        </Link>
       </div>
     </section>
   );
@@ -554,6 +580,21 @@ const DESTINOS: Destino[] = [
     icono: Plugs,
     titulo: 'Mapeo contable',
     texto: 'A qué cuenta va cada asiento automático.',
+  },
+  // 17-09: las dos piezas que el contador cierra a mano. El deterioro se
+  // aprueba CADA MES antes de asentarlo; el certificado de retenciones se
+  // emite una vez al año y fija número y fecha.
+  {
+    href: `${BASE}/deterioro`,
+    icono: Scales,
+    titulo: 'Deterioro de cartera',
+    texto: 'La provisión por edades: sugerida, editable y aprobada cada mes.',
+  },
+  {
+    href: `${BASE}/certificados`,
+    icono: Certificate,
+    titulo: 'Certificados de retención',
+    texto: 'Lo que le retuvieron a cada propietario en el año, para declarar.',
   },
 ];
 

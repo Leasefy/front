@@ -582,6 +582,25 @@ describe('CarteraCompleta', () => {
     })
   })
 
+  /*
+   * 🔴 Contrato de finanzas del 17-09, §9: `GET /inmobiliaria/reports/cartera`
+   * acepta `sedeId`, pero si la base todavía no tiene la columna de sede el
+   * filtro NO se aplica y el back lo dice en `avisos`. Sin pintarlo, la
+   * pantalla mostraría el CONSOLIDADO con el selector de sede puesto — el peor
+   * de los dos mundos: un número que no es el que se pidió, sin decirlo.
+   */
+  it('🔴 el aviso de que el filtro por sede no se aplicó se pinta, no se esconde', () => {
+    conReporte(
+      reporte({
+        avisos: [
+          'Esta base todavía no tiene la columna de sede: el filtro por centro de costo no se aplicó y estás viendo el informe CONSOLIDADO.',
+        ],
+      }),
+    )
+    montar()
+    expect($('[data-testid="avisos-de-la-cartera"]').textContent).toContain('CONSOLIDADO')
+  })
+
   it('sin avisos no se pinta un recuadro vacío', () => {
     conReporte(reporte())
     montar()

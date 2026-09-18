@@ -1367,7 +1367,13 @@
         "automatizacionIa": "AI automation",
         "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat",
         "mandato": "Mandate and payouts",
-        "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission"
+        "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission",
+        "mediosDeRecibo": "Receipt methods",
+        "mediosDeReciboDesc": "What the cashier can record a payment with: cash and cheque off by default",
+        "costosDeLaPlata": "Cost of moving money",
+        "costosDeLaPlataDesc": "The 4x1000 tax and the payment gateway, and who absorbs them",
+        "sedes": "Branches",
+        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch"
       },
       "notifications": {
         "title": "Notifications",

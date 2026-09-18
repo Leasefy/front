@@ -11,7 +11,10 @@ import {
   Users,
   Wallet,
   ArrowsClockwise,
+  Coins,
   HandCoins,
+  Receipt,
+  Storefront,
 } from '@phosphor-icons/react';
 
 /**
@@ -53,6 +56,9 @@ export type SeccionId =
   | 'equipo'
   | 'permisos'
   | 'medios-de-pago'
+  | 'medios-de-recibo'
+  | 'costos-de-la-plata'
+  | 'sedes'
   | 'mandato'
   | 'integraciones'
   | 'migracion'
@@ -156,6 +162,40 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.mandato',
     descKey: 'inmobiliaria.config.tabs.mandatoDesc',
     icon: HandCoins,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: con qué puede la persona de caja registrar que entró plata. NO es
+    // «Medios de pago» —eso es lo que el inquilino ve en «Cómo pagar»—: son dos
+    // cosas distintas y por eso son dos secciones.
+    id: 'medios-de-recibo',
+    grupo: 'dinero',
+    slug: 'medios-de-recibo',
+    labelKey: 'inmobiliaria.config.tabs.mediosDeRecibo',
+    descKey: 'inmobiliaria.config.tabs.mediosDeReciboDesc',
+    icon: Receipt,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: el 4x1000 y la pasarela, y a quién se le trasladan. Por defecto
+    // los asume la inmobiliaria contra su comisión.
+    id: 'costos-de-la-plata',
+    grupo: 'dinero',
+    slug: 'costos-de-la-plata',
+    labelKey: 'inmobiliaria.config.tabs.costosDeLaPlata',
+    descKey: 'inmobiliaria.config.tabs.costosDeLaPlataDesc',
+    icon: Coins,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: los centros de costo. El tablero financiero y el deterioro se
+    // pueden mirar consolidados o por sede.
+    id: 'sedes',
+    grupo: 'inmobiliaria',
+    slug: 'sedes',
+    labelKey: 'inmobiliaria.config.tabs.sedes',
+    descKey: 'inmobiliaria.config.tabs.sedesDesc',
+    icon: Storefront,
     gate: { tipo: 'admin' },
   },
   {

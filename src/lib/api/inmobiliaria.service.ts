@@ -1968,6 +1968,30 @@ export const actasApi = {
   async complete(id: string): Promise<ActaEntrega> {
     return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/complete`, {});
   },
+
+  /**
+   * 🔴 I-03: el inquilino no firma. El asesor la cierra con fotos y un TESTIGO,
+   * y al inquilino se le manda copia con 5 días para objetar (Nico, 18-09-2026).
+   *
+   * El back exige cuatro cosas y responde 400/409 con su código si falta alguna:
+   * que el inquilino NO haya firmado (`EL_INQUILINO_SI_FIRMO` — si firmó, se
+   * cierra por el camino normal), que el ASESOR sí (`FALTA_LA_FIRMA_DEL_ASESOR`:
+   * alguien de la inmobiliaria responde por este cierre), que estén las fotos
+   * por espacio (`ACTA_SIN_FOTOS_POR_ESPACIO`) y el testigo con nombre y cédula
+   * — sin documento «un testigo» es un nombre cualquiera y no sirve el día que
+   * haya que sostener el acta.
+   */
+  async cerrarSinFirma(
+    id: string,
+    testigo: { testigoNombre: string; testigoDocumento: string },
+  ): Promise<ActaEntrega> {
+    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo);
+  },
+
+  /** El inquilino objeta dentro de los 5 días. NO reabre el acta: deja escrito. */
+  async objetar(id: string, texto: string): Promise<ActaEntrega> {
+    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto });
+  },
 };
 
 // ============================================================================

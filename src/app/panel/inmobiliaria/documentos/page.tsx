@@ -57,6 +57,10 @@ import {
 } from '@/components/ui/select';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
+import {
+  CerrarActaSinFirma,
+  sePuedeCerrarSinFirma,
+} from '@/components/inmobiliaria/CerrarActaSinFirma';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
 import {
@@ -183,6 +187,7 @@ function DocumentosContent() {
   const [generarAbierto, setGenerarAbierto] = useState(false);
   const [plantillaAbierta, setPlantillaAbierta] = useState<PlantillaDeLaAgencia | null>(null);
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
+  const [cerrandoSinFirma, setCerrandoSinFirma] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
 
   /*
@@ -726,8 +731,44 @@ function DocumentosContent() {
         ancho="sm:max-w-2xl"
       >
         <CajonCabecera titulo={t('inmobiliaria.documentos.actaDetail')} />
-        <CajonCuerpo>{actaVisible && <ActaEntregaViewer acta={actaVisible} />}</CajonCuerpo>
+        <CajonCuerpo>
+          {actaVisible && (
+            <>
+              <ActaEntregaViewer acta={actaVisible} />
+              {/*
+                🔴 I-03: el inquilino no firma y el acta queda abierta para
+                siempre. El botón sólo aparece cuando de verdad se puede —si el
+                inquilino firmó, se cierra por el camino normal— para que nadie
+                consiga un testigo y descubra después que no hacía falta.
+              */}
+              {actaVisible.status !== 'completed' &&
+                sePuedeCerrarSinFirma(actaVisible) && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <Button
+                      variant="secondary"
+                      hideArrow
+                      onClick={() => setCerrandoSinFirma(actaVisible)}
+                    >
+                      Cerrar sin la firma del inquilino
+                    </Button>
+                  </div>
+                )}
+            </>
+          )}
+        </CajonCuerpo>
       </Cajon>
+
+      {cerrandoSinFirma && (
+        <CerrarActaSinFirma
+          acta={cerrandoSinFirma}
+          onCerrar={() => setCerrandoSinFirma(null)}
+          onCerrada={() => {
+            setCerrandoSinFirma(null);
+            setActaAbierta(null);
+            void recargarActas();
+          }}
+        />
+      )}
     </div>
   );
 }

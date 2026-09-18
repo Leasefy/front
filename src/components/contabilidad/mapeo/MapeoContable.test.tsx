@@ -21,12 +21,20 @@ import { act } from 'react';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, cuentasMock } = vi.hoisted(() => ({
+const { api, cuentasMock, escrituraMock } = vi.hoisted(() => ({
   api: {
-    mapeo: { obtener: vi.fn(), guardar: vi.fn(), sembrar: vi.fn() },
+    mapeo: { obtener: vi.fn(), guardar: vi.fn(), sembrar: vi.fn(), rubros: vi.fn() },
     asientos: { faltantes: vi.fn(), reprocesar: vi.fn() },
   },
   cuentasMock: { cuentas: [] as unknown[], cargando: false },
+  /*
+   * El gate de escritura se mockea porque lee dos contextos (permisos y auth) y
+   * este test monta el componente suelto. El hook real ya no LANZA sin ellos
+   * —devuelve «no pudimos leer tu rol»—, pero eso dejaría todos los controles
+   * deshabilitados y estos tests prueban justamente que asignar una cuenta
+   * funciona. Se mockea en «sí puede», que es el caso de un ADMIN o un CONTADOR.
+   */
+  escrituraMock: { puede: true, motivo: null as string | null, usuarioId: 'u-1' },
 }));
 
 vi.mock('@/lib/api/contabilidad.service', async () => {
@@ -39,11 +47,17 @@ vi.mock('../use-cuentas', async () => {
   const actual = await vi.importActual<typeof import('../use-cuentas')>('../use-cuentas');
   return { ...actual, useCuentas: () => cuentasMock };
 });
+vi.mock('../use-puede-escribir', async () => {
+  const actual = await vi.importActual<typeof import('../use-puede-escribir')>(
+    '../use-puede-escribir',
+  );
+  return { ...actual, usePuedeEscribir: () => escrituraMock };
+});
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
-import { MapeoContable, type EstadoDelMapeo } from './MapeoContable';
+import { MapeoContable, parteDe, PARTES_DEL_MAPEO, type EstadoDelMapeo } from './MapeoContable';
 
 const evento = (nombre: string, conCuenta: boolean) => ({
   evento: nombre,
@@ -186,5 +200,194 @@ describe('<MapeoContable>', () => {
 
     expect(q('mapeo-que-hacer')).toBeNull();
     expect(q('mapeo-contable')!.textContent).toContain('Todos los eventos tienen cuenta');
+  });
+});
+
+/**
+ * Las dos partes de la pantalla y `?parte=` (contrato del 18-09, §8).
+ *
+ * `parteDe` se prueba como `informeDe` de los reportes, y por el mismo motivo:
+ * un `value` que el `Tabs` de Radix no conoce deja la pantalla SIN ningún panel
+ * montado —en blanco— y eso no se ve en el tipo, se ve en producción.
+ */
+describe('las dos partes del mapeo', () => {
+  it('acepta las dos tal como viajan en la URL', () => {
+    expect(parteDe('asientos')).toBe('asientos');
+    expect(parteDe('rubros')).toBe('rubros');
+  });
+
+  it('lo que no existe cae a «asientos», no a una pestaña vacía', () => {
+    expect(parteDe('lo-que-sea')).toBe('asientos');
+    expect(parteDe('')).toBe('asientos');
+    expect(parteDe(null)).toBe('asientos');
+    expect(parteDe(undefined)).toBe('asientos');
+  });
+
+  it('la lista no tiene repetidos ni cosas de más', () => {
+    expect(PARTES_DEL_MAPEO).toEqual(['asientos', 'rubros']);
+    expect(new Set(PARTES_DEL_MAPEO).size).toBe(PARTES_DEL_MAPEO.length);
+  });
+
+  it('dibuja las dos pestañas', async () => {
+    api.mapeo.obtener.mockResolvedValue(mapeoCon(9, 0));
+    await pintar();
+    expect(q('parte-asientos')).not.toBeNull();
+    expect(q('parte-rubros')).not.toBeNull();
+  });
+
+  it('🔴 la pestaña de rubros NO pide su consulta hasta que se abre', async () => {
+    api.mapeo.obtener.mockResolvedValue(mapeoCon(9, 0));
+    await pintar();
+    expect(api.mapeo.rubros).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * El bloque de eventos de gasto (§2).
+ *
+ * 🔴 El caso que importa es `hayEventosDeGasto` ausente o `false`: la base no
+ * tiene los valores nuevos del enum, un PUT devolvería 400 EVENTO_SIN_MIGRACION
+ * y NO escribiría nada —o sea que se perdería también lo que sí se podía
+ * guardar—. Así que no se dibuja nada editable: se explica qué falta.
+ */
+describe('<MapeoContable> — eventos de gasto', () => {
+  const eventoDeGasto = (nombre: string, conCuenta: boolean) => ({
+    evento: nombre,
+    nombre: `Gasto ${nombre}`,
+    explicacion: 'Lo que hace',
+    lado: 'DEBE',
+    cuenta: conCuenta ? { id: `cg-${nombre}`, codigo: '519595', nombre: 'Otros' } : null,
+    propuesta: null,
+    codigoPropuesto: '519595',
+  });
+
+  it('con la migración ausente explica qué falta y no dibuja la tabla', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: false,
+      eventosDeGasto: [],
+      completoGastos: false,
+      faltantesGastos: [],
+    });
+
+    await pintar();
+
+    expect(q('eventos-de-gasto-sin-migracion')).not.toBeNull();
+    expect(q('eventos-de-gasto-sin-migracion')!.textContent).toContain('no se puede causar');
+    expect(q('evento-de-gasto-GASTO_SIN_RUBRO')).toBeNull();
+  });
+
+  it('🔴 `undefined` de un back viejo se trata igual que `false`: no se afirma nada', async () => {
+    api.mapeo.obtener.mockResolvedValue(mapeoCon(9, 0));
+
+    await pintar();
+
+    expect(q('eventos-de-gasto-sin-migracion')).not.toBeNull();
+  });
+
+  it('con la migración dibuja los siete y marca los que faltan', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: true,
+      completoGastos: false,
+      faltantesGastos: ['IVA_DESCONTABLE'],
+      eventosDeGasto: [
+        eventoDeGasto('GASTO_SIN_RUBRO', true),
+        eventoDeGasto('IVA_DESCONTABLE', false),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('evento-de-gasto-GASTO_SIN_RUBRO')).not.toBeNull();
+    expect(q('falta-gasto-IVA_DESCONTABLE')).not.toBeNull();
+    expect(q('falta-gasto-GASTO_SIN_RUBRO')).toBeNull();
+    expect(q('eventos-de-gasto-incompleto')!.textContent).toContain('Faltan 1 de 2');
+  });
+
+  it('dice qué NO se puede hacer hoy, en vez del nombre del evento', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: true,
+      completoGastos: false,
+      faltantesGastos: ['IVA_DESCONTABLE'],
+      eventosDeGasto: [eventoDeGasto('IVA_DESCONTABLE', false)],
+    });
+
+    await pintar();
+
+    expect(q('eventos-de-gasto-apagado')!.textContent).toContain('IVA descontable');
+  });
+
+  it('completo lo dice sin reclamar nada', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: true,
+      completoGastos: true,
+      faltantesGastos: [],
+      eventosDeGasto: [eventoDeGasto('GASTO_SIN_RUBRO', true)],
+    });
+
+    await pintar();
+
+    expect(q('eventos-de-gasto-completo')).not.toBeNull();
+    expect(q('eventos-de-gasto-incompleto')).toBeNull();
+  });
+
+  /*
+   * 🔴 `onEstado` es lo que decide si el paso 5 del muro ofrece «Continuar».
+   * Los eventos de GASTO no entran ahí: un mapeo de gasto vacío no impide
+   * asentar un solo recibo, y contarlo dejaría el paso 5 imposible de terminar
+   * para cualquier inmobiliaria que nunca registró una factura de proveedor.
+   */
+  it('🔴 los eventos de gasto NO cuentan en lo que reporta hacia afuera', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: true,
+      completoGastos: false,
+      faltantesGastos: ['IVA_DESCONTABLE', 'GASTO_POR_PAGAR'],
+      eventosDeGasto: [
+        eventoDeGasto('IVA_DESCONTABLE', false),
+        eventoDeGasto('GASTO_POR_PAGAR', false),
+      ],
+    });
+    const visto: EstadoDelMapeo[] = [];
+
+    await pintar((e) => visto.push(e));
+
+    expect(visto.at(-1)).toEqual({ completo: true, faltan: 0, total: 9 });
+  });
+});
+
+/**
+ * El 403 del back, dicho ANTES del clic.
+ *
+ * El back es la autoridad (`ContabilidadEscrituraGuard`) y un AGENTE recibe 403
+ * haga lo que haga la pantalla. Lo que cambia es cuándo se entera: con el gate,
+ * el control llega deshabilitado y con el motivo escrito.
+ */
+describe('<MapeoContable> — sin permiso de escritura', () => {
+  it('deshabilita el botón de propuestas y dice por qué', async () => {
+    escrituraMock.puede = false;
+    escrituraMock.motivo =
+      'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
+    const conPropuesta = {
+      ...evento('falta0', false),
+      propuesta: { id: 'c-prop', codigo: '110505', nombre: 'Caja', activa: true, imputable: true },
+    };
+    api.mapeo.obtener.mockResolvedValue({
+      eventos: [conPropuesta],
+      completo: false,
+      faltantes: ['falta0'],
+    });
+
+    await pintar();
+
+    const boton = q('usar-propuestas') as HTMLButtonElement | null;
+    expect(boton?.disabled).toBe(true);
+    expect(q('sin-escritura-mapeo')?.textContent).toContain('el contador');
+
+    escrituraMock.puede = true;
+    escrituraMock.motivo = null;
   });
 });

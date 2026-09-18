@@ -1,12 +1,27 @@
 'use client';
 
 /**
- * El mapeo contable: ocho eventos, una cuenta por evento.
+ * El mapeo contable: qué cuenta del PUC usa cada asiento automático.
  *
  * Cada fila se guarda sola al elegir la cuenta (un PUT por fila): el contador
  * ajusta una y sigue; no hay un «guardar todo» que se pueda olvidar. La
  * escritura la decide el back (ADMIN o CONTADOR) y el 403 se muestra en
  * palabras, igual que en el resto de la contabilidad.
+ *
+ * ── Dos partes, no una tabla larga (contrato del 18-09, §1 y §2) ────────────
+ *
+ * «Asientos automáticos» son los movimientos que el sistema ya asienta solo
+ * —recaudos, giros— y, debajo, los siete EVENTOS DE GASTO que hacen falta para
+ * causar una factura de proveedor. Los de gasto van en su propio bloque con su
+ * propio estado: el mapeo de recaudo puede estar completo mientras el de gasto
+ * está vacío, y mezclarlos haría que un paso 5 ya hecho pareciera incompleto de
+ * un día para otro (ver el encabezado de `EventosDeGasto.tsx`).
+ *
+ * «Rubros del P&G» es otra cosa: no dice cómo se asienta algo, dice cómo se LEE
+ * el libro para comparar contra el presupuesto. Va en una pestaña aparte porque
+ * el trabajo es distinto, se hace una vez y lo hace el contador — y porque
+ * `onEstado` (de lo que depende el pie del paso 5) sigue siendo sólo de los
+ * eventos de recaudo: un rubro sin mapear no impide asentar nada.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -25,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -37,6 +53,9 @@ import {
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
+import { usePuedeEscribir } from '../use-puede-escribir';
+import { EventosDeGasto } from './EventosDeGasto';
+import { RubrosDelPyg } from './RubrosDelPyg';
 import { NOMBRE_DEL_LADO, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
 
 /** Cómo va el mapeo, para quien lo tiene adentro. Ver `onEstado`. */
@@ -48,9 +67,29 @@ export interface EstadoDelMapeo {
   total: number;
 }
 
+/** Las dos partes de la pantalla, tal como viajan en `?parte=`. */
+export type ParteDelMapeo = 'asientos' | 'rubros';
+
+export const PARTES_DEL_MAPEO: readonly ParteDelMapeo[] = ['asientos', 'rubros'];
+
+/**
+ * `?parte=rubros` abre esa pestaña. Lo usa la alerta de la portada («N rubros
+ * del P&G sin cuenta»): mandar a «Mapeo» a secas obligaría a buscar la pestaña.
+ *
+ * Un valor que no está en la lista cae a `asientos`, que es el default: un
+ * `value` que el `Tabs` de Radix no conoce deja la pantalla sin ningún panel
+ * montado, o sea en blanco.
+ */
+export function parteDe(valor: string | null | undefined): ParteDelMapeo {
+  return PARTES_DEL_MAPEO.find((p) => p === valor) ?? 'asientos';
+}
+
 export function MapeoContable({
+  inicial = 'asientos',
   onEstado,
 }: {
+  /** Qué pestaña abrir. Viene de `?parte=` por `parteDe()`. */
+  inicial?: ParteDelMapeo;
   /**
    * 🔴 Se avisa hacia afuera porque el PASO depende de esto, no sólo la tabla.
    *
@@ -62,6 +101,7 @@ export function MapeoContable({
    */
   onEstado?: (estado: EstadoDelMapeo) => void;
 } = {}) {
+  const [parte, setParte] = useState<ParteDelMapeo>(inicial);
   const [mapeo, setMapeo] = useState<Mapeo | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -76,6 +116,7 @@ export function MapeoContable({
   const [faltantes, setFaltantes] = useState<AsientosFaltantes | null>(null);
   const [reprocesando, setReprocesando] = useState(false);
   const { cuentas, cargando: cuentasCargando } = useCuentas();
+  const escritura = usePuedeEscribir();
 
   const cargarFaltantes = useCallback(async () => {
     try {
@@ -204,7 +245,14 @@ export function MapeoContable({
     return <FalloDeCarga error={error} queEs="el mapeo contable" onReintentar={cargar} />;
   }
 
-  return (
+  /*
+   * La tabla de siempre, en una variable y no en su propio componente: usa siete
+   * piezas del estado de acá (mapeo, sembrables, apagados, paginación,
+   * guardando…) y extraerla significaría pasar siete props o partir el estado en
+   * dos. La pestaña de rubros SÍ es un componente aparte porque no comparte nada
+   * — tiene su propia consulta.
+   */
+  const cuerpoDeAsientos = (
     <div className="space-y-5" data-testid="mapeo-contable">
       {mapeo.completo ? (
         <Banner variant="success" title="Todos los eventos tienen cuenta">
@@ -234,12 +282,28 @@ export function MapeoContable({
               </p>
             )}
             {sembrables.length > 0 && (
-              <Button size="sm" hideArrow onClick={() => void sembrar()} disabled={sembrando} data-testid="usar-propuestas">
-                <Sparkle className="h-4 w-4" aria-hidden="true" />
-                {sembrando
-                  ? 'Asignando…'
-                  : `Usar las cuentas propuestas (${sembrables.length})`}
-              </Button>
+              <div className="space-y-1">
+                <Button
+                  size="sm"
+                  hideArrow
+                  onClick={() => void sembrar()}
+                  disabled={sembrando || !escritura.puede}
+                  title={escritura.motivo ?? undefined}
+                  data-testid="usar-propuestas"
+                >
+                  <Sparkle className="h-4 w-4" aria-hidden="true" />
+                  {sembrando
+                    ? 'Asignando…'
+                    : `Usar las cuentas propuestas (${sembrables.length})`}
+                </Button>
+                {/* El 403 del back, dicho antes del clic y con las mismas
+                    palabras que después (`mensajeDeContabilidad`). */}
+                {!escritura.puede && escritura.motivo ? (
+                  <p className="text-caption text-fg-muted" data-testid="sin-escritura-mapeo">
+                    {escritura.motivo}
+                  </p>
+                ) : null}
+              </div>
             )}
           </div>
         </Banner>
@@ -267,7 +331,14 @@ export function MapeoContable({
                 : '. Completa el mapeo y reprocesa.'}
             </p>
           </div>
-          <Button size="sm" hideArrow onClick={() => void reprocesar()} disabled={reprocesando} data-testid="reprocesar-asientos">
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => void reprocesar()}
+            disabled={reprocesando || !escritura.puede}
+            title={escritura.motivo ?? undefined}
+            data-testid="reprocesar-asientos"
+          >
             {reprocesando ? 'Reprocesando…' : 'Reprocesar'}
           </Button>
         </div>
@@ -312,7 +383,7 @@ export function MapeoContable({
                       value={e.cuenta?.id ?? ''}
                       onChange={(cuentaId) => void asignar(e.evento, cuentaId, e.nombre)}
                       soloImputables
-                      disabled={guardando.has(e.evento)}
+                      disabled={guardando.has(e.evento) || !escritura.puede}
                       placeholder="Sin cuenta: este asiento no se genera"
                       className="w-full"
                     />
@@ -343,7 +414,8 @@ export function MapeoContable({
                           size="sm"
                           hideArrow
                           onClick={() => void asignar(e.evento, e.propuesta!.id, e.nombre)}
-                          disabled={guardando.has(e.evento)}
+                          disabled={guardando.has(e.evento) || !escritura.puede}
+                          title={escritura.motivo ?? undefined}
                         >
                           Usar
                         </Button>
@@ -374,5 +446,44 @@ export function MapeoContable({
         ) : null}
       </section>
     </div>
+  );
+
+  return (
+    <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDelMapeo)}>
+      <TabsList variant="underline" className="justify-start">
+        <TabsTrigger value="asientos" data-testid="parte-asientos">
+          Asientos automáticos
+        </TabsTrigger>
+        <TabsTrigger value="rubros" data-testid="parte-rubros">
+          Rubros del P&G
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="asientos" className="pt-5">
+        {parte === 'asientos' ? (
+          <div className="space-y-8">
+            {cuerpoDeAsientos}
+            {/* Los siete del §2, con su propio estado: el de recaudo puede estar
+                completo mientras éste está vacío. */}
+            <EventosDeGasto
+              eventos={mapeo.eventosDeGasto}
+              hay={mapeo.hayEventosDeGasto}
+              completo={mapeo.completoGastos}
+              cuentas={cuentas}
+              onAsignar={asignar}
+              guardando={guardando}
+              puedeEscribir={escritura.puede}
+              motivoSinEscritura={escritura.motivo}
+            />
+          </div>
+        ) : null}
+      </TabsContent>
+
+      {/* Se monta al abrirla: `GET /mapeo/rubros` es otra consulta y no tiene
+          por qué salir cuando nadie va a mirar esa pestaña. */}
+      <TabsContent value="rubros" className="pt-5">
+        {parte === 'rubros' ? <RubrosDelPyg /> : null}
+      </TabsContent>
+    </Tabs>
   );
 }

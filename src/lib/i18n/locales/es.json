@@ -1427,7 +1427,9 @@
         "avisos": "Avisos automáticos",
         "avisosDesc": "Qué les llega solo a tus inquilinos y propietarios. Todo arranca apagado.",
         "bitacora": "Bitácora de plata",
-        "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas."
+        "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas.",
+        "slaDePqrs": "Tiempo de respuesta",
+        "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo."
       },
       "notifications": {
         "title": "Notificaciones",

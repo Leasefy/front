@@ -17,6 +17,7 @@ import {
   Storefront,
   Megaphone,
   ClipboardText,
+  Clock,
 } from '@phosphor-icons/react';
 
 /**
@@ -65,6 +66,7 @@ export type SeccionId =
   | 'integraciones'
   | 'migracion'
   | 'avisos'
+  | 'sla-de-pqrs'
   | 'bitacora'
   | 'notificaciones'
   | 'preferencias'
@@ -253,6 +255,22 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     // son los que SALEN a los clientes de la inmobiliaria: no son la misma cosa
     // y no pueden verse igual.
     icon: Megaphone,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 El tiempo máximo de una PQRS (18-09-2026). Va en el grupo «sistema» y
+     * es de ADMIN por la misma razón que los avisos: cambiar lo que la
+     * inmobiliaria le PROMETE a sus clientes no es decisión de quien atiende
+     * el caso. Quien atiende lo VE (el back lo deja leer con
+     * `operaciones:view`), pero no lo cambia.
+     */
+    id: 'sla-de-pqrs',
+    grupo: 'sistema',
+    slug: 'sla-de-pqrs',
+    labelKey: 'inmobiliaria.config.tabs.slaDePqrs',
+    descKey: 'inmobiliaria.config.tabs.slaDePqrsDesc',
+    icon: Clock,
     gate: { tipo: 'admin' },
   },
   {

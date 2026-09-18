@@ -1387,7 +1387,9 @@
         "avisos": "Automatic notices",
         "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off.",
         "bitacora": "Money log",
-        "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts."
+        "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
+        "slaDePqrs": "Response time",
+        "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },
       "notifications": {
         "title": "Notifications",

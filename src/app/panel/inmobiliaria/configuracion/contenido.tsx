@@ -9,6 +9,7 @@
  */
 
 import { SeccionAvisos } from './SeccionAvisos';
+import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
 import { SeccionBitacora } from './SeccionBitacora';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
@@ -62,6 +63,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionBitacora />;
     case 'avisos':
       return <SeccionAvisos />;
+    case 'sla-de-pqrs':
+      return <SeccionSlaDePqrs />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':

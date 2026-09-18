@@ -125,3 +125,161 @@ describe('describirAlerta', () => {
     expect(d.accion).toEqual({ tipo: 'ir', label: 'Completar el mapeo', href: '/panel/inmobiliaria/contabilidad/mapeo' });
   });
 });
+
+/**
+ * Las cuatro alertas nuevas del contrato del 18-09 (§8, la portada).
+ *
+ * Lo que se cuida acá es lo mismo que en las de siempre, más una cosa: las
+ * cuatro dependen de migraciones sin aplicar, así que sus consultas pueden
+ * responder `disponible: false` o fallar. `undefined` y `null` tienen que
+ * comportarse igual —sin alerta— porque la portada las pasa como `null` cuando
+ * el pedido falló y como `undefined` si un back viejo no las tiene.
+ */
+describe('las cuatro alertas del 18-09', () => {
+  it('ausentes o nulas no generan nada: el silencio no es «está todo bien»', () => {
+    expect(alertasDeContabilidad(NADA)).toEqual([]);
+    expect(
+      alertasDeContabilidad({ ...NADA, rubros: null, facturas: null, lotes: null, exogena: null }),
+    ).toEqual([]);
+  });
+
+  it('todo en cero tampoco grita', () => {
+    expect(
+      alertasDeContabilidad({
+        ...NADA,
+        rubros: { completo: true, faltantes: [] },
+        facturas: { sinCausar: 0, totalCop: 0 },
+        lotes: { porAprobar: 0, totalCop: 0 },
+        exogena: { anio: 2025, sinVistoBueno: 0, conBloqueos: 0 },
+      }),
+    ).toEqual([]);
+  });
+
+  it('un mapeo incompleto SIN nombres no grita: no habría qué decir', () => {
+    expect(
+      alertasDeContabilidad({ ...NADA, rubros: { completo: false, faltantes: [] } }),
+    ).toEqual([]);
+  });
+
+  it('las cuatro salen juntas, y después de las de siempre', () => {
+    const alertas = alertasDeContabilidad({
+      faltantes: faltantes(),
+      balance: { cuadra: false, diferenciaCop: 1000 },
+      cierre: null,
+      mesAnterior: null,
+      rubros: { completo: false, faltantes: ['Nómina'] },
+      facturas: { sinCausar: 3, totalCop: 1_200_000 },
+      lotes: { porAprobar: 1, totalCop: 12_480_000 },
+      exogena: { anio: 2025, sinVistoBueno: 6, conBloqueos: 2 },
+    });
+    expect(alertas.map((a) => a.tipo)).toEqual([
+      'NO_CUADRA',
+      'RUBROS_INCOMPLETOS',
+      'FACTURAS_SIN_CAUSAR',
+      'LOTES_POR_APROBAR',
+      'EXOGENA_SIN_VISTO_BUENO',
+    ]);
+  });
+});
+
+describe('describirAlerta — las cuatro nuevas', () => {
+  it('rubros: nombra el guion que ya se ve y manda a la parte de rubros del mapeo', () => {
+    const d = describirAlerta(
+      { tipo: 'RUBROS_INCOMPLETOS', faltantes: ['Nómina', 'Gastos'] },
+      pesos,
+    );
+    expect(d.titulo).toBe('2 rubros del P&G sin cuenta del PUC');
+    expect(d.detalle).toContain('«—»');
+    expect(d.accion).toEqual({
+      tipo: 'ir',
+      label: 'Mapear los rubros',
+      href: '/panel/inmobiliaria/contabilidad/mapeo?parte=rubros',
+    });
+  });
+
+  it('rubros: con más de tres nombres recorta y dice «y otros»', () => {
+    const d = describirAlerta(
+      { tipo: 'RUBROS_INCOMPLETOS', faltantes: ['a', 'b', 'c', 'd'] },
+      pesos,
+    );
+    expect(d.detalle).toContain('a, b, c y otros');
+  });
+
+  it('facturas sin causar: la plata en el título y por qué importa en el detalle', () => {
+    const d = describirAlerta(
+      { tipo: 'FACTURAS_SIN_CAUSAR', sinCausar: 3, totalCop: 1_200_000 },
+      pesos,
+    );
+    expect(d.titulo).toBe('3 facturas de proveedor sin causar por $1.200.000');
+    expect(d.detalle).toContain('no está en el libro');
+    expect(d.detalle).toContain('exógena');
+    expect(d.accion).toEqual({
+      tipo: 'ir',
+      label: 'Ver las facturas',
+      href: '/panel/inmobiliaria/contabilidad/gastos?estado=BORRADOR',
+    });
+  });
+
+  it('facturas: una sola va en singular', () => {
+    const d = describirAlerta(
+      { tipo: 'FACTURAS_SIN_CAUSAR', sinCausar: 1, totalCop: 400_000 },
+      pesos,
+    );
+    expect(d.titulo).toBe('1 factura de proveedor sin causar por $400.000');
+  });
+
+  it('🔴 lotes por aprobar: el detalle dice que lo aprueba OTRA persona', () => {
+    const d = describirAlerta(
+      { tipo: 'LOTES_POR_APROBAR', porAprobar: 1, totalCop: 12_480_000 },
+      pesos,
+    );
+    expect(d.titulo).toBe('1 lote de egresos espera aprobación por $12.480.000');
+    expect(d.detalle).toContain('distinto de quien lo armó');
+    expect(d.accion).toEqual({
+      tipo: 'ir',
+      label: 'Ver los lotes',
+      href: '/panel/inmobiliaria/contabilidad/egresos',
+    });
+  });
+
+  it('exógena con bloqueos es warning y dice qué los causa', () => {
+    const d = describirAlerta(
+      { tipo: 'EXOGENA_SIN_VISTO_BUENO', anio: 2025, sinVistoBueno: 6, conBloqueos: 2 },
+      pesos,
+    );
+    expect(d.severidad).toBe('warning');
+    expect(d.titulo).toBe('6 formatos de exógena de 2025 sin el visto bueno del contador');
+    expect(d.detalle).toContain('sin tercero');
+    expect(d.detalle).toContain('sin concepto');
+    expect(d.accion).toEqual({
+      tipo: 'ir',
+      label: 'Ver la exógena',
+      href: '/panel/inmobiliaria/contabilidad/exogena?anio=2025',
+    });
+  });
+
+  it('exógena sin bloqueos es info y dice que ya cuadra contra el libro', () => {
+    const d = describirAlerta(
+      { tipo: 'EXOGENA_SIN_VISTO_BUENO', anio: 2025, sinVistoBueno: 1, conBloqueos: 0 },
+      pesos,
+    );
+    expect(d.severidad).toBe('info');
+    expect(d.detalle).toContain('ya cuadran contra el libro');
+  });
+
+  it('las cuatro traen título, detalle y acción: la regla de Nico, sin excepción', () => {
+    const nuevas = [
+      { tipo: 'RUBROS_INCOMPLETOS' as const, faltantes: ['a'] },
+      { tipo: 'FACTURAS_SIN_CAUSAR' as const, sinCausar: 1, totalCop: 1 },
+      { tipo: 'LOTES_POR_APROBAR' as const, porAprobar: 1, totalCop: 1 },
+      { tipo: 'EXOGENA_SIN_VISTO_BUENO' as const, anio: 2025, sinVistoBueno: 1, conBloqueos: 0 },
+    ];
+    for (const alerta of nuevas) {
+      const d = describirAlerta(alerta, pesos);
+      expect(d.clave, alerta.tipo).toBeTruthy();
+      expect(d.titulo.length, alerta.tipo).toBeGreaterThan(10);
+      expect(d.detalle.length, alerta.tipo).toBeGreaterThan(20);
+      expect(d.accion.label, alerta.tipo).toBeTruthy();
+    }
+  });
+});

@@ -33,6 +33,7 @@ import {
   ArrowLineDown,
   ArrowLineUp,
   HandCoins,
+  IdentificationBadge,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -233,6 +234,11 @@ export interface PantallaDelPanel {
   hintKey?: string;
   /** data-tour-target (PanelTour). */
   dataTourTarget?: string;
+  /**
+   * 🔴 Módulo de PAGO que gobierna esta fila (17-09-2026). Hoy sólo `nomina`.
+   * No es un permiso: es si la inmobiliaria lo compró. Ver `agency-nav-filter.ts`.
+   */
+  moduloPago?: string;
 }
 
 export interface ModuloDelPanel extends PantallaDelPanel {
@@ -489,6 +495,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
       // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
       { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
+      // 🔴 NÓMINA es un módulo de PAGO (Nico, 17-09): `moduloPago` hace que la
+      // fila no exista para quien no lo compró — ni siquiera un instante mientras
+      // cargan los permisos, porque el gate falla cerrado. Y `CONTADOR_ROLES`
+      // porque «la ven sólo administrador y contador».
+      { key: 'nomina', labelKey: 'inmobiliaria.nav.nomina', href: r('/nomina'), icon: IdentificationBadge, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', moduloPago: 'nomina' },
     ],
   },
 

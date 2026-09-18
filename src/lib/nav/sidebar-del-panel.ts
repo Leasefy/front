@@ -81,6 +81,10 @@ export function filasDelSidebar(
         modulos: entrada.modulos,
         roles: entrada.roles,
         scope: entrada.scope,
+        // 🔴 El módulo de PAGO viaja con la fila para que `filterAgencyNav` lo
+        // vuelva a mirar: `resolverEntradaDeModulo` ya lo miró al elegir pantalla,
+        // pero el filtro final es el que decide qué se pinta.
+        moduloPago: entrada.moduloPago ?? m.moduloPago,
         exact: m.exact,
         ai: m.ia,
         hint: m.hintKey ? t(m.hintKey) : undefined,

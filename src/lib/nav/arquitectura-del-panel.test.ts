@@ -205,7 +205,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 22 módulos en 5 grupos con nombre (+ Inicio y Chat = 24 filas)', () => {
+  it('el sidebar tiene 23 módulos en 5 grupos con nombre (+ Inicio y Chat = 25 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -213,9 +213,12 @@ describe('arquitectura del panel — sidebar', () => {
     // pantallas que eran secciones de otro módulo pasaron a ser filas, más la
     // del equipo de pagos, que no tenía ninguna. Conciliación ya era fila: sólo
     // cambió de grupo. La propuesta original contaba 21 porque incluía
-    // «Ayuda», que en el panel no existe como fila: no se inventa.
+    // «Ayuda», que en el panel no existe como fila: no se inventa. Eran 22 hasta
+    // que entró NÓMINA (2026-09-17), que además es la primera fila con
+    // `moduloPago`: existe en el catálogo pero NO se le muestra a quien no
+    // compró el módulo (ver `agency-nav-filter.ts`).
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(5);
-    expect(modulos).toHaveLength(22);
+    expect(modulos).toHaveLength(23);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -856,11 +859,13 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     expect(secciones('postulaciones')).toEqual(['/postulaciones/soportes']);
     expect(secciones('pagos')).toEqual(['/pagos/recaudo', '/pagos/cartera', '/pagos/liquidaciones', '/pagos/dispersiones']);
     expect(secciones('reportes')).toEqual(['/reportes/resumen', '/reportes/rentabilidad']);
-    // Dinero sin Conciliación sigue con más de una fila (R3).
+    // Dinero sin Conciliación sigue con más de una fila (R3). Nómina cierra el
+    // grupo desde el 2026-09-17.
     expect(ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'dinero')!.modulos.map((m) => m.key)).toEqual([
       'pagos',
       'facturacion',
       'contabilidad',
+      'nomina',
     ]);
   });
 });

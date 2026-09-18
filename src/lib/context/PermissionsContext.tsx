@@ -52,6 +52,15 @@ interface PermissionsContextValue {
   agentPermsResolved: boolean;
   isAdmin: boolean;
   agencyRole: string | null;
+  /**
+   * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
+   *
+   * No son permisos: un administrador tiene todos los permisos y aun así no ve
+   * Nómina si su inmobiliaria no la compró. Viajan con `my-permissions` para no
+   * agregar una llamada al arranque de cada pantalla, y mientras no lleguen la
+   * lista es VACÍA — el gate falla cerrado.
+   */
+  modulosPagos: readonly string[];
   refetch: () => Promise<void>;
 }
 
@@ -225,6 +234,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       canAccess,
       isAdmin: permissions?.isAdmin ?? false,
       agencyRole: permissions?.role ?? null,
+      // 🔴 Vacío mientras no llegue la respuesta: el gate de un módulo de pago
+      // falla CERRADO. Mostrar la fila «por si acaso» lleva a una pantalla que
+      // responde 402, que es peor que no mostrarla.
+      modulosPagos: permissions?.modulosPagos ?? [],
       refetch: fetchPermissions,
     }),
     [

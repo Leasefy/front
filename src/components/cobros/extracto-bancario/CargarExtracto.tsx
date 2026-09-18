@@ -6,7 +6,7 @@
  * filas de prueba y recién ahí se manda al back.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { UploadSimple, X } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,16 @@ import {
   type MapeoDeExtracto,
 } from '@/lib/cobros/extracto-bancario';
 import { mensajeDe, plata } from './formato';
+import { tesoreriaApi } from '@/lib/api/tesoreria.service';
+import type { CuentaDeclarada } from '@/lib/api/tesoreria.types';
 
 interface Props {
   onCargado: (resultado: ResultadoDeCarga) => void;
 }
 
 const SIN_MAPEAR = '__ninguna__';
+/** «No la declaro»: el extracto entra como siempre y el back avisa. */
+const SIN_CUENTA = '__sin_cuenta__';
 
 export function CargarExtracto({ onCargado }: Props) {
   const input = useRef<HTMLInputElement>(null);
@@ -42,6 +46,36 @@ export function CargarExtracto({ onCargado }: Props) {
   const [leyendo, setLeyendo] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoDeCarga | null>(null);
+  /**
+   * 🔴 (18-09-2026) A qué CUENTA corresponde este extracto. Es lo que le permite
+   * al back impedir que el mismo pago entre por el extracto Y por el archivo de
+   * recaudo del convenio. Las cuentas salen de los convenios configurados: si
+   * ninguna está declarada, este selector no aparece y todo sigue como antes.
+   */
+  const [cuentas, setCuentas] = useState<CuentaDeclarada[]>([]);
+  const [cuenta, setCuenta] = useState<string>(SIN_CUENTA);
+
+  useEffect(() => {
+    let vivo = true;
+    void tesoreriaApi
+      .cuentasDeclaradas()
+      .then((c) => {
+        if (!vivo) return;
+        setCuentas(c);
+        // Con UNA sola cuenta declarada no hay nada que elegir: se preselecciona.
+        if (c.length === 1) setCuenta(c[0].cuenta);
+      })
+      // Un back sin desplegar no tiene esta ruta: el extracto entra como antes.
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  /** La cuenta elegida, si recauda por ARCHIVO: su extracto no se puede cargar. */
+  const laCuentaEntraPorArchivo = cuentas.find(
+    (c) => c.cuenta === cuenta && c.via === 'ARCHIVO',
+  );
 
   const armadas = useMemo(() => armarFilasDeExtracto(crudas, mapeo), [crudas, mapeo]);
   const faltan = faltantesDelMapeo(mapeo);
@@ -82,7 +116,11 @@ export function CargarExtracto({ onCargado }: Props) {
     if (!archivo || faltan.length > 0 || armadas.filas.length === 0) return;
     setCargando(true);
     try {
-      const r = await conciliacionBancariaApi.cargarExtracto(archivo.name, armadas.filas);
+      const r = await conciliacionBancariaApi.cargarExtracto(
+        archivo.name,
+        armadas.filas,
+        cuenta === SIN_CUENTA ? undefined : cuenta,
+      );
       setResultado(r);
       onCargado(r);
       const detalle = [
@@ -101,6 +139,9 @@ export function CargarExtracto({ onCargado }: Props) {
           : `${r.nuevas} ${r.nuevas === 1 ? 'movimiento nuevo' : 'movimientos nuevos'} del extracto.`,
         detalle ? { description: detalle } : undefined,
       );
+      // 🔴 Los avisos del camino de entrada no son un detalle del éxito: se
+      // muestran aparte para que no se pierdan en la misma línea.
+      for (const aviso of r.avisos ?? []) toast.info(aviso);
       limpiar();
     } catch (error) {
       toast.error(mensajeDe(error, 'No se pudo cargar el extracto.'));
@@ -150,6 +191,43 @@ export function CargarExtracto({ onCargado }: Props) {
           </Button>
         </div>
       </div>
+
+      {/* 🔴 (18-09-2026) A qué cuenta corresponde este extracto. Sólo aparece si
+          hay convenios de recaudo con cuenta declarada: sin eso no hay nada que
+          elegir y la pantalla queda como estaba. */}
+      {cuentas.length > 0 && (
+        <div className="space-y-2" data-testid="cuenta-del-extracto">
+          <label className="space-y-1 text-sm">
+            <span className="font-medium text-fg">¿De qué cuenta es este extracto?</span>
+            <select
+              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-96"
+              value={cuenta}
+              onChange={(e) => setCuenta(e.target.value)}
+              data-testid="elegir-cuenta-del-extracto"
+            >
+              <option value={SIN_CUENTA}>— no la declaro —</option>
+              {cuentas.map((c) => (
+                <option key={c.cuenta} value={c.cuenta}>
+                  {c.cuenta} · {c.banco} ({c.via === 'ARCHIVO' ? 'recauda por archivo' : 'por extracto'})
+                </option>
+              ))}
+            </select>
+          </label>
+          {laCuentaEntraPorArchivo ? (
+            <Banner variant="warning" title="Esta cuenta recauda por el archivo del banco">
+              La plata de {laCuentaEntraPorArchivo.cuenta} entra por el archivo del convenio «
+              {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago DOS
+              veces en la cola, y conciliar los dos le emitiría al inquilino dos recibos por un
+              pago que hizo una vez. Importá el archivo en Tesorería → Recaudo del banco.
+            </Banner>
+          ) : (
+            <p className="text-xs text-fg-muted">
+              Decir la cuenta es lo que le permite al sistema impedir que el mismo pago entre por
+              el extracto Y por el archivo de recaudo del banco.
+            </p>
+          )}
+        </div>
+      )}
 
       {resultado && (
         <Banner variant={resultado.nuevas > 0 ? 'success' : 'info'} title="Extracto cargado">
@@ -242,7 +320,19 @@ export function CargarExtracto({ onCargado }: Props) {
                     </>
                   )}
                 </p>
-                <Button hideArrow onClick={() => void cargar()} disabled={cargando || armadas.filas.length === 0} data-testid="cargar">
+                {/* 🔴 Con la cuenta marcada como «recauda por archivo» el botón
+                    NO se aprieta: el back responde 409 y el aviso de arriba ya
+                    dice qué hacer. Descubrirlo apretando es peor. */}
+                <Button
+                  hideArrow
+                  onClick={() => void cargar()}
+                  disabled={
+                    cargando ||
+                    armadas.filas.length === 0 ||
+                    laCuentaEntraPorArchivo !== undefined
+                  }
+                  data-testid="cargar"
+                >
                   {cargando ? <Spinner size="sm" /> : <UploadSimple className="h-4 w-4" aria-hidden="true" />}
                   Cargar {armadas.filas.length} {armadas.filas.length === 1 ? 'movimiento' : 'movimientos'}
                 </Button>

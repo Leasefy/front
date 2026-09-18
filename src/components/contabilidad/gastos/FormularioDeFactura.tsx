@@ -36,8 +36,8 @@
  * para cada cerradura.
  */
 
-import { useMemo, useState } from 'react';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, SealCheck, Trash } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -61,6 +61,7 @@ import {
   TIPOS_DE_FACTURA,
   type FacturaDeProveedor,
   type FacturaNueva,
+  type LiquidacionDeFactura,
   type TipoDeFacturaDeProveedor,
 } from '@/lib/api/gastos.service';
 import type { CuentaPuc } from '@/lib/api/contabilidad.service';
@@ -129,6 +130,13 @@ export function FormularioDeFactura({
   const [reteiva, setReteiva] = useState(0);
   const [reteica, setReteica] = useState(0);
   const [guardando, setGuardando] = useState(false);
+  /**
+   * La liquidación del BACK (`POST /gastos/facturas/previsualizar`). `null`
+   * mientras no haya líneas válidas o mientras el pedido falle: ahí la pantalla
+   * muestra la cuenta local, que es la misma aritmética sin el perfil tributario
+   * del proveedor. Nunca se muestran las dos como si fueran lo mismo.
+   */
+  const [liquidacion, setLiquidacion] = useState<LiquidacionDeFactura | null>(null);
 
   const borrador: BorradorDeFactura = {
     proveedorNombre,
@@ -148,6 +156,60 @@ export function FormularioDeFactura({
   const avisoDelTotal = avisoDeTotalQueNoCuadra(borrador, formatCurrency);
   const retenciones = sumaDeRetenciones(borrador);
   const neto = totalDelPapel === null ? null : netoAPagar(totalDelPapel, borrador);
+
+  /*
+   * 🔴 La liquidación la hace el BACK mientras se escribe. No es un capricho de
+   * arquitectura: depende del perfil tributario del PROVEEDOR —si es responsable
+   * de IVA, su porcentaje de retefuente, si la inmobiliaria es agente retenedor
+   * de ICA en ese municipio— y eso el navegador no lo sabe. La cuenta local de
+   * `factura-de-proveedor.ts` sigue existiendo para el aviso instantáneo de que
+   * el papel y las líneas no dicen lo mismo, que es otra pregunta.
+   *
+   * Con retraso de medio segundo: sin él, cada tecla de una base de seis cifras
+   * son seis peticiones, y las respuestas llegan desordenadas. `vivo` descarta
+   * la respuesta de un pedido que ya quedó viejo, para que el total no parpadee
+   * hacia atrás.
+   */
+  const lineasListas = useMemo(() => lineasParaElBack(lineas), [lineas]);
+  const huellaDeLaLiquidacion = JSON.stringify([
+    proveedorId,
+    lineasListas,
+    retefuente,
+    reteiva,
+    reteica,
+  ]);
+
+  useEffect(() => {
+    if (!abierto || lineasListas.length === 0) {
+      setLiquidacion(null);
+      return;
+    }
+    let vivo = true;
+    const id = setTimeout(() => {
+      void gastosApi.facturas
+        .previsualizar({
+          ...(proveedorId ? { proveedorId } : {}),
+          lineas: lineasListas,
+          retefuenteCop: retefuente,
+          reteivaCop: reteiva,
+          reteicaCop: reteica,
+        })
+        .then((l) => {
+          if (vivo) setLiquidacion(l);
+        })
+        .catch(() => {
+          // Que la previsualización falle no puede tapar el formulario: se
+          // muestra la cuenta local y el back tendrá la última palabra igual.
+          if (vivo) setLiquidacion(null);
+        });
+    }, 500);
+    return () => {
+      vivo = false;
+      clearTimeout(id);
+    };
+    // `huellaDeLaLiquidacion` resume las cinco entradas en un valor estable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto, huellaDeLaLiquidacion]);
 
   /** Elegir un proveedor del registro copia sus datos en la factura. */
   const elegirProveedor = (id: string) => {
@@ -545,36 +607,106 @@ export function FormularioDeFactura({
               </div>
             </div>
 
-            <dl className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
+            <dl
+              className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4"
+              data-testid="liquidacion"
+            >
               <div>
                 <dt className="text-caption text-fg-muted">Subtotal de las líneas</dt>
                 <dd>
-                  <Monto valor={totales.subtotalCop} className="text-sm" />
+                  <Monto valor={liquidacion?.subtotalCop ?? totales.subtotalCop} className="text-sm" />
                 </dd>
               </div>
               <div>
                 <dt className="text-caption text-fg-muted">IVA de las líneas</dt>
                 <dd>
-                  <Monto valor={totales.ivaCop} className="text-sm" />
+                  <Monto valor={liquidacion?.ivaCop ?? totales.ivaCop} className="text-sm" />
                 </dd>
               </div>
               <div>
                 <dt className="text-caption text-fg-muted">Retenciones</dt>
                 <dd>
-                  <Monto valor={retenciones} className="text-sm" />
+                  <Monto
+                    valor={
+                      liquidacion
+                        ? liquidacion.retefuenteCop + liquidacion.reteivaCop + liquidacion.reteicaCop
+                        : retenciones
+                    }
+                    className="text-sm"
+                  />
                 </dd>
               </div>
               <div>
                 <dt className="text-caption text-fg-muted">Se le paga (neto)</dt>
                 <dd data-testid="factura-neto">
-                  {neto === null ? (
+                  {liquidacion ? (
+                    <Monto valor={liquidacion.netoCop} className="text-sm font-medium" />
+                  ) : neto === null ? (
                     <span className="text-sm text-fg-subtle">—</span>
                   ) : (
                     <Monto valor={neto} className="text-sm font-medium" />
                   )}
                 </dd>
               </div>
+
+              {/* 🔴 De dónde sale cada impuesto. `CALCULADO` = lo dedujo el back
+                  del perfil del proveedor; `DECLARADO` = lo leyó una persona en
+                  el papel. Sin esa distinción no se sabe cuál revisar. */}
+              {liquidacion && liquidacion.impuestos.length > 0 ? (
+                <div className="sm:col-span-4">
+                  <dt className="text-caption text-fg-muted">Impuestos, uno por uno</dt>
+                  <dd>
+                    <ul className="mt-1 space-y-0.5" data-testid="impuestos-de-la-factura">
+                      {liquidacion.impuestos.map((i) => (
+                        <li
+                          key={`${i.tipo}-${i.nombre}`}
+                          className="flex flex-wrap items-baseline gap-x-2 text-caption text-fg-muted"
+                        >
+                          <span className="text-fg">{i.nombre}</span>
+                          {i.porcentaje !== null ? <span>{i.porcentaje}%</span> : null}
+                          <Monto valor={i.valorCop} className="text-caption" />
+                          <span className="rounded-sm bg-surface-muted px-1">
+                            {i.origen === 'CALCULADO'
+                              ? 'lo calculó Leasefy con el perfil del proveedor'
+                              : 'lo escribiste vos'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
+
+            {/* El PENDIENTE_DE_CONFIRMAR de esta pieza: una retención calculada
+                sobre un perfil que nadie confirmó es plata que la inmobiliaria
+                le puede terminar debiendo a la DIAN. */}
+            {liquidacion?.sinConfirmar ? (
+              <div
+                className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
+                role="status"
+                data-testid="liquidacion-sin-confirmar"
+              >
+                <SealCheck className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="font-medium">
+                    Alguna retención salió de un perfil tributario que nadie confirmó
+                  </p>
+                  <p className="text-fg-muted">
+                    Verificá con el contador antes de causar: una retención mal practicada es plata
+                    que la inmobiliaria le termina debiendo a la DIAN.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {liquidacion && liquidacion.notas.length > 0 ? (
+              <Nota testId="notas-de-la-liquidacion">
+                {liquidacion.notas.map((n) => (
+                  <p key={n}>{n}</p>
+                ))}
+              </Nota>
+            ) : null}
 
             {avisoDelTotal ? (
               <div

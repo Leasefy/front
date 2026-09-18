@@ -98,7 +98,17 @@ export function RubrosDelPyg() {
     void cargar();
   }, [cargar]);
 
-  const avisos = useMemo(() => (mapeo ? avisosDelMapeoDeRubros(mapeo) : []), [mapeo]);
+  /*
+   * Los del back PRIMERO: son los dos casos que esta capa no puede deducir y que
+   * producen un número que se ve razonable — una cuenta AMBIGUA (dos rubros la
+   * reclaman, así que su plata se cuenta dos veces) y un código HUÉRFANO (el
+   * rubro apunta a una cuenta que ya no existe, da cero, y ese cero no significa
+   * «no se gastó»). Después los que sí se derivan de la forma del mapeo.
+   */
+  const avisos = useMemo(
+    () => [...(mapeo?.avisos ?? []), ...(mapeo ? avisosDelMapeoDeRubros(mapeo) : [])],
+    [mapeo],
+  );
   const sembrables = useMemo(() => (mapeo ? rubrosSembrables(mapeo) : []), [mapeo]);
   const faltan = useMemo(() => (mapeo ? faltantesSugeridos(mapeo) : []), [mapeo]);
 

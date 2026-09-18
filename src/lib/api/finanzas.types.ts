@@ -534,6 +534,17 @@ export type FuenteDelReal =
   | 'COMISION_CAUSADA'
   | 'RECARGOS_RECAUDADOS'
   | 'COSTOS_DE_LA_PLATA'
+  /**
+   * 🔴 El valor que abre el contrato de contabilidad del 18-09 (§1): el real del
+   * rubro sale de las cuentas del PUC que el contador le mapeó, en
+   * `/panel/inmobiliaria/contabilidad/mapeo?parte=rubros`.
+   *
+   * Es lo que cierra el «—» que esta pantalla lleva mostrando en `gastos` y
+   * `nomina`: hasta ahora no había P&G y el real de esos rubros no existía. Los
+   * tres valores de arriba NO cambian — siguen midiéndose donde se medían, y el
+   * mapeo del PUC es una segunda lectura al lado.
+   */
+  | 'CUENTAS_DEL_PUC'
   | 'SIN_FUENTE';
 
 export interface RubroDelPresupuesto {
@@ -573,7 +584,26 @@ export interface FilaDelPresupuesto {
   anioAnteriorCop: number | null;
   contraPresupuestoCop: number | null;
   variacionAnualPct: number | null;
+  /**
+   * Por qué no hay real. ⚠️ Cambió de significado con el contrato del 18-09: en
+   * un rubro de gasto ya no quiere decir «no hay P&G» sino «no hay mapeo de
+   * cuentas», y se arregla en el mapeo de rubros.
+   */
   motivoSinReal: string | null;
+  /**
+   * La suma de las cuentas del PUC mapeadas al rubro, en el mes (contrato del
+   * 18-09, §1). `null` = el rubro no tiene cuentas mapeadas.
+   *
+   * Es una SEGUNDA lectura, no un reemplazo: en los rubros con fuente propia
+   * (`comisiones`, `intereses_y_gastos_de_cobranza`, `costos_de_la_plata`)
+   * convive con `realCop` para que el contador vea si el libro y la operación
+   * dicen lo mismo. Opcional: un back anterior al 18-09 no lo manda.
+   */
+  realDelLibroCop?: number | null;
+  /** Los códigos de las cuentas que suman ese real, para poder auditarlo. */
+  cuentasDelRubro?: string[];
+  /** `true` = hay real propio Y real del libro, y NO coinciden. */
+  difiereDelLibro?: boolean;
 }
 
 export interface ComparacionDelPresupuesto {

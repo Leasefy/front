@@ -1415,7 +1415,9 @@
         "sedes": "Sedes",
         "sedesDesc": "Los centros de costo: el tablero y el deterioro se miran por sede",
         "avisos": "Avisos automáticos",
-        "avisosDesc": "Qué les llega solo a tus inquilinos y propietarios. Todo arranca apagado."
+        "avisosDesc": "Qué les llega solo a tus inquilinos y propietarios. Todo arranca apagado.",
+        "bitacora": "Bitácora de plata",
+        "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas."
       },
       "notifications": {
         "title": "Notificaciones",

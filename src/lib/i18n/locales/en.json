@@ -1375,7 +1375,9 @@
         "sedes": "Branches",
         "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch",
         "avisos": "Automatic notices",
-        "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off."
+        "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off.",
+        "bitacora": "Money log",
+        "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts."
       },
       "notifications": {
         "title": "Notifications",

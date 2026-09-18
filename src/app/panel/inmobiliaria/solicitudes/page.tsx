@@ -33,6 +33,7 @@ import type { Pqrs, PqrsEstado, PqrsListResponse } from '@/lib/api/pqrs-agencia.
 import { PQRS_ESTADOS } from '@/lib/api/pqrs-agencia.types';
 import { NuevaPqrsDrawer } from '@/components/inmobiliaria/pqrs/NuevaPqrsDrawer';
 import { PqrsDrawer } from '@/components/inmobiliaria/pqrs/PqrsDrawer';
+import { BandejaDePropuestas } from '@/components/inmobiliaria/pqrs/BandejaDePropuestas';
 import {
   ESTADO_BADGE,
   ESTADO_LABEL,
@@ -210,6 +211,14 @@ function PqrsContent() {
           {t(k('new'))}
         </Button>
       </header>
+
+      {/*
+        🔴 I-02: lo que el agente detectó y espera confirmación. Va ARRIBA del
+        resumen porque es lo único de esta pantalla que tiene un reloj legal
+        corriendo desde antes de que alguien la abra. Si no hay nada pendiente
+        no se dibuja.
+      */}
+      <BandejaDePropuestas onRadicada={load} />
 
       {/* Resumen por estado */}
       <section className="space-y-3">

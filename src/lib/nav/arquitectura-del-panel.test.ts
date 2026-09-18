@@ -205,7 +205,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 25 módulos en 5 grupos con nombre (+ Inicio y Chat = 27 filas)', () => {
+  it('el sidebar tiene 26 módulos en 5 grupos con nombre (+ Inicio y Chat = 28 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -226,7 +226,11 @@ describe('arquitectura del panel — sidebar', () => {
     // inquilinos, codeudores y proveedores— y colgarla de uno solo la
     // escondería para los demás.
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(5);
-    expect(modulos).toHaveLength(25);
+    // Eran 25 hasta que entró «Proveedores» (H-04, 18-09-2026): el registro de
+    // a quién se llama para cada oficio. Va como FILA por la misma regla de
+    // Portales — Mantenimientos no tiene secciones, y una sola card no dibuja
+    // el riel, así que colgarla de ahí la volvería inalcanzable.
+    expect(modulos).toHaveLength(26);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {

@@ -39,6 +39,7 @@ import {
   CalendarCheck,
   Signature,
   ShieldWarning,
+  Toolbox,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -447,6 +448,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Las rutas `mantenimientos/tickets/*` siguen existiendo para cuando el
       // micro lo sirva; el workspace está apagado en `agentWorkspaceNav.ts`.
       { key: 'mantenimientos', labelKey: 'inmobiliaria.nav.mantenimientos', href: r('/mantenimientos'), icon: Wrench, module: 'operaciones', scope: 'administracion' },
+      // 🔴 H-04 (18-09-2026): el registro de proveedores. Va como FILA y no
+      // como sub-pantalla de Mantenimientos porque el riel no se dibuja con
+      // una card sola: quedaría inalcanzable desde el menú. Mismo criterio
+      // que «Portales» con Inmuebles.
+      { key: 'proveedores', labelKey: 'inmobiliaria.nav.proveedores', href: r('/mantenimientos/proveedores'), icon: Toolbox, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
       // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).

@@ -114,7 +114,14 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     render('/panel/inmobiliaria/contratos/renovaciones/7')
     const renovaciones = cards().find((c) => c.href.endsWith('/renovaciones'))
     expect(renovaciones).toMatchObject({ activa: true, actual: false })
-    expect(cards()).toHaveLength(2)
+    // Eran dos (la raíz y Renovaciones) hasta que entró «Firmas» el 18-09-2026
+    // (A-13: la invitación a firmar vence a los 7 días). Lo que este test
+    // sostiene es que bajar un piso no se lleva las cards, no cuántas hay.
+    expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/contratos',
+      '/panel/inmobiliaria/contratos/renovaciones',
+      '/panel/inmobiliaria/contratos/firmas',
+    ])
   })
 
   it('🔴 en la cara propietarios la raíz de Pagos NO aparece: es la deuda de los INQUILINOS', () => {

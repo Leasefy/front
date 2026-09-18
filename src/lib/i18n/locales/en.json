@@ -1014,7 +1014,8 @@
       "visitasDelPipeline": "Visits",
       "reclamosDeCandidatos": "Claims",
       "invitacionesAFirmar": "Signatures",
-      "listasRestrictivas": "Lists"
+      "listasRestrictivas": "Lists",
+      "clausulasPropias": "Custom clauses"
     },
     "piloto": {
       "titulo": "Autopilot",

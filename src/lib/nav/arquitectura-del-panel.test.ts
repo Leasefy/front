@@ -510,6 +510,10 @@ describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09
     expect(contratos?.pantallas?.map((p) => p.href)).toEqual([
       `${PANEL}/contratos/renovaciones`,
       `${PANEL}/contratos/firmas`,
+      // «Cláusulas propias» entró el 18-09-2026: lo que la inmobiliaria agrega
+      // a sus contratos además del texto legal. Va como sección y no como fila
+      // porque una cláusula sólo tiene sentido dentro de un contrato.
+      `${PANEL}/contratos/clausulas`,
     ]);
   });
 

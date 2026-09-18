@@ -121,6 +121,9 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
       '/panel/inmobiliaria/contratos',
       '/panel/inmobiliaria/contratos/renovaciones',
       '/panel/inmobiliaria/contratos/firmas',
+      // Y «Cláusulas propias» el 18-09-2026. Este test sostiene que bajar un
+      // piso no se lleva el riel, no cuántas cards hay.
+      '/panel/inmobiliaria/contratos/clausulas',
     ])
   })
 

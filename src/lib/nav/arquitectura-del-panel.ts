@@ -40,6 +40,7 @@ import {
   Signature,
   ShieldWarning,
   Toolbox,
+  Scroll,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -433,6 +434,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // recordatorio toca y qué se venció — y que el inmueble SIGUE
           // reservado hasta que alguien cancele.
           { labelKey: 'inmobiliaria.nav.invitacionesAFirmar', href: r('/contratos/firmas'), icon: Signature, module: 'contratos' },
+          // 🔴 18-09-2026: las cláusulas propias de la inmobiliaria. Va como
+          // SECCIÓN de Contratos y no como fila: Contratos ya tiene riel, y
+          // una cláusula sólo tiene sentido dentro de un contrato.
+          { labelKey: 'inmobiliaria.nav.clausulasPropias', href: r('/contratos/clausulas'), icon: Scroll, module: 'contratos' },
           // Retención (el agente Laura: tablero, riesgo de salida y decisiones
           // por aprobar) NO está en el catálogo a propósito: no va a producción
           // todavía (Nico, 2026-09-03). Las tres rutas siguen existiendo bajo

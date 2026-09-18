@@ -43,8 +43,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -213,31 +212,25 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           <fieldset className="flex flex-wrap items-center gap-4">
             <legend className="sr-only">Qué comparar</legend>
             <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Input
-                type="checkbox"
-                className="h-4 w-4"
+              <Checkbox
                 checked={conAcumulado}
-                onChange={(e) => setConAcumulado(e.target.checked)}
+                onCheckedChange={(v) => setConAcumulado(v === true)}
                 data-testid="ver-acumulado"
               />
               Acumulado del año
             </label>
             <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Input
-                type="checkbox"
-                className="h-4 w-4"
+              <Checkbox
                 checked={comparar.includes('presupuesto')}
-                onChange={() => alternarComparacion('presupuesto')}
+                onCheckedChange={() => alternarComparacion('presupuesto')}
                 data-testid="ver-presupuesto"
               />
               Presupuesto
             </label>
             <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Input
-                type="checkbox"
-                className="h-4 w-4"
+              <Checkbox
                 checked={comparar.includes('anioAnterior')}
-                onChange={() => alternarComparacion('anioAnterior')}
+                onCheckedChange={() => alternarComparacion('anioAnterior')}
                 data-testid="ver-anio-anterior"
               />
               Año anterior
@@ -245,11 +238,9 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
           </fieldset>
         ) : (
           <label className="flex items-center gap-2 text-sm text-fg-muted">
-            <Input
-              type="checkbox"
-              className="h-4 w-4"
+            <Checkbox
               checked={comparativo}
-              onChange={(e) => setComparativo(e.target.checked)}
+              onCheckedChange={(v) => setComparativo(v === true)}
               data-testid="ver-comparativo"
             />
             Comparar con el año anterior

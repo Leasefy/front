@@ -29,7 +29,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -136,12 +136,10 @@ export function AuxiliarPorTercero() {
           </select>
         </div>
         <label className="flex items-end gap-2 pb-2 text-sm text-fg-muted">
-          <Input
-            type="checkbox"
-            className="h-4 w-4"
+          <Checkbox
             checked={conSaldo}
-            onChange={(e) => {
-              setConSaldo(e.target.checked);
+            onCheckedChange={(v) => {
+              setConSaldo(v === true);
               setDesplazamiento(0);
             }}
             data-testid="solo-con-saldo"

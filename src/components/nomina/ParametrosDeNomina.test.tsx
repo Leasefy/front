@@ -102,6 +102,8 @@ function sinCargar(): ParametrosDelAnio {
         fuente: 'Decreto de salario mínimo 2025. VALIDAR.',
       },
     },
+    cargadoPor: null,
+    confirmadoPor: null,
     avisos: AVISOS,
     completos: false,
     queFalta: [
@@ -296,16 +298,114 @@ describe('confirmar es un acto aparte', () => {
         salarioMinimoCop: 1_623_500,
         auxilioTransporteCop: 200_000,
         uvtCop: 52_000,
+        cargadoPorUserId: 'u-1',
+        cargadoAt: '2026-01-05T00:00:00.000Z',
         confirmadoPorUserId: null,
         confirmadoAt: null,
         notas: null,
       },
-      propuesta: null,
+      cargadoPor: { id: 'u-1', nombre: 'Ana Gómez' },
+      confirmadoPor: null,
     });
     await montar();
     const cartel = contenedor.querySelector('[data-testid="sin-confirmar"]');
     expect(cartel?.textContent).toContain('Nadie ha confirmado');
     expect(cartel?.textContent).toContain('cada desprendible');
+  });
+});
+
+/**
+ * 🔴 «Quién lo cargó y cuándo» (Nico, 17-09).
+ *
+ * Es el número con el que se paga la nómina de todo el mundo: cuando alguien
+ * pregunte «¿de dónde salió este salario mínimo?», la respuesta tiene que estar
+ * en la misma pantalla y no en un log.
+ */
+describe('quién cargó las cifras y cuándo', () => {
+  function guardadas(extra: Partial<ParametrosDelAnio> = {}): ParametrosDelAnio {
+    return {
+      ...sinCargar(),
+      completos: true,
+      queFalta: [],
+      guardado: {
+        id: 'p-1',
+        anio: 2026,
+        ...FACTORES,
+        salarioMinimoCop: 1_623_500,
+        auxilioTransporteCop: 200_000,
+        uvtCop: 52_000,
+        cargadoPorUserId: 'u-1',
+        cargadoAt: '2026-01-05T00:00:00.000Z',
+        confirmadoPorUserId: 'u-2',
+        confirmadoAt: '2026-01-07T00:00:00.000Z',
+        notas: null,
+      },
+      cargadoPor: { id: 'u-1', nombre: 'Ana Gómez' },
+      confirmadoPor: { id: 'u-2', nombre: 'Carlos Ruiz' },
+      ...extra,
+    };
+  }
+
+  it('dice quién las cargó, cuándo, y quién las confirmó', async () => {
+    h.parametros.mockResolvedValue(guardadas());
+    await montar();
+    const bloque = contenedor.querySelector('[data-testid="quien-y-cuando"]');
+    expect(bloque?.textContent).toContain('2026-01-05');
+    expect(bloque?.textContent).toContain('Ana Gómez');
+    expect(bloque?.textContent).toContain('2026-01-07');
+    expect(bloque?.textContent).toContain('Carlos Ruiz');
+  });
+
+  it('🔴 cargar y confirmar se muestran por SEPARADO: son dos actos distintos', async () => {
+    h.parametros.mockResolvedValue(
+      guardadas({
+        guardado: {
+          ...guardadas().guardado!,
+          confirmadoPorUserId: null,
+          confirmadoAt: null,
+        },
+        confirmadoPor: null,
+      }),
+    );
+    await montar();
+    const bloque = contenedor.querySelector('[data-testid="quien-y-cuando"]');
+    expect(bloque?.textContent).toContain('Ana Gómez');
+    expect(bloque?.textContent).toContain('Sin confirmar');
+  });
+
+  it('si el usuario ya no está, muestra la fecha sin el nombre', async () => {
+    h.parametros.mockResolvedValue(
+      guardadas({ cargadoPor: { id: 'u-1', nombre: null } }),
+    );
+    await montar();
+    const bloque = contenedor.querySelector('[data-testid="quien-y-cuando"]');
+    expect(bloque?.textContent).toContain('2026-01-05');
+    expect(bloque?.textContent).toContain('no se pudo resolver quién');
+  });
+
+  it('sin nada cargado, lo dice', async () => {
+    h.parametros.mockResolvedValue(sinCargar());
+    await montar();
+    expect(
+      contenedor.querySelector('[data-testid="quien-y-cuando"]')?.textContent,
+    ).toContain('Todavía nadie ha cargado');
+  });
+
+  it('🔴 con cifras YA cargadas, la referencia del año conocido SIGUE a la vista', async () => {
+    // La propuesta viaja siempre justo para esto: quien corrige una cifra tiene
+    // que poder ver contra qué compararla.
+    h.parametros.mockResolvedValue(guardadas());
+    await montar();
+    expect(
+      contenedor.querySelector('[data-testid="ref-salarioMinimoCop"]')
+        ?.textContent,
+    ).toContain('En 2025 fue');
+  });
+
+  it('🔴 y el campo trae lo GUARDADO, no la referencia', async () => {
+    h.parametros.mockResolvedValue(guardadas());
+    await montar();
+    expect(campo('salarioMinimoCop')?.value).toBe('1623500');
   });
 });
 

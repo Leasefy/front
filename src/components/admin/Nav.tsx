@@ -41,6 +41,7 @@ export const NAV_ITEMS = [
   { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
   { href: '/admin/inmuebles', label: 'Inmuebles', hint: 'riesgo · historial interno', code: '32' },
   { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
+  { href: '/admin/modulos-pagos', label: 'Módulos', hint: 'nómina · qué compró cada una', code: '34' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {

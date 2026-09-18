@@ -21,6 +21,7 @@ import {
   type Definitiva,
   type Desprendible,
   type DocumentoDeNomina,
+  type EnvioDelDesprendible,
   type EstadoDeNomina,
   type FactoresDeNomina,
   type NominaElectronica,
@@ -241,6 +242,16 @@ export const nominaApi = {
 
   desprendible: (id: string) =>
     apiClient.get<Desprendible>(`${BASE}/liquidaciones/${id}`),
+
+  /**
+   * Reenviar el desprendible. Sale solo al aprobar; esto es para cuando faltó el
+   * correo en la ficha o el envío falló.
+   */
+  reenviarDesprendible: (id: string) =>
+    apiClient.post<EnvioDelDesprendible>(
+      `${BASE}/liquidaciones/${id}/enviar`,
+      {},
+    ),
 
   // ── Liquidación definitiva ───────────────────────────────────────────────
   causales: () =>

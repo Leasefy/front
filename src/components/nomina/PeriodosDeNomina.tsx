@@ -105,10 +105,27 @@ export function PeriodosDeNominaPanel() {
 
   const aprobar = async (p: PeriodoDeNomina) => {
     try {
-      await nominaApi.aprobar(p.id);
+      const r = await nominaApi.aprobar(p.id);
       toast.success(
         'El período quedó aprobado: las líneas están congeladas y las provisiones del mes escritas.',
       );
+      /*
+       * 🔴 El resultado del ENVÍO de los desprendibles se muestra siempre, no
+       * sólo cuando falla. Aprobar dispara un correo a cada persona; si la
+       * pantalla no dijera cuántos salieron, quien aprueba se quedaría sin saber
+       * si la gente recibió su desprendible — y eso no se puede consultar en
+       * ningún otro lado sin abrir los treinta uno por uno.
+       */
+      const envio = r.envioDeDesprendibles;
+      if (envio) {
+        setAvisos([
+          `Desprendibles: ${envio.enviados} enviado${envio.enviados === 1 ? '' : 's'}` +
+            (envio.sinCorreo > 0 ? `, ${envio.sinCorreo} sin correo` : '') +
+            (envio.fallaron > 0 ? `, ${envio.fallaron} con fallo` : '') +
+            '.',
+          ...envio.avisos,
+        ]);
+      }
       await estado.recargar();
     } catch (error) {
       toast.error(mensajeDelFallo(error, 'No se pudo aprobar el período.'));
@@ -203,6 +220,13 @@ export function PeriodosDeNominaPanel() {
             {armando ? 'Armando…' : 'Armar borrador'}
           </Button>
         </div>
+        <p className="text-xs text-fg-muted">
+          🔴 <strong>Aprobar le manda a cada persona su desprendible en PDF por
+          correo</strong>, con constancia de a qué dirección salió. Si un correo
+          falla, el período queda aprobado igual y se puede reenviar desde el
+          desprendible: deshacer una aprobación borraría provisiones ya
+          contabilizadas.
+        </p>
         <p className="text-xs text-fg-muted">
           La contabilidad siempre cierra el mes completo: las dos quincenas de un
           mes comparten su asiento del gasto, y la retención se calcula sobre el

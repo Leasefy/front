@@ -24,8 +24,11 @@
  *   · **lo que un contador tiene que validar sale marcado**, con el motivo.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import {
   Table,
   TableBody,
@@ -51,6 +54,94 @@ import {
   etiquetaDelPeriodo,
 } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+
+/**
+ * 🔴 LA CONSTANCIA DEL ENVÍO.
+ *
+ * Nico (17-09): el desprendible sale por correo al aprobar, «con constancia».
+ * Acá se ve A QUÉ correo salió y cuándo — no un «enviado ✓», porque la pregunta
+ * que la gente hace es «¿a qué dirección lo mandaron?», y la ficha pudo cambiar
+ * desde entonces.
+ *
+ * Y las tres situaciones se dicen distinto: salió, falta el correo en la ficha
+ * (que no es un error del sistema: es un dato que falta) o falló el envío.
+ */
+function Constancia({
+  datos,
+  onReenviado,
+}: {
+  datos: Datos;
+  onReenviado: () => Promise<void>;
+}) {
+  const [enviando, setEnviando] = useState(false);
+
+  const reenviar = async () => {
+    setEnviando(true);
+    try {
+      const r = await nominaApi.reenviarDesprendible(datos.id);
+      if (r.estado === 'ENVIADO') {
+        toast.success(`Desprendible enviado a ${r.enviadoA}.`);
+      } else {
+        // 🔴 No es un toast de éxito: no salió. Y el motivo dice qué hacer.
+        toast.error(r.motivo ?? 'El desprendible no se pudo enviar.');
+      }
+      await onReenviado();
+    } catch (error) {
+      toast.error(
+        mensajeDelFallo(error, 'No se pudo reenviar el desprendible.'),
+      );
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const enviado = datos.desprendibleEnviadoAt != null;
+
+  return (
+    <div
+      className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+      data-testid="constancia-del-envio"
+    >
+      <div className="space-y-1">
+        {enviado ? (
+          <p>
+            <strong className="text-fg">Enviado</strong> a{' '}
+            <strong className="text-fg">{datos.desprendibleEnviadoA}</strong> el{' '}
+            {datos.desprendibleEnviadoAt!.slice(0, 10)}
+            {datos.desprendibleIntentos > 1
+              ? ` (${datos.desprendibleIntentos} intentos)`
+              : ''}
+            .
+          </p>
+        ) : datos.desprendibleError ? (
+          <>
+            <p>
+              <strong className="text-warning">No se envió.</strong>{' '}
+              {datos.desprendibleError}
+            </p>
+            <p>
+              El período quedó aprobado igual: la liquidación es válida, lo que
+              falta es el correo.
+            </p>
+          </>
+        ) : (
+          <p>
+            Todavía no se ha enviado. Sale solo cuando se aprueba el período.
+          </p>
+        )}
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => void reenviar()}
+        disabled={enviando}
+        data-testid="reenviar-desprendible"
+      >
+        {enviando ? 'Enviando…' : enviado ? 'Reenviar' : 'Enviar ahora'}
+      </Button>
+    </div>
+  );
+}
 
 const BLOQUES: {
   clase: ClaseDeConcepto;
@@ -94,12 +185,18 @@ export function DesprendiblePanel({ liquidacionId }: { liquidacionId: string }) 
       queEs="el desprendible"
       queSeEspera="ver el desprendible"
     >
-      {(datos) => <Contenido datos={datos} />}
+      {(datos) => <Contenido datos={datos} onReenviado={estado.recargar} />}
     </Cargado>
   );
 }
 
-function Contenido({ datos }: { datos: Datos }) {
+function Contenido({
+  datos,
+  onReenviado,
+}: {
+  datos: Datos;
+  onReenviado: () => Promise<void>;
+}) {
   const porClase = useMemo(() => {
     const mapa = new Map<ClaseDeConcepto, LineaDeLiquidacion[]>();
     for (const l of datos.lineas) {
@@ -155,6 +252,8 @@ function Contenido({ datos }: { datos: Datos }) {
           </p>
         ) : null}
       </header>
+
+      <Constancia datos={datos} onReenviado={onReenviado} />
 
       {marcadas.length > 0 ? (
         <Avisos

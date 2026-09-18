@@ -166,6 +166,47 @@ describe('🔴 el orden de los botones es la regla de negocio', () => {
   });
 });
 
+describe('🔴 aprobar manda los desprendibles, y la pantalla lo dice', () => {
+  it('muestra cuántos salieron, cuántos sin correo y cuántos fallaron', async () => {
+    await montar([periodo({ estado: 'BORRADOR' })]);
+    h.aprobar.mockResolvedValue({
+      envioDeDesprendibles: {
+        enviados: 28,
+        sinCorreo: 1,
+        fallaron: 1,
+        avisos: ['1 persona no tiene correo en su ficha: su desprendible no salió.'],
+      },
+    });
+    await act(async () => {
+      boton('aprobar-per-1')?.click();
+    });
+    const avisos = contenedor.querySelector(
+      '[data-testid="avisos-de-liquidacion"]',
+    );
+    expect(avisos?.textContent).toContain('28 enviados');
+    expect(avisos?.textContent).toContain('1 sin correo');
+    expect(avisos?.textContent).toContain('1 con fallo');
+    expect(avisos?.textContent).toContain('no tiene correo en su ficha');
+  });
+
+  it('también lo dice cuando salieron TODOS: quien aprueba no puede quedarse sin saber', async () => {
+    await montar([periodo({ estado: 'BORRADOR' })]);
+    h.aprobar.mockResolvedValue({
+      envioDeDesprendibles: { enviados: 5, sinCorreo: 0, fallaron: 0, avisos: [] },
+    });
+    await act(async () => {
+      boton('aprobar-per-1')?.click();
+    });
+    expect(texto()).toContain('5 enviados');
+  });
+
+  it('avisa en la pantalla que aprobar manda los desprendibles, ANTES de aprobar', async () => {
+    await montar([periodo()]);
+    expect(texto()).toContain('desprendible en PDF por correo');
+    expect(texto()).toContain('se puede reenviar');
+  });
+});
+
 describe('anular', () => {
   it('🔴 se pide con AlertDialog, no con el diálogo del navegador', async () => {
     const confirmar = vi.fn(() => true);

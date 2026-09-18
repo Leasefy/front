@@ -29,14 +29,21 @@ void React;
 
 const h = vi.hoisted(() => ({
   desprendible: vi.fn(),
+  reenviar: vi.fn(),
+  exito: vi.fn(),
+  error: vi.fn(),
   noEstaHabilitada: vi.fn(() => false),
   faltaLaMigracion: vi.fn(() => false),
 }));
 
 vi.mock('@/lib/api/nomina.service', () => ({
-  nominaApi: { desprendible: h.desprendible },
+  nominaApi: { desprendible: h.desprendible, reenviarDesprendible: h.reenviar },
   noEstaHabilitada: h.noEstaHabilitada,
   faltaLaMigracion: h.faltaLaMigracion,
+}));
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: h.exito, error: h.error, info: vi.fn(), warning: vi.fn() },
 }));
 
 import { DesprendiblePanel } from './Desprendible';
@@ -84,6 +91,10 @@ function datos(extra: Partial<Datos> = {}): Datos {
     causalRetiro: null,
     requiereValidacionContador: false,
     avisos: null,
+    desprendibleEnviadoA: null,
+    desprendibleEnviadoAt: null,
+    desprendibleError: null,
+    desprendibleIntentos: 0,
     lineas: [
       linea(),
       linea({
@@ -165,6 +176,9 @@ async function montar() {
 
 beforeEach(() => {
   h.desprendible.mockReset();
+  h.reenviar.mockReset();
+  h.exito.mockReset();
+  h.error.mockReset();
   h.noEstaHabilitada.mockReturnValue(false);
   h.faltaLaMigracion.mockReturnValue(false);
 });
@@ -297,6 +311,98 @@ describe('el desprendible', () => {
     expect(texto()).toContain('De prueba');
     // Y la explicación de qué significa ese prefijo.
     expect(texto()).toContain('NO se informó');
+  });
+});
+
+/**
+ * 🔴 LA CONSTANCIA (Nico, 17-09: «con constancia»).
+ *
+ * La pregunta que la gente hace no es «¿se envió?» sino «¿a qué correo?». La
+ * ficha pudo cambiar desde entonces.
+ */
+describe('la constancia del envío', () => {
+  it('dice A QUÉ correo salió y cuándo', async () => {
+    h.desprendible.mockResolvedValue(
+      datos({
+        desprendibleEnviadoA: 'ana@ejemplo.co',
+        desprendibleEnviadoAt: '2026-03-31T12:00:00.000Z',
+        desprendibleIntentos: 1,
+      }),
+    );
+    await montar();
+    const c = contenedor.querySelector('[data-testid="constancia-del-envio"]');
+    expect(c?.textContent).toContain('ana@ejemplo.co');
+    expect(c?.textContent).toContain('2026-03-31');
+  });
+
+  it('con varios intentos lo dice', async () => {
+    h.desprendible.mockResolvedValue(
+      datos({
+        desprendibleEnviadoA: 'ana@ejemplo.co',
+        desprendibleEnviadoAt: '2026-03-31T12:00:00.000Z',
+        desprendibleIntentos: 3,
+      }),
+    );
+    await montar();
+    expect(texto()).toContain('3 intentos');
+  });
+
+  it('🔴 si no salió, dice por qué Y que el período quedó aprobado igual', async () => {
+    h.desprendible.mockResolvedValue(
+      datos({
+        desprendibleError:
+          'Esta persona no tiene correo en su ficha: el desprendible no se pudo enviar.',
+        desprendibleIntentos: 1,
+      }),
+    );
+    await montar();
+    const c = contenedor.querySelector('[data-testid="constancia-del-envio"]');
+    expect(c?.textContent).toContain('No se envió');
+    expect(c?.textContent).toContain('no tiene correo');
+    expect(c?.textContent).toContain('quedó aprobado igual');
+  });
+
+  it('sin enviar, dice que sale al aprobar el período', async () => {
+    h.desprendible.mockResolvedValue(datos());
+    await montar();
+    expect(texto()).toContain('Sale solo cuando se aprueba el período');
+  });
+
+  it('el reenvío exitoso avisa a qué correo salió', async () => {
+    h.desprendible.mockResolvedValue(datos());
+    h.reenviar.mockResolvedValue({
+      estado: 'ENVIADO',
+      enviadoA: 'ana@ejemplo.co',
+      motivo: null,
+    });
+    await montar();
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLButtonElement>('[data-testid="reenviar-desprendible"]')
+        ?.click();
+    });
+    expect(h.exito).toHaveBeenCalledWith(
+      expect.stringContaining('ana@ejemplo.co'),
+    );
+  });
+
+  it('🔴 SIN_CORREO NO es un toast de éxito: no salió', async () => {
+    h.desprendible.mockResolvedValue(datos());
+    h.reenviar.mockResolvedValue({
+      estado: 'SIN_CORREO',
+      enviadoA: null,
+      motivo: 'Esta persona no tiene correo en su ficha. Complétalo y reenvíalo.',
+    });
+    await montar();
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLButtonElement>('[data-testid="reenviar-desprendible"]')
+        ?.click();
+    });
+    expect(h.exito).not.toHaveBeenCalled();
+    expect(h.error).toHaveBeenCalledWith(
+      expect.stringContaining('no tiene correo'),
+    );
   });
 });
 

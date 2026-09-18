@@ -74,9 +74,19 @@ export interface ParametrosGuardados extends FactoresDeNomina {
   salarioMinimoCop: number | null;
   auxilioTransporteCop: number | null;
   uvtCop: number | null;
+  /** 🔴 Quién CARGÓ las cifras del año y cuándo. Siempre presentes. */
+  cargadoPorUserId: string;
+  cargadoAt: string;
+  /** Quién las REVISÓ. Es otra cosa que cargarlas. */
   confirmadoPorUserId: string | null;
   confirmadoAt: string | null;
   notas: string | null;
+}
+
+/** Quién hizo algo, con nombre. `nombre` en `null` = el usuario ya no está. */
+export interface QuienFue {
+  id: string;
+  nombre: string | null;
 }
 
 export interface PropuestaDeParametros extends FactoresDeNomina {
@@ -98,7 +108,15 @@ export interface PropuestaDeParametros extends FactoresDeNomina {
 export interface ParametrosDelAnio extends Lectura {
   anio: number;
   guardado: ParametrosGuardados | null;
+  /**
+   * 🔴 Viaja SIEMPRE, también con parámetros guardados — y sus tres cifras del
+   * Estado vienen SIEMPRE en `null`. No es para prellenar: es para que la
+   * pantalla pueda mostrar la REFERENCIA del año conocido al lado de cada campo,
+   * también cuando se está corrigiendo algo ya cargado.
+   */
   propuesta: PropuestaDeParametros | null;
+  cargadoPor: QuienFue | null;
+  confirmadoPor: QuienFue | null;
   avisos: Record<string, string>;
   completos: boolean;
   /** En palabras de quien lo tiene que buscar: «el salario mínimo del año». */
@@ -318,7 +336,30 @@ export interface LiquidacionDeNomina {
   causalRetiro: string | null;
   requiereValidacionContador: boolean;
   avisos: string[] | null;
+  /**
+   * 🔴 La CONSTANCIA del desprendible enviado. Tres campos y no un booleano:
+   * cuando alguien reclame que no le llegó, la pregunta es a QUÉ correo salió.
+   */
+  desprendibleEnviadoA: string | null;
+  desprendibleEnviadoAt: string | null;
+  desprendibleError: string | null;
+  desprendibleIntentos: number;
   lineas: LineaDeLiquidacion[];
+}
+
+/** Qué pasó con un envío. `SIN_CORREO` no es un error del sistema: falta un dato. */
+export interface EnvioDelDesprendible {
+  estado: 'ENVIADO' | 'SIN_CORREO' | 'FALLO';
+  enviadoA: string | null;
+  motivo: string | null;
+}
+
+/** El resumen del envío al aprobar el período. */
+export interface EnvioDeDesprendibles {
+  enviados: number;
+  fallaron: number;
+  sinCorreo: number;
+  avisos: string[];
 }
 
 export interface Periodos extends Lectura {
@@ -327,6 +368,8 @@ export interface Periodos extends Lectura {
 
 export interface PeriodoConLiquidaciones extends PeriodoDeNomina {
   liquidaciones: LiquidacionDeNomina[];
+  /** Sólo viene en la respuesta de APROBAR: qué pasó con los desprendibles. */
+  envioDeDesprendibles?: EnvioDeDesprendibles;
 }
 
 export interface Desprendible extends LiquidacionDeNomina {

@@ -237,6 +237,7 @@ function Formulario({
 
   const avisos = Object.values(datos.avisos ?? {});
   const referencia = datos.propuesta?.referencia ?? null;
+  const cargado = datos.guardado;
 
   return (
     <div className="space-y-6">
@@ -265,8 +266,58 @@ function Formulario({
       <section className="space-y-3">
         <TituloDeBloque
           titulo={`Las cifras que fija el Estado en ${anio}`}
-          explicacion="Leasefy NO las trae: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Cárgalas con el documento a la vista."
+          explicacion="Leasefy NO las mantiene: el salario mínimo y el auxilio de transporte salen del decreto de diciembre y la UVT de la resolución de la DIAN. Las carga esta inmobiliaria, con el documento a la vista."
         />
+
+        {/*
+          🔴 Quién cargó estas cifras y cuándo (Nico, 17-09).
+
+          No es adorno: es el número con el que se paga la nómina de todo el
+          mundo. Cuando alguien pregunte «¿de dónde salió este salario mínimo?»,
+          la respuesta tiene que estar en la misma pantalla y no en un log.
+
+          Cargar y confirmar son dos actos distintos y se muestran por separado:
+          cargar es teclear el decreto, confirmar es que un contador diga que
+          está bien. Guardar de nuevo NO reconfirma.
+        */}
+        <div
+          className="rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+          data-testid="quien-y-cuando"
+        >
+          {cargado ? (
+            <>
+              <p>
+                <strong className="text-fg">Cargadas</strong> el{' '}
+                {cargado.cargadoAt.slice(0, 10)}
+                {datos.cargadoPor?.nombre
+                  ? ` por ${datos.cargadoPor.nombre}`
+                  : ' (no se pudo resolver quién)'}
+                .
+              </p>
+              <p>
+                {cargado.confirmadoAt ? (
+                  <>
+                    <strong className="text-fg">Confirmadas</strong> el{' '}
+                    {cargado.confirmadoAt.slice(0, 10)}
+                    {datos.confirmadoPor?.nombre
+                      ? ` por ${datos.confirmadoPor.nombre}`
+                      : ''}
+                    .
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-warning">Sin confirmar</strong> —
+                    nadie las ha revisado todavía.
+                  </>
+                )}
+              </p>
+            </>
+          ) : (
+            <p>
+              Todavía nadie ha cargado las cifras de {anio} en esta inmobiliaria.
+            </p>
+          )}
+        </div>
         <div className="grid gap-4 sm:grid-cols-3">
           {(
             [
@@ -409,12 +460,11 @@ function Formulario({
             Deshacer los cambios
           </Button>
         </div>
-        {datos.guardado?.confirmadoAt ? (
-          <p className="text-xs text-fg-muted" data-testid="confirmados-el">
-            Confirmados el{' '}
-            {new Date(datos.guardado.confirmadoAt).toISOString().slice(0, 10)}.
-          </p>
-        ) : null}
+        <p className="text-xs text-fg-muted">
+          Guardar deja tu nombre y la fecha en «Cargadas»; confirmar es un acto
+          aparte, y corregir una cifra lo borra — si cambia el número, el contador
+          tiene que volver a mirarlo.
+        </p>
       </section>
     </div>
   );

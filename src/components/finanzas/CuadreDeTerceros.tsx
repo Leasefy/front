@@ -31,6 +31,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CheckCircle, WarningOctagon } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -174,12 +175,47 @@ function Cuadre({ datos }: { datos: Respuesta }) {
           />
         </div>
         {datos.comisionRetenidaCop > 0 ? (
-          <CifraDeTexto
-            id="comision-referencia"
-            etiqueta="Tu comisión causada (referencia)"
-            texto={formatCurrency(datos.comisionRetenidaCop)}
-            definicion="NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor — mientras no la traslades a tu cuenta, el banco va a tener de más."
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CifraDeTexto
+              id="comision-referencia"
+              etiqueta="Tu comisión causada (referencia)"
+              texto={formatCurrency(datos.comisionRetenidaCop)}
+              definicion="NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor."
+              pie={
+                datos.comisionTrasladadaCop > 0 ? (
+                  <span>
+                    Ya trasladaste {formatCurrency(datos.comisionTrasladadaCop)} a tu cuenta
+                    propia: esa parte salió del banco de recaudo.
+                  </span>
+                ) : null
+              }
+            />
+            {/* 🔴 (18-09) El número que cierra el cuadre. Hasta hoy la pantalla
+                decía «suele ser tu comisión» sin poder decir CUÁNTA seguía ahí;
+                ahora lo dice, y el enlace lleva a proponerlo. */}
+            <CifraDeTexto
+              id="comision-en-la-cuenta"
+              etiqueta="Comisión sin trasladar"
+              texto={formatCurrency(datos.comisionEnLaCuentaCop)}
+              definicion={
+                datos.laDiferenciaEsLaComision
+                  ? 'La diferencia de arriba es EXACTAMENTE esto. No es un descuadre: es plata tuya que sigue en la cuenta de recaudo. Aprueba el traslado y el cuadre da cero.'
+                  : 'Lo que de tu comisión sigue en la cuenta de recaudo: causada menos trasladada.'
+              }
+              tono={datos.laDiferenciaEsLaComision ? 'success' : undefined}
+              pie={
+                datos.comisionEnLaCuentaCop > 0 ? (
+                  <Link
+                    href="/panel/inmobiliaria/pagos/traslados"
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    data-testid="ir-a-traslados"
+                  >
+                    Proponer el traslado a tu cuenta propia
+                  </Link>
+                ) : null
+              }
+            />
+          </div>
         ) : null}
       </section>
 

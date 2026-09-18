@@ -24,6 +24,7 @@ import {
   type DeterioroDelMes,
   type DevolucionRegistrada,
   type Emision,
+  type EmisionMasiva,
   type GirosDevueltos,
   type MediosDeRecibo,
   type NuevaDevolucion,
@@ -152,6 +153,34 @@ export const finanzasApi = {
       anio,
       propietarioId,
       ...(criterio ? { criterio } : {}),
+    }),
+
+  /**
+   * 🔴 (18-09-2026) Emite el certificado de TODOS los propietarios del año.
+   *
+   * Nico: «el certificado anual se genera SOLO para todos los propietarios, sin
+   * pedirlo». Lo hace el cron de enero; este botón es para el año que el cron no
+   * alcanzó, o para la inmobiliaria que acaba de migrar su historia. Es
+   * idempotente: se salta a quien ya lo tiene.
+   */
+  emitirTodosLosCertificados: (anio: number, criterio?: CriterioDeRetencion) =>
+    apiClient.post<EmisionMasiva>(`${BASE}/retenciones/certificado/emitir-todos`, {
+      anio,
+      ...(criterio ? { criterio } : {}),
+    }),
+
+  /** Regenera el de UN propietario: anula el anterior con motivo y emite otro. */
+  reemitirCertificado: (
+    anio: number,
+    propietarioId: string,
+    criterio?: CriterioDeRetencion,
+    motivo?: string,
+  ) =>
+    apiClient.post<Emision>(`${BASE}/retenciones/certificado/reemitir`, {
+      anio,
+      propietarioId,
+      ...(criterio ? { criterio } : {}),
+      ...(motivo ? { motivo } : {}),
     }),
 
   // ── 8. Giros devueltos ──────────────────────────────────────────────────

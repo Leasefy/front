@@ -398,6 +398,24 @@ export interface Emision {
   anio?: number;
 }
 
+/**
+ * 🔴 (18-09-2026) Lo que devuelve emitir los certificados de TODOS.
+ *
+ * `sinDocumento` trae NOMBRE y no sólo un conteo: un propietario sin documento
+ * en su ficha no puede recibir certificado (saldría sin NIT y no sirve para
+ * declarar), y decir «3 quedaron fuera» sin decir quiénes no le permite a nadie
+ * arreglarlo.
+ */
+export interface EmisionMasiva {
+  anio: number;
+  emitidos: number;
+  yaEstaban: number;
+  sinDocumento: { propietarioId: string | null; nombre: string }[];
+  errores: { propietarioId: string | null; mensaje: string }[];
+  disponible: boolean;
+  motivo: string | null;
+}
+
 // ══ 8. Giros devueltos ══════════════════════════════════════════════════════
 
 export type MotivoDeDevolucion =
@@ -510,10 +528,20 @@ export interface CuadreDeTerceros {
   /** 🚨 Entradas de plata marcadas IGNORADAS: se denuncian, no se suman. */
   entradasIgnoradasCop: number;
   entradasIgnoradas: number;
-  /** Referencia para explicar una diferencia a favor. NO entra en la identidad. */
+  /** La comisión CAUSADA hasta la fecha. Referencia; NO entra en la identidad. */
   comisionRetenidaCop: number;
+  /** 🔴 (18-09) Lo que YA salió hacia la cuenta propia: traslados aprobados. */
+  comisionTrasladadaCop: number;
   haySaldoDelBanco: boolean;
   plataDeTercerosCop: number;
+  /**
+   * 🔴 (18-09) La comisión que TODAVÍA está en la cuenta de recaudo: causada
+   * menos trasladada. Es el número que hay que trasladar para que el cuadre dé
+   * cero.
+   */
+  comisionEnLaCuentaCop: number;
+  /** `true` = la diferencia se explica ENTERA con la comisión sin trasladar. */
+  laDiferenciaEsLaComision: boolean;
   diferenciaCop: number | null;
   cuadra: boolean;
   /** 🚨 Lo único de esta pantalla que se pinta en rojo. */

@@ -85,6 +85,7 @@ export function aniosDisponibles(hasta: number = anioActual()): number[] {
 export function CertificadoDeRetencionesPanel() {
   const [anio, setAnio] = useState(() => anioActual());
   const [criterio, setCriterio] = useState<CriterioDeRetencion>('CAUSADO');
+  const [emitiendoTodos, setEmitiendoTodos] = useState(false);
   const [datos, setDatos] = useState<CertificadoDeRetenciones | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -143,6 +144,64 @@ export function CertificadoDeRetencionesPanel() {
     }
   }
 
+  /**
+   * 🔴 (18-09-2026) EMITE EL DE TODOS. Nico: «el certificado anual se genera SOLO
+   * para todos los propietarios, sin pedirlo». Lo hace el cron de enero; este
+   * botón es para el año que el cron no alcanzó o para la inmobiliaria que acaba
+   * de migrar su historia.
+   *
+   * Es idempotente: se salta a quien ya lo tiene. Y lo que NO se pudo emitir se
+   * dice con NOMBRE —un propietario sin documento en su ficha no puede recibir
+   * certificado—, porque «3 quedaron fuera» no le permite a nadie arreglarlo.
+   */
+  async function emitirTodos() {
+    setEmitiendoTodos(true);
+    try {
+      const r = await finanzasApi.emitirTodosLosCertificados(anio, criterio);
+      if (!r.disponible) {
+        toast.error('Todavía no se pueden emitir certificados.', {
+          description: r.motivo ?? undefined,
+        });
+        return;
+      }
+      toast.success(`${r.emitidos} certificado(s) emitido(s).`, {
+        description:
+          `${r.yaEstaban} ya estaban emitidos y no se tocaron.` +
+          (r.sinDocumento.length > 0
+            ? ` SIN documento en su ficha (no se les puede emitir): ${r.sinDocumento.map((x) => x.nombre).join(', ')}.`
+            : ''),
+      });
+      for (const e of r.errores) {
+        toast.error('Un certificado no se pudo emitir.', { description: e.mensaje });
+      }
+      await cargar();
+    } catch (e) {
+      toast.error('No se pudieron emitir los certificados.', {
+        description: explicar(e, 'No se pudieron emitir los certificados.'),
+      });
+    } finally {
+      setEmitiendoTodos(false);
+    }
+  }
+
+  /** REGENERA el de un propietario: anula el anterior con motivo y emite otro. */
+  async function reemitir(fila: FilaDelCertificado) {
+    setEmitiendo(fila.propietarioId);
+    try {
+      const e = await finanzasApi.reemitirCertificado(anio, fila.propietarioId, criterio);
+      toast.success(`Certificado ${e.numero} regenerado.`, {
+        description: `El anterior quedó anulado con su motivo. El de ${fila.nombre} ya está al día.`,
+      });
+      await cargar();
+    } catch (e) {
+      toast.error('No se pudo regenerar el certificado.', {
+        description: explicar(e, 'No se pudo regenerar el certificado.'),
+      });
+    } finally {
+      setEmitiendo(null);
+    }
+  }
+
   return (
     <div className="space-y-5" data-testid="certificado-de-retenciones">
       {/* ── Año y criterio ─────────────────────────────────────────────── */}
@@ -179,7 +238,24 @@ export function CertificadoDeRetencionesPanel() {
         <p className="max-w-xl text-xs leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
           {QUE_MIDE_EL_CRITERIO[criterio]}
         </p>
+        {/* 🔴 (18-09) Antes esto sólo se podía emitir de a uno: una inmobiliaria
+            con 300 propietarios necesitaba 300 clics, y quien se olvidara no se
+            enteraba hasta que el propietario reclamara en abril. */}
+        <Button
+          hideArrow
+          data-testid="emitir-todos-los-certificados"
+          isLoading={emitiendoTodos}
+          onClick={() => void emitirTodos()}
+        >
+          Emitir el de todos
+        </Button>
       </div>
+      <p className="max-w-2xl text-xs leading-relaxed text-fg-muted">
+        Al cerrar el año esto se hace SOLO para todos tus propietarios y queda disponible en su
+        portal. El botón está acá para el año que el cierre automático no alcanzó, o para la
+        historia que acabas de migrar: se salta a quien ya lo tiene, así que apretarlo dos veces no
+        duplica ningún documento.
+      </p>
 
       <EstadoDeDatos
         cargando={cargando && !datos}
@@ -300,12 +376,27 @@ export function CertificadoDeRetencionesPanel() {
                             </TableCell>
                             <TableCell>
                               {emitido ? (
-                                <span
-                                  className="inline-flex items-center gap-1 text-xs text-success"
-                                  data-testid={`emitido-${f.propietarioId}`}
-                                >
-                                  <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                                  {emitido.numero} · {emitido.emitidoAt.slice(0, 10)}
+                                <span className="flex flex-col items-start gap-1">
+                                  <span
+                                    className="inline-flex items-center gap-1 text-xs text-success"
+                                    data-testid={`emitido-${f.propietarioId}`}
+                                  >
+                                    <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                                    {emitido.numero} · {emitido.emitidoAt.slice(0, 10)}
+                                  </span>
+                                  {/* «Se puede regenerar» (Nico, 17-09): anula el
+                                      anterior con motivo y emite otro. El viejo no
+                                      se borra — el propietario puede tenerlo. */}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    hideArrow
+                                    data-testid={`regenerar-${f.propietarioId}`}
+                                    isLoading={emitiendo === f.propietarioId}
+                                    onClick={() => void reemitir(f)}
+                                  >
+                                    Regenerar
+                                  </Button>
                                 </span>
                               ) : (
                                 <Button

@@ -15,6 +15,8 @@ import {
   HandCoins,
   Receipt,
   Storefront,
+  Megaphone,
+  ClipboardText,
 } from '@phosphor-icons/react';
 
 /**
@@ -247,7 +249,10 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     slug: 'avisos',
     labelKey: 'inmobiliaria.config.tabs.avisos',
     descKey: 'inmobiliaria.config.tabs.avisosDesc',
-    icon: Bell,
+    // La campana es de «Notificaciones», que son las que te llegan A VOS. Éstos
+    // son los que SALEN a los clientes de la inmobiliaria: no son la misma cosa
+    // y no pueden verse igual.
+    icon: Megaphone,
     gate: { tipo: 'admin' },
   },
   {
@@ -261,7 +266,10 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     slug: 'bitacora',
     labelKey: 'inmobiliaria.config.tabs.bitacora',
     descKey: 'inmobiliaria.config.tabs.bitacoraDesc',
-    icon: Shield,
+    // El escudo es de «Seguridad». Una bitácora no protege: REGISTRA quién hizo
+    // qué con la plata. Leerlas como la misma cosa es justo lo que hace que
+    // nadie abra la que necesita.
+    icon: ClipboardText,
     gate: { tipo: 'admin' },
   },
   {

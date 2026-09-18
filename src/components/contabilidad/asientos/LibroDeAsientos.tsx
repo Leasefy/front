@@ -388,6 +388,7 @@ export function LibroDeAsientos() {
         cargando={cargandoCierre}
         fallo={falloDelCierre}
         onCerrado={refrescarTodo}
+        onReabierto={refrescarTodo}
       />
 
       <DetalleDeAsiento

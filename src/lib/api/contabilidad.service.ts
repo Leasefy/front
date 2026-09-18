@@ -85,6 +85,17 @@ export interface CuentaPuc {
   padreId: string | null;
   imputable: boolean;
   activa: boolean;
+  /**
+   * 🔴 El gasto de esta cuenta NO es deducible (contrato del 19-09, §3).
+   * «Todo deducible salvo lo marcado»: lo marcado va a la columna «Pago o
+   * abono no deducible» del formato 1001.
+   *
+   * `undefined` = la base no tiene la columna todavía (migración 70; el back
+   * la omite en toda lectura) y no hay nada marcado. `null` = la columna
+   * existe y la cuenta no está marcada. Ninguno de los dos se pinta como una
+   * casilla marcada, y `undefined` no se pinta como «no deducible: no».
+   */
+  noDeducible?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -139,14 +150,25 @@ export interface CuentaNueva {
 }
 
 /** `ActualizarCuentaDto`. 🔴 `codigo` NO está: un código no se cambia, se
- * crea otra cuenta. Mandarlo es un 400. */
-export const CLAVES_DE_ACTUALIZAR_CUENTA = ['nombre', 'naturaleza', 'activa', 'imputable'] as const;
+ * crea otra cuenta. Mandarlo es un 400.
+ *
+ * `noDeducible` se agregó el 19-09 (§3): sin la migración 70 el back responde
+ * 503 `NO_DEDUCIBLE_SIN_MIGRAR` — pero SÓLO si la clave viaja, así que el
+ * resto de la edición del PUC sigue funcionando mientras no se marque nada. */
+export const CLAVES_DE_ACTUALIZAR_CUENTA = [
+  'nombre',
+  'naturaleza',
+  'activa',
+  'imputable',
+  'noDeducible',
+] as const;
 
 export interface CambiosDeCuenta {
   nombre?: string;
   naturaleza?: NaturalezaContable;
   activa?: boolean;
   imputable?: boolean;
+  noDeducible?: boolean;
 }
 
 export const LARGO_MAXIMO_DE_CODIGO = 20;
@@ -369,6 +391,72 @@ export interface ResultadoDeCierre {
   /** Asientos que quedaron bloqueados con este cierre. */
   cerrados: number;
   fronteraAnterior: string | null;
+}
+
+// ── Reabrir un mes cerrado (contrato del 19-09, §1) ────────────────────────
+
+/**
+ * `ReabrirDto`, con la trampa entera adentro.
+ *
+ * 🔴 `hasta` es **el primer día que se vuelve a poder escribir**, NO hasta
+ * dónde queda cerrado. Con la contabilidad cerrada al 31-dic, «reabrir
+ * diciembre» es `2025-12-01` y deja la frontera en el 30-nov — el back hace
+ * `fronteraNueva = hasta - 1 día`. Sin `hasta` se reabre TODO y la
+ * contabilidad queda sin ninguna fecha cerrada.
+ *
+ * Es el mismo nombre de campo que `CerrarPeriodoDto` y significa lo contrario;
+ * por eso la pantalla muestra el resultado ANTES de confirmar y por eso esta
+ * frase está acá y no sólo en el componente.
+ */
+export const CLAVES_DE_REABRIR = ['hasta', 'motivo'] as const;
+
+/** `MinLength(3)` en el DTO: un motivo de dos letras es un 400. */
+export const LARGO_MINIMO_DEL_MOTIVO_DE_REAPERTURA = 3;
+export const LARGO_MAXIMO_DEL_MOTIVO_DE_REAPERTURA = 500;
+
+/**
+ * Una fila de `reaperturas_contables`, tal como la devuelve Prisma.
+ *
+ * 🔴 `fronteraAnterior` y `fronteraNueva` acá son `@db.Date` serializados
+ * (`2025-12-31T00:00:00.000Z`), NO el `AAAA-MM-DD` pelado del nivel de arriba
+ * de la respuesta. Pasalos siempre por `diaDe`/`diaLegible`.
+ */
+export interface ReaperturaContable {
+  id: string;
+  agencyId: string;
+  fronteraAnterior: string;
+  /** `null` = se reabrió todo: no queda ninguna fecha cerrada. */
+  fronteraNueva: string | null;
+  motivo: string;
+  reabiertoPorUserId: string | null;
+  reabiertoAt: string;
+}
+
+/** Respuesta de `POST /asientos/reabrir`. */
+export interface ResultadoDeReapertura {
+  reapertura: ReaperturaContable;
+  /** `AAAA-MM-DD`: hasta dónde estaba cerrada antes. */
+  fronteraAnterior: string;
+  /** `AAAA-MM-DD`, o `null` si se reabrió todo. */
+  fronteraNueva: string | null;
+  /**
+   * El texto del back: los asientos marcados NO se desmarcan y corregir sigue
+   * siendo por reversa. Se muestra tal cual — es la mitad de la operación que
+   * nadie espera.
+   */
+  aviso: string;
+}
+
+/**
+ * `GET /asientos/reaperturas`. Lectura de CUALQUIER miembro: que se pueda ver
+ * quién deshizo un cierre es justamente el punto.
+ *
+ * `disponible: false` = falta la migración 68; `motivo` la nombra.
+ */
+export interface BitacoraDeReaperturas {
+  disponible: boolean;
+  motivo: string | null;
+  reaperturas: ReaperturaContable[];
 }
 
 // ── Reportes ───────────────────────────────────────────────────────────────
@@ -1289,6 +1377,36 @@ export const contabilidadApi = {
       return apiClient.post<ResultadoDeCierre>(
         `${BASE}/asientos/cerrar`,
         soloClaves({ hasta }, CLAVES_DE_CERRAR),
+      );
+    },
+
+    /**
+     * Mueve la frontera HACIA ATRÁS. Sólo ADMIN (`SoloAdministradorGuard`):
+     * el contador cierra, y deshacer el cierre es otra decisión — a los demás
+     * el back les responde 403 con esa frase.
+     *
+     * 🔴 `hasta` es el PRIMER día que se vuelve a poder escribir. `null`
+     * reabre todo. 503 `REAPERTURA_SIN_MIGRAR` sin la migración 68.
+     */
+    async reabrir(hasta: string | null, motivo: string): Promise<ResultadoDeReapertura> {
+      return apiClient.post<ResultadoDeReapertura>(
+        `${BASE}/asientos/reabrir`,
+        // `hasta: null` se convierte en AUSENTE en vez de viajar como `null`.
+        // Las dos formas funcionan —`@IsOptional()` de class-validator se
+        // saltea la validación con `null` igual que con `undefined`, y el
+        // servicio hace `dto.hasta ? … : null`—, pero la ausencia es la que el
+        // DTO documenta («sin esto se reabre todo») y la que no depende de ese
+        // detalle de la librería.
+        soloClaves({ hasta: hasta ?? undefined, motivo }, CLAVES_DE_REABRIR),
+      );
+    },
+
+    /** La bitácora de reaperturas. La lee cualquier miembro. */
+    async reaperturas(limite?: number): Promise<BitacoraDeReaperturas> {
+      return apiClient.get<BitacoraDeReaperturas>(
+        conQuery(`${BASE}/asientos/reaperturas`, {
+          limite: limite === undefined ? undefined : String(limite),
+        }),
       );
     },
   },

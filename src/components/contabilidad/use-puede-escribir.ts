@@ -103,3 +103,47 @@ export function usePuedeEscribir(): PuedeEscribir {
  */
 export const MOTIVO_SIN_ESCRITURA =
   'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
+
+/**
+ * El texto del 403 de `SoloAdministradorGuard`, palabra por palabra.
+ *
+ * 🔴 No es el mismo que `MOTIVO_SIN_ESCRITURA`, y la diferencia es el punto:
+ * el contador SÍ puede cerrar y SÍ puede asentar, pero no puede deshacer un
+ * cierre. Decirle «sólo el administrador o el contador» al contador que no ve
+ * el botón sería mentirle.
+ */
+export const MOTIVO_SIN_REAPERTURA =
+  'Sólo un administrador puede reabrir un mes cerrado. El contador cierra; deshacer el cierre es otra decisión.';
+
+/**
+ * ¿Este rol puede REABRIR un mes cerrado? Sólo ADMIN — ni siquiera el contador
+ * (`SoloAdministradorGuard`, contrato del 19-09 §1).
+ *
+ * Mismo criterio que `usePuedeEscribir`: esto sólo deshabilita y explica; el
+ * back sigue siendo la autoridad y su 403 llega igual si la pantalla se
+ * equivoca hacia el «sí».
+ */
+export function usePuedeReabrir(): PuedeEscribir {
+  const permisos = usePermissionsContextSafe();
+  const auth = useContext(AuthContext);
+  const usuarioId = auth?.user?.id ?? null;
+
+  if (!permisos) {
+    return {
+      puede: false,
+      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recargá la pantalla.',
+      usuarioId,
+    };
+  }
+  if (permisos.isLoading) {
+    return {
+      puede: false,
+      motivo: 'Estamos verificando tu rol en la inmobiliaria.',
+      usuarioId,
+    };
+  }
+  if (permisos.isAdmin || permisos.agencyRole === AGENCY_ROLES.ADMIN) {
+    return { puede: true, motivo: null, usuarioId };
+  }
+  return { puede: false, motivo: MOTIVO_SIN_REAPERTURA, usuarioId };
+}

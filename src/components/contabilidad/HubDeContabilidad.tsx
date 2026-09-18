@@ -959,6 +959,7 @@ export function HubDeContabilidad() {
           cargando={cargando}
           fallo={'cierre' in datos.fallos}
           onCerrado={() => void recargar()}
+          onReabierto={() => void recargar()}
         />
         {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
       </div>

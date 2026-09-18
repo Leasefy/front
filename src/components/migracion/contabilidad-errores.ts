@@ -34,6 +34,19 @@ const MENSAJES: Record<string, string> = {
   PERIODO_CERRADO: 'Esa fecha cae en un período que ya se cerró.',
   ASIENTO_YA_REVERSADO: 'Ese asiento ya tiene su reversión: no se puede reversar dos veces.',
   PERIODO_YA_CERRADO: 'Ese período ya estaba cerrado.',
+  // reapertura.service.ts (19-09)
+  MOTIVO_OBLIGATORIO:
+    'Reabrir un mes cerrado exige un motivo escrito: queda en la bitácora y es lo que hace que el cierre se pueda deshacer sin perder el rastro.',
+  NADA_QUE_REABRIR: 'La contabilidad no tiene ninguna fecha cerrada: no hay nada que reabrir.',
+  NO_ES_UNA_REAPERTURA:
+    'Esa fecha no mueve la frontera hacia atrás. Para cerrar MÁS se usa el cierre, no la reapertura.',
+  REAPERTURA_SIN_MIGRAR:
+    'Todavía no se puede reabrir un mes cerrado: falta la migración en la base. La aplica Víctor.',
+  // puc.service.ts / exogena.service.ts (19-09)
+  NO_DEDUCIBLE_SIN_MIGRAR:
+    'Todavía no se puede marcar una cuenta como no deducible: falta la migración en la base, y la aplica Víctor. Mientras tanto todo el gasto se declara deducible en el 1001.',
+  CONFIGURACION_DE_EXOGENA_SIN_MIGRAR:
+    'Todavía no se puede guardar la configuración de exógena: falta la migración en la base, y la aplica Víctor. Mientras tanto rigen los valores por defecto.',
   // migracion-contable.service.ts
   LOTE_DEMASIADO_GRANDE: 'El lote es demasiado grande: parte el archivo en tandas de 5.000 asientos.',
 };

@@ -190,6 +190,86 @@ export const CLAVES_DE_ANULAR_EXOGENA = ['anio', 'motivo'] as const;
 /** 409 al aprobar con movimientos sin tercero o cuentas sin concepto. */
 export const EXOGENA_CON_BLOQUEOS = 'EXOGENA_CON_BLOQUEOS';
 
+// ── La configuración de la inmobiliaria (contrato del 19-09, §2) ───────────
+
+/** Lo que Leasefy publicó para el año. `null` = ese año no está publicado. */
+export interface AnioDeLaPlataforma {
+  anio: number;
+  /** Qué resolución de la DIAN rige el año. `null` = no se cargó. */
+  resolucion: string | null;
+  /** 🔴 `null` = no se agrupa nada. NO es cero: agrupar con un tope inventado
+   * esconde terceros que había que declarar. */
+  topeCuantiasMenoresCop: number | null;
+  nitCuantiasMenores: string | null;
+}
+
+/**
+ * `GET /exogena/configuracion?anio=`.
+ *
+ * 🔴 Los dos interruptores se ven iguales y NO valen lo mismo:
+ * `girosAPropietariosEn1001` ya está decidido (Nico, 18-09: sólo en el 1647) y
+ * `saldo2815En1009` todavía espera al contador. Cuál es cuál lo dice el back
+ * en `decididoPorNico` y `esperaAlContador`, con el texto entero — la pantalla
+ * los usa tal cual y no inventa una explicación propia.
+ */
+export interface ConfiguracionDeExogena {
+  /** `false` = falta la migración 70: se ven los valores por defecto y guardar es 503. */
+  disponible: boolean;
+  motivo: string | null;
+  girosAPropietariosEn1001: boolean;
+  saldo2815En1009: boolean;
+  /** El override propio. `null` = hereda el del año publicado. */
+  topeCuantiasMenoresCop: number | null;
+  delAnioDeLaPlataforma: AnioDeLaPlataforma | null;
+  /** Por interruptor: por qué ya está resuelto. */
+  decididoPorNico: Record<string, string>;
+  /** Por interruptor: qué falta para resolverlo. */
+  esperaAlContador: Record<string, string>;
+}
+
+/**
+ * `GuardarConfiguracionDto`.
+ *
+ * 🔴 `anio` NO está: la configuración es de la inmobiliaria y no del año
+ * (`configuracion_de_exogena` tiene `agencyId` único). El `?anio=` del GET
+ * sólo sirve para traer `delAnioDeLaPlataforma`. Mandar `anio` en el cuerpo es
+ * un 400 por `forbidNonWhitelisted`.
+ */
+export const CLAVES_DE_CONFIGURACION = [
+  'girosAPropietariosEn1001',
+  'saldo2815En1009',
+  'topeCuantiasMenoresCop',
+] as const;
+
+export interface CambiosDeConfiguracion {
+  girosAPropietariosEn1001?: boolean;
+  saldo2815En1009?: boolean;
+  /** `null` borra el override y vuelve a heredar el del año publicado. */
+  topeCuantiasMenoresCop?: number | null;
+}
+
+/**
+ * Lo que devuelve el `PUT`: la FILA de `configuracion_de_exogena`, no el
+ * resumen del `GET`.
+ *
+ * 🔴 Verificado contra `ExogenaService.guardarConfiguracion`, que devuelve el
+ * `upsert` pelado: no trae `delAnioDeLaPlataforma`, ni `decididoPorNico`, ni
+ * `esperaAlContador`. Tipar esto como `ConfiguracionDeExogena` haría que la
+ * pantalla pintara el tope heredado como si no existiera apenas se guarda algo
+ * — por eso quien guarda vuelve a pedir el `GET`.
+ */
+export interface FilaDeConfiguracionDeExogena {
+  id: string;
+  agencyId: string;
+  girosAPropietariosEn1001: boolean;
+  saldo2815En1009: boolean;
+  topeCuantiasMenoresCop: number | null;
+  actualizadoPorUserId: string | null;
+}
+
+/** 503 sin la migración 70. */
+export const CONFIGURACION_DE_EXOGENA_SIN_MIGRAR = 'CONFIGURACION_DE_EXOGENA_SIN_MIGRAR';
+
 /**
  * Lo que la resolución de cada año decide y el sistema NO puede saber. La
  * pantalla los lista con este texto, marcados como pendientes de confirmar.
@@ -292,6 +372,31 @@ export const exogenaApi = {
     return apiClient.post<ResumenDeFormato>(
       `${BASE}/${encodeURIComponent(formato)}/aprobar`,
       soloClaves({ anio, observaciones }, CLAVES_DE_APROBAR),
+    );
+  },
+
+  /**
+   * Qué escogió esta inmobiliaria, qué hereda del año que Leasefy publicó, y
+   * cuál de los dos interruptores ya se resolvió.
+   */
+  async configuracion(anio: number): Promise<ConfiguracionDeExogena> {
+    return apiClient.get<ConfiguracionDeExogena>(
+      conQuery(`${BASE}/configuracion`, { anio: String(anio) }),
+    );
+  },
+
+  /**
+   * Escritura (ADMIN o CONTADOR). 503 sin la migración 70.
+   *
+   * 🔴 `topeCuantiasMenoresCop: null` SÍ viaja —es lo que borra el override y
+   * devuelve la herencia—; `undefined` no viaja y deja el valor como estaba.
+   */
+  async guardarConfiguracion(
+    cambios: CambiosDeConfiguracion,
+  ): Promise<FilaDeConfiguracionDeExogena> {
+    return apiClient.put<FilaDeConfiguracionDeExogena>(
+      `${BASE}/configuracion`,
+      soloClaves(cambios, CLAVES_DE_CONFIGURACION),
     );
   },
 

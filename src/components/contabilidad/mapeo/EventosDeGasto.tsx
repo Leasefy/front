@@ -17,13 +17,14 @@
  *
  * ── 🔴 Sin la migración no se muestra editable, y se dice por qué ───────────
  *
- * `hayEventosDeGasto: false` significa que la base no tiene los siete valores
- * nuevos del enum `EventoContable`. Un `PUT` con uno de ellos devuelve 400
- * `EVENTO_SIN_MIGRACION` y **no escribe nada**: o sea que se perdería también lo
- * que sí se podía guardar en esa misma llamada. Así que con la migración
- * ausente el bloque sale en modo lectura, explicando qué falta y qué no se
- * puede hacer todavía (causar una factura de proveedor), en vez de ofrecer un
- * selector que sólo produce errores.
+ * Estos siete NO son valores del enum `EventoContable` —agregar un valor a un
+ * enum de Postgres es irreversible—: son texto con un CHECK en una tabla propia,
+ * y por eso se guardan con `PUT /mapeo/gastos` y no con `PUT /mapeo`.
+ * `hayEventosDeGasto: false` significa que esa tabla todavía no existe, y un
+ * `PUT` ahí devuelve 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` sin escribir nada. Así que
+ * con la migración ausente el bloque sale en modo lectura, explicando qué falta
+ * y qué no se puede hacer todavía (causar una factura de proveedor), en vez de
+ * ofrecer un selector que sólo produce errores.
  *
  * `undefined` se trata igual que `false`: un back anterior al 18-09 no manda el
  * campo, y afirmar que la migración está por la ausencia del dato sería inventar.
@@ -51,8 +52,10 @@ import { TituloDeBloque } from '@/components/finanzas/piezas';
 export interface EventosDeGastoProps {
   /** Los siete del back. `undefined` = un back que todavía no los manda. */
   eventos: MapeoDeEvento[] | undefined;
-  /** `false`/`undefined` = la base no tiene los valores nuevos del enum. */
+  /** `false`/`undefined` = falta la migración que crea la tabla. */
   hay: boolean | undefined;
+  /** El texto del 503 del back, con el nombre de la migración. */
+  motivo?: string | null;
   completo: boolean | undefined;
   cuentas: readonly CuentaPuc[];
   /** Guarda un evento. Devuelve la promesa: la fila espera al back. */
@@ -94,6 +97,7 @@ export function loQueNoSePuedeCausar(faltantes: readonly EventoContable[]): stri
 export function EventosDeGasto({
   eventos,
   hay,
+  motivo,
   completo,
   cuentas,
   onAsignar,
@@ -119,8 +123,9 @@ export function EventosDeGasto({
       {hay !== true ? (
         <FaltaLaMigracion
           motivo={
-            'Falta la migración que agrega los siete valores nuevos al enum de eventos contables ' +
-            '(20260918100000_rubros_del_pyg_y_sede_en_el_movimiento).'
+            motivo ??
+            'Falta la migración que crea la tabla donde viven estos siete eventos ' +
+              '(20260918100000_rubros_del_pyg_y_sede_en_el_movimiento).'
           }
           queSeEspera="decir a qué cuenta va cada línea del asiento de un gasto"
           mientrasTanto="Sin estos eventos, una factura de proveedor se puede registrar pero no se puede causar: no hay a qué cuenta mandar el gasto ni la cuenta por pagar. El resto del mapeo —recaudos y giros— funciona igual."

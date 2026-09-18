@@ -895,16 +895,23 @@ export type EventoDeRecaudoOGiro =
   | 'AJUSTE_AL_PESO';
 
 /**
- * Los SIETE valores nuevos del enum `EventoContable` (migración 49, contrato
- * del 18-09 §2): los que necesita la factura de proveedor para causarse y el
- * egreso para pagarse.
+ * Los SIETE eventos de gasto (contrato del 18-09 §2): los que necesita la
+ * factura de proveedor para causarse y el egreso para pagarse.
  *
- * 🔴 Van aparte de los de recaudo y giro a propósito. `GET /mapeo` los devuelve
- * en `eventosDeGasto` con su propio `completoGastos`, porque el mapeo de
- * recaudo puede estar completo —y los recibos asentándose— mientras el de gasto
- * está vacío. Meterlos en la misma lista haría que la inmobiliaria que nunca
- * registró una factura de proveedor viera su paso 5 «incompleto» de un día para
- * otro, sin haber cambiado nada.
+ * 🔴 **NO son valores del enum `EventoContable`**, y eso cambia dónde se
+ * guardan. Agregar un valor a un enum de Postgres es irreversible, así que el
+ * back los guarda como TEXTO con un CHECK en una tabla propia. Consecuencia
+ * para esta capa: se leen con `GET /mapeo/gastos`, se guardan con
+ * `PUT /mapeo/gastos` y se siembran con `POST /mapeo/gastos/semilla` —
+ * `PUT /mapeo` sigue siendo el de los diez del recaudo, y mandarle uno de gasto
+ * es 400 `EVENTO_DESCONOCIDO`.
+ *
+ * Van aparte de los de recaudo y giro también en la pantalla. `GET /mapeo` los
+ * devuelve en `eventosDeGasto` con su propio `completoGastos`, porque el mapeo
+ * de recaudo puede estar completo —y los recibos asentándose— mientras el de
+ * gasto está vacío. Meterlos en la misma lista haría que la inmobiliaria que
+ * nunca registró una factura de proveedor viera su paso 5 «incompleto» de un
+ * día para otro, sin haber cambiado nada.
  */
 export type EventoDeGasto =
   | 'GASTO_SIN_RUBRO'
@@ -915,6 +922,11 @@ export type EventoDeGasto =
   | 'RETEICA_PRACTICADA'
   | 'EGRESO_BANCOS';
 
+/**
+ * El vocabulario que la pantalla maneja, unido. Ojo: la UNIÓN es de la pantalla,
+ * no de la base — los de recaudo son un enum de Postgres y los de gasto, texto
+ * con CHECK en otra tabla. Por eso hay dos rutas para guardarlos.
+ */
 export type EventoContable = EventoDeRecaudoOGiro | EventoDeGasto;
 
 export const EVENTOS_CONTABLES: readonly EventoDeRecaudoOGiro[] = [
@@ -940,12 +952,16 @@ export const EVENTOS_DE_GASTO: readonly EventoDeGasto[] = [
   'EGRESO_BANCOS',
 ];
 
-/**
- * El 400 de mandar un evento de gasto con el enum sin migrar. El mismo que ya
- * da `AJUSTE_AL_PESO`: no escribe nada, así que el resto del PUT se pierde
- * entero y la pantalla tiene que decir por qué.
- */
-export const EVENTO_SIN_MIGRACION = 'EVENTO_SIN_MIGRACION';
+/** Qué hace cada evento de gasto, para el caso en que el back no lo diga. */
+export const PARA_QUE_SIRVE_EL_GASTO: Record<EventoDeGasto, string> = {
+  GASTO_SIN_RUBRO: 'La cuenta del gasto cuando la línea de la factura no dice cuál.',
+  IVA_DESCONTABLE: 'El IVA de la factura del proveedor.',
+  GASTO_POR_PAGAR: 'La cuenta por pagar al proveedor.',
+  RETEFUENTE_PRACTICADA: 'La retefuente que se le practica al proveedor.',
+  RETEIVA_PRACTICADA: 'El reteIVA que se le practica al proveedor.',
+  RETEICA_PRACTICADA: 'El reteICA que se le practica al proveedor.',
+  EGRESO_BANCOS: 'La plata que sale del banco al pagarle.',
+};
 
 /** `GET /asientos/faltantes`: lo que pasó sin asiento por falta de mapeo. */
 export interface AsientosFaltantes {
@@ -1004,11 +1020,23 @@ export interface MapeoContable {
   completoGastos?: boolean;
   faltantesGastos?: EventoContable[];
   /**
-   * `false` = la base no tiene los valores nuevos del enum. El bloque de gasto
-   * se muestra explicando qué falta y NO editable: un `PUT` con uno de esos
-   * eventos devuelve 400 `EVENTO_SIN_MIGRACION` y no escribe nada.
+   * `false` = falta la migración 49 (la tabla donde viven). El bloque de gasto
+   * se muestra explicando qué falta y NO editable: `PUT /mapeo/gastos`
+   * devolvería 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribiría nada.
    */
   hayEventosDeGasto?: boolean;
+  /** El texto del 503 cuando `hayEventosDeGasto` es `false`. */
+  motivoDeLosGastos?: string | null;
+}
+
+/** Lo que devuelve `GET /mapeo/gastos`: los siete, solos. */
+export interface MapeoDeGastos {
+  /** `false` = falta la migración 49. */
+  disponible: boolean;
+  motivo: string | null;
+  eventos: MapeoDeEvento[];
+  completo: boolean;
+  faltantes: EventoContable[];
 }
 
 /** `EntradaDeMapeoDto`. */
@@ -1018,6 +1046,19 @@ export interface EntradaDeMapeo {
   evento: EventoContable;
   cuentaId: string;
 }
+
+/**
+ * 🔴 Los eventos de gasto se guardan por SU PROPIA ruta (`PUT /mapeo/gastos`),
+ * no por `PUT /mapeo` — que sigue siendo el de los diez del recaudo.
+ *
+ * Mandar uno de gasto por la ruta vieja no es un error de estilo: son dos
+ * controladores con dos validaciones distintas, y el back contesta
+ * 400 `EVENTO_DESCONOCIDO`. Sin la migración 49, `PUT /mapeo/gastos` responde
+ * 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribe nada — por eso la pantalla no
+ * dibuja el bloque editable cuando `hayEventosDeGasto` no es `true`.
+ */
+export const MAPEO_DE_RUBROS_SIN_MIGRAR = 'MAPEO_DE_RUBROS_SIN_MIGRAR';
+export const EVENTO_DESCONOCIDO = 'EVENTO_DESCONOCIDO';
 
 /** Respuesta de `POST /mapeo/semilla`. */
 export interface ResultadoDeSemillaDeMapeo {
@@ -1091,6 +1132,16 @@ export interface MapeoDeRubros {
   completo: boolean;
   faltantes: string[];
   rubros: MapeoDeRubro[];
+  /**
+   * 🔴 Lo que el back detectó y esta capa NO puede deducir: cuentas AMBIGUAS
+   * (dos rubros reclaman el mismo código, así que su plata se cuenta dos veces)
+   * y códigos HUÉRFANOS (un rubro mapeado a una cuenta que ya no existe: da
+   * cero, y ese cero NO significa «no se gastó»).
+   *
+   * Los dos casos producen un número que se ve razonable, que es lo que los
+   * hace peligrosos. Se muestran tal cual llegan.
+   */
+  avisos?: string[];
 }
 
 /** `GuardarMapeoDeRubroDto`. La lista REEMPLAZA el juego completo del rubro. */
@@ -1310,6 +1361,31 @@ export const contabilidadApi = {
     /** Asigna las cuentas propuestas a los eventos vacíos; no pisa lo asignado. */
     async sembrar(): Promise<ResultadoDeSemillaDeMapeo> {
       return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/semilla`, {});
+    },
+
+    /**
+     * Los siete eventos de gasto, solos. `GET /mapeo` ya los trae, así que
+     * esto es para la pantalla que sólo quiere ese bloque.
+     */
+    async gastos(): Promise<MapeoDeGastos> {
+      return apiClient.get<MapeoDeGastos>(`${BASE}/mapeo/gastos`);
+    },
+
+    /**
+     * 🔴 Su propia ruta, no `PUT /mapeo`: los de gasto no viven en el enum
+     * `EventoContable` sino en una tabla con CHECK. Mandarlos por la ruta de
+     * recaudo es 400 `EVENTO_DESCONOCIDO`; sin la migración 49 esta ruta
+     * responde 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribe nada.
+     */
+    async guardarGastos(entradas: EntradaDeMapeo[]): Promise<MapeoDeGastos> {
+      return apiClient.put<MapeoDeGastos>(`${BASE}/mapeo/gastos`, {
+        entradas: entradas.map((e) => soloClaves(e, CLAVES_DE_ENTRADA_DE_MAPEO)),
+      });
+    },
+
+    /** Asigna las cuentas propuestas a los eventos de gasto vacíos. */
+    async sembrarGastos(): Promise<ResultadoDeSemillaDeMapeo> {
+      return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/gastos/semilla`, {});
     },
 
     /** Los rubros del P&G con sus cuentas del PUC y las que el preset propone. */

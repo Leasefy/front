@@ -246,6 +246,35 @@ describe('facturas.registrar', () => {
   });
 });
 
+describe('facturas.previsualizar', () => {
+  it('🔴 liquida sin escribir: sólo lo que hace falta para la cuenta', async () => {
+    await gastosApi.facturas.previsualizar({
+      proveedorId: 'p1',
+      lineas: [
+        { descripcion: 'Cerradura', cuentaId: 'c1', baseCop: 400_000, ivaPct: 19 },
+      ],
+      retefuenteCop: 10_000,
+    });
+    const [ruta, cuerpo] = clienteMock.post.mock.calls[0];
+    expect(ruta).toBe(`${BASE}/gastos/facturas/previsualizar`);
+    expect(Object.keys(cuerpo as object).sort()).toEqual(
+      ['proveedorId', 'lineas', 'retefuenteCop'].sort(),
+    );
+  });
+
+  it('también filtra las líneas: el IVA de la línea lo calcula el back', async () => {
+    await gastosApi.facturas.previsualizar({
+      lineas: [
+        // @ts-expect-error a propósito: es lo que el back calcula.
+        { descripcion: 'x', baseCop: 1, ivaPct: 19, ivaCop: 0 },
+      ],
+    });
+    const [, cuerpo] = clienteMock.post.mock.calls[0];
+    const lineas = (cuerpo as { lineas: Record<string, unknown>[] }).lineas;
+    expect('ivaCop' in lineas[0]).toBe(false);
+  });
+});
+
 describe('facturas.causar / anular', () => {
   it('causar es un POST con cuerpo vacío y el id codificado', async () => {
     await gastosApi.facturas.causar('a/b');
@@ -346,6 +375,26 @@ describe('lotes', () => {
   it('sin formato el archivo no lleva query: el lote ya tiene el suyo', async () => {
     await gastosApi.lotes.archivo('l1');
     expect(clienteMock.getBlob).toHaveBeenCalledWith(`${BASE}/egresos/lotes/l1/archivo`);
+  });
+
+  /*
+   * 🔴 Un asiento POR EGRESO, no uno por lote: con un asiento compartido, anular
+   * UN egreso reversaba el pago de los otros ocho, a los que el banco ya les
+   * había girado. La pantalla anuncia cuántos quedaron, no «el asiento N.º X».
+   */
+  it('el pago devuelve un asiento por egreso', async () => {
+    clienteMock.post.mockResolvedValueOnce({
+      lote: { id: 'l1' },
+      asientos: [
+        { egresoId: 'e1', id: 'a1', numero: 415 },
+        { egresoId: 'e2', id: 'a2', numero: 416 },
+      ],
+      comprobantes: 2,
+    });
+    const r = await gastosApi.lotes.pagado('l1', { fecha: '2026-09-20' });
+    expect(r.asientos).toHaveLength(2);
+    expect(r.asientos[0].egresoId).toBe('e1');
+    expect(r.comprobantes).toBe(2);
   });
 
   it('pagado manda fecha y referencia', async () => {

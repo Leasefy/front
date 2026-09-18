@@ -46,42 +46,85 @@ export type ComparacionDelPyg = 'presupuesto' | 'anioAnterior';
 
 export const COMPARACIONES: readonly ComparacionDelPyg[] = ['presupuesto', 'anioAnterior'];
 
-/** Una cuenta dentro de un grupo del P&G. */
-export interface CuentaDelPyg {
-  codigo: string;
-  nombre: string;
+/** Las cuatro cifras que trae cada nivel del árbol. */
+export interface CifrasDelPyg {
   mesCop: number;
   acumuladoCop: number;
-  /** `null` = esa cuenta no tiene rubro presupuestado. Se pinta «—», no `0`. */
-  presupuestoMesCop: number | null;
-  /** `null` = el año anterior no tiene movimiento en esa cuenta. */
+  /** `null` = el año anterior no movió esa cuenta, o no existía. Nunca `0`. */
   anioAnteriorMesCop: number | null;
+  anioAnteriorAcumuladoCop: number | null;
+}
+
+/** Una cuenta imputable, la hoja del árbol. */
+export interface CuentaDelPyg extends CifrasDelPyg {
+  cuentaId: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable;
   /** El rubro del presupuesto que el mapeo del §1 le asignó. */
   rubro: string | null;
 }
 
-/** Una clase del P&G: 4 ingresos, 5 gastos, 6/7 si la inmobiliaria las usa. */
-export interface GrupoDelPyg {
+/** Un grupo de 2 dígitos: `41` Operacionales, `51` Operacionales de admón. */
+export interface GrupoDelPyg extends CifrasDelPyg {
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable;
+  cuentas: CuentaDelPyg[];
+}
+
+/** Una clase: 4 ingresos, 5 gastos, 6/7 si la inmobiliaria las usa. */
+export interface ClaseDelPyg extends CifrasDelPyg {
   clase: string;
   nombre: string;
   naturaleza: NaturalezaContable;
-  mesCop: number;
-  acumuladoCop: number;
-  presupuestoMesCop: number | null;
-  anioAnteriorMesCop: number | null;
-  cuentas: CuentaDelPyg[];
+  grupos: GrupoDelPyg[];
 }
 
 export interface ResultadoDelPyg {
   ingresosMesCop: number;
   gastosMesCop: number;
   utilidadMesCop: number;
-  /** `null` cuando no hay ingresos: dividir por cero no es 0 %. */
+  /**
+   * 🔴 `null` cuando no hubo ingresos, NUNCA `0`: «vendiste y no ganaste» y «no
+   * vendiste» son cosas distintas, y la pantalla pinta «—». Misma regla del
+   * presupuesto.
+   */
   margenMesPct: number | null;
   ingresosAcumuladoCop: number;
   gastosAcumuladoCop: number;
   utilidadAcumuladoCop: number;
   margenAcumuladoPct: number | null;
+  ingresosAnioAnteriorMesCop?: number | null;
+  gastosAnioAnteriorMesCop?: number | null;
+  utilidadAnioAnteriorMesCop?: number | null;
+}
+
+/**
+ * 🔴 El presupuesto va por RUBRO y NO por cuenta, y es a propósito.
+ *
+ * Un presupuesto pertenece a un rubro («nómina»), no a la subcuenta 510506.
+ * Poner un `presupuestoMesCop` en cada cuenta habría obligado a repartir el
+ * presupuesto del rubro entre sus cuentas, que es un número inventado — y de
+ * los peligrosos, porque se ve razonable. La pantalla pinta el ÁRBOL con
+ * `clases` y la COMPARACIÓN con `porRubro`: son dos tablas, no una.
+ */
+export interface FilaPorRubro {
+  rubro: string;
+  nombre: string;
+  naturaleza: 'INGRESO' | 'COSTO' | 'MIXTO';
+  /** El real del libro del mes, por las cuentas que el mapeo le asignó. */
+  realCop: number | null;
+  presupuestoCop: number | null;
+  anioAnteriorCop: number | null;
+  /** real − presupuesto. `null` si falta alguno de los dos. */
+  contraPresupuestoCop: number | null;
+}
+
+export interface ComparacionPorRubro {
+  /** `false` = falta la migración 49: no hay mapeo de rubros que leer. */
+  disponible: boolean;
+  filas: FilaPorRubro[];
 }
 
 /** Cuántos documentos no llegaron al libro. Lo que no está asentado no aparece. */
@@ -90,16 +133,30 @@ export interface SinAsentar {
   lotes: number;
   cobros: number;
   total: number;
+  /** `false` = faltan cuentas en el mapeo, así que reprocesar no alcanzaría. */
+  mapeoCompleto?: boolean;
 }
 
 export interface EstadoDeResultados {
   /** `AAAA-MM`. */
   mes: string;
+  /** `AAAA-MM` del mismo mes del año pasado. */
+  mesDelAnioAnterior?: string;
   sedeId: string | null;
   /** Desde dónde corre el acumulado: `AAAA-MM-DD`. */
   desdeElAcumulado: string;
-  grupos: GrupoDelPyg[];
+  /** El árbol: clase → grupo (2 dígitos) → cuenta imputable. */
+  clases: ClaseDelPyg[];
   resultado: ResultadoDelPyg;
+  porRubro?: ComparacionPorRubro;
+  /**
+   * 🔴 La frase del canon VIENE DEL BACK, en la respuesta. No se escribe acá: es
+   * lo que evita que alguien lea «ingresos $118 M» como un error cuando el
+   * recaudo del mes fue de $1.118 M. Si el back no la manda, la pantalla usa la
+   * suya (`lib/contabilidad/estados-financieros.ts#LEYENDA_DEL_CANON`), que dice
+   * lo mismo — pero nunca se queda sin decirlo.
+   */
+  elCanonNoEsIngreso?: string;
   avisos: string[];
   sinAsentar: SinAsentar;
   /** Cuántos movimientos no tienen sede: lo que quedaría afuera al filtrar. */
@@ -122,20 +179,20 @@ export interface CuentaDelBalance {
   nombre: string;
   totalCop: number;
   /** La misma fecha del año anterior, con `comparativo=true`. */
-  anioAnteriorCop?: number | null;
+  anioAnteriorTotalCop?: number | null;
 }
 
 export interface GrupoDelBalance {
   codigo: string;
   nombre: string;
   totalCop: number;
-  anioAnteriorCop?: number | null;
+  anioAnteriorTotalCop?: number | null;
   cuentas: CuentaDelBalance[];
 }
 
 export interface LadoDelBalance {
   totalCop: number;
-  anioAnteriorCop?: number | null;
+  anioAnteriorTotalCop?: number | null;
   grupos: GrupoDelBalance[];
 }
 
@@ -143,6 +200,7 @@ export interface BalanceGeneral {
   /** `AAAA-MM-DD`. */
   hasta: string;
   sedeId?: string | null;
+  comparativo?: boolean;
   activo: LadoDelBalance;
   pasivo: LadoDelBalance;
   patrimonio: LadoDelBalance;
@@ -154,6 +212,16 @@ export interface BalanceGeneral {
   /** `activo == pasivo + patrimonio + resultadoDelEjercicio`. */
   cuadra: boolean;
   diferenciaCop: number;
+  /** La misma frase del P&G: el canon no es ingreso y por eso no está acá. */
+  elCanonNoEsIngreso?: string;
+  /**
+   * 🔴 En toda inmobiliaria nueva va a venir uno que hay que saber leer: **el
+   * PUC semilla NO trae cuentas de patrimonio (clase 3)** —el capital de cada
+   * una lo define su escritura— así que el balance NO cuadra hasta que el
+   * contador las cree y cargue los saldos iniciales. Eso es esperado y se
+   * muestra como aviso; el descuadre se muestra igual, en rojo y arriba, porque
+   * sigue siendo cierto que el balance no cuadra.
+   */
   avisos: string[];
 }
 

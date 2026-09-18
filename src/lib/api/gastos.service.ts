@@ -250,6 +250,70 @@ export interface FacturaNueva {
 /** `AnularDto`: un solo campo. Un asiento no se borra, se reversa con motivo. */
 export const CLAVES_DE_ANULAR = ['motivo'] as const;
 
+// ── La liquidación, antes de escribir nada ─────────────────────────────────
+
+/**
+ * Un impuesto de la liquidación, con DE DÓNDE SALE.
+ *
+ * 🔴 `origen` es el campo que hace útil a esta respuesta. `DECLARADO` = el valor
+ * que la persona escribió (leyó la retención en el papel del proveedor);
+ * `CALCULADO` = el que el back dedujo del perfil tributario del proveedor. Sin
+ * esa distinción, una retención calculada y una leída se ven igual, y nadie
+ * sabe cuál revisar contra la factura.
+ */
+export interface ImpuestoDeLaFactura {
+  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA' | 'RETEICA';
+  nombre: string;
+  porcentaje: number | null;
+  baseCop: number;
+  valorCop: number;
+  origen: 'DECLARADO' | 'CALCULADO';
+}
+
+/** `PrevisualizarFacturaDto`. Sólo lo que hace falta para liquidar. */
+export const CLAVES_DE_PREVISUALIZAR = [
+  'proveedorId',
+  'lineas',
+  'retefuenteCop',
+  'reteivaCop',
+  'reteicaCop',
+] as const;
+
+export interface BorradorAPrevisualizar {
+  proveedorId?: string;
+  lineas: LineaNueva[];
+  retefuenteCop?: number;
+  reteivaCop?: number;
+  reteicaCop?: number;
+}
+
+/**
+ * La liquidación de `POST /gastos/facturas/previsualizar`. **No escribe nada**:
+ * es lo que la pantalla muestra mientras se digita.
+ *
+ * 🔴 `sinConfirmar` es el `PENDIENTE_DE_CONFIRMAR` de esta pieza: el back
+ * calculó una retención con un perfil tributario que nadie confirmó. Se muestra
+ * con el mismo tratamiento que el PUC le da a lo que propone y no sabe — un
+ * aviso con el texto exacto, nunca un asterisco — porque una retención mal
+ * practicada es plata que la inmobiliaria le debe a la DIAN.
+ */
+export interface LiquidacionDeFactura {
+  subtotalCop: number;
+  ivaCop: number;
+  /** `0` si la inmobiliaria no es responsable de IVA: ahí el IVA es más gasto. */
+  ivaDescontableCop: number;
+  retefuenteCop: number;
+  reteivaCop: number;
+  reteicaCop: number;
+  totalCop: number;
+  netoCop: number;
+  impuestos: ImpuestoDeLaFactura[];
+  /** `true` = algún impuesto salió de un perfil tributario sin confirmar. */
+  sinConfirmar: boolean;
+  /** Lo que el back quiere decir de esta liquidación, en palabras. */
+  notas: string[];
+}
+
 // ── Egresos ────────────────────────────────────────────────────────────────
 
 export type EstadoDeEgreso = 'PENDIENTE' | 'EN_LOTE' | 'PAGADO' | 'ANULADO';
@@ -473,6 +537,31 @@ export interface PagoDelLote {
 }
 
 /**
+ * Lo que devuelve marcar pagado el lote: el lote, y **un asiento POR EGRESO**.
+ *
+ * 🔴 No es un detalle de forma. Con un asiento compartido por lote, anular UN
+ * egreso reversaba el pago de los otros ocho —a los que el banco ya les había
+ * girado—. Con un asiento por egreso, el comprobante N.º 87 y el asiento N.º 415
+ * son la misma cosa, y anular uno no toca a nadie más.
+ *
+ * Consecuencia para la pantalla: después de pagar NO se anuncia «asiento N.º X»
+ * (no hay uno), se anuncia cuántos quedaron y se puede abrir el de cada
+ * comprobante.
+ */
+export interface AsientoDelEgreso {
+  egresoId: string;
+  id: string;
+  numero: number;
+}
+
+export interface ResultadoDelPago {
+  lote: LoteDeEgreso;
+  asientos: AsientoDelEgreso[];
+  /** Cuántos comprobantes de egreso quedaron numerados. */
+  comprobantes: number;
+}
+
+/**
  * El 409 de aprobar un lote que armó la misma persona.
  *
  * 🔴 No es un detalle de implementación: es el control de doble firma sobre
@@ -525,6 +614,27 @@ export const gastosApi = {
           desplazamiento: numero(filtros.desplazamiento),
         }),
       );
+    },
+
+    /**
+     * Lectura. Liquida la factura **sin escribir nada**: es lo que la pantalla
+     * muestra mientras se digita.
+     *
+     * 🔴 Lo hace el BACK y no el navegador porque la liquidación depende del
+     * perfil tributario del proveedor (si es responsable de IVA, su porcentaje
+     * de retefuente, si la inmobiliaria es agente retenedor de ICA en ese
+     * municipio) — datos que la pantalla no tiene y no debería adivinar. La
+     * respuesta dice, impuesto por impuesto, si el valor lo declaró la persona o
+     * lo calculó el back, y si algo salió de un perfil sin confirmar.
+     */
+    async previsualizar(borrador: BorradorAPrevisualizar): Promise<LiquidacionDeFactura> {
+      const base = soloClaves(borrador, CLAVES_DE_PREVISUALIZAR) as BorradorAPrevisualizar;
+      return apiClient.post<LiquidacionDeFactura>(`${BASE}/gastos/facturas/previsualizar`, {
+        ...base,
+        lineas: borrador.lineas.map(
+          (l) => soloClaves(l, CLAVES_DE_LINEA_DE_FACTURA) as LineaNueva,
+        ),
+      });
     },
 
     /** Escritura. Con `causar: true` registra y asienta en un solo paso. */
@@ -632,9 +742,12 @@ export const gastosApi = {
       );
     },
 
-    /** Escritura. Numera los comprobantes y asienta la salida del banco. */
-    async pagado(id: string, pago: PagoDelLote): Promise<LoteDeEgreso> {
-      return apiClient.post<LoteDeEgreso>(
+    /**
+     * Escritura. Numera los comprobantes y asienta la salida del banco: **un
+     * asiento por egreso**, no uno por lote (ver `ResultadoDelPago`).
+     */
+    async pagado(id: string, pago: PagoDelLote): Promise<ResultadoDelPago> {
+      return apiClient.post<ResultadoDelPago>(
         `${BASE}/egresos/lotes/${encodeURIComponent(id)}/pagado`,
         soloClaves(pago, CLAVES_DE_PAGADO),
       );

@@ -186,10 +186,14 @@ describe('mapeo de rubros', () => {
 });
 
 /**
- * Los siete eventos de gasto (§2). El enum crece con la migración 49, así que
- * la lista tiene que ser exactamente la del contrato: un nombre mal escrito
- * acá produce un 400 `EVENTO_SIN_MIGRACION` indistinguible del de la base sin
- * migrar, y se buscaría el problema en el lugar equivocado.
+ * Los siete eventos de gasto (§2).
+ *
+ * 🔴 NO son valores del enum `EventoContable`: son texto con CHECK en una tabla
+ * propia, porque agregar un valor a un enum de Postgres es irreversible. Por eso
+ * tienen su propia ruta (`PUT /mapeo/gastos`), y por eso el test más importante
+ * de este bloque es el que comprueba que NO se van por `PUT /mapeo` — los dos
+ * cuerpos son idénticos, el tipo no los distingue, y el error saldría como un
+ * 400 `EVENTO_DESCONOCIDO` en producción.
  */
 describe('los eventos de gasto', () => {
   it('son los siete del contrato, sin repetirse con los de recaudo', async () => {
@@ -209,11 +213,51 @@ describe('los eventos de gasto', () => {
     expect(cruce).toEqual([]);
   });
 
-  it('el PUT del mapeo acepta uno de gasto igual que uno de recaudo', async () => {
+  /*
+   * 🔴 Los de gasto NO son valores del enum `EventoContable` (agregar uno a un
+   * enum de Postgres es irreversible): son texto con CHECK en una tabla propia,
+   * y por eso tienen su propia ruta. Mandarlos por `PUT /mapeo` es 400
+   * `EVENTO_DESCONOCIDO` — un error que se descubriría en producción, porque los
+   * dos cuerpos son idénticos y el tipo no los distingue.
+   */
+  it('🔴 se guardan por SU ruta, no por la de recaudo', async () => {
     clienteMock.put.mockReset().mockResolvedValue({});
-    await contabilidadApi.mapeo.guardar([{ evento: 'IVA_DESCONTABLE', cuentaId: 'c-240810' }]);
-    expect(clienteMock.put).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo', {
+    await contabilidadApi.mapeo.guardarGastos([
+      { evento: 'IVA_DESCONTABLE', cuentaId: 'c-240810' },
+    ]);
+    expect(clienteMock.put).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo/gastos', {
       entradas: [{ evento: 'IVA_DESCONTABLE', cuentaId: 'c-240810' }],
     });
+    expect(clienteMock.put).not.toHaveBeenCalledWith(
+      '/inmobiliaria/contabilidad/mapeo',
+      expect.anything(),
+    );
+  });
+
+  it('la entrada se filtra al DTO igual que la de recaudo', async () => {
+    clienteMock.put.mockReset().mockResolvedValue({});
+    await contabilidadApi.mapeo.guardarGastos([
+      { evento: 'EGRESO_BANCOS', cuentaId: 'c-112005', nombre: 'de más' } as never,
+    ]);
+    expect(clienteMock.put).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo/gastos', {
+      entradas: [{ evento: 'EGRESO_BANCOS', cuentaId: 'c-112005' }],
+    });
+  });
+
+  it('tienen su propio GET y su propia semilla', async () => {
+    await contabilidadApi.mapeo.gastos();
+    expect(clienteMock.get).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo/gastos');
+    await contabilidadApi.mapeo.sembrarGastos();
+    expect(clienteMock.post).toHaveBeenCalledWith(
+      '/inmobiliaria/contabilidad/mapeo/gastos/semilla',
+      {},
+    );
+  });
+
+  it('cada uno dice para qué sirve: siete nombres de evento no son una pantalla', async () => {
+    const { PARA_QUE_SIRVE_EL_GASTO, EVENTOS_DE_GASTO } = await import('./contabilidad.service');
+    for (const e of EVENTOS_DE_GASTO) {
+      expect(PARA_QUE_SIRVE_EL_GASTO[e]?.length ?? 0).toBeGreaterThan(15);
+    }
   });
 });

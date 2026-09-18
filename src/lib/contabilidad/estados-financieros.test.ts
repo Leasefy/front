@@ -12,16 +12,20 @@ import { describe, it, expect } from 'vitest';
 
 import {
   LEYENDA_DEL_CANON,
+  PATRIMONIO_LO_CREA_EL_CONTADOR,
   POR_QUE_EL_RESULTADO_VA_APARTE,
   anchoDelMayor,
   avisoDeLoQueFalta,
   columnasDelPyg,
   descripcionDelDescuadre,
   descuadreDelMayor,
+  esElBalanceDeUnaInmobiliariaNueva,
   filasDelPyg,
   ladosDelBalance,
+  leyendaDelCanon,
   margenLegible,
   mesesConDatos,
+  motivoSinComparacionPorRubro,
   totalDelOtroLado,
 } from './estados-financieros';
 import type {
@@ -36,24 +40,37 @@ const pyg = (extra: Partial<EstadoDeResultados> = {}): EstadoDeResultados => ({
   mes: '2026-09',
   sedeId: null,
   desdeElAcumulado: '2026-01-01',
-  grupos: [
+  clases: [
     {
       clase: '4',
       nombre: 'Ingresos',
       naturaleza: 'CREDITO',
       mesCop: 118_000_000,
       acumuladoCop: 980_000_000,
-      presupuestoMesCop: 120_000_000,
       anioAnteriorMesCop: 101_000_000,
-      cuentas: [
+      anioAnteriorAcumuladoCop: 900_000_000,
+      grupos: [
         {
-          codigo: '415510',
-          nombre: 'Inmobiliarias por retribución o contrata',
+          codigo: '41',
+          nombre: 'Operacionales',
+          naturaleza: 'CREDITO',
           mesCop: 100_000_000,
           acumuladoCop: 850_000_000,
-          presupuestoMesCop: null,
           anioAnteriorMesCop: 88_000_000,
-          rubro: 'comisiones',
+          anioAnteriorAcumuladoCop: 800_000_000,
+          cuentas: [
+            {
+              cuentaId: 'c-415510',
+              codigo: '415510',
+              nombre: 'Inmobiliarias por retribución o contrata',
+              naturaleza: 'CREDITO',
+              mesCop: 100_000_000,
+              acumuladoCop: 850_000_000,
+              anioAnteriorMesCop: 88_000_000,
+              anioAnteriorAcumuladoCop: null,
+              rubro: 'comisiones',
+            },
+          ],
         },
       ],
     },
@@ -63,11 +80,25 @@ const pyg = (extra: Partial<EstadoDeResultados> = {}): EstadoDeResultados => ({
       naturaleza: 'DEBITO',
       mesCop: 74_000_000,
       acumuladoCop: 600_000_000,
-      presupuestoMesCop: null,
       anioAnteriorMesCop: null,
-      cuentas: [],
+      anioAnteriorAcumuladoCop: null,
+      grupos: [],
     },
   ],
+  porRubro: {
+    disponible: true,
+    filas: [
+      {
+        rubro: 'nomina',
+        nombre: 'Nómina',
+        naturaleza: 'COSTO',
+        realCop: 50_000_000,
+        presupuestoCop: 52_000_000,
+        anioAnteriorCop: 44_000_000,
+        contraPresupuestoCop: -2_000_000,
+      },
+    ],
+  },
   resultado: {
     ingresosMesCop: 118_000_000,
     gastosMesCop: 74_000_000,
@@ -128,34 +159,45 @@ describe('🔴 LEYENDA_DEL_CANON', () => {
 });
 
 describe('filasDelPyg', () => {
-  it('aplana grupo y cuentas en el orden en que se leen', () => {
+  it('aplana los tres niveles en el orden en que se leen', () => {
     const filas = filasDelPyg(pyg());
-    expect(filas.map((f) => [f.tipo, f.codigo])).toEqual([
-      ['grupo', '4'],
+    expect(filas.map((f) => [f.nivel, f.codigo])).toEqual([
+      ['clase', '4'],
+      ['grupo', '41'],
       ['cuenta', '415510'],
-      ['grupo', '5'],
+      ['clase', '5'],
     ]);
   });
 
-  it('las claves son únicas: una cuenta repetida en dos clases no colisiona', () => {
+  it('las claves son únicas: una cuenta repetida en dos grupos no colisiona', () => {
     const filas = filasDelPyg(pyg());
     expect(new Set(filas.map((f) => f.clave)).size).toBe(filas.length);
   });
 
-  it('🔴 el `null` del presupuesto llega como null, no como 0', () => {
+  it('🔴 el `null` del año anterior llega como null, no como 0', () => {
     const cuenta = filasDelPyg(pyg()).find((f) => f.codigo === '415510')!;
-    expect(cuenta.presupuestoMesCop).toBeNull();
+    expect(cuenta.anioAnteriorAcumuladoCop).toBeNull();
     expect(cuenta.anioAnteriorMesCop).toBe(88_000_000);
+  });
+
+  it('🔴 ninguna fila del árbol trae presupuesto: eso va por rubro', () => {
+    for (const fila of filasDelPyg(pyg())) {
+      expect('presupuestoMesCop' in fila).toBe(false);
+    }
   });
 
   it('sólo las cuentas llevan rubro', () => {
     const filas = filasDelPyg(pyg());
-    expect(filas.find((f) => f.tipo === 'grupo')!.rubro).toBeNull();
-    expect(filas.find((f) => f.tipo === 'cuenta')!.rubro).toBe('comisiones');
+    expect(filas.find((f) => f.nivel === 'clase')!.rubro).toBeNull();
+    expect(filas.find((f) => f.nivel === 'grupo')!.rubro).toBeNull();
+    expect(filas.find((f) => f.nivel === 'cuenta')!.rubro).toBe('comisiones');
   });
 
-  it('un P&G vacío no revienta', () => {
-    expect(filasDelPyg(pyg({ grupos: [] }))).toEqual([]);
+  it('un P&G vacío no revienta, ni con clases ausentes', () => {
+    expect(filasDelPyg(pyg({ clases: [] }))).toEqual([]);
+    expect(filasDelPyg({ ...pyg(), clases: undefined } as unknown as EstadoDeResultados)).toEqual(
+      [],
+    );
   });
 });
 
@@ -168,11 +210,22 @@ describe('columnasDelPyg', () => {
     expect(columnasDelPyg([], false).map((c) => c.clave)).toEqual(['mes']);
   });
 
-  it('con las dos comparaciones son cuatro, en orden', () => {
-    expect(columnasDelPyg(['presupuesto', 'anioAnterior'], true).map((c) => c.clave)).toEqual([
+  it('🔴 pedir `presupuesto` NO agrega columna al árbol: eso mueve la tabla por rubro', () => {
+    expect(columnasDelPyg(['presupuesto'], true).map((c) => c.clave)).toEqual([
       'mes',
       'acumulado',
-      'presupuesto',
+    ]);
+  });
+
+  it('el año anterior agrega su mes y, con acumulado, también su acumulado', () => {
+    expect(columnasDelPyg(['anioAnterior'], true).map((c) => c.clave)).toEqual([
+      'mes',
+      'acumulado',
+      'anioAnterior',
+      'anioAnteriorAcumulado',
+    ]);
+    expect(columnasDelPyg(['anioAnterior'], false).map((c) => c.clave)).toEqual([
+      'mes',
       'anioAnterior',
     ]);
   });
@@ -183,10 +236,48 @@ describe('columnasDelPyg', () => {
     }
   });
 
-  it('las dos columnas que pueden traer null explican qué es el guion', () => {
-    const columnas = columnasDelPyg(['presupuesto', 'anioAnterior'], true);
-    expect(columnas.find((c) => c.clave === 'presupuesto')!.definicion).toContain('«—»');
+  it('la columna que puede traer null explica qué es el guion', () => {
+    const columnas = columnasDelPyg(['anioAnterior'], true);
     expect(columnas.find((c) => c.clave === 'anioAnterior')!.definicion).toContain('«—»');
+  });
+});
+
+describe('leyendaDelCanon', () => {
+  it('usa la del back cuando viene', () => {
+    expect(leyendaDelCanon({ elCanonNoEsIngreso: 'Lo que dice el back.' })).toBe(
+      'Lo que dice el back.',
+    );
+  });
+
+  it('🔴 sin la del back usa la nuestra: nunca se queda sin decirlo', () => {
+    expect(leyendaDelCanon({})).toBe(LEYENDA_DEL_CANON);
+    expect(leyendaDelCanon({ elCanonNoEsIngreso: '   ' })).toBe(LEYENDA_DEL_CANON);
+  });
+});
+
+describe('motivoSinComparacionPorRubro', () => {
+  it('con filas y disponible no hay motivo: se dibuja la tabla', () => {
+    expect(motivoSinComparacionPorRubro(pyg())).toBeNull();
+  });
+
+  it('sin la migración explica que falta el mapeo de rubros', () => {
+    const motivo = motivoSinComparacionPorRubro(
+      pyg({ porRubro: { disponible: false, filas: [] } }),
+    )!;
+    expect(motivo).toContain('mapeo de rubros');
+  });
+
+  it('sin filas dice que no hay presupuesto cargado, no que falte una migración', () => {
+    const motivo = motivoSinComparacionPorRubro(
+      pyg({ porRubro: { disponible: true, filas: [] } }),
+    )!;
+    expect(motivo).toContain('presupuesto cargado');
+  });
+
+  it('un back viejo que no manda el bloque lo dice', () => {
+    expect(motivoSinComparacionPorRubro(pyg({ porRubro: undefined }))).toContain(
+      'todavía no manda',
+    );
   });
 });
 
@@ -259,6 +350,44 @@ describe('el balance', () => {
 
   it('el comparativo ausente llega como null, no como 0', () => {
     expect(ladosDelBalance(balance())[0].anioAnteriorCop).toBeNull();
+  });
+
+  it('lee `anioAnteriorTotalCop`, que es como lo manda el back', () => {
+    const conComparativo = balance({
+      activo: { totalCop: 1_000_000_000, anioAnteriorTotalCop: 900_000_000, grupos: [] },
+    });
+    expect(ladosDelBalance(conComparativo)[0].anioAnteriorCop).toBe(900_000_000);
+  });
+
+  /*
+   * 🔴 El caso que va a ver TODA inmobiliaria nueva: el PUC semilla no trae
+   * cuentas de patrimonio (clase 3) porque el capital lo define la escritura de
+   * cada una. El balance no cuadra, y no es un defecto de la pantalla ni del
+   * libro: es una tarea del contador. Decirlo evita que alguien busque el error
+   * donde no está.
+   */
+  it('🔴 reconoce el balance de una inmobiliaria nueva: no cuadra y el patrimonio está en cero', () => {
+    expect(
+      esElBalanceDeUnaInmobiliariaNueva(
+        balance({ cuadra: false, diferenciaCop: 56_000_000, patrimonio: { totalCop: 0, grupos: [] } }),
+      ),
+    ).toBe(true);
+  });
+
+  it('un balance que cuadra no es ése caso, aunque el patrimonio esté en cero', () => {
+    expect(
+      esElBalanceDeUnaInmobiliariaNueva(balance({ patrimonio: { totalCop: 0, grupos: [] } })),
+    ).toBe(false);
+  });
+
+  it('un descuadre CON patrimonio cargado no se explica con las cuentas que faltan', () => {
+    expect(esElBalanceDeUnaInmobiliariaNueva(balance({ cuadra: false }))).toBe(false);
+  });
+
+  it('la frase del patrimonio dice quién crea las cuentas y por qué no vienen', () => {
+    expect(PATRIMONIO_LO_CREA_EL_CONTADOR).toContain('clase 3');
+    expect(PATRIMONIO_LO_CREA_EL_CONTADOR).toContain('escritura');
+    expect(PATRIMONIO_LO_CREA_EL_CONTADOR).toContain('Las crea el contador');
   });
 
   it('explica por qué el resultado del ejercicio va aparte del patrimonio', () => {

@@ -82,6 +82,16 @@ export interface ResumenDeFormato {
   bloqueos: string[];
   /** Lo que hay que mirar pero no impide. */
   avisos: string[];
+  /**
+   * 🔴 Las preguntas que ESTE formato necesita que responda el contador: si los
+   * giros a propietarios van en el 1001 o sólo en el 1647, qué parte del gasto
+   * es deducible, qué tope de cuantías menores fijó la resolución del año.
+   *
+   * Es contenido de pantalla, no un comentario del código: son decisiones que el
+   * sistema no puede tomar y que cambian lo que se presenta. Se listan enteras,
+   * con el tratamiento de `PENDIENTE_DE_CONFIRMAR`.
+   */
+  paraElContador?: string[];
   /** Este formato necesita el visto bueno del contador antes de presentarse. */
   necesitaContador: boolean;
 }
@@ -123,6 +133,8 @@ export interface FormatoArmado {
   totales: Record<string, number>;
   bloqueos: string[];
   avisos: string[];
+  /** Las preguntas que este formato necesita que responda el contador. */
+  paraElContador?: string[];
   /** Sólo con `incluirDetalle=true`. */
   detalle?: DetalleDeExogena[];
 }

@@ -209,6 +209,40 @@ export function MapeoContable({
     }
   };
 
+  /**
+   * 🔴 Los de gasto van por SU ruta (`PUT /mapeo/gastos`). No viven en el enum
+   * `EventoContable` sino en una tabla con CHECK —agregar un valor a un enum de
+   * Postgres es irreversible—, así que mandarlos por `PUT /mapeo` es 400
+   * `EVENTO_DESCONOCIDO`. Y como la respuesta es OTRA forma (`MapeoDeGastos`,
+   * sólo los siete), se pega dentro del mapeo que ya está en pantalla en vez de
+   * reemplazarlo: reemplazarlo borraría los diez del recaudo de la tabla de
+   * arriba.
+   */
+  const asignarGasto = async (evento: EventoContable, cuentaId: string, nombre: string) => {
+    if (!cuentaId) return;
+    marcar(evento, true);
+    try {
+      const gastos = await contabilidadApi.mapeo.guardarGastos([{ evento, cuentaId }]);
+      setMapeo((previo) =>
+        previo
+          ? {
+              ...previo,
+              eventosDeGasto: gastos.eventos,
+              completoGastos: gastos.completo,
+              faltantesGastos: gastos.faltantes,
+              hayEventosDeGasto: gastos.disponible,
+              motivoDeLosGastos: gastos.motivo,
+            }
+          : previo,
+      );
+      toast.success(`«${nombre}» quedó en la cuenta elegida.`);
+    } catch (e) {
+      toast.error(mensajeDeContabilidad(e, 'No se pudo guardar la cuenta del gasto.'));
+    } finally {
+      marcar(evento, false);
+    }
+  };
+
   const sembrar = async () => {
     setSembrando(true);
     try {
@@ -468,9 +502,10 @@ export function MapeoContable({
             <EventosDeGasto
               eventos={mapeo.eventosDeGasto}
               hay={mapeo.hayEventosDeGasto}
+              motivo={mapeo.motivoDeLosGastos}
               completo={mapeo.completoGastos}
               cuentas={cuentas}
-              onAsignar={asignar}
+              onAsignar={asignarGasto}
               guardando={guardando}
               puedeEscribir={escritura.puede}
               motivoSinEscritura={escritura.motivo}

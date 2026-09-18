@@ -10,13 +10,19 @@
  * están escritas de nuevo, tomadas del contrato del 18-09 §3 y §4: si alguien
  * agrega una clave al servicio sin agregarla al DTO, este archivo se pone rojo.
  *
- * ── Lo que NO se manda, y es la mitad del valor de este archivo ─────────────
+ * ── 🔴 Lo que NO se manda, y es la mitad del valor de este archivo ──────────
  *
- * `subtotalCop`, `ivaCop`, `ivaDescontableCop`, `netoCop` y el `ivaCop` de cada
- * línea los calcula el back. Mandarlos sería pedirle que confíe en una cuenta
- * que hizo el navegador — y el back los recalcula igual, compara y devuelve 400
- * `TOTALES_NO_CUADRAN`. El test los pone en el objeto de entrada a propósito,
- * para comprobar que se caen en el camino.
+ * **Ningún total viaja, `totalCop` incluido.** El contrato del 18-09 decía que el
+ * cliente lo mandaba y el back comparaba (400 `TOTALES_NO_CUADRAN`); el back
+ * quedó implementado liquidando todo de las líneas, `CrearFacturaDeProveedorDto`
+ * no declara ningún total y ese código no existe. La copia a mano de abajo está
+ * verificada contra el DTO real, no contra la versión del contrato.
+ *
+ * Esto es exactamente el defecto del `propertyType`/`type` de la importación de
+ * inmuebles: una clave de más es un 400 del request ENTERO, y estuvo seis
+ * unidades de trabajo rompiendo cada llamada con los dos repos en verde porque
+ * cada lado mockeaba al otro. El test pone los totales en el objeto de entrada a
+ * propósito, para comprobar que se caen en el camino.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -59,7 +65,11 @@ beforeEach(() => {
 
 // ── Las copias a mano de los DTO del contrato ─────────────────────────────
 
-/** `CrearFacturaDeProveedorDto`, contrato del 18-09 §3. */
+/**
+ * `CrearFacturaDeProveedorDto`, copiado del DTO REAL del back
+ * (`inmobiliaria/contabilidad/gastos/dto/index.ts`). 🔴 Sin ningún total: el
+ * back los liquida de las líneas y las retenciones.
+ */
 const DTO_CREAR_FACTURA = [
   'tipo',
   'proveedorId',
@@ -79,12 +89,16 @@ const DTO_CREAR_FACTURA = [
   'retefuenteCop',
   'reteivaCop',
   'reteicaCop',
-  'totalCop',
   'causar',
 ];
 
-/** `LineaDeFacturaDto`. `ivaCop` es calculado: no está. */
-const DTO_LINEA = ['descripcion', 'cuentaId', 'baseCop', 'ivaPct'];
+/**
+ * `LineaDeFacturaDto`: cinco campos. `ivaCop` (el IVA en pesos del renglón)
+ * existe y MANDA sobre `ivaPct` — «el documento del proveedor dice lo que dice».
+ * Esta pantalla captura un porcentaje, así que no lo usa; está en la lista para
+ * que el día que haga falta no haya que descubrir el 400.
+ */
+const DTO_LINEA = ['descripcion', 'cuentaId', 'baseCop', 'ivaPct', 'ivaCop'];
 
 /** `CrearEgresoDto`, §4. */
 const DTO_CREAR_EGRESO = [
@@ -112,9 +126,8 @@ describe('las listas de claves son las del DTO del contrato', () => {
     expect([...CLAVES_DE_CREAR_FACTURA]).toEqual(DTO_CREAR_FACTURA);
   });
 
-  it('la línea de la factura no declara el IVA: lo calcula el back', () => {
+  it('la línea declara los cinco campos, `ivaCop` incluido', () => {
     expect([...CLAVES_DE_LINEA_DE_FACTURA]).toEqual(DTO_LINEA);
-    expect(CLAVES_DE_LINEA_DE_FACTURA).not.toContain('ivaCop');
   });
 
   it('el egreso', () => {
@@ -128,9 +141,15 @@ describe('las listas de claves son las del DTO del contrato', () => {
     expect([...CLAVES_DE_CONCILIAR]).toEqual(['movimientoBancarioId']);
   });
 
-  it('ninguna lista de totales calculados viaja en el cuerpo de la factura', () => {
-    for (const calculado of ['subtotalCop', 'ivaCop', 'ivaDescontableCop', 'netoCop']) {
-      expect(CLAVES_DE_CREAR_FACTURA).not.toContain(calculado);
+  it('🔴 NINGÚN total viaja en el cuerpo de la factura, `totalCop` incluido', () => {
+    for (const total of [
+      'totalCop',
+      'subtotalCop',
+      'ivaCop',
+      'ivaDescontableCop',
+      'netoCop',
+    ]) {
+      expect(CLAVES_DE_CREAR_FACTURA, total).not.toContain(total);
     }
   });
 });
@@ -197,8 +216,8 @@ describe('facturas.registrar', () => {
     ],
     retefuenteCop: 10_000,
     reteicaCop: 3_040,
+    // Lo que el back liquida y el cliente NO manda — `totalCop` incluido:
     totalCop: 476_000,
-    // Lo que el back calcula y el cliente NO manda:
     subtotalCop: 400_000,
     ivaCop: 76_000,
     ivaDescontableCop: 76_000,
@@ -207,7 +226,7 @@ describe('facturas.registrar', () => {
     id: 'no-deberia-viajar',
   } as unknown as FacturaNueva;
 
-  it('deja afuera los totales calculados y el estado', async () => {
+  it('🔴 deja afuera TODOS los totales y el estado', async () => {
     await gastosApi.facturas.registrar(conBasura);
     const [ruta, cuerpo] = clienteMock.post.mock.calls[0];
     expect(ruta).toBe(`${BASE}/gastos/facturas`);
@@ -225,17 +244,18 @@ describe('facturas.registrar', () => {
         'lineas',
         'retefuenteCop',
         'reteicaCop',
-        'totalCop',
       ].sort(),
     );
+    expect('totalCop' in (cuerpo as object)).toBe(false);
   });
 
-  it('filtra también cada línea: el IVA de la línea no viaja', async () => {
+  it('filtra también cada línea a las claves de su DTO', async () => {
     await gastosApi.facturas.registrar(conBasura);
     const [, cuerpo] = clienteMock.post.mock.calls[0];
     const lineas = (cuerpo as { lineas: Record<string, unknown>[] }).lineas;
+    // El objeto de entrada traía `ivaCop`, que el DTO SÍ acepta, así que pasa.
     expect(Object.keys(lineas[0]).sort()).toEqual(
-      ['descripcion', 'cuentaId', 'baseCop', 'ivaPct'].sort(),
+      ['descripcion', 'cuentaId', 'baseCop', 'ivaPct', 'ivaCop'].sort(),
     );
   });
 
@@ -262,16 +282,27 @@ describe('facturas.previsualizar', () => {
     );
   });
 
-  it('también filtra las líneas: el IVA de la línea lo calcula el back', async () => {
+  it('también filtra cada línea a las claves de su DTO', async () => {
     await gastosApi.facturas.previsualizar({
       lineas: [
-        // @ts-expect-error a propósito: es lo que el back calcula.
-        { descripcion: 'x', baseCop: 1, ivaPct: 19, ivaCop: 0 },
+        { descripcion: 'x', baseCop: 1, ivaPct: 19, ivaCop: 190 },
       ],
     });
     const [, cuerpo] = clienteMock.post.mock.calls[0];
     const lineas = (cuerpo as { lineas: Record<string, unknown>[] }).lineas;
-    expect('ivaCop' in lineas[0]).toBe(false);
+    expect(Object.keys(lineas[0]).sort()).toEqual(
+      ['descripcion', 'baseCop', 'ivaPct', 'ivaCop'].sort(),
+    );
+  });
+
+  it('una clave que el DTO de previsualizar no declara se cae', async () => {
+    await gastosApi.facturas.previsualizar({
+      lineas: [{ descripcion: 'x', baseCop: 1, ivaPct: 19 }],
+      // @ts-expect-error `sedeId` no está en `PrevisualizarFacturaDto`.
+      sedeId: 's1',
+    });
+    const [, cuerpo] = clienteMock.post.mock.calls[0];
+    expect('sedeId' in (cuerpo as object)).toBe(false);
   });
 });
 

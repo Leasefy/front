@@ -879,16 +879,24 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* El comprobante, listo para imprimir. */}
+      {/*
+        El comprobante, tal como lo arma el BACK. Su forma no es el egreso crudo:
+        trae `numero` ya formateado («CE-87»), los datos de la inmobiliaria, el
+        beneficiario, los `valores`, y la factura / el lote / el asiento de los
+        que salió.
+
+        🔴 El back responde 409 `EGRESO_SIN_COMPROBANTE` mientras el egreso no
+        esté pagado, con estas palabras: «se numera cuando la plata sale del
+        banco. Un comprobante numerado de un pago que no salió es un documento
+        falso». Por eso el botón sólo se ofrece con `numero !== null`.
+      */}
       <AlertDialog open={comprobante !== null} onOpenChange={(a) => !a && setComprobante(null)}>
         <AlertDialogContent className="max-w-2xl" data-testid="comprobante-de-egreso">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Comprobante de egreso N.º {comprobante?.egreso.numero}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Comprobante de egreso {comprobante?.numero}</AlertDialogTitle>
             <AlertDialogDescription>
-              {comprobante?.agencia.nombre}
-              {comprobante?.agencia.nit ? ` · NIT ${comprobante.agencia.nit}` : ''}
+              {comprobante?.inmobiliaria?.name ?? 'La inmobiliaria'}
+              {comprobante?.inmobiliaria?.nit ? ` · NIT ${comprobante.inmobiliaria.nit}` : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {comprobante ? (
@@ -896,54 +904,123 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               <dl className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <dt className="text-caption text-fg-muted">Beneficiario</dt>
-                  <dd>{comprobante.egreso.beneficiarioNombre}</dd>
+                  <dd>
+                    {comprobante.beneficiario.nombre}
+                    {comprobante.beneficiario.documento
+                      ? ` · ${comprobante.beneficiario.tipoDocumento ?? ''} ${comprobante.beneficiario.documento}`
+                      : ''}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-caption text-fg-muted">Fecha</dt>
-                  <dd>{diaLegible(comprobante.egreso.fechaDelEgreso)}</dd>
+                  <dd>{comprobante.fecha ? diaLegible(comprobante.fecha) : '—'}</dd>
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <dt className="text-caption text-fg-muted">Concepto</dt>
-                  <dd>{comprobante.egreso.concepto}</dd>
+                  <dd>{comprobante.concepto}</dd>
                 </div>
                 <div>
-                  <dt className="text-caption text-fg-muted">Valor pagado</dt>
+                  <dt className="text-caption text-fg-muted">Cuenta a la que se pagó</dt>
                   <dd>
-                    <Monto valor={comprobante.egreso.netoCop} />
+                    {comprobante.beneficiario.banco ? (
+                      <>
+                        {comprobante.beneficiario.banco}
+                        {comprobante.beneficiario.tipoDeCuenta
+                          ? ` · ${comprobante.beneficiario.tipoDeCuenta}`
+                          : ''}
+                        {comprobante.beneficiario.numeroDeCuenta
+                          ? ` · ${comprobante.beneficiario.numeroDeCuenta}`
+                          : ''}
+                      </>
+                    ) : (
+                      <span className="text-fg-subtle">Sin cuenta registrada</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-fg-muted">Asiento</dt>
+                  <dd>
+                    {comprobante.asiento ? (
+                      `N.º ${comprobante.asiento.numero} · ${diaLegible(comprobante.asiento.fecha)}`
+                    ) : (
+                      <span className="text-fg-subtle">Sin asiento</span>
+                    )}
                   </dd>
                 </div>
               </dl>
-              {comprobante.lineas.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cuenta</TableHead>
-                        <TableHead className="text-right">Débito</TableHead>
-                        <TableHead className="text-right">Crédito</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {comprobante.lineas.map((l) => (
-                        <TableRow key={`${l.codigo}-${l.debitoCop}-${l.creditoCop}`}>
-                          <TableCell className="font-mono text-xs">
-                            {l.codigo} · {l.cuenta}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Monto valor={l.debitoCop} vacioSiCero className="text-sm" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Monto valor={l.creditoCop} vacioSiCero className="text-sm" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+
+              {/* Los valores, con las retenciones desglosadas: es lo que el
+                  proveedor tiene que poder cotejar contra su propia factura. */}
+              <dl
+                className="grid gap-2 rounded-lg border border-border bg-surface-muted p-3 sm:grid-cols-5"
+                data-testid="valores-del-comprobante"
+              >
+                <div>
+                  <dt className="text-caption text-fg-muted">Valor</dt>
+                  <dd>
+                    <Monto valor={comprobante.valores.valorCop} className="text-sm" />
+                  </dd>
                 </div>
+                <div>
+                  <dt className="text-caption text-fg-muted">Retefuente</dt>
+                  <dd>
+                    <Monto valor={comprobante.valores.retefuenteCop} vacioSiCero className="text-sm" />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-fg-muted">ReteIVA</dt>
+                  <dd>
+                    <Monto valor={comprobante.valores.reteivaCop} vacioSiCero className="text-sm" />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-fg-muted">ReteICA</dt>
+                  <dd>
+                    <Monto valor={comprobante.valores.reteicaCop} vacioSiCero className="text-sm" />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-caption text-fg-muted">Pagado</dt>
+                  <dd>
+                    <Monto valor={comprobante.valores.netoCop} className="text-sm font-medium" />
+                  </dd>
+                </div>
+              </dl>
+
+              {comprobante.factura ? (
+                <p className="text-caption text-fg-muted" data-testid="factura-del-comprobante">
+                  Paga la factura {comprobante.factura.prefijoDelProveedor ?? ''}
+                  {comprobante.factura.numeroDelProveedor} del{' '}
+                  {diaLegible(comprobante.factura.fecha)} por{' '}
+                  <Monto valor={comprobante.factura.totalCop} className="text-caption" /> ·{' '}
+                  {comprobante.factura.concepto}
+                </p>
+              ) : (
+                <p className="text-caption text-fg-muted" data-testid="sin-factura">
+                  Este egreso no sale de una factura de proveedor: causa el gasto y el pago en el
+                  mismo asiento.
+                </p>
+              )}
+
+              {comprobante.lote ? (
+                <p className="text-caption text-fg-muted">
+                  Salió en el lote «{comprobante.lote.concepto}»
+                  {comprobante.lote.referenciaBanco
+                    ? ` · ref. ${comprobante.lote.referenciaBanco}`
+                    : ''}
+                </p>
               ) : null}
-              {comprobante.nota ? (
-                <p className="text-caption text-fg-muted">{comprobante.nota}</p>
-              ) : null}
+
+              {/* 🔴 Conciliado o no: un comprobante de un pago que el extracto
+                  todavía no confirma es una promesa, no un hecho. */}
+              <p
+                className={comprobante.conciliado ? 'text-caption text-fg-muted' : 'text-caption text-warning'}
+                data-testid="conciliacion-del-comprobante"
+              >
+                {comprobante.conciliado
+                  ? 'Conciliado contra el extracto bancario.'
+                  : 'Todavía sin conciliar contra el extracto: el asiento dice que la plata salió, pero nadie lo verificó contra el banco.'}
+              </p>
             </div>
           ) : null}
           <AlertDialogFooter>

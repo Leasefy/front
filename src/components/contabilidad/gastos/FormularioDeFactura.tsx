@@ -13,14 +13,18 @@
  * documento tributario no cambia porque alguien editó una ficha, y el back los
  * guarda copiados por eso mismo.
  *
- * ── 🔴 El total que viaja es el del PAPEL, no el que calculó el navegador ───
+ * ── 🔴 El total del papel se pide, pero NO viaja ────────────────────────────
  *
- * El formulario suma las líneas y el IVA, pero lo que manda en `totalCop` es el
- * número que la persona leyó en la factura. Si no coinciden, el aviso lo dice con
- * LOS DOS números y el back rechaza con 400 `TOTALES_NO_CUADRAN`. Corregirlo
- * automáticamente taparía un error de digitación —o un IVA que el proveedor
- * calculó distinto— y dejaría la contabilidad cuadrada contra un papel que dice
- * otra cosa. La cuenta está en `lib/contabilidad/factura-de-proveedor.ts`.
+ * `CrearFacturaDeProveedorDto` no declara ningún total: el back liquida de las
+ * líneas y las retenciones. Mandar `totalCop` sería un 400 que tira la factura
+ * entera (`forbidNonWhitelisted`).
+ *
+ * Igual se pide, y es a propósito: es el doble ingreso del monto contra el que se
+ * compara la suma de las líneas — el control clásico contra la transposición de
+ * dígitos. Y como el back ya no lo verifica, ese aviso es el ÚNICO que hay: si se
+ * registra descuadrado, la factura queda por lo que suman las líneas y el libro
+ * cuadra contra un papel que dice otra cosa. La cuenta y el texto están en
+ * `lib/contabilidad/factura-de-proveedor.ts`.
  *
  * ── Qué le falta se dice en palabras, no con un botón gris ──────────────────
  *
@@ -248,8 +252,12 @@ export function FormularioDeFactura({
         retefuenteCop: retefuente,
         reteivaCop: reteiva,
         reteicaCop: reteica,
-        // 🔴 El total del PAPEL, no el calculado.
-        totalCop: totalDelPapel as number,
+        /*
+         * 🔴 `totalCop` NO va: `CrearFacturaDeProveedorDto` no lo declara y con
+         * `forbidNonWhitelisted` sería un 400 que tira la factura entera. El
+         * total del papel es un control LOCAL —ver `avisoDeTotalQueNoCuadra`— y
+         * el back liquida de las líneas.
+         */
         ...(causar ? { causar: true } : {}),
       };
       const factura = await gastosApi.facturas.registrar(cuerpo);
@@ -649,9 +657,11 @@ export function FormularioDeFactura({
                 </dd>
               </div>
 
-              {/* 🔴 De dónde sale cada impuesto. `CALCULADO` = lo dedujo el back
-                  del perfil del proveedor; `DECLARADO` = lo leyó una persona en
-                  el papel. Sin esa distinción no se sabe cuál revisar. */}
+              {/* 🔴 De dónde sale cada impuesto, EN LAS PALABRAS DEL BACK
+                  (`explicacion`): él sabe si la tarifa salió del perfil del
+                  proveedor, de una base mínima o de lo que escribió la persona.
+                  `origen` resume eso en una etiqueta; sin la distinción no se
+                  sabe cuál revisar contra el papel. */}
               {liquidacion && liquidacion.impuestos.length > 0 ? (
                 <div className="sm:col-span-4">
                   <dt className="text-caption text-fg-muted">Impuestos, uno por uno</dt>
@@ -666,10 +676,11 @@ export function FormularioDeFactura({
                           {i.porcentaje !== null ? <span>{i.porcentaje}%</span> : null}
                           <Monto valor={i.valorCop} className="text-caption" />
                           <span className="rounded-sm bg-surface-muted px-1">
-                            {i.origen === 'CALCULADO'
-                              ? 'lo calculó Leasefy con el perfil del proveedor'
-                              : 'lo escribiste vos'}
+                            {i.origen === 'CALCULADO' ? 'lo calculó Leasefy' : 'lo escribiste vos'}
                           </span>
+                          {i.explicacion ? (
+                            <span className="text-fg-subtle">{i.explicacion}</span>
+                          ) : null}
                         </li>
                       ))}
                     </ul>

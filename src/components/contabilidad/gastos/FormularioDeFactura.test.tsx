@@ -2,11 +2,11 @@
  * El formulario de la factura de proveedor.
  *
  * 🔴 Lo que este archivo protege, y es la decisión más delicada de la pantalla:
- * **el `totalCop` que viaja es el del PAPEL, no el que calculó el navegador.**
- * Ajustarlo automáticamente taparía un error de digitación —o un IVA que el
- * proveedor calculó distinto— y dejaría la contabilidad cuadrada contra una
- * factura que dice otra cosa. La diferencia se muestra con los dos números y la
- * decide quien digita.
+ * **ningún total viaja al back, `totalCop` incluido.**
+ * `CrearFacturaDeProveedorDto` no lo declara, y con `forbidNonWhitelisted` una
+ * clave de más es un 400 que tira la factura entera. El total del papel se pide
+ * igual, como doble ingreso del monto — y como el back ya no lo verifica, el
+ * aviso de descuadre es el único control que queda.
  *
  * Y dos más: que la liquidación la pide el BACK (`previsualizar`, que es el que
  * sabe el perfil tributario del proveedor), y que si esa liquidación llega con
@@ -175,14 +175,9 @@ describe('<FormularioDeFactura>', () => {
     expect((q('registrar-factura') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('🔴 manda el total del PAPEL, no el calculado de las líneas', async () => {
+  it('🔴 NO manda ningún total: el DTO no los declara y sería un 400', async () => {
     await pintar();
     await llenarTodo();
-    // El papel dice 475.900 y las líneas suman 476.000.
-    await act(async () => {
-      escribir('factura-total', '475900');
-      await Promise.resolve();
-    });
 
     await act(async () => {
       (q('registrar-factura') as HTMLButtonElement).click();
@@ -191,12 +186,18 @@ describe('<FormularioDeFactura>', () => {
     });
 
     const [cuerpo] = gastos.facturas.registrar.mock.calls[0];
-    expect((cuerpo as { totalCop: number }).totalCop).toBe(475_900);
+    const claves = Object.keys(cuerpo as object);
+    for (const total of ['totalCop', 'subtotalCop', 'ivaCop', 'netoCop']) {
+      expect(claves, total).not.toContain(total);
+    }
+    // Lo que sí viaja: las líneas y las retenciones declaradas.
+    expect(claves).toContain('lineas');
   });
 
-  it('🔴 y avisa de la diferencia con los DOS números, sin corregirla', async () => {
+  it('🔴 avisa de la diferencia con los DOS números y dice que nadie más la mira', async () => {
     await pintar();
     await llenarTodo();
+    // El papel dice 475.900 y las líneas suman 476.000.
     await act(async () => {
       escribir('factura-total', '475900');
       await Promise.resolve();
@@ -205,8 +206,10 @@ describe('<FormularioDeFactura>', () => {
     const aviso = q('aviso-total-no-cuadra')!.textContent!;
     expect(aviso).toContain('475.900');
     expect(aviso).toContain('476.000');
-    expect(aviso).toContain('TOTALES_NO_CUADRAN');
-    // El aviso NO bloquea: la decisión es de quien digita.
+    expect(aviso).toContain('no se le manda al back');
+    expect(aviso).toContain('nadie más lo va a notar');
+    // El aviso NO bloquea: el caso legítimo existe y la decisión es de quien
+    // tiene el papel en la mano.
     expect((q('registrar-factura') as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -263,7 +266,9 @@ describe('<FormularioDeFactura>', () => {
           porcentaje: 2.5,
           baseCop: 400_000,
           valorCop: 10_000,
+          suma: false,
           origen: 'CALCULADO',
+          explicacion: '2,5 % del perfil tributario del proveedor.',
         },
         {
           tipo: 'RETEICA',
@@ -271,7 +276,9 @@ describe('<FormularioDeFactura>', () => {
           porcentaje: null,
           baseCop: 400_000,
           valorCop: 3_040,
+          suma: false,
           origen: 'DECLARADO',
+          explicacion: 'Lo escribió quien digitó la factura.',
         },
       ],
       sinConfirmar: false,
@@ -287,8 +294,10 @@ describe('<FormularioDeFactura>', () => {
     });
 
     const impuestos = q('impuestos-de-la-factura')!.textContent!;
-    expect(impuestos).toContain('lo calculó Leasefy con el perfil del proveedor');
+    expect(impuestos).toContain('lo calculó Leasefy');
     expect(impuestos).toContain('lo escribiste vos');
+    // 🔴 Y la explicación del BACK, que es la que sabe de dónde salió la tarifa.
+    expect(impuestos).toContain('perfil tributario del proveedor');
   });
 
   it('🔴 `sinConfirmar` se dice, nombrando lo que está en juego', async () => {

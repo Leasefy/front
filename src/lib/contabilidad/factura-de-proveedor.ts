@@ -1,21 +1,26 @@
 /**
  * La cuenta de una factura de proveedor, mientras se digita.
  *
- * ── Por qué el navegador suma si el back recalcula igual ────────────────────
+ * ── 🔴 Por qué esta cuenta es el ÚNICO control del total ────────────────────
  *
- * El back es la autoridad: recalcula de las líneas y las retenciones, compara
- * con el `totalCop` que se le mandó y devuelve 400 `TOTALES_NO_CUADRAN` con los
- * dos números (contrato del 18-09, §3). Pero ese 400 llega DESPUÉS de mandar
- * una factura entera, y la persona que digita ya pasó de pantalla. Estas
- * funciones hacen la misma cuenta ANTES, para poder decir «tu factura dice
- * $476.000 y las líneas suman $475.900» al lado del campo, con los dos números,
- * mientras todavía se está mirando el papel.
+ * El contrato del 18-09 decía que el cliente mandaba `totalCop` y que el back lo
+ * comparaba contra su propia liquidación (400 `TOTALES_NO_CUADRAN` con los dos
+ * números). **El back quedó implementado de otra forma**: liquida todo de las
+ * líneas y las retenciones, el DTO no declara ningún total y ese código de error
+ * no existe (verificado en `CrearFacturaDeProveedorDto` y
+ * `liquidar-factura-de-proveedor.ts`).
  *
- * 🔴 Lo que NO hacen: corregir el total. El `totalCop` que viaja es el que dice
- * la FACTURA, no el que calculó el navegador. Ajustarlo solo taparía el error de
- * digitación —o el IVA que el proveedor calculó distinto— y dejaría la
- * contabilidad cuadrada contra un papel que dice otra cosa. La diferencia se
- * muestra y la decide quien digita.
+ * O sea que el total del papel NO viaja y nadie del otro lado lo verifica. Si las
+ * líneas suman $475.900 y la factura dice $476.000, la factura se registra por
+ * $475.900 **en silencio**, y el libro queda cuadrado contra un papel que dice
+ * otra cosa. Por eso el total se sigue pidiendo —es un doble ingreso del monto,
+ * el control clásico contra la transposición de dígitos— y el aviso de descuadre
+ * es más fuerte que cuando había un 400 atrás: es el único que hay.
+ *
+ * Lo que estas funciones NO hacen sigue siendo lo mismo: corregir nada. Ajustar
+ * la base o el IVA automáticamente taparía el error de digitación —o el IVA que
+ * el proveedor calculó distinto, que es un caso legítimo— y la decisión es de
+ * quien tiene el papel en la mano.
  *
  * ── Redondeo: al peso, siempre ──────────────────────────────────────────────
  *
@@ -164,7 +169,9 @@ export function problemasDeLaFactura(borrador: BorradorDeFactura): string[] {
   }
 
   if (borrador.totalCop === null || borrador.totalCop <= 0) {
-    problemas.push('Falta el total que dice la factura.');
+    // Se pide aunque no viaje: es el doble ingreso del monto contra el que se
+    // compara la suma de las líneas, y es el único control que queda.
+    problemas.push('Falta el total que dice la factura: con él se verifica que las líneas sumen bien.');
   }
 
   const retenciones = sumaDeRetenciones(borrador);
@@ -184,9 +191,12 @@ export function problemasDeLaFactura(borrador: BorradorDeFactura): string[] {
  * El aviso de que el papel y las líneas no dicen lo mismo, con LOS DOS números.
  * `null` cuando cuadran o cuando todavía no hay total escrito.
  *
- * No es un problema que bloquee: el back lo rechaza con `TOTALES_NO_CUADRAN` y
- * ese 400 es la última palabra, pero acá se avisa antes para que nadie descubra
- * el peso de diferencia después de digitar veinte líneas.
+ * 🔴 No bloquea, y NADIE MÁS lo va a mirar: el total del papel no viaja al back.
+ * Si se registra así, la factura queda por lo que suman las líneas y el libro
+ * cuadra contra un papel que dice otra cosa. El aviso lo dice con esas palabras y
+ * nombra el arreglo —la base o el IVA de una línea—, porque el caso legítimo
+ * existe: un proveedor puede haber calculado el IVA distinto, y para eso la línea
+ * acepta el IVA en pesos.
  */
 export function avisoDeTotalQueNoCuadra(
   borrador: BorradorDeFactura,
@@ -199,7 +209,8 @@ export function avisoDeTotalQueNoCuadra(
   return (
     `La factura dice ${formatoDeMonto(borrador.totalCop)} y las líneas suman ` +
     `${formatoDeMonto(calculado)}: ${formatoDeMonto(Math.abs(diferencia))} de diferencia. ` +
-    'El back rechaza la factura así (TOTALES_NO_CUADRAN): revisá las bases y el IVA de cada línea.'
+    'El total del papel no se le manda al back, así que si la registrás así va a quedar ' +
+    `por ${formatoDeMonto(calculado)} y nadie más lo va a notar. Revisá la base o el IVA de cada línea.`
   );
 }
 
@@ -217,6 +228,8 @@ export function lineasParaElBack(lineas: readonly LineaEnCurso[]): LineaNueva[] 
       descripcion: l.descripcion.trim(),
       ...(l.cuentaId ? { cuentaId: l.cuentaId } : {}),
       baseCop: l.baseCop as number,
+      // `ivaPct` y no `ivaCop`: este formulario captura un porcentaje. El DTO
+      // acepta los dos y el de pesos manda, pero acá no hay de dónde sacarlo.
       ivaPct: l.ivaPct,
     }));
 }

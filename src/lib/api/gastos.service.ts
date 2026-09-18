@@ -25,12 +25,18 @@
  * de este archivo compara esas listas contra copias escritas a mano del
  * contrato — no contra sí mismas.
  *
- * Los TOTALES son el caso delicado: el back los recalcula de las líneas y de
- * las retenciones, compara con lo que mandó el cliente y devuelve 400
- * `TOTALES_NO_CUADRAN` con los dos números. Así que lo único que viaja es lo
- * que la FACTURA DE PAPEL dice (`totalCop` y las tres retenciones); el
- * subtotal, el IVA, el IVA descontable y el neto se leen de la respuesta y
- * nunca se envían: son cuenta del back y mandarlos sería pedirle que confíe.
+ * 🔴 Los TOTALES son el caso delicado y el contrato terminó distinto de como
+ * empezó. Decía que el cliente mandaba `totalCop` y el back lo comparaba (400
+ * `TOTALES_NO_CUADRAN`); el back quedó implementado liquidando TODO de las
+ * líneas y las retenciones, `CrearFacturaDeProveedorDto` **no declara ningún
+ * total** y ese código de error no existe. Así que **nada de** `totalCop`,
+ * `subtotalCop`, `ivaCop`, `ivaDescontableCop` ni `netoCop` viaja: se leen de la
+ * respuesta y de `previsualizar`.
+ *
+ * Lo que la pantalla pierde con eso, y hay que decirlo: ya no hay nadie del otro
+ * lado verificando que las líneas sumen lo que dice el papel. El total del papel
+ * se sigue pidiendo como control local y el aviso de descuadre es más fuerte, no
+ * menos — porque ahora es el único.
  *
  * ── `disponible: false` en vez de una pantalla en blanco ────────────────────
  *
@@ -91,7 +97,7 @@ export interface LineaDeFactura {
   cuentaId: string | null;
   baseCop: number;
   ivaPct: number;
-  /** Lo calcula el back de `baseCop × ivaPct`. Sólo se lee. */
+  /** Lo que el back liquidó para el renglón. */
   ivaCop: number;
 }
 
@@ -128,7 +134,7 @@ export interface FacturaDeProveedor {
   retefuenteCop: number;
   reteivaCop: number;
   reteicaCop: number;
-  /** Lo que dice la factura. */
+  /** Lo que el back liquidó: subtotal + IVA. */
   totalCop: number;
   /** Lo que se le paga: total − retenciones. */
   netoCop: number;
@@ -178,27 +184,52 @@ export interface FiltrosDeFacturas {
 }
 
 /**
- * `LineaDeFacturaDto`. 🔴 `ivaCop` NO está: lo calcula el back de
- * `baseCop × ivaPct`, y mandarlo sería pedirle que confíe en una cuenta que
- * hizo el navegador.
+ * `LineaDeFacturaDto`. Tiene CINCO campos, y el quinto importa: `ivaCop`, el
+ * IVA en pesos del renglón, que **manda sobre `ivaPct`** — «el documento del
+ * proveedor dice lo que dice».
+ *
+ * Este formulario captura un PORCENTAJE, así que no lo manda: el back calcula
+ * `baseCop × ivaPct`. Es una omisión deliberada de un campo opcional, no un
+ * desajuste con el DTO. El día que haya que digitar un IVA que no sale de la
+ * base por el porcentaje —pasa, y entonces el papel gana— se agrega acá y a la
+ * lista de claves.
  */
-export const CLAVES_DE_LINEA_DE_FACTURA = ['descripcion', 'cuentaId', 'baseCop', 'ivaPct'] as const;
+export const CLAVES_DE_LINEA_DE_FACTURA = [
+  'descripcion',
+  'cuentaId',
+  'baseCop',
+  'ivaPct',
+  'ivaCop',
+] as const;
 
 export interface LineaNueva {
   descripcion: string;
   cuentaId?: string;
   baseCop: number;
-  ivaPct: number;
+  ivaPct?: number;
+  /** En pesos. Si viene, manda sobre `ivaPct`. Hoy la pantalla no lo usa. */
+  ivaCop?: number;
 }
 
 /**
  * `CrearFacturaDeProveedorDto`.
  *
- * 🔴 Lo que NO está y es a propósito: `subtotalCop`, `ivaCop`,
- * `ivaDescontableCop` y `netoCop`. Los calcula el back. `totalCop` SÍ va —es
- * lo que dice el papel— y el back lo compara con su cuenta: si no coinciden,
- * 400 `TOTALES_NO_CUADRAN` con los dos números, que es exactamente la
- * pregunta que hay que hacerle a quien digita.
+ * 🔴 **NINGÚN total viaja, `totalCop` incluido.** El contrato del 18-09 decía
+ * que el cliente mandaba `totalCop` y el back lo comparaba (400
+ * `TOTALES_NO_CUADRAN`); el back quedó implementado de otra forma: liquida TODO
+ * de las líneas y las retenciones, y ese código de error no existe. Verificado
+ * contra `CrearFacturaDeProveedorDto` y `liquidar-factura-de-proveedor.ts`.
+ *
+ * Mandar `totalCop` igual no sería «un campo de más que el back ignora»: con
+ * `forbidNonWhitelisted: true` es un 400 y con él la factura entera — el mismo
+ * defecto que el `propertyType`/`type` de la importación de inmuebles, que
+ * estuvo seis unidades de trabajo rompiendo cada request con los dos repos en
+ * verde porque cada lado mockeaba al otro.
+ *
+ * Consecuencia para la pantalla, y hay que decirla: el total del papel se sigue
+ * pidiendo, pero como CONTROL LOCAL. Nadie del otro lado lo verifica, así que si
+ * las líneas no suman lo que dice la factura, el libro queda con lo que suman
+ * las líneas y en silencio. Por eso el aviso es más fuerte, no menos.
  */
 export const CLAVES_DE_CREAR_FACTURA = [
   'tipo',
@@ -219,7 +250,6 @@ export const CLAVES_DE_CREAR_FACTURA = [
   'retefuenteCop',
   'reteivaCop',
   'reteicaCop',
-  'totalCop',
   'causar',
 ] as const;
 
@@ -242,7 +272,6 @@ export interface FacturaNueva {
   retefuenteCop?: number;
   reteivaCop?: number;
   reteicaCop?: number;
-  totalCop: number;
   /** Registra y causa en un solo paso. */
   causar?: boolean;
 }
@@ -267,7 +296,15 @@ export interface ImpuestoDeLaFactura {
   porcentaje: number | null;
   baseCop: number;
   valorCop: number;
+  /** `true` = suma al total (el IVA); `false` = se resta (las retenciones). */
+  suma: boolean;
   origen: 'DECLARADO' | 'CALCULADO';
+  /**
+   * Por qué ese valor, en las palabras del back. La pantalla muestra ESTO y no
+   * una frase propia: el back sabe si la tarifa salió del perfil del proveedor,
+   * de una base mínima o de lo que escribió la persona.
+   */
+  explicacion: string;
 }
 
 /** `PrevisualizarFacturaDto`. Sólo lo que hace falta para liquidar. */
@@ -386,6 +423,8 @@ export interface ListaDeEgresos {
   disponible: boolean;
   motivo: string | null;
   total: number;
+  /** Ya sumados por el back sobre el filtro pedido. */
+  totales: { valorCop: number; retencionesCop: number; netoCop: number };
   egresos: Egreso[];
 }
 
@@ -440,16 +479,56 @@ export interface EgresoNuevo {
 /** `ConciliarEgresoDto`. */
 export const CLAVES_DE_CONCILIAR = ['movimientoBancarioId'] as const;
 
-/** El comprobante de egreso, listo para imprimir. */
+/**
+ * El comprobante de egreso, tal como lo arma el back — no el egreso crudo.
+ *
+ * 🔴 `GET /egresos/:id/comprobante` responde 409 `EGRESO_SIN_COMPROBANTE`
+ * mientras el egreso no esté pagado, con estas palabras del back: «se numera
+ * cuando la plata sale del banco. Un comprobante numerado de un pago que no
+ * salió es un documento falso». Por eso la pantalla no ofrece el botón antes.
+ */
 export interface ComprobanteDeEgreso {
-  egreso: Egreso;
-  /** El nombre de la inmobiliaria y su NIT, como los imprime el back. */
-  agencia: { nombre: string; nit: string | null };
-  /** Las líneas del asiento, para que el comprobante muestre la contrapartida. */
-  lineas: { codigo: string; cuenta: string; debitoCop: number; creditoCop: number }[];
-  /** El texto legal del pie, si el back lo manda. */
-  nota: string | null;
+  /** Ya formateado: `CE-87`. */
+  numero: string;
+  /** `AAAA-MM-DD`, o `null` si el egreso no tiene fecha. */
+  fecha: string | null;
+  inmobiliaria: {
+    name: string;
+    nit: string | null;
+    phone: string | null;
+    address: string | null;
+  } | null;
+  beneficiario: {
+    nombre: string;
+    tipoDocumento: string | null;
+    documento: string | null;
+    banco: string | null;
+    tipoDeCuenta: string | null;
+    numeroDeCuenta: string | null;
+  };
+  concepto: string;
+  valores: {
+    valorCop: number;
+    retefuenteCop: number;
+    reteivaCop: number;
+    reteicaCop: number;
+    netoCop: number;
+  };
+  /** La factura del proveedor que lo originó, si vino de una. */
+  factura: {
+    prefijoDelProveedor: string | null;
+    numeroDelProveedor: string;
+    fecha: string;
+    concepto: string;
+    totalCop: number;
+  } | null;
+  lote: { concepto: string; referenciaBanco: string | null; pagadoAt: string | null } | null;
+  asiento: { numero: number; fecha: string } | null;
+  conciliado: boolean;
 }
+
+/** El 409 de pedir el comprobante de un egreso que todavía no se pagó. */
+export const EGRESO_SIN_COMPROBANTE = 'EGRESO_SIN_COMPROBANTE';
 
 // ── Lotes de egreso ────────────────────────────────────────────────────────
 
@@ -515,8 +594,15 @@ export interface LoteDeEgreso {
 
 export interface ListaDeLotes {
   disponible: boolean;
-  motivo: string | null
-  total: number;
+  motivo: string | null;
+  /**
+   * 🔴 Opcional porque el back NO lo manda (`{ disponible, motivo, lotes }`).
+   * Declararlo obligatorio era una mentira del tipo: `lista.total` sería
+   * `undefined` en tiempo de ejecución con `tsc` en verde, y cualquier
+   * `total.toLocaleString()` reventaría en producción.
+   */
+  total?: number;
+  /** Cada lote llega con sus egresos (`include: { egresos: true }`). */
   lotes: LoteDeEgreso[];
 }
 

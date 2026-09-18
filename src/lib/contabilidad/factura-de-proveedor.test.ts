@@ -170,10 +170,10 @@ describe('problemasDeLaFactura', () => {
     expect(problemas.some((p) => p.includes('en positivo'))).toBe(true);
   });
 
-  it('sin total escrito lo pide, en vez de asumir el de las líneas', () => {
-    expect(problemasDeLaFactura(borrador({ totalCop: null }))).toContain(
-      'Falta el total que dice la factura.',
-    );
+  it('sin total escrito lo pide, y dice para qué sirve', () => {
+    const problemas = problemasDeLaFactura(borrador({ totalCop: null }));
+    const delTotal = problemas.find((p) => p.includes('total que dice la factura'))!;
+    expect(delTotal).toContain('se verifica que las líneas sumen bien');
   });
 });
 
@@ -188,12 +188,24 @@ describe('avisoDeTotalQueNoCuadra', () => {
     expect(avisoDeTotalQueNoCuadra(borrador({ totalCop: null }), pesos)).toBeNull();
   });
 
-  it('🔴 lleva los DOS números y la diferencia, más el código del back', () => {
+  it('🔴 lleva los DOS números y la diferencia', () => {
     const aviso = avisoDeTotalQueNoCuadra(borrador({ totalCop: 475_900 }), pesos)!;
     expect(aviso).toContain(pesos(475_900));
     expect(aviso).toContain(pesos(476_000));
     expect(aviso).toContain(pesos(100));
-    expect(aviso).toContain('TOTALES_NO_CUADRAN');
+  });
+
+  /*
+   * 🔴 El contrato decía que el back rechazaba con `TOTALES_NO_CUADRAN`. Quedó
+   * implementado de otra forma: el total del papel NO viaja y nadie lo verifica.
+   * El aviso tiene que decir ESO —que si se registra así, la factura queda por lo
+   * que suman las líneas y nadie lo nota— y no prometer un 400 que no existe.
+   */
+  it('🔴 dice que el back NO lo verifica y con cuánto va a quedar la factura', () => {
+    const aviso = avisoDeTotalQueNoCuadra(borrador({ totalCop: 475_900 }), pesos)!;
+    expect(aviso).toContain('no se le manda al back');
+    expect(aviso).toContain('nadie más lo va a notar');
+    expect(aviso).not.toContain('TOTALES_NO_CUADRAN');
   });
 });
 
@@ -217,8 +229,14 @@ describe('lineasParaElBack', () => {
     });
   });
 
-  it('no manda el IVA calculado: lo calcula el back', () => {
+  /*
+   * El DTO acepta `ivaCop` y ése MANDA sobre `ivaPct`, pero este formulario
+   * captura un porcentaje: no hay de dónde sacar el IVA en pesos. Es una omisión
+   * deliberada de un campo opcional, no un desajuste con el DTO.
+   */
+  it('manda el porcentaje y no el IVA en pesos: es lo que el formulario captura', () => {
     const [enviada] = lineasParaElBack([linea()]);
+    expect(enviada.ivaPct).toBe(19);
     expect('ivaCop' in enviada).toBe(false);
   });
 });

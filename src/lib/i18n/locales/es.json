@@ -1022,7 +1022,8 @@
       "cuadre": "Cuadre del día",
       "trasladoComision": "Traslados de comisión",
       "pendientesDeAplicar": "Pendientes de aplicar",
-      "recaudoBancario": "Recaudo bancario"
+      "recaudoBancario": "Recaudo bancario",
+      "deudaDelMes": "Deuda del mes"
     },
     "piloto": {
       "titulo": "Piloto automático",

@@ -328,7 +328,9 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'pagos',
+      // 🔴 «deudaDelMes» y no «pagos»: la card de la raíz no puede llamarse
+      // como el módulo que la contiene (`labelEnElRielKey`).
+      'deudaDelMes',
       'recaudo',
       'recaudoBancario',
       'cartera',
@@ -447,7 +449,9 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     expect(caras()).toHaveLength(3)
     expect(cards().map((c) => c.label)).toEqual([
       'tableroFinanciero',
-      'pagos',
+      // 🔴 «deudaDelMes» y no «pagos»: la card de la raíz no puede llamarse
+      // como el módulo que la contiene (`labelEnElRielKey`).
+      'deudaDelMes',
       'recaudo',
       'recaudoBancario',
       'cartera',

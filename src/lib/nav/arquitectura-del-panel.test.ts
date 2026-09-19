@@ -261,6 +261,20 @@ describe('arquitectura del panel — sidebar', () => {
     expect(moduloDeLaRuta(`${PANEL}/configuracion/equipo`)).toBeNull();
   });
 
+  it('🔴 la raíz de Pagos se llama distinto en el sidebar y en el riel', () => {
+    // «Pagos» dentro de «Pagos», al lado de Recaudo y Cartera, no dice qué se
+    // va a encontrar ahí. La fila del sidebar sigue siendo el módulo; la card
+    // dice lo que la pantalla es: la deuda del mes.
+    const pagos = modulos.find((m) => m.key === 'pagos')!;
+    expect(String(leer(es, pagos.labelKey))).toBe('Pagos');
+    expect(String(leer(es, pagos.labelEnElRielKey!))).toBe('Deuda del mes');
+    expect(typeof leer(en, pagos.labelEnElRielKey!)).toBe('string');
+    // Y es `pestanasDelModulo` —lo que pinta el riel— quien usa el segundo.
+    expect(pestanasDelModulo(pagos)[0]?.labelKey).toBe(pagos.labelEnElRielKey);
+    // Nadie más lo necesita: el resto de las raíces SÍ se llaman como su módulo.
+    expect(modulos.filter((m) => m.labelEnElRielKey).map((m) => m.key)).toEqual(['pagos']);
+  });
+
   it('el menú tiene UNA entrada de inmuebles, no dos', () => {
     expect(modulos.filter((m) => m.href === `${PANEL}/inmuebles`)).toHaveLength(1);
   });
@@ -282,9 +296,18 @@ describe('arquitectura del panel — sidebar', () => {
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
     };
+    /*
+     * 🔴 R4 mide el nombre con el que se NAVEGA a la ruta, que para la raíz de
+     * un módulo es el de su fila del sidebar. Desde el 18-09 la raíz puede
+     * llamarse distinto DENTRO del riel (`labelEnElRielKey`): la fila tiene que
+     * decir «Pagos» —es el módulo— y la card, «Deuda del mes», porque una
+     * sección con el nombre del módulo que la contiene no dice qué hay ahí. La
+     * regla se aplica al primero; el segundo no nombra una URL, nombra una card.
+     */
+    const porRuta = new Map(modulos.map((m) => [m.href, m.labelKey]));
     for (const p of pantallas) {
       const segmento = p.href.split('/').pop() ?? '';
-      const texto = norm(String(leer(es, p.labelKey)));
+      const texto = norm(String(leer(es, porRuta.get(p.href) ?? p.labelKey)));
       const esperado = excepciones[p.href.replace(PANEL, '')];
       if (esperado) {
         expect(texto, p.href).toBe(esperado);

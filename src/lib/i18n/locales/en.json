@@ -1022,7 +1022,8 @@
       "cuadre": "Today's balance",
       "trasladoComision": "Commission transfers",
       "pendientesDeAplicar": "Unapplied money",
-      "recaudoBancario": "Bank collections"
+      "recaudoBancario": "Bank collections",
+      "deudaDelMes": "Debt this month"
     },
     "piloto": {
       "titulo": "Autopilot",

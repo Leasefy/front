@@ -286,6 +286,22 @@ export interface ModuloDelPanel extends PantallaDelPanel {
   scope?: BusinessModule;
   /** Pantallas N3. La raíz del módulo se agrega sola como primera pestaña. */
   pantallas?: PantallaDelPanel[];
+  /**
+   * 🔴 Cómo se llama la RAÍZ cuando es una card del riel, si no puede llamarse
+   * como el módulo.
+   *
+   * En el sidebar la fila tiene que llamarse «Pagos» —es el módulo—, pero
+   * dentro del riel esa misma card quedaba como «Pagos» al lado de Recaudo y
+   * Cartera: una sección con el nombre del módulo que la contiene no dice qué
+   * se va a encontrar ahí. La raíz de Pagos es la DEUDA DEL MES, y así se
+   * llama en el riel.
+   *
+   * Sin esto, la fila del sidebar y la card dirían lo mismo, que es el
+   * problema; con dos `labelKey` distintos cada una dice lo suyo. No lo usa
+   * ningún otro módulo: el resto de las raíces sí se llaman como su módulo
+   * porque la raíz ES el módulo (Reportes, Contratos).
+   */
+  labelEnElRielKey?: string;
 }
 
 export interface GrupoDelPanel {
@@ -560,7 +576,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // 2026-09-16, con su URL intacta. Desde Cartera —que es lo que la
         // cobranza persigue— se llega con un enlace (`IrALaCobranza`), no con
         // una card: una sala la reclama un solo lugar.
-        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
+        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', labelEnElRielKey: 'inmobiliaria.nav.deudaDelMes', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
@@ -712,7 +728,7 @@ export function modulosDelPanel(): ModuloDelPanel[] {
  */
 export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
   const raiz: PantallaDelPanel = {
-    labelKey: m.labelKey,
+    labelKey: m.labelEnElRielKey ?? m.labelKey,
     href: m.href,
     icon: m.icon,
     module: m.module,

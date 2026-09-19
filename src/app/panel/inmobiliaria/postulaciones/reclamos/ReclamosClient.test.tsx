@@ -16,6 +16,7 @@ const { api, permisos } = vi.hoisted(() => ({
   api: {
     reclamos: (() => Promise.resolve(null)) as () => Promise<unknown>,
     responder: vi.fn(async () => ({}) as unknown),
+    tomar: vi.fn(async () => ({}) as unknown),
   },
   permisos: { edit: true },
 }))
@@ -30,9 +31,13 @@ vi.mock('@/lib/api/crm.service', async () => {
     postulacionesApi: {
       reclamos: () => api.reclamos(),
       responderReclamo: api.responder,
+      tomarReclamo: api.tomar,
     },
   }
 })
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
     isLoading: false,
@@ -120,10 +125,22 @@ describe('ReclamosClient', () => {
     expect(fila).toContain('¿Por qué no aprobaron mi postulación?')
   })
 
-  it('al abrir el formulario recuerda qué SÍ se puede decir', async () => {
+  it('🔴 la regla se lee ANTES de escribir, no dentro del formulario', async () => {
+    // Antes este recordatorio vivía DENTRO del campo de respuesta, así que
+    // sólo lo leía quien ya había decidido responder — y para entonces la
+    // frase con el puntaje suele estar pensada. Ahora está arriba, y esta
+    // prueba exige justamente eso: visible SIN abrir nada.
+    await pintar()
+    const regla = $('[data-testid="que-se-puede-decir"]')?.textContent ?? ''
+    expect(regla).toContain('Su puntaje')
+    expect(regla).toContain('centrales de riesgo')
+    expect(regla).toContain('Que se presente con codeudor')
+  })
+
+  it('y sigue estando cuando el formulario está abierto', async () => {
     await pintar()
     await clic('[data-testid="responder-r-1"]')
-    expect(contenedor.textContent).toContain('No su puntaje')
+    expect($('[data-testid="que-se-puede-decir"]')).not.toBeNull()
   })
 
   it('🔴 el 400 del colador se ve al lado del campo, y el reclamo no se cierra', async () => {
@@ -159,5 +176,33 @@ describe('ReclamosClient', () => {
     permisos.edit = false
     await pintar()
     expect($('[data-testid="responder-r-1"]')).toBeNull()
+  })
+
+  it('🔴 «Lo veo yo» pone el reclamo a tu nombre', async () => {
+    // `tomarReclamo` existía en el back y no tenía consumidor: dos personas de
+    // la misma inmobiliaria podían responderle al mismo candidato sin saber la
+    // una de la otra, y el estado EN_REVISION no lo alcanzaba nadie nunca.
+    await pintar()
+    await clic('[data-testid="tomar-r-1"]')
+    expect(api.tomar).toHaveBeenCalledWith('r-1')
+  })
+
+  it('un reclamo ya respondido no ofrece tomarlo ni responderlo de nuevo', async () => {
+    api.reclamos = () =>
+      Promise.resolve({
+        ...RECLAMOS,
+        reclamos: [
+          {
+            ...RECLAMOS.reclamos[0],
+            estado: 'RESUELTO' as const,
+            respuesta: 'Puedes presentarte con un codeudor.',
+            respondidoEl: '2026-09-18T12:00:00.000Z',
+          },
+        ],
+      })
+    await pintar()
+    expect($('[data-testid="tomar-r-1"]')).toBeNull()
+    expect($('[data-testid="responder-r-1"]')).toBeNull()
+    expect(contenedor.textContent).toContain('Puedes presentarte con un codeudor.')
   })
 })

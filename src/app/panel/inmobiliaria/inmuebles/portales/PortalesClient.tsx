@@ -80,6 +80,7 @@ import {
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
 import { EL_CATALOGO_DE_LEASEFY, marcaDelPortal } from '@/lib/portales/marca'
+import { comoSeConecta } from '@/lib/portales/como-se-conecta'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils'
@@ -194,6 +195,7 @@ function DialogoDeCuenta({
   const [notas, setNotas] = useState(portal.cuenta?.notas ?? '')
   const [activa, setActiva] = useState(portal.cuenta?.activa ?? true)
   const [guardando, setGuardando] = useState(false)
+  const conexion = comoSeConecta(portal.portal)
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -247,20 +249,58 @@ function DialogoDeCuenta({
           </p>
         </div>
 
+        {/* 🔴 El identificador se llama como lo llama SU portal (Nico, 19-09:
+            «creo que hasta para conectar con cada portal puede ser diferente
+            cada portal»). Antes decía «Usuario o código en el portal» para los
+            seis, con el ejemplo «el usuario con el que entras a su panel» —y
+            en Metrocuadrado ése es justamente el dato equivocado, porque las
+            credenciales de integración son OTRAS. Ver `como-se-conecta.ts`. */}
         <div className="space-y-1.5">
-          <Label htmlFor="cuenta-identificador">Usuario o código en el portal</Label>
+          <Label htmlFor="cuenta-identificador">{conexion.rotuloDelIdentificador}</Label>
           <Input
             id="cuenta-identificador"
             value={identificador}
             onChange={(e) => setIdentificador(e.target.value)}
             maxLength={120}
-            placeholder="El usuario con el que entras a su panel"
+            placeholder={conexion.ejemploDelIdentificador}
+            data-testid="cuenta-identificador"
           />
           <p className="text-xs text-fg-subtle">
             No guardamos contraseñas. Esto es sólo para que el equipo sepa con
             qué usuario cargar el archivo.
           </p>
+          {conexion.cuidado && (
+            <p className="text-xs text-warning" data-testid="cuidado-del-portal">
+              {conexion.cuidado}
+            </p>
+          )}
         </div>
+
+        {/* 🔴 Lo que haría falta el día que se conecte de verdad, plegado.
+            Hoy no se pide nada de esto —esta pantalla es una libreta, Leasefy
+            todavía no publica en ningún portal de afuera— pero saberlo cambia
+            a quién se llama: en Ciencuadras la contraseña la genera la propia
+            inmobiliaria en 30 segundos; en Metrocuadrado hay que pedirle
+            cuatro datos al asesor; en Mercado Libre hay que pagar un paquete
+            o el aviso no se crea. Callarlo es dejar que lo descubran a mitad
+            de camino. */}
+        <details className="rounded-lg border border-border" data-testid="que-pide-este-portal">
+          <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-fg">
+            Qué pide {portal.nombre} para conectarse de verdad
+          </summary>
+          <div className="space-y-2 border-t border-border px-3 py-2.5">
+            <ul className="space-y-1.5 text-sm text-fg-muted">
+              {conexion.paraConectarloDeVerdad.map((linea) => (
+                <li key={linea}>· {linea}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-fg-subtle">
+              Hoy Leasefy no publica solo en este portal: lo que guardas acá es
+              a nombre de quién está la cuenta, para saber con qué usuario
+              cargar el archivo. Verificado el 19-09-2026 — {conexion.fuente}
+            </p>
+          </div>
+        </details>
 
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-notas">Notas</Label>

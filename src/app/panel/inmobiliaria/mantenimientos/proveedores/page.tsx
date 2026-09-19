@@ -35,7 +35,6 @@ import {
 } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { BackButton } from '@/components/ui/back-button';
 import { Button, Badge, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
@@ -126,12 +125,11 @@ function ContenidoDeProveedores() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <div className="mb-6">
-          <BackButton label="Volver a Mantenimientos" />
-        </div>
-
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      {/* 🔴 Sin «Volver a Mantenimientos» (Nico, 18-09-2026: «¿para qué el
+          devolverse?»). Proveedores es una FILA del menú, no una sub-pantalla
+          de Mantenimientos: el botón prometía subir un nivel que no existe. */}
+      <div className="space-y-6 p-4 md:p-6">
+        <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             <h1 className="flex items-center gap-2 text-h2 text-fg">
               <Wrench className="h-6 w-6 text-primary" weight="duotone" />

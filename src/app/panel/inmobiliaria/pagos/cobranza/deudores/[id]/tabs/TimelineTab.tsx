@@ -17,6 +17,14 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useDebtorTimeline } from '@/lib/hooks/cobranza/use-debtor-timeline'
 import { relativeTime } from '@/lib/cartera'
+import {
+  ArrowsLeftRight,
+  PhoneCall,
+  CheckCircle,
+  NotePencil,
+  Circle,
+  type Icon,
+} from '@phosphor-icons/react'
 import { Button } from '@/components/ui'
 
 void React
@@ -27,11 +35,18 @@ interface TimelineTabProps {
   refetchKey?: number
 }
 
-const EVENT_ICON: Record<string, string> = {
-  stage_transition: '⇄',
-  call: '📞',
-  payment: '✅',
-  memo: '📝',
+/*
+ * 🔴 19-09: acá había emojis (⇄ 📞 ✅ 📝). Un emoji se pinta con la fuente del
+ * sistema: cambia de forma en cada plataforma, no hereda `currentColor` —así
+ * que en tema oscuro queda de otro color que el texto que acompaña— y no
+ * escala con el resto de la tipografía. El panel marca todo lo demás con
+ * iconos de Phosphor; esta línea de tiempo era la excepción.
+ */
+const EVENT_ICON: Record<string, Icon> = {
+  stage_transition: ArrowsLeftRight,
+  call: PhoneCall,
+  payment: CheckCircle,
+  memo: NotePencil,
 }
 
 export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
@@ -122,10 +137,13 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
             >
               <span
                 aria-hidden="true"
-                className="text-base shrink-0 mt-0.5"
+                className="mt-0.5 shrink-0 text-fg-muted"
                 title={ev.event_type}
               >
-                {EVENT_ICON[ev.event_type] ?? '•'}
+                {(() => {
+                  const Icono = EVENT_ICON[ev.event_type] ?? Circle
+                  return <Icono className="h-4 w-4" weight="duotone" />
+                })()}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-fg">

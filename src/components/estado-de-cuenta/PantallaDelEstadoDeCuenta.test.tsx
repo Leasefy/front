@@ -94,17 +94,46 @@ function backFalso(doc: EstadoDeCuenta) {
     };
     const contratos = doc.contratos
       .filter((c) => (f.contrato ? c.numero === f.contrato : true))
-      .map((c) => ({
-        ...c,
-        secciones: {
-          arriendos: c.secciones.arriendos.filter(pasa),
-          otrosConceptos: c.secciones.otrosConceptos.filter(pasa),
-        },
-      }))
+      .map((c) => {
+        const arriendos = c.secciones.arriendos.filter(pasa);
+        const otrosConceptos = c.secciones.otrosConceptos.filter(pasa);
+        // Los totales del contrato salen de las filas que QUEDAN.
+        const filas = [...arriendos, ...otrosConceptos];
+        const suma = (p: (x: (typeof filas)[number]) => boolean) =>
+          filas.filter(p).reduce((n, x) => n + (x.valorNeto ?? 0), 0);
+        const cancelado = suma((x) => x.estado === 'CANCELADA');
+        const pendiente = suma((x) => x.estado === 'PENDIENTE');
+        return {
+          ...c,
+          secciones: { arriendos, otrosConceptos },
+          totales: { cancelado, pendiente, restaPorPagar: pendiente },
+        };
+      })
       .filter(
         (c) => c.secciones.arriendos.length + c.secciones.otrosConceptos.length > 0,
       );
-    return { ...doc, contratos, filtro: f };
+    /*
+     * 🔴 El recorte también mueve los TOTALES, y el falso tiene que decirlo.
+     *
+     * Hasta el 19-09 devolvía `{ ...doc, contratos }`, o sea las filas
+     * recortadas con los totales del documento entero. Un back falso que
+     * miente así deja ciego al archivo entero: ninguna prueba de acá podía
+     * fallar por un total mal calculado, porque el total nunca cambiaba. Es
+     * justo lo que hizo que el primer intento de «el resumen no se mueve con
+     * el filtro» pasara con el arreglo Y sin él.
+     */
+    const sumar = (cs: typeof contratos, campo: 'cancelado' | 'pendiente' | 'restaPorPagar') =>
+      cs.reduce((n, c) => n + (c.totales?.[campo] ?? 0), 0);
+    return {
+      ...doc,
+      contratos,
+      totales: {
+        cancelado: sumar(contratos, 'cancelado'),
+        pendiente: sumar(contratos, 'pendiente'),
+        restaPorPagar: sumar(contratos, 'restaPorPagar'),
+      },
+      filtro: f,
+    };
   });
 }
 
@@ -322,5 +351,70 @@ describe('PantallaDelEstadoDeCuenta', () => {
     expect(print).toHaveBeenCalledTimes(1);
 
     vi.unstubAllGlobals();
+  });
+});
+
+/**
+ * 🔴 19-09-2026 · «¿Por qué no bajaste esto y lo pegaste a la tabla?» (Nico).
+ *
+ * La barra de filtros vivía arriba de la tarjeta, y entre ella y las filas que
+ * filtra pasaban el membrete de la inmobiliaria, el nombre del cliente, el
+ * resumen, la ficha del contrato y la barra de amortización: unos 700 px. Un
+ * control a esa distancia de lo que controla no se lee como su control.
+ *
+ * Bajarla sola habría creado un defecto PEOR: el resumen se calculaba del
+ * documento FILTRADO, así que al elegir «este mes» el rótulo «RESTA POR PAGAR»
+ * pasaba del total del cliente a la cuota del mes — y con la barra abajo, ese
+ * número habría cambiado ARRIBA del control que lo cambia. Por eso el resumen
+ * pasa a leer el documento entero: «resta por pagar», «próxima cuota» y «al
+ * día» son hechos del CLIENTE; el recorte lo dice la barra, con su «N de M».
+ */
+describe('la barra de filtros vive pegada a las tablas', () => {
+  it('🔴 está DENTRO del documento, después del resumen y antes de los contratos', async () => {
+    const cargar = backFalso(estadoDeCuenta({ contratos: [contrato()] }));
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+
+    const hoja = host.querySelector('[data-testid="estado-de-cuenta"]')!;
+    const barra = host.querySelector('[data-testid="estado-filtros"]')!;
+    expect(hoja.contains(barra)).toBe(true);
+
+    // Orden en el DOM: resumen → barra → primera tabla.
+    const resumen = host.querySelector('[data-testid="resta-por-pagar"]')!;
+    const primeraTabla = host.querySelector('table')!;
+    const antes = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(antes(resumen, barra)).toBe(true);
+    expect(antes(barra, primeraTabla)).toBe(true);
+  });
+
+  it('🔴 filtrar NO mueve «resta por pagar»: es del cliente, no del recorte', async () => {
+    const cargar = backFalso(estadoDeCuenta({ contratos: [contrato()] }));
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+
+    const resta = () => host.querySelector('[data-testid="resta-por-pagar"]')?.textContent;
+    const antes = resta();
+    const filasAntes = host.querySelectorAll('tbody tr').length;
+
+    clic(host.querySelector('[data-testid="filtro-periodo"] ~ div [data-opcion="esteMes"]'));
+    await esperarAlBack();
+
+    // La tabla SÍ se recorta…
+    expect(host.querySelectorAll('tbody tr').length).toBeLessThan(filasAntes);
+    // …y el número de arriba NO se mueve.
+    expect(resta()).toBe(antes);
+    // El recorte se dice donde corresponde: en la barra.
+    expect(host.querySelector('[data-testid="filtro-conteo"]')?.textContent).toMatch(
+      /^\d+ de \d+ filas$/,
+    );
+  });
+
+  it('la barra sigue sin salir en papel', async () => {
+    // `data-estado-barra` es lo que la esconde al imprimir: mudarla de lugar
+    // no puede meterla en el PDF que recibe el cliente.
+    const cargar = backFalso(estadoDeCuenta({ contratos: [contrato()] }));
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+    expect(host.querySelector('[data-testid="estado-filtros"]')?.hasAttribute('data-estado-barra')).toBe(
+      true,
+    );
   });
 });

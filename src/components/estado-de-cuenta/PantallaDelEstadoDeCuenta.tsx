@@ -318,18 +318,6 @@ export function PantallaDelEstadoDeCuenta({
           data-estado-marco
           className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
         >
-          {!sinFiltros && entero.contratos.length > 0 && (
-            <FiltrosDelEstado
-              filtros={filtros}
-              onCambiar={setFiltros}
-              /* Del documento ENTERO: filtrar por un contrato no puede hacer
-                 desaparecer del desplegable a los demás. */
-              contratos={entero.contratos.map((c) => c.numero)}
-              hoy={hoy}
-              visibles={cuantasFilasDelDocumento(vista)}
-              total={cuantasFilasDelDocumento(entero)}
-            />
-          )}
 
           {vista.contratos.length === 0 && conFiltros ? (
             /* Filtrado a cero NO es «este cliente no tiene contratos»: decirlo
@@ -354,6 +342,31 @@ export function PantallaDelEstadoDeCuenta({
             <EstadoDeCuentaDocumento
               doc={vista}
               hoy={hoy}
+              /* 🔴 El resumen de arriba se calcula del ENTERO: «resta por
+                 pagar», «próxima cuota» y «al día» son hechos del cliente, no
+                 del recorte. Antes se calculaban de `vista`, así que filtrar a
+                 «este mes» bajaba «RESTA POR PAGAR» de $88.634.333 a la cuota
+                 del mes — y con la barra abajo, el número habría cambiado
+                 ARRIBA del control que lo cambia. */
+              docEntero={entero}
+              /* 🔴 La barra va ADENTRO del documento, pegada a las tablas
+                 (Nico, 19-09). Antes estaba arriba de la tarjeta, a media
+                 pantalla de las filas que filtra. */
+              filtros={
+                !sinFiltros && entero.contratos.length > 0 ? (
+                  <FiltrosDelEstado
+                    filtros={filtros}
+                    onCambiar={setFiltros}
+                    /* Del documento ENTERO: filtrar por un contrato no puede
+                       hacer desaparecer del desplegable a los demás. */
+                    contratos={entero.contratos.map((c) => c.numero)}
+                    hoy={hoy}
+                    visibles={cuantasFilasDelDocumento(vista)}
+                    total={cuantasFilasDelDocumento(entero)}
+                    className="border-b-0 px-6 sm:px-10"
+                  />
+                ) : null
+              }
               sinPaginar={imprimiendo}
               nota={nota}
               reglasDeMoraHref={reglasDeMoraHref}

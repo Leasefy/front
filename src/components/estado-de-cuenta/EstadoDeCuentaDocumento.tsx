@@ -127,6 +127,32 @@ export interface EstadoDeCuentaDocumentoProps {
    * descuenta mes a mes). Sólo el panel: lo lee un endpoint de la inmobiliaria.
    */
   conAnticipoDelContrato?: boolean;
+  /**
+   * 🔴 La barra de filtros, pegada a las TABLAS (Nico, 19-09: «¿por qué no
+   * bajaste esto y lo pegaste a la tabla?»).
+   *
+   * Vivía arriba del documento entero, a media pantalla de las filas que
+   * filtra: primero pasaban el membrete, el nombre del cliente, el resumen, la
+   * ficha del contrato y la barra de amortización. Un control a 700 px de lo
+   * que controla no se lee como su control.
+   *
+   * Va acá y no en la pantalla porque el único lugar donde queda pegado a las
+   * tablas es ADENTRO del documento, justo antes de los contratos.
+   */
+  filtros?: React.ReactNode;
+  /**
+   * El documento SIN filtrar, para el resumen de arriba.
+   *
+   * 🔴 Sin esto, bajar la barra de filtros creaba un defecto peor del que
+   * arregla: el resumen se calcula de `doc.contratos[].filas`, así que
+   * filtrando a «este mes» el rótulo «RESTA POR PAGAR» pasaba de $88.634.333 a
+   * la cuota del mes — y el número cambiaba ARRIBA de un control que está
+   * abajo. «Resta por pagar», «próxima cuota» y «al día» son hechos del
+   * CLIENTE, no del recorte que uno esté mirando; el recorte lo dice la barra,
+   * con su «11 de 11 filas». Es la misma regla que la deuda del mes en Pagos y
+   * las cifras del mes en Facturación.
+   */
+  docEntero?: EstadoDeCuenta;
   className?: string;
 }
 
@@ -137,6 +163,8 @@ export function EstadoDeCuentaDocumento({
   nota,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
+  filtros,
+  docEntero,
   className,
 }: EstadoDeCuentaDocumentoProps) {
   const t = useTextoDelEstado();
@@ -211,7 +239,18 @@ export function EstadoDeCuentaDocumento({
         </div>
       </div>
 
-      <ResumenDelEstado doc={doc} hoy={hoy} className="mt-6" />
+      {/* Del documento ENTERO: lo que el cliente debe no depende del recorte
+          que uno esté mirando (ver `docEntero`). */}
+      <ResumenDelEstado doc={docEntero ?? doc} hoy={hoy} className="mt-6" />
+
+      {/* 🔴 La barra de filtros, a lo ancho de la hoja y pegada a lo que
+          filtra. `data-estado-barra` (que trae `FiltrosDelEstado`) la esconde
+          al imprimir: en papel no hay filtros que tocar. */}
+      {filtros ? (
+        <div className="-mx-6 mt-8 border-y border-border bg-surface-muted/30 sm:-mx-10">
+          {filtros}
+        </div>
+      ) : null}
 
       {doc.contratos.length === 0 ? (
         <p
@@ -225,7 +264,7 @@ export function EstadoDeCuentaDocumento({
           </span>
         </p>
       ) : (
-        <div className="mt-10 space-y-12">
+        <div className={cn('space-y-12', filtros ? 'mt-8' : 'mt-10')}>
           {doc.contratos.map((c) => (
             <ContratoDelEstado
               key={c.numero}

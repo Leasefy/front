@@ -22,22 +22,22 @@
  * no tiene secciones, y el riel no se dibuja con una card sola, así que una
  * única sub-pantalla quedaría inalcanzable desde el menú (la misma razón por la
  * que «Portales» es fila y no sub-pantalla de Inmuebles).
+ *
+ * 🔴 19-09-2026 · LA LISTA SE VOLVIÓ TABLA (Nico: «esto parece ser una tabla;
+ * si es una tabla, organízala y colócale todo lo que tienen nuestras tablas»).
+ * Acá quedan la pantalla, el formulario y el historial; la tabla con su chasis
+ * —cajones, oficio, buscador, alcance, orden, vacío adentro y paginado— vive en
+ * `@/components/mantenimientos/TablaDeProveedores`, con el porqué escrito ahí.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Wrench,
-  Plus,
-  Star,
-  WarningCircle,
-  ArrowCounterClockwise,
-  X,
-} from '@phosphor-icons/react';
+import { useCallback, useEffect, useState } from 'react';
+import { Plus, Star, X } from '@phosphor-icons/react';
+import { Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
-import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { TablaDeProveedores } from '@/components/mantenimientos/TablaDeProveedores';
+import { ESPECIALIDADES } from '@/components/mantenimientos/especialidades';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { toast } from '@/components/ui/toast';
@@ -49,19 +49,6 @@ import {
   type GuardarProveedor,
 } from '@/lib/api/proveedores-de-mantenimiento.service';
 
-/** Las especialidades, en palabras. Los valores son los del enum del back. */
-const ESPECIALIDADES: Array<{ valor: string; label: string }> = [
-  { valor: 'PLUMBING', label: 'Plomería' },
-  { valor: 'ELECTRICAL', label: 'Electricidad' },
-  { valor: 'APPLIANCE', label: 'Electrodomésticos' },
-  { valor: 'STRUCTURAL', label: 'Estructural' },
-  { valor: 'PAINTING', label: 'Pintura' },
-  { valor: 'LOCKS', label: 'Cerrajería' },
-  { valor: 'OTHER_MAINT', label: 'Otros' },
-];
-
-const EN_PALABRAS = new Map(ESPECIALIDADES.map((e) => [e.valor, e.label]));
-
 function ContenidoDeProveedores() {
   const { canAccess } = usePermissions();
   const puedeEditar = canAccess('operaciones', 'edit');
@@ -69,8 +56,6 @@ function ContenidoDeProveedores() {
   const [proveedores, setProveedores] = useState<ProveedorDeMantenimiento[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [verInactivos, setVerInactivos] = useState(false);
   const [editando, setEditando] = useState<ProveedorDeMantenimiento | 'nuevo' | null>(null);
   const [historialDe, setHistorialDe] = useState<ProveedorDeMantenimiento | null>(null);
 
@@ -89,19 +74,6 @@ function ContenidoDeProveedores() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
-
-  const visibles = useMemo(() => {
-    const lista = proveedores ?? [];
-    const q = busqueda.trim().toLowerCase();
-    return lista
-      .filter((p) => (verInactivos ? true : p.activo))
-      .filter(
-        (p) =>
-          !q ||
-          p.nombre.toLowerCase().includes(q) ||
-          p.documento.toLowerCase().includes(q),
-      );
-  }, [proveedores, busqueda, verInactivos]);
 
   const desactivar = async (p: ProveedorDeMantenimiento) => {
     try {
@@ -129,12 +101,13 @@ function ContenidoDeProveedores() {
           devolverse?»). Proveedores es una FILA del menú, no una sub-pantalla
           de Mantenimientos: el botón prometía subir un nivel que no existe. */}
       <div className="space-y-6 p-4 md:p-6">
+        {/* El encabezado de la casa: eyebrow, título y qué es —el mismo de
+            Contratos y Renovaciones—. El icono se fue al encabezado de la
+            tarjeta, que es donde lo llevan las demás tablas. */}
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="flex items-center gap-2 text-h2 text-fg">
-              <Wrench className="h-6 w-6 text-primary" weight="duotone" />
-              Proveedores
-            </h1>
+            <Eyebrow>Operación</Eyebrow>
+            <h1 className="text-h2 text-fg">Proveedores</h1>
             <p className="max-w-2xl text-sm text-fg-muted">
               A quién llamas para cada oficio, con sus papeles al día y cómo le ha
               ido. La calificación se pone al cerrar cada trabajo, no desde aquí.
@@ -148,60 +121,18 @@ function ContenidoDeProveedores() {
           )}
         </header>
 
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Input
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre o documento"
-            className="max-w-xs"
-            aria-label="Buscar proveedor"
-          />
-          <label className="flex items-center gap-2 text-sm text-fg-muted">
-            <input
-              type="checkbox"
-              checked={verInactivos}
-              onChange={(e) => setVerInactivos(e.target.checked)}
-            />
-            Ver también los inactivos
-          </label>
-        </div>
-
-        <EstadoDeDatos
+        <TablaDeProveedores
+          proveedores={proveedores ?? []}
           cargando={cargando}
           error={error}
-          vacio={!cargando && !error && visibles.length === 0}
-          queEs="los proveedores"
           onReintentar={cargar}
-          esqueleto={<EsqueletoTabla columnas={3} filas={5} />}
-          cuandoVacio={
-            <div className="rounded-lg border border-dashed border-border p-8 text-center">
-              <p className="text-sm text-fg">
-                {busqueda.trim()
-                  ? 'Ningún proveedor coincide con esa búsqueda.'
-                  : 'Todavía no hay proveedores registrados.'}
-              </p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Registrar a quién llamas te deja exigirle el RUT y la seguridad
-                social antes de mandarlo a un inmueble.
-              </p>
-            </div>
-          }
-        >
-          <ul className="space-y-3">
-            {visibles.map((p) => (
-              <FilaDeProveedor
-                key={p.id}
-                proveedor={p}
-                puedeEditar={puedeEditar}
-                onEditar={() => setEditando(p)}
-                onDesactivar={() => void desactivar(p)}
-                onReactivar={() => void reactivar(p)}
-                onVerHistorial={() => setHistorialDe(p)}
-              />
-            ))}
-          </ul>
-        </EstadoDeDatos>
+          puedeEditar={puedeEditar}
+          onRegistrar={() => setEditando('nuevo')}
+          onEditar={setEditando}
+          onDesactivar={(p) => void desactivar(p)}
+          onReactivar={(p) => void reactivar(p)}
+          onVerHistorial={setHistorialDe}
+        />
       </div>
 
       {editando && (
@@ -237,135 +168,6 @@ function useLenisQuieto() {
     lenis.stop();
     return () => lenis.start();
   }, [lenis]);
-}
-
-// ── Una fila ────────────────────────────────────────────────────────────────
-
-function FilaDeProveedor({
-  proveedor: p,
-  puedeEditar,
-  onEditar,
-  onDesactivar,
-  onReactivar,
-  onVerHistorial,
-}: {
-  proveedor: ProveedorDeMantenimiento;
-  puedeEditar: boolean;
-  onEditar: () => void;
-  onDesactivar: () => void;
-  onReactivar: () => void;
-  onVerHistorial: () => void;
-}) {
-  return (
-    <li
-      data-testid="proveedor"
-      className={cn(
-        'rounded-lg border bg-card p-4',
-        p.activo ? 'border-border' : 'border-dashed border-border opacity-70',
-      )}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium text-fg">{p.nombre}</p>
-            {!p.activo && <Badge variant="secondary">Inactivo</Badge>}
-            <Estrellas
-              calificacion={p.calificacion}
-              trabajos={p.trabajosCalificados}
-            />
-          </div>
-          <p className="mt-0.5 text-xs text-fg-muted tabular-nums">
-            {p.documento}
-            {p.telefono ? ` · ${p.telefono}` : ''}
-            {p.correo ? ` · ${p.correo}` : ''}
-          </p>
-          {p.especialidades.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {p.especialidades.map((e) => (
-                <Badge key={e} variant="secondary">
-                  {EN_PALABRAS.get(e) ?? e}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 gap-2">
-          {p.trabajosCalificados > 0 && (
-            <Button variant="ghost" hideArrow onClick={onVerHistorial}>
-              Historial
-            </Button>
-          )}
-          {puedeEditar && (
-            <>
-              <Button variant="secondary" hideArrow onClick={onEditar}>
-                Editar
-              </Button>
-              {p.activo ? (
-                <Button variant="ghost" hideArrow onClick={onDesactivar}>
-                  Desactivar
-                </Button>
-              ) : (
-                <Button variant="ghost" hideArrow onClick={onReactivar}>
-                  <ArrowCounterClockwise className="mr-1 h-4 w-4" />
-                  Reactivar
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/*
-        🔴 Los avisos vienen del back ya redactados. No se reordenan ni se
-        resumen: cada uno dice qué falta y por qué importa.
-      */}
-      {p.avisos.length > 0 && (
-        <ul className="mt-3 space-y-1" data-testid="avisos-del-proveedor">
-          {p.avisos.map((a) => (
-            <li
-              key={a}
-              className="flex items-start gap-1.5 text-xs text-warning"
-            >
-              <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>{a}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {p.reaperturasPorGarantia > 0 && (
-        <p className="mt-2 text-xs text-fg-muted">
-          {p.reaperturasPorGarantia === 1
-            ? 'Un trabajo suyo hubo que rehacerlo dentro de la garantía.'
-            : `${p.reaperturasPorGarantia} trabajos suyos hubo que rehacerlos dentro de la garantía.`}
-        </p>
-      )}
-    </li>
-  );
-}
-
-function Estrellas({
-  calificacion,
-  trabajos,
-}: {
-  calificacion: number | null;
-  trabajos: number;
-}) {
-  if (calificacion === null) {
-    return <span className="text-xs text-fg-muted">Sin calificar todavía</span>;
-  }
-  return (
-    <span className="flex items-center gap-1 text-xs text-fg-muted">
-      <Star className="h-3.5 w-3.5 text-warning" weight="fill" />
-      <span className="tabular-nums font-medium text-fg">
-        {calificacion.toFixed(1)}
-      </span>
-      <span>
-        ({trabajos} {trabajos === 1 ? 'trabajo' : 'trabajos'})
-      </span>
-    </span>
-  );
 }
 
 // ── El formulario ───────────────────────────────────────────────────────────

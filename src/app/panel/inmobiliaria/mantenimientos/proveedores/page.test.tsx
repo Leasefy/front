@@ -14,6 +14,12 @@
  *      «algo salió mal» deja a la persona sin saber que falta desplegar.
  * P5 — Calificar no se ofrece desde acá: el back exige la solicitud del trabajo
  *      que se califica, y en esta lista no hay ningún trabajo a la vista.
+ *
+ * 🔴 19-09-2026 · T1-T6: es una TABLA, con el chasis de la casa. Nico: «esto
+ * parece ser una tabla; si es una tabla, organízala y colócale todo lo que
+ * tienen nuestras tablas». Lo que se rompía antes y estas pruebas sostienen:
+ * los controles vivían FUERA de la tabla, «ver los inactivos» era una casilla
+ * pelada, no había orden ni alcance, y el vacío era un cartel suelto.
  */
 
 import * as React from 'react'
@@ -74,6 +80,20 @@ const UNO = {
   ],
 }
 
+/** Al día y con los papeles completos: el que NO pide nada hoy. */
+const AL_DIA = {
+  ...UNO,
+  id: 'p-2',
+  nombre: 'Aseo Andes',
+  documento: '901222333',
+  especialidades: ['PAINTING'],
+  rut: { ruta: null, nombre: 'rut.pdf', vigenteHasta: '2027-03-31', vencido: false },
+  seguridadSocial: { ruta: null, nombre: 'pila.pdf', vigenteHasta: '2026-12-31', vencido: false },
+  calificacion: null,
+  trabajosCalificados: 0,
+  avisos: [] as string[],
+}
+
 let contenedor: HTMLDivElement
 let raiz: Root
 
@@ -83,6 +103,31 @@ async function montar() {
   raiz = createRoot(contenedor)
   await act(async () => {
     raiz.render(<ProveedoresPage />)
+  })
+}
+
+const $ = (id: string) =>
+  contenedor.querySelector(`[data-testid="${id}"]`) as HTMLElement | null
+
+const botones = () =>
+  Array.from(contenedor.querySelectorAll('button')).map((b) => b.textContent?.trim())
+
+const nombresEnOrden = () =>
+  Array.from(contenedor.querySelectorAll('[data-testid="proveedor"]')).map(
+    (fila) => fila.querySelector('td')?.textContent?.trim(),
+  )
+
+async function clic(el: Element | null | undefined) {
+  await act(async () => {
+    el!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
+async function escribir(input: HTMLInputElement, texto: string) {
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    setter.call(input, texto)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
   })
 }
 
@@ -101,7 +146,7 @@ afterEach(() => {
 describe('Registro de proveedores', () => {
   it('P1 — muestra los avisos del back palabra por palabra, sin resumirlos', async () => {
     await montar()
-    const avisos = contenedor.querySelector('[data-testid="avisos-del-proveedor"]')
+    const avisos = $('avisos-del-proveedor')
     expect(avisos).not.toBeNull()
     const textos = Array.from(avisos!.querySelectorAll('li')).map((li) =>
       li.textContent?.trim(),
@@ -112,17 +157,13 @@ describe('Registro de proveedores', () => {
   it('P1b — no inventa avisos: sin avisos del back no dibuja la lista', async () => {
     h.api.listar.mockResolvedValue([{ ...UNO, avisos: [] }])
     await montar()
-    expect(
-      contenedor.querySelector('[data-testid="avisos-del-proveedor"]'),
-    ).toBeNull()
+    expect($('avisos-del-proveedor')).toBeNull()
   })
 
   it('P2 — sin permiso de edit no aparece ningún botón de escribir', async () => {
     h.canAccess.mockImplementation((_m: string, a: string) => a !== 'edit')
     await montar()
-    const textos = Array.from(contenedor.querySelectorAll('button')).map((b) =>
-      b.textContent?.trim(),
-    )
+    const textos = botones()
     expect(textos).not.toContain('Registrar proveedor')
     expect(textos).not.toContain('Editar')
     expect(textos).not.toContain('Desactivar')
@@ -130,9 +171,7 @@ describe('Registro de proveedores', () => {
 
   it('P2b — con permiso de edit sí aparecen', async () => {
     await montar()
-    const textos = Array.from(contenedor.querySelectorAll('button')).map((b) =>
-      b.textContent?.trim(),
-    )
+    const textos = botones()
     expect(textos.some((t) => t?.includes('Registrar proveedor'))).toBe(true)
     expect(textos).toContain('Editar')
     expect(textos).toContain('Desactivar')
@@ -141,12 +180,11 @@ describe('Registro de proveedores', () => {
   it('P3 — desactivar llama a desactivar (no a borrar) y dice que el historial se conserva', async () => {
     h.api.desactivar.mockResolvedValue({ ...UNO, activo: false })
     await montar()
-    const boton = Array.from(contenedor.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Desactivar',
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Desactivar',
+      ),
     )
-    await act(async () => {
-      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
     expect(h.api.desactivar).toHaveBeenCalledWith('p-1')
     expect(h.toast.success).toHaveBeenCalledWith(
       expect.stringContaining('historial se conserva'),
@@ -159,12 +197,11 @@ describe('Registro de proveedores', () => {
         'Falta la migración de proveedores: pídele a tu administrador que la aplique.',
     })
     await montar()
-    const boton = Array.from(contenedor.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Desactivar',
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Desactivar',
+      ),
     )
-    await act(async () => {
-      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
     expect(h.toast.error).toHaveBeenCalledWith(
       'Falta la migración de proveedores: pídele a tu administrador que la aplique.',
     )
@@ -172,30 +209,110 @@ describe('Registro de proveedores', () => {
 
   it('P5 — no ofrece calificar: la estrella se pone al cerrar el trabajo', async () => {
     await montar()
-    const textos = Array.from(contenedor.querySelectorAll('button')).map((b) =>
-      b.textContent?.trim(),
-    )
-    expect(textos.some((t) => t?.toLowerCase().includes('calificar'))).toBe(false)
+    expect(botones().some((t) => t?.toLowerCase().includes('calificar'))).toBe(false)
     expect(h.api.calificar).not.toHaveBeenCalled()
   })
+})
 
-  it('los inactivos no salen hasta que se piden, y entonces se pueden reactivar', async () => {
+/**
+ * 🔴 El chasis de la casa. Antes de esto el buscador y la casilla de inactivos
+ * flotaban sobre el fondo de la página, encima de una pila de tarjetas.
+ */
+describe('Proveedores — la tabla, con lo que tienen todas nuestras tablas', () => {
+  it('T1 — los controles viven DENTRO de la tarjeta de la tabla, no flotando encima', async () => {
+    await montar()
+    const tabla = $('proveedores-tabla')
+    expect(tabla).not.toBeNull()
+    for (const id of [
+      'buscar-proveedores',
+      'cajon-activos',
+      'cajon-inactivos',
+      'cajon-todos',
+      'filtro-especialidad',
+    ]) {
+      expect(tabla!.querySelector(`[data-testid="${id}"]`), id).not.toBeNull()
+    }
+    // Ni un control suelto por fuera: los `<input>` de la pantalla son los de
+    // la tabla (el formulario sólo existe con el modal abierto).
+    const fuera = Array.from(contenedor.querySelectorAll('input')).filter(
+      (i) => !tabla!.contains(i),
+    )
+    expect(fuera).toEqual([])
+  })
+
+  it('T2 — «ver los inactivos» es un cajón de la tabla, no una casilla suelta', async () => {
     h.api.listar.mockResolvedValue([{ ...UNO, activo: false }])
     await montar()
-    expect(contenedor.querySelectorAll('[data-testid="proveedor"]').length).toBe(0)
+    expect(contenedor.querySelector('input[type="checkbox"]')).toBeNull()
+    // Arranca en «Activos»: el inactivo no está.
+    expect(nombresEnOrden()).toEqual([])
 
-    const casilla = contenedor.querySelector<HTMLInputElement>(
-      'input[type="checkbox"]',
-    )
-    // Un `new Event('click')` no le sirve a React: el delegado de eventos sólo
-    // reconoce un MouseEvent, y sin él la casilla controlada nunca cambia.
-    await act(async () => {
-      casilla!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(contenedor.querySelectorAll('[data-testid="proveedor"]').length).toBe(1)
-    const textos = Array.from(contenedor.querySelectorAll('button')).map((b) =>
-      b.textContent?.trim(),
-    )
-    expect(textos.some((t) => t?.includes('Reactivar'))).toBe(true)
+    await clic($('cajon-inactivos'))
+    expect(nombresEnOrden().length).toBe(1)
+    expect(botones().some((t) => t?.includes('Reactivar'))).toBe(true)
+  })
+
+  it('T3 — el orden por defecto sube a los que tienen papeles pendientes', async () => {
+    // `AL_DIA` va primero en la lista que manda el back y alfabéticamente
+    // ('Aseo Andes' < 'Plomería El Rayo'): si el orden no fuera por papeles,
+    // quedaría arriba en los dos casos.
+    h.api.listar.mockResolvedValue([AL_DIA, UNO])
+    await montar()
+    expect(nombresEnOrden()[0]).toContain('Plomería El Rayo')
+
+    await clic($('ordenar-por-nombre'))
+    expect(nombresEnOrden()[0]).toContain('Aseo Andes')
+  })
+
+  it('T4 — el alcance sale sólo con filtros puestos, y se quitan desde ahí', async () => {
+    h.api.listar.mockResolvedValue([AL_DIA, UNO])
+    await montar()
+    expect($('alcance-de-proveedores')).toBeNull()
+
+    await escribir($('buscar-proveedores') as HTMLInputElement, 'andes')
+    expect(nombresEnOrden().length).toBe(1)
+    expect($('alcance-de-proveedores')!.textContent).toContain('1 de 2')
+
+    await clic($('limpiar-filtros-proveedores'))
+    expect(nombresEnOrden().length).toBe(2)
+    expect($('alcance-de-proveedores')).toBeNull()
+  })
+
+  it('T4b — el buscador también encuentra por documento y por oficio', async () => {
+    h.api.listar.mockResolvedValue([AL_DIA, UNO])
+    await montar()
+    const buscador = $('buscar-proveedores') as HTMLInputElement
+
+    await escribir(buscador, '900123456')
+    expect(nombresEnOrden()).toEqual([expect.stringContaining('Plomería El Rayo')])
+
+    // Sin tilde: nadie escribe «Plomería» con tilde en un buscador.
+    await escribir(buscador, 'plomeria')
+    expect(nombresEnOrden()).toEqual([expect.stringContaining('Plomería El Rayo')])
+  })
+
+  it('T5 — el vacío vive DENTRO de la tabla y ofrece registrar al primero', async () => {
+    h.api.listar.mockResolvedValue([])
+    await montar()
+    const vacio = $('sin-datos')
+    expect(vacio).not.toBeNull()
+    expect($('proveedores-tabla')!.contains(vacio!)).toBe(true)
+    expect(vacio!.getAttribute('data-caso')).toBe('vacio')
+    expect($('crear-el-primero')).not.toBeNull()
+  })
+
+  it('T5b — buscar y no encontrar NO se dice como «todavía no hay proveedores»', async () => {
+    await montar()
+    await escribir($('buscar-proveedores') as HTMLInputElement, 'zzzz')
+    expect($('sin-datos')!.getAttribute('data-caso')).toBe('filtros')
+    expect($('crear-el-primero')).toBeNull()
+  })
+
+  it('T6 — si la carga falla, la tabla lo dice; no lo pinta como «no hay»', async () => {
+    h.api.listar.mockRejectedValue(new Error('network'))
+    await montar()
+    expect($('fallo-de-carga')).not.toBeNull()
+    expect($('sin-datos')).toBeNull()
+    expect(contenedor.textContent).not.toContain('Todavía no hay proveedores')
   })
 })

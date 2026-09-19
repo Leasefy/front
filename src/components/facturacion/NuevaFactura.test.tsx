@@ -182,18 +182,42 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
 let host: HTMLDivElement;
 let root: Root;
 
+const irAResolucion = vi.fn();
+
 async function montar() {
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => {
-    root.render(<NuevaFactura />);
+    root.render(<NuevaFactura onIrAResolucion={irAResolucion} />);
+  });
+}
+
+/** Escribir en un input controlado por React. */
+async function escribir(sel: string, texto: string) {
+  const input = q(sel) as HTMLInputElement;
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    setter.call(input, texto);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+async function clic(sel: string) {
+  await act(async () => {
+    (q(sel) as HTMLElement | null)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
   });
 }
 
 beforeEach(() => {
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
+  irAResolucion.mockReset();
   toastOk.mockReset();
   toastErr.mockReset();
 });
@@ -845,5 +869,185 @@ describe('NuevaFactura', () => {
       expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
       expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
     });
+  });
+});
+
+/**
+ * 🔴 Lo que Nico pidió el 18-09 de noche, mirando 730 contratos en pantalla:
+ *
+ *   «Selecciono sólo una y no da el poder generar factura de sólo esa, y
+ *    agrega un buscador a la tabla.»
+ *
+ * NO contradice el pedido del 12 («no que me ponga a escoger una»): ahí
+ * rechazó una pantalla que OBLIGABA a elegir un contrato para poder ver algo.
+ * La lista completa y premarcada se queda; lo que faltaba era poder actuar
+ * sobre UNA fila y poder encontrarla. Este bloque es el que impide que
+ * arreglar una de las dos cosas rompa la otra.
+ */
+describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
+  const DOS = () =>
+    respuesta({
+      inquilinos: [
+        factura({
+          clave: 'ct-1|2026-09|INQUILINO',
+          terceroNombre: 'Miguel Lorenzo Ramirez',
+          terceroDocumento: '94476481',
+          inmueble: 'CL 52 A SUR 67 - 16 SAN ANTONIO',
+        }),
+        factura({
+          clave: 'ct-2|2026-09|INQUILINO',
+          codigo: 3,
+          terceroNombre: 'J y C Papas S.A.S',
+          terceroDocumento: '901559008',
+          inmueble: 'CL 129 SUR 56 53 LC 01 MEDELLÍN',
+        }),
+      ],
+    });
+
+  it('🔴 «Generar esta» emite ESA fila y ninguna otra', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 1,
+      yaEstaban: 0,
+      totalCop: 1_800_000,
+      facturas: [],
+    });
+    await montar();
+    await clic('[data-testid="generar-una-ct-2|2026-09|INQUILINO"]');
+    expect(generarMock).toHaveBeenCalledTimes(1);
+    const [mes, claves] = generarMock.mock.calls[0] as [string, string[]];
+    expect(mes).toBe('2026-09');
+    // UNA, aunque las tres estén marcadas: no hay que limpiar la selección
+    // primero, que era exactamente lo que no se podía hacer.
+    expect(claves).toEqual(['ct-2|2026-09|INQUILINO']);
+  });
+
+  it('el buscador deja la fila que se busca, sin desmarcar nada', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    expect(qa('[data-testid^="factura-ct-"]')).toHaveLength(3);
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    expect(q('[data-testid="factura-ct-2|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    // 🔴 Buscar ESCONDE, nunca desmarca: perder 700 facturas por escribir en
+    // un campo sería mucho peor que no tener buscador.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain(
+      'Generar 3 facturas',
+    );
+  });
+
+  it('busca por documento, por inmueble y sin tildes', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    for (const [texto, clave] of [
+      ['901559008', 'ct-2|2026-09|INQUILINO'],
+      ['medellin', 'ct-2|2026-09|INQUILINO'],
+      ['san antonio', 'ct-1|2026-09|INQUILINO'],
+    ] as const) {
+      await escribir('[data-testid="facturacion-inquilinos-buscar"]', texto);
+      expect(q(`[data-testid="factura-${clave}"]`), texto).not.toBeNull();
+    }
+  });
+
+  it('las cifras del mes NO se mueven con la búsqueda, y se dice cuántas se ven', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    const alcance = q('[data-testid="facturacion-inquilinos-alcance"]')!;
+    expect(alcance.textContent).toContain('1 de 2 facturas');
+    // La cabecera de la tarjeta sigue hablando del mes completo.
+    expect(q('[data-testid="facturacion-inquilinos"]')!.textContent).toContain(
+      '2 facturas',
+    );
+  });
+
+  it('🔴 la casilla de la cabecera LIMPIA cuando hay algo marcado', async () => {
+    // Antes «si están TODAS, quita»: estando en 726 de 730 apretarla subía a
+    // 730, y para dejar una sola había que apretarla dos veces adivinando el
+    // orden. Es media explicación de «selecciono sólo una y no da».
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('3 facturas');
+
+    /*
+     * 🔴 EL CASO QUE DISCRIMINA: una desmarcada a mano — el estado real de
+     * Nico, 726 de 730 —. Con la regla vieja («si están TODAS, quita») esto
+     * SUBÍA a 3; con la nueva («si hay ALGUNA, quita») baja a 1, que es lo que
+     * cualquiera espera de una casilla a medias. Sin este paso, el test pasaba
+     * con las dos reglas y no probaba nada.
+     */
+    await clic(
+      '[data-testid="factura-ct-1|2026-09|INQUILINO"] [role="checkbox"], ' +
+        '[data-testid="factura-ct-1|2026-09|INQUILINO"] input[type="checkbox"]',
+    );
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
+    await clic('[data-testid="facturacion-inquilinos-todas"]');
+    // Se fueron las dos de inquilinos; queda la del propietario.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
+    // Y volver a apretarla las marca de nuevo.
+    await clic('[data-testid="facturacion-inquilinos-todas"]');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('3 facturas');
+  });
+
+  it('con búsqueda puesta, marcar toca SÓLO lo que se ve', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    await clic('[data-testid="facturacion-inquilinos-todas"]'); // limpia las dos
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    await clic('[data-testid="facturacion-inquilinos-todas"]'); // marca la encontrada
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
+  });
+});
+
+describe('🔴 un botón apagado tiene que decir por qué, y al lado', () => {
+  /*
+   * Nico apretó «Generar», no pasó nada, y lo leyó como «no da el poder
+   * generar factura». Estaba apagado con razón —la inmobiliaria no tiene
+   * resolución de la DIAN para «Canon del inquilino»— pero el porqué vivía
+   * en un banner arriba de todo, a media pantalla del botón.
+   */
+  const SIN_RESOLUCION = () =>
+    respuesta({
+      resolucion: resolucionVigente({
+        puedeNumerar: false,
+        motivo: 'SIN_RESOLUCION',
+        explicacion:
+          'La inmobiliaria no tiene ninguna resolución de facturación que numere «Canon del inquilino».',
+        siguiente: null,
+      }),
+    });
+
+  it('el motivo está AL LADO del botón, no sólo arriba de todo', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(q('[data-testid="facturacion-motivo-apagado"]')!.textContent).toContain(
+      'no tiene ninguna resolución',
+    );
+  });
+
+  it('y la salida LLEVA a la resolución, no sólo la nombra', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    await clic('[data-testid="facturacion-ir-a-resolucion"]');
+    expect(irAResolucion).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Generar esta» también se apaga, y con el mismo motivo en el title', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    const boton = q('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(boton.getAttribute('title')).toContain('no tiene ninguna resolución');
+    // Y no manda nada al back aunque alguien lo dispare igual.
+    await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
+    expect(generarMock).not.toHaveBeenCalled();
+  });
+
+  it('con resolución vigente no hay motivo que mostrar', async () => {
+    await montar();
+    expect(q('[data-testid="facturacion-motivo-apagado"]')).toBeNull();
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(false);
   });
 });

@@ -209,7 +209,9 @@ function FacturacionContent() {
 
           <TabsContent value="nueva" className="mt-0">
             <div className="p-4">
-              <NuevaFactura />
+              {/* La pestaña es estado local: sin el callback, «Cargar la
+                  resolución» sería un texto que dice a dónde ir sin llevar. */}
+              <NuevaFactura onIrAResolucion={() => setActive('resolucion')} />
             </div>
           </TabsContent>
 

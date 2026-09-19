@@ -9,10 +9,35 @@
  * inquilinos pero debe arrojar el listado completo de las facturas que puedo
  * generar para ese mes.»
  *
- * Por eso acá no hay ningún buscador de contrato ni ningún «elegir uno»: se
- * elige el MES y el back responde las dos listas completas
- * (`GET /inmobiliaria/facturacion/por-generar`). Lo único que la persona hace
- * es desmarcar lo que no quiere y apretar «Generar N facturas».
+ * Por eso el punto de partida es el MES: el back responde las dos listas
+ * completas (`GET /inmobiliaria/facturacion/por-generar`) con todo marcado, y
+ * lo normal es desmarcar lo que no va y apretar «Generar N facturas».
+ *
+ * ── 🔴 Y poder hacer UNA, sin dejar de tener la lista (Nico, 18-09 de noche) ─
+ *
+ * «Selecciono sólo una y no da el poder generar factura de sólo esa, y agrega
+ * un buscador a la tabla.»
+ *
+ * No se contradice con lo de arriba, y la diferencia importa para no volver a
+ * romper esto: el 12 rechazó una pantalla que OBLIGABA a elegir un contrato
+ * para poder ver algo. La lista completa y premarcada se queda. Lo que
+ * faltaba era poder **actuar sobre una sola fila** y poder **encontrarla**
+ * entre 730. Tres cosas lo resuelven:
+ *
+ *   1. un **buscador dentro de la tabla** (contrato, tercero, documento,
+ *      inmueble, concepto);
+ *   2. **«Generar esta»** en la fila: una factura, un clic, sin tocar la
+ *      selección de las otras 729;
+ *   3. la casilla de la cabecera **limpia** cuando hay algo marcado, en vez de
+ *      marcarlo todo. Estando en 726 de 730, apretarla subía a 730: para
+ *      dejar una sola había que apretarla dos veces y adivinar el orden.
+ *
+ * 🔴 Y lo que de verdad lo bloqueaba: **el botón estaba apagado** porque la
+ * inmobiliaria no tiene resolución de la DIAN para «Canon del inquilino». El
+ * porqué vivía en un banner arriba de todo, a media pantalla del botón — o
+ * sea, un control que no se mueve y no dice por qué, que se lee como roto.
+ * Ahora el motivo y la salida («Cargar la resolución») están AL LADO del
+ * botón, y cada «Generar esta» lo repite en su `title`.
  *
  * ── 🔴 Cada fila SALE de la cuota del contrato ──────────────────────────────
  *
@@ -57,7 +82,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Info, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
+import { Info, MagnifyingGlass, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
 import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
 import {
   generarPorTandas,
@@ -185,6 +210,40 @@ interface TablaProps {
   onAlternarTodas: (claves: string[]) => void
   ocupado: boolean
   testid: string
+  /**
+   * Emitir UNA fila, sin tocar la selección de las demás (Nico, 18-09:
+   * «selecciono sólo una y no da el poder generar factura de sólo esa»).
+   */
+  onGenerarUna: (clave: string) => void
+  /** Por qué no se puede emitir hoy (sin resolución de la DIAN). `null` = se puede. */
+  motivoParaNoEmitir: string | null
+}
+
+/**
+ * Lo que la búsqueda mira de una fila. Es lo que la persona tiene a mano
+ * cuando quiere UNA factura: el número del contrato (el suyo y el nuestro),
+ * el nombre o el documento del tercero, la dirección, y el concepto.
+ */
+function textoBuscableDe(f: FacturaDelMes): string {
+  return [
+    f.numeroExterno,
+    f.codigo === null ? null : String(f.codigo),
+    f.terceroNombre,
+    f.terceroDocumento,
+    f.inmueble,
+    conceptosLegibles(f),
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** Sin tildes y en minúsculas: nadie escribe «Ramírez» con tilde en un buscador. */
+function normalizar(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 }
 
 function TablaDeFacturas({
@@ -196,9 +255,25 @@ function TablaDeFacturas({
   onAlternarTodas,
   ocupado,
   testid,
+  onGenerarUna,
+  motivoParaNoEmitir,
 }: TablaProps) {
+  /*
+   * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
+   * una factura y no poder llegar a su fila es lo mismo que no poder hacerla.
+   * Es local y no toca la selección: buscar ESCONDE filas, nunca desmarca —
+   * desmarcar 700 facturas sin querer, escribiendo en un campo, sería mucho
+   * peor que no tener buscador.
+   */
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const q = normalizar(busqueda)
+    if (q === '') return filas
+    return filas.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
+  }, [filas, busqueda])
+
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(filas, { resetKey: testid + filas.length })
+    useTablePagination(visibles, { resetKey: `${testid}|${filas.length}|${busqueda}` })
 
   /*
    * 🔴 Sólo lo que HOY se puede emitir entra a la selección. Una fila de un mes
@@ -207,10 +282,10 @@ function TablaDeFacturas({
    */
   const porEmitir = useMemo(
     () =>
-      filas
+      visibles
         .filter((f) => (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible)
         .map((f) => f.clave),
-    [filas],
+    [visibles],
   )
   const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
   // 🔴 La mora se totaliza aparte: es plata que la factura suma por encima de la
@@ -232,8 +307,11 @@ function TablaDeFacturas({
           <p className="text-caption text-fg-muted">{descripcion}</p>
         </div>
         <div className="text-caption text-fg-muted tabular-nums sm:text-right">
+          {/* 🔴 Del MES entero, no de lo que el buscador dejó a la vista: el
+              alcance de la búsqueda se dice al lado del buscador. Si estas
+              cifras se movieran al escribir, nadie sabría cuál es el mes. */}
           <p className="whitespace-nowrap">
-            {total} {total === 1 ? 'factura' : 'facturas'} ·{' '}
+            {filas.length} {filas.length === 1 ? 'factura' : 'facturas'} ·{' '}
             {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
           </p>
           <p className="whitespace-nowrap">
@@ -260,17 +338,68 @@ function TablaDeFacturas({
         </div>
       </div>
 
+      {/* 🔴 El buscador, DENTRO de la tabla (Nico, 18-09). A su lado, cuántas
+          filas quedaron a la vista: las cifras de arriba siguen siendo las del
+          mes completo y los dos números tienen que poder conciliarse. */}
+      <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
+          <MagnifyingGlass
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+            aria-hidden="true"
+          />
+          <Input
+            className="pl-9"
+            placeholder="Contrato, tercero, documento, inmueble o concepto"
+            aria-label={`Buscar en las facturas de ${titulo.toLowerCase()}`}
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            data-testid={`facturacion-${testid}-buscar`}
+          />
+        </div>
+        <p
+          className="text-caption text-fg-muted tabular-nums"
+          data-testid={`facturacion-${testid}-alcance`}
+        >
+          {busqueda.trim() === '' ? (
+            <>
+              {filas.length} {filas.length === 1 ? 'factura' : 'facturas'} en el mes
+            </>
+          ) : (
+            <>
+              {visibles.length} de {filas.length} facturas.{' '}
+              <button
+                type="button"
+                onClick={() => setBusqueda('')}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                data-testid={`facturacion-${testid}-limpiar-busqueda`}
+              >
+                Quitar la búsqueda
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
+                {/* 🔴 Con algo marcado, esta casilla LIMPIA (Nico, 18-09).
+                    Antes, estando en 726 de 730, apretarla subía a 730: para
+                    dejar una sola había que apretarla dos veces y adivinar el
+                    orden. Con búsqueda puesta sólo toca lo que se ve, que es
+                    lo que hace posible «marcar sólo estas». */}
                 <Checkbox
                   checked={todas}
                   indeterminate={algunas}
                   disabled={ocupado || porEmitir.length === 0}
                   onCheckedChange={() => onAlternarTodas(porEmitir)}
-                  aria-label={`Seleccionar todas las facturas de ${titulo.toLowerCase()}`}
+                  aria-label={
+                    elegidas.length > 0
+                      ? `Quitar la selección de ${titulo.toLowerCase()}`
+                      : `Seleccionar todas las facturas de ${titulo.toLowerCase()}`
+                  }
                   data-testid={`facturacion-${testid}-todas`}
                 />
               </TableHead>
@@ -293,9 +422,13 @@ function TablaDeFacturas({
               <TableRow>
                 <TableCell colSpan={10} className="p-0">
                   <SinDatos
+                    hayFiltros={busqueda.trim() !== ''}
                     queSon={`facturas de ${titulo.toLowerCase()} este mes`}
                     icono={Receipt}
                     descripcion={descripcion}
+                    onLimpiarFiltros={
+                      busqueda.trim() !== '' ? () => setBusqueda('') : undefined
+                    }
                   />
                 </TableCell>
               </TableRow>
@@ -447,7 +580,25 @@ function TablaDeFacturas({
                           Todavía no
                         </span>
                       ) : (
-                        <span className="text-caption text-primary">Por emitir</span>
+                        <div className="flex flex-col items-start gap-1.5">
+                          <span className="text-caption text-primary">Por emitir</span>
+                          {/* 🔴 «Selecciono sólo una y no da el poder generar
+                              factura de sólo esa» (Nico, 18-09). Una factura,
+                              un clic, sin tocar la selección de las otras 729
+                              ni obligar a limpiarla primero. Apagado dice por
+                              qué: el mismo motivo del botón grande. */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            hideArrow
+                            disabled={ocupado || motivoParaNoEmitir !== null}
+                            title={motivoParaNoEmitir ?? undefined}
+                            onClick={() => onGenerarUna(factura.clave)}
+                            data-testid={`generar-una-${factura.clave}`}
+                          >
+                            Generar esta
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -474,7 +625,16 @@ function TablaDeFacturas({
   )
 }
 
-export function NuevaFactura() {
+export interface NuevaFacturaProps {
+  /**
+   * Llevar a la pestaña «Resolución». La pestaña es estado local de la página,
+   * no una URL, así que se recibe como callback: sin esto, el aviso de «no hay
+   * resolución» diría a dónde ir y no llevaría.
+   */
+  onIrAResolucion?: () => void
+}
+
+export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [mes, setMes] = useState(() => mesActual())
   /**
    * Hasta dónde MIRAR. Arranca en el mes elegido —que es el trabajo diario— y
@@ -538,10 +698,21 @@ export function NuevaFactura() {
     })
   }
 
+  /**
+   * 🔴 Con ALGO marcado, limpia; sólo con nada marcado, marca todo.
+   *
+   * Antes la condición era «si están TODAS marcadas, quita»: estando en 726 de
+   * 730 —el estado normal después de desmarcar cuatro— apretarla subía a 730,
+   * y para dejar una sola había que apretarla dos veces y adivinar el orden.
+   * Es media explicación de «selecciono sólo una y no da» (Nico, 18-09).
+   *
+   * `claves` son las filas VISIBLES de esa tabla: con el buscador puesto,
+   * marcar toca sólo lo que se ve, que es lo que hace posible «sólo estas».
+   */
   const alternarTodas = (claves: string[]) => {
     setSeleccion((previa) => {
       const siguiente = new Set(previa)
-      if (claves.every((c) => siguiente.has(c))) {
+      if (claves.some((c) => siguiente.has(c))) {
         for (const c of claves) siguiente.delete(c)
       } else {
         for (const c of claves) siguiente.add(c)
@@ -589,9 +760,15 @@ export function NuevaFactura() {
     setCorridaHecha(null)
   }, [mes])
 
-  async function generar() {
-    if (elegidas.length === 0 || generando) return
-    const claves = [...elegidas]
+  /**
+   * Emite. Sin argumento, lo que esté seleccionado; con `soloEstas`, esas y
+   * nada más —es el botón «Generar esta» de la fila (Nico, 18-09)—, que no
+   * toca la selección de las demás ni obliga a limpiarla primero.
+   */
+  async function generar(soloEstas?: string[]) {
+    const claves = soloEstas ?? [...elegidas]
+    if (claves.length === 0 || generando) return
+    if (motivoParaNoEmitir !== null) return
     setGenerando(true)
     setCorridaHecha(null)
     detenerRef.current = false
@@ -636,6 +813,22 @@ export function NuevaFactura() {
     setDeteniendo(true)
   }
 
+  /**
+   * 🔴 Por qué HOY no se puede emitir nada, en las palabras del back.
+   *
+   * Sin resolución vigente el back devuelve 400, así que el botón se apaga
+   * — y hasta el 18-09 se apagaba MUDO: el porqué vivía en un banner arriba
+   * de todo, a media pantalla de distancia. Nico apretó, no pasó nada, y lo
+   * leyó como «no da el poder generar». Un control que no se mueve y no dice
+   * por qué se lee como roto: el motivo va al lado del control, y con la
+   * salida puesta.
+   */
+  const motivoParaNoEmitir: string | null =
+    datos !== null && !datos.resolucion.puedeNumerar
+      ? (datos.resolucion.explicacion ??
+        'No hay una resolución de facturación vigente con la cual numerar.')
+      : null
+
   const vacio =
     datos !== null &&
     delMes.inquilinos.length === 0 &&
@@ -659,7 +852,17 @@ export function NuevaFactura() {
           />
           <p className="text-caption text-fg">
             {datos.resolucion.explicacion ??
-              'No hay una resolución de facturación vigente con la cual numerar.'}
+              'No hay una resolución de facturación vigente con la cual numerar.'}{' '}
+            {onIrAResolucion && (
+              <button
+                type="button"
+                onClick={onIrAResolucion}
+                className="font-medium underline underline-offset-4"
+                data-testid="facturacion-ir-a-resolucion-banner"
+              >
+                Cargar la resolución
+              </button>
+            )}
           </p>
         </div>
       )}
@@ -794,6 +997,40 @@ export function NuevaFactura() {
                 : 'Generando…'
               : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
           </Button>
+          {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
+              puesta. El mismo motivo vivía sólo en un banner arriba de todo:
+              Nico apretó, no pasó nada, y lo leyó como «no da el poder
+              generar». Un control que no se mueve y no dice por qué se lee
+              como roto. */}
+          {!generando && motivoParaNoEmitir !== null && (
+            <p
+              className="max-w-sm text-caption text-warning lg:text-right"
+              data-testid="facturacion-motivo-apagado"
+            >
+              {motivoParaNoEmitir}{' '}
+              {onIrAResolucion && (
+                <button
+                  type="button"
+                  onClick={onIrAResolucion}
+                  className="font-medium underline underline-offset-4"
+                  data-testid="facturacion-ir-a-resolucion"
+                >
+                  Cargar la resolución
+                </button>
+              )}
+            </p>
+          )}
+          {/* El otro motivo de que esté apagado, y el único que la persona
+              puede arreglar en esta misma pantalla. */}
+          {!generando && motivoParaNoEmitir === null && elegidas.length === 0 && datos && (
+            <p
+              className="text-caption text-fg-muted lg:text-right"
+              data-testid="facturacion-sin-seleccion"
+            >
+              No hay ninguna factura marcada. Marca las que quieras, o usa
+              «Generar esta» en una fila.
+            </p>
+          )}
         </div>
       </div>
 
@@ -860,6 +1097,8 @@ export function NuevaFactura() {
               onAlternarTodas={alternarTodas}
               ocupado={generando}
               testid="inquilinos"
+              onGenerarUna={(clave) => void generar([clave])}
+              motivoParaNoEmitir={motivoParaNoEmitir}
             />
             <TablaDeFacturas
               titulo="Propietarios"
@@ -870,6 +1109,8 @@ export function NuevaFactura() {
               onAlternarTodas={alternarTodas}
               ocupado={generando}
               testid="propietarios"
+              onGenerarUna={(clave) => void generar([clave])}
+              motivoParaNoEmitir={motivoParaNoEmitir}
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,

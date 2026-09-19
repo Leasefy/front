@@ -86,20 +86,21 @@ function RenovacionesContent() {
       <BandejaDeCartasDelIncremento puedeEditar={puedeEditarContratos} />
 
       {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
-          como en Contratos: nada suelto por fuera. */}
-      {/* «Notificar» también abre el cajón: la propuesta sale con el mensaje y
-          por el canal que el inquilino tenga. Antes marcaba «notificado» sin
-          mandar nada. */}
+          como en Contratos: nada suelto por fuera.
+
+          🔴 UNA sola prop de apertura (19-09). Acá había cinco
+          —`onStartRenewal`, `onNotifyTenant`, `onViewDetails`,
+          `onCalculateIPC`, `onViewHistory`— y las cinco apuntaban a este
+          mismo `openWorkflow`. Del otro lado eso era un menú con cinco items
+          que hacían exactamente lo mismo, encima de una fila que ya abría el
+          cajón sola. Las acciones no se perdieron: viven en el cajón, que es
+          el único que sabe en qué paso va cada renovación. */}
       <RenovacionesTable
         data={renovaciones}
         isLoading={isLoading}
         error={error}
         onReintentar={refetch}
-        onStartRenewal={openWorkflow}
-        onNotifyTenant={openWorkflow}
-        onViewDetails={openWorkflow}
-        onCalculateIPC={openWorkflow}
-        onViewHistory={openWorkflow}
+        onAbrir={openWorkflow}
       />
 
       {/* Renovacion Workflow Sheet */}

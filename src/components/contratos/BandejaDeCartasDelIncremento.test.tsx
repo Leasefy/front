@@ -155,3 +155,50 @@ describe('<BandejaDeCartasDelIncremento> (D6)', () => {
     expect($('enviar-c1')).toBeNull();
   });
 });
+
+/**
+ * 🔴 19-09-2026 · El vacío pesa un renglón, no una tarjeta.
+ *
+ * Esto vive encima de la tabla de Renovaciones —183 filas en la agencia
+ * migrada— y ocupaba una tarjeta entera para decir «No hay cartas por enviar»,
+ * con título, tres contadores en cero y párrafo. Es el mismo defecto que la
+ * bandeja del agente en `/pagos`: regalarle el lugar más valioso de la
+ * pantalla a un vacío estructural.
+ *
+ * Lo que NO se puede hacer es esconderla: si desapareciera, nadie sabría que
+ * las cartas existen ni que salen solas.
+ */
+describe('<BandejaDeCartasDelIncremento> — el vacío no se queda con la pantalla', () => {
+  it('🔴 sin cartas y sin vencidas es UNA línea, no la tarjeta entera', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([]));
+    await montar();
+    expect($('bandeja-de-cartas-vacia')).not.toBeNull();
+    expect($('bandeja-de-cartas')).toBeNull();
+  });
+
+  it('pero sigue diciendo que las cartas existen y cuándo salen', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([]));
+    await montar();
+    const linea = $('bandeja-de-cartas-vacia')!.textContent ?? '';
+    expect(linea).toContain('Cartas del incremento');
+    expect(linea).toContain('30 días antes del aniversario');
+  });
+
+  it('🔴 con una vencida SIN constancia vuelve la tarjeta: eso hay que verlo', async () => {
+    // La alerta roja del pedido D6. Colapsarla sería esconder el único caso
+    // que pide una acción hoy.
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([], { vencidasSinConstancia: 2, enviadas: 3 }),
+    );
+    await montar();
+    expect($('bandeja-de-cartas')).not.toBeNull();
+    expect($('bandeja-de-cartas-vacia')).toBeNull();
+  });
+
+  it('con cartas por enviar también es la tarjeta', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+    await montar();
+    expect($('bandeja-de-cartas')).not.toBeNull();
+    expect($('bandeja-de-cartas-vacia')).toBeNull();
+  });
+});

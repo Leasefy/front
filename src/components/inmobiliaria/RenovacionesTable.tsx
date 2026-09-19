@@ -12,25 +12,51 @@
  *
  * Todo lo que se pinta viene del back: los conteos de los cajones se cuentan
  * sobre la lista real, los días los recalcula el back al leer.
+ *
+ * ── 🔴 Los tres arreglos del 19-09-2026 ─────────────────────────────────────
+ *
+ * **1. El menú de cinco puertas a la misma habitación.** La última celda tenía
+ * un menú con «Ver detalle», «Notificar al inquilino», «Iniciar negociación»,
+ * «Calcular IPC» y «Ver historial» — cinco rótulos distintos, cinco `onSelect`
+ * distintos y **una sola cosa**: la página cableaba los cinco al mismo
+ * `openWorkflow`. Abrías cualquiera y salía el mismo cajón. Y la fila entera
+ * YA abría ese cajón, así que el menú no agregaba ni una acción: agregaba
+ * cuatro promesas falsas y un clic de más.
+ *
+ * Un menú que ofrece cinco cosas y hace una es peor que no tener menú: enseña
+ * que los rótulos de esta pantalla no significan nada. Se fue entero. En su
+ * lugar va un `CaretRight` —el mismo de las listas de la casa— que dice lo
+ * único cierto: **esta fila se abre**. Las acciones están donde siempre
+ * estuvieron, adentro del cajón, que es el que sabe en qué paso va cada
+ * renovación y cuál es la acción de ese paso.
+ *
+ * **2. No había buscador sobre 183 renovaciones.** En la agencia migrada hay
+ * 139 contratos venciendo en los próximos 90 días. Sin buscador, llegar a uno
+ * es pasar páginas. Busca por inmueble, dirección, inquilino, propietario y
+ * NÚMERO DE CONTRATO, que es como la inmobiliaria nombra las cosas.
+ *
+ * **3. Los filtros estaban en dos renglones y en dos idiomas visuales**: el
+ * estado como `Select` metido en el encabezado de la tarjeta, arriba a la
+ * derecha, y los cajones de urgencia como `Chip`s en una franja aparte. Dos
+ * controles que hacen lo mismo —achicar la lista— con dos formas distintas y
+ * en dos lugares distintos. Ahora es UNA franja pegada a la tabla: los
+ * cajones, el estado y el buscador, en ese orden, y debajo el alcance
+ * («12 de 183») cuando hay algo puesto.
  */
 
 import { useMemo, useState } from 'react';
 import {
   SortAscending,
   SortDescending,
-  DotsThree,
-  Eye,
   ArrowsClockwise,
+  CaretRight,
+  MagnifyingGlass,
   Warning,
-  Funnel,
-  Bell,
-  Calculator,
-  ClockCounterClockwise,
   TrendUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { SinDatos } from '@/components/estado/SinDatos';
 import {
   Select,
@@ -50,13 +76,6 @@ import {
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import {
-  DropdownList,
-  DropdownListTrigger,
-  DropdownListContent,
-  DropdownListItem,
-  DropdownListSeparator,
-} from '@/components/ui/dropdown-menu';
 import { Chip } from '@leasefy/cadence';
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
@@ -86,11 +105,15 @@ interface RenovacionesTableProps {
   error?: unknown;
   /** Para el botón de reintentar del estado de fallo. */
   onReintentar?: () => void;
-  onStartRenewal?: (renovacion: Renovacion) => void;
-  onNotifyTenant?: (renovacion: Renovacion) => void;
-  onViewDetails?: (renovacion: Renovacion) => void;
-  onCalculateIPC?: (renovacion: Renovacion) => void;
-  onViewHistory?: (renovacion: Renovacion) => void;
+  /**
+   * Abrir el cajón de una renovación. UNO, no cinco.
+   *
+   * 🔴 Antes eran `onStartRenewal`, `onNotifyTenant`, `onViewDetails`,
+   * `onCalculateIPC` y `onViewHistory`, y la página los cableaba a los cinco
+   * al MISMO `openWorkflow`. Cinco props para una conducta es la forma en que
+   * un menú termina ofreciendo cinco acciones que no existen.
+   */
+  onAbrir?: (renovacion: Renovacion) => void;
 }
 
 /**
@@ -109,6 +132,42 @@ function fechaCorta(iso: string | null | undefined, locale: string): string {
     })
     .replace(/ de /g, ' ')
     .replace(/\.$/, '');
+}
+
+/**
+ * Lo que el buscador mira de una renovación.
+ *
+ * 🔴 El NÚMERO DE CONTRATO va primero a propósito: es como la inmobiliaria
+ * nombra las cosas —«el 1686»—, y era el único dato de la fila por el que no
+ * se podía buscar porque ni siquiera se mostraba.
+ */
+function textoBuscableDe(r: Renovacion): string {
+  return [
+    r.contractNumero,
+    r.contractCode === null || r.contractCode === undefined ? null : String(r.contractCode),
+    r.propertyTitle,
+    r.propertyAddress,
+    r.tenantName,
+    r.propietarioName,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** Sin tildes y en minúsculas: nadie escribe «Ramírez» con tilde en un buscador. */
+function normalizar(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/** «Contrato 1686» o «Contrato #4120» — lo que la inmobiliaria reconoce. */
+function rotuloDelContrato(r: Renovacion): string | null {
+  if (r.contractNumero) return `Contrato ${r.contractNumero}`;
+  if (r.contractCode !== null && r.contractCode !== undefined) return `Contrato #${r.contractCode}`;
+  return null;
 }
 
 const ORDEN_DE_ESTADO: Record<RenovacionStatus, number> = {
@@ -144,17 +203,14 @@ export function RenovacionesTable({
   isLoading = false,
   error,
   onReintentar,
-  onStartRenewal,
-  onNotifyTenant,
-  onViewDetails,
-  onCalculateIPC,
-  onViewHistory,
+  onAbrir,
 }: RenovacionesTableProps) {
   const { t, locale } = useI18n();
   const [sortField, setSortField] = useState<SortField>('daysUntilExpiry');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [busqueda, setBusqueda] = useState('');
 
   const bucketCounts = useMemo(
     () => ({
@@ -173,6 +229,10 @@ export function RenovacionesTable({
     }
     if (statusFilter !== 'all') {
       result = result.filter((item) => item.status === statusFilter);
+    }
+    const q = normalizar(busqueda);
+    if (q !== '') {
+      result = result.filter((item) => normalizar(textoBuscableDe(item)).includes(q));
     }
     result.sort((a, b) => {
       let aVal: string | number = '';
@@ -208,7 +268,7 @@ export function RenovacionesTable({
       return 0;
     });
     return result;
-  }, [data, bucketFilter, statusFilter, sortField, sortDirection]);
+  }, [data, bucketFilter, statusFilter, busqueda, sortField, sortDirection]);
 
   /*
    * Paginado de presentación: `useRenovaciones()` trae todas y crecen con la
@@ -216,7 +276,7 @@ export function RenovacionesTable({
    * ordenar cambia el orden, no el conjunto.
    */
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(filtradas, { resetKey: `${bucketFilter}|${statusFilter}` });
+    useTablePagination(filtradas, { resetKey: `${bucketFilter}|${statusFilter}|${busqueda}` });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -248,10 +308,12 @@ export function RenovacionesTable({
     </TableHead>
   );
 
-  const hayFiltros = bucketFilter !== 'all' || statusFilter !== 'all';
+  const hayFiltros =
+    bucketFilter !== 'all' || statusFilter !== 'all' || busqueda.trim() !== '';
   const limpiarFiltros = () => {
     setBucketFilter('all');
     setStatusFilter('all');
+    setBusqueda('');
   };
 
   const chip = (valor: BucketFilter, etiqueta: string, tono: string) => (
@@ -273,7 +335,11 @@ export function RenovacionesTable({
       className="rounded-lg border border-border bg-card overflow-hidden"
       data-testid="renovaciones-tabla"
     >
-      {/* Encabezado de la tarjeta — el mismo de Contratos. */}
+      {/* Encabezado de la tarjeta — el mismo de Contratos. Sin filtros
+          adentro: el `Select` de estado vivía acá arriba a la derecha y los
+          cajones abajo en otra franja, o sea dos controles que hacen lo mismo
+          en dos lugares y con dos formas. Ahora los filtros están todos en la
+          franja de abajo, pegados a la tabla. */}
       <div className="flex flex-col gap-3 p-5 border-b border-border sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
@@ -284,18 +350,29 @@ export function RenovacionesTable({
               {t('inmobiliaria.nav.renovaciones')}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Toca una renovación para ver el detalle y avanzarla.
+              Toca una renovación para abrir su cajón: ahí se manda la propuesta,
+              se registra la respuesta del inquilino y se sube el contrato firmado.
             </p>
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Funnel className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {t('inmobiliaria.finance.renewals.statusLabel')}:
-          </span>
+      {/* 🔴 UNA franja de filtros, pegada a la tabla: los cajones de urgencia
+          (0-30 críticas, 31-60 urgentes, 61-90 próximas — el preaviso de la
+          Ley 820 son 90 días), el estado, y el buscador. */}
+      <div className="flex flex-col gap-3 border-b border-border px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          {chip('all', t('inmobiliaria.finance.renewals.all'), 'bg-muted')}
+          {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
+          {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
+          {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
+          <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="h-9 w-auto gap-2 text-sm font-medium" data-testid="filtro-estado">
+            <SelectTrigger
+              className="h-9 w-auto gap-2 text-sm font-medium"
+              aria-label={t('inmobiliaria.finance.renewals.statusLabel')}
+              data-testid="filtro-estado"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -310,16 +387,42 @@ export function RenovacionesTable({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="relative w-full lg:max-w-xs">
+          <MagnifyingGlass
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+            aria-hidden="true"
+          />
+          <Input
+            className="pl-9"
+            placeholder="Contrato, inmueble, inquilino o propietario"
+            aria-label="Buscar renovaciones"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            data-testid="buscar-renovaciones"
+          />
+        </div>
       </div>
 
-      {/* Los cajones de urgencia: 0-30 críticas, 31-60 urgentes, 61-90 próximas
-          (el preaviso de la Ley 820 son 90 días). */}
-      <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-border">
-        {chip('all', t('inmobiliaria.finance.renewals.all'), 'bg-muted')}
-        {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
-        {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
-        {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
-      </div>
+      {/* El alcance, sólo cuando hay algo puesto: la lista de arriba dice 183
+          y la tabla 12, y los dos números tienen que poder conciliarse. */}
+      {hayFiltros && (
+        <p
+          className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+          data-testid="alcance-de-renovaciones"
+        >
+          {filtradas.length} de {data.length}{' '}
+          {data.length === 1 ? 'renovación' : 'renovaciones'}.{' '}
+          <button
+            type="button"
+            onClick={limpiarFiltros}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="limpiar-filtros-renovaciones"
+          >
+            Quitar los filtros
+          </button>
+        </p>
+      )}
 
       <Table>
         <TableHeader>
@@ -375,16 +478,22 @@ export function RenovacionesTable({
             return (
               <TableRow
                 key={item.id}
-                onClick={() => onViewDetails?.(item)}
+                onClick={() => onAbrir?.(item)}
                 className={cn(
                   'border-b border-border last:border-0 transition-colors',
-                  onViewDetails && 'cursor-pointer hover:bg-muted/40',
+                  onAbrir && 'cursor-pointer hover:bg-muted/40',
                 )}
                 data-testid={`renovacion-${item.id}`}
               >
                 <TableCell className="px-5 py-4 max-w-[240px]">
                   <p className="font-medium text-foreground truncate">{item.propertyTitle}</p>
-                  <p className="text-xs text-muted-foreground truncate">{item.propertyAddress}</p>
+                  {/* 🔴 El número del contrato: es como la inmobiliaria nombra
+                      las cosas («el 1686») y era el único dato de la fila por
+                      el que no se podía buscar porque no se mostraba. */}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {item.propertyAddress}
+                    {rotuloDelContrato(item) ? ` · ${rotuloDelContrato(item)}` : ''}
+                  </p>
                 </TableCell>
 
                 <TableCell className="px-5 py-4 max-w-[200px]">
@@ -446,71 +555,18 @@ export function RenovacionesTable({
                   </span>
                 </TableCell>
 
+                {/* 🔴 Acá vivía un menú con CINCO items —«Ver detalle»,
+                    «Notificar al inquilino», «Iniciar negociación», «Calcular
+                    IPC», «Ver historial»— que la página cableaba a los cinco
+                    al MISMO `openWorkflow`: cinco rótulos, una conducta. Y la
+                    fila entera ya abría ese cajón. Queda lo único cierto:
+                    esta fila se abre. */}
                 <TableCell className="px-3 py-4 text-right">
-                  <DropdownList>
-                    <DropdownListTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        hideArrow
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-8 w-8 text-muted-foreground"
-                        aria-label="Acciones"
-                      >
-                        <DotsThree className="w-5 h-5" weight="bold" />
-                      </Button>
-                    </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
-                      {onViewDetails && (
-                        <DropdownListItem
-                          onSelect={() => onViewDetails(item)}
-                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>{t('inmobiliaria.finance.renewals.viewDetails')}</span>
-                        </DropdownListItem>
-                      )}
-                      {onNotifyTenant && item.status === 'pending' && (
-                        <DropdownListItem
-                          onSelect={() => onNotifyTenant(item)}
-                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                        >
-                          <Bell className="w-4 h-4" />
-                          <span>{t('inmobiliaria.finance.renewals.notifyTenant')}</span>
-                        </DropdownListItem>
-                      )}
-                      {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
-                        <>
-                          <DropdownListSeparator />
-                          <DropdownListItem
-                            onSelect={() => onStartRenewal(item)}
-                            className="flex items-center gap-3 px-3 py-2 cursor-pointer text-primary focus:text-primary"
-                          >
-                            <ArrowsClockwise className="w-4 h-4" />
-                            <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
-                          </DropdownListItem>
-                        </>
-                      )}
-                      {onCalculateIPC && (
-                        <DropdownListItem
-                          onSelect={() => onCalculateIPC(item)}
-                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                        >
-                          <Calculator className="w-4 h-4" />
-                          <span>{t('inmobiliaria.finance.renewals.calculateIPC')}</span>
-                        </DropdownListItem>
-                      )}
-                      {onViewHistory && (
-                        <DropdownListItem
-                          onSelect={() => onViewHistory(item)}
-                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                        >
-                          <ClockCounterClockwise className="w-4 h-4" />
-                          <span>{t('inmobiliaria.finance.renewals.viewHistory')}</span>
-                        </DropdownListItem>
-                      )}
-                    </DropdownListContent>
-                  </DropdownList>
+                  <CaretRight
+                    className="ml-auto h-4 w-4 text-fg-subtle"
+                    aria-hidden="true"
+                    data-testid={`abrir-${item.id}`}
+                  />
                 </TableCell>
               </TableRow>
             );

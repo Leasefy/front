@@ -58,6 +58,36 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
   }
   if (!datos) return null;
 
+  /*
+   * 🔴 Sin nada que enviar, esto es UNA LÍNEA y no una tarjeta (19-09-2026).
+   *
+   * Vive encima de la tabla de Renovaciones —183 filas en la agencia migrada—
+   * y ocupaba una tarjeta entera para decir «No hay cartas por enviar», con su
+   * título, sus tres contadores en cero y su párrafo explicativo. Reservarle el
+   * lugar más valioso de la pantalla a un vacío estructural es lo mismo que le
+   * pasaba a la bandeja del agente en `/pagos`, y se resuelve igual.
+   *
+   * No desaparece: si desapareciera, nadie sabría que las cartas existen ni que
+   * salen solas. Se dice en un renglón, que es lo que el hecho pesa.
+   */
+  const nadaQueHacer = datos.cartas.length === 0 && datos.vencidasSinConstancia === 0;
+  if (nadaQueHacer) {
+    return (
+      <p
+        className="flex items-start gap-2 rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground"
+        data-testid="bandeja-de-cartas-vacia"
+      >
+        <EnvelopeSimple className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+        <span>
+          <span className="font-medium text-foreground">Cartas del incremento:</span> ninguna por
+          enviar. Cada carta aparece sola {datos.diasAntes} días antes del aniversario; el canon
+          sube igual en la fecha, la carta es transparencia.
+          {!datos.disponible && ' Falta una actualización de la base para poder enviarlas.'}
+        </span>
+      </p>
+    );
+  }
+
   return (
     <section className="space-y-3 rounded-lg border border-border bg-card p-5" data-testid="bandeja-de-cartas">
       <div className="flex flex-wrap items-baseline justify-between gap-2">

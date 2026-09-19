@@ -99,7 +99,9 @@ async function montarConElCajonAbierto(): Promise<PropsDelCajon> {
   await act(async () => {
     root.render(React.createElement(RenovacionesPage));
   });
-  const abrir = h.tabla.props?.onStartRenewal as (r: Renovacion) => void;
+  // 🔴 Era `onStartRenewal`, una de las CINCO props que la página cableaba
+  // al mismo `openWorkflow`. Desde el 19-09 hay una sola: `onAbrir`.
+  const abrir = h.tabla.props?.onAbrir as (r: Renovacion) => void;
   await act(async () => {
     abrir(RENOVACION);
   });

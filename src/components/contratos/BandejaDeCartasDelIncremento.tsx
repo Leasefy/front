@@ -30,7 +30,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { EnvelopeSimple } from '@phosphor-icons/react';
+import { EnvelopeSimple, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,6 +45,27 @@ import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 
 /** La cola completa. El tablero lleva acá, con el estado en la URL. */
 export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
+
+/**
+ * «20 ene 2026», leyendo la parte `YYYY-MM-DD`.
+ *
+ * 🔴 19-09 (visto en el navegador): la cola mostraba las fechas CRUDAS
+ * —«desde el 2026-01-20», «Llegó el aniversario (2026-01-20)»— en la única
+ * pantalla donde la fecha es el dato que decide si hay que correr. Ninguna
+ * otra pantalla del panel escribe una fecha así.
+ *
+ * Se leen las partes en vez de `new Date(iso)` porque `desde` es un DATE que
+ * viaja como medianoche UTC y en Bogotá cae al día anterior: la misma trampa
+ * que ya mordió en Renovaciones y en el estado de cuenta.
+ */
+export function fechaCorta(iso: string | null | undefined): string {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  if (!partes) return '—';
+  return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
+    .toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+    .replace(/ de /g, ' ')
+    .replace(/\.$/, '');
+}
 
 export const PESOS = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -243,24 +264,28 @@ export function Fila({
         </Link>
         <span>
           {PESOS.format(carta.canonAnteriorCop)} → <strong>{PESOS.format(carta.canonNuevoCop)}</strong> desde el{' '}
-          {carta.desde}
+          {fechaCorta(carta.desde)}
         </span>
       </div>
       <p className="text-xs text-muted-foreground">{carta.inmueble}</p>
       {carta.alertaRoja ? (
-        <p className="text-xs font-medium text-destructive">
-          🔴 Llegó el aniversario ({carta.desde}) sin constancia de la carta.
+        <p className="flex items-start gap-1.5 text-xs font-medium text-destructive">
+          {/* 🔴 Acá había un emoji 🔴 literal, el mismo que uso en los
+              comentarios del código: se filtró a la cara del usuario. El panel
+              marca las alertas con iconos, no con emojis. */}
+          <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden="true" />
+          <span>Llegó el aniversario ({fechaCorta(carta.desde)}) sin constancia de la carta.</span>
         </p>
       ) : carta.estado === 'ENVIADA' ? (
         <p className="text-xs text-muted-foreground">
-          Enviada el {carta.enviadaAt?.slice(0, 10)}
+          Enviada el {fechaCorta(carta.enviadaAt)}
           {carta.medio ? ` (${carta.medio.toLowerCase()})` : ''}.
         </p>
       ) : (
         <p className="text-xs text-plan-status-yellow">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
       )}
       {carta.ultimoIntento && carta.estado !== 'ENVIADA' && (
-        <p className="text-xs text-muted-foreground">Último intento: {carta.ultimoIntento}</p>
+        <p className="text-xs text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>
       )}
       {!carta.correoDelInquilino && carta.estado !== 'ENVIADA' && (
         <p className="text-xs text-muted-foreground">

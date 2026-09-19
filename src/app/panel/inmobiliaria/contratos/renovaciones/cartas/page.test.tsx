@@ -129,7 +129,10 @@ describe('la cola de cartas — lo que D6 garantizaba sigue garantizado', () => 
     await montar();
     const fila = $('carta-c1-2026-10-01')!;
     expect(fila.textContent).toContain('#1850');
-    expect(fila.textContent).toContain('2026-10-01');
+    // 🔴 19-09: acá se esperaba el crudo `2026-10-01`. El testid sigue siendo
+    // la fecha ISO —es la llave de la fila, no texto para leer—, pero lo que
+    // se ESCRIBE es la fecha en español.
+    expect(fila.textContent).toContain('01 oct 2026');
   });
 
   it('enviar es un clic y refresca la cola', async () => {
@@ -197,6 +200,34 @@ describe('la cola de cartas — el chrome de la casa', () => {
     expect($('carta-c1-2026-10-01')).not.toBeNull();
     expect($('carta-c2-2026-10-01')).toBeNull();
     expect($('alcance-de-cartas')!.textContent).toContain('1 de 2 cartas');
+  });
+
+  /*
+   * 🔴 19-09 · Visto en el navegador: la cola escribía las fechas CRUDAS
+   * —«desde el 2026-01-20», «Llegó el aniversario (2026-01-20)»— en la única
+   * pantalla donde la fecha decide si hay que correr, y ninguna otra del panel
+   * las escribe así. Y la alerta iba con un emoji 🔴 literal: el mismo que uso
+   * en los comentarios del código, filtrado a la cara del usuario.
+   */
+  it('🔴 las fechas se escriben en español, no en `YYYY-MM-DD`', async () => {
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([carta({ contractId: 'c1', desde: '2026-01-20' })]),
+    );
+    await montar();
+    const texto = $('carta-c1-2026-01-20')!.textContent ?? '';
+    expect(texto).toContain('20 ene 2026');
+    expect(texto).not.toContain('2026-01-20');
+  });
+
+  it('🔴 la alerta va con icono, no con un emoji', async () => {
+    api.bandejaDeCartas.mockResolvedValue(
+      bandeja([
+        carta({ contractId: 'c1', estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true }),
+      ]),
+    );
+    await montar();
+    expect(container!.textContent).toContain('sin constancia de la carta');
+    expect(container!.textContent).not.toContain('🔴');
   });
 
   it('sin `estado` en la URL se ven todas', async () => {

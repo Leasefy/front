@@ -25,7 +25,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Scroll, Plus, WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { BackButton } from '@/components/ui/back-button';
 import { Button, Badge, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
@@ -89,12 +88,12 @@ function ContenidoDeClausulas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <div className="mb-6">
-          <BackButton label="Volver a Contratos" />
-        </div>
-
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      {/* 🔴 Sin «Volver a Contratos» (Nico, 18-09-2026: «tiene un devolver que
+          ni se pa que está ahí»). Esta pantalla ES una pestaña de Contratos: el
+          camino de vuelta son las pestañas de arriba, y un botón que repite lo
+          que la navegación ya hace sólo agrega una decisión más. */}
+      <div className="space-y-6 p-4 md:p-6">
+        <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             <h1 className="flex items-center gap-2 text-h2 text-fg">
               <Scroll className="h-6 w-6 text-primary" weight="duotone" />
@@ -123,12 +122,35 @@ function ContenidoDeClausulas() {
           onReintentar={cargar}
           esqueleto={<EsqueletoTabla columnas={2} filas={3} />}
           cuandoVacio={
-            <div className="rounded-lg border border-dashed border-border p-8 text-center">
-              <p className="text-sm text-fg">Todavía no hay cláusulas propias.</p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Tus contratos salen con el texto legal completo. Lo que agregues
-                acá se suma al final, y sólo si la ley lo permite.
-              </p>
+            /* 🔴 El vacío decía que no había nada, no PARA QUÉ sirve la
+               pantalla. Con ejemplos se entiende en dos segundos qué se
+               escribe acá y qué no (Nico, 18-09-2026). */
+            <div className="rounded-lg border border-dashed border-border p-8">
+              <div className="mx-auto max-w-lg space-y-4 text-center">
+                <p className="text-base font-medium text-fg">
+                  Todavía no has agregado ninguna cláusula
+                </p>
+                <p className="text-sm leading-relaxed text-fg-muted">
+                  Tus contratos ya salen completos con todo lo que exige la ley.
+                  Acá agregas lo que tu inmobiliaria quiere pactar ADEMÁS, y se
+                  suma al final de cada contrato nuevo.
+                </p>
+                <div className="rounded-lg bg-surface px-4 py-3 text-left">
+                  <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
+                    Por ejemplo
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-fg-muted">
+                    <li>· Prohibido tener mascotas sin autorización escrita.</li>
+                    <li>· El inquilino mantiene el jardín y la piscina.</li>
+                    <li>· No se permite subarrendar ni en plataformas.</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-fg-subtle">
+                  Lo que escribas pasa por el mismo validador que revisa todo
+                  contrato: si una cláusula choca con la Ley 820, te lo decimos
+                  antes de guardarla.
+                </p>
+              </div>
             </div>
           }
         >

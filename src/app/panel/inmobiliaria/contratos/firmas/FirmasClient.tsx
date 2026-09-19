@@ -77,17 +77,47 @@ export function FirmasClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
+    <div className="space-y-6 p-4 md:p-6">
+      <header className="max-w-2xl space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">
           Invitaciones a firmar
         </h1>
-        <p className="text-muted-foreground text-sm">
-          La invitación vence a los 7 días con dos recordatorios. Al vencer el
-          contrato vuelve a borrador; el inmueble sigue reservado hasta que
-          alguien cancele.
+        <p className="text-sm text-fg-muted">
+          Los contratos que ya se mandaron a firmar y todavía nadie firma. Acá
+          ves cuáles siguen a tiempo, cuáles se vencieron y qué te toca hacer
+          con cada uno.
         </p>
       </header>
+
+      {/* 🔴 Los tres estados, explicados antes de la lista (Nico, 18-09-2026:
+          «que se entienda muy bien qué debe hacer el usuario con los diferentes
+          estados de esa pantalla»). Sin esto, la pantalla mostraba secciones
+          —«vencidas», «por recordar»— sin decir nunca qué significan ni qué se
+          espera de quien las mira. */}
+      <section
+        className="grid gap-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-3"
+        data-testid="los-tres-estados"
+      >
+        {[
+          {
+            que: 'A tiempo',
+            como: 'Se mandó hace menos de 7 días. No tienes que hacer nada: el sistema manda los dos recordatorios solo.',
+          },
+          {
+            que: 'Le toca recordatorio',
+            como: 'Pasaron los días del primer o segundo aviso. Sale de acá con un clic, o puedes llamar tú.',
+          },
+          {
+            que: 'Se venció',
+            como: 'Nadie firmó en 7 días: el contrato volvió a borrador. El inmueble SIGUE reservado hasta que canceles o lo vuelvas a mandar.',
+          },
+        ].map((e) => (
+          <div key={e.que} className="space-y-0.5">
+            <p className="text-sm font-medium text-fg">{e.que}</p>
+            <p className="text-sm leading-relaxed text-fg-muted">{e.como}</p>
+          </div>
+        ))}
+      </section>
 
       {resultado ? (
         <p className="text-sm" data-testid="resultado-cancelacion">
@@ -118,8 +148,8 @@ export function FirmasClient() {
           cuandoVacio={
             <EmptyState
               icon={Signature}
-              title="Ninguna invitación pendiente"
-              description="Cuando se mande un contrato a firmar, acá se ve qué recordatorio toca y qué se venció."
+              title="No hay nadie pendiente de firmar"
+              description="Ningún contrato está esperando firma en este momento, así que no hay nada que hacer acá. Cuando mandes uno a firmar desde su ficha, aparece en esta lista con los días que le quedan."
             />
           }
         >

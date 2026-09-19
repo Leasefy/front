@@ -27,6 +27,7 @@ import { Scroll, Plus, WarningCircle, CheckCircle, X } from '@phosphor-icons/rea
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -122,36 +123,46 @@ function ContenidoDeClausulas() {
           onReintentar={cargar}
           esqueleto={<EsqueletoTabla columnas={2} filas={3} />}
           cuandoVacio={
-            /* 🔴 El vacío decía que no había nada, no PARA QUÉ sirve la
-               pantalla. Con ejemplos se entiende en dos segundos qué se
-               escribe acá y qué no (Nico, 18-09-2026). */
-            <div className="rounded-lg border border-dashed border-border p-8">
-              <div className="mx-auto max-w-lg space-y-4 text-center">
-                <p className="text-base font-medium text-fg">
-                  Todavía no has agregado ninguna cláusula
-                </p>
-                <p className="text-sm leading-relaxed text-fg-muted">
-                  Tus contratos ya salen completos con todo lo que exige la ley.
-                  Acá agregas lo que tu inmobiliaria quiere pactar ADEMÁS, y se
-                  suma al final de cada contrato nuevo.
-                </p>
-                <div className="rounded-lg bg-surface px-4 py-3 text-left">
-                  <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
-                    Por ejemplo
-                  </p>
-                  <ul className="mt-2 space-y-1 text-sm text-fg-muted">
-                    <li>· Prohibido tener mascotas sin autorización escrita.</li>
-                    <li>· El inquilino mantiene el jardín y la piscina.</li>
-                    <li>· No se permite subarrendar ni en plataformas.</li>
-                  </ul>
-                </div>
-                <p className="text-xs text-fg-subtle">
-                  Lo que escribas pasa por el mismo validador que revisa todo
-                  contrato: si una cláusula choca con la Ley 820, te lo decimos
-                  antes de guardarla.
-                </p>
-              </div>
-            </div>
+            /*
+             * 🔴 El vacío, con la cara de TODOS los vacíos del panel (Nico,
+             * 19-09: «esto se ve horrible»).
+             *
+             * Era un recuadro punteado con tres párrafos centrados, un cuadro
+             * de ejemplos alineado a la izquierda ADENTRO de esa columna
+             * centrada —o sea dos ejes distintos peleando— y ningún botón: la
+             * única forma de escribir la primera cláusula era subir la vista
+             * hasta el encabezado. Y el primer párrafo repetía casi palabra por
+             * palabra el subtítulo de la pantalla, dos veces lo mismo a 40 px
+             * de distancia.
+             *
+             * Ahora es el `EmptyState` de la casa —círculo gris, título,
+             * descripción, acción— y lo único propio son los EJEMPLOS, que son
+             * la parte que enseña: en dos segundos se entiende qué se escribe
+             * acá y qué no.
+             */
+            <EmptyState
+              icon={Scroll}
+              title="Todavía no hay ninguna cláusula propia"
+              description="Las que agregues se suman al final de cada contrato nuevo."
+              action={
+                puedeEditar
+                  ? { label: 'Escribir la primera', onClick: () => setEditando('nueva') }
+                  : undefined
+              }
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
+                Por ejemplo
+              </p>
+              <ul className="mt-2 space-y-1.5 text-sm text-fg-muted">
+                <li>Prohibido tener mascotas sin autorización escrita.</li>
+                <li>El inquilino mantiene el jardín y la piscina.</li>
+                <li>No se permite subarrendar ni en plataformas.</li>
+              </ul>
+              <p className="mt-4 border-t border-border pt-3 text-xs text-fg-subtle">
+                Si una cláusula choca con la Ley 820 te lo decimos antes de
+                guardarla, con la norma citada.
+              </p>
+            </EmptyState>
           }
         >
           <ul className="space-y-3">

@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,21 @@ export interface EmptyStateProps {
   action?: EmptyStateAction;
   /** Segunda salida, en tono link (la usa el adaptador de data-display). */
   secondaryAction?: EmptyStateAction;
+  /**
+   * Un bloque propio entre la descripción y la acción.
+   *
+   * 🔴 Existe por las pantallas donde el vacío tiene que ENSEÑAR, no sólo
+   * avisar: en «Cláusulas propias» tres ejemplos («Prohibido tener mascotas sin
+   * autorización escrita») explican qué se escribe ahí mejor que dos párrafos.
+   * Antes esas pantallas se armaban su propio vacío a mano —centrado, con un
+   * recuadro alineado a la izquierda adentro y sin el botón— y terminaban
+   * siendo un muro de texto que no se parecía a ningún otro vacío del panel
+   * (Nico, 19-09: «esto se ve horrible»).
+   *
+   * Va ACÁ y no en cada pantalla para que el círculo gris, la tipografía y la
+   * posición del botón sigan siendo los mismos en las ~130 que lo usan.
+   */
+  children?: React.ReactNode;
   /** Additional CSS classes */
   className?: string;
 }
@@ -93,6 +109,7 @@ export function EmptyState({
   description,
   action,
   secondaryAction,
+  children,
   className,
 }: EmptyStateProps) {
   return (
@@ -113,6 +130,7 @@ export function EmptyState({
       </span>
       <p className="text-[15px] font-semibold text-fg">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
+      {children && <div className="mt-5 w-full max-w-sm text-left">{children}</div>}
       {action && <div className="mt-5">{renderAction(action, 'secondary', 'sm')}</div>}
       {secondaryAction && <div className="mt-2">{renderAction(secondaryAction, 'link', 'sm')}</div>}
     </div>

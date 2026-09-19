@@ -216,3 +216,54 @@ describe('Cláusulas propias de la inmobiliaria', () => {
     expect(boton('Dejar de ofrecer')).toBeUndefined()
   })
 })
+
+/**
+ * 🔴 19-09-2026 · El vacío, con la cara de todos los vacíos del panel.
+ *
+ * Nico: «esto se ve horrible». Era un recuadro punteado con tres párrafos
+ * centrados, un cuadro de ejemplos alineado a la IZQUIERDA dentro de esa
+ * columna centrada —dos ejes peleando— y ningún botón: para escribir la
+ * primera cláusula había que subir la vista hasta el encabezado. Encima, el
+ * primer párrafo repetía casi palabra por palabra el subtítulo de la pantalla,
+ * dos veces lo mismo a 40 px de distancia.
+ */
+describe('el vacío de cláusulas propias', () => {
+  it('🔴 usa el EmptyState de la casa y trae su acción ADENTRO', async () => {
+    h.api.listar.mockResolvedValue([])
+    await montar()
+    const vacio = contenedor.querySelector('[data-testid="empty-state"]')
+    expect(vacio).not.toBeNull()
+    // La salida está en el vacío, no sólo arriba en el encabezado.
+    expect(
+      Array.from(vacio!.querySelectorAll('button')).some((b) =>
+        b.textContent?.includes('Escribir la primera'),
+      ),
+    ).toBe(true)
+  })
+
+  it('enseña con ejemplos: es lo que explica qué se escribe acá', async () => {
+    h.api.listar.mockResolvedValue([])
+    await montar()
+    const vacio = contenedor.querySelector('[data-testid="empty-state"]')!
+    expect(vacio.textContent).toContain('Por ejemplo')
+    expect(vacio.textContent).toContain('Prohibido tener mascotas')
+    expect(vacio.textContent).toContain('Ley 820')
+  })
+
+  it('🔴 no repite el subtítulo de la pantalla', async () => {
+    // El encabezado ya dice «se suman al final y pasan por el mismo validador».
+    // El vacío decía lo mismo con otras palabras, justo debajo.
+    h.api.listar.mockResolvedValue([])
+    await montar()
+    const vacio = contenedor.querySelector('[data-testid="empty-state"]')!
+    expect(vacio.textContent).not.toContain('Tus contratos ya salen completos')
+  })
+
+  it('sin permiso de editar el vacío no ofrece una acción que no se puede hacer', async () => {
+    h.canAccess.mockReturnValue(false)
+    h.api.listar.mockResolvedValue([])
+    await montar()
+    const vacio = contenedor.querySelector('[data-testid="empty-state"]')!
+    expect(vacio.querySelector('button')).toBeNull()
+  })
+})

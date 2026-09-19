@@ -20,9 +20,21 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+/*
+ * 🔴 El falso pasa TODAS las props, no sólo `href`.
+ *
+ * Con `{ href, children }` a secas se perdían `data-testid` y `className`, así
+ * que las losetas del tablero —que son `<Link>`— quedaban invisibles para las
+ * pruebas y para cualquier aserción sobre su color. Un falso que recorta props
+ * hace que el test mida otra cosa que la pantalla.
+ */
 vi.mock('next/link', () => ({
-  default: ({ href, children }: { href: string; children?: React.ReactNode }) =>
-    React.createElement('a', { href }, children),
+  default: ({
+    href,
+    children,
+    ...resto
+  }: { href: string; children?: React.ReactNode } & Record<string, unknown>) =>
+    React.createElement('a', { href, ...resto }, children),
 }));
 
 import { cicloDeVidaApi, type CartaEnLaBandeja } from '@/lib/api/ciclo-de-vida.service';
@@ -92,67 +104,62 @@ async function montar(puedeEditar = true) {
 
 const $ = (id: string) => container!.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 
-describe('<BandejaDeCartasDelIncremento> (D6)', () => {
-  it('lista la carta con el canon de antes y el nuevo, y desde cuándo', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+/**
+ * 🔴 19-09-2026 · De lista infinita a TABLERO.
+ *
+ * Nico: «es una lista enorme… quizás un tablero que contenga diferente
+ * información y de ahí amplío la información si es que son urgentes, críticas
+ * etc… y poder ir abriendo esos caminos en la navegación, porque es larguísima
+ * esa lista y ni se ve la tabla que hay en la parte de abajo».
+ *
+ * 57 cartas de cuatro renglones son ~5.700 px ENCIMA de la tabla de
+ * Renovaciones. Acá quedó el tablero; la cola se mudó a
+ * `/contratos/renovaciones/cartas` y sus pruebas viven con ella
+ * (`cartas/page.test.tsx`): enviar con un clic, el correo simulado que no se
+ * canta como enviado, el caso sin correo del inquilino y los permisos.
+ */
+describe('<BandejaDeCartasDelIncremento> — el tablero (D6)', () => {
+  it('🔴 NO lista las cartas: son tres losetas con su conteo', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta(), carta({ contractId: 'c2' })]));
     await montar();
-    const fila = $('carta-c1-2026-10-01')!;
-    expect(fila.textContent).toContain('#1850');
-    expect(fila.textContent).toContain('2026-10-01');
-    expect(container!.textContent).toContain('30 días antes del aniversario');
+    expect($('tablero-de-cartas')).not.toBeNull();
+    // Ni una fila de carta, ni un botón de enviar, encima de Renovaciones.
+    expect($('carta-c1-2026-10-01')).toBeNull();
+    expect($('enviar-c1')).toBeNull();
   });
 
-  it('🔴 el aniversario sin constancia se ve como alerta roja', async () => {
+  it('cada loseta es un CAMINO a la cola ya filtrada', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
+    await montar();
+    const RUTA = '/panel/inmobiliaria/contratos/renovaciones/cartas';
+    expect($('loseta-sin-constancia')?.getAttribute('href')).toBe(`${RUTA}?estado=sin-constancia`);
+    expect($('loseta-por-enviar')?.getAttribute('href')).toBe(`${RUTA}?estado=por-enviar`);
+    expect($('loseta-enviadas')?.getAttribute('href')).toBe(`${RUTA}?estado=enviadas`);
+    expect($('abrir-cola-de-cartas')?.getAttribute('href')).toBe(RUTA);
+  });
+
+  it('🔴 las vencidas sin constancia se cuentan y se ven distintas', async () => {
     api.bandejaDeCartas.mockResolvedValue(
-      bandeja([carta({ estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true, diasParaElAniversario: -3 })]),
+      bandeja([carta({ estado: 'VENCIDA_SIN_CONSTANCIA', alertaRoja: true })]),
     );
     await montar();
-    expect($('carta-c1-2026-10-01')!.textContent).toContain('sin constancia');
-    expect(container!.textContent).toContain('1 sin constancia');
+    const loseta = $('loseta-sin-constancia')!;
+    expect(loseta.textContent).toContain('1');
+    // El único color de la tarjeta se gasta en lo que pide acción hoy.
+    expect(loseta.className).toContain('destructive');
   });
 
-  it('enviar es un clic y refresca la bandeja', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
-    api.enviarCarta.mockResolvedValue({
-      ultimoEnvio: { resultado: 'ENVIADA', mensaje: 'Carta enviada a ana@example.com.' },
-    });
+  it('en cero, la loseta roja no grita', async () => {
+    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { vencidasSinConstancia: 0 }));
     await montar();
-    await act(async () => ($('enviar-c1') as HTMLButtonElement).click());
-    expect(api.enviarCarta).toHaveBeenCalledWith('c1', '2026-10-01', undefined);
-    expect(toastMock.success).toHaveBeenCalled();
-    expect(api.bandejaDeCartas).toHaveBeenCalledTimes(2);
+    expect($('loseta-sin-constancia')!.className).not.toContain('destructive');
   });
 
-  it('🔴 un correo SIMULADO no se canta como enviado', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
-    api.enviarCarta.mockResolvedValue({
-      ultimoEnvio: { resultado: 'SIMULADA', mensaje: 'El envío de correos está apagado en este entorno.' },
-    });
-    await montar();
-    await act(async () => ($('enviar-c1') as HTMLButtonElement).click());
-    expect(toastMock.success).not.toHaveBeenCalled();
-    expect(toastMock.error).toHaveBeenCalledWith('La carta no salió.', expect.objectContaining({ description: expect.any(String) }));
-  });
-
-  it('sin correo del inquilino no deja enviar y dice qué hacer', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta({ correoDelInquilino: null })]));
-    await montar();
-    expect(($('enviar-c1') as HTMLButtonElement).disabled).toBe(true);
-    expect(container!.textContent).toContain('entrégala por otro medio');
-  });
-
-  it('sin migración se ven las cartas pero no se envían', async () => {
+  it('sin migración lo dice, sin esconder el tablero', async () => {
     api.bandejaDeCartas.mockResolvedValue(bandeja([carta()], { disponible: false }));
     await montar();
     expect(container!.textContent).toContain('todavía no se pueden enviar');
-    expect($('enviar-c1')).toBeNull();
-  });
-
-  it('sin permiso de editar se lee, no se manda', async () => {
-    api.bandejaDeCartas.mockResolvedValue(bandeja([carta()]));
-    await montar(false);
-    expect($('carta-c1-2026-10-01')).not.toBeNull();
-    expect($('enviar-c1')).toBeNull();
+    expect($('tablero-de-cartas')).not.toBeNull();
   });
 });
 

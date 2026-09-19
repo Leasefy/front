@@ -1,14 +1,31 @@
 'use client';
 
 /**
- * 🔴 D6 · La bandeja de cartas del incremento (Nico, 17-09 ~03:10): «el canon
- * sube en la fecha + la carta se genera sola 30 días antes (configurable) en
- * una bandeja para enviar con un clic + alerta roja si llega el aniversario sin
+ * 🔴 D6 · Las cartas del incremento (Nico, 17-09 ~03:10): «el canon sube en la
+ * fecha + la carta se genera sola 30 días antes (configurable) en una bandeja
+ * para enviar con un clic + alerta roja si llega el aniversario sin
  * constancia».
  *
- * Arriba las alertas rojas, después las por enviar, al final las enviadas del
- * último mes. Enviar es un clic (el clic es la revisión); se puede abrir la
- * carta para corregirla antes. La lista y el texto los arma el back.
+ * ── 🔴 De lista infinita a TABLERO (Nico, 19-09-2026) ───────────────────────
+ *
+ * «Es una lista enorme… quizás un tablero que contenga diferente información y
+ * de ahí amplío la información si es que son urgentes, críticas etc… y poder
+ * ir abriendo esos caminos en la navegación, porque es larguísima esa lista y
+ * ni se ve la tabla que hay en la parte de abajo.»
+ *
+ * Tenía razón y el número lo dice: en la agencia migrada hay **57 cartas** (17
+ * sin constancia + 40 por enviar), cada una de cuatro renglones. Eso son unos
+ * 5.700 px de lista ENCIMA de la tabla de Renovaciones — la pantalla a la que
+ * uno venía. Una cola de trabajo de 57 ítems no es un aviso: es una pantalla.
+ *
+ * Así que esto quedó como el TABLERO —tres losetas con su conteo, la roja
+ * primero— y la cola se mudó a su propia ruta,
+ * `/contratos/renovaciones/cartas`, con el buscador, el filtro por estado y la
+ * paginación de la casa. Cada loseta es un ENLACE que abre la cola ya filtrada:
+ * ése es el «camino» que pedía.
+ *
+ * Sin nada que enviar y sin vencidas es UNA línea. No desaparece: si
+ * desapareciera, nadie sabría que las cartas existen ni que salen solas.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -26,7 +43,10 @@ import {
 } from '@/lib/api/ciclo-de-vida.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 
-const PESOS = new Intl.NumberFormat('es-CO', {
+/** La cola completa. El tablero lleva acá, con el estado en la URL. */
+export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
+
+export const PESOS = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -89,18 +109,22 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
   }
 
   return (
-    <section className="space-y-3 rounded-lg border border-border bg-card p-5" data-testid="bandeja-de-cartas">
+    <section
+      className="space-y-4 rounded-lg border border-border bg-card p-5"
+      data-testid="bandeja-de-cartas"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex items-center gap-2">
           <EnvelopeSimple className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold">Cartas del incremento</h2>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {datos.vencidasSinConstancia > 0 && (
-            <span className="font-medium text-destructive">{datos.vencidasSinConstancia} sin constancia · </span>
-          )}
-          {datos.porEnviar} por enviar · {datos.enviadas} enviadas
-        </p>
+        <Link
+          href={RUTA_DE_LAS_CARTAS}
+          className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+          data-testid="abrir-cola-de-cartas"
+        >
+          Abrir la cola →
+        </Link>
       </div>
       <p className="text-xs text-muted-foreground">
         Cada carta aparece sola {datos.diasAntes} días antes del aniversario. El canon sube igual en la fecha; la carta
@@ -111,25 +135,70 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
           Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
         </p>
       )}
-      {datos.cartas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay cartas por enviar.</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {datos.cartas.map((c) => (
-            <Fila
-              key={`${c.contractId}-${c.desde}`}
-              carta={c}
-              editable={puedeEditar && datos.disponible}
-              onEnviada={cargar}
-            />
-          ))}
-        </ul>
-      )}
+
+      {/* 🔴 El tablero: tres losetas, la roja primero, cada una un camino a la
+          cola ya filtrada. Antes acá empezaban 57 cartas de cuatro renglones. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="tablero-de-cartas">
+        <Loseta
+          testid="sin-constancia"
+          rotulo="Sin constancia"
+          cuantas={datos.vencidasSinConstancia}
+          detalle="El aniversario ya pasó y no hay constancia."
+          urgente
+        />
+        <Loseta
+          testid="por-enviar"
+          rotulo="Por enviar"
+          cuantas={datos.porEnviar}
+          detalle={`El aniversario llega en menos de ${datos.diasAntes} días.`}
+        />
+        <Loseta
+          testid="enviadas"
+          rotulo="Enviadas"
+          cuantas={datos.enviadas}
+          detalle="Con su constancia guardada."
+        />
+      </div>
     </section>
   );
 }
 
-function Fila({
+/** Una loseta del tablero: el conteo ES el camino a esa parte de la cola. */
+function Loseta({
+  rotulo,
+  cuantas,
+  detalle,
+  urgente = false,
+  testid,
+}: {
+  rotulo: string;
+  cuantas: number;
+  detalle: string;
+  urgente?: boolean;
+  testid: string;
+}) {
+  return (
+    <Link
+      href={`${RUTA_DE_LAS_CARTAS}?estado=${testid}`}
+      data-testid={`loseta-${testid}`}
+      className={`block rounded-lg border p-3 transition-colors hover:bg-surface-muted ${
+        urgente && cuantas > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-border'
+      }`}
+    >
+      <p className="text-xs text-muted-foreground">{rotulo}</p>
+      <p
+        className={`font-mono text-2xl font-semibold tabular-nums ${
+          urgente && cuantas > 0 ? 'text-destructive' : 'text-foreground'
+        }`}
+      >
+        {cuantas}
+      </p>
+      <p className="text-caption text-muted-foreground">{detalle}</p>
+    </Link>
+  );
+}
+
+export function Fila({
   carta,
   editable,
   onEnviada,

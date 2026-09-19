@@ -68,6 +68,7 @@ import {
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { cn } from '@/lib/utils'
 
 type Clase = 'DOCUMENTO' | 'DATO' | 'ACCION'
 
@@ -346,26 +347,53 @@ function FilaDeRequisito({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant={r.obligatorio ? 'default' : 'secondary'}>
-          {r.obligatorio ? 'Obligatorio' : 'Opcional'}
-        </Badge>
-        {/* 🔴 F-08: el estudio no lleva interruptor. El porqué va al lado, no
-            en un error después del clic. */}
+        {/* 🔴 F-08: el estudio no se puede volver opcional. Va como etiqueta
+            fija con su porqué al lado, no como un control que después
+            devuelve 409. */}
         {r.esElEstudio ? (
-          <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
-            Nadie se postula ni firma sin estudio
-          </span>
+          <>
+            <Badge variant="default">Obligatorio</Badge>
+            <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
+              Nadie se postula ni firma sin estudio
+            </span>
+          </>
         ) : puedeEditar && !esElPreset ? (
           <>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={ocupado}
-              onClick={onAlternar}
+            {/* 🔴 Obligatorio/Opcional es un CONTROL, no una etiqueta (Nico,
+                18-09-2026: «no hay opción de cambiarlo... y debería»). Las dos
+                opciones se ven siempre: así se sabe que se puede cambiar y en
+                qué se convierte, sin tener que adivinar qué hace un botón que
+                dice «volver opcional». */}
+            <div
+              className="flex overflow-hidden rounded-full border border-border"
+              role="group"
+              aria-label={`¿${r.etiqueta} es obligatorio?`}
               data-testid={`alternar-${r.id}`}
             >
-              {r.obligatorio ? 'Volver opcional' : 'Volver obligatorio'}
-            </Button>
+              {[
+                { valor: true, texto: 'Obligatorio' },
+                { valor: false, texto: 'Opcional' },
+              ].map((o) => (
+                <button
+                  key={String(o.valor)}
+                  type="button"
+                  disabled={ocupado}
+                  aria-pressed={r.obligatorio === o.valor}
+                  onClick={() => {
+                    if (r.obligatorio !== o.valor) onAlternar()
+                  }}
+                  className={cn(
+                    'px-3 py-1 text-xs transition-colors disabled:opacity-50',
+                    r.obligatorio === o.valor
+                      ? 'bg-fg font-medium text-background'
+                      : 'text-fg-muted hover:text-fg',
+                  )}
+                  data-testid={`poner-${o.valor ? 'obligatorio' : 'opcional'}-${r.id}`}
+                >
+                  {o.texto}
+                </button>
+              ))}
+            </div>
             <Button
               size="sm"
               variant="ghost"
@@ -378,7 +406,12 @@ function FilaDeRequisito({
               <Trash className="h-4 w-4" />
             </Button>
           </>
-        ) : null}
+        ) : (
+          // Sin permiso, o mientras es el preset: la etiqueta dice cómo está.
+          <Badge variant={r.obligatorio ? 'default' : 'secondary'}>
+            {r.obligatorio ? 'Obligatorio' : 'Opcional'}
+          </Badge>
+        )}
       </div>
     </li>
   )
@@ -534,30 +567,42 @@ export function RequisitosClient() {
             </Card>
           ) : null}
 
-          {perfiles.length > 0 ? (
-            <div className="flex flex-wrap gap-2" data-testid="filtro-perfiles">
-              <Button
-                size="sm"
-                variant={perfil === null ? 'default' : 'outline'}
-                onClick={() => setPerfil(null)}
+          <Card className="overflow-hidden">
+            {/* 🔴 Las pestañas van PEGADAS a la tarjeta (Nico, 18-09-2026):
+                flotando encima parecían un filtro de otra cosa. Pegadas, se
+                lee que cambian el contenido de esta tarjeta y no de la
+                pantalla entera. */}
+            {perfiles.length > 0 ? (
+              <div
+                className="flex overflow-x-auto border-b border-border"
+                role="tablist"
+                data-testid="filtro-perfiles"
               >
-                Todos
-              </Button>
-              {perfiles.map((p) => (
-                <Button
-                  key={p.perfil}
-                  size="sm"
-                  variant={perfil === p.perfil ? 'default' : 'outline'}
-                  onClick={() => setPerfil(p.perfil)}
-                  data-testid={`perfil-${p.perfil}`}
-                >
-                  {p.nombre}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-
-          <Card>
+                {[{ perfil: null as string | null, nombre: 'Todos' }, ...perfiles].map(
+                  (p) => {
+                    const activa = perfil === p.perfil
+                    return (
+                      <button
+                        key={p.perfil ?? 'todos'}
+                        type="button"
+                        role="tab"
+                        aria-selected={activa}
+                        onClick={() => setPerfil(p.perfil)}
+                        className={cn(
+                          'shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm transition-colors',
+                          activa
+                            ? 'border-fg font-medium text-fg'
+                            : 'border-transparent text-fg-muted hover:text-fg',
+                        )}
+                        data-testid={p.perfil ? `perfil-${p.perfil}` : 'perfil-todos'}
+                      >
+                        {p.nombre}
+                      </button>
+                    )
+                  },
+                )}
+              </div>
+            ) : null}
             <CardHeader>
               <CardTitle className="text-base">
                 {perfil

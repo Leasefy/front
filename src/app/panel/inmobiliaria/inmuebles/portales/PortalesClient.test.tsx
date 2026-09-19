@@ -179,16 +179,16 @@ describe('Publicación en portales', () => {
     await montar()
     const pasos = porTestId('como-funciona')!.querySelectorAll('ol > li')
     expect(pasos.length).toBe(4)
-    expect(pasos[0].textContent).toMatch(/Anota tu cuenta/)
-    expect(pasos[3].textContent).toMatch(/Marca «ya la subí»/)
+    expect(pasos[0].textContent).toMatch(/Conecta tu cuenta/)
+    expect(pasos[3].textContent).toMatch(/Confirma que ya salió/)
   })
 
   it('P1 — sin cuenta anotada dice que ese portal NO puede recibir avisos', async () => {
     await montar()
     const fila = porTestId('portal-FINCARAIZ')!
-    expect(fila.textContent).toMatch(/no puede recibir avisos/i)
+    expect(fila.textContent).toMatch(/necesitamos los datos de tu cuenta/i)
     // Y ofrece anotarla, que es lo que faltaba en todo el producto.
-    expect(porTestId('cuenta-FINCARAIZ')!.textContent).toMatch(/Anotar la cuenta/)
+    expect(porTestId('cuenta-FINCARAIZ')!.textContent).toMatch(/Configurar/)
   })
 
   it('P1b — anotar la cuenta llama al back con ese portal', async () => {
@@ -221,7 +221,7 @@ describe('Publicación en portales', () => {
     await montar()
     const boton = porTestId('exportar-METROCUADRADO')
     expect(boton).not.toBeNull()
-    expect(boton!.textContent).toMatch(/Descargar 2 avisos/)
+    expect(boton!.textContent).toMatch(/Descargar archivo \(2\)/)
   })
 
   it('P3 — al publicar sólo se ofrecen los portales con cuenta al día', async () => {
@@ -394,8 +394,8 @@ describe('las tarjetas de portal', () => {
 
   it('el estado se lee de un vistazo, portal por portal', async () => {
     await montar()
-    expect(porTestId('portal-FINCARAIZ')!.textContent).toContain('Sin cuenta anotada')
-    expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('Cuenta al día')
+    expect(porTestId('portal-FINCARAIZ')!.textContent).toContain('Sin configurar')
+    expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('Lista para publicar')
   })
 
   it('«Sitio propio» dice que es el nuestro y que sale solo', async () => {
@@ -408,9 +408,9 @@ describe('las tarjetas de portal', () => {
     })
     await montar()
     const t = porTestId('portal-SITIO_PROPIO')!.textContent ?? ''
-    expect(t).toContain('catálogo de Leasefy')
-    expect(t).toContain('Sale solo')
+    expect(t).toContain('nuestro propio catálogo')
+    expect(t).toContain('Se publica automático')
     // Y NO le dice que «no puede recibir avisos»: ese texto es de los de afuera.
-    expect(t).not.toContain('no puede recibir avisos')
+    expect(t).not.toContain('necesitamos los datos de tu cuenta')
   })
 })

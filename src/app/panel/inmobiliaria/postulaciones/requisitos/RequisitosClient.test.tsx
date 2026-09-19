@@ -240,3 +240,37 @@ describe('Requisitos por tipo de inquilino', () => {
     expect(aviso!.textContent).toContain('Falta aplicar la migración')
   })
 })
+
+describe('los cambios del 18-09 de noche', () => {
+  it('🔴 las pestañas de perfil van PEGADAS a la tarjeta, no flotando', async () => {
+    await montar()
+    const tabs = porTestId('filtro-perfiles')!
+    expect(tabs.getAttribute('role')).toBe('tablist')
+    // Pegadas = dentro de la tarjeta y separadas por su borde inferior.
+    expect(tabs.className).toContain('border-b')
+    expect(porTestId('perfil-todos')!.getAttribute('aria-selected')).toBe('true')
+    expect(porTestId('perfil-EMPLEADO')!.getAttribute('aria-selected')).toBe('false')
+  })
+
+  it('🔴 Obligatorio/Opcional es un control con las dos opciones a la vista', async () => {
+    // Antes era una etiqueta muerta y un botón que decía «Volver opcional»:
+    // había que adivinar el estado actual y en qué se convertía.
+    await montar()
+    expect(porTestId('poner-obligatorio-r-1')!.getAttribute('aria-pressed')).toBe('true')
+    expect(porTestId('poner-opcional-r-1')!.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('tocar la opción que ya está NO llama al back', async () => {
+    await montar()
+    await clic(porTestId('poner-obligatorio-r-1'))
+    expect(h.api.editarRequisito).not.toHaveBeenCalled()
+    await clic(porTestId('poner-opcional-r-1'))
+    expect(h.api.editarRequisito).toHaveBeenCalledWith('r-1', { obligatorio: false })
+  })
+
+  it('el estudio sigue sin control: etiqueta fija y su porqué', async () => {
+    await montar()
+    expect(porTestId('poner-opcional-r-2')).toBeNull()
+    expect(porTestId('estudio-candado-r-2')).not.toBeNull()
+  })
+})

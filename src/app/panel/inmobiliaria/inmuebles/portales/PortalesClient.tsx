@@ -397,8 +397,8 @@ function DialogoDePublicar({
 
   return (
     <Modal
-      titulo="Sacar un inmueble a los portales"
-      ayuda="Escoge el inmueble y en qué portales quieres que salga."
+      titulo="Publicar un inmueble"
+      ayuda="Elige el inmueble y en qué portales quieres publicarlo."
       onCerrar={onCerrar}
       bloqueado={publicando}
     >
@@ -648,11 +648,11 @@ function TarjetaDePortal({
           <p className="truncate font-medium text-fg">{p.nombre}</p>
           <p className="mt-0.5 text-xs">
             {alDia ? (
-              <span className="text-success">● Cuenta al día</span>
+              <span className="text-success">● Lista para publicar</span>
             ) : enPausa ? (
-              <span className="text-warning">● Cuenta en pausa</span>
+              <span className="text-warning">● En pausa</span>
             ) : (
-              <span className="text-fg-subtle">○ Sin cuenta anotada</span>
+              <span className="text-fg-subtle">○ Sin configurar</span>
             )}
           </p>
         </div>
@@ -661,23 +661,23 @@ function TarjetaDePortal({
       <p className="text-sm leading-relaxed text-fg-muted">
         {esNuestro ? (
           <>
-            Es el catálogo de Leasefy.{' '}
-            <span className="font-medium text-fg">Sale solo</span>, sin archivo
-            que subir a ninguna parte.
+            Es nuestro propio catálogo.{' '}
+            <span className="font-medium text-fg">Se publica automático</span>,
+            sin archivos ni trámites.
           </>
         ) : !p.cuenta ? (
           <>
-            Hoy este portal{' '}
-            <span className="font-medium text-fg">no puede recibir avisos</span>:
-            anota la cuenta que ya pagas ahí.
+            Para publicar aquí necesitamos los datos de tu cuenta de este
+            portal — la que tu inmobiliaria ya paga.
           </>
         ) : p.cuenta.modoEfectivo === 'API' ? (
-          'Los avisos salen y se bajan solos.'
+          'Los avisos se publican y se bajan automático.'
         ) : (
           <>
-            Por archivo: lo descargas y lo subes a su panel
+            Se publica con archivo: lo descargas de acá y lo subes en la página
+            del portal
             {p.cuenta.identificadorEnElPortal
-              ? ` con ${p.cuenta.identificadorEnElPortal}`
+              ? `, con el usuario ${p.cuenta.identificadorEnElPortal}`
               : ''}
             .
           </>
@@ -694,7 +694,7 @@ function TarjetaDePortal({
               download={`${p.portal.toLowerCase()}.csv`}
             >
               <DownloadSimple className="mr-1.5 h-4 w-4" />
-              Descargar {cuantos} {cuantos === 1 ? 'aviso' : 'avisos'}
+              Descargar archivo ({cuantos})
             </a>
           </Button>
         ) : null}
@@ -705,7 +705,7 @@ function TarjetaDePortal({
             onClick={onAnotar}
             data-testid={`cuenta-${p.portal}`}
           >
-            {p.cuenta ? 'Editar' : 'Anotar la cuenta'}
+            {p.cuenta ? 'Editar' : 'Configurar'}
           </Button>
         ) : null}
       </div>
@@ -723,20 +723,20 @@ function TarjetaDePortal({
  */
 const PASOS: { que: string; como: string }[] = [
   {
-    que: 'Anota tu cuenta',
-    como: 'La que ya pagas en ese portal. Sin una cuenta al día, el portal no recibe el aviso.',
+    que: 'Conecta tu cuenta',
+    como: 'La que tu inmobiliaria ya paga en ese portal. Sin eso, el portal no acepta el aviso.',
   },
   {
-    que: 'Saca el inmueble',
-    como: 'Escoge cuál y en qué portales. Te decimos antes si le falta algo para poder salir.',
+    que: 'Elige el inmueble',
+    como: 'Cuál publicas y en qué portales. Te avisamos antes si le falta algo.',
   },
   {
     que: 'Sube el archivo',
-    como: 'Descargas el archivo del portal y lo cargas en su panel, con tu usuario.',
+    como: 'Lo descargas de acá y lo cargas en la página del portal, con tu usuario.',
   },
   {
-    que: 'Marca «ya la subí»',
-    como: 'Así el tablero deja de pedírtelo y queda constancia de cuándo salió.',
+    que: 'Confirma que ya salió',
+    como: 'Así dejamos de pedírtelo y queda registrado cuándo se publicó.',
   },
 ]
 
@@ -747,7 +747,7 @@ function ComoFunciona() {
       data-testid="como-funciona"
     >
       <h2 className="mb-4 text-sm font-medium text-fg">
-        Cómo sale un inmueble a un portal
+        Cómo se publica un inmueble
       </h2>
       <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {PASOS.map((p, i) => (
@@ -876,8 +876,8 @@ export function PortalesClient() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
         <p className="text-sm text-fg-muted">
-          Saca tus inmuebles a los portales donde ya pagas cuenta, y lleva en un
-          solo lado qué está publicado dónde.
+          Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
+          cuenta, y mira en un solo lugar cuáles están publicados y dónde.
         </p>
       </header>
 
@@ -886,10 +886,10 @@ export function PortalesClient() {
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Tus cuentas en cada portal</CardTitle>
+          <CardTitle className="text-base">Tus cuentas de portal</CardTitle>
           <p className="text-sm text-fg-muted">
-            Leasefy no vende ni crea estas cuentas: publica con las que tu
-            inmobiliaria ya paga.
+            Nosotros no vendemos estas cuentas. Publicamos con las que tu inmobiliaria
+            ya tiene contratadas: acá sólo nos dices cuáles son.
           </p>
         </CardHeader>
         <CardContent>
@@ -943,7 +943,7 @@ export function PortalesClient() {
               data-testid="abrir-publicar"
             >
               <Plus className="mr-1.5 h-4 w-4" />
-              Sacar un inmueble
+              Publicar un inmueble
             </Button>
           ) : null}
         </CardHeader>
@@ -964,8 +964,8 @@ export function PortalesClient() {
               cuandoVacio={
                 <EmptyState
                   icon={CloudArrowUp}
-                  title="Ningún inmueble está en un portal todavía"
-                  description="Usa «Sacar un inmueble» para escoger cuál sale y a dónde. Acá vas a ver el estado de cada aviso y lo que te falta hacer."
+                  title="Todavía no has publicado ningún inmueble"
+                  description="Usa «Publicar un inmueble» para elegir cuál y en qué portales. Acá vas a ver el estado de cada publicación y qué te falta hacer."
                 />
               }
             >

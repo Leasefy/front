@@ -86,8 +86,8 @@ describe('<ProrrogaDelContrato> (D5)', () => {
     api.prorroga.mockResolvedValue(plan());
     await montar();
     const frase = $('prorroga-frase')!.textContent ?? '';
-    expect(frase).toContain('2026-12-04');
-    expect(frase).toContain('2027-12-05');
+    expect(frase).toContain('4 dic 2026');
+    expect(frase).toContain('5 dic 2027');
     expect(frase).toContain('por el mismo término');
   });
 
@@ -144,7 +144,7 @@ describe('<ProrrogaDelContrato> (D5)', () => {
   it('sin migración lo dice y no deja tocar nada', async () => {
     api.prorroga.mockResolvedValue(plan({ accion: 'PRORROGAR', disponible: false }));
     await montar();
-    expect($('prorroga-sin-migracion')!.textContent).toContain('actualización de la base');
+    expect($('prorroga-sin-migracion')!.textContent).toContain('Todavía no puedes');
     expect($('prorrogar')).toBeNull();
   });
 
@@ -216,10 +216,14 @@ describe('<ProrrogaDelContrato> (D5)', () => {
     expect($('prorroga-ALERTA_NO_SE_PRORROGA')!.textContent).toContain('no se generan cuotas nuevas');
   });
 
-  it('sin la migración 20260918021000 la casilla se ve pero no se puede mover', async () => {
+  it('🔴 sin la migración 20260918021000 la casilla NO se dibuja', async () => {
+    // Antes se dibujaba deshabilitada, con el porqué en una línea gris de
+    // 11 px debajo. Nico, 18-09-2026: «se ven muy pequeñas y ni funcionan».
+    // Un control que no se mueve se lee como roto; el estado, como texto, no.
     api.prorroga.mockResolvedValue(plan({ noSeProrrogaDisponible: false }));
     await montar();
-    expect(($('no-se-prorroga-casilla') as HTMLInputElement).disabled).toBe(true);
-    expect($('no-se-prorroga')!.textContent).toContain('Falta una actualización de la base');
+    expect($('no-se-prorroga-casilla')).toBeNull();
+    expect($('no-se-prorroga')!.querySelector('input')).toBeNull();
+    expect($('no-se-prorroga')!.textContent).toContain('no se puede cambiar desde acá');
   });
 });

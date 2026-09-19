@@ -234,7 +234,11 @@ describe('<CondicionesDelContrato> (17-09)', () => {
       }),
     );
     await montar();
-    expect(container!.textContent).toContain('Falta una actualización de la base');
+    // 🔴 El aviso ya no es una notita gris de 11 px repetida bajo cada
+    // control: va una vez por bloque, con peso, y los controles muertos no se
+    // dibujan (Nico, 18-09-2026: «se ven muy pequeñas y ni funcionan»).
+    expect(container!.textContent).toContain('Todavía no puedes');
+    expect(container!.textContent).not.toContain('Falta una actualización de la base');
     expect($('guardar-poliza')).toBeNull();
     expect($('guardar-administracion')).toBeNull();
   });

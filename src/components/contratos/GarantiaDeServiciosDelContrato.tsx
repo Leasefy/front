@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AunNoDisponible } from './AunNoDisponible';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,9 +141,11 @@ export function GarantiaDeServiciosDelContrato({
       </div>
 
       {!datos.disponible && (
-        <p className="text-xs text-muted-foreground" data-testid="garantia-sin-migracion">
-          Falta una actualización de la base para registrarla. Mientras tanto no se exige.
-        </p>
+        <AunNoDisponible
+          testId="garantia-sin-migracion"
+          queNoSePuede="exigir ni registrar esta garantía"
+          mientrasTanto="Al inquilino no se le pide, que es como está hoy."
+        />
       )}
 
       {datos.pendiente && (

@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { AunNoDisponible } from './AunNoDisponible';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -176,7 +177,13 @@ function GastosDeCobranza({
           Este contrato no causa gastos de cobranza.
         </p>
       )}
-      {!g.disponible && <p className="text-xs text-muted-foreground">Falta una actualización de la base para elegirlo.</p>}
+      {!g.disponible && (
+        <AunNoDisponible
+          testId="gastos-sin-migracion"
+          queNoSePuede="cambiar esto desde el contrato"
+          mientrasTanto="Se sigue haciendo lo que diga tu inmobiliaria en su configuración."
+        />
+      )}
     </fieldset>
   );
 }
@@ -300,7 +307,13 @@ function SeguroOpcional({
           )}
         </div>
       )}
-      {!s.disponible && <p className="text-xs text-muted-foreground">Falta una actualización de la base para registrarlo.</p>}
+      {!s.disponible && (
+        <AunNoDisponible
+          testId="seguro-sin-migracion"
+          queNoSePuede="registrar un plan de seguro para el inquilino"
+          mientrasTanto="El contrato sigue sin ofrecerlo, que es como está hoy."
+        />
+      )}
     </div>
   );
 }
@@ -449,7 +462,13 @@ function Administracion({
           Guardar administración
         </Button>
       )}
-      {!a.disponible && <p className="text-xs text-muted-foreground">Falta una actualización de la base para elegirla.</p>}
+      {!a.disponible && (
+        <AunNoDisponible
+          testId="administracion-sin-migracion"
+          queNoSePuede="cambiar quién paga la administración"
+          mientrasTanto="Se cobra como hoy: aparte del canon, al inquilino."
+        />
+      )}
     </fieldset>
   );
 }

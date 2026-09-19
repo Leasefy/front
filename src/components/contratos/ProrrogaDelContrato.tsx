@@ -17,6 +17,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowsClockwise, Info, WarningCircle } from '@phosphor-icons/react';
 
+import { AunNoDisponible } from './AunNoDisponible';
+import { fechaLegible } from '@/components/estado-de-cuenta/filas';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -129,11 +132,13 @@ export function ProrrogaDelContrato({
 
       {plan.accion === 'NO_VENCIDO' && (
         <p className="text-sm" data-testid="prorroga-frase">
-          Rige hasta el <strong>{plan.ultimoDia}</strong>.{' '}
+          {/* 🔴 «2027-08-20» es el formato de la base, no el de una persona
+              (Nico, 18-09-2026). */}
+          Rige hasta el <strong>{fechaLegible(plan.ultimoDia)}</strong>.{' '}
           {plan.aviso
             ? 'Hay aviso de no renovación: no se prorroga. Si ese día sigue activo, queda en alerta para que decidas.'
             : plan.regla && plan.finNuevo
-              ? `Si nadie avisa que no renueva, se prorroga ${REGLA[plan.regla]} hasta el ${plan.finNuevo}.`
+              ? `Si nadie avisa que no renueva, se prorroga ${REGLA[plan.regla]} hasta el ${fechaLegible(plan.finNuevo)}.`
               : plan.porQue}
         </p>
       )}
@@ -226,13 +231,23 @@ export function ProrrogaDelContrato({
         )
       )}
 
-      {/* 🔴 «No se prorroga» explícito (Nico, 17-09). */}
-      <label className="flex items-start gap-2 text-xs" data-testid="no-se-prorroga">
+      {/* 🔴 «No se prorroga» explícito (Nico, 17-09). Si la base todavía no lo
+          soporta, NO se dibuja la casilla muerta: se dice el estado y ya. Una
+          casilla que no se mueve se lee como rota (Nico, 18-09). */}
+      {!plan.noSeProrrogaDisponible ? (
+        <p className="text-sm text-fg-muted" data-testid="no-se-prorroga">
+          <span className="font-medium text-fg">
+            Este contrato {plan.noSeProrroga ? 'NO se prorroga' : 'se prorroga'} al vencer.
+          </span>{' '}
+          Por ahora no se puede cambiar desde acá.
+        </p>
+      ) : (
+      <label className="flex items-start gap-2.5 text-sm" data-testid="no-se-prorroga">
         <input
           type="checkbox"
-          className="mt-0.5"
+          className="mt-1 h-4 w-4"
           checked={plan.noSeProrroga}
-          disabled={!editable || !plan.noSeProrrogaDisponible}
+          disabled={!editable}
           onChange={(e) =>
             void hacer(
               () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, e.target.checked),
@@ -246,15 +261,11 @@ export function ProrrogaDelContrato({
         <span>
           <strong>Este contrato NO se prorroga al vencer.</strong> Queda en alerta y nadie genera cuotas nuevas: lo que
           siga se decide a mano (renovarlo o terminarlo con la fecha de entrega).
-          {!plan.noSeProrrogaDisponible && (
-            <span className="block text-muted-foreground">
-              Falta una actualización de la base para poder apagarlo.
-            </span>
-          )}
         </span>
       </label>
+      )}
 
-      {plan.uso && !plan.noSeProrroga && (
+      {plan.uso && !plan.noSeProrroga && plan.disponible && (
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs" htmlFor="meses-de-prorroga">
             {plan.uso === 'COMERCIAL'
@@ -289,11 +300,11 @@ export function ProrrogaDelContrato({
       )}
 
       {!plan.disponible && (
-        <p className="flex items-start gap-2 text-xs text-muted-foreground" data-testid="prorroga-sin-migracion">
-          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-          Falta una actualización de la base: el plan se calcula, pero todavía no se puede prorrogar ni registrar el
-          aviso desde el contrato.
-        </p>
+        <AunNoDisponible
+          testId="prorroga-sin-migracion"
+          queNoSePuede="prorrogar ni registrar el aviso de no renovación desde acá"
+          mientrasTanto="El plan que ves arriba sí está calculado y el contrato se prorroga como diga su regla."
+        />
       )}
 
       {plan.historial.length > 0 && (

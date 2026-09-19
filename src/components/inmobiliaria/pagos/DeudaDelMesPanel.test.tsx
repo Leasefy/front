@@ -278,8 +278,32 @@ describe('filtrarCuotas', () => {
     expect(filtrarCuotas(FILAS, 'nicolas', 'POR_VENCER')).toHaveLength(0)
   })
 
-  it('sin búsqueda ni cajón devuelve todo', () => {
-    expect(filtrarCuotas(FILAS, '  ', 'TODAS')).toHaveLength(4)
+  /*
+   * 🔴 19-09 · Este test decía «sin búsqueda ni cajón devuelve todo» y esperaba
+   * las CUATRO filas. Estaba mal, y se vio en el navegador con los 105 de la
+   * agencia de QA: la pestaña cantaba «Todo lo que falta · 105 cuotas» mientras
+   * los tres momentos que promete contener sumaban 101, porque metía adentro
+   * las 4 ya saldadas. El dinero sí cuadraba, o sea la cifra hablaba de la
+   * deuda y el conteo del mes. `TODAS` no es «todo el mes»: es «todo lo que
+   * falta», y una cuota pagada del todo no falta.
+   */
+  it('🔴 TODAS es «todo lo que falta»: deja fuera lo ya saldado', () => {
+    const vistas = filtrarCuotas(FILAS, '  ', 'TODAS')
+    expect(vistas.map((f) => f.cuotaId)).toEqual(['q1', 'q2', 'q3'])
+    expect(vistas.some((f) => f.cajon === 'SIN_DEUDA')).toBe(false)
+  })
+
+  it('🔴 y lo saldado sigue estando: tiene su propio cajón', () => {
+    // Sin esto, buscar a alguien que YA PAGÓ devolvería «ningún resultado»,
+    // que es la pantalla afirmando que esa cuota no existe.
+    expect(filtrarCuotas(FILAS, '', 'SIN_DEUDA').map((f) => f.cuotaId)).toEqual(['q4'])
+    expect(filtrarCuotas(FILAS, 'luis', 'SIN_DEUDA').map((f) => f.cuotaId)).toEqual(['q4'])
+  })
+
+  it('los tres momentos más lo saldado reconstruyen el mes', () => {
+    const n = (c: Parameters<typeof filtrarCuotas>[2]) => filtrarCuotas(FILAS, '', c).length
+    expect(n('POR_VENCER') + n('VENCIDA_EN_PLAZO') + n('CARTERA')).toBe(n('TODAS'))
+    expect(n('TODAS') + n('SIN_DEUDA')).toBe(FILAS.length)
   })
 })
 
@@ -352,15 +376,46 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
   })
 
   it('la tabla es de CUOTAS del mes, con su cajón dicho', () => {
+    // 🔴 19-09: abre en «Todo lo que falta», que son los TRES momentos. La
+    // cuarta fila —ya saldada— no falta, y por eso no está acá; vive en su
+    // propia pestaña, que es el test de abajo.
     montar()
     const filas = todos('[data-testid="cuota-fila"]')
-    expect(filas).toHaveLength(4)
+    expect(filas).toHaveLength(3)
     expect(filas[0]!.textContent).toContain('Nicolás Rojas')
     expect(filas[0]!.textContent).toContain('Cartera')
     expect(filas[0]!.textContent).toContain('5 días de mora')
     expect(filas[1]!.textContent).toContain('Vencido, en plazo')
     expect(filas[2]!.textContent).toContain('Por vencer')
-    expect(filas[3]!.textContent).toContain('Pagada')
+  })
+
+  it('🔴 «Pagadas» es la quinta pestaña, y ahí sí está la saldada', () => {
+    montar()
+    clic($('[data-testid="cajon-pagadas"]'))
+    const filas = todos('[data-testid="cuota-fila"]')
+    expect(filas).toHaveLength(1)
+    expect(filas[0]!.textContent).toContain('Luis Pérez')
+    expect(filas[0]!.textContent).toContain('Pagada')
+    expect($('[data-testid="que-es-este-cajon"]').textContent).toContain('ya están pagadas del todo')
+  })
+
+  it('🔴 la franja cuadra consigo misma: los tres momentos suman «todo lo que falta»', () => {
+    /*
+     * El defecto que se vio en el navegador: «Todo lo que falta · 105 cuotas»
+     * con 0 + 8 + 93 = 101 al lado. El primero contaba el mes entero
+     * (`totales.cuotas`) y el último la cartera del back
+     * (`totales.cuotasEnCartera`): dos fuentes distintas, y nada que las
+     * obligara a cuadrar. Ahora los cinco conteos salen de las filas.
+     */
+    montar()
+    const cuotas = (id: string) => {
+      const m = $(`[data-testid="${id}"]`).textContent!.match(/(\d+)\s+cuotas?/)
+      return Number(m![1])
+    }
+    expect(
+      cuotas('cajon-por-vencer') + cuotas('cajon-vencido-en-plazo') + cuotas('cajon-cartera'),
+    ).toBe(cuotas('cajon-todas'))
+    expect(cuotas('cajon-todas') + cuotas('cajon-pagadas')).toBe(4)
   })
 
   it('🔴 el vacío NO dice «todavía no hay cobros»: si no hay cuota, nadie la generó', () => {
@@ -412,8 +467,19 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect($('[data-testid="cajon-cartera"]').getAttribute('aria-selected')).toBe('false')
 
     clic($('[data-testid="limpiar-filtros"]'))
-    expect(todos('[data-testid="cuota-fila"]')).toHaveLength(4)
+    // Vuelve a «todo lo que falta»: los tres momentos, sin la saldada.
+    expect(todos('[data-testid="cuota-fila"]')).toHaveLength(3)
     expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('🔴 el alcance describe la TABLA también sin filtros puestos', () => {
+    /*
+     * Visto en el navegador: decía «105 cuotas en Septiembre de 2026» encima
+     * de una tabla de 101, porque el caso «sin filtros» cantaba el total del
+     * mes en vez de lo que estaba mostrando.
+     */
+    montar()
+    expect($('[data-testid="alcance-de-la-tabla"]').textContent).toContain('3 de 4 cuotas')
   })
 
   /*

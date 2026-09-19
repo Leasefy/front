@@ -205,7 +205,19 @@ export function filtrarCuotas(
 ): FilaDeLaCuotaDelMes[] {
   const q = normalizar(busqueda.trim())
   return filas.filter((f) => {
-    if (cajon !== 'TODAS' && f.cajon !== cajon) return false
+    /*
+     * 🔴 19-09 (visto en el navegador, con los 105 de la agencia de QA):
+     * «Todo lo que falta» NO es «todas las cuotas del mes». La pestaña decía
+     * «105 cuotas» mientras los tres momentos que promete contener sumaban
+     * 101 —0 por vencer, 8 vencidas en plazo, 93 en cartera—, porque metía
+     * adentro las 4 que ya están pagadas del todo. El dinero sí cuadraba
+     * ($356.595.650), o sea la cifra hablaba de la deuda y el conteo del mes:
+     * dos cosas distintas en la misma pestaña. Una cuota saldada no es «lo
+     * que falta», y va en su propia pestaña.
+     */
+    if (cajon === 'TODAS') {
+      if (f.cajon === 'SIN_DEUDA') return false
+    } else if (f.cajon !== cajon) return false
     if (q === '') return true
     const campos = [f.inquilino, f.documento, f.contrato, f.contratoDeLeasefy, f.inmueble]
     return campos.some((c) => c && normalizar(c).includes(q))
@@ -356,6 +368,25 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     for (const f of todas) cuenta[f.cajon] = (cuenta[f.cajon] ?? 0) + 1
     return cuenta
   }, [todas])
+
+  /** Las que de verdad faltan: los tres momentos, sin las ya saldadas. */
+  const cuotasQueFaltan = useMemo(
+    () => todas.filter((f) => f.cajon !== 'SIN_DEUDA').length,
+    [todas],
+  )
+
+  /**
+   * Lo que entró por las cuotas YA SALDADAS. No es el «Pagado» del resumen:
+   * ése incluye los abonos parciales de cuotas que todavía deben, así que
+   * usarlo acá pondría en la pestaña una plata que no es la de sus filas.
+   */
+  const pagadoDeLasSaldadas = useMemo(
+    () =>
+      todas
+        .filter((f) => f.cajon === 'SIN_DEUDA')
+        .reduce((suma, f) => suma + (f.pagadoCop ?? 0), 0),
+    [todas],
+  )
 
   const t = datos?.totales
   const avisos = datos?.avisos ?? []
@@ -521,10 +552,16 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             data-lenis-prevent
             className="flex divide-x divide-border overflow-x-auto border-b border-border bg-surface-muted/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
+            {/* 🔴 Los conteos de las CUATRO pestañas salen de la misma fuente
+                —las filas—, para que la franja cuadre consigo misma: «todo lo
+                que falta» es, por definición, la suma de los tres momentos que
+                tiene al lado. Antes el primero contaba el mes entero (`t.cuotas`)
+                y el último la cartera del back (`t.cuotasEnCartera`), y nada
+                obligaba a que 0 + 8 + 93 diera lo que decía el primero. */}
             <PestanaDeCajon
               label="Todo lo que falta"
               monto={t?.pendienteCop ?? 0}
-              cuotas={t?.cuotas ?? 0}
+              cuotas={cuotasQueFaltan}
               activa={cajon === 'TODAS'}
               testId="cajon-todas"
               testIdCifra="mes-falta-pestana"
@@ -553,7 +590,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             <PestanaDeCajon
               label="Cartera"
               monto={t?.carteraCop ?? 0}
-              cuotas={t?.cuotasEnCartera ?? 0}
+              cuotas={cuotasPorCajon.CARTERA ?? 0}
               tono="danger"
               activa={cajon === 'CARTERA'}
               testId="cajon-cartera"
@@ -572,6 +609,23 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                   </span>
                 ) : null
               }
+            />
+            {/* 🔴 La quinta pestaña existe para que nadie desaparezca. Sacar las
+                saldadas de «todo lo que falta» era correcto, pero sin este
+                cajón esas cuotas no se podían ver en ninguna parte y buscar a
+                un inquilino que YA PAGÓ devolvía «ningún resultado» — la
+                pantalla afirmaría que no existe. Con esto, las cuatro
+                pestañas de deuda más ésta suman las cuotas del mes que dice
+                el resumen, y el número se puede conciliar a ojo. */}
+            <PestanaDeCajon
+              label="Pagadas"
+              monto={pagadoDeLasSaldadas}
+              cuotas={cuotasPorCajon.SIN_DEUDA ?? 0}
+              tono="muted"
+              activa={cajon === 'SIN_DEUDA'}
+              testId="cajon-pagadas"
+              testIdCifra="mes-pagadas"
+              onClick={() => setCajon('SIN_DEUDA')}
             />
           </div>
 
@@ -601,12 +655,21 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 data-testid="buscar-cuotas"
               />
             </div>
+            {/*
+              🔴 El alcance describe SIEMPRE lo que hay en la tabla, también sin
+              filtros puestos. Antes el caso «sin filtros» cantaba `todas.length`
+              —las cuotas del mes— y desde que «Todo lo que falta» dejó fuera las
+              saldadas, eso era falso: decía «105 cuotas en Septiembre de 2026»
+              encima de una tabla de 101. Un renglón que cuenta una cosa y
+              muestra otra es peor que no tener renglón.
+            */}
             <p className="text-xs text-fg-muted" data-testid="alcance-de-la-tabla">
+              {numberFormatter.format(visibles.length)} de{' '}
+              {numberFormatter.format(todas.length)}{' '}
+              {todas.length === 1 ? 'cuota' : 'cuotas'} de {titulo}.
               {hayFiltros ? (
                 <>
-                  {numberFormatter.format(visibles.length)} de{' '}
-                  {numberFormatter.format(todas.length)} cuotas del mes. Las cifras de
-                  arriba son las del mes completo.{' '}
+                  {' '}Las cifras de arriba son las del mes completo.{' '}
                   <button
                     type="button"
                     onClick={limpiar}
@@ -616,12 +679,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                     Quitar el filtro
                   </button>
                 </>
-              ) : (
-                <>
-                  {numberFormatter.format(todas.length)}{' '}
-                  {todas.length === 1 ? 'cuota' : 'cuotas'} en {titulo}
-                </>
-              )}
+              ) : null}
             </p>
           </div>
 

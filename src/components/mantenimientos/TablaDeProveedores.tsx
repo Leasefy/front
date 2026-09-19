@@ -411,10 +411,12 @@ export function TablaDeProveedores({
               data-testid="proveedor"
               className={cn('border-b border-border last:border-0', !p.activo && 'opacity-70')}
             >
-              <TableCell className="max-w-[240px] px-5 py-4 align-top">
+              <TableCell className="max-w-[280px] px-5 py-4 align-top">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-foreground">{p.nombre}</span>
-                  {!p.activo && <Badge variant="secondary">Inactivo</Badge>}
+                  {/* `secondary` en oscuro es casi blanco: el proveedor APAGADO
+                      quedaba con el elemento más brillante de su fila. */}
+                  {!p.activo && <Badge variant="outline">Inactivo</Badge>}
                 </div>
                 <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{p.documento}</p>
               </TableCell>
@@ -432,18 +434,19 @@ export function TablaDeProveedores({
                 )}
               </TableCell>
 
-              <TableCell className="max-w-[220px] px-5 py-4 align-top">
-                {p.especialidades.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {p.especialidades.map((e) => (
-                      <Badge key={e} variant="secondary">
-                        {EN_PALABRAS.get(e) ?? e}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
+              {/*
+                🔴 19-09 (visto en el navegador, en TEMA OSCURO): los oficios
+                eran `Badge variant="secondary"`, y en oscuro esa pastilla es
+                casi blanca. Con una o dos por fila, lo más brillante de la
+                tabla terminaba siendo «Plomería» —un atributo— y no el nombre
+                del proveedor, que es por lo que uno busca. Una pastilla gasta
+                borde, fondo y radio para decir «objeto aparte»; un oficio no
+                es un objeto aparte, es un dato de la fila. Va como texto.
+              */}
+              <TableCell className="max-w-[180px] px-5 py-4 align-top text-muted-foreground">
+                {p.especialidades.length > 0
+                  ? p.especialidades.map((e) => EN_PALABRAS.get(e) ?? e).join(' · ')
+                  : '—'}
               </TableCell>
 
               <TableCell className="px-5 py-4 align-top">
@@ -462,7 +465,7 @@ export function TablaDeProveedores({
                 Meterlos en un icono con globito ahorraría dos renglones y
                 escondería justo el dato por el que existe esta pantalla.
               */}
-              <TableCell className="max-w-[280px] px-5 py-4 align-top">
+              <TableCell className="max-w-[340px] px-5 py-4 align-top">
                 {p.avisos.length > 0 ? (
                   <ul className="space-y-1" data-testid="avisos-del-proveedor">
                     {p.avisos.map((a) => (

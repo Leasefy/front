@@ -400,7 +400,16 @@ function FormularioDeProveedor({
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          {/*
+            🔴 19-09 (visto en el navegador, no en una prueba): el pie NO era
+            pegajoso y el encabezado sí. Con el alto real de una pantalla
+            (806 px) el formulario mide 860 y «Registrar» caía en y=836: fuera
+            de vista, sin ninguna señal de que hubiera algo más abajo. Alguien
+            llenaba Nombre y NIT —los dos únicos obligatorios— y no encontraba
+            con qué guardar. El mismo defecto de siempre: el control que
+            necesitás no está donde estás mirando.
+          */}
+          <div className="sticky bottom-0 -mx-6 -mb-6 flex gap-2 border-t border-border bg-background px-6 py-4">
             <Button
               type="button"
               variant="secondary"

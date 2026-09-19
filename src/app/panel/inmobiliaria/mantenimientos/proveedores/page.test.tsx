@@ -291,6 +291,30 @@ describe('Proveedores — la tabla, con lo que tienen todas nuestras tablas', ()
     expect(nombresEnOrden()).toEqual([expect.stringContaining('Plomería El Rayo')])
   })
 
+  it('T4c — los oficios van como TEXTO, no como pastillas', async () => {
+    // 🔴 Visto en el navegador, en tema oscuro: `Badge variant="secondary"`
+    // es casi blanco en oscuro, y con una o dos por fila lo más brillante de
+    // la tabla terminaba siendo el oficio y no el nombre del proveedor.
+    h.api.listar.mockResolvedValue([UNO])
+    await montar()
+    const fila = contenedor.querySelector('[data-testid="proveedor"]')!
+    const celdas = Array.from(fila.querySelectorAll('td'))
+    const queHace = celdas[2]
+    expect(queHace.textContent).toBe('Plomería')
+    expect(queHace.querySelector('[class*="rounded-full"]')).toBeNull()
+  })
+
+  it('T4d — con varios oficios los separa, sin una pastilla por cada uno', async () => {
+    h.api.listar.mockResolvedValue([
+      { ...UNO, especialidades: ['PLUMBING', 'STRUCTURAL'] },
+    ])
+    await montar()
+    const celdas = Array.from(
+      contenedor.querySelector('[data-testid="proveedor"]')!.querySelectorAll('td'),
+    )
+    expect(celdas[2].textContent).toBe('Plomería · Estructural')
+  })
+
   it('T5 — el vacío vive DENTRO de la tabla y ofrece registrar al primero', async () => {
     h.api.listar.mockResolvedValue([])
     await montar()

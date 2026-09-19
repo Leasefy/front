@@ -32,6 +32,12 @@ export type TipoDeFallo =
   | 'limitado'
   /** 402: el plan se quedó sin créditos de IA. Reintentar no compra créditos. */
   | 'sinCreditos'
+  /**
+   * 403 marcado `SEGUNDO_FACTOR_REQUERIDO`: el rol exige segundo factor y esta
+   * sesión entró sólo con contraseña. No es «no tienes acceso»: la persona SÍ
+   * tiene el permiso, le falta un paso que puede dar ella misma.
+   */
+  | 'sinSegundoFactor'
   /** El pedido se cortó por tiempo (o se abortó) antes de que hubiera respuesta. */
   | 'tardo'
 
@@ -190,6 +196,27 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         titulo: 'Este inmueble está arrendado',
         descripcion:
           'Su operación —el contrato, los cobros, el inventario de la entrega— no hace parte de tu rol. Si la necesitas, pídele a un administrador el permiso de ver contratos.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+    // 🔴 EL ADMINISTRADOR AL QUE LE DECÍAMOS QUE LE PIDIERA A UN ADMINISTRADOR
+    // (18-09-2026). Cuando el back exige segundo factor, el 403 cubre TODO el
+    // panel menos `users/me`, `auth/`, `health` y `config/`. Pintado como el
+    // 403 genérico de abajo, la pantalla le dice a quien manda en la
+    // inmobiliaria que le pida permiso a alguien más — y no hay a quién: el
+    // permiso lo tiene, lo que le falta es activar el TOTP, que es algo que
+    // hace él mismo en dos minutos. Un cartel sin salida repetido en las 25
+    // secciones del panel.
+    if (error instanceof ApiError && error.code === 'SEGUNDO_FACTOR_REQUERIDO') {
+      return {
+        tipo: 'sinSegundoFactor',
+        titulo: 'Activa tu segundo factor para seguir',
+        descripcion:
+          'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo una vez en Configuración → Seguridad y vuelve a entrar: son dos minutos.',
+        // Reintentar no cambia nada: el token de esta sesión ya nació sin el
+        // segundo factor. Hay que activarlo y volver a entrar.
         sePuedeReintentar: false,
         status,
         mensajeOriginal,

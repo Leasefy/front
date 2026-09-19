@@ -40,6 +40,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   sinCreditos: Lock,
   // Se cortó por tiempo: el mismo reloj que el límite de ritmo.
   tardo: Timer,
+  // Falta el segundo factor: un candado, como los otros «está cerrado» — pero
+  // este tiene llave y la tiene la persona que está mirando.
+  sinSegundoFactor: Lock,
 }
 
 export interface FalloDeCargaProps {
@@ -171,7 +174,10 @@ export function FalloDeCarga({
         </p>
       </div>
 
-      {(mostrarReintentar || volverA || fallo.tipo === 'sinSesion') && (
+      {(mostrarReintentar ||
+        volverA ||
+        fallo.tipo === 'sinSesion' ||
+        fallo.tipo === 'sinSegundoFactor') && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           {mostrarReintentar && (
             <Button
@@ -197,6 +203,18 @@ export function FalloDeCarga({
                   ProtectedRoute. */}
               <Link href={`/auth?returnUrl=${encodeURIComponent(rutaActual)}`}>
                 Volver a entrar
+              </Link>
+            </Button>
+          )}
+          {fallo.tipo === 'sinSegundoFactor' && (
+            <Button asChild>
+              {/* La puerta del muro. Sin esto el cartel es un callejón sin
+                  salida repetido en todo el panel: el back devuelve 403 en
+                  TODAS las rutas menos las mínimas para entrar, y el texto
+                  genérico de un 403 le dice a la persona que le pida permiso a
+                  un administrador cuando ella lo es. */}
+              <Link href="/panel/inmobiliaria/configuracion/seguridad">
+                Ir a activarlo
               </Link>
             </Button>
           )}

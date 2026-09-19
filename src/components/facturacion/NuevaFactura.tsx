@@ -414,7 +414,19 @@ function TablaDeFacturas({
                   metida en el total. */}
               <TableHead className="whitespace-nowrap text-right">Retenciones</TableHead>
               <TableHead className="whitespace-nowrap text-right">Total</TableHead>
-              <TableHead className="whitespace-nowrap">Estado</TableHead>
+              {/*
+                🔴 19-09 (medido en el navegador, no deducido): esta tabla mide
+                1.427 px dentro de un contenedor de 1.172, y «Estado» —donde
+                vive el botón «Generar esta»— caía en left:1584 con una pantalla
+                de 1512. O sea: **el botón de generar UNA factura, que es
+                exactamente lo que pidió Nico, estaba fuera de la pantalla** y
+                sólo aparecía si alguien adivinaba que la tabla se arrastra de
+                lado. Se ancla a la derecha para que la acción de la fila esté
+                siempre donde se la busca, se haya arrastrado o no.
+              */}
+              <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg dark:bg-surface-muted">
+                Estado
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -470,18 +482,29 @@ function TablaDeFacturas({
                         <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
                       )}
                     </TableCell>
-                    <TableCell className="max-w-[220px]">
-                      <p className="truncate text-fg">{factura.terceroNombre}</p>
+                    {/* 🔴 19-09: los anchos se midieron en el navegador. La
+                        tabla daba 1.428 px en un contenedor de 1.172 y
+                        sobraban 256, así que Retenciones y Total quedaban
+                        fuera de vista. Tercero, Inmueble y Concepto son las
+                        tres que crecen con el dato; se recortan, y el texto
+                        entero queda en el `title` —truncar algo que después no
+                        se puede leer es esconderlo. */}
+                    <TableCell className="max-w-[160px]">
+                      <p className="truncate text-fg" title={factura.terceroNombre}>
+                        {factura.terceroNombre}
+                      </p>
                       {factura.terceroDocumento && (
                         <p className="truncate text-caption text-fg-muted tabular-nums">
                           {factura.terceroDocumento}
                         </p>
                       )}
                     </TableCell>
-                    <TableCell className="max-w-[220px]">
-                      <p className="truncate text-fg-muted">{factura.inmueble}</p>
+                    <TableCell className="max-w-[160px]">
+                      <p className="truncate text-fg-muted" title={factura.inmueble}>
+                        {factura.inmueble}
+                      </p>
                     </TableCell>
-                    <TableCell className="max-w-[240px]">
+                    <TableCell className="max-w-[190px]">
                       <p className="truncate text-fg-muted">
                         {conceptosLegibles(factura)}
                       </p>
@@ -554,7 +577,7 @@ function TablaDeFacturas({
                           </p>
                         )}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface">
                       {emitida ? (
                         <span className="text-caption text-fg-muted">
                           {/* El número que vale ante la DIAN es el autorizado
@@ -829,6 +852,22 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         'No hay una resolución de facturación vigente con la cual numerar.')
       : null
 
+  /*
+   * 🔴 19-09 (visto en el navegador): el botón decía «Generar 208 facturas» y
+   * justo encima, en la misma tarjeta, «50 números disponibles». La pantalla
+   * tenía el dato y no sacaba la cuenta. Y no es un susto teórico: probado
+   * contra datos reales el 19-09, el back numera las que alcanzan y las demás
+   * fallan con «rango agotado» — o sea, apretar dejaba 50 facturas emitidas,
+   * 158 errores y a alguien preguntándose qué pasó.
+   *
+   * Se AVISA, no se apaga: emitir las 50 que caben es trabajo legítimo, y
+   * bloquear el botón obligaría a deseleccionar 158 filas a mano para hacerlo.
+   */
+  const numerosQueFaltan: number | null =
+    datos !== null && datos.resolucion.puedeNumerar && elegidas.length > datos.resolucion.disponibles
+      ? elegidas.length - datos.resolucion.disponibles
+      : null
+
   const vacio =
     datos !== null &&
     delMes.inquilinos.length === 0 &&
@@ -1002,6 +1041,28 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               Nico apretó, no pasó nada, y lo leyó como «no da el poder
               generar». Un control que no se mueve y no dice por qué se lee
               como roto. */}
+          {!generando && motivoParaNoEmitir === null && numerosQueFaltan !== null && datos !== null && (
+            <p
+              className="max-w-sm text-caption text-warning lg:text-right"
+              data-testid="facturacion-rango-corto"
+            >
+              La resolución sólo tiene {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
+              {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y elegiste{' '}
+              {elegidas.length.toLocaleString('es-CO')}: se numeran las primeras y las{' '}
+              {numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar por rango
+              agotado.{' '}
+              {onIrAResolucion && (
+                <button
+                  type="button"
+                  onClick={onIrAResolucion}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="facturacion-ir-a-resolucion-rango"
+                >
+                  Cargar otra resolución
+                </button>
+              )}
+            </p>
+          )}
           {!generando && motivoParaNoEmitir !== null && (
             <p
               className="max-w-sm text-caption text-warning lg:text-right"

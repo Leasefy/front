@@ -495,6 +495,41 @@ describe('NuevaFactura', () => {
       ).toBe(true);
     });
 
+    /*
+     * 🔴 19-09 · Visto en el navegador con los datos reales de QA: el botón
+     * decía «Generar 208 facturas» y justo encima, en la misma tarjeta,
+     * «50 números disponibles». La pantalla tenía los dos números y no sacaba
+     * la cuenta. Probado contra el back el 19-09: numera las que alcanzan y
+     * las demás fallan con «rango agotado», así que apretar dejaba 50
+     * emitidas, 158 errores y a alguien preguntándose qué pasó.
+     */
+    it('🔴 avisa ANTES si la selección no cabe en el rango de la resolución', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+      );
+      await montar();
+      const aviso = q('[data-testid="facturacion-rango-corto"]')!;
+      expect(aviso).not.toBeNull();
+      expect(aviso.textContent).toContain('sólo tiene 1');
+      expect(aviso.textContent).toContain('rango agotado');
+    });
+
+    it('🔴 avisar NO es apagar: emitir las que caben es trabajo legítimo', async () => {
+      // Apagar el botón obligaría a deseleccionar a mano las que no caben.
+      porGenerarMock.mockResolvedValue(
+        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+      );
+      await montar();
+      expect(
+        (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled,
+      ).toBe(false);
+    });
+
+    it('si el rango alcanza, no hay aviso', async () => {
+      await montar();
+      expect(q('[data-testid="facturacion-rango-corto"]')).toBeNull();
+    });
+
     it('si el rango no alcanzó, se avisa aparte del éxito', async () => {
       generarMock.mockResolvedValue({
         mes: '2026-09',

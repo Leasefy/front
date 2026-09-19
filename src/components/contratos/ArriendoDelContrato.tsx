@@ -249,6 +249,9 @@ function LineaDelContrato({
   className?: string;
 }) {
   const reducirMovimiento = usePrefiereMenosMovimiento();
+  // El día de hoy, escrito, para la etiqueta de la línea. Mismo helper que usa
+  // el resto del archivo, así que no hay dos ideas de «hoy» en la ficha.
+  const hoyLegible = fechaLegible(hoyLocal());
   // La barra crece al montar; con movimiento reducido nace llena.
   const [crecida, setCrecida] = React.useState(reducirMovimiento);
   React.useEffect(() => {
@@ -359,6 +362,7 @@ function LineaDelContrato({
         mesActual={avance.mesActual}
         valorTexto={valorTexto}
         marcarHoy={enCurso}
+        hoyLegible={hoyLegible}
         relleno={terminado ? 'bg-border-strong' : 'bg-primary'}
         crecida={crecida}
       />
@@ -401,6 +405,7 @@ function Barra({
   mesActual,
   valorTexto,
   marcarHoy,
+  hoyLegible,
   relleno,
   crecida,
 }: {
@@ -409,14 +414,17 @@ function Barra({
   mesActual: number;
   valorTexto: string;
   marcarHoy: boolean;
+  /** La fecha de hoy, escrita. Sin ella «Hoy» es una palabra flotando. */
+  hoyLegible: string;
   relleno: string;
   crecida: boolean;
 }) {
   const tramos = totalDeMeses <= MESES_CON_TRAMOS ? totalDeMeses : 1;
   const porcentaje = Math.round(fraccion * 1000) / 10;
-  // La etiqueta «Hoy» no se sale del bloque en los bordes.
+  // La etiqueta no se sale del bloque en los bordes. Con la fecha al lado es
+  // más ancha que antes, así que el margen para centrarla se abre.
   const alinearHoy =
-    porcentaje < 8 ? 'translate-x-0' : porcentaje > 92 ? '-translate-x-full' : '-translate-x-1/2';
+    porcentaje < 18 ? 'translate-x-0' : porcentaje > 82 ? '-translate-x-full' : '-translate-x-1/2';
 
   return (
     <div className={cn('relative', marcarHoy ? 'mt-3 pt-6' : 'mt-4')}>
@@ -429,7 +437,12 @@ function Barra({
           )}
           style={{ left: `${porcentaje}%` }}
         >
-          Hoy
+          {/* 🔴 «HOY» solo era una palabra flotando encima de la línea y no se
+              entendía a qué se refería (Nico, 18-09-2026). Con la fecha al
+              lado queda claro que el punto marca DÓNDE CAE HOY entre el inicio
+              y el fin — que es justamente lo que la línea cuenta, y lo que los
+              dos extremos ya dicen con sus propias fechas. */}
+          Hoy · {hoyLegible}
         </span>
       ) : null}
       <div

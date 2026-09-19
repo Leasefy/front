@@ -150,6 +150,53 @@ describe('<RenovacionesTable>', () => {
     expect(container.querySelector('[data-testid="renovacion-c"]')).not.toBeNull();
   });
 
+  /*
+   * 🔴 19-09 · Visto en el navegador con las 28 de la agencia de QA: la franja
+   * decía «Todas 28» y al lado «Críticas 6 · Urgentes 8 · Próximas 6», que
+   * suman 20. Las otras ocho caían en `'90+'`, un cajón que el tipo del back
+   * SIEMPRE tuvo y que la franja no dibujaba: ocho filas imposibles de aislar
+   * y un número que no cuadraba con los de al lado.
+   */
+  it('🔴 los cuatro cajones suman lo que dice «Todas»', () => {
+    render({
+      data: [
+        renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
+        renovacion({ id: 'b', daysUntilExpiry: 45, urgencyBucket: '31-60' }),
+        renovacion({ id: 'c', daysUntilExpiry: 80, urgencyBucket: '61-90' }),
+        renovacion({ id: 'd', daysUntilExpiry: 200, urgencyBucket: '90+' }),
+        renovacion({ id: 'e', daysUntilExpiry: 310, urgencyBucket: '90+' }),
+      ],
+    });
+    const n = (etiqueta: string) =>
+      Number(chip(etiqueta).textContent!.replace(etiqueta, '').trim());
+    expect(n('Más de 90 días')).toBe(2);
+    expect(n('Críticas') + n('Urgentes') + n('Próximas') + n('Más de 90 días')).toBe(
+      n('Todas'),
+    );
+  });
+
+  it('🔴 y ese cajón se puede mirar solo', () => {
+    render({
+      data: [
+        renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
+        renovacion({ id: 'd', daysUntilExpiry: 200, urgencyBucket: '90+' }),
+      ],
+    });
+    act(() => chip('Más de 90 días').click());
+    expect(container.querySelectorAll('tbody tr').length).toBe(1);
+    expect(container.querySelector('[data-testid="renovacion-d"]')).not.toBeNull();
+  });
+
+  it('sin ninguna a más de 90 días el chip no aparece: sería una puerta a un cuarto vacío', () => {
+    render({
+      data: [renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' })],
+    });
+    const etiquetas = Array.from(container.querySelectorAll('button')).map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(etiquetas.some((t) => t?.startsWith('Más de 90'))).toBe(false);
+  });
+
   it('tocar la fila abre el detalle', () => {
     const onAbrir = vi.fn();
     render({ data: [renovacion()], onAbrir });

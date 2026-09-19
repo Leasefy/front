@@ -87,7 +87,15 @@ import {
 
 type SortField = 'propertyTitle' | 'tenantName' | 'propietarioName' | 'daysUntilExpiry' | 'status' | 'currentRent';
 type SortDirection = 'asc' | 'desc';
-type BucketFilter = 'all' | '0-30' | '31-60' | '61-90';
+/*
+ * 🔴 19-09 (visto en el navegador, con las 28 de la agencia de QA): faltaba
+ * `'90+'`. La franja decía «Todas 28» y al lado «Críticas 6 · Urgentes 8 ·
+ * Próximas 6» —que suman 20—, porque ocho renovaciones caían en un cajón que
+ * el tipo del back SÍ tiene (`urgencyBucket: '0-30' | '31-60' | '61-90' |
+ * '90+'`) y la franja no dibujaba. Ocho filas que no se podían aislar y un
+ * número que no cuadraba con los de al lado.
+ */
+type BucketFilter = 'all' | '0-30' | '31-60' | '61-90' | '90+';
 type StatusFilter = 'all' | RenovacionStatus;
 
 interface RenovacionesTableProps {
@@ -218,6 +226,7 @@ export function RenovacionesTable({
       '0-30': data.filter((r) => r.urgencyBucket === '0-30').length,
       '31-60': data.filter((r) => r.urgencyBucket === '31-60').length,
       '61-90': data.filter((r) => r.urgencyBucket === '61-90').length,
+      '90+': data.filter((r) => r.urgencyBucket === '90+').length,
     }),
     [data],
   );
@@ -366,6 +375,13 @@ export function RenovacionesTable({
           {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
           {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
           {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
+          {/* El cuarto, para que los tres de al lado sumen lo que dice «Todas».
+              Sólo aparece si de verdad hay alguna: en la mayoría de las
+              inmobiliarias la lista se corta en 90 días y un chip en cero
+              sería una puerta a un cuarto vacío. */}
+          {bucketCounts['90+'] > 0
+            ? chip('90+', 'Más de 90 días', 'bg-muted text-muted-foreground')
+            : null}
           <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger

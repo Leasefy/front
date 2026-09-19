@@ -72,9 +72,19 @@ function RenovacionesContent() {
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.nav.renovaciones')}
         </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-          Los contratos que entran en sus últimos 90 días y cómo va cada
-          renovación: propuesta, aceptación del inquilino y firma.
+        {/*
+          🔴 19-09 (visto en el navegador): decía «los contratos que entran en
+          sus últimos 90 días» y en la agencia de QA había ocho con MÁS de 90.
+          No es un error de datos: los 90 días
+          (`DIAS_DE_VENTANA_DE_RENOVACION`) son la ventana con la que el cron
+          CREA la renovación; una vez abierta se queda en la lista hasta que se
+          firma o se cierra, aunque el vencimiento se aleje. La lista son las
+          renovaciones abiertas, y eso es lo que ahora dice.
+        */}
+        <p className="text-sm text-muted-foreground max-w-2xl">
+          Las renovaciones abiertas y cómo va cada una: propuesta, aceptación
+          del inquilino y firma. Un contrato entra solo cuando le quedan 90
+          días —el preaviso de la Ley 820— y sigue acá hasta que se cierra.
         </p>
       </header>
 

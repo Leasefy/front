@@ -26,6 +26,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -141,7 +142,7 @@ export function VisitasClient() {
               className="text-muted-foreground text-sm"
               data-testid="visitas-no-habilitadas"
             >
-              Próximamente: {porAtender.noHabilitado}
+              {motivoEnCristiano(porAtender.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos
@@ -286,7 +287,7 @@ export function VisitasClient() {
               className="text-muted-foreground text-sm"
               data-testid="recordatorios-no-habilitados"
             >
-              Próximamente: {recordatorios.noHabilitado}
+              {motivoEnCristiano(recordatorios.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos

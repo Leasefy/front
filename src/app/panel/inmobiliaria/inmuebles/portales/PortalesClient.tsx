@@ -44,6 +44,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
   DownloadSimple,
@@ -148,7 +149,7 @@ function Modal({
       <div
         data-lenis-prevent
         style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background"
+        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-lg bg-background"
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-4">
           <div className="space-y-0.5">
@@ -315,11 +316,19 @@ interface InmuebleParaPublicar {
 
 function DialogoDePublicar({
   inmuebles,
+  cargandoInmuebles,
   portales,
   onCerrar,
   onPublicado,
 }: {
   inmuebles: InmuebleParaPublicar[]
+  /**
+   * 🔴 El portafolio de una inmobiliaria grande son miles de filas y el
+   * endpoint no pagina, así que tarda. Sin esto el diálogo afirmaba «Todavía no
+   * tienes inmuebles en el portafolio» a alguien con 2.818 — una frase falsa,
+   * dicha con total seguridad, mientras la respuesta venía en camino.
+   */
+  cargandoInmuebles: boolean
   portales: PortalConCuenta[]
   onCerrar: () => void
   onPublicado: () => void
@@ -407,7 +416,14 @@ function DialogoDePublicar({
                 autoFocus
               />
             </div>
-            {resultados.length === 0 ? (
+            {cargandoInmuebles && inmuebles.length === 0 ? (
+              <p
+                className="py-6 text-center text-sm text-fg-muted"
+                data-testid="buscando-inmuebles"
+              >
+                Buscando tus inmuebles…
+              </p>
+            ) : resultados.length === 0 ? (
               <p className="py-6 text-center text-sm text-fg-muted">
                 {inmuebles.length === 0
                   ? 'Todavía no tienes inmuebles en el portafolio.'
@@ -645,7 +661,7 @@ function ComoFunciona() {
 export function PortalesClient() {
   const cuentas = useCrm(() => publicacionApi.cuentas(), [], ['portafolio'])
   const tablero = useCrm(() => publicacionApi.tablero(), [], ['portafolio'])
-  const { consignaciones } = useConsignaciones()
+  const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones()
   const { canAccess } = usePermissions()
   const puedeEditar = canAccess('portafolio', 'edit')
 
@@ -751,7 +767,7 @@ export function PortalesClient() {
         <CardContent>
           {cuentas.noHabilitado ? (
             <p className="text-sm text-fg-muted" data-testid="cuentas-no-habilitadas">
-              Próximamente: {cuentas.noHabilitado}
+              {motivoEnCristiano(cuentas.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos
@@ -871,7 +887,7 @@ export function PortalesClient() {
         <CardContent>
           {tablero.noHabilitado ? (
             <p className="text-sm text-fg-muted" data-testid="tablero-no-habilitado">
-              Próximamente: {tablero.noHabilitado}
+              {motivoEnCristiano(tablero.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos
@@ -1003,6 +1019,7 @@ export function PortalesClient() {
       {publicando ? (
         <DialogoDePublicar
           inmuebles={inmuebles}
+          cargandoInmuebles={cargandoInmuebles}
           portales={portales}
           onCerrar={() => setPublicando(false)}
           onPublicado={() => {

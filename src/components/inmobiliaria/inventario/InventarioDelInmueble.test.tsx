@@ -104,7 +104,11 @@ describe('InventarioDelInmueble', () => {
   it('sin la migración monta la tarjeta de siempre y lo dice', async () => {
     await montar(datos({ disponible: false }));
     expect(q('legado')).not.toBeNull();
-    expect(host.textContent).toContain('todavía no está activado');
+    // 🔴 «El inventario por versiones todavía no está activado» era jerga
+    // nuestra (Nico, 18-09-2026: «¿qué es eso?»). Ahora dice qué pasa en la
+    // práctica, que es lo único que le sirve a quien administra el inmueble.
+    expect(host.textContent).not.toContain('por versiones');
+    expect(host.textContent).toContain('un solo inventario');
   });
 
   it('dice «por actualizar tras el contrato N» cuando un contrato terminó después del último completo', async () => {

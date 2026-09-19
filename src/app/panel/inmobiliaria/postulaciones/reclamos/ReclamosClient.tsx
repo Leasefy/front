@@ -27,6 +27,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ChatCircleDots, Eye, ShieldWarning, Clock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -236,7 +237,7 @@ export function ReclamosClient() {
         <CardContent>
           {datos.noHabilitado ? (
             <p className="text-sm text-fg-muted" data-testid="reclamos-no-habilitados">
-              Próximamente: {datos.noHabilitado}
+              {motivoEnCristiano(datos.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos

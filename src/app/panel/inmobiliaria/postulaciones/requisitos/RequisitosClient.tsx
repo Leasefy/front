@@ -32,6 +32,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import {
   ListChecks,
   Lock,
@@ -504,7 +505,7 @@ export function RequisitosClient() {
         <Card>
           <CardContent className="py-6">
             <p className="text-sm text-fg-muted" data-testid="requisitos-no-habilitados">
-              Próximamente: {datos.noHabilitado}
+              {motivoEnCristiano(datos.noHabilitado)}
             </p>
           </CardContent>
         </Card>

@@ -27,6 +27,9 @@
  */
 
 import { useState } from 'react'
+import { toast } from '@/components/ui/toast'
+import { ApiError } from '@/lib/api/client'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { FileText, Lock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -57,10 +60,23 @@ function Puerta({
     <div className="space-y-1.5" data-testid={`puerta-${titulo}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium">{cuando}</p>
+        {/* 🔴 «Faltan 0» no es un estado (Nico, 18-09-2026). Pasa cuando el
+            back dice «incompleto» pero devuelve la lista de faltantes vacía
+            —por ejemplo sin la migración—, y en pantalla queda una cuenta que
+            no significa nada. Si no sabemos qué falta, se dice. */}
         <Badge variant={completo ? 'secondary' : 'outline'}>
-          {completo ? 'Listo' : `Faltan ${falta.length}`}
+          {completo
+            ? 'Listo'
+            : falta.length === 0
+              ? 'Sin revisar'
+              : `Faltan ${falta.length}`}
         </Badge>
       </div>
+      {!completo && falta.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Todavía no pudimos revisar qué papeles faltan para este paso.
+        </p>
+      ) : null}
       {falta.length > 0 ? (
         <ul className="text-muted-foreground space-y-1 text-sm">
           {falta.map((f) => (
@@ -110,6 +126,17 @@ export function MandatoDelInmueble({
       // en ninguna parte del front ni vuelve en las lecturas.
       setEnlace(`${window.location.origin}/mandato/firma/${r.token}`)
       invalidar('portafolio')
+    } catch (e) {
+      // 🔴 Acá no había `catch` (Nico, 18-09-2026: «cuando uno le da lo de
+      // firmar no sirve, tira error»). El `void pedirFirma()` del onClick se
+      // tragaba el rechazo y lo convertía en un unhandled rejection: el botón
+      // volvía a su sitio y nadie se enteraba de por qué no pasó nada — o
+      // saltaba el overlay de error de Next. El motivo del back se muestra.
+      toast.error(
+        e instanceof ApiError && e.message
+          ? e.message
+          : 'No pudimos crear el enlace de firma. Vuelve a intentar.',
+      )
     } finally {
       setPidiendo(false)
     }
@@ -126,7 +153,7 @@ export function MandatoDelInmueble({
             className="text-muted-foreground text-sm"
             data-testid="mandato-no-habilitado"
           >
-            Próximamente: {documentos.noHabilitado}
+            {motivoEnCristiano(documentos.noHabilitado)}
           </p>
         ) : (
           <EstadoDeDatos
@@ -197,6 +224,15 @@ export function MandatoDelInmueble({
         {!firmas.noHabilitado ? (
           <div className="space-y-2 border-t pt-4" data-testid="firma-del-mandato">
             <p className="text-sm font-medium">Firma del mandato</p>
+            {/* 🔴 Antes sólo decía «todavía no está firmado», sin decir quién
+                firma ni por qué (Nico, 18-09-2026). Sin eso, el botón es un
+                trámite sin dueño. */}
+            <p className="text-muted-foreground text-sm">
+              Lo firma <span className="text-foreground font-medium">
+                {propietarioNombre ?? 'el propietario'}
+              </span>: es el documento con el que te autoriza a administrar y
+              arrendar el inmueble. Va antes del primer giro de su plata.
+            </p>
             {laFirma ? (
               <p className="text-muted-foreground text-sm">
                 {laFirma.estado === 'FIRMADA'

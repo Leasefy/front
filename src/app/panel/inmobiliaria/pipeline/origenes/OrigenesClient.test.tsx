@@ -7,7 +7,7 @@
  *     no desaparece;
  *   · la lectura en palabras señala el portal que no cerró nada, que es el que
  *     hay que mirar antes de renovar;
- *   · un 503 se ve como «Próximamente» con la migración que falta, NO como un
+ *   · un 503 se avisa como «todavía no está disponible», no como un error que falta, NO como un
  *     error con botón de reintentar.
  *
  * Se monta con `createRoot` + `act` (el repo no tiene testing-library).
@@ -156,7 +156,7 @@ describe('OrigenesClient', () => {
     expect($('[data-testid="fila-totales"]')?.textContent).toContain('22.22 %')
   })
 
-  it('🔴 un 503 se ve como «Próximamente» con la migración, no como un error', async () => {
+  it('🔴 un 503 se avisa como «todavía no está disponible», no como un error', async () => {
     api.informe = vi.fn(() =>
       Promise.reject(
         new ApiError(503, [
@@ -166,8 +166,10 @@ describe('OrigenesClient', () => {
     )
     await pintar()
     const aviso = $('[data-testid="informe-no-habilitado"]')?.textContent ?? ''
-    expect(aviso).toContain('Próximamente')
-    expect(aviso).toContain('20260918160000')
+    expect(aviso).toContain('todavía no está disponible')
+    // 🔴 El identificador de la migración es para quien despliega.
+    expect(aviso).not.toContain('20260918160000')
+    expect(aviso).toContain('todavía no está disponible')
     expect($('[data-testid="tabla-por-origen"]')).toBeNull()
   })
 

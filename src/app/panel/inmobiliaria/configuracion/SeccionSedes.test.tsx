@@ -155,9 +155,12 @@ describe('sedes', () => {
       }),
     );
     await pintar();
-    expect(document.body.querySelector('[data-testid="sin-la-migracion"]')?.textContent).toContain(
-      'sedes_como_centro_de_costo',
-    );
+    // 🔴 El identificador de la migración es para quien despliega, no para la
+    // inmobiliaria (Nico, 18-09-2026). Lo que queda es el aviso.
+    const cartel =
+      document.body.querySelector('[data-testid="sin-la-migracion"]')?.textContent ?? '';
+    expect(cartel).not.toContain('sedes_como_centro_de_costo');
+    expect(cartel).toContain('todavía no está disponible');
     expect(boton('Crear una sede').disabled).toBe(true);
     expect(document.body.textContent).toContain('Todavía no hay sedes');
   });

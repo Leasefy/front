@@ -176,7 +176,10 @@ describe('costos de la plata', () => {
       datos({ disponible: false, motivo: 'Falta la migración 20260917220000_costos_de_la_plata_y_medios.' }),
     );
     await pintar();
-    expect(texto('sin-la-migracion')).toContain('20260917220000_costos_de_la_plata_y_medios');
+    // 🔴 El identificador de la migración es para quien despliega, no para la
+    // inmobiliaria (Nico, 18-09-2026). Lo que tiene que quedar es el aviso.
+    expect(texto('sin-la-migracion')).not.toContain('20260917220000');
+    expect(texto('sin-la-migracion')).toContain('todavía no está disponible');
     expect(
       [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Guardar')!
         .disabled,

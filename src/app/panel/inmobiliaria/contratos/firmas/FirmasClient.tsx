@@ -24,6 +24,7 @@
  */
 
 import { useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { Signature } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -101,7 +102,7 @@ export function FirmasClient() {
               className="text-muted-foreground text-sm"
               data-testid="firmas-no-habilitadas"
             >
-              Próximamente: {barrido.noHabilitado}
+              {motivoEnCristiano(barrido.noHabilitado)}
             </p>
           </CardContent>
         </Card>

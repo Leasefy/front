@@ -19,6 +19,7 @@
  */
 
 import { useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { ShieldWarning, Warning } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -147,7 +148,7 @@ export function ListasClient() {
               className="text-muted-foreground text-sm"
               data-testid="listas-no-habilitadas"
             >
-              Próximamente: {cargadas.noHabilitado}
+              {motivoEnCristiano(cargadas.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos
@@ -209,7 +210,7 @@ export function ListasClient() {
               className="text-muted-foreground text-sm"
               data-testid="consultas-no-habilitadas"
             >
-              Próximamente: {bandeja.noHabilitado}
+              {motivoEnCristiano(bandeja.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos

@@ -25,6 +25,7 @@
  */
 
 import { useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { MagicWand } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -175,7 +176,7 @@ export function CalceClient() {
               className="text-muted-foreground text-sm"
               data-testid="calce-no-habilitado"
             >
-              Próximamente: {delLead.noHabilitado}
+              {motivoEnCristiano(delLead.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos

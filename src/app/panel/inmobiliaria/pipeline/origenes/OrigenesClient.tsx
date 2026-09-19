@@ -24,6 +24,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { TrendUp } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -121,7 +122,7 @@ export function OrigenesClient() {
         <CardContent className="space-y-3">
           {configuracion.noHabilitado ? (
             <p className="text-muted-foreground text-sm" data-testid="config-no-habilitada">
-              Próximamente: {configuracion.noHabilitado}
+              {motivoEnCristiano(configuracion.noHabilitado)}
             </p>
           ) : (
             <>
@@ -208,7 +209,7 @@ export function OrigenesClient() {
         <CardContent>
           {informe.noHabilitado ? (
             <p className="text-muted-foreground text-sm" data-testid="informe-no-habilitado">
-              Próximamente: {informe.noHabilitado}
+              {motivoEnCristiano(informe.noHabilitado)}
             </p>
           ) : (
             <EstadoDeDatos

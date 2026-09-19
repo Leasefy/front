@@ -161,8 +161,10 @@ describe('tasas de usura', () => {
     );
     await pintar();
     const cartel = document.body.querySelector('[data-testid="sin-la-migracion"]');
-    expect(cartel?.textContent).toContain('20260917221000_usura_y_deterioro');
-    expect(cartel?.textContent).toContain('Víctor');
+    expect(cartel?.textContent).not.toContain('20260917221000');
+    // «Víctor» tampoco: la inmobiliaria no sabe quién es.
+    expect(cartel?.textContent).not.toContain('Víctor');
+    expect(cartel?.textContent).toContain('todavía no está disponible');
     expect(botones('Cargar una tasa')[0]!.disabled).toBe(true);
   });
 

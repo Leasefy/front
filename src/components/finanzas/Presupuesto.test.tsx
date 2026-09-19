@@ -210,7 +210,8 @@ describe('sin la migración', () => {
       }),
     );
     await pintar();
-    expect(testId('sin-la-migracion')?.textContent).toContain('20260917224000');
+    expect(testId('sin-la-migracion')?.textContent).not.toContain('20260917224000');
+    expect(testId('sin-la-migracion')?.textContent).toContain('todavía no está disponible');
     expect(testId('cargar-presupuesto')).toBeNull();
     // Pero la comparación con el real SÍ se sigue viendo.
     expect(testId('real-comisiones')?.textContent).toContain('112.000.000');

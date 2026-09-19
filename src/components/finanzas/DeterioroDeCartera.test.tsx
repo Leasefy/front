@@ -324,7 +324,8 @@ describe('deterioro de cartera', () => {
       datos({ disponible: false, motivo: 'Falta la migración 20260917221000_usura_y_deterioro.' }),
     );
     await pintar();
-    expect(texto('sin-la-migracion')).toContain('Víctor');
+    expect(texto('sin-la-migracion')).not.toContain('Víctor');
+    expect(texto('sin-la-migracion')).toContain('todavía no está disponible');
     for (const id of ['proponer', 'aprobar', 'anular']) {
       expect(
         document.body.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)!.disabled,

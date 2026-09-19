@@ -19,6 +19,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { enCristiano } from '@/lib/errores/en-cristiano';
 import { Warning, WarningOctagon } from '@phosphor-icons/react';
 
 import { SIN_MEDIR } from '@/lib/tasas';
@@ -168,6 +169,7 @@ export function SinLaMigracion({
   queSeEspera: string;
   testId?: string;
 }) {
+  const traducido = enCristiano(motivo);
   return (
     <div
       className="flex gap-3 rounded-lg border border-border bg-surface p-5 text-sm text-fg"
@@ -177,12 +179,18 @@ export function SinLaMigracion({
       <WarningOctagon className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
       <div className="space-y-1.5">
         <p className="font-medium">Todavía no se puede {queSeEspera}.</p>
+        {/* 🔴 Traducido: el `motivo` del back trae el identificador de la
+            migración, que es para quien despliega y no para la inmobiliaria.
+            El original queda en `title` para soporte. */}
+        {traducido.texto ? (
+          <p className="text-fg-muted" title={traducido.tecnico ?? undefined}>
+            {traducido.texto}
+          </p>
+        ) : null}
         <p className="text-fg-muted">
-          {motivo ?? 'Falta la migración de esta pieza en la base de datos.'}
-        </p>
-        <p className="text-fg-muted">
-          La aplica Víctor. Hasta entonces esta pantalla te muestra lo que ya se puede leer y no
-          guarda nada — no se pierde trabajo, simplemente todavía no hay dónde escribirlo.
+          Nuestro equipo lo está habilitando. Hasta entonces esta pantalla te muestra lo que ya se
+          puede leer y no guarda nada — no se pierde trabajo, simplemente todavía no hay dónde
+          escribirlo.
         </p>
       </div>
     </div>

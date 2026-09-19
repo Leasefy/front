@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { enCristiano } from '@/lib/errores/en-cristiano';
 import { HandCoins, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -102,10 +103,16 @@ export function ModalidadDelMandato({
         <p className="text-sm text-muted-foreground">Cargando…</p>
       ) : (
         <div className="space-y-3">
-          {!mandato.disponible && mandato.motivo ? (
-            <div className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning flex gap-2">
+          {/* 🔴 Acá salía «Falta aplicar la migración 20260917120000_…», que no
+              le dice nada a quien administra inmuebles. El original queda en
+              `title` para soporte. */}
+          {!mandato.disponible && enCristiano(mandato.motivo).texto ? (
+            <div
+              className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning flex gap-2"
+              title={enCristiano(mandato.motivo).tecnico ?? undefined}
+            >
               <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <span>{mandato.motivo}</span>
+              <span>{enCristiano(mandato.motivo).texto}</span>
             </div>
           ) : null}
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">

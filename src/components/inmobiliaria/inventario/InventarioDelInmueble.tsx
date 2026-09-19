@@ -71,9 +71,11 @@ export function InventarioDelInmueble(props: Props) {
   if (!datos || !datos.disponible) {
     return (
       <div className="space-y-2" id="inventario" data-testid="inventario-sin-versiones">
-        {datos && !datos.disponible && (
-          <p className="text-xs text-muted-foreground">{t(`${B}.migracionPendiente`)}</p>
-        )}
+        {/* 🔴 La nota va DEBAJO (Nico, 18-09-2026). Arriba separaba «Trabajar
+            sin señal» de la tarjeta del inventario —que es a lo que pertenece,
+            porque es la copia de ESE inventario para llevárselo a la visita— y
+            además abría la pantalla con una aclaración técnica en vez de con el
+            inventario, que es a lo que la persona vino. */}
         <InventarioDeLaConsignacion
           consignacion={props.consignacion}
           puedeEditar={props.puedeEditar}
@@ -81,6 +83,11 @@ export function InventarioDelInmueble(props: Props) {
           sinSenal={props.sinSenal}
           onActualizada={props.onActualizada}
         />
+        {datos && !datos.disponible && (
+          <p className="px-1 text-xs text-muted-foreground" data-testid="nota-de-inventario">
+            {t(`${B}.migracionPendiente`)}
+          </p>
+        )}
       </div>
     );
   }

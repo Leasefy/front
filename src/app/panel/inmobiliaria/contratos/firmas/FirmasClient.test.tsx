@@ -139,7 +139,7 @@ describe('FirmasClient', () => {
     expect(contenedor.textContent).toContain('no envía')
   })
 
-  it('un 503 se ve como «Próximamente» con la migración', async () => {
+  it('un 503 se avisa como «todavía no está disponible», no como un error', async () => {
     const { ApiError } = await import('@/lib/api/client')
     api.barrido = vi.fn(() =>
       Promise.reject(
@@ -149,9 +149,12 @@ describe('FirmasClient', () => {
       ),
     )
     await pintar()
-    expect($('[data-testid="firmas-no-habilitadas"]')?.textContent).toContain(
-      '20260918163000',
-    )
+    const aviso = $('[data-testid="firmas-no-habilitadas"]')?.textContent ?? ''
+    // 🔴 El identificador de la migración es para quien despliega, no para la
+    // inmobiliaria (Nico, 18-09-2026). Lo que queda es el aviso, y NO un error.
+    expect(aviso).not.toContain('20260918163000')
+    expect(aviso).toContain('todavía no está disponible')
+    expect($('[data-testid="fallo-de-carga"]')).toBeNull()
   })
 
   it('sin permiso no ofrece cancelar', async () => {

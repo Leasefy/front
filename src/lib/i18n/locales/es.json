@@ -878,7 +878,7 @@
       "errorAlCargar": "No se pudo cargar el inventario.",
       "reintentar": "Reintentar",
       "desdeCache": "Sin señal: estás viendo la última copia del inventario guardada en este teléfono.",
-      "migracionPendiente": "El inventario por versiones todavía no está activado: se guarda como siempre y no se exige para iniciar contratos.",
+      "migracionPendiente": "Este inmueble guarda un solo inventario, no una copia aparte por cada contrato. Funciona igual: puedes agregar ítems, imprimir el acta y arrancar contratos sin problema.",
       "vigente": "Vigente: versión {{version}}, completada el {{fecha}}.",
       "sinInventario": "Este inmueble no tiene inventario. Hazlo y complétalo antes de iniciar un contrato.",
       "soloBorrador": "El inventario está en borrador. Complétalo para poder iniciar un contrato.",

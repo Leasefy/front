@@ -35,6 +35,37 @@
  *      generarse de forma automática: que la persona de finanzas decida cuándo
  *      cobrar basado en la cartera». Está en «Cartera → Cobros emitidos».
  *
+ * ── 🔴 UNA SOLA TARJETA (Nico, 2026-09-18 de noche) ─────────────────────────
+ *
+ * «Esto tiene que hacer parte de la tabla», señalando el renglón del mes con
+ * su botón y las seis fichas de cifras; y «esto debe sí o sí ser otra forma,
+ * eso de prender o apagar algo, quizás con un switch tab como manejamos otras
+ * tablas, y el buscador igual dentro de la tabla», señalando el interruptor
+ * «Sólo cartera».
+ *
+ * Tenía razón en las dos, y las dos son el mismo defecto: había **cinco
+ * bloques sueltos flotando** encima de la tabla —el mes, seis fichas, un
+ * aviso, un interruptor y un buscador—, cada uno con su propio margen, y
+ * ninguno se leía como parte de lo que estaba mirando. Peor: **los tres
+ * cajones eran fichas de sólo lectura y el filtro era un interruptor
+ * distinto**, así que el número y la forma de ver ese número eran dos
+ * controles diferentes a 300 px de distancia.
+ *
+ * Ahora es UNA tarjeta con el orden en que se lee y se opera:
+ *
+ *   1. el **mes** y la única acción que mueve plata («Registrar un pago»);
+ *   2. el **resumen del mes** en un renglón: se debe · pagado · falta;
+ *   3. los **tres cajones como pestañas**, pegadas a la tabla — el número ES
+ *      el filtro: tocar «Cartera $789.149.569» deja la tabla en esas 455
+ *      cuotas. Es el patrón de pestañas de la casa (`role="tablist"` +
+ *      `border-b`), el mismo de Requisitos;
+ *   4. el **buscador**, dentro de la tarjeta, con el alcance a su derecha;
+ *   5. la **tabla** y su paginación.
+ *
+ * El interruptor «Sólo cartera» ya no existe: era una tercera forma de decir
+ * lo que ahora dice una pestaña, y un interruptor sólo puede expresar dos
+ * estados de cuatro (¿y «por vencer»? ¿y «vencido, en plazo»?).
+ *
  * ── Los cinco números, y por qué no se pueden mezclar ───────────────────────
  *
  * El vocabulario es el MISMO de «Cartera por concepto» (`CarteraPorConcepto`),
@@ -56,8 +87,9 @@
  * ── Lo que la pantalla se niega a hacer ─────────────────────────────────────
  *
  * 1. **Decir «todavía no hay cobros».** Con contratos vigentes SÍ hay deuda.
- * 2. **Cambiar la franja con el filtro.** La franja habla del MES entero; la
- *    tabla muestra lo filtrado y lo dice arriba de ella.
+ * 2. **Cambiar las cifras con el filtro.** Las pestañas y el resumen hablan
+ *    del MES entero; la tabla muestra lo filtrado y lo dice al lado del
+ *    buscador.
  * 3. **Callar lo que el número no cuenta.** Contratos sin tabla de
  *    amortización y cuotas que el contrato ya no cubre salen en los avisos.
  * 4. **Pintar un error como un mes vacío.** Eso lo separa `EstadoDeDatos`.
@@ -75,16 +107,10 @@
 
 import { useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import {
-  CurrencyCircleDollar,
-  MagnifyingGlass,
-  Plus,
-  Warning,
-} from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -103,11 +129,12 @@ import {
 import { useCarteraDelMes } from '@/lib/hooks/use-cartera'
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service'
 import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
-import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
+import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { cn } from '@/lib/utils'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
 
@@ -129,71 +156,168 @@ export function mesesRecientes(cantidad = 12, hoy: Date = new Date()): string[] 
 function normalizar(s: string): string {
   return s
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .trim()
 }
 
 /**
- * Las filas que se ven: la búsqueda (inquilino, documento, contrato, inmueble)
- * y el interruptor «Sólo cartera» — el mismo par que ya tiene «Cartera por
- * concepto». Pura y exportada para poder fijarla en un test.
+ * Qué pestaña está elegida. `TODAS` no es un cajón del back: es «sin filtro».
  *
- * 🔴 «Sólo cartera» filtra por el CAJÓN, no por «tiene saldo»: una cuota
- * vencida dentro del plazo no es cartera y no puede aparecer acá.
+ * 🔴 Reemplaza al booleano `soloCartera`. Un interruptor sólo sabe decir dos
+ * estados y los cajones son tres: con él, «por vencer» y «vencido, en plazo»
+ * no tenían forma de mirarse solos aunque cada uno tuviera su propia cifra en
+ * pantalla.
+ */
+export type CajonElegido = 'TODAS' | CajonDeLaCuota
+
+/**
+ * Qué significa cada pestaña, en una línea.
+ *
+ * 🔴 Estas frases estaban debajo de cada ficha cuando los cajones eran seis
+ * cuadros de sólo lectura, y son lo que hace que la partición se entienda: sin
+ * ellas, «vencido, en plazo» y «cartera» se leen como sinónimos y la cobranza
+ * termina persiguiendo a alguien que está usando el plazo que la inmobiliaria
+ * misma le dio, con la Ley 2300 de por medio. En una pestaña no caben, así que
+ * se dice la del cajón ELEGIDO, justo encima de la tabla que se está mirando.
+ * Las palabras son las de «Cartera por concepto», sin cambiar una coma.
+ */
+const QUE_ES_ESTE_CAJON: Record<CajonElegido, string> = {
+  TODAS: 'Todo lo que falta por pagar de este mes, en los tres momentos por los que pasa una deuda.',
+  POR_VENCER: 'Todavía no vence. Es deuda, no cartera.',
+  VENCIDA_EN_PLAZO: 'Venció, pero el plazo del contrato sigue corriendo.',
+  CARTERA: 'Pasó el plazo. Es lo único que la cobranza persigue.',
+  SIN_DEUDA: 'Cuotas de este mes que ya están pagadas del todo.',
+}
+
+/**
+ * Las filas que se ven: la búsqueda (inquilino, documento, contrato, inmueble)
+ * y el cajón elegido en las pestañas. Pura y exportada para poder fijarla en
+ * un test.
+ *
+ * 🔴 Filtra por el CAJÓN, no por «tiene saldo»: una cuota vencida dentro del
+ * plazo no es cartera y no puede aparecer bajo «Cartera».
  */
 export function filtrarCuotas(
   filas: readonly FilaDeLaCuotaDelMes[],
   busqueda: string,
-  soloCartera: boolean,
+  cajon: CajonElegido,
 ): FilaDeLaCuotaDelMes[] {
   const q = normalizar(busqueda.trim())
   return filas.filter((f) => {
-    if (soloCartera && f.cajon !== 'CARTERA') return false
+    if (cajon !== 'TODAS' && f.cajon !== cajon) return false
     if (q === '') return true
     const campos = [f.inquilino, f.documento, f.contrato, f.contratoDeLeasefy, f.inmueble]
     return campos.some((c) => c && normalizar(c).includes(q))
   })
 }
 
-function Cifra({
+/** Una cifra del resumen del mes: rótulo chico, número grande, en un renglón. */
+function CifraDelMes({
   label,
   valor,
-  detalle,
-  tono,
   testId,
+  tono,
+  fuerte,
   extra,
 }: {
   label: string
   valor: string
-  detalle: string
-  tono?: 'danger' | 'warning' | 'muted' | 'success'
   testId: string
-  /** Una línea más debajo del detalle: el interés, cuando lo hay. */
+  tono?: 'success' | 'danger'
+  /** La cifra principal del mes se lee más grande que sus dos vecinas. */
+  fuerte?: boolean
   extra?: ReactNode
 }) {
-  const color =
-    tono === 'danger'
-      ? 'text-danger'
-      : tono === 'warning'
-        ? 'text-warning'
-        : tono === 'success'
-          ? 'text-success'
-          : tono === 'muted'
-            ? 'text-fg-muted'
-            : 'text-fg'
   return (
-    <div className="p-4" data-testid="pagos-cifra">
-      <p className="text-xs text-fg-muted">{label}</p>
+    <div className="min-w-0">
+      <p className="text-caption uppercase tracking-wide text-fg-subtle">{label}</p>
       <p
-        className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${color}`}
+        className={cn(
+          'font-mono font-semibold tabular-nums',
+          fuerte ? 'text-xl' : 'text-base',
+          tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
+        )}
         data-testid={testId}
       >
         {valor}
       </p>
-      <p className="mt-0.5 text-xs text-fg-muted">{detalle}</p>
       {extra}
     </div>
+  )
+}
+
+/**
+ * Una pestaña de cajón: el número ES el filtro.
+ *
+ * El monto que muestra es lo que FALTA en ese cajón —la misma medida en las
+ * cuatro—, así que las tres de la derecha suman la primera. El conteo va
+ * debajo, chico: es el dato secundario.
+ */
+function PestanaDeCajon({
+  label,
+  monto,
+  cuotas,
+  activa,
+  tono,
+  testId,
+  testIdCifra,
+  onClick,
+  extra,
+}: {
+  label: string
+  monto: number
+  cuotas: number
+  activa: boolean
+  tono?: 'warning' | 'danger' | 'muted'
+  testId: string
+  testIdCifra: string
+  onClick: () => void
+  extra?: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={activa}
+      data-testid={testId}
+      onClick={onClick}
+      className={cn(
+        'relative flex shrink-0 flex-col gap-0.5 px-4 py-3 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+        activa ? 'bg-surface' : 'hover:bg-surface-muted',
+      )}
+    >
+      <span className={cn('text-xs', activa ? 'font-medium text-fg' : 'text-fg-muted')}>
+        {label}
+      </span>
+      <span
+        className={cn(
+          'font-mono text-base font-semibold tabular-nums',
+          tono === 'danger'
+            ? 'text-danger'
+            : tono === 'warning'
+              ? 'text-warning'
+              : tono === 'muted'
+                ? 'text-fg-muted'
+                : 'text-fg',
+        )}
+        data-testid={testIdCifra}
+      >
+        {formatCurrency(monto)}
+      </span>
+      <span className="text-caption text-fg-subtle">
+        {numberFormatter.format(cuotas)} {cuotas === 1 ? 'cuota' : 'cuotas'}
+      </span>
+      {extra}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute inset-x-0 bottom-0 h-0.5 bg-primary transition-opacity',
+          activa ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+    </button>
   )
 }
 
@@ -206,7 +330,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   const { t: traducir } = useI18n()
   const [mes, setMes] = useState(() => mesInicial ?? mesActual())
   const [busqueda, setBusqueda] = useState('')
-  const [soloCartera, setSoloCartera] = useState(false)
+  const [cajon, setCajon] = useState<CajonElegido>('TODAS')
   const [reciboAbierto, setReciboAbierto] = useState(false)
 
   const { datos, cargando, error, recargar } = useCarteraDelMes(mes)
@@ -217,14 +341,21 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
 
   const todas = useMemo(() => datos?.filas ?? [], [datos])
   const visibles = useMemo(
-    () => filtrarCuotas(todas, busqueda, soloCartera),
-    [todas, busqueda, soloCartera],
+    () => filtrarCuotas(todas, busqueda, cajon),
+    [todas, busqueda, cajon],
   )
-  const hayFiltros = busqueda.trim().length > 0 || soloCartera
+  const hayFiltros = busqueda.trim().length > 0 || cajon !== 'TODAS'
   const limpiar = () => {
     setBusqueda('')
-    setSoloCartera(false)
+    setCajon('TODAS')
   }
+
+  /** Cuántas cuotas hay en cada cajón, para el renglón chico de la pestaña. */
+  const cuotasPorCajon = useMemo(() => {
+    const cuenta: Record<string, number> = {}
+    for (const f of todas) cuenta[f.cajon] = (cuenta[f.cajon] ?? 0) + 1
+    return cuenta
+  }, [todas])
 
   const t = datos?.totales
   const avisos = datos?.avisos ?? []
@@ -248,177 +379,215 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   }
 
   return (
-    <section className="space-y-4" aria-label={`La deuda de ${titulo}`}>
-      {/* El mes y la acción principal, juntos: el alcance de lo que se ve y
-          lo único que de verdad mueve plata en esta pantalla. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-fg">La deuda de</h2>
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-[190px]" aria-label="Mes de la deuda">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {opciones.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {mesEnTitulo(m)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Sin `cobros:create` queda a la vista y deshabilitado, con el porqué:
-            esconder un control se lee como «falta la función». */}
-        <span
-          className="inline-flex"
-          title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
-        >
-          <Button
-            hideArrow
-            disabled={!puedeHacerRecibo}
-            onClick={() => setReciboAbierto(true)}
-            data-testid="abrir-recibo-de-caja"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Registrar un pago
-          </Button>
-        </span>
-      </div>
-
-      <EstadoDeDatos
-        cargando={cargando && !datos}
-        error={error}
-        queEs={`la deuda de ${titulo}`}
-        onReintentar={recargar}
-        esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
+    <section className="space-y-3" aria-label={`La deuda de ${titulo}`}>
+      {/* 🔴 UNA tarjeta: el mes, las cifras, las pestañas, el buscador y la
+          tabla. Antes eran cinco bloques sueltos encima de la tabla y ninguno
+          se leía como parte de ella (Nico, 18-09). */}
+      <div
+        className="overflow-hidden rounded-lg border border-border bg-surface"
+        data-testid="tarjeta-de-la-deuda"
       >
-        {/* ── El mes: lo que se debe, lo pagado y lo que falta. ─────────── */}
-        <div
-          className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-          data-testid="resumen-del-mes"
-        >
-          <Cifra
-            testId="mes-se-debe"
-            label={`Se debe en ${titulo}`}
-            valor={formatCurrency(t?.totalCop ?? 0)}
-            detalle={`${numberFormatter.format(t?.cuotas ?? 0)} ${
-              (t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'
-            } · ${numberFormatter.format(t?.inquilinos ?? 0)} ${
-              (t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'
-            }`}
-          />
-          <Cifra
-            testId="mes-pagado"
-            label="Pagado"
-            valor={formatCurrency(t?.pagadoCop ?? 0)}
-            tono="success"
-            detalle="Lo que ya entró de estas cuotas."
-          />
-          <Cifra
-            testId="mes-falta"
-            label="Falta por pagar"
-            valor={formatCurrency(t?.pendienteCop ?? 0)}
-            detalle="Se reparte en los tres cajones de abajo."
-            extra={
-              interesDelMes > 0 ? (
-                <p
-                  className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
-                  data-testid="mes-falta-con-intereses"
-                >
-                  {traducir(CLAVE_DE_MORA.conIntereses, {
-                    monto: formatCurrency(t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes),
-                  })}
-                </p>
-              ) : null
-            }
-          />
-        </div>
-
-        {/* ── Dónde está lo que falta. Los tres cajones, en el orden en que
-              una deuda los recorre: nace futura, vence, y recién después es
-              cartera. Las palabras son las de «Cartera por concepto». ──── */}
-        <div
-          className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-          data-testid="cajones-del-mes"
-        >
-          <Cifra
-            testId="mes-por-vencer"
-            label="Por vencer"
-            valor={formatCurrency(t?.porVencerCop ?? 0)}
-            tono="muted"
-            detalle="Todavía no vence. Es deuda, no cartera."
-          />
-          <Cifra
-            testId="mes-vencido-en-plazo"
-            label="Vencido, en plazo"
-            valor={formatCurrency(t?.vencidaEnPlazoCop ?? 0)}
-            tono="warning"
-            detalle="Venció, pero el plazo del contrato sigue corriendo."
-          />
-          <Cifra
-            testId="mes-cartera"
-            label="Cartera"
-            valor={formatCurrency(t?.carteraCop ?? 0)}
-            tono="danger"
-            detalle={`Pasó el plazo. ${numberFormatter.format(
-              t?.cuotasEnCartera ?? 0,
-            )} ${(t?.cuotasEnCartera ?? 0) === 1 ? 'cuota' : 'cuotas'}: es lo único que la cobranza persigue.`}
-            extra={
-              interesDelMes > 0 ? (
-                <p
-                  className="mt-0.5 font-mono text-xs tabular-nums text-danger"
-                  data-testid="mes-intereses"
-                  title={traducir(CLAVE_DE_MORA.explicacion)}
-                >
-                  {traducir(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDelMes) })}
-                </p>
-              ) : null
-            }
-          />
-        </div>
-
-        {/* 🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
-            amortización no es un contrato sin deuda: es una deuda que todavía
-            nadie generó. Callarlo deja la franja mintiendo por omisión. */}
-        {avisos.length > 0 && (
-          <div
-            className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
-            data-testid="avisos-del-mes"
-          >
-            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <div className="space-y-2">
-              <ul className="space-y-1">
-                {avisos.map((aviso) => (
-                  <li key={aviso}>{aviso}</li>
+        {/* 1 · El mes y la única acción que mueve plata. Va FUERA de
+            `EstadoDeDatos`: cambiar de mes no puede hacer desaparecer el
+            control con el que se cambia de mes. */}
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold text-fg">La deuda de</h2>
+            <Select value={mes} onValueChange={setMes}>
+              <SelectTrigger className="w-[190px]" aria-label="Mes de la deuda">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {opciones.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {mesEnTitulo(m)}
+                  </SelectItem>
                 ))}
-              </ul>
-              {/* Sin reglas de mora el interés sale en cero y NO porque no haya
-                  mora: se lleva a donde se arregla. */}
-              {datos?.sinReglasDeMora ? (
-                <Link
-                  href={RUTA_DE_REGLAS_DE_MORA}
-                  className="inline-block font-medium underline underline-offset-4"
-                  data-testid="mes-configurar-reglas"
-                >
-                  {traducir(CLAVE_DE_MORA.configurarReglas)}
-                </Link>
-              ) : null}
-            </div>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+          {/* Sin `cobros:create` queda a la vista y deshabilitado, con el porqué:
+              esconder un control se lee como «falta la función». */}
+          <span
+            className="inline-flex"
+            title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
+          >
+            <Button
+              hideArrow
+              disabled={!puedeHacerRecibo}
+              onClick={() => setReciboAbierto(true)}
+              data-testid="abrir-recibo-de-caja"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Registrar un pago
+            </Button>
+          </span>
+        </div>
 
-        <section className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex items-center gap-2 text-sm text-fg">
-              <Switch
-                checked={soloCartera}
-                onCheckedChange={setSoloCartera}
-                aria-label="Ver sólo las cuotas que ya son cartera"
-                data-testid="solo-cartera"
-              />
-              Sólo cartera
-            </label>
-            <div className="relative w-full sm:w-72">
+        <EstadoDeDatos
+          cargando={cargando && !datos}
+          error={error}
+          queEs={`la deuda de ${titulo}`}
+          onReintentar={recargar}
+          esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
+        >
+          {/* 2 · El mes en un renglón: lo pactado, lo que entró y lo que falta. */}
+          <div
+            className="flex flex-wrap items-start gap-x-10 gap-y-3 border-b border-border bg-surface-muted/40 px-4 py-3"
+            data-testid="resumen-del-mes"
+          >
+            <CifraDelMes
+              testId="mes-se-debe"
+              label={`Se debe en ${titulo}`}
+              valor={formatCurrency(t?.totalCop ?? 0)}
+              fuerte
+              extra={
+                <p className="text-caption text-fg-muted">
+                  {numberFormatter.format(t?.cuotas ?? 0)}{' '}
+                  {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} ·{' '}
+                  {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
+                  {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}
+                </p>
+              }
+            />
+            <CifraDelMes
+              testId="mes-pagado"
+              label="Pagado"
+              valor={formatCurrency(t?.pagadoCop ?? 0)}
+              tono="success"
+              extra={<p className="text-caption text-fg-muted">Lo que ya entró de estas cuotas.</p>}
+            />
+            <CifraDelMes
+              testId="mes-falta"
+              label="Falta por pagar"
+              valor={formatCurrency(t?.pendienteCop ?? 0)}
+              extra={
+                interesDelMes > 0 ? (
+                  <p
+                    className="font-mono text-caption tabular-nums text-fg-muted"
+                    data-testid="mes-falta-con-intereses"
+                  >
+                    {traducir(CLAVE_DE_MORA.conIntereses, {
+                      monto: formatCurrency(
+                        t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                      ),
+                    })}
+                  </p>
+                ) : (
+                  <p className="text-caption text-fg-muted">Se reparte en las pestañas de abajo.</p>
+                )
+              }
+            />
+          </div>
+
+          {/* 🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
+              amortización no es un contrato sin deuda: es una deuda que todavía
+              nadie generó. Callarlo deja el resumen mintiendo por omisión. */}
+          {avisos.length > 0 && (
+            <div
+              className="flex gap-2 border-b border-border bg-warning-soft px-4 py-3 text-sm text-fg"
+              data-testid="avisos-del-mes"
+            >
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+              <div className="space-y-2">
+                <ul className="space-y-1">
+                  {avisos.map((aviso) => (
+                    <li key={aviso}>{aviso}</li>
+                  ))}
+                </ul>
+                {/* Sin reglas de mora el interés sale en cero y NO porque no haya
+                    mora: se lleva a donde se arregla. */}
+                {datos?.sinReglasDeMora ? (
+                  <Link
+                    href={RUTA_DE_REGLAS_DE_MORA}
+                    className="inline-block font-medium underline underline-offset-4"
+                    data-testid="mes-configurar-reglas"
+                  >
+                    {traducir(CLAVE_DE_MORA.configurarReglas)}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* 3 · Los tres cajones COMO PESTAÑAS, pegadas a la tabla: el número
+                 es el filtro. En el orden en que una deuda los recorre —nace
+                 futura, vence, y recién después es cartera—, con las palabras
+                 de «Cartera por concepto». */}
+          <div
+            role="tablist"
+            aria-label="Dónde está lo que falta por pagar"
+            data-testid="cajones-del-mes"
+            data-lenis-prevent
+            className="flex divide-x divide-border overflow-x-auto border-b border-border bg-surface-muted/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <PestanaDeCajon
+              label="Todo lo que falta"
+              monto={t?.pendienteCop ?? 0}
+              cuotas={t?.cuotas ?? 0}
+              activa={cajon === 'TODAS'}
+              testId="cajon-todas"
+              testIdCifra="mes-falta-pestana"
+              onClick={() => setCajon('TODAS')}
+            />
+            <PestanaDeCajon
+              label="Por vencer"
+              monto={t?.porVencerCop ?? 0}
+              cuotas={cuotasPorCajon.POR_VENCER ?? 0}
+              tono="muted"
+              activa={cajon === 'POR_VENCER'}
+              testId="cajon-por-vencer"
+              testIdCifra="mes-por-vencer"
+              onClick={() => setCajon('POR_VENCER')}
+            />
+            <PestanaDeCajon
+              label="Vencido, en plazo"
+              monto={t?.vencidaEnPlazoCop ?? 0}
+              cuotas={cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0}
+              tono="warning"
+              activa={cajon === 'VENCIDA_EN_PLAZO'}
+              testId="cajon-vencido-en-plazo"
+              testIdCifra="mes-vencido-en-plazo"
+              onClick={() => setCajon('VENCIDA_EN_PLAZO')}
+            />
+            <PestanaDeCajon
+              label="Cartera"
+              monto={t?.carteraCop ?? 0}
+              cuotas={t?.cuotasEnCartera ?? 0}
+              tono="danger"
+              activa={cajon === 'CARTERA'}
+              testId="cajon-cartera"
+              testIdCifra="mes-cartera"
+              onClick={() => setCajon('CARTERA')}
+              extra={
+                interesDelMes > 0 ? (
+                  <span
+                    className="font-mono text-caption tabular-nums text-danger"
+                    data-testid="mes-intereses"
+                    title={traducir(CLAVE_DE_MORA.explicacion)}
+                  >
+                    {traducir(CLAVE_DE_MORA.masIntereses, {
+                      monto: formatCurrency(interesDelMes),
+                    })}
+                  </span>
+                ) : null
+              }
+            />
+          </div>
+
+          {/* 3b · Qué es el cajón elegido, en una línea. Es lo que antes vivía
+                  debajo de cada ficha; acá acompaña a la tabla que se mira. */}
+          <p
+            className="border-b border-border px-4 py-2 text-xs text-fg-muted"
+            data-testid="que-es-este-cajon"
+          >
+            {QUE_ES_ESTE_CAJON[cajon]}
+          </p>
+
+          {/* 4 · El buscador, DENTRO de la tarjeta, con el alcance a su lado.
+                 La cifra de arriba habla del MES; la tabla, de lo filtrado. */}
+          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-sm">
               <MagnifyingGlass
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
                 aria-hidden="true"
@@ -432,40 +601,50 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 data-testid="buscar-cuotas"
               />
             </div>
+            <p className="text-xs text-fg-muted" data-testid="alcance-de-la-tabla">
+              {hayFiltros ? (
+                <>
+                  {numberFormatter.format(visibles.length)} de{' '}
+                  {numberFormatter.format(todas.length)} cuotas del mes. Las cifras de
+                  arriba son las del mes completo.{' '}
+                  <button
+                    type="button"
+                    onClick={limpiar}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    data-testid="limpiar-filtros"
+                  >
+                    Quitar el filtro
+                  </button>
+                </>
+              ) : (
+                <>
+                  {numberFormatter.format(todas.length)}{' '}
+                  {todas.length === 1 ? 'cuota' : 'cuotas'} en {titulo}
+                </>
+              )}
+            </p>
           </div>
 
-          {/* La franja de arriba habla del MES; la tabla, de lo filtrado. Si
-              no se dijera, los dos números parecerían contradecirse. */}
-          {hayFiltros && (
-            <p className="text-xs text-fg-muted" data-testid="alcance-de-la-tabla">
-              <CurrencyCircleDollar
-                className="mr-1 inline h-3.5 w-3.5 align-text-bottom"
-                aria-hidden="true"
-              />
-              {numberFormatter.format(visibles.length)} de{' '}
-              {numberFormatter.format(todas.length)} cuotas del mes. Las cifras de arriba
-              son las del mes completo.
-            </p>
-          )}
-
+          {/* 5 · La tabla, sin marco propio: el marco es el de la tarjeta. */}
           <CuotasDelMesTabla
             filas={visibles}
             mes={mes}
             hayFiltros={hayFiltros}
             onLimpiarFiltros={limpiar}
+            sinMarco
           />
-        </section>
+        </EstadoDeDatos>
+      </div>
 
-        {datos ? (
-          <p className="text-xs text-fg-muted">
-            La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe
-            desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
-            de cartera de su contrato. Cada fila es un mes del{' '}
-            <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
-            clic en su nombre para verlo completo. Leído contra el {datos.hoy}.
-          </p>
-        ) : null}
-      </EstadoDeDatos>
+      {datos ? (
+        <p className="text-xs text-fg-muted">
+          La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe
+          desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
+          de cartera de su contrato. Cada fila es un mes del{' '}
+          <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
+          clic en su nombre para verlo completo. Leído contra el {datos.hoy}.
+        </p>
+      ) : null}
 
       {/* El recibo de caja: se le hace a un CLIENTE y el back reparte la plata
           por antigüedad sobre sus cuotas (y permite adelantar). */}

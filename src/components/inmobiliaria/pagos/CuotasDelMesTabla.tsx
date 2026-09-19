@@ -124,9 +124,15 @@ export interface CuotasDelMesTablaProps {
   filas: readonly FilaDeLaCuotaDelMes[]
   /** 'YYYY-MM'. Cambiar de mes (o de filtro) vuelve a la página 1. */
   mes: string
-  /** ¿Hay búsqueda o interruptor puestos? Distingue los dos vacíos. */
+  /** ¿Hay búsqueda o pestaña de cajón puestas? Distingue los dos vacíos. */
   hayFiltros?: boolean
   onLimpiarFiltros?: () => void
+  /**
+   * 🔴 Sin marco propio: la tabla vive DENTRO de otra tarjeta, que ya trae el
+   * borde y el redondeo (Nico, 18-09: «esto tiene que hacer parte de la
+   * tabla»). Dos bordes anidados a 1 px de distancia se leen como dos cajas.
+   */
+  sinMarco?: boolean
 }
 
 const COLUMNAS = 6
@@ -136,6 +142,7 @@ export function CuotasDelMesTabla({
   mes,
   hayFiltros = false,
   onLimpiarFiltros,
+  sinMarco = false,
 }: CuotasDelMesTablaProps) {
   const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
@@ -145,7 +152,10 @@ export function CuotasDelMesTabla({
 
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border bg-surface"
+      className={cn(
+        'overflow-hidden bg-surface',
+        sinMarco ? '' : 'rounded-lg border border-border',
+      )}
       data-testid="pagos-cuotas-tabla"
     >
       <Table>

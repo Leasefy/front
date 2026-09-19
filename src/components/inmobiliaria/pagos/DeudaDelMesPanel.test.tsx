@@ -247,19 +247,39 @@ afterEach(() => {
 })
 
 describe('filtrarCuotas', () => {
-  it('🔴 «Sólo cartera» filtra por el CAJÓN: lo vencido en plazo NO es cartera', () => {
-    expect(filtrarCuotas(FILAS, '', true).map((f) => f.cuotaId)).toEqual(['q1'])
+  /*
+   * 🔴 Antes el tercer argumento era `soloCartera: boolean` y este test se
+   * llamaba «Sólo cartera filtra por el CAJÓN». El interruptor se fue el
+   * 18-09 (Nico: «eso de prender o apagar algo debe sí o sí ser otra forma,
+   * quizás con un switch tab como manejamos otras tablas»): un booleano sólo
+   * sabe decir dos estados y los cajones son tres, así que «por vencer» y
+   * «vencido, en plazo» no tenían forma de mirarse solos aunque cada uno
+   * tuviera su propia cifra en pantalla. Lo que el test protege NO cambió:
+   * se filtra por el CAJÓN, no por «tiene saldo».
+   */
+  it('🔴 filtra por el CAJÓN: lo vencido en plazo NO es cartera', () => {
+    expect(filtrarCuotas(FILAS, '', 'CARTERA').map((f) => f.cuotaId)).toEqual(['q1'])
+    expect(filtrarCuotas(FILAS, '', 'VENCIDA_EN_PLAZO').map((f) => f.cuotaId)).toEqual(['q2'])
+  })
+
+  it('cada cajón se puede mirar solo, no sólo la cartera', () => {
+    // Lo que el interruptor no podía hacer.
+    expect(filtrarCuotas(FILAS, '', 'POR_VENCER').map((f) => f.cuotaId)).toEqual(['q3'])
   })
 
   it('busca por inquilino, documento, contrato e inmueble, sin tildes', () => {
-    expect(filtrarCuotas(FILAS, 'nicolas', false).map((f) => f.cuotaId)).toEqual(['q1'])
-    expect(filtrarCuotas(FILAS, '43111222', false).map((f) => f.cuotaId)).toEqual(['q2'])
-    expect(filtrarCuotas(FILAS, '1686', false).map((f) => f.cuotaId)).toEqual(['q1'])
-    expect(filtrarCuotas(FILAS, 'laureles', false).map((f) => f.cuotaId)).toEqual(['q2'])
+    expect(filtrarCuotas(FILAS, 'nicolas', 'TODAS').map((f) => f.cuotaId)).toEqual(['q1'])
+    expect(filtrarCuotas(FILAS, '43111222', 'TODAS').map((f) => f.cuotaId)).toEqual(['q2'])
+    expect(filtrarCuotas(FILAS, '1686', 'TODAS').map((f) => f.cuotaId)).toEqual(['q1'])
+    expect(filtrarCuotas(FILAS, 'laureles', 'TODAS').map((f) => f.cuotaId)).toEqual(['q2'])
   })
 
-  it('sin búsqueda ni interruptor devuelve todo', () => {
-    expect(filtrarCuotas(FILAS, '  ', false)).toHaveLength(4)
+  it('la búsqueda y el cajón se combinan', () => {
+    expect(filtrarCuotas(FILAS, 'nicolas', 'POR_VENCER')).toHaveLength(0)
+  })
+
+  it('sin búsqueda ni cajón devuelve todo', () => {
+    expect(filtrarCuotas(FILAS, '  ', 'TODAS')).toHaveLength(4)
   })
 })
 
@@ -304,13 +324,31 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
 
   it('usa las MISMAS palabras que la cartera por concepto', () => {
     montar()
-    const franja = $('[data-testid="cajones-del-mes"]').textContent ?? ''
-    expect(franja).toContain('Por vencer')
-    expect(franja).toContain('Todavía no vence. Es deuda, no cartera.')
-    expect(franja).toContain('Vencido, en plazo')
-    expect(franja).toContain('Venció, pero el plazo del contrato sigue corriendo.')
-    expect(franja).toContain('Cartera')
-    expect(franja).toContain('es lo único que la cobranza persigue')
+    const pestanas = $('[data-testid="cajones-del-mes"]').textContent ?? ''
+    expect(pestanas).toContain('Por vencer')
+    expect(pestanas).toContain('Vencido, en plazo')
+    expect(pestanas).toContain('Cartera')
+  })
+
+  /*
+   * 🔴 Las explicaciones de cada cajón vivían debajo de su ficha, las tres a la
+   * vez. Con los cajones convertidos en pestañas (18-09) no caben ahí, así que
+   * se dice la del cajón ELEGIDO, encima de la tabla. Esto es MÁS fuerte que el
+   * test viejo: antes bastaba con que las frases estuvieran en el DOM; ahora
+   * tiene que ser la que corresponde a lo que se está mirando. Sin esta línea,
+   * «vencido, en plazo» y «cartera» se leen como sinónimos y la cobranza
+   * termina persiguiendo a alguien que usa el plazo que le dieron.
+   */
+  it('🔴 la explicación sigue al cajón elegido, con las palabras de cartera', () => {
+    montar()
+    const dice = () => $('[data-testid="que-es-este-cajon"]').textContent ?? ''
+    expect(dice()).toContain('Todo lo que falta por pagar de este mes')
+    clic($('[data-testid="cajon-por-vencer"]'))
+    expect(dice()).toBe('Todavía no vence. Es deuda, no cartera.')
+    clic($('[data-testid="cajon-vencido-en-plazo"]'))
+    expect(dice()).toBe('Venció, pero el plazo del contrato sigue corriendo.')
+    clic($('[data-testid="cajon-cartera"]'))
+    expect(dice()).toBe('Pasó el plazo. Es lo único que la cobranza persigue.')
   })
 
   it('la tabla es de CUOTAS del mes, con su cajón dicho', () => {
@@ -352,13 +390,54 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(vacio).not.toContain('cobro')
   })
 
-  it('🔴 «Sólo cartera» deja sólo la cartera, y la franja sigue hablando del MES', () => {
+  /*
+   * 🔴 Era «Sólo cartera deja sólo la cartera». Cambió el CONTROL —de un
+   * interruptor a pestañas (Nico, 18-09)— y no lo que se protege: el número es
+   * ahora el filtro, y las cifras siguen siendo las del MES completo aunque la
+   * tabla esté filtrada. Se agrega lo que el interruptor no podía: elegir
+   * cualquiera de los tres cajones, y volver a todas.
+   */
+  it('🔴 la pestaña del cajón filtra la tabla, y las cifras siguen siendo del MES', () => {
     montar()
-    clic($('[data-testid="solo-cartera"]'))
+    clic($('[data-testid="cajon-cartera"]'))
+    expect($('[data-testid="cajon-cartera"]').getAttribute('aria-selected')).toBe('true')
     expect(todos('[data-testid="cuota-fila"]')).toHaveLength(1)
-    // La franja NO se mueve: es del mes completo, y se dice cuántas se ven.
+    // Las cifras NO se mueven: son del mes completo, y se dice cuántas se ven.
     expect(pesos('[data-testid="mes-falta"]')).toBe(6_000_000)
+    expect(pesos('[data-testid="mes-cartera"]')).toBe(2_000_000)
     expect($('[data-testid="alcance-de-la-tabla"]').textContent).toContain('1 de 4 cuotas')
+
+    clic($('[data-testid="cajon-por-vencer"]'))
+    expect(todos('[data-testid="cuota-fila"]')).toHaveLength(1)
+    expect($('[data-testid="cajon-cartera"]').getAttribute('aria-selected')).toBe('false')
+
+    clic($('[data-testid="limpiar-filtros"]'))
+    expect(todos('[data-testid="cuota-fila"]')).toHaveLength(4)
+    expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('true')
+  })
+
+  /*
+   * 🔴 Lo que Nico señaló con el dedo: «esto tiene que hacer parte de la
+   * tabla», por el renglón del mes y las seis fichas; «y el buscador igual
+   * dentro de la tabla». Una sola tarjeta, y la tabla sin marco propio adentro
+   * —dos bordes anidados a 1 px se leen como dos cajas—.
+   */
+  it('🔴 el mes, las cifras, las pestañas y el buscador viven DENTRO de la tarjeta', () => {
+    montar()
+    const tarjeta = $('[data-testid="tarjeta-de-la-deuda"]')
+    for (const parte of [
+      'abrir-recibo-de-caja',
+      'resumen-del-mes',
+      'cajones-del-mes',
+      'buscar-cuotas',
+      'pagos-cuotas-tabla',
+    ]) {
+      expect(tarjeta.querySelector(`[data-testid="${parte}"]`)).not.toBeNull()
+    }
+    // Y el interruptor de antes ya no existe en ninguna parte.
+    expect(host.querySelector('[data-testid="solo-cartera"]')).toBeNull()
+    // La tabla no dibuja su propio borde: el marco es el de la tarjeta.
+    expect($('[data-testid="pagos-cuotas-tabla"]').className).not.toContain('border-border')
   })
 
   it('🔴 dice lo que estos números NO cuentan', () => {

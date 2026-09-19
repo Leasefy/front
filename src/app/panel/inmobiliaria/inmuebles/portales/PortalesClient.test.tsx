@@ -352,18 +352,44 @@ describe('las tarjetas de portal', () => {
     await montar()
     const grilla = porTestId('lista-de-portales')!
     expect(grilla.className).toContain('grid')
-    // Fincaraíz → «FI»; Metrocuadrado → «ME». Dos letras, siempre.
-    expect(porTestId('portal-FINCARAIZ')!.textContent).toContain('FI')
+    // Fincaraíz ya tiene su logo real, así que no lleva monograma.
+    // Metrocuadrado todavía no: «ME». Dos letras, siempre.
+    expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('ME')
+    expect(porTestId('portal-FINCARAIZ')!.querySelector('img')).not.toBeNull()
+  })
+
+  it('🔴 usa el logo REAL cuando lo tenemos, con su procedencia escrita', async () => {
+    // Los cuatro que tienen archivo salen con su logo; los dos que no, con
+    // monograma. Lo que NUNCA se hace es aproximar el logo de una empresa que
+    // existe —redibujarlo o teñir un cuadrado «más o menos de su color»—:
+    // sería una marca falsa en la pantalla que dice dónde se publica el
+    // inmueble de un cliente. Cada archivo tiene su fila en
+    // `public/portales/PROCEDENCIA.md` con su licencia.
+    await montar()
+    const deFincaraiz = porTestId('portal-FINCARAIZ')!.querySelector('img')
+    expect(deFincaraiz?.getAttribute('src')).toBe('/portales/fincaraiz.png')
+    // Metrocuadrado no tiene archivo: monograma, sin imagen inventada.
+    expect(porTestId('portal-METROCUADRADO')!.querySelector('img')).toBeNull()
     expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('ME')
   })
 
-  it('🔴 no inventa el logo de una empresa que existe', async () => {
-    // No tenemos los archivos con su licencia verificada, y aproximar el logo
-    // de Fincaraíz —o teñir su cuadrado con «más o menos su color»— deja una
-    // marca falsa en la pantalla que dice dónde se publica el inmueble de un
-    // cliente. Misma decisión que en `lib/aseguradoras/marca.ts`.
-    await montar()
-    expect(contenedor.querySelectorAll('img').length).toBe(0)
+  it('🔴 todo logo declarado tiene su fila en PROCEDENCIA.md', async () => {
+    // El guardián del acuerdo: agregar un archivo a `LOGOS` sin decir de dónde
+    // salió y con qué licencia deja de ser posible en silencio.
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const marca = readFileSync(
+      join(process.cwd(), 'src/lib/portales/marca.ts'),
+      'utf8',
+    )
+    const procedencia = readFileSync(
+      join(process.cwd(), 'public/portales/PROCEDENCIA.md'),
+      'utf8',
+    )
+    const archivos = [...marca.matchAll(/'\/portales\/([^']+)'/g)].map((m) => m[1])
+    expect(archivos.length).toBeGreaterThan(0)
+    const sinProcedencia = archivos.filter((a) => !procedencia.includes(a))
+    expect(sinProcedencia).toEqual([])
   })
 
   it('el estado se lee de un vistazo, portal por portal', async () => {

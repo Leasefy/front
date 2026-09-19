@@ -628,12 +628,18 @@ function TarjetaDePortal({
       data-testid={`portal-${p.portal}`}
     >
       <div className="flex items-start gap-3">
+        {/* El mismo recuadro de marca que las aseguradoras
+            (`AseguradorasConPrima`): fondo blanco fijo para que un logo de
+            marca oscura no desaparezca en modo noche, y `object-contain` para
+            que los seis se vean del mismo tamaño aunque sus proporciones vayan
+            de 2:1 a 7:1. */}
         <span
           aria-hidden="true"
-          className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted text-sm font-semibold tracking-wide text-fg-muted"
+          className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border border-faint bg-white p-1.5 text-sm font-semibold tracking-wide text-fg-muted"
         >
           {logo ? (
-            <img src={logo} alt="" className="h-7 w-7 object-contain" />
+            // eslint-disable-next-line @next/next/no-img-element -- SVG/PNG de marca; next/image no aporta acá
+            <img src={logo} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
             iniciales
           )}

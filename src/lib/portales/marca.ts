@@ -3,24 +3,33 @@
  *
  * ## Logo real cuando lo hay, monograma cuando no
  *
- * Nico pidió «cada portal con su logo». Hoy no tenemos ni uno: no hay archivos
- * en el repo y bajarlos del sitio de cada portal deja un logo con copyright sin
- * verificar dentro del producto. Redibujarlos de memoria o teñir un cuadrado
- * con «más o menos su color» es peor todavía: deja una **marca falsa de una
- * empresa que existe**, en la pantalla que le dice a la inmobiliaria dónde se
- * está publicando su inmueble.
+ * Nico pidió los logos reales (18-09-2026) y están puestos: cuatro de seis.
+ * Cada uno con su procedencia y su licencia escritas en
+ * `public/portales/PROCEDENCIA.md` — sin esa fila no entra ninguno, porque un
+ * logo sin procedencia es una demanda esperando.
  *
- * Es la misma decisión que ya está tomada para las aseguradoras
- * (`lib/aseguradoras/marca.ts` + `public/aseguradoras/PROCEDENCIA.md`), y se
- * repite acá por el mismo motivo. Cuando consigamos los archivos con su
- * licencia verificada, se agregan a `LOGOS` y cada tarjeta cambia sola.
+ * 🔴 `fincaraiz.png` es **CC BY-SA 4.0**: pide atribución. Se usa sin modificar
+ * y sólo para identificar al portal, que es el caso más defendible; si algún
+ * día se compone dentro de otra pieza gráfica hay que poner el crédito o
+ * sacarlo. El detalle está en PROCEDENCIA.md §B.
  *
- * ## Por qué el monograma es neutro y no del color de cada portal
+ * Faltan Metrocuadrado —su sitio sirve el logo desde JavaScript y lo único
+ * público es un favicon— y «Sitio propio», que somos nosotros y usa el símbolo
+ * del sistema de diseño. Los dos caen al monograma, que es lo que corresponde:
+ * lo que NUNCA se hace es redibujar el logo de memoria o teñir un cuadrado con
+ * «más o menos su color». Eso deja una **marca falsa de una empresa que
+ * existe**, en la pantalla que le dice a la inmobiliaria dónde se publica el
+ * inmueble de su cliente.
  *
- * `docs/DESIGN.md` §1: **un solo acento**. Seis portales con seis amarillos,
- * rojos y azules propios convierten la sección en un tablero de patrocinadores
- * y el color deja de significar nada. Acá significa una sola cosa: si ese
- * portal puede recibir avisos o no.
+ * Misma decisión y mismo formato que las aseguradoras
+ * (`lib/aseguradoras/marca.ts` + `public/aseguradoras/PROCEDENCIA.md`).
+ *
+ * ## Por qué el MONOGRAMA es neutro aunque los logos vayan a color
+ *
+ * `docs/DESIGN.md` §1: **un solo acento**. El logo real de cada portal lleva su
+ * color —es su marca y así se reconoce—, pero va contenido en su recuadro. El
+ * monograma de los que no tienen archivo NO se inventa un color: sería el único
+ * color de la pantalla que no significa nada.
  */
 
 /** Palabras que no aportan a la marca. */
@@ -50,14 +59,24 @@ export function inicialesDelPortal(nombre: string): string {
 /**
  * Logos reales, por código de portal.
  *
- * 🔴 VACÍO A PROPÓSITO. Para agregar uno hacen falta las dos cosas:
+ * Para agregar uno hacen falta las dos cosas:
  *   1. el archivo en `public/portales/`, y
- *   2. una línea en `public/portales/PROCEDENCIA.md` con de dónde salió y con
+ *   2. una fila en `public/portales/PROCEDENCIA.md` con de dónde salió y con
  *      qué licencia — igual que `public/aseguradoras/PROCEDENCIA.md`.
  *
- * Sin el punto 2 no entra: un logo sin procedencia es una demanda esperando.
+ * Sin el punto 2 no entra. Sacar una entrada de acá devuelve esa tarjeta a su
+ * monograma sin tocar nada más — que es lo que hay que hacer si un portal pide
+ * que dejemos de usar su marca.
  */
-const LOGOS: Record<string, string> = {}
+const LOGOS: Record<string, string> = {
+  // Wikimedia Commons, dominio público (PROCEDENCIA.md §A).
+  MERCADO_LIBRE: '/portales/mercado-libre.svg',
+  PROPERATI: '/portales/properati.png',
+  // 🔴 CC BY-SA 4.0: pide atribución (PROCEDENCIA.md §B).
+  FINCARAIZ: '/portales/fincaraiz.png',
+  // Del sitio oficial; copyright NO verificado (PROCEDENCIA.md §C).
+  CIENCUADRAS: '/portales/ciencuadras.svg',
+}
 
 export interface MarcaDePortal {
   iniciales: string

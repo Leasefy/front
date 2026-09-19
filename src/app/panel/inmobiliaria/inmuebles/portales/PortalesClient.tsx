@@ -79,6 +79,7 @@ import {
 } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { EL_CATALOGO_DE_LEASEFY, marcaDelPortal } from '@/lib/portales/marca'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { cn } from '@/lib/utils'
@@ -586,6 +587,127 @@ function DialogoDePublicar({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Una tarjeta por portal
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 🔴 Por qué monograma y no el logo de cada portal (Nico pidió los logos).
+ *
+ * No tenemos los archivos, y las tres salidas fáciles son peores que esto:
+ * bajarlos del sitio de cada portal deja copyright sin verificar adentro del
+ * producto; redibujarlos de memoria o teñir un cuadrado con «más o menos su
+ * color» deja una marca FALSA de una empresa que existe, justo en la pantalla
+ * que dice dónde se publica el inmueble de un cliente. Es la misma decisión ya
+ * tomada para las aseguradoras (`lib/aseguradoras/marca.ts`).
+ *
+ * `lib/portales/marca.ts` tiene el mapa `LOGOS` listo y vacío: el día que haya
+ * un archivo con su licencia verificada, esta tarjeta lo pinta sola.
+ */
+function TarjetaDePortal({
+  portal: p,
+  porSubir: cuantos,
+  puedeEditar,
+  onAnotar,
+}: {
+  portal: PortalConCuenta
+  porSubir: number
+  puedeEditar: boolean
+  onAnotar: () => void
+}) {
+  const { iniciales, logo } = marcaDelPortal(p.portal, p.nombre)
+  const esNuestro = p.portal === EL_CATALOGO_DE_LEASEFY
+  const alDia = p.cuenta?.activa === true
+  const enPausa = Boolean(p.cuenta) && !alDia
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-3 rounded-lg border p-4',
+        alDia ? 'border-border bg-card' : 'border-dashed border-border bg-surface',
+      )}
+      data-testid={`portal-${p.portal}`}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted text-sm font-semibold tracking-wide text-fg-muted"
+        >
+          {logo ? (
+            <img src={logo} alt="" className="h-7 w-7 object-contain" />
+          ) : (
+            iniciales
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-fg">{p.nombre}</p>
+          <p className="mt-0.5 text-xs">
+            {alDia ? (
+              <span className="text-success">● Cuenta al día</span>
+            ) : enPausa ? (
+              <span className="text-warning">● Cuenta en pausa</span>
+            ) : (
+              <span className="text-fg-subtle">○ Sin cuenta anotada</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-sm leading-relaxed text-fg-muted">
+        {esNuestro ? (
+          <>
+            Es el catálogo de Leasefy.{' '}
+            <span className="font-medium text-fg">Sale solo</span>, sin archivo
+            que subir a ninguna parte.
+          </>
+        ) : !p.cuenta ? (
+          <>
+            Hoy este portal{' '}
+            <span className="font-medium text-fg">no puede recibir avisos</span>:
+            anota la cuenta que ya pagas ahí.
+          </>
+        ) : p.cuenta.modoEfectivo === 'API' ? (
+          'Los avisos salen y se bajan solos.'
+        ) : (
+          <>
+            Por archivo: lo descargas y lo subes a su panel
+            {p.cuenta.identificadorEnElPortal
+              ? ` con ${p.cuenta.identificadorEnElPortal}`
+              : ''}
+            .
+          </>
+        )}
+      </p>
+
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+        {/* 🔴 Descargar sólo si hay algo que descargar: seis botones que bajan
+            un CSV vacío es lo que hacía que esta pantalla no se entendiera. */}
+        {cuantos > 0 ? (
+          <Button variant="outline" size="sm" asChild data-testid={`exportar-${p.portal}`}>
+            <a
+              href={publicacionApi.exportarUrl(p.portal)}
+              download={`${p.portal.toLowerCase()}.csv`}
+            >
+              <DownloadSimple className="mr-1.5 h-4 w-4" />
+              Descargar {cuantos} {cuantos === 1 ? 'aviso' : 'avisos'}
+            </a>
+          </Button>
+        ) : null}
+        {puedeEditar ? (
+          <Button
+            variant={p.cuenta ? 'ghost' : 'outline'}
+            size="sm"
+            onClick={onAnotar}
+            data-testid={`cuenta-${p.portal}`}
+          >
+            {p.cuenta ? 'Editar' : 'Anotar la cuenta'}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Cómo funciona: los cuatro pasos
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -778,85 +900,20 @@ export function PortalesClient() {
               conservarContenido
               esqueleto={<EsqueletoTabla filas={4} columnas={3} />}
             >
-              <ul className="divide-y" data-testid="lista-de-portales">
-                {portales.map((p) => {
-                  const cuantos = porSubir.get(p.portal) ?? 0
-                  return (
-                    <li
-                      key={p.portal}
-                      className="flex flex-wrap items-center justify-between gap-3 py-3"
-                      data-testid={`portal-${p.portal}`}
-                    >
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="flex items-center gap-2 font-medium text-fg">
-                          {p.nombre}
-                          {p.cuenta?.activa ? (
-                            <Badge variant="secondary">Cuenta al día</Badge>
-                          ) : null}
-                          {p.cuenta && !p.cuenta.activa ? (
-                            <Badge variant="outline">Cuenta en pausa</Badge>
-                          ) : null}
-                          {p.cuenta?.modoEfectivo === 'API' ? (
-                            <Badge>Publica solo</Badge>
-                          ) : null}
-                        </p>
-                        <p className="text-sm text-fg-muted">
-                          {!p.cuenta ? (
-                            <>
-                              Sin cuenta anotada — hoy este portal{' '}
-                              <span className="font-medium text-fg">
-                                no puede recibir avisos
-                              </span>
-                              .
-                            </>
-                          ) : p.cuenta.modoEfectivo === 'API' ? (
-                            'Los avisos salen y se bajan solos.'
-                          ) : (
-                            <>
-                              Por archivo: se descarga y se sube al panel del portal
-                              {p.cuenta.identificadorEnElPortal
-                                ? ` con ${p.cuenta.identificadorEnElPortal}`
-                                : ''}
-                              .
-                            </>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {/* 🔴 Descargar sólo si hay algo que descargar: seis
-                            botones que bajan un CSV vacío es lo que hacía que
-                            esta pantalla no se entendiera. */}
-                        {cuantos > 0 ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            data-testid={`exportar-${p.portal}`}
-                          >
-                            <a
-                              href={publicacionApi.exportarUrl(p.portal)}
-                              download={`${p.portal.toLowerCase()}.csv`}
-                            >
-                              <DownloadSimple className="mr-1.5 h-4 w-4" />
-                              Descargar {cuantos} {cuantos === 1 ? 'aviso' : 'avisos'}
-                            </a>
-                          </Button>
-                        ) : null}
-                        {puedeEditar ? (
-                          <Button
-                            variant={p.cuenta ? 'ghost' : 'outline'}
-                            size="sm"
-                            onClick={() => setCuentaAbierta(p)}
-                            data-testid={`cuenta-${p.portal}`}
-                          >
-                            {p.cuenta ? 'Editar' : 'Anotar la cuenta'}
-                          </Button>
-                        ) : null}
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
+              <div
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="lista-de-portales"
+              >
+                {portales.map((p) => (
+                  <TarjetaDePortal
+                    key={p.portal}
+                    portal={p}
+                    porSubir={porSubir.get(p.portal) ?? 0}
+                    puedeEditar={puedeEditar}
+                    onAnotar={() => setCuentaAbierta(p)}
+                  />
+                ))}
+              </div>
             </EstadoDeDatos>
           )}
         </CardContent>

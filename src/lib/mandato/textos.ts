@@ -20,14 +20,26 @@ export const NOMBRE_DE_LA_MODALIDAD: Record<ModalidadDeLaLiquidacion, string> = 
 
 export const QUE_ES_LA_MODALIDAD: Record<Modalidad, string> = {
   GARANTIZADO:
-    'Se le gira lo que el contrato causa, pague o no el inquilino, siempre completo. Lo girado sin recaudo queda como cuenta por cobrar al inquilino.',
+    'Al propietario se le gira el canon completo cada mes, haya pagado o no el inquilino. Lo que se giró sin haber recaudado queda como deuda del inquilino.',
   SOBRE_RECAUDO:
-    'Se le gira lo que el inquilino de ese contrato ya pagó; el mes puede salir parcial. No hay cuenta por cobrar.',
+    'Al propietario se le gira sólo lo que el inquilino ya pagó. Si pagó a medias, el giro sale a medias, y no queda deuda de la inmobiliaria con él.',
 };
 
-/** «Garantizado (de la inmobiliaria)», «Sin modalidad: la liquidación de siempre». */
+/** Qué pasa cuando el mandato no pactó una regla especial. */
+export const SIN_MODALIDAD_PACTADA =
+  'Este mandato no pactó una regla especial de giro, así que se liquida como el resto: la base la define quien genera los giros del mes.';
+
+/**
+ * «Garantizado (de la inmobiliaria)», «Como siempre».
+ *
+ * 🔴 El caso por defecto decía «Sin modalidad: la liquidación de siempre»
+ * (Nico, 18-09-2026: «nada de lo que dice aquí lo entienden los usuarios»).
+ * «Modalidad» es palabra nuestra y «la liquidación de siempre» no dice qué
+ * pasa. Lo que pasa es lo normal: se le gira al propietario según lo que
+ * decida quien genera los giros, sin regla especial pactada en el mandato.
+ */
 export function modalidadEnPalabras(m: ModalidadResuelta | null | undefined): string {
-  if (!m?.modalidad) return 'Sin modalidad: la liquidación de siempre';
+  if (!m?.modalidad) return 'Como siempre, sin regla especial';
   return m.fuente === 'INMOBILIARIA'
     ? `${NOMBRE_DE_LA_MODALIDAD[m.modalidad]} (la de la inmobiliaria)`
     : NOMBRE_DE_LA_MODALIDAD[m.modalidad];

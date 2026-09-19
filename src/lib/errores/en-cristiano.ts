@@ -107,3 +107,20 @@ export function enCristiano(motivo: string | null | undefined): MotivoEnCristian
 export function motivoEnCristiano(motivo: string | null | undefined): string | null {
   return enCristiano(motivo).texto
 }
+
+/**
+ * El mensaje de un error, en cristiano y listo para un `toast`.
+ *
+ * 🔴 El `catch` que se agregó al botón «Crear enlace de firma» hizo visible el
+ * fallo —que era el arreglo— pero lo mostró con el texto crudo del back, o sea
+ * con el identificador de la migración adentro. Un error que por fin se ve no
+ * puede seguir hablándole al operador.
+ */
+export function errorEnCristiano(error: unknown, porDefecto: string): string {
+  const crudo =
+    error && typeof error === 'object' && 'message' in error
+      ? (error as { message?: unknown }).message
+      : null
+  if (typeof crudo !== 'string' || !crudo.trim()) return porDefecto
+  return enCristiano(crudo).texto ?? porDefecto
+}

@@ -28,8 +28,7 @@
 
 import { useState } from 'react'
 import { toast } from '@/components/ui/toast'
-import { ApiError } from '@/lib/api/client'
-import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
+import { errorEnCristiano, motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { FileText, Lock } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -133,9 +132,7 @@ export function MandatoDelInmueble({
       // volvía a su sitio y nadie se enteraba de por qué no pasó nada — o
       // saltaba el overlay de error de Next. El motivo del back se muestra.
       toast.error(
-        e instanceof ApiError && e.message
-          ? e.message
-          : 'No pudimos crear el enlace de firma. Vuelve a intentar.',
+        errorEnCristiano(e, 'No pudimos crear el enlace de firma. Vuelve a intentar.'),
       )
     } finally {
       setPidiendo(false)

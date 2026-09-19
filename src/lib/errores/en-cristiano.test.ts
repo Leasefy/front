@@ -84,3 +84,24 @@ describe('el motivo técnico, en cristiano', () => {
     expect(r.texto![0]).toBe(r.texto![0].toUpperCase())
   })
 })
+
+describe('el error de un toast, en cristiano', () => {
+  it('🔴 el toast del enlace de firma deja de mostrar la migración', async () => {
+    const { errorEnCristiano } = await import('./en-cristiano')
+    // El texto exacto que le salió a Nico al apretar «Crear enlace de firma»
+    // apenas el botón ganó su `catch`.
+    const real =
+      'Todavía no se puede exigir documentos, consultar listas ni firmar el mandato en esta base: falta aplicar la migración 20260918163000_captacion_listas_y_firma_del_mandato (firmas_del_mandato). La consignación sigue funcionando como hoy.'
+    const texto = errorEnCristiano(new Error(real), 'No se pudo')
+    expect(texto).not.toContain('20260918163000')
+    expect(texto).not.toContain('migración')
+    // Queda en minúscula porque va detrás de «Por ahora,».
+    expect(texto).toContain('la consignación sigue funcionando como hoy')
+  })
+
+  it('un error sin mensaje cae en el texto por defecto', async () => {
+    const { errorEnCristiano } = await import('./en-cristiano')
+    expect(errorEnCristiano({}, 'No se pudo')).toBe('No se pudo')
+    expect(errorEnCristiano(new Error('   '), 'No se pudo')).toBe('No se pudo')
+  })
+})

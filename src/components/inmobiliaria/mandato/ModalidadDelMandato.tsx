@@ -43,6 +43,7 @@ import {
   diaLegible,
   interesesEnPalabras,
   modalidadEnPalabras,
+  SIN_MODALIDAD_PACTADA,
 } from '@/lib/mandato/textos';
 
 type OpcionDeModalidad = Modalidad | 'INMOBILIARIA';
@@ -115,29 +116,37 @@ export function ModalidadDelMandato({
               <span>{enCristiano(mandato.motivo).texto}</span>
             </div>
           ) : null}
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          {/* 🔴 Los rótulos eran los del modelo —«Modalidad», «Destino de los
+              intereses»— y las respuestas también («Sin modalidad: la
+              liquidación de siempre»). Nico, 18-09-2026: «nada de lo que dice
+              aquí lo entienden los usuarios». Ahora cada fila es una PREGUNTA
+              sobre la plata del propietario, y debajo qué significa. */}
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-label text-fg-muted">Modalidad</dt>
-              <dd className="text-foreground font-medium" data-testid="modalidad-efectiva">
+              <dt className="text-fg-muted">¿Cuánto se le gira cada mes?</dt>
+              <dd className="text-foreground font-medium mt-0.5" data-testid="modalidad-efectiva">
                 {modalidadEnPalabras(mandato.efectivo.modalidad)}
               </dd>
-              {mandato.efectivo.modalidad.modalidad ? (
-                <dd className="text-xs text-muted-foreground mt-1">
-                  {QUE_ES_LA_MODALIDAD[mandato.efectivo.modalidad.modalidad]}
-                </dd>
-              ) : null}
+              <dd className="text-xs text-muted-foreground mt-1">
+                {mandato.efectivo.modalidad.modalidad
+                  ? QUE_ES_LA_MODALIDAD[mandato.efectivo.modalidad.modalidad]
+                  : SIN_MODALIDAD_PACTADA}
+              </dd>
             </div>
             <div>
-              <dt className="text-label text-fg-muted">Intereses de mora y gastos de cobranza</dt>
-              <dd className="text-foreground font-medium" data-testid="intereses-efectivos">
+              <dt className="text-fg-muted">
+                Si el inquilino paga tarde, ¿de quién son los intereses?
+              </dt>
+              <dd className="text-foreground font-medium mt-0.5" data-testid="intereses-efectivos">
                 {interesesEnPalabras(mandato.efectivo.intereses)}
               </dd>
-              {mandato.efectivo.intereses.porcentajeAlPropietario > 0 ? (
-                <dd className="text-xs text-muted-foreground mt-1">
-                  Lo que el inquilino pague de intereses entra en la liquidación del propietario,
-                  sin comisión.
-                </dd>
-              ) : null}
+              <dd className="text-xs text-muted-foreground mt-1">
+                {mandato.efectivo.intereses.porcentajeAlPropietario > 0
+                  ? 'Lo que el inquilino pague de intereses de mora entra en la liquidación del propietario, sin comisión.'
+                  : mandato.efectivo.intereses.destino === 'PROPIETARIO'
+                    ? 'Los intereses de mora y los gastos de cobranza se le giran al propietario.'
+                    : 'Los intereses de mora y los gastos de cobranza se los queda la inmobiliaria: no entran en el giro del propietario.'}
+              </dd>
             </div>
           </dl>
           {mandato.modalidadDesde ? (

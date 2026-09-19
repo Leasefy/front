@@ -36,12 +36,27 @@ const ESTADO_BADGE: Record<EventoEstado, string> = {
 /** A dónde lleva el vínculo, si tiene ficha propia. */
 export function hrefDelVinculo(e: EventoAgenda): string | null {
   if (!e.vinculoId) return null;
-  if (e.tipo === 'firma_pendiente') return `/panel/inmobiliaria/contratos/${e.vinculoId}`;
-  // Las tareas se atan a la consignación (id del mandato); las visitas al
-  // inmueble (propertyId), que no abre ficha por ese id.
-  if (e.tipo === 'tarea' && e.vinculoTipo === 'propiedad') return `/panel/inmobiliaria/inmuebles/${e.vinculoId}`;
-  if (e.tipo === 'tarea' && e.vinculoTipo === 'contrato') return `/panel/inmobiliaria/contratos/${e.vinculoId}`;
+  // 🔴 Las VISITAS se atan al inmueble por `propertyId`, que NO abre ficha por
+  // ese id: son la excepción y por eso se excluyen primero.
+  if (e.tipo === 'visita') return null;
+  // Todo lo demás lleva a su ficha. Antes esto sólo cubría `firma_pendiente` y
+  // las tareas, así que un VENCIMIENTO —que trae `vinculoTipo: 'contrato'` y el
+  // id del contrato— se quedaba sin enlace y sin acciones: el cajón abría con
+  // el rótulo «Qué haces con esta tarea» encima de la nada (Nico, 18-09-2026).
+  if (e.vinculoTipo === 'contrato') return `/panel/inmobiliaria/contratos/${e.vinculoId}`;
+  if (e.vinculoTipo === 'propiedad') return `/panel/inmobiliaria/inmuebles/${e.vinculoId}`;
   return null;
+}
+
+/**
+ * ¿Este evento tiene algo que la persona pueda HACER desde el cajón?
+ *
+ * Sólo las tareas y las visitas. Un vencimiento, una firma pendiente o una
+ * inspección los deriva el sistema de otra cosa —el contrato, el acta— y no se
+ * marcan ni se cancelan desde acá: se resuelven en su ficha.
+ */
+export function tieneAcciones(e: EventoAgenda): boolean {
+  return e.tipo === 'tarea' || e.tipo === 'visita';
 }
 
 interface Props {
@@ -227,6 +242,32 @@ export function EventoAgendaDrawer({
                 sueltos al pie y no se entendía a qué se aplicaban ni qué iba a
                 pasar (Nico, 2026-09-04: «deberían mostrar bien las acciones de
                 esas agendas»). Van en el pie fijo del cajón. */}
+            {/* 🔴 Un evento SIN acciones no lleva el rótulo «Qué haces con
+                esta tarea» encima de la nada (Nico, 18-09-2026). Un
+                vencimiento, una firma pendiente o una inspección los deriva el
+                sistema de otra cosa: no se marcan acá, se resuelven en su
+                ficha. Así que el pie dice eso y ofrece el camino. */}
+            {!tieneAcciones(evento) ? (
+              <CajonPie>
+                <div className="space-y-2" data-testid="evento-sin-acciones">
+                  <p className="text-sm text-fg-muted">
+                    Esto lo pone el sistema solo, a partir{' '}
+                    {evento.vinculoTipo === 'contrato' ? 'del contrato' : 'del inmueble'}:
+                    no se marca ni se cancela desde la agenda. Desaparece cuando
+                    cambia lo que lo originó.
+                  </p>
+                  {href ? (
+                    <Button asChild size="sm" variant="outline" hideArrow>
+                      <Link href={href} data-testid="evento-ir-a-la-ficha">
+                        {evento.vinculoTipo === 'contrato'
+                          ? 'Abrir el contrato'
+                          : 'Abrir el inmueble'}
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </CajonPie>
+            ) : (
             <CajonPie
               ayuda={
                 <span className="font-medium uppercase tracking-[0.08em] text-fg-subtle">
@@ -295,6 +336,7 @@ export function EventoAgendaDrawer({
                 </p>
               )}
             </CajonPie>
+            )}
           </>
         )}
       </Cajon>

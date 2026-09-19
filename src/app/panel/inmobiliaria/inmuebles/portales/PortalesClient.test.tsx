@@ -346,3 +346,45 @@ describe('Publicación en portales', () => {
     expect(porTestId('reintentar')).toBeNull()
   })
 })
+
+describe('las tarjetas de portal', () => {
+  it('cada portal es su propia tarjeta, con monograma', async () => {
+    await montar()
+    const grilla = porTestId('lista-de-portales')!
+    expect(grilla.className).toContain('grid')
+    // Fincaraíz → «FI»; Metrocuadrado → «ME». Dos letras, siempre.
+    expect(porTestId('portal-FINCARAIZ')!.textContent).toContain('FI')
+    expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('ME')
+  })
+
+  it('🔴 no inventa el logo de una empresa que existe', async () => {
+    // No tenemos los archivos con su licencia verificada, y aproximar el logo
+    // de Fincaraíz —o teñir su cuadrado con «más o menos su color»— deja una
+    // marca falsa en la pantalla que dice dónde se publica el inmueble de un
+    // cliente. Misma decisión que en `lib/aseguradoras/marca.ts`.
+    await montar()
+    expect(contenedor.querySelectorAll('img').length).toBe(0)
+  })
+
+  it('el estado se lee de un vistazo, portal por portal', async () => {
+    await montar()
+    expect(porTestId('portal-FINCARAIZ')!.textContent).toContain('Sin cuenta anotada')
+    expect(porTestId('portal-METROCUADRADO')!.textContent).toContain('Cuenta al día')
+  })
+
+  it('«Sitio propio» dice que es el nuestro y que sale solo', async () => {
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [
+        { portal: 'SITIO_PROPIO', nombre: 'Sitio propio', tieneApi: true, cuenta: null },
+      ],
+    })
+    await montar()
+    const t = porTestId('portal-SITIO_PROPIO')!.textContent ?? ''
+    expect(t).toContain('catálogo de Leasefy')
+    expect(t).toContain('Sale solo')
+    // Y NO le dice que «no puede recibir avisos»: ese texto es de los de afuera.
+    expect(t).not.toContain('no puede recibir avisos')
+  })
+})

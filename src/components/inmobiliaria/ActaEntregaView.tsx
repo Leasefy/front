@@ -59,6 +59,13 @@ interface ActaEntregaViewProps {
    * que se asocie mejor» — suelto debajo de la tarjeta parecía de otra cosa.
    */
   enlace?: { href: string; texto: string; testid?: string };
+  /**
+   * 🔴 Una franja DENTRO de la tarjeta, arriba del encabezado (Nico,
+   * 18-09-2026: «¿por qué no unificaste estas dos cards?»). «Trabajar sin
+   * señal» es la copia de ESTE inventario para llevárselo a la visita: flotando
+   * como tarjeta aparte parecía de otra cosa.
+   */
+  franja?: React.ReactNode;
 }
 
 // Condition styling
@@ -115,6 +122,7 @@ export function ActaEntregaView({
   onPrint,
   onDownload,
   enlace,
+  franja,
 }: ActaEntregaViewProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +163,11 @@ export function ActaEntregaView({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
+      {franja ? (
+        <div className="border-b border-border bg-surface px-5 py-3" data-testid="franja-del-acta">
+          {franja}
+        </div>
+      ) : null}
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between gap-3 mb-2">

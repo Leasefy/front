@@ -1015,7 +1015,14 @@
       "reclamosDeCandidatos": "Claims",
       "invitacionesAFirmar": "Signatures",
       "listasRestrictivas": "Lists",
-      "clausulasPropias": "Custom clauses"
+      "clausulasPropias": "Custom clauses",
+      "caraTesoreria": "Balance the till",
+      "caraTesoreriaDetalle": "money sitting in the account",
+      "tableroFinanciero": "Financial dashboard",
+      "cuadre": "Today's balance",
+      "trasladoComision": "Commission transfers",
+      "pendientesDeAplicar": "Unapplied money",
+      "recaudoBancario": "Bank collections"
     },
     "piloto": {
       "titulo": "Autopilot",

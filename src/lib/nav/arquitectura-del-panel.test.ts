@@ -540,26 +540,44 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
   const tabs = pestanasDelModulo(pagos);
   const porHref = (seg: string) => tabs.find((t) => t.href === `${PANEL}${seg}`);
 
-  it('🔴 «Cobros» desapareció del sidebar y Pagos quedó con cuatro pantallas', () => {
+  it('🔴 «Cobros» desapareció del sidebar, y Pagos es HOY todo lo que es', () => {
     // «Hay dos cosas de lo mismo, que son Cobros y uno en Pagos y el otro en
     // Cobros […] que se fuera lo de Cobros, porque todo funciona alrededor del
     // estado de cuenta del contrato» (Nico). El CEO: «inquilinos […] y
     // dispersión a propietarios, todo en un solo módulo». Eran cinco hasta que
     // Cobranza se mudó a «Agentes IA» (2026-09-16).
+    //
+    // 🔴 Y de cuatro pasaron a NUEVE el 18-09 de noche. Las cinco que entran
+    // no son pantallas nuevas: existían desde el 17 y el 18 y vivían como
+    // enlaces azules apretados a la derecha del título de `/pagos`. Nico:
+    // «esos links que están al lado derecho menos [se entienden], ¿eso es como
+    // tabs? porque está a nivel de UX muy mal logrado». Este test es el que
+    // impide que una pantalla vuelva a quedarse fuera de la navegación.
     expect(pagos.pantallas?.map((p) => p.href)).toEqual([
       `${PANEL}/pagos/recaudo`,
+      `${PANEL}/pagos/recaudo-bancario`,
       `${PANEL}/pagos/cartera`,
       `${PANEL}/pagos/liquidaciones`,
       `${PANEL}/pagos/dispersiones`,
+      `${PANEL}/pagos/cuadre`,
+      `${PANEL}/pagos/traslados`,
+      `${PANEL}/pagos/pendientes`,
+      `${PANEL}/pagos/tablero`,
     ]);
   });
 
-  it('las dos caras están declaradas y en orden: primero lo que ENTRA, después lo que SALE', () => {
+  it('las tres caras están declaradas y en orden: entra, sale, y lo que está en la cuenta', () => {
     expect(pagos.pantallas?.map((p) => p.cara)).toEqual([
       'inquilinos',
       'inquilinos',
+      'inquilinos',
       'propietarios',
       'propietarios',
+      'tesoreria',
+      'tesoreria',
+      'tesoreria',
+      // El tablero financiero mira las tres: es la única sin cara.
+      undefined,
     ]);
     // Y las dos caras tienen su rótulo y su matiz en los dos idiomas (lo pinta
     // `SeccionesDelModulo` a partir de `CARAS_DE_LA_PLATA`).
@@ -569,17 +587,26 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       expect(typeof leer(es, c.detalleKey), c.detalleKey).toBe('string');
       expect(typeof leer(en, c.detalleKey), c.detalleKey).toBe('string');
     }
-    expect(CARAS_DE_LA_PLATA.map((c) => c.cara)).toEqual(['inquilinos', 'propietarios']);
+    expect(CARAS_DE_LA_PLATA.map((c) => c.cara)).toEqual([
+      'inquilinos',
+      'propietarios',
+      'tesoreria',
+    ]);
   });
 
-  it('🔴 TODAS las pantallas tienen cara, la raíz incluida', () => {
+  it('🔴 TODAS las pantallas tienen cara salvo la que mira TODAS, la raíz incluida', () => {
     // La raíz no tenía, así que se dibujaba como primera card en las DOS caras
     // — y lo que muestra es la deuda de los INQUILINOS. Elegir «Propietarios» y
     // encontrarse eso es el mismo defecto que Nico venía señalando, un piso más
     // abajo (2026-09-16). `pestanasDelModulo` le pasa la `cara` del módulo.
     expect(tabs[0]?.href).toBe(pagos.href);
     expect(tabs[0]?.cara).toBe('inquilinos');
-    expect(tabs.filter((t) => !t.cara)).toEqual([]);
+    // 🔴 La única sin cara es el tablero financiero, y lo es de verdad: mira lo
+    // que entra, lo que sale y lo que está en la cuenta. `SeccionesDelModulo`
+    // la dibuja PRIMERO en las tres, con una línea que la separa del resto.
+    // Cualquier otra sin cara es el defecto de arriba volviendo por la puerta
+    // de atrás — por eso se fija la lista, no sólo el conteo.
+    expect(tabs.filter((t) => !t.cara).map((t) => t.href)).toEqual([`${PANEL}/pagos/tablero`]);
   });
 
   it('el rótulo de cada cara lleva VERBO: «Inquilinos» a secas ya nombra otra fila', () => {
@@ -587,7 +614,7 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     // palabra significando dos cosas distintas en el mismo panel es media
     // explicación de por qué «no se entendía» (Nico, 2026-09-16).
     const rotulos = CARAS_DE_LA_PLATA.map((c) => String(leer(es, c.labelKey)));
-    expect(rotulos).toEqual(['Cobrar a inquilinos', 'Pagar a propietarios']);
+    expect(rotulos).toEqual(['Cobrar a inquilinos', 'Pagar a propietarios', 'Cuadrar la caja']);
     const filas = modulos.map((m) => String(leer(es, m.labelKey)));
     for (const r of rotulos) expect(filas, r).not.toContain(r);
   });
@@ -623,7 +650,15 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     };
     expect(resolverEntradaDeModulo(pagos, ctx)?.href).toBe(`${PANEL}/pagos/recaudo`);
     const visibles = tabs.filter((t) => pasaGateDeFila(t, ctx)).map((t) => t.href);
-    expect(visibles).toEqual([`${PANEL}/pagos/recaudo`, `${PANEL}/pagos/cartera`]);
+    // El recaudo por convenio con el banco pide `cobros` —importar el archivo
+    // del banco termina en recibos de caja—, así que entra acá y no en las de
+    // tesorería, que piden `dispersiones`. La cara nueva no le regala ninguna
+    // pantalla a quien no la tenía.
+    expect(visibles).toEqual([
+      `${PANEL}/pagos/recaudo`,
+      `${PANEL}/pagos/recaudo-bancario`,
+      `${PANEL}/pagos/cartera`,
+    ]);
   });
 
   it('🔴 PERMISOS: el contador no pierde liquidaciones ni dispersiones', () => {
@@ -886,7 +921,17 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/postulaciones/reclamos',
       '/postulaciones/soportes',
     ]);
-    expect(secciones('pagos')).toEqual(['/pagos/recaudo', '/pagos/cartera', '/pagos/liquidaciones', '/pagos/dispersiones']);
+    expect(secciones('pagos')).toEqual([
+      '/pagos/recaudo',
+      '/pagos/recaudo-bancario',
+      '/pagos/cartera',
+      '/pagos/liquidaciones',
+      '/pagos/dispersiones',
+      '/pagos/cuadre',
+      '/pagos/traslados',
+      '/pagos/pendientes',
+      '/pagos/tablero',
+    ]);
     expect(secciones('reportes')).toEqual(['/reportes/resumen', '/reportes/rentabilidad']);
     // Dinero sin Conciliación sigue con más de una fila (R3). Nómina cierra el
     // grupo desde el 2026-09-17.

@@ -49,19 +49,26 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  * el módulo único de plata: quien no tiene `dispersiones` no ve la card de
  * Dispersiones aunque ahora viva en el mismo módulo que su cartera.
  *
- * ── 🔴 Las dos CARAS (Nico, 15 y 16-09) ─────────────────────────────────────
+ * ── 🔴 Las CARAS (Nico, 15, 16 y 18-09) ─────────────────────────────────────
  *
- * Un módulo puede tener dos caras del mismo asunto (`cara` en
- * `arquitectura-del-panel.ts`; hoy sólo Pagos: lo que ENTRA de los inquilinos
- * y lo que SALE hacia los propietarios). Se dibujaban como dos rótulos en
- * versalitas metidos ENTRE las cards del mismo riel, y Nico no los entendía:
- * «eso de arriba de inquilinos y propietarios no se entiende, esa separación
- * de las tabs de arriba». Eran dos niveles distintos —de qué lado estoy y qué
- * pantalla abro— peleando por el mismo renglón.
+ * Un módulo puede tener varias caras del mismo asunto (`cara` en
+ * `arquitectura-del-panel.ts`; hoy sólo Pagos: lo que ENTRA de los inquilinos,
+ * lo que SALE hacia los propietarios y lo que está EN LA CUENTA). Se dibujaban
+ * como rótulos en versalitas metidos ENTRE las cards del mismo riel, y Nico no
+ * los entendía: «eso de arriba de inquilinos y propietarios no se entiende,
+ * esa separación de las tabs de arriba». Eran dos niveles distintos —de qué
+ * lado estoy y qué pantalla abro— peleando por el mismo renglón.
  *
- * Ahora:
- *   1. **la cara es un selector explícito** en su propio renglón, arriba;
- *   2. **debajo van SÓLO las secciones de la cara elegida**;
+ * Se separaron en dos renglones, y el 18-09 Nico volvió sobre lo mismo: «esta
+ * navegación no se entiende un culo». Dos filas de cosas horizontales y
+ * clicables, una encima de la otra, se leen como dos juegos de pestañas del
+ * mismo nivel por bien pintada que esté cada una. Quedó así:
+ *
+ *   1. **un solo renglón**: la cara a la izquierda, una línea, y a la derecha
+ *      lo que hay DENTRO de esa cara — la jerarquía se lee de izquierda a
+ *      derecha, que es como se lee una barra;
+ *   2. **la cara es un SELECTOR** con su caret, no una pestaña: dos formas
+ *      distintas para dos niveles distintos (`BarraDePestanas`);
  *   3. **la cara se deduce de la RUTA** —estás en Dispersiones ⇒ estás en
  *      Propietarios— y por defecto entra Inquilinos, que es donde se opera
  *      todos los días;
@@ -73,11 +80,11 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  * esa persona, no existe. Es lo que hace que quien sólo tiene `cobros` vea su
  * cara y ni se entere de la de propietarios.
  *
- * 🔴 Una sección SIN cara se dibuja en las dos, y eso es una puerta trasera al
+ * 🔴 Una sección SIN cara se dibuja en TODAS, y eso es una puerta trasera al
  * mismo defecto: `/pagos` no tenía cara y aparecía como primera card también
  * en «Propietarios», mostrando la deuda de los inquilinos (Nico, 2026-09-16).
- * Ya no hay ninguna —la raíz de Pagos declara la suya—, pero el filtro sigue
- * aceptándolas: son legítimas sólo si la pantalla de verdad mira las dos.
+ * Hoy la única sin cara es el tablero financiero, que de verdad mira las tres:
+ * va primero y con una línea que lo separa del resto.
  */
 export function SeccionesDelModulo() {
   const pathname = usePathname() ?? '';
@@ -108,21 +115,27 @@ export function SeccionesDelModulo() {
     primera: visibles.find((p) => p.cara === c.cara),
   })).filter((c): c is typeof c & { primera: PantallaDelPanel } => Boolean(c.primera));
 
-  const hayDosCaras = carasPresentes.length > 1;
+  const hayVariasCaras = carasPresentes.length > 1;
 
   /*
-   * La cara activa sale de la RUTA. La Sala (una pantalla sin `cara`) mira las
-   * dos, así que ahí se entra por la primera presente —Inquilinos—, que es
-   * donde se opera todos los días.
+   * La cara activa sale de la RUTA. Una pantalla sin `cara` mira todas —hoy
+   * sólo el tablero financiero—, así que ahí se entra por la primera presente
+   * —Inquilinos—, que es donde se opera todos los días.
    */
-  const caraActiva: CaraDeLaPlata | null = hayDosCaras
+  const caraActiva: CaraDeLaPlata | null = hayVariasCaras
     ? (activa.cara ?? carasPresentes[0]!.cara)
     : null;
 
-  // Sin cara (la Sala) primero; después, sólo las de la cara elegida.
-  const enPantalla = hayDosCaras
-    ? visibles.filter((p) => !p.cara || p.cara === caraActiva)
-    : visibles;
+  /*
+   * 🔴 Lo que mira TODAS las caras va PRIMERO, y `BarraDePestanas` le pone una
+   * línea detrás. Es el orden en que se opera —la vista de arriba, y después
+   * el detalle de este lado de la plata— y además el único modo de que la
+   * línea separadora tenga sentido: mezclado, el tablero financiero se leería
+   * como una sección más de la cara elegida.
+   */
+  const deLaCara = hayVariasCaras ? visibles.filter((p) => p.cara === caraActiva) : visibles;
+  const deTodasLasCaras = hayVariasCaras ? visibles.filter((p) => !p.cara) : [];
+  const enPantalla = [...deTodasLasCaras, ...deLaCara];
 
   const items: PestanaDeBarra[] = enPantalla.map((p) => ({
     href: p.href,
@@ -131,6 +144,7 @@ export function SeccionesDelModulo() {
     active: activa.href === p.href,
     current: ruta === p.href,
     ia: p.ia,
+    sinCara: hayVariasCaras ? !p.cara : undefined,
     dataTourTarget: p.dataTourTarget,
   }));
 

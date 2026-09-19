@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CaretDown, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -67,6 +67,12 @@ export interface PestanaDeBarra {
   current: boolean;
   /** Píldora «IA»: la pantalla es (o está asistida por) un agente. */
   ia?: boolean;
+  /**
+   * La pantalla NO es de la cara elegida: mira todas (hoy sólo el tablero
+   * financiero). Va primero y con una línea que la separa del resto — si se
+   * mezclara, se leería como una sección más de este lado de la plata.
+   */
+  sinCara?: boolean;
   dataTourTarget?: string;
 }
 
@@ -170,58 +176,151 @@ function PestanaDeProfundidad({ item }: { item: PestanaDeBarra }) {
 }
 
 /**
- * El selector de caras: de qué lado del contrato se mira la plata.
+ * El selector de cara: de qué lado del contrato se mira la plata.
  *
- * Renglón propio, encima del riel, y con OTRA cara que las secciones —texto
- * más grande, sin el rectángulo hundido, con el matiz al lado— para que no se
- * confunda con ellas: ése fue exactamente el defecto que Nico reportó
- * («esa separación de las tabs de arriba no se entiende»).
+ * ── 🔴 Por qué dejó de ser una fila de píldoras (Nico, 18-09 de noche) ──────
  *
- * Son enlaces, no botones de estado: la cara vive en la URL.
+ * «Esta navegación no se entiende un culo.» Eran DOS renglones, uno encima del
+ * otro: arriba las caras como píldoras, abajo las secciones como cards en un
+ * rectángulo hundido. Cada renglón, por separado, estaba bien. Juntos no,
+ * porque **los dos se leían como pestañas del mismo nivel** y nada decía que
+ * el de abajo colgaba del de arriba: eran dos filas de cosas horizontales,
+ * clicables y parecidas, una sobre la otra.
+ *
+ * Lo que arregla el defecto no es pintar mejor las píldoras: es que las dos
+ * capas dejen de tener la misma FORMA y pasen a leerse de izquierda a derecha,
+ * que es como se lee una jerarquía en una barra:
+ *
+ *     [ ↓ Cobrar a inquilinos ⌄ ] │ [Tablero] ┆ [Deuda del mes] [Recaudo] …
+ *       ↑ un selector                ↑ lo que hay dentro de esa cara
+ *
+ * Un botón con su cursor de menú y su caret no se confunde con una pestaña ni
+ * un segundo; y el renglón único hace que no haya dos filas compitiendo. De
+ * paso entra la TERCERA cara (tesorería) sin ensanchar nada: con píldoras, tres
+ * caras con su matiz ocupaban media pantalla antes de la primera sección.
+ *
+ * ── Sigue siendo un ENLACE, no un estado local ──────────────────────────────
+ *
+ * Cada opción del menú es un `<Link>` a la primera sección visible de esa cara:
+ * la cara viaja en la URL, se puede compartir y se puede volver, y al entrar en
+ * Dispersiones queda en «Propietarios» sin que nadie la toque.
+ *
+ * ── Y por qué el menú se escribe a mano y no con Radix ──────────────────────
+ *
+ * Tres enlaces en una caja que se cierra con Escape, con un clic afuera o al
+ * navegar. Un menú porteado traería foco atrapado, `pointer-events` sintéticos
+ * y un portal que los tests de esta barra no pueden abrir sin simular gestos
+ * del navegador — para tres enlaces. Esto es todo lo que hace falta.
  */
 function SelectorDeCaras({
   caras,
   ariaLabel,
+  pathname,
 }: {
   caras: readonly CaraDeLaBarra[];
   ariaLabel: string;
+  pathname: string;
 }) {
+  const [abierto, setAbierto] = useState(false);
+  const cajaRef = useRef<HTMLDivElement | null>(null);
+  const elegida = caras.find((c) => c.activa) ?? caras[0]!;
+  const IconoElegido = elegida.icon;
+
+  // Navegar cierra el menú: sin esto queda abierto encima de la pantalla nueva.
+  useEffect(() => setAbierto(false), [pathname]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    const afuera = (e: MouseEvent) => {
+      if (!cajaRef.current?.contains(e.target as Node)) setAbierto(false);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAbierto(false);
+    };
+    document.addEventListener('mousedown', afuera);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', afuera);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [abierto]);
+
   return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      data-testid="selector-de-caras"
-      // Lenis se come la rueda si no (mismo motivo que el riel de abajo).
-      data-lenis-prevent
-      className="flex items-center gap-1 overflow-x-auto px-4 pt-2 [scrollbar-width:none] md:px-6 [&::-webkit-scrollbar]:hidden"
-    >
-      {caras.map((cara) => {
-        const IconoDeLaCara = cara.icon;
-        return (
-          <Link
-            key={cara.clave}
-            href={cara.href}
-            data-cara={cara.clave}
-            data-activa={cara.activa ? 'true' : undefined}
-            aria-current={cara.activa ? 'true' : undefined}
-            className={cn(
-              'group flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              cara.activa
-                ? 'border-primary/30 bg-primary-soft font-medium text-fg'
-                : 'border-border text-fg-muted hover:bg-surface-muted hover:text-fg',
-            )}
-          >
-            <IconoDeLaCara
-              className={cn('h-4 w-4', cara.activa ? 'text-primary' : 'text-fg-subtle group-hover:text-fg')}
-              weight={cara.activa ? 'bold' : 'regular'}
-              aria-hidden="true"
-            />
-            {cara.label}
-            <span className="hidden text-fg-subtle sm:inline">· {cara.detalle}</span>
-          </Link>
-        );
-      })}
+    <div ref={cajaRef} className="relative shrink-0" data-testid="selector-de-caras">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={abierto}
+        aria-label={ariaLabel}
+        data-testid="abrir-caras"
+        data-cara-elegida={elegida.clave}
+        onClick={() => setAbierto((v) => !v)}
+        className={cn(
+          'flex max-w-[15rem] items-center gap-2 rounded-lg border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left transition-colors hover:bg-surface-muted',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        )}
+      >
+        <IconoElegido className="h-4 w-4 shrink-0 text-primary" weight="bold" aria-hidden="true" />
+        <span className="min-w-0">
+          <span className="block truncate text-[13px] font-medium leading-tight text-fg">
+            {elegida.label}
+          </span>
+          {/* El matiz es lo que hace que la separación se entienda sin abrir
+              nada. En un teléfono no cabe y el rótulo ya lleva verbo. */}
+          <span className="hidden truncate text-[11px] leading-tight text-fg-subtle sm:block">
+            {elegida.detalle}
+          </span>
+        </span>
+        <CaretDown
+          className={cn(
+            'h-3.5 w-3.5 shrink-0 text-fg-subtle transition-transform',
+            abierto && 'rotate-180',
+          )}
+          aria-hidden="true"
+        />
+      </button>
+
+      {abierto && (
+        <div
+          role="menu"
+          aria-label={ariaLabel}
+          data-lenis-prevent
+          className="absolute left-0 top-[calc(100%+4px)] z-30 w-[19rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-lg"
+        >
+          {caras.map((cara) => {
+            const IconoDeLaCara = cara.icon;
+            return (
+              <Link
+                key={cara.clave}
+                role="menuitem"
+                href={cara.href}
+                data-cara={cara.clave}
+                data-activa={cara.activa ? 'true' : undefined}
+                aria-current={cara.activa ? 'true' : undefined}
+                onClick={() => setAbierto(false)}
+                className={cn(
+                  'flex items-start gap-2.5 rounded-sm px-2.5 py-2 transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+                  cara.activa ? 'bg-surface-muted' : 'hover:bg-surface-muted',
+                )}
+              >
+                <IconoDeLaCara
+                  className={cn('mt-0.5 h-4 w-4 shrink-0', cara.activa ? 'text-primary' : 'text-fg-subtle')}
+                  weight={cara.activa ? 'bold' : 'regular'}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium text-fg">{cara.label}</span>
+                  <span className="block text-[11px] text-fg-subtle">{cara.detalle}</span>
+                </span>
+                {cara.activa && (
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" weight="bold" aria-hidden="true" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -334,26 +433,12 @@ export function BarraDePestanas({
   }, [cssVar]);
 
   const esSecciones = nivel === 'secciones';
+  // Con menos de dos caras no se dibuja el selector: no se anuncia una
+  // separación que, para esa persona, no existe.
+  const conCaras = esSecciones && !!caras && caras.length > 1;
 
-  return (
-    <div
-      ref={barRef}
-      data-nivel={nivel}
-      className={cn(
-        // `print:hidden`: la navegación no va en un PDF (cuenta de cobro, ficha de un caso).
-        'sticky border-b border-border backdrop-blur-md print:hidden',
-        topClass,
-        // Las secciones van por encima de las pestañas (ambas sticky); la banda
-        // de las pestañas es hundida para leerse como «dentro de» la card activa.
-        esSecciones ? 'z-[21] bg-bg/95' : 'z-20 bg-surface-muted/40',
-      )}
-    >
-      {/* La cara PRIMERO: de qué lado del contrato estoy. Con menos de dos no
-          se dibuja nada — no se anuncia una separación que no existe. */}
-      {esSecciones && caras && caras.length > 1 ? (
-        <SelectorDeCaras caras={caras} ariaLabel={carasAriaLabel ?? 'Caras del módulo'} />
-      ) : null}
-      <div className="relative">
+  const riel = (
+      <div className={cn('relative', conCaras && 'min-w-0 flex-1')}>
         <div
           className={cn(
             'pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-bg to-transparent transition-opacity',
@@ -396,8 +481,12 @@ export function BarraDePestanas({
           // Lenis se come la rueda si no.
           data-lenis-prevent
           className={cn(
-            'flex overflow-x-auto px-4 [scrollbar-width:none] md:px-6 [&::-webkit-scrollbar]:hidden',
-            esSecciones ? 'py-2' : 'gap-1',
+            'flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            // Con selector, el padding izquierdo lo pone el renglón: si no, el
+            // riel arrancaría a 24 px del control del que cuelga.
+            conCaras ? 'pl-2 pr-4 md:pr-6' : 'px-4 md:px-6',
+            esSecciones && !conCaras ? 'py-2' : '',
+            esSecciones ? '' : 'gap-1',
           )}
         >
           {esSecciones ? (
@@ -405,8 +494,17 @@ export function BarraDePestanas({
             // caras, acá abajo van SÓLO las de la cara elegida — la elección
             // vive en el renglón de arriba, que es otro nivel.
             <div className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1">
-              {items.map((item) => (
-                <CardDeSeccion key={item.href} item={item} />
+              {items.map((item, i) => (
+                <Fragment key={item.href}>
+                  {/* La línea que separa lo que mira TODAS las caras (el
+                      tablero financiero) de las secciones de ESTA cara. Sin
+                      ella, el tablero se leería como una sección más de este
+                      lado de la plata. */}
+                  {item.sinCara === false && items[i - 1]?.sinCara === true && (
+                    <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
+                  )}
+                  <CardDeSeccion item={item} />
+                </Fragment>
               ))}
             </div>
           ) : (
@@ -414,6 +512,39 @@ export function BarraDePestanas({
           )}
         </nav>
       </div>
+  );
+
+  return (
+    <div
+      ref={barRef}
+      data-nivel={nivel}
+      className={cn(
+        // `print:hidden`: la navegación no va en un PDF (cuenta de cobro, ficha de un caso).
+        'sticky border-b border-border backdrop-blur-md print:hidden',
+        topClass,
+        // Las secciones van por encima de las pestañas (ambas sticky); la banda
+        // de las pestañas es hundida para leerse como «dentro de» la card activa.
+        esSecciones ? 'z-[21] bg-bg/95' : 'z-20 bg-surface-muted/40',
+      )}
+    >
+      {/* 🔴 UN SOLO RENGLÓN (Nico, 18-09: «esta navegación no se entiende un
+          culo»). La cara a la izquierda, una línea, y a la derecha lo que hay
+          DENTRO de esa cara. Dos filas de cosas horizontales y clicables, una
+          encima de la otra, se leen como dos juegos de pestañas del mismo
+          nivel por bien pintada que esté cada una. */}
+      {conCaras ? (
+        <div className="flex items-center gap-2 py-2 pl-4 md:pl-6">
+          <SelectorDeCaras
+            caras={caras!}
+            ariaLabel={carasAriaLabel ?? 'Caras del módulo'}
+            pathname={pathname}
+          />
+          <span aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+          {riel}
+        </div>
+      ) : (
+        riel
+      )}
     </div>
   );
 }

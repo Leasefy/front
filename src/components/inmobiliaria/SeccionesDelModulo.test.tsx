@@ -133,7 +133,13 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     // inquilinos es el mismo defecto que Nico señaló arriba, un piso más abajo.
     render('/panel/inmobiliaria/pagos/liquidaciones')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
+    // `tableroFinanciero` va primero en las TRES caras: es la única pantalla
+    // del módulo que mira todas, y el riel le pone una línea detrás.
+    expect(lista.map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'liquidaciones',
+      'dispersiones',
+    ])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['liquidaciones'])
   })
 
@@ -232,7 +238,7 @@ describe('🔴 SeccionesDelModulo — dentro de una sala de «Agentes IA» no ap
 })
 
 
-describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', () => {
+describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)', () => {
   /**
    * El defecto que este bloque fija: las dos caras eran dos rótulos en
    * versalitas metidos ENTRE las cards del mismo riel, y Nico no los entendía
@@ -241,8 +247,25 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
    * ARRIBA, y debajo van sólo las secciones de la cara elegida.
    */
 
-  /** Las caras del selector: clave, texto y si está elegida. */
+  /**
+   * Las caras del selector: clave, texto y si está elegida.
+   *
+   * 🔴 Hay que ABRIR el menú: desde el 18-09 la cara no es una fila de
+   * píldoras siempre a la vista sino un selector con su caret, porque dos
+   * filas de cosas horizontales y clicables una encima de la otra se leían
+   * como dos juegos de pestañas del mismo nivel («esta navegación no se
+   * entiende un culo»). Lo que el bloque protege no cambió: son ENLACES, uno
+   * por cara, cada uno con su matiz y su destino.
+   */
+  function abrirCaras() {
+    const boton = contenedor.querySelector('[data-testid="abrir-caras"]')
+    act(() => {
+      boton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
   function caras(): Array<{ clave: string; texto: string; activa: boolean; href: string }> {
+    abrirCaras()
     const selector = contenedor.querySelector('[data-testid="selector-de-caras"]')
     return [...(selector?.querySelectorAll('a') ?? [])].map((a) => ({
       clave: a.getAttribute('data-cara') ?? '',
@@ -252,20 +275,41 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     }))
   }
 
-  it('la cara es un SELECTOR aparte, no un rótulo entre las cards', () => {
+  it('la cara es un SELECTOR aparte, no una pestaña más del riel', () => {
     render('/panel/inmobiliaria/pagos')
-    expect(caras().map((c) => c.clave)).toEqual(['inquilinos', 'propietarios'])
-    // Y ya no queda ningún rótulo de cara dentro del riel de secciones.
+    expect(caras().map((c) => c.clave)).toEqual(['inquilinos', 'propietarios', 'tesoreria'])
+    // 🔴 Y vive FUERA del `nav` de las secciones, con otra forma (un botón con
+    // menú, no un enlace en un riel hundido): es lo que impide que las dos
+    // capas se lean como el mismo nivel.
+    expect(contenedor.querySelector('nav [data-testid="selector-de-caras"]')).toBeNull()
+    expect(contenedor.querySelector('[data-testid="abrir-caras"]')?.tagName).toBe('BUTTON')
+    expect(
+      contenedor.querySelector('[data-testid="abrir-caras"]')?.getAttribute('aria-haspopup'),
+    ).toBe('menu')
     expect(contenedor.querySelectorAll('nav [role="group"]')).toHaveLength(0)
+  })
+
+  it('🔴 con el menú cerrado, el botón dice en qué cara estás', () => {
+    // Sin esto el selector sería un botón mudo: la cara tiene que leerse sin
+    // abrir nada, que es justo lo que no se entendía.
+    render('/panel/inmobiliaria/pagos/dispersiones')
+    const boton = contenedor.querySelector('[data-testid="abrir-caras"]')!
+    expect(boton.getAttribute('data-cara-elegida')).toBe('propietarios')
+    expect(boton.textContent).toContain('caraPropietarios')
+    expect(boton.textContent).toContain('caraPropietariosDetalle')
+    // Y cerrado no hay ningún enlace de cara suelto por ahí.
+    expect(contenedor.querySelectorAll('[data-cara]')).toHaveLength(0)
   })
 
   it('cada cara dice de un vistazo lo que entra y lo que sale', () => {
     render('/panel/inmobiliaria/pagos')
-    const [inquilinos, propietarios] = caras()
+    const [inquilinos, propietarios, tesoreria] = caras()
     expect(inquilinos?.texto).toContain('caraInquilinos')
     expect(inquilinos?.texto).toContain('caraInquilinosDetalle')
     expect(propietarios?.texto).toContain('caraPropietarios')
     expect(propietarios?.texto).toContain('caraPropietariosDetalle')
+    expect(tesoreria?.texto).toContain('caraTesoreria')
+    expect(tesoreria?.texto).toContain('caraTesoreriaDetalle')
   })
 
   it('cada cara es un ENLACE a su primera sección: la cara viaja en la URL', () => {
@@ -275,19 +319,30 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     expect(caras().map((c) => c.href)).toEqual([
       '/panel/inmobiliaria/pagos',
       '/panel/inmobiliaria/pagos/liquidaciones',
+      '/panel/inmobiliaria/pagos/cuadre',
     ])
   })
 
   it('en la Sala entra Inquilinos, que es donde se opera todos los días', () => {
     render('/panel/inmobiliaria/pagos')
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera'])
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'pagos',
+      'recaudo',
+      'recaudoBancario',
+      'cartera',
+    ])
   })
 
   it('🔴 la cara se deduce de la RUTA: en Dispersiones estás en Propietarios', () => {
     render('/panel/inmobiliaria/pagos/dispersiones')
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
-    expect(cards().map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'liquidaciones',
+      'dispersiones',
+    ])
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
   })
 
@@ -296,20 +351,69 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
   })
 
-  it('🔴 TODA card del riel pertenece a la cara elegida, sin excepciones', () => {
+  it('🔴 TODA card del riel es de la cara elegida, salvo la que mira TODAS', () => {
     // Es la regla que Nico pedía: «que las tabs de abajo estén atadas a lo
-    // seleccionado arriba». La última excepción era la raíz de Pagos.
+    // seleccionado arriba». La última excepción era la raíz de Pagos, que
+    // mostraba la deuda de los inquilinos dentro de «Propietarios».
+    //
+    // 🔴 Queda UNA excepción y es legítima: el tablero financiero mira lo que
+    // entra, lo que sale y lo que está en la cuenta. Por eso va PRIMERO en las
+    // tres y con una línea que lo separa — mezclado, se leería como una
+    // sección más de este lado de la plata.
     render('/panel/inmobiliaria/pagos/dispersiones')
     expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos/tablero',
       '/panel/inmobiliaria/pagos/liquidaciones',
       '/panel/inmobiliaria/pagos/dispersiones',
     ])
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos/tablero',
       '/panel/inmobiliaria/pagos',
       '/panel/inmobiliaria/pagos/recaudo',
+      '/panel/inmobiliaria/pagos/recaudo-bancario',
       '/panel/inmobiliaria/pagos/cartera',
     ])
+    render('/panel/inmobiliaria/pagos/cuadre')
+    expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos/tablero',
+      '/panel/inmobiliaria/pagos/cuadre',
+      '/panel/inmobiliaria/pagos/traslados',
+      '/panel/inmobiliaria/pagos/pendientes',
+    ])
+  })
+
+  /*
+   * 🔴 Las cinco pantallas que NO estaban en la navegación (Nico, 18-09 de
+   * noche): vivían como enlaces azules apretados a la derecha del título de
+   * `/pagos` —«¿eso es como tabs? porque está a nivel de UX muy mal
+   * logrado»—. Parecían pestañas sin serlo, y eran pantallas de pleno derecho
+   * escondidas en una esquina del encabezado. Este test es el que impide que
+   * vuelvan a quedarse afuera.
+   */
+  it('🔴 las pantallas de tesorería y el tablero SON navegación, no enlaces del título', () => {
+    const enElRiel = (ruta: string) => {
+      render(ruta)
+      return cards().some((c) => c.href === ruta && c.activa)
+    }
+    for (const ruta of [
+      '/panel/inmobiliaria/pagos/tablero',
+      '/panel/inmobiliaria/pagos/cuadre',
+      '/panel/inmobiliaria/pagos/traslados',
+      '/panel/inmobiliaria/pagos/pendientes',
+      '/panel/inmobiliaria/pagos/recaudo-bancario',
+    ]) {
+      expect(enElRiel(ruta), ruta).toBe(true)
+    }
+  })
+
+  it('🔴 la línea separa lo que mira TODAS las caras de lo que es de ESTA', () => {
+    render('/panel/inmobiliaria/pagos')
+    const cajas = [...contenedor.querySelectorAll('nav a')]
+    // Sólo la primera card —el tablero— no pertenece a la cara elegida.
+    expect(cajas[0]?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/tablero')
+    // Y hay exactamente UN separador, justo detrás de ella.
+    expect(contenedor.querySelectorAll('nav span[aria-hidden="true"].w-px')).toHaveLength(1)
   })
 
   it('el riel dice de qué CARA son sus cards, para quien no ve el selector', () => {
@@ -328,19 +432,39 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     permisos.agencyRole = 'VIEWER'
     permisos.modulos = ['cobros']
     render('/panel/inmobiliaria/pagos/cartera')
-    expect(cards().map((c) => c.label)).toEqual(['recaudo', 'cartera'])
+    expect(cards().map((c) => c.label)).toEqual(['recaudo', 'recaudoBancario', 'cartera'])
     expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
+    // Y tampoco ve el tablero financiero, que pide `dashboard`: la cara nueva
+    // no le regala pantallas a nadie.
+    expect(cards().map((c) => c.href)).not.toContain('/panel/inmobiliaria/pagos/tablero')
   })
 
-  it('🔴 el contador ve las dos caras, y cada una con sus secciones', () => {
+  it('🔴 el contador ve las tres caras, y cada una con sus secciones', () => {
     permisos.isAdmin = false
     permisos.agencyRole = 'CONTADOR'
     permisos.modulos = null
     render('/panel/inmobiliaria/pagos')
-    expect(caras()).toHaveLength(2)
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera'])
+    expect(caras()).toHaveLength(3)
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'pagos',
+      'recaudo',
+      'recaudoBancario',
+      'cartera',
+    ])
     render('/panel/inmobiliaria/pagos/liquidaciones')
-    expect(cards().map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'liquidaciones',
+      'dispersiones',
+    ])
+    render('/panel/inmobiliaria/pagos/traslados')
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'cuadre',
+      'trasladoComision',
+      'pendientesDeAplicar',
+    ])
   })
 
   it('un módulo sin caras (Reportes) no dibuja selector alguno', () => {

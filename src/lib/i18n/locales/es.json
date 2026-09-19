@@ -1015,7 +1015,14 @@
       "reclamosDeCandidatos": "Reclamos",
       "invitacionesAFirmar": "Firmas",
       "listasRestrictivas": "Listas",
-      "clausulasPropias": "Cláusulas propias"
+      "clausulasPropias": "Cláusulas propias",
+      "caraTesoreria": "Cuadrar la caja",
+      "caraTesoreriaDetalle": "la plata que está en la cuenta",
+      "tableroFinanciero": "Tablero financiero",
+      "cuadre": "Cuadre del día",
+      "trasladoComision": "Traslados de comisión",
+      "pendientesDeAplicar": "Pendientes de aplicar",
+      "recaudoBancario": "Recaudo bancario"
     },
     "piloto": {
       "titulo": "Piloto automático",

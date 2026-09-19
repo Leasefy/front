@@ -41,6 +41,9 @@ import {
   ShieldWarning,
   Toolbox,
   Scroll,
+  Vault,
+  ArrowsLeftRight,
+  HourglassMedium,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -130,18 +133,33 @@ const CONTADOR_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.
 const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
 
 /**
- * Las dos caras de la plata dentro del módulo Pagos.
+ * Las TRES caras de la plata dentro del módulo Pagos.
  *
- * No son grupos ni submódulos: son la MISMA plata mirada desde los dos lados
- * del contrato.
+ * No son grupos ni submódulos: son la MISMA plata mirada desde los tres
+ * lugares donde está.
  *
- *   · `inquilinos`   — lo que ENTRA: la deuda del mes (la raíz), recaudo y
- *                      cartera.
+ *   · `inquilinos`   — lo que ENTRA: la deuda del mes (la raíz), recaudo,
+ *                      el recaudo por convenio con el banco y cartera.
  *   · `propietarios` — lo que SALE: liquidaciones y dispersiones.
+ *   · `tesoreria`    — lo que está EN LA CUENTA y todavía no es de nadie: el
+ *                      cuadre del día, el traslado de la comisión y la plata
+ *                      pendiente de aplicar.
  *
- * 🔴 TODA pantalla del módulo tiene cara, incluida la raíz. El campo sigue
- * siendo opcional porque otro módulo con caras podría tener una pantalla que
- * mire las dos; hoy Pagos no tiene ninguna, y es a propósito (abajo).
+ * 🔴 La tercera cara nació el 18-09 de noche, y no de un antojo de
+ * arquitectura: esas tres pantallas existían desde el 17 y el 18 y NUNCA
+ * habían entrado a la navegación. Vivían como cinco enlaces azules apretados
+ * a la derecha del título de `/pagos`, y Nico los señaló: «esos links que
+ * están al lado derecho menos [se entienden], ¿eso es como tabs? porque está
+ * a nivel de UX muy mal logrado». Las dos observaciones eran ciertas:
+ * parecían pestañas sin serlo, y eran pantallas de pleno derecho escondidas
+ * en una esquina. La regla que deja: **una pantalla que no cabe en la
+ * navegación no se cuelga del título — o es una sección, o no existe.**
+ *
+ * 🔴 Casi TODA pantalla del módulo tiene cara, incluida la raíz. El campo es
+ * opcional para la pantalla que de verdad mira todas: hoy es una sola, el
+ * tablero financiero, y se dibuja en los tres rieles, primero y separada por
+ * una línea. Una pantalla sin cara que en realidad sea de una sola es el
+ * defecto que Nico venía señalando (abajo, el caso de `/pagos`).
  *
  * ── 🔴 Cómo se dibujan, y las DOS veces que cambió (Nico, 15 y 16-09) ───────
  *
@@ -178,7 +196,7 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * lugares significando dos cosas distintas es media explicación de por qué
  * «no se entendía».
  */
-export type CaraDeLaPlata = 'inquilinos' | 'propietarios';
+export type CaraDeLaPlata = 'inquilinos' | 'propietarios' | 'tesoreria';
 
 /** Rótulo, matiz e icono de cada cara, en el orden en que se leen. */
 export const CARAS_DE_LA_PLATA: readonly {
@@ -199,6 +217,12 @@ export const CARAS_DE_LA_PLATA: readonly {
     labelKey: 'inmobiliaria.nav.caraPropietarios',
     detalleKey: 'inmobiliaria.nav.caraPropietariosDetalle',
     icon: ArrowLineUp,
+  },
+  {
+    cara: 'tesoreria',
+    labelKey: 'inmobiliaria.nav.caraTesoreria',
+    detalleKey: 'inmobiliaria.nav.caraTesoreriaDetalle',
+    icon: Vault,
   },
 ];
 
@@ -540,12 +564,41 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
+          // El recaudo por convenio con el banco SÍ es de la cara inquilinos:
+          // importar el archivo del banco termina en recibos de caja, y por eso
+          // pide `cobros` como Recaudo y Cartera, no `dispersiones`.
+          { labelKey: 'inmobiliaria.nav.recaudoBancario', href: r('/pagos/recaudo-bancario'), icon: Bank, module: 'cobros', cara: 'inquilinos' },
           { labelKey: 'inmobiliaria.nav.cartera', href: r('/pagos/cartera'), icon: CurrencyCircleDollar, module: 'cobros', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.
           { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES, cara: 'propietarios' },
           { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
+          // 🔴 Lo que está EN LA CUENTA (cara tesorería) — Nico, 18-09 de
+          // noche. Estas cuatro pantallas existían desde el 17 y el 18 pero
+          // nunca entraron a la navegación: vivían como cinco enlaces azules
+          // apretados a la derecha del título de `/pagos` («esos links que
+          // están al lado derecho menos se entienden, ¿eso es como tabs?
+          // porque está a nivel de UX muy mal logrado»). Tenían razón en las
+          // dos cosas: parecían pestañas y no lo eran, y eran pantallas de
+          // pleno derecho escondidas en una esquina.
+          //
+          // Son una TERCERA cara y no un revoltijo: las tres hablan de plata
+          // que está en la cuenta y todavía no es de nadie —el cuadre («es
+          // plata de propietarios e inquilinos»), el traslado («es plata de
+          // propietarios e inquilinos hasta que se separa la comisión») y lo
+          // pendiente de aplicar («es plata de un tercero hasta que se aplica
+          // o se devuelve»)—, y por eso las tres piden `dispersiones`.
+          { labelKey: 'inmobiliaria.nav.cuadre', href: r('/pagos/cuadre'), icon: Scales, module: 'dispersiones', cara: 'tesoreria' },
+          { labelKey: 'inmobiliaria.nav.trasladoComision', href: r('/pagos/traslados'), icon: ArrowsLeftRight, module: 'dispersiones', cara: 'tesoreria' },
+          { labelKey: 'inmobiliaria.nav.pendientesDeAplicar', href: r('/pagos/pendientes'), icon: HourglassMedium, module: 'dispersiones', cara: 'tesoreria' },
+          // 🔴 SIN `cara`: el tablero financiero mira las TRES —lo que entra,
+          // lo que deben, lo que sale y lo que queda—, así que se dibuja en
+          // los tres rieles, primero y separado por una línea. Es la única
+          // excepción legítima a «toda pantalla tiene cara» (ver el comentario
+          // de `CaraDeLaPlata`): una pantalla sin cara que en realidad sea de
+          // una sola es el defecto que Nico venía señalando.
+          { labelKey: 'inmobiliaria.nav.tableroFinanciero', href: r('/pagos/tablero'), icon: ChartLineUp, module: 'dashboard' },
         ],
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },

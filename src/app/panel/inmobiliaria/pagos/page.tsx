@@ -48,8 +48,16 @@
  * Había un TERCER renglón encima del contenido —las pestañas de la Sala del
  * agente— que decía «Pagos a propietarios» con «Inquilinos» elegido arriba. Se
  * fue entero; sus nueve pestañas están repartidas o retiradas una por una en
- * la NOTA al pie de `agentWorkspaceNav.ts`. Quedan DOS renglones: la cara y,
- * debajo, sólo las pantallas de esa cara.
+ * la NOTA al pie de `agentWorkspaceNav.ts`.
+ *
+ * ── Y el 18-09 de noche, el renglón que quedaba de más ──────────────────────
+ *
+ * «Esta navegación no se entiende un culo.» Seguían siendo DOS renglones —la
+ * cara arriba, las secciones abajo— y ése era el problema: dos filas de cosas
+ * horizontales y clicables, una encima de la otra, se leen como dos juegos de
+ * pestañas del mismo nivel por bien pintada que esté cada una. Hoy es UN
+ * renglón: la cara a la izquierda como selector, una línea, y a la derecha lo
+ * que hay dentro de esa cara (`BarraDePestanas`).
  *
  * Y esta pantalla pasó a ser de la cara INQUILINOS —lo dice el rótulo del
  * encabezado y el `cara: 'inquilinos'` de la arquitectura—: antes no era de
@@ -165,54 +173,22 @@ function PagosHome() {
             {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>
-        {/* El tablero financiero (17-09) es la vista de arriba de TODA la plata
-            —lo que entra, lo que deben, lo que sale y lo que queda—, así que se
-            llega desde acá con un enlace y no con una card: esta pantalla es la
-            deuda del mes de los inquilinos, y no se le puede robar el foco. */}
-        <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href="/panel/inmobiliaria/pagos/tablero"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-al-tablero-financiero"
-          >
-            Tablero financiero
-          </Link>
-          {/* El cuadre de la plata de terceros (17-09) se mira TODOS los días y
-              no es la deuda de nadie: por eso va como enlace desde acá y no
-              como una sección más de Pagos. */}
-          <Link
-            href="/panel/inmobiliaria/pagos/cuadre"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-al-cuadre"
-          >
-            Cuadre del día
-          </Link>
-          {/* 🔴 Tesorería (18-09): el recaudo por convenio con el banco, el
-              traslado de la comisión a la cuenta propia y la plata pendiente de
-              aplicar. Van como enlace y no como card por el mismo motivo que el
-              cuadre: esta pantalla es la deuda del mes de los inquilinos. */}
-          <Link
-            href="/panel/inmobiliaria/pagos/recaudo-bancario"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-al-recaudo-bancario"
-          >
-            Recaudo del banco
-          </Link>
-          <Link
-            href="/panel/inmobiliaria/pagos/traslados"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-a-traslados-de-comision"
-          >
-            Traslado de la comisión
-          </Link>
-          <Link
-            href="/panel/inmobiliaria/pagos/pendientes"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            data-testid="ir-a-pendientes-de-aplicar"
-          >
-            Pendiente de aplicar
-          </Link>
-        </div>
+        {/* 🔴 Acá vivían CINCO enlaces azules apretados a la derecha del
+            título —Tablero financiero · Cuadre del día · Recaudo del banco ·
+            Traslado de la comisión · Pendiente de aplicar—. Nico, 18-09 de
+            noche: «esos links que están al lado derecho menos [se entienden],
+            ¿eso es como tabs? porque está a nivel de UX muy mal logrado».
+
+            Las dos observaciones eran ciertas y la segunda explica la primera:
+            parecían pestañas (texto azul en fila, arriba, donde van las
+            pestañas) sin serlo, y eran cinco pantallas de pleno derecho
+            escondidas en una esquina del encabezado porque nadie las había
+            metido en la navegación. Hoy son secciones de su cara —tres de
+            ellas estrenaron la tercera, «Cuadrar la caja»— y el tablero,
+            que mira las tres, va primero en el riel con su línea.
+
+            La regla que deja: una pantalla que no cabe en la navegación no se
+            cuelga del título. O es una sección, o no existe. */}
       </header>
 
       {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente

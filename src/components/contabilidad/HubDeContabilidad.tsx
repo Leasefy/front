@@ -609,89 +609,110 @@ function ParaElContador() {
         {bajando ? 'Armando el archivo…' : 'Descargar el libro en CSV'}
       </Button>
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
-        <Link
-          href={`${BASE}/reportes?informe=balance`}
-          className="text-caption text-primary hover:underline"
-        >
-          Balance de prueba
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=auxiliar`}
-          className="text-caption text-primary hover:underline"
-        >
-          Libro auxiliar por cuenta
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=tercero`}
-          className="text-caption text-primary hover:underline"
-        >
-          Estado de cuenta
-        </Link>
-        {/* Las tres pantallas de la lógica financiera del 17-09. Van acá como
-            enlaces y no como cards: el hub es el LIBRO, y estas tres son
-            trabajo del contador que cuelga de él, no otro libro. */}
-        <Link
-          href={`${BASE}/deterioro`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-al-deterioro"
-        >
-          Deterioro de cartera
-        </Link>
-        <Link
-          href={`${BASE}/certificados`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-a-certificados"
-        >
-          Certificados de retención
-        </Link>
-        <Link
-          href={`${BASE}/presupuesto`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-al-presupuesto"
-        >
-          Presupuesto
-        </Link>
-        {/* Los tres informes del 18-09 que el contador pide por nombre. */}
-        <Link
-          href={`${BASE}/estados-financieros?informe=pyg`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-al-pyg"
-        >
-          Estado de resultados
-        </Link>
-        <Link
-          href={`${BASE}/estados-financieros?informe=balance`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-al-balance-general"
-        >
-          Balance general
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=mayor`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-al-mayor"
-        >
-          Libro mayor
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=terceros`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-a-terceros"
-        >
-          Auxiliar por tercero
-        </Link>
-        <Link
-          href={`${BASE}/exogena`}
-          className="text-caption text-primary hover:underline"
-          data-testid="ir-a-la-exogena"
-        >
-          Exógena
-        </Link>
+      {/* 🔴 20-09 · Eran ONCE enlaces azules en una fila envuelta, todos con
+          el mismo peso y sin decir qué es qué: «Balance de prueba · Libro
+          auxiliar por cuenta · Estado de cuenta · Deterioro de cartera ·
+          Certificados de retención · Presupuesto · Estado de resultados ·
+          Balance general · Libro mayor · Auxiliar por tercero · Exógena».
+          Nico: «la sección de contabilidad necesita un glow up».
+
+          Dos cosas estaban mal. Una, que once acentos compitiendo entre sí no
+          son un acento (DESIGN §1): el azul se reserva para la acción de la
+          tarjeta —bajar el libro— y los informes se leen en el color del
+          texto. La otra, que un contador no busca «un informe»: busca EL
+          libro, o LOS estados, o la cartera. Agrupados, son cuatro decisiones
+          de tres opciones en vez de una de once. */}
+      <div className="mt-auto grid gap-x-6 gap-y-3 border-t border-border pt-3 sm:grid-cols-2">
+        {INFORMES_DEL_CONTADOR.map((grupo) => (
+          <div key={grupo.titulo} className="min-w-0 space-y-1">
+            <p className="text-caption uppercase tracking-wide text-fg-subtle">
+              {grupo.titulo}
+            </p>
+            <ul className="space-y-0.5">
+              {grupo.informes.map((informe) => (
+                <li key={informe.href}>
+                  <Link
+                    href={informe.href}
+                    className="text-caption text-fg underline-offset-2 hover:text-primary hover:underline"
+                    data-testid={informe.testid}
+                  >
+                    {informe.nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
+
+/**
+ * Los informes que el contador pide por nombre, agrupados por la pregunta que
+ * contesta cada grupo. El orden es el del trabajo: primero el libro, después
+ * lo que se firma con él, después lo que se le debe a alguien.
+ */
+const INFORMES_DEL_CONTADOR: ReadonlyArray<{
+  titulo: string;
+  informes: ReadonlyArray<{ href: string; nombre: string; testid?: string }>;
+}> = [
+  {
+    titulo: 'El libro',
+    informes: [
+      { href: `${BASE}/reportes?informe=balance`, nombre: 'Balance de prueba' },
+      { href: `${BASE}/reportes?informe=mayor`, nombre: 'Libro mayor', testid: 'ir-al-mayor' },
+      { href: `${BASE}/reportes?informe=auxiliar`, nombre: 'Libro auxiliar por cuenta' },
+      {
+        href: `${BASE}/reportes?informe=terceros`,
+        nombre: 'Auxiliar por tercero',
+        testid: 'ir-a-terceros',
+      },
+    ],
+  },
+  {
+    titulo: 'Lo que se firma',
+    informes: [
+      {
+        href: `${BASE}/estados-financieros?informe=pyg`,
+        nombre: 'Estado de resultados',
+        testid: 'ir-al-pyg',
+      },
+      {
+        href: `${BASE}/estados-financieros?informe=balance`,
+        nombre: 'Balance general',
+        testid: 'ir-al-balance-general',
+      },
+    ],
+  },
+  {
+    titulo: 'Cartera y terceros',
+    informes: [
+      { href: `${BASE}/reportes?informe=tercero`, nombre: 'Estado de cuenta' },
+      {
+        href: `${BASE}/deterioro`,
+        nombre: 'Deterioro de cartera',
+        testid: 'ir-al-deterioro',
+      },
+      {
+        href: `${BASE}/certificados`,
+        nombre: 'Certificados de retención',
+        testid: 'ir-a-certificados',
+      },
+    ],
+  },
+  {
+    titulo: 'Obligaciones y control',
+    informes: [
+      { href: `${BASE}/exogena`, nombre: 'Exógena', testid: 'ir-a-la-exogena' },
+      {
+        href: `${BASE}/presupuesto`,
+        nombre: 'Presupuesto',
+        testid: 'ir-al-presupuesto',
+      },
+    ],
+  },
+];
 
 interface Destino {
   href: string;

@@ -61,8 +61,18 @@ export function InteresesDelContratoSeccion({
     n === 1 ? t('estadoDeCuenta.unaCuota') : t('estadoDeCuenta.nCuotas', { n });
 
   return (
-    <div data-testid={`intereses-${numero}`} className="space-y-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+    /*
+     * 🔴 19-09-2026 (Nico) · «no se sabe si ahí van tablas o qué, no se
+     * entiende bien qué es de qué o qué hace parte a qué». Esta sección tiene
+     * el mismo marco que las otras dos del contrato —arriendos y otros
+     * conceptos—: el título es el encabezado de la caja, y lo que la sección
+     * contiene va adentro. Ver `SeccionDeFilas` en `ContratoDelEstado.tsx`.
+     */
+    <section
+      data-testid={`intereses-${numero}`}
+      className="overflow-hidden rounded-md border border-border-faint"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-border-faint bg-surface-muted/30 px-4 py-2.5">
         <h4 className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.intereses')}
         </h4>
@@ -77,14 +87,11 @@ export function InteresesDelContratoSeccion({
 
       {intereses.filas.length > 0 && (
         <>
-          <p className="text-caption text-fg-muted">
+          <p className="px-4 pt-3 text-caption text-fg-muted">
             {t('estadoDeCuenta.interesesExplicacion')}
           </p>
 
-          <div
-            data-tabla
-            className="hidden overflow-x-auto rounded-md border border-border-faint md:block"
-          >
+          <div data-tabla className="mt-2 hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -193,7 +200,7 @@ export function InteresesDelContratoSeccion({
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

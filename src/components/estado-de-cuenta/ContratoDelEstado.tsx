@@ -347,9 +347,29 @@ function SeccionDeFilas({
     [visibles, cortes],
   );
 
+  /*
+   * 🔴 19-09-2026 (Nico) · «tienes una cosa que dice otros conceptos, e
+   * interés de mora y no se sabe si ahí van tablas o qué, no se entiende bien
+   * qué es de qué o qué hace parte a qué».
+   *
+   * Tenía razón: el rótulo era un `<h4>` en mayúsculas flotando en el aire,
+   * con una tabla enmarcada debajo y aire igual arriba y abajo. Nada decía
+   * dónde empieza y dónde termina cada sección, ni que las tres —arriendos,
+   * otros conceptos e intereses— son partes del MISMO contrato. Y con la
+   * sección vacía era peor: quedaba un título suelto y una frase, sin nada
+   * que los uniera.
+   *
+   * Ahora cada sección es UNA caja: el título es su encabezado, pegado a lo
+   * que contiene, y el contenido va adentro —tabla o frase, da igual—. La
+   * tabla pierde su marco propio para no tener dos bordes, uno dentro del
+   * otro.
+   */
   return (
-    <div data-testid={testid} className="space-y-2">
-      <div className="flex items-baseline justify-between gap-3">
+    <section
+      data-testid={testid}
+      className="overflow-hidden rounded-md border border-border-faint"
+    >
+      <div className="flex items-baseline justify-between gap-3 border-b border-border-faint bg-surface-muted/30 px-4 py-2.5">
         <h4 className="text-label uppercase tracking-wide text-fg-subtle">{titulo}</h4>
         {filas.length > 0 && (
           <span className="font-mono text-caption tabular-nums text-fg-subtle">
@@ -361,7 +381,7 @@ function SeccionDeFilas({
       </div>
 
       {filas.length === 0 ? (
-        <p className="py-2 text-body-sm text-fg-muted">{vacio}</p>
+        <p className="px-4 py-3 text-body-sm text-fg-muted">{vacio}</p>
       ) : (
         <>
           {/* Escritorio: la tabla. `md:` y no `sm:` porque con las columnas de
@@ -375,7 +395,7 @@ function SeccionDeFilas({
               las tarjetas del móvil en el papel. */}
           <div
             data-tabla
-            className="hidden overflow-x-auto rounded-md border border-border-faint md:block"
+            className="hidden overflow-x-auto md:block"
           >
             <Table>
               <TableHeader>
@@ -448,7 +468,7 @@ function SeccionDeFilas({
           </ul>
 
           {paginar && shouldPaginate && (
-            <div className="print:hidden">
+            <div className="border-t border-border-faint px-4 py-2 print:hidden">
               <TablePagination
                 total={total}
                 page={page}
@@ -461,7 +481,7 @@ function SeccionDeFilas({
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }
 

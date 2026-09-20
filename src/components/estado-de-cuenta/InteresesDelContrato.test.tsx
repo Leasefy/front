@@ -111,6 +111,35 @@ function documento(intereses: InteresesDelContrato | null, totales?: TotalesDeIn
   } as typeof doc;
 }
 
+/*
+ * 🔴 19-09-2026 (Nico) · «tienes una cosa que dice otros conceptos, e interés
+ * de mora y no se sabe si ahí van tablas o qué, no se entiende bien qué es de
+ * qué o qué hace parte a qué».
+ *
+ * Los rótulos eran `<h4>` en mayúsculas flotando en el aire, con una tabla
+ * enmarcada debajo y el mismo aire arriba y abajo: nada decía dónde empieza y
+ * dónde termina cada sección, ni que las tres son partes del MISMO contrato.
+ * Con la sección vacía era peor: un título suelto y una frase, sin nada que
+ * los uniera. Ahora cada una es UNA caja con su título de encabezado.
+ */
+describe('cada sección del contrato es una caja, no un título flotando', () => {
+  it('🔴 los intereses van en un `section` con marco propio', () => {
+    montar(<EstadoDeCuentaDocumento doc={documento(conIntereses())} hoy={HOY} />);
+    const seccion = $(`[data-testid="intereses-${contrato().numero}"]`)!;
+    expect(seccion.tagName).toBe('SECTION');
+    expect(seccion.className).toContain('border');
+    expect(seccion.className).toContain('rounded-md');
+  });
+
+  it('y el título es su encabezado: va DENTRO de la caja', () => {
+    montar(<EstadoDeCuentaDocumento doc={documento(conIntereses())} hoy={HOY} />);
+    const seccion = $(`[data-testid="intereses-${contrato().numero}"]`)!;
+    const titulo = seccion.querySelector('h4');
+    expect(titulo).not.toBeNull();
+    expect(titulo!.textContent).toContain('Intereses de mora');
+  });
+});
+
 describe('los intereses de mora en el estado de cuenta', () => {
   it('🔴 van en su propia sección, con días de mora, lo liquidado y lo que falta', () => {
     montar(<EstadoDeCuentaDocumento doc={documento(conIntereses())} hoy={HOY} />);

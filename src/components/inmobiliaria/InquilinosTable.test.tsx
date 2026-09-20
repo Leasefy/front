@@ -149,6 +149,38 @@ describe('<InquilinosTable>', () => {
    * «4 de jun» en la lista y en el cajón para un arriendo que empieza el 5.
    * A `formatDate` tiene que llegarle sólo el día.
    */
+  /*
+   * 🔴 20-09 · Desde que los arriendos salen del CONTRATO y no del `Lease`,
+   * las dos fechas pueden faltar: en `Lease` eran NOT NULL, en `Contract` son
+   * opcionales y un contrato a término indefinido no tiene hasta cuándo.
+   * `formatDate(null)` pinta «Invalid Date» en la tabla, que es peor que no
+   * saber: hace creer que el dato está y salió mal.
+   */
+  it('🔴 un arriendo sin fecha de fin dice «—», no «Invalid Date»', () => {
+    expect(diaDeVigencia(null)).toBeNull()
+
+    montar([persona({ arriendos: [arriendo({ desde: '2025-09-05', hasta: null })] })])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('2025-09-05')
+    expect(fila).toContain('—')
+    expect(fila).not.toContain('Invalid')
+  })
+
+  it('🔴 un arriendo sin `Lease` se pinta igual: el arriendo lo dice el CONTRATO', () => {
+    /*
+     * Los 11 contratos migrados de la agencia de QA: tienen inmueble, canon y
+     * fechas, y `leaseId` en null porque nunca se les creó el `Lease`. Antes
+     * del 20-09 esas personas no salían en la pantalla en ninguna parte.
+     */
+    montar([
+      persona({
+        arriendos: [arriendo({ leaseId: null, contractId: 'c-mig', canonCop: 10_950_000 })],
+      }),
+    ])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('10.950.000')
+  })
+
   it('la vigencia llega a formatDate como DÍA, aunque el back la mande a medianoche UTC', () => {
     expect(diaDeVigencia('2026-06-05T00:00:00.000Z')).toBe('2026-06-05')
     expect(diaDeVigencia('2026-06-05')).toBe('2026-06-05')

@@ -65,6 +65,34 @@ describe('getBootstrap', () => {
     expect(result.errors).toEqual([])
   })
 
+  it('T-0099: passes `segundoFactor` through unchanged when present', async () => {
+    getMock.mockResolvedValueOnce({
+      user: { id: 'u1', email: 'a@b.com', firstName: '', lastName: '' },
+      role: 'AGENT',
+      agency: null,
+      subscription: null,
+      onboarding: null,
+      errors: [],
+      segundoFactor: { exigido: true },
+    })
+    const result = await getBootstrap()
+    expect(result.segundoFactor).toEqual({ exigido: true })
+  })
+
+  it('T-0099: defaults `segundoFactor` to { exigido: false } when the key is missing (older back build) — never throws', async () => {
+    getMock.mockResolvedValueOnce({
+      user: { id: 'u1', email: 'a@b.com', firstName: '', lastName: '' },
+      role: 'TENANT',
+      agency: null,
+      subscription: null,
+      onboarding: null,
+      errors: [],
+      // no `segundoFactor` key at all — an old back build
+    })
+    const result = await getBootstrap()
+    expect(result.segundoFactor).toEqual({ exigido: false })
+  })
+
   it('propagates a rejected apiClient.get (401/409/5xx) unchanged', async () => {
     const err = new Error('boom')
     getMock.mockRejectedValueOnce(err)

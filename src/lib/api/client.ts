@@ -47,6 +47,27 @@ export function hayRespuestaDeSesion(): boolean {
 }
 
 /**
+ * T-0099: mirror de `mfaRequired` (auth-context.tsx) para código que NO puede
+ * leer contexto de React — hoy sólo `clasificar.ts`, que reclasifica un 403
+ * `SEGUNDO_FACTOR_REQUERIDO` que llegue mientras la sesión está esperando el
+ * paso a aal2 (la persona YA tiene el factor activo, sólo le falta terminar
+ * de entrar el código) en vez de mandarla a activarlo en Configuración →
+ * Seguridad, que sería falso. Mismo patrón que `_accessToken`: lo escribe el
+ * AuthProvider, lo lee quien lo necesite.
+ */
+let _mfaPendiente = false
+
+/** Called by AuthProvider whenever `mfaRequired` changes. */
+export function setMfaPendingFlag(pending: boolean) {
+  _mfaPendiente = pending
+}
+
+/** ¿Está la sesión esperando que se pase de aal1 a aal2 (segundo factor)? */
+export function estaMfaPendiente(): boolean {
+  return _mfaPendiente
+}
+
+/**
  * Espera a que el AuthProvider conteste, con tope. El tope existe para que un
  * provider que nunca contesta no cuelgue la app: pasado ese tiempo se sale sin
  * token y el 401 se maneja como cualquier otro fallo.

@@ -25,6 +25,7 @@ const { replaceMock, refreshUserMock, authState } = vi.hoisted(() => {
       isAuthenticated: true,
       isLoading: false,
       mfaRequired: false,
+      mfaEnrollRequired: false,
       needsOnboarding: false,
       perfilElegido: null as string | null,
       agencyRole: null as string | null,
@@ -57,6 +58,7 @@ beforeEach(() => {
   authState.isAuthenticated = true
   authState.isLoading = false
   authState.mfaRequired = false
+  authState.mfaEnrollRequired = false
   authState.needsOnboarding = false
   authState.perfilElegido = null
   authState.agencyRole = null
@@ -148,6 +150,61 @@ describe('ProtectedRoute — agency panel (allowAgencyMembers)', () => {
  * fabrica un usuario de la sesión de Supabase con un rol que nadie confirmó
  * (`profileSource: 'session'`), y este gate lo leía como un hecho.
  */
+/**
+ * T-0099: `PermissionsProvider`, `useAgencySubscription`, `useInmobiliariaConfig`,
+ * `useMigracionesPendientes`, `usePostulacionesPendientes` and every other
+ * protected hook/provider the panel mounts live ONLY inside
+ * `InmobiliariaLayout`'s `<ProtectedRoute>{children}</ProtectedRoute>`
+ * (src/app/panel/inmobiliaria/layout.tsx:363-385). None of them can fire a
+ * single fetch unless this gate renders `children` — so proving the gate
+ * holds here is the single shared-layer guarantee for all of them, instead
+ * of duplicating an `mfaRequired` check into each hook.
+ */
+describe('ProtectedRoute — T-0099: MFA-pending gate (session assurance level, not the URL)', () => {
+  it('with mfaRequired=true on a panel route: children (and everything they mount) do NOT render, and it redirects to /auth/mfa-verify', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('once mfaRequired flips back to false (MFA_CHALLENGE_VERIFIED released it): children mount normally, no redirect', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaRequired = false
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('with mfaEnrollRequired=true (no factor to even step up to): children do NOT render, redirects to /auth/mfa-enroll — takes priority over mfaRequired', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaEnrollRequired = true
+    authState.mfaRequired = false
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('once mfaEnrollRequired flips back to false (enrolled + verified): children mount normally, no redirect', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaEnrollRequired = false
+    authState.mfaRequired = false
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+})
+
 describe('ProtectedRoute — un perfil degradado NUNCA expulsa', () => {
   it('con el back caído se queda en el panel: no redirige al portal del inquilino', async () => {
     authState.user = { role: 'tenant', profileSource: 'session', onboardingCompleted: true }

@@ -21,6 +21,7 @@ const { replaceMock, authState } = vi.hoisted(() => ({
     needsOnboarding: false,
     perfilElegido: null as string | null,
     mfaRequired: false,
+    mfaEnrollRequired: false,
     agencyRole: null as string | null,
     agencyMembershipChecked: true,
     hasActiveAgencyMembership: false,
@@ -47,6 +48,8 @@ beforeEach(() => {
   authState.isAuthenticated = false
   authState.needsOnboarding = false
   authState.perfilElegido = null
+  authState.mfaRequired = false
+  authState.mfaEnrollRequired = false
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -62,6 +65,30 @@ async function render() {
     root.render(<PostLoginPage />)
   })
 }
+
+describe('post-login — T-0099: MFA gate first, enroll-pending before verify-pending', () => {
+  it('mfaEnrollRequired=true → /auth/mfa-enroll, ahead of the onboarding/role checks', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaEnrollRequired = true
+    authState.mfaRequired = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+
+  it('mfaRequired=true (has a factor, aal1) → /auth/mfa-verify', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaRequired = true
+    authState.mfaEnrollRequired = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+})
 
 describe('post-login — retomar donde lo dejó', () => {
   it('sin registro en el back y sin perfil elegido → el selector', async () => {

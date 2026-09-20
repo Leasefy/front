@@ -157,4 +157,77 @@ describe('MfaSetupSection', () => {
     expect(warn).not.toHaveBeenCalled()
     expect(error).not.toHaveBeenCalled()
   })
+
+  /**
+   * T-0099: `/auth/mfa-enroll` needs to know when enrollment finishes so it
+   * can bounce into `/auth/mfa-verify` for the SDK-recognized step-up (this
+   * screen's own verify goes over raw REST, bypassing the SDK's cached
+   * session — see the module doc comment on why).
+   */
+  it('T-0099: calls onEnrolled once the factor is enrolled AND verified', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      señales.push(init?.signal ?? undefined)
+      const url = String(_url)
+      if (url.endsWith('/user')) return respuesta({ factors: [] })
+      if (url.endsWith('/factors')) return respuesta({ id: 'f1', totp: { qr_code: '<svg/>', secret: 'S3CR3T' } })
+      if (url.endsWith('/challenge')) return respuesta({ id: 'ch1' })
+      if (url.endsWith('/verify')) return respuesta({})
+      return respuesta({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const onEnrolled = vi.fn()
+    await act(async () => {
+      root.render(<MfaSetupSection onEnrolled={onEnrolled} />)
+    })
+
+    const activar = [...container.querySelectorAll('button')].find((b) =>
+      (b.textContent ?? '').includes('Activar'),
+    )
+    await act(async () => {
+      activar?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // Not yet — enrollment started but the code hasn't been verified.
+    expect(onEnrolled).not.toHaveBeenCalled()
+
+    const input = container.querySelector('input') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )!.set!
+      setter.call(input, '123456')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const verificar = [...container.querySelectorAll('button')].find((b) =>
+      (b.textContent ?? '').includes('Verificar'),
+    )
+    await act(async () => {
+      verificar?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onEnrolled).toHaveBeenCalledTimes(1)
+  })
+
+  it('T-0099: calls onEnrolled on mount too, when a verified factor already exists (defensive — landing on /auth/mfa-enroll already enrolled)', async () => {
+    const fetchMock = vi.fn(async (_url: string) => {
+      const url = String(_url)
+      if (url.endsWith('/user')) {
+        return respuesta({ factors: [{ id: 'f1', factor_type: 'totp', status: 'verified' }] })
+      }
+      return respuesta({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const onEnrolled = vi.fn()
+    await act(async () => {
+      root.render(<MfaSetupSection onEnrolled={onEnrolled} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onEnrolled).toHaveBeenCalledTimes(1)
+  })
 })

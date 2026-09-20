@@ -6,7 +6,7 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets } from '@/lib/api/client'
+import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets, setMfaPendingFlag } from '@/lib/api/client'
 import { getBootstrap } from '@/lib/api/bootstrap.service'
 import { mapBootstrapSubscription } from '@/lib/api/subscriptions.service'
 import type { AgencySubscriptionState } from '@/lib/api/agency-subscription.types'
@@ -249,6 +249,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  // T-0099 — see AuthState['mfaEnrollRequired'] in types.ts.
+  const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
   // El perfil elegido en «Selecciona tu perfil». Vive en `user_metadata` de
   // Supabase y se relee de la sesión en cada evento (ver perfil-de-onboarding.ts).
@@ -329,6 +331,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * required either way and is sufficient on its own.
    */
   const sessionGenerationRef = useRef(0)
+
+  /**
+   * T-0099: mirrors the bootstrap's `segundoFactor.exigido` (contract.md
+   * T-0099 §2) outside React state — `checkMfaLevel` reads it without
+   * needing it in its `useCallback` deps (keeping that callback's identity
+   * stable, same reasoning as every other ref in this file). Written by
+   * `fetchBootstrap`, gated on the session generation like everything else
+   * it sets.
+   */
+  const segundoFactorExigidoRef = useRef(false)
 
   /**
    * Fetch the user profile from the backend.
@@ -476,6 +488,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
             : null,
         })
+        // T-0099: read BEFORE the deferred `checkMfaLevel` runs (it reads this
+        // ref) — `fetchBootstrap` always resolves before `alSoltarElLock`
+        // schedules that check in every caller.
+        segundoFactorExigidoRef.current = data.segundoFactor.exigido
       }
       return {
         user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
@@ -765,10 +781,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user, fetchUser, probeAgencyMembership])
 
-  /** Check MFA assurance level and update mfaRequired state.
+  /** Check MFA assurance level and update mfaRequired/mfaEnrollRequired.
    *  `miGeneracion`, when passed, gates the write: a deferred MFA check
    *  (see `alSoltarElLock` below) that settles after the session has moved
-   *  on must not flip `mfaRequired` for whoever is signed in NOW. */
+   *  on must not flip these for whoever is signed in NOW.
+   *
+   *  T-0099: two DIFFERENT pending states share this one check, per
+   *  contract.md T-0099 §3 —
+   *    - `mfaRequired` ("verify-pending"): a factor exists, the session just
+   *      hasn't stepped up to it THIS sign-in. Supabase's own `nextLevel`
+   *      already answers this — unchanged from before this task.
+   *    - `mfaEnrollRequired` ("enroll-pending"): the back's role policy
+   *      (`segundoFactor.exigido`, mirrored in `segundoFactorExigidoRef`)
+   *      requires aal2 but there is NO factor to even step up to —
+   *      something Supabase's aal pair alone cannot say (`nextLevel` stays
+   *      `'aal1'` with nothing enrolled, identical to "no requirement at
+   *      all"). `listFactors()` is only called to break that tie — never
+   *      when `nextLevel === 'aal2'` already proves a factor exists. */
   const checkMfaLevel = useCallback(async (miGeneracion?: number) => {
     const supabase = getSupabase()
     if (!supabase) return
@@ -780,6 +809,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else if (aal?.currentLevel === 'aal2') {
         setMfaRequired(false)
       }
+      if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
+        setMfaEnrollRequired(false)
+      } else {
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
+        const tieneFactorVerificado = (factors?.totp ?? []).some((f) => f.status === 'verified')
+        setMfaEnrollRequired(!tieneFactorVerificado)
+      }
     } catch {
       // MFA not available — ignore
     }
@@ -788,6 +825,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const setMfaVerified = useCallback(() => {
     setMfaRequired(false)
   }, [])
+
+  // T-0099: `clasificar.ts` no puede leer contexto de React — mirror de
+  // `mfaRequired` hacia `apiClient` (mismo patrón que `_accessToken`) para
+  // que un 403 SEGUNDO_FACTOR_REQUERIDO que llegue en la ventana de la
+  // carrera se pueda distinguir de alguien que nunca activó el factor.
+  useEffect(() => {
+    setMfaPendingFlag(mfaRequired)
+  }, [mfaRequired])
 
   // Load the persisted active-context choice whenever the authenticated user
   // changes (userId-scoped read → a foreign entry reads as unset), and keep it
@@ -1009,10 +1054,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-          setIsLoading(false)
           // Apply the bootstrap's own membership verdict — no second request.
-          // Fire-and-forget ONLY as a fallback when the bootstrap failed
-          // wholesale (agencyResult null); isLoading already released above.
+          // Fire-and-forget — the global loader does not wait on this either
+          // (only the agency-route gate waits, on agencyMembershipChecked).
           if (userData) {
             if (agencyResult) {
               applyAgencyFetchResult(agencyResult)
@@ -1023,9 +1067,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           // SIGNED_IN también puede venir de adentro del lock (`setSession` en
           // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
+          //
+          // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
+          // MFA — no antes, como estaba (línea `setIsLoading(false)` seguía
+          // directo al `setUser`, sin esperar `checkMfaLevel`). Ese hueco de
+          // UN macrotask —el que separa el callback devuelto del
+          // `setTimeout(0)` de `alSoltarElLock`— era la ventana en la que
+          // ProtectedRoute veía `isLoading=false` + `mfaRequired=false`
+          // (todavía el default, no el valor real) y dejaba montar el panel
+          // de la inmobiliaria un tick antes de que el MFA check lo
+          // corrigiera y redirigiera a /auth/mfa-verify. En ese tick se
+          // disparaban TODOS los fetches protegidos del layout (config,
+          // members, subscription, migración…) con el token aal1 — el bug
+          // que reporta esta tarea. Alineado con INITIAL_SESSION, que ya
+          // soltaba el loader en este mismo punto.
           const yaHizoOnboarding = userData?.onboardingCompleted === true
           alSoltarElLock(async () => {
             await checkMfaLevel(miGeneracion)
+            if (sessionGenerationRef.current === miGeneracion) {
+              setIsLoading(false)
+            }
             // NOTE: the waiter handoff to `signInWithEmail` below is
             // intentionally NOT gated on the generation — it resolves a
             // promise local to the specific sign-in call that armed it (not
@@ -1086,6 +1147,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setPersistedContext(null)
           clearActiveContext()
           setMfaRequired(false)
+          // T-0099 WU-4: mfaEnrollRequired/segundoFactorExigidoRef were left
+          // out of this reset — an asymmetry with mfaRequired above. Inert
+          // today (isLoading gating + hard redirects mean nothing reads the
+          // stale value before the next sign-in's own bootstrap overwrites
+          // it), but a logout while enroll-pending followed by a DIFFERENT
+          // user logging in must start clean, not carry the previous
+          // member's pending state for even one render.
+          setMfaEnrollRequired(false)
+          segundoFactorExigidoRef.current = false
           setNeedsOnboarding(false)
           setPerfilElegido(null)
           setIsLoading(false)
@@ -1110,18 +1180,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-          // El refresco corre adentro del lock de auth-js: el MFA se chequea al soltarlo.
-          alSoltarElLock(() => checkMfaLevel(miGeneracion))
           // Probe agency membership for every authenticated user (coexistence).
           // Fire-and-forget so the global loader isn't blocked by agency latency
           // (the agency-route gate still waits on agencyMembershipChecked).
           if (userData) {
             void probeAgencyMembership(session.access_token)
           }
-          // CRITICAL: if the very first event on page load is TOKEN_REFRESHED
-          // (Supabase auto-refreshed the expired token before emitting INITIAL_SESSION),
-          // we must still flip isLoading to false or ProtectedRoute stays stuck forever.
-          setIsLoading(false)
+          // El refresco corre adentro del lock de auth-js: el MFA se chequea al
+          // soltarlo.
+          //
+          // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
+          // MFA — antes se soltaba afuera, sin esperarlo (comentario
+          // "CRITICAL" de abajo, que documentaba la razón real de por qué el
+          // loader tenía que soltarse igual: TOKEN_REFRESHED puede ser el
+          // PRIMER evento de la carga, ej. una pestaña del panel dormida toda
+          // la noche cuyo access token venció — Supabase lo renueva solo
+          // ANTES de emitir INITIAL_SESSION). Esa es justo la ventana en la
+          // que este bug se ve: `isLoading` ya en false, `mfaRequired`
+          // todavía en su default `false` un tick antes de que el chequeo
+          // deferred lo corrigiera — tiempo de sobra para que ProtectedRoute
+          // montara el panel entero con el token aal1. Soltarlo acá adentro
+          // sigue cumpliendo la garantía original (el loader se suelta pase
+          // lo que pase, sin depender de otro evento) sin la ventana falsa.
+          alSoltarElLock(async () => {
+            await checkMfaLevel(miGeneracion)
+            if (sessionGenerationRef.current === miGeneracion) {
+              setIsLoading(false)
+            }
+          })
+        } else if (event === 'MFA_CHALLENGE_VERIFIED' && session) {
+          /**
+           * T-0099: `supabase.auth.mfa.verify()` (llamado desde
+           * /auth/mfa-verify) sube la sesión a aal2 y avisa con este evento —
+           * que hasta acá NO tenía handler. `session` acá es la respuesta de
+           * `/factors/:id/verify` (ver GoTrueClient#_verify en
+           * @supabase/auth-js): trae un `access_token` NUEVO, ya en aal2.
+           *
+           * Sin este branch, `apiClient` seguía sirviendo el token VIEJO
+           * (aal1) — `setAccessToken` nunca se llamaba acá — hasta el
+           * próximo refresh natural o una recarga completa. El primer fetch
+           * protegido después de "verificar" podía seguir dando 403 con un
+           * token que a los ojos de React YA se veía liberado (la página
+           * llama a `setMfaVerified()` apenas `mfa.verify()` resuelve).
+           *
+           * No es una sesión nueva — no bumpear la generación (mismo
+           * razonamiento que TOKEN_REFRESHED). `setAccessToken` corre
+           * SINCRÓNICO, antes de cualquier `await`, así que para cuando el
+           * `mfa.verify()` que llamó la página resuelve, el token ya está
+           * puesto — `_notifyAllSubscribers` espera a este callback (ver
+           * GoTrueClient#_notifyAllSubscribers) antes de devolver el
+           * control. El chequeo de MFA sigue diferido: mismo lock de auth-js
+           * que todo lo demás acá.
+           */
+          const miGeneracion = sessionGenerationRef.current
+          huboSesionRef.current = true
+          setAccessToken(session.access_token)
+          alSoltarElLock(() => checkMfaLevel(miGeneracion))
         }
       }
     )
@@ -1447,6 +1561,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    mfaEnrollRequired,
     needsOnboarding,
     perfilElegido,
     agency,

@@ -4066,7 +4066,7 @@ export interface paths {
         put?: never;
         /**
          * Propone (borrador) un acuerdo de pago reutilizando el motor de payment-plans
-         * @description Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer) — same per-stage ceilings + Math.min(tier, agencyMaxDiscountPct) clamp (triple-gate authority). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).
+         * @description Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer). The discount comes ONLY from an approved agency policy (acuerdo general, clamped by agencyMaxDiscountPct); without one there is no discount (rule of 2026-09-17). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).
          */
         post: operations["proposeCobranzaAgreement"];
         delete?: never;
@@ -4421,7 +4421,7 @@ export interface paths {
         put?: never;
         /**
          * Manually contact the codeudor / fiador (cobranza:approve — OWNER/ADMIN)
-         * @description Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by AgencyPolicy.contactCodeudorEnabled (default OFF ⇒ 200 with contacted=false, reason=codeudor_disabled). Reuses the existing Ley 2300 / Habeas Data / certified-fence guardrails via the channel senders. Never auto-contacts.
+         * @description Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by the agency's N days overdue (politica_de_cobranza.codeudor_avisos_desde_dias_mora; unset ⇒ 200 with contacted=false, reason=codeudor_sin_umbral; case below N ⇒ reason=mora_bajo_umbral). Ley 2300 frequency is counted for the codeudor as a PERSON (1 contact/day, one channel per ISO week), separate from the debtor. Reuses the Habeas Data / certified-fence guardrails. Never auto-contacts.
          */
         post: operations["postCobranzaCodeudorContactar"];
         delete?: never;
@@ -4439,7 +4439,7 @@ export interface paths {
         };
         /**
          * Read the cobranza autonomy level
-         * @description Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('automatico_completo' = current behavior) with isDefault=true. cobranza:view.
+         * @description Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('sugerir' since 2026-09-17: nothing auto-dispatches until an admin picks another level) with isDefault=true. cobranza:view.
          */
         get: operations["getCobranzaAutonomy"];
         /**
@@ -4524,6 +4524,70 @@ export interface paths {
          * @description Actualización parcial. La coherencia de los rangos se valida sobre el estado RESULTANTE, no sobre el parche: mover sólo el mínimo también puede invertir un rango. Requiere cobranza:configure.
          */
         patch: operations["updateCobranzaAcuerdoGeneral"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/politica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Umbrales de cobranza de la inmobiliaria (centrales y codeudor)
+         * @description Días de mora desde los que sale solo el aviso previo de centrales (Ley 1266) y desde los que el codeudor recibe los avisos de cobro. null = no se hace nada. Requiere cobranza:view.
+         */
+        get: operations["getCobranzaPoliticaPorInmobiliaria"];
+        /**
+         * Fijar los umbrales de cobranza de la inmobiliaria (OWNER/ADMIN)
+         * @description Actualiza uno o los dos umbrales (1 a 365 días de mora, o null para apagar). Deja rastro en audit_log. Requiere cobranza:configure. 503 si la migración de la tabla no está aplicada.
+         */
+        put: operations["putCobranzaPoliticaPorInmobiliaria"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/centrales/avisos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Avisos previos a centrales generados y SIN enviar
+         * @description Mientras un aviso esté acá, el reloj de 20 días de la Ley 1266 no corre y el reporte no se puede proponer. Requiere cobranza:view.
+         */
+        get: operations["listarAvisosPreviosSinEnviar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/centrales/avisos/{avisoId}/enviado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registrar que el aviso previo SALIÓ (arranca los 20 días de la Ley 1266)
+         * @description El micro no manda este aviso: lo manda una persona y acá registra el canal y la constancia. Sólo este registro arranca el reloj. Requiere cobranza:approve.
+         */
+        post: operations["registrarEnvioDelAvisoPrevio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/agency/{agencyId}/cartera/import": {
@@ -4637,6 +4701,66 @@ export interface paths {
          * @description Records a human's certify/reject decision for a mined lesson. Certifying passes the fail-closed fence (needs sufficient evidence + a recommendation); rejecting is always allowed. Only certified lessons are ever used by the chat. Requires OPERATOR+ (a decision/write) — VIEWER may list but not certify.
          */
         post: operations["postAiHubChatLessonCertify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirma y EJECUTA una acción que el chat propuso
+         * @description Ejecuta la propuesta guardada (recordatorio de pago, mensaje directo, PQRS o mantenimiento) con la inmobiliaria de la sesión. Idempotente por id: confirmar dos veces no manda dos veces. Vencida → 410. Cancelada o en vuelo → 409. Requiere OPERATOR+.
+         */
+        post: operations["postAiHubChatAccionConfirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Descarta una acción propuesta (no ejecuta nada)
+         * @description Marca la propuesta como cancelada. No ejecuta nada y deja el rastro de que el operador dijo que no.
+         */
+        post: operations["postAiHubChatAccionCancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat del panel — valorar una respuesta (pulgar arriba / abajo)
+         * @description Guarda la valoración de UNA respuesta del chat. Con pulgar abajo y un comentario, crea además una lección por inmobiliaria (pasando por una guarda de calidad que descarta lo que no es una regla). Con pulgar arriba, propone la pregunta para el banco de preguntas (no la agrega sola). Idempotente por turno. Cualquier miembro de la agencia.
+         */
+        post: operations["postAiHubChatFeedback"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4763,7 +4887,7 @@ export interface paths {
         put?: never;
         /**
          * Piloto — aprobar y liberar una acción retenida por autonomía
-         * @description Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos) o un cobro por WhatsApp/email. Idempotente: la segunda aprobación devuelve 409 y no emite nada.
+         * @description Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos), un cobro por WhatsApp/email o un reporte a centrales de riesgo (que sólo sale con esta aprobación). Idempotente: la segunda aprobación devuelve 409 y no emite nada.
          */
         post: operations["aprobarRetenidoPiloto"];
         delete?: never;
@@ -10731,7 +10855,7 @@ export interface components {
              * @enum {string|null}
              */
             channel: "sms" | "whatsapp" | null;
-            /** @description Block reason when contacted=false (codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted. */
+            /** @description Block reason when contacted=false (codeudor_sin_umbral | mora_bajo_umbral | sin_dato_de_mora | codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted. */
             reason: string | null;
         };
         CobranzaCodeudorError: {
@@ -10775,6 +10899,7 @@ export interface components {
             autonomyLevel: "sugerir" | "aprobar" | "automatico_controlado" | "automatico_completo";
             requiresHumanApproval: boolean;
             isDefault: boolean;
+            advertencia?: string | null;
         };
         CobranzaAutonomyError: {
             error: string;
@@ -10897,6 +11022,89 @@ export interface components {
             maxInstallments?: number;
             minInitialPct?: number;
         };
+        CobranzaEtapasDeCartera: {
+            s1: number;
+            s2: number;
+            s3: number;
+            s5: number;
+        };
+        CobranzaPoliticaPorInmobiliaria: {
+            /** Format: uuid */
+            agencyId: string;
+            centralesAvisoDesdeDiasMora: number | null;
+            codeudorAvisosDesdeDiasMora: number | null;
+            provisionada: boolean;
+            etapasDeCartera: components["schemas"]["CobranzaEtapasDeCartera"];
+            etapasPersonalizadas: boolean;
+            afiliadaDatacredito: boolean;
+            afiliadaTransunion: boolean;
+            sugerenciaDeCuotasPorEtapa: {
+                S0?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                S1?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                S2?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                S3?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                S4?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                S5?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+                SX?: {
+                    maxInstallments: number;
+                    minInitialPct: number;
+                    conditionEs: string;
+                };
+            };
+        };
+        CobranzaPoliticaPorInmobiliariaUpdate: {
+            centralesAvisoDesdeDiasMora?: number | null;
+            codeudorAvisosDesdeDiasMora?: number | null;
+            etapasDeCartera?: components["schemas"]["CobranzaEtapasDeCartera"] & (Record<string, never> | null);
+            afiliadaDatacredito?: boolean | null;
+            afiliadaTransunion?: boolean | null;
+        };
+        AvisoPrevioSinEnviar: {
+            avisoId: string;
+            debtorId: string;
+            generadoEn: string;
+            diasMora: number | null;
+            deudaCop: number | null;
+            legalArtifactId: string | null;
+        };
+        AvisosPreviosSinEnviar: {
+            avisos: components["schemas"]["AvisoPrevioSinEnviar"][];
+            total: number;
+        };
+        AvisoPrevioEnvioResultado: {
+            /** @enum {boolean} */
+            ok: true;
+            enviadoEn: string;
+        };
+        AvisoPrevioEnvio: {
+            /** @enum {string} */
+            canal: "correo_certificado" | "correo_fisico" | "email" | "whatsapp" | "entrega_personal" | "otro";
+            constancia: string;
+        };
         CarteraImportErrorEntry: {
             /** @description 0-based index of the failing row within the submitted batch. */
             rowIndex: number;
@@ -10987,7 +11195,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion";
             actionType: string;
             title: string;
             description: string;
@@ -11006,13 +11214,30 @@ export interface components {
         };
         AiHubChatDispatch: {
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
             summary: string;
             nextStep?: string;
             pendingApproval?: components["schemas"]["AiHubChatPendingApproval"];
+        };
+        AiHubChatAccionPropuesta: {
+            id: string;
+            accion: string;
+            titulo: string;
+            resumen: string;
+            canal: string | null;
+            destinatarios: {
+                nombre: string;
+                contacto: string;
+                detalle?: string;
+                excluidoPor?: string;
+            }[];
+            total: number;
+            texto: string | null;
+            estado: string;
+            venceEn: string;
         };
         AiHubChatSnapshot: {
             deudoresActivos: number;
@@ -11031,11 +11256,16 @@ export interface components {
             }[];
             dispatches: components["schemas"]["AiHubChatDispatch"][];
             pendingApprovals: components["schemas"]["AiHubChatPendingApproval"][];
+            accionesPropuestas: components["schemas"]["AiHubChatAccionPropuesta"][];
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             generatedAt: string;
         };
         AiHubChatError: {
             error: string;
+        };
+        AiHubChatErrorConCodigo: {
+            error: string;
+            code: string;
         };
         AiHubChatRequest: {
             message: string;
@@ -11060,10 +11290,10 @@ export interface components {
         AiHubChatLesson: {
             id: string;
             /** @enum {string} */
-            kind: "routing" | "approval";
+            kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -11101,6 +11331,47 @@ export interface components {
         AiHubChatLessonCertifyRequest: {
             /** @enum {string} */
             decision: "certified" | "rejected";
+        };
+        AiHubChatAccionResultado: {
+            enviados: number;
+            fallidos: {
+                nombre: string;
+                motivo: string;
+            }[];
+            resumen: string;
+        } | null;
+        AiHubChatAccionRespuesta: {
+            propuestaId: string;
+            /** @enum {string} */
+            estado: "ejecutada" | "fallida" | "cancelada";
+            yaEjecutada: boolean;
+            resultado: components["schemas"]["AiHubChatAccionResultado"];
+            resueltaEn: string;
+        };
+        AiHubChatAccionError: {
+            error: string;
+            estado?: string;
+        };
+        AiHubChatFeedbackResponse: {
+            guardado: boolean;
+            yaRegistrado: boolean;
+            leccionId: string | null;
+            motivo: string;
+            registradoEn: string;
+        };
+        AiHubChatFeedbackError: {
+            error: string;
+        };
+        AiHubChatFeedbackRequest: {
+            turnId: string;
+            pregunta: string;
+            respuesta: string;
+            /** @enum {string} */
+            veredicto: "up" | "down";
+            comentario?: string;
+            cifraMal?: boolean;
+            herramientas?: string[];
+            consulta?: string;
         };
         AgentOverviewResponse: {
             /** @enum {string} */
@@ -11260,7 +11531,7 @@ export interface components {
             /** @enum {boolean} */
             ok: true;
             /** @enum {string} */
-            emitido: "llamada" | "cobro" | "dispersion" | "nada";
+            emitido: "llamada" | "cobro" | "reporte" | "acuerdo-roto" | "nada";
         };
         AiHubGobiernoItem: {
             agente: string;
@@ -20975,6 +21246,268 @@ export interface operations {
             };
         };
     };
+    getCobranzaPoliticaPorInmobiliaria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Política vigente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPoliticaPorInmobiliaria"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putCobranzaPoliticaPorInmobiliaria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPoliticaPorInmobiliariaUpdate"];
+            };
+        };
+        responses: {
+            /** @description Política actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPoliticaPorInmobiliaria"];
+                };
+            };
+            /** @description Cuerpo malformado o umbral fuera de rango */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible o migración sin aplicar */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    listarAvisosPreviosSinEnviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Avisos sin enviar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisosPreviosSinEnviar"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    registrarEnvioDelAvisoPrevio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                avisoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoPrevioEnvio"];
+            };
+        };
+        responses: {
+            /** @description Envío registrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoPrevioEnvioResultado"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Ese aviso no existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Ese aviso ya estaba registrado como enviado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     importCartera: {
         parameters: {
             query?: never;
@@ -21126,6 +21659,15 @@ export interface operations {
                     "application/json": components["schemas"]["AiHubChatError"];
                 };
             };
+            /** @description La cuenta de IA se quedó sin créditos. Reintentar no lo arregla: hay que recargar (code: sin_creditos_ia). */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatErrorConCodigo"];
+                };
+            };
             /** @description agencyId mismatch (T-15-06) / not a member */
             403: {
                 headers: {
@@ -21263,6 +21805,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiHubChatLessonsError"];
+                };
+            };
+        };
+    };
+    postAiHubChatAccionConfirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                propuestaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ejecutada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionRespuesta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description Otra inmobiliaria o rol sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description No existe para esta inmobiliaria / este operador */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description Cancelada o con otra confirmación en vuelo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description Venció (10 minutos) */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+        };
+    };
+    postAiHubChatAccionCancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                propuestaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionRespuesta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description Otra inmobiliaria o rol sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+            /** @description No existe para esta inmobiliaria / este operador */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatAccionError"];
+                };
+            };
+        };
+    };
+    postAiHubChatFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Valoración registrada (con o sin lección) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatFeedbackResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatFeedbackError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatFeedbackError"];
+                };
+            };
+            /** @description Sin base de datos: la valoración no se pudo guardar */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatFeedbackError"];
                 };
             };
         };

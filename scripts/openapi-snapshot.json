@@ -9793,7 +9793,7 @@
               "string",
               "null"
             ],
-            "description": "Block reason when contacted=false (codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted."
+            "description": "Block reason when contacted=false (codeudor_sin_umbral | mora_bajo_umbral | sin_dato_de_mora | codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted."
           }
         },
         "required": [
@@ -9881,6 +9881,12 @@
           },
           "isDefault": {
             "type": "boolean"
+          },
+          "advertencia": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10413,6 +10419,392 @@
           }
         }
       },
+      "CobranzaEtapasDeCartera": {
+        "type": "object",
+        "properties": {
+          "s1": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s2": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s3": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s5": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          }
+        },
+        "required": [
+          "s1",
+          "s2",
+          "s3",
+          "s5"
+        ]
+      },
+      "CobranzaPoliticaPorInmobiliaria": {
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "centralesAvisoDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "codeudorAvisosDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "provisionada": {
+            "type": "boolean"
+          },
+          "etapasDeCartera": {
+            "$ref": "#/components/schemas/CobranzaEtapasDeCartera"
+          },
+          "etapasPersonalizadas": {
+            "type": "boolean"
+          },
+          "afiliadaDatacredito": {
+            "type": "boolean"
+          },
+          "afiliadaTransunion": {
+            "type": "boolean"
+          },
+          "sugerenciaDeCuotasPorEtapa": {
+            "type": "object",
+            "properties": {
+              "S0": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S1": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S2": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S3": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S4": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S5": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "SX": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "agencyId",
+          "centralesAvisoDesdeDiasMora",
+          "codeudorAvisosDesdeDiasMora",
+          "provisionada",
+          "etapasDeCartera",
+          "etapasPersonalizadas",
+          "afiliadaDatacredito",
+          "afiliadaTransunion",
+          "sugerenciaDeCuotasPorEtapa"
+        ]
+      },
+      "CobranzaPoliticaPorInmobiliariaUpdate": {
+        "type": "object",
+        "properties": {
+          "centralesAvisoDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 365
+          },
+          "codeudorAvisosDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 365
+          },
+          "etapasDeCartera": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CobranzaEtapasDeCartera"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "afiliadaDatacredito": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "afiliadaTransunion": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AvisoPrevioSinEnviar": {
+        "type": "object",
+        "properties": {
+          "avisoId": {
+            "type": "string"
+          },
+          "debtorId": {
+            "type": "string"
+          },
+          "generadoEn": {
+            "type": "string"
+          },
+          "diasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "deudaCop": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "legalArtifactId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "avisoId",
+          "debtorId",
+          "generadoEn",
+          "diasMora",
+          "deudaCop",
+          "legalArtifactId"
+        ]
+      },
+      "AvisosPreviosSinEnviar": {
+        "type": "object",
+        "properties": {
+          "avisos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvisoPrevioSinEnviar"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "avisos",
+          "total"
+        ]
+      },
+      "AvisoPrevioEnvioResultado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "enviadoEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "enviadoEn"
+        ]
+      },
+      "AvisoPrevioEnvio": {
+        "type": "object",
+        "properties": {
+          "canal": {
+            "type": "string",
+            "enum": [
+              "correo_certificado",
+              "correo_fisico",
+              "email",
+              "whatsapp",
+              "entrega_personal",
+              "otro"
+            ]
+          },
+          "constancia": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "canal",
+          "constancia"
+        ],
+        "additionalProperties": false
+      },
       "CarteraImportErrorEntry": {
         "type": "object",
         "properties": {
@@ -10754,7 +11146,10 @@
               "matching",
               "avaluo",
               "conciliacion",
-              "pagos"
+              "pagos",
+              "documentos",
+              "reportes",
+              "comunicacion"
             ]
           },
           "actionType": {
@@ -10833,7 +11228,10 @@
               "matching",
               "avaluo",
               "conciliacion",
-              "pagos"
+              "pagos",
+              "documentos",
+              "reportes",
+              "comunicacion"
             ]
           },
           "taskDescription": {
@@ -10861,6 +11259,81 @@
           "taskDescription",
           "status",
           "summary"
+        ]
+      },
+      "AiHubChatAccionPropuesta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "canal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destinatarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "contacto": {
+                  "type": "string"
+                },
+                "detalle": {
+                  "type": "string"
+                },
+                "excluidoPor": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nombre",
+                "contacto"
+              ]
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "texto": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estado": {
+            "type": "string"
+          },
+          "venceEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "accion",
+          "titulo",
+          "resumen",
+          "canal",
+          "destinatarios",
+          "total",
+          "texto",
+          "estado",
+          "venceEn"
         ]
       },
       "AiHubChatSnapshot": {
@@ -10948,6 +11421,12 @@
               "$ref": "#/components/schemas/AiHubChatPendingApproval"
             }
           },
+          "accionesPropuestas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatAccionPropuesta"
+            }
+          },
           "snapshot": {
             "$ref": "#/components/schemas/AiHubChatSnapshot"
           },
@@ -10960,6 +11439,7 @@
           "suggestedActions",
           "dispatches",
           "pendingApprovals",
+          "accionesPropuestas",
           "snapshot",
           "generatedAt"
         ]
@@ -10973,6 +11453,21 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "AiHubChatErrorConCodigo": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "code"
         ]
       },
       "AiHubChatRequest": {
@@ -11069,7 +11564,8 @@
             "type": "string",
             "enum": [
               "routing",
-              "approval"
+              "approval",
+              "feedback"
             ]
           },
           "pattern": {
@@ -11087,7 +11583,10 @@
                   "matching",
                   "avaluo",
                   "conciliacion",
-                  "pagos"
+                  "pagos",
+                  "documentos",
+                  "reportes",
+                  "comunicacion"
                 ]
               },
               "tags": {
@@ -11246,6 +11745,183 @@
         },
         "required": [
           "decision"
+        ]
+      },
+      "AiHubChatAccionResultado": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "enviados": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fallidos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nombre",
+                "motivo"
+              ]
+            }
+          },
+          "resumen": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enviados",
+          "fallidos",
+          "resumen"
+        ]
+      },
+      "AiHubChatAccionRespuesta": {
+        "type": "object",
+        "properties": {
+          "propuestaId": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ejecutada",
+              "fallida",
+              "cancelada"
+            ]
+          },
+          "yaEjecutada": {
+            "type": "boolean"
+          },
+          "resultado": {
+            "$ref": "#/components/schemas/AiHubChatAccionResultado"
+          },
+          "resueltaEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "propuestaId",
+          "estado",
+          "yaEjecutada",
+          "resultado",
+          "resueltaEn"
+        ]
+      },
+      "AiHubChatAccionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatFeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "guardado": {
+            "type": "boolean"
+          },
+          "yaRegistrado": {
+            "type": "boolean"
+          },
+          "leccionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "registradoEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "guardado",
+          "yaRegistrado",
+          "leccionId",
+          "motivo",
+          "registradoEn"
+        ]
+      },
+      "AiHubChatFeedbackError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "turnId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "pregunta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "respuesta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "veredicto": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "comentario": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cifraMal": {
+            "type": "boolean"
+          },
+          "herramientas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "maxItems": 12
+          },
+          "consulta": {
+            "type": "string",
+            "maxLength": 8000
+          }
+        },
+        "required": [
+          "turnId",
+          "pregunta",
+          "respuesta",
+          "veredicto"
         ]
       },
       "AgentOverviewResponse": {
@@ -11930,7 +12606,8 @@
             "enum": [
               "llamada",
               "cobro",
-              "dispersion",
+              "reporte",
+              "acuerdo-roto",
               "nada"
             ]
           }
@@ -35436,7 +36113,7 @@
       "post": {
         "operationId": "proposeCobranzaAgreement",
         "summary": "Propone (borrador) un acuerdo de pago reutilizando el motor de payment-plans",
-        "description": "Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer) — same per-stage ceilings + Math.min(tier, agencyMaxDiscountPct) clamp (triple-gate authority). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).",
+        "description": "Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer). The discount comes ONLY from an approved agency policy (acuerdo general, clamped by agencyMaxDiscountPct); without one there is no discount (rule of 2026-09-17). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).",
         "tags": [
           "agency",
           "cobranza",
@@ -37368,7 +38045,7 @@
       "post": {
         "operationId": "postCobranzaCodeudorContactar",
         "summary": "Manually contact the codeudor / fiador (cobranza:approve — OWNER/ADMIN)",
-        "description": "Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by AgencyPolicy.contactCodeudorEnabled (default OFF ⇒ 200 with contacted=false, reason=codeudor_disabled). Reuses the existing Ley 2300 / Habeas Data / certified-fence guardrails via the channel senders. Never auto-contacts.",
+        "description": "Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by the agency's N days overdue (politica_de_cobranza.codeudor_avisos_desde_dias_mora; unset ⇒ 200 with contacted=false, reason=codeudor_sin_umbral; case below N ⇒ reason=mora_bajo_umbral). Ley 2300 frequency is counted for the codeudor as a PERSON (1 contact/day, one channel per ISO week), separate from the debtor. Reuses the Habeas Data / certified-fence guardrails. Never auto-contacts.",
         "tags": [
           "agency",
           "cobranza"
@@ -37468,7 +38145,7 @@
       "get": {
         "operationId": "getCobranzaAutonomy",
         "summary": "Read the cobranza autonomy level",
-        "description": "Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('automatico_completo' = current behavior) with isDefault=true. cobranza:view.",
+        "description": "Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('sugerir' since 2026-09-17: nothing auto-dispatches until an admin picks another level) with isDefault=true. cobranza:view.",
         "tags": [
           "agency",
           "cobranza"
@@ -38300,6 +38977,463 @@
         }
       }
     },
+    "/api/agency/{agencyId}/cobranza/politica": {
+      "get": {
+        "operationId": "getCobranzaPoliticaPorInmobiliaria",
+        "summary": "Umbrales de cobranza de la inmobiliaria (centrales y codeudor)",
+        "description": "Días de mora desde los que sale solo el aviso previo de centrales (Ley 1266) y desde los que el codeudor recibe los avisos de cobro. null = no se hace nada. Requiere cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Política vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliaria"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putCobranzaPoliticaPorInmobiliaria",
+        "summary": "Fijar los umbrales de cobranza de la inmobiliaria (OWNER/ADMIN)",
+        "description": "Actualiza uno o los dos umbrales (1 a 365 días de mora, o null para apagar). Deja rastro en audit_log. Requiere cobranza:configure. 503 si la migración de la tabla no está aplicada.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliariaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Política actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliaria"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado o umbral fuera de rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible o migración sin aplicar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/centrales/avisos": {
+      "get": {
+        "operationId": "listarAvisosPreviosSinEnviar",
+        "summary": "Avisos previos a centrales generados y SIN enviar",
+        "description": "Mientras un aviso esté acá, el reloj de 20 días de la Ley 1266 no corre y el reporte no se puede proponer. Requiere cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avisos sin enviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvisosPreviosSinEnviar"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/centrales/avisos/{avisoId}/enviado": {
+      "post": {
+        "operationId": "registrarEnvioDelAvisoPrevio",
+        "summary": "Registrar que el aviso previo SALIÓ (arranca los 20 días de la Ley 1266)",
+        "description": "El micro no manda este aviso: lo manda una persona y acá registra el canal y la constancia. Sólo este registro arranca el reloj. Requiere cobranza:approve.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "avisoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvisoPrevioEnvio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envío registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvisoPrevioEnvioResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese aviso no existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ese aviso ya estaba registrado como enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/cartera/import": {
       "post": {
         "operationId": "importCartera",
@@ -38544,6 +39678,16 @@
               }
             }
           },
+          "402": {
+            "description": "La cuenta de IA se quedó sin créditos. Reintentar no lo arregla: hay que recargar (code: sin_creditos_ia).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatErrorConCodigo"
+                }
+              }
+            }
+          },
           "403": {
             "description": "agencyId mismatch (T-15-06) / not a member",
             "content": {
@@ -38770,6 +39914,265 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiHubChatLessonsError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/confirmar": {
+      "post": {
+        "operationId": "postAiHubChatAccionConfirmar",
+        "summary": "Confirma y EJECUTA una acción que el chat propuso",
+        "description": "Ejecuta la propuesta guardada (recordatorio de pago, mensaje directo, PQRS o mantenimiento) con la inmobiliaria de la sesión. Idempotente por id: confirmar dos veces no manda dos veces. Vencida → 410. Cancelada o en vuelo → 409. Requiere OPERATOR+.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "propuestaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejecutada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria o rol sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe para esta inmobiliaria / este operador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cancelada o con otra confirmación en vuelo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Venció (10 minutos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/cancelar": {
+      "post": {
+        "operationId": "postAiHubChatAccionCancelar",
+        "summary": "Descarta una acción propuesta (no ejecuta nada)",
+        "description": "Marca la propuesta como cancelada. No ejecuta nada y deja el rastro de que el operador dijo que no.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "propuestaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria o rol sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe para esta inmobiliaria / este operador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/feedback": {
+      "post": {
+        "operationId": "postAiHubChatFeedback",
+        "summary": "Chat del panel — valorar una respuesta (pulgar arriba / abajo)",
+        "description": "Guarda la valoración de UNA respuesta del chat. Con pulgar abajo y un comentario, crea además una lección por inmobiliaria (pasando por una guarda de calidad que descarta lo que no es una regla). Con pulgar arriba, propone la pregunta para el banco de preguntas (no la agrega sola). Idempotente por turno. Cualquier miembro de la agencia.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubChatFeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valoración registrada (con o sin lección)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId distinto al del token / no es miembro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base de datos: la valoración no se pudo guardar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
                 }
               }
             }
@@ -39554,7 +40957,7 @@
       "post": {
         "operationId": "aprobarRetenidoPiloto",
         "summary": "Piloto — aprobar y liberar una acción retenida por autonomía",
-        "description": "Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos) o un cobro por WhatsApp/email. Idempotente: la segunda aprobación devuelve 409 y no emite nada.",
+        "description": "Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos), un cobro por WhatsApp/email o un reporte a centrales de riesgo (que sólo sale con esta aprobación). Idempotente: la segunda aprobación devuelve 409 y no emite nada.",
         "tags": [
           "agency",
           "ai-hub",

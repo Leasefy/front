@@ -114,11 +114,52 @@ describe('adaptarDispersion', () => {
       expect(d.totalDeTerceros).toBe(0)
     })
 
+    it('🔴 la base del canon: la del back, o deducida — nunca «recaudado» por defecto', () => {
+      // Lo que manda `GET /inmobiliaria/dispersiones` desde el 16-09.
+      expect(adaptarDispersion({ ...DEL_BACK, baseDelCanon: 'CAUSADO' }).baseDelCanon).toBe('CAUSADO')
+      // Aprobar y girar no la mandan: la columna cruda, si viene.
+      expect(adaptarDispersion({ ...DEL_BACK, baseDeCalculo: 'CAUSADO' }).baseDelCanon).toBe('CAUSADO')
+      // Una de las cuotas, sin nada escrito: CAUSADO.
+      const deCuotas = {
+        ...DEL_BACK,
+        items: DEL_BACK.items!.map((i) => ({ ...i, cobroId: null, cuotaId: 'cuota-1' })),
+      }
+      expect(adaptarDispersion(deCuotas).baseDelCanon).toBe('CAUSADO')
+      // La vieja por cobros, sin nada escrito: RECAUDADO, que ahí es verdad.
+      expect(adaptarDispersion(DEL_BACK).baseDelCanon).toBe('RECAUDADO')
+    })
+
     it('sin items no explota', () => {
       const sinItems = { ...DEL_BACK }
       delete sinItems.items
 
       expect(adaptarDispersion(sinItems).items).toEqual([])
     })
+  })
+})
+
+describe('las deducciones de la liquidación', () => {
+  const BLOQUE = {
+    netoDelMesCop: 900_000,
+    deducciones: [],
+    deduccionesCop: 1_100_000,
+    saldoAnteriorCop: 0,
+    netoCop: -200_000,
+    aGirarCop: 0,
+    saldoEnContraCop: 200_000,
+    compensadoCop: 900_000,
+    renglones: [],
+  }
+
+  it('pasan tal cual: el neto a girar y el saldo en contra los calcula el back', () => {
+    const d = adaptarDispersion({ ...DEL_BACK, netToPropietario: -200_000, conDeducciones: BLOQUE })
+    expect(d.conDeducciones).toEqual(BLOQUE)
+    // El guardado se conserva: la pantalla lee `conDeducciones.aGirarCop`, no lo recalcula.
+    expect(d.netToPropietario).toBe(-200_000)
+  })
+
+  it('un back anterior sin el bloque no inventa uno', () => {
+    expect(adaptarDispersion(DEL_BACK).conDeducciones).toBeUndefined()
+    expect(adaptarDispersion({ ...DEL_BACK, conDeducciones: null }).conDeducciones).toBeUndefined()
   })
 })

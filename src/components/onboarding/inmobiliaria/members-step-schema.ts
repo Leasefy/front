@@ -34,7 +34,7 @@ import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency
 export type MemberRole = 'AGENTE' | 'CONTADOR' | 'ADMIN' | 'VIEWER'
 
 export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
-  { value: 'AGENTE', label: 'Agente' },
+  { value: 'AGENTE', label: 'Asesor comercial' },
   { value: 'CONTADOR', label: 'Contador' },
   { value: 'ADMIN', label: 'Administrador' },
   { value: 'VIEWER', label: 'Solo lectura' },

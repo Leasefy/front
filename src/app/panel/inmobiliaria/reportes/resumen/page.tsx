@@ -35,6 +35,7 @@ import {
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
 import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 
@@ -146,17 +147,32 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
 
 /**
  * Secondary stat — neutral tile, Satoshi number, mono label (no rainbow).
+ * `detalle` es una línea opcional debajo del rótulo: para decir qué cuenta el
+ * número cuando el rótulo solo no alcanza.
  */
-function SecondaryStat({ icon: Icon, value, label }: { icon: React.ElementType; value: string | number; label: string }) {
+function SecondaryStat({
+  icon: Icon,
+  value,
+  label,
+  detalle,
+  testId,
+}: {
+  icon: React.ElementType;
+  value: string | number;
+  label: string;
+  detalle?: string;
+  testId?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4" data-testid={testId}>
       <div className="flex items-center gap-3">
         <div className="rounded-md p-2 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none">{value}</p>
           <MonoLabel className="mt-1 block">{label}</MonoLabel>
+          {detalle && <p className="mt-1 text-xs text-fg-muted">{detalle}</p>}
         </div>
       </div>
     </div>
@@ -226,7 +242,13 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
 /**
  * Agent Mini Card
  */
-function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: Record<string, string | number>) => string }) {
+function AgentMiniCard({
+  agent,
+  t,
+}: {
+  agent: Agente;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-xs font-semibold">
@@ -240,8 +262,15 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
           {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
-      <span className="font-heading text-sm font-semibold text-fg tabular-nums">
-        {formatCurrency(agent.metrics.commissionsThisMonth)}
+      {/* 🔴 17-09: acá iba la comisión del asesor. Se paga por fuera de
+          Leasefy y ningún inmueble tenía asesor asignado, así que era un «$0»
+          que se leía como un mal mes. Ahora: los inmuebles que tiene a cargo. */}
+      <span
+        className="font-heading text-sm font-semibold text-fg tabular-nums"
+        data-testid="agente-inmuebles"
+        title="Inmuebles a cargo"
+      >
+        {agent.metrics.assignedProperties}
       </span>
     </div>
   );
@@ -308,13 +337,16 @@ function ResumenDelNegocio() {
   };
 
   /*
-   * El back manda `collectionRate` y `occupancyRate` ya en 0 cuando no hay
-   * denominador (su `expectedRevenue > 0 ? … : 0`), así que el número solo no
-   * alcanza para saber si se midió algo. El denominador SÍ viaja en el mismo
-   * payload: con él acá se rehace la cuenta y el «no se midió» queda en null.
-   * Sin esto, una inmobiliaria sin un inmueble leía «0.0% de ocupación».
+   * 🔴 La tasa de recaudo la mide el BACK, como la eligió la inmobiliaria
+   * (sobre lo causado por defecto, o sobre lo emitido), y viaja con su
+   * fórmula y `pct: null` cuando no hubo contra qué medir. Acá se rehacía
+   * `collectedRevenue / expectedRevenue` y Cobros emitidos dividía otra cosa:
+   * 2,2 % y 43,6 % para la misma agencia, con el mismo nombre. Ahora el número
+   * se pinta con su rótulo, y la pantalla no divide nada.
    */
-  const tasaDeRecaudo = tasaMedida(kpis.collectedRevenue, kpis.expectedRevenue);
+  const tasa = tasaDelTablero(kpis);
+  const tasaDeRecaudo = tasa.pct;
+  const rotuloDeLaTasa = t(claveDelRotulo(tasa.base));
   /*
    * 🔴 La ocupación se mide contra el CATÁLOGO, no contra todo el portafolio
    * (Nico, 2026-09-12: «esa tasa de ocupación se debe medir contra el inmueble
@@ -372,6 +404,11 @@ function ResumenDelNegocio() {
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
   const cobrosEnMora = pendingCobros.filter((c) => c.status === 'late');
+  // La deuda del contrato, cuando el back la manda (ver la alerta de cartera).
+  const carteraDelMes = kpisData?.deuda?.delMes;
+  // Toda la deuda viva: el número de cuotas de la pantalla de Cartera.
+  const deudaTotal = kpisData?.deuda?.total;
+  const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
 
   // First load: distinguish "loading" from "empty agency" so the panel never
   // renders silent zeros while the KPIs are still in flight.
@@ -421,6 +458,7 @@ function ResumenDelNegocio() {
           value={formatCurrency(kpis.collectedRevenue)}
           subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
             rate: textoDeTasa(tasaDeRecaudo),
+            rotulo: rotuloDeLaTasa,
           })}
           trend={
             hayConQueComparar(kpis.collectedRevenue, kpis.collectionTrend)
@@ -428,7 +466,7 @@ function ResumenDelNegocio() {
               : undefined
           }
           icon={CurrencyDollar}
-          href="/panel/inmobiliaria/cobros"
+          href="/panel/inmobiliaria/pagos/cartera/cobros"
           brandHero
         />
         <KPICard
@@ -477,7 +515,25 @@ function ResumenDelNegocio() {
         <SecondaryStat icon={Kanban} value={kpis.activeLeads} label={t('inmobiliaria.dashboard.kpi.activeLeads')} />
         <SecondaryStat icon={Clock} value={kpis.scheduledVisits} label={t('inmobiliaria.dashboard.kpi.scheduledVisits')} />
         <SecondaryStat icon={FileText} value={kpis.contractsInProgress} label={t('inmobiliaria.dashboard.kpi.contractsInProgress')} />
-        <SecondaryStat icon={Warning} value={pendingCobros.length} label={t('inmobiliaria.dashboard.kpi.pendingCollections')} />
+        {/*
+          🔴 Decía «34 cobros pendientes»: los cobros que alguien alcanzó a
+          emitir. Lo pendiente sale de las CUOTAS del contrato, y el número es
+          el de Cartera —todas las cuotas con saldo, venzan cuando venzan
+          (`deuda.total.cuotas`, mismo criterio que el informe de cartera)—,
+          con cuántas ya son cartera. Un back que no manda `deuda` no tiene ese
+          número: se dice, en vez de contar cobros con el rótulo de cuotas.
+        */}
+        <SecondaryStat
+          icon={Warning}
+          value={deudaTotal ? miles(deudaTotal.cuotas) : SIN_MEDIR}
+          label={t('inmobiliaria.dashboard.kpi.cuotasPendientes')}
+          detalle={
+            deudaTotal
+              ? t('inmobiliaria.dashboard.kpi.cuotasPendientesDetalle', { enCartera: miles(deudaTotal.cuotasEnCartera) })
+              : t('inmobiliaria.dashboard.kpi.cuotasPendientesSinDato')
+          }
+          testId="resumen-cuotas-pendientes"
+        />
       </div>
 
       {/* Main Content Grid */}
@@ -589,7 +645,7 @@ function ResumenDelNegocio() {
           <QuickAction
             title={t('recibos.hacer')}
             description={t('recibos.queEs')}
-            href="/panel/inmobiliaria/cobros?status=pending"
+            href="/panel/inmobiliaria/pagos/cartera/cobros?status=pending"
             icon={CurrencyDollar}
           />
           <QuickAction
@@ -601,20 +657,53 @@ function ResumenDelNegocio() {
         </div>
       </div>
 
-      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón. */}
-      {cobrosEnMora.length > 0 && (
+      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón.
+
+          🔴 La cartera sale de las CUOTAS del contrato, no de los cobros. Visto
+          en vivo el 16-09 en la agencia de QA: la alerta decía «5 cobros en mora
+          por $11.705.223» con 97 cuotas del mes en cartera por $321.945.650 —el
+          número estaba en `kpis.deuda` y nadie lo leía—. Los cobros quedan sólo
+          para un back que todavía no manda `deuda`. */}
+      {carteraDelMes ? (
+        carteraDelMes.cuotasEnCartera > 0 && (
+          <AlertaAccionable
+            severidad="warning"
+            titulo={t('inmobiliaria.dashboard.alerts.carteraDelMes', {
+              count: carteraDelMes.cuotasEnCartera,
+              amount: formatCurrency(carteraDelMes.carteraCop),
+            })}
+            accion={{ label: t('inmobiliaria.dashboard.alerts.verCartera'), href: '/panel/inmobiliaria/pagos/cartera' }}
+            data-testid="alerta-cartera-del-mes"
+          >
+            {t('inmobiliaria.dashboard.alerts.carteraDelMesDetalle')}
+          </AlertaAccionable>
+        )
+      ) : cobrosEnMora.length > 0 && (
         <AlertaAccionable
           severidad="warning"
           titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
             count: cobrosEnMora.length,
             amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
           })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/cobros?status=late' }}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/pagos/cartera/cobros?status=late' }}
           data-testid="alerta-cobros-en-mora"
         >
           {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
         </AlertaAccionable>
       )}
+      {/* Lo que el back vio raro en la plata y ya viene dicho en palabras. El
+          caso que lo pidió: «Recaudo del mes $0» con $8.200.000 en recibos de
+          caja que no bajaron ninguna cuota; sin el aviso el cero era
+          inexplicable. */}
+      {avisosDeLaDeuda.map((aviso) => (
+        <AlertaAccionable
+          key={aviso}
+          severidad="info"
+          titulo={aviso}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.verRecaudo'), href: '/panel/inmobiliaria/pagos/recaudo' }}
+          data-testid="aviso-de-la-deuda"
+        />
+      ))}
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"
@@ -678,7 +767,9 @@ function ResumenDelNegocio() {
         {/* Collection Rate Progress */}
         <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
-            <MonoLabel>{t('inmobiliaria.dashboard.financial.collectionRate')}</MonoLabel>
+            {/* Con qué fórmula se midió: «Recaudo sobre lo causado» y «Pagado de lo
+                emitido» son dos números distintos. */}
+            <MonoLabel data-testid="resumen-rotulo-de-la-tasa">{rotuloDeLaTasa}</MonoLabel>
             <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
               {textoDeTasa(tasaDeRecaudo)}
             </span>
@@ -690,6 +781,9 @@ function ResumenDelNegocio() {
               style={{ width: anchoDeBarra(tasaDeRecaudo) }}
             />
           </div>
+          <p className="mt-2 text-xs text-fg-muted tabular-nums" data-testid="resumen-cifras-de-la-tasa">
+            {fraseDeLasCifras(tasa, t, formatCurrency)}
+          </p>
         </div>
       </div>
     </div>

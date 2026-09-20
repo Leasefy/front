@@ -5,16 +5,21 @@ import {
   Handshake,
   CheckCircle,
   Calendar,
-  CurrencyDollar,
-  Wallet,
   Clock,
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteMetrics as AgenteMetricsType } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeTasa } from '@/lib/tasas';
 
+/**
+ * 🔴 17-09: acá vivían «Comisiones del mes» y «Comisiones totales», y con
+ * ellas todo un aparato para explicar por qué salían en $0 (ningún inmueble
+ * tenía asesor asignado). La comisión de los asesores se paga por fuera de
+ * Leasefy: la pantalla ya no le atribuye un peso a nadie. Lo que sí se mide
+ * —quién captó y quién arrendó— vive en «Captaciones y arriendos».
+ */
 interface AgenteMetricsProps {
   metrics: AgenteMetricsType;
   className?: string;
@@ -23,12 +28,14 @@ interface AgenteMetricsProps {
 interface MetricCardProps {
   label: string;
   value: string | number;
+  /** Por qué el valor no es un dato: se lee al pasar el cursor y por lector de pantalla. */
+  motivo?: string | null;
   icon: React.ReactNode;
   iconBg: string;
   performance?: 'above' | 'average' | 'below';
 }
 
-function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps) {
+function MetricCard({ label, value, motivo, icon, iconBg, performance }: MetricCardProps) {
   // Determine card background based on performance
   const cardBg = performance === 'above'
     ? 'bg-success-soft border-success/30'
@@ -48,7 +55,14 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
           <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1 truncate">
             {label}
           </p>
-          <p className="text-xl font-bold text-fg dark:text-white truncate">
+          <p
+            className={cn(
+              'text-xl font-bold truncate',
+              motivo ? 'text-fg-subtle' : 'text-fg dark:text-white',
+            )}
+            title={motivo ?? undefined}
+            aria-label={motivo ? `${label}: sin dato. ${motivo}` : undefined}
+          >
             {value}
           </p>
         </div>
@@ -74,9 +88,11 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
   // Determine performance levels
   // Above average: conversionRate > 60%, avgDaysToClose < 25
   // Below average: conversionRate < 30%
-  const conversionPerformance = metrics.conversionRate >= 0.6
+  // `conversionRate` ya es un porcentaje (0–100): compararlo con 0.6 dejaba a
+  // todo el que tuviera un solo cierre «por encima del promedio».
+  const conversionPerformance = metrics.conversionRate >= 60
     ? 'above'
-    : metrics.conversionRate < 0.3
+    : metrics.conversionRate < 30
     ? 'below'
     : 'average';
 
@@ -127,19 +143,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
           iconBg="bg-surface-muted dark:bg-ink"
         />
 
-        {/* Row 2: Financial and Efficiency */}
-        <MetricCard
-          label={t('inmobiliaria.agente.commissionsMonth')}
-          value={formatCurrency(metrics.commissionsThisMonth)}
-          icon={<CurrencyDollar className="w-5 h-5 text-warning" />}
-          iconBg="bg-warning-soft"
-        />
-        <MetricCard
-          label={t('inmobiliaria.agente.totalCommissions')}
-          value={formatCurrency(metrics.totalCommissions)}
-          icon={<Wallet className="w-5 h-5 text-warning" />}
-          iconBg="bg-warning-soft"
-        />
+        {/* Row 2: Efficiency */}
         <MetricCard
           label={t('inmobiliaria.agente.avgDaysToClose')}
           value={metrics.avgDaysToClose > 0 ? `${metrics.avgDaysToClose} ${t('inmobiliaria.agente.daysUnit')}` : 'N/A'}
@@ -149,7 +153,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
         />
         <MetricCard
           label={t('inmobiliaria.agente.conversionRate')}
-          value={`${Math.round(metrics.conversionRate * 100)}%`}
+          value={textoDeTasa(metrics.conversionRate, 0)}
           icon={<ChartLineUp className="w-5 h-5 text-danger" />}
           iconBg="bg-danger-soft"
           performance={conversionPerformance}

@@ -271,7 +271,7 @@ export function FilaDeRevision({
         >
           Este contrato ya está activo y no tiene propietario: no genera cobros
           hasta que el inmueble quede consignado. Elígelo acá, o selecciona
-          varias filas y usá «Mismo propietario».
+          varias filas y usa «Mismo propietario».
         </p>
       ) : null}
 

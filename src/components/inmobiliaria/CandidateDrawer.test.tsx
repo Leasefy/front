@@ -74,6 +74,18 @@ describe('<PreScoringStudyPanel>', () => {
     expect(panel?.textContent).toContain('No viable');
   });
 
+  it('D13: el tope asegurable se muestra como dato informativo, no como bloqueo', () => {
+    render({
+      status: 'COMPLETED',
+      completedAt: null,
+      maxAsegurableCop: 2_000_000,
+      carriers: [],
+    });
+    const nota = container.querySelector('[data-testid="prescoring-tope-informativo"]');
+    expect(nota?.textContent).toContain('Dato informativo');
+    expect(nota?.textContent).toContain('la inmobiliaria decide');
+  });
+
   it('renders the ceiling alone, without the "no study" empty state, when carriers is empty', () => {
     render({
       status: 'COMPLETED',

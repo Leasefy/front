@@ -37,7 +37,6 @@ import {
   rutaDeExport,
   descargarBlob,
 } from '@/lib/reportes/exportables';
-import { zonasDelReporte } from '@/lib/reportes/zonas';
 import {
   useCarteraReport,
   useOcupacionReport,
@@ -111,15 +110,23 @@ function loadFavorites(): Set<ReportId> {
 }
 
 /**
- * Save favorites to localStorage
+ * Guarda los favoritos. Devuelve si de verdad quedaron guardados.
+ *
+ * 🔴 RP3 (auditoría 13-09): esto tragaba el error con un `catch {}` y la
+ * pantalla igual decía «Agregado a favoritos». `localStorage` falla de verdad
+ * —modo privado de Safari, cuota llena, el usuario bloqueó el almacenamiento—,
+ * y entonces la marca desaparece al recargar sin que nadie haya avisado.
+ * Afirmar que algo se guardó cuando no se guardó es de las mentiras más caras
+ * que puede decir una pantalla, porque no se descubre hasta después.
  */
-function saveFavorites(favorites: Set<ReportId>): void {
-  if (typeof window === 'undefined') return;
+function saveFavorites(favorites: Set<ReportId>): boolean {
+  if (typeof window === 'undefined') return false;
 
   try {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favorites]));
+    return true;
   } catch {
-    // Ignore errors
+    return false;
   }
 }
 
@@ -285,32 +292,20 @@ function ReportesContent() {
     };
   }, [reports, filters.favoritesOnly, favorites]);
 
-  /**
-   * Las zonas del desplegable, que ahora salen de un reporte de verdad.
+  /*
+   * 🔴 El filtro de zona se RETIRÓ (RP2 de la auditoría del 13-09).
    *
-   * Acá había seis nombres escritos a mano —«Zona Norte», «Chapinero»,
-   * «Usaquen», «El Poblado», «Zona Centro», «Suba»— con el comentario «from
-   * mock data» al lado. En una pantalla de REPORTES, que es donde un dato se
-   * convierte en una decisión: la lista mezclaba barrios de Bogotá con uno de
-   * Medellín y no tenía nada que ver con la agencia que estuviera mirando.
-   * Una agencia de Cali abría su filtro de zonas y veía Chapinero.
+   * `filters.zone` se guardaba y NUNCA se aplicaba: `filteredReports` filtra
+   * por categoría, favoritos y búsqueda, y ningún endpoint de reportes acepta
+   * una zona. Elegir una zona no cambiaba un solo número. En una pantalla de
+   * REPORTES —donde el dato se convierte en decisión— un control así es peor
+   * que no tenerlo: hace creer que lo que se está mirando es de esa zona.
    *
-   * La fuente real es el reporte de ocupación, que el back agrupa por zona
-   * (`OcupacionReport.zones[].zone`) y esta misma página ya carga. Si todavía
-   * no llegó, o la agencia no tiene inmuebles agrupados, la lista queda vacía
-   * y el desplegable no se ofrece: mejor un control menos que seis zonas que
-   * no son suyas.
-   *
-   * ⚠️ Ojo con lo que este filtro NO hace: `filters.zone` se guarda pero
-   * `filteredReports` nunca lo aplica —filtra por categoría, favoritos y
-   * búsqueda—, y ningún endpoint de reportes acepta una zona como parámetro.
-   * Elegir una zona hoy no cambia nada. Eso es un hueco funcional aparte, y
-   * está reportado; acá sólo se arregla que los nombres sean reales.
+   * Lo que se conserva es cómo leer las zonas de verdad
+   * (`lib/reportes/zonas.ts`, con su prueba): el día que el back sepa filtrar
+   * por zona, el desplegable vuelve con esa fuente y no con seis nombres
+   * escritos a mano, que es como estaba antes.
    */
-  const zones = useMemo(
-    () => zonasDelReporte(ocupacionReport.report),
-    [ocupacionReport.report],
-  );
 
   // Quick stats
   const stats = useMemo(() => {
@@ -341,18 +336,15 @@ function ReportesContent() {
 
   // Handle toggle favorite
   const handleToggleFavorite = useCallback((reportId: ReportId) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(reportId)) {
-        next.delete(reportId);
-      } else {
-        next.add(reportId);
-      }
+    const wasFavorite = favorites.has(reportId);
+    const next = new Set(favorites);
+    if (wasFavorite) next.delete(reportId);
+    else next.add(reportId);
 
-      saveFavorites(next);
-      return next;
-    });
+    // Se guarda PRIMERO y se anuncia lo que de verdad pasó (RP3).
+    const guardado = saveFavorites(next);
 
+    setFavorites(next);
     setReports((prev) =>
       prev.map((r) =>
         r.id === reportId ? { ...r, isFavorite: !r.isFavorite } : r
@@ -360,7 +352,14 @@ function ReportesContent() {
     );
 
     const report = reports.find((r) => r.id === reportId);
-    const wasFavorite = favorites.has(reportId);
+
+    if (!guardado) {
+      toast.warning('El cambio vale para esta sesión, pero no se pudo guardar', {
+        description:
+          'Tu navegador no dejó escribir el almacenamiento local (suele pasar en modo privado). Al recargar, tus favoritos vuelven a como estaban.',
+      });
+      return;
+    }
 
     toast.success(wasFavorite ? t('inmobiliaria.reportes.toasts.removedFromFavorites') : t('inmobiliaria.reportes.toasts.addedToFavorites'), {
       description: report?.title,
@@ -641,7 +640,6 @@ function ReportesContent() {
             filters={filters}
             onFiltersChange={handleFilterChange}
             reportCounts={reportCounts}
-            zones={zones}
             minimal
           />
         </div>

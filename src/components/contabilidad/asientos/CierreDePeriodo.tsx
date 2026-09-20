@@ -1,12 +1,21 @@
 'use client';
 
 /**
- * El cierre de período.
+ * El cierre de período, y debajo su reverso.
  *
  * Cerrar hasta una fecha bloquea todo asiento con fecha igual o anterior: no
- * entra ninguno nuevo, y las reversas van con fecha posterior. No se deshace
- * (el back no tiene «reabrir»). Por eso la confirmación pide escribir la
- * fecha: un clic de más no puede cerrar un mes.
+ * entra ninguno nuevo, y las reversas van con fecha posterior. Por eso la
+ * confirmación pide escribir la fecha: un clic de más no puede cerrar un mes.
+ *
+ * ── Desde el 19-09 SÍ se deshace, y por eso están juntos ───────────────────
+ *
+ * `POST /asientos/reabrir` mueve la frontera hacia atrás — sólo el ADMIN, con
+ * motivo y bitácora. Vive dentro de esta misma tarjeta (`<Reapertura>`) y no
+ * en otra pantalla a propósito: cerrar y reabrir son la misma frontera, y
+ * quien está mirando «cerrada hasta el 31 de diciembre» es quien necesita
+ * poder deshacerlo. 🔴 Ojo con el vocabulario: el `hasta` del cierre es el
+ * último día que queda CERRADO; el de la reapertura es el primero que se
+ * vuelve a poder ESCRIBIR.
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
@@ -32,6 +41,7 @@ import {
   type ResultadoDeCierre,
 } from '@/lib/api/contabilidad.service';
 import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
+import { Reapertura } from './Reapertura';
 
 export interface CierreDePeriodoProps {
   cierre: Cierre | null;
@@ -47,6 +57,11 @@ export interface CierreDePeriodoProps {
    */
   fallo?: boolean;
   onCerrado?: (r: ResultadoDeCierre) => void;
+  /**
+   * Se reabrió: la frontera se movió hacia ATRÁS. Quien monta esta tarjeta
+   * tiene que volver a pedir el cierre y la lista, igual que con `onCerrado`.
+   */
+  onReabierto?: () => void;
 }
 
 /** El último día del mes anterior: lo que normalmente se cierra. */
@@ -66,6 +81,7 @@ export function CierreDePeriodo({
   cargando = false,
   fallo = false,
   onCerrado,
+  onReabierto,
 }: CierreDePeriodoProps) {
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
@@ -182,6 +198,8 @@ export function CierreDePeriodo({
           </p>
         ) : null}
       </div>
+
+      <Reapertura cerradaHasta={cerradaHasta} onReabierto={() => onReabierto?.()} />
 
       <Dialog open={confirmando} onOpenChange={(open) => !open && cerrarDialogo()}>
         <DialogContent className="sm:max-w-md">

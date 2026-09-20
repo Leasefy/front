@@ -99,8 +99,8 @@ const ERROR_STATE_VIEJO = [
   'src/app/panel/inmobiliaria/inmuebles/page.tsx',
   'src/app/panel/inmobiliaria/inmuebles/[id]/candidatos/page.tsx',
   'src/app/panel/inmobiliaria/reportes/resumen/page.tsx',
-  'src/app/panel/inmobiliaria/cobros/page.tsx',
-  'src/app/panel/inmobiliaria/cobros/cobranza/llamadas/page.tsx',
+  'src/app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx',
+  'src/app/panel/inmobiliaria/pagos/cobranza/llamadas/page.tsx',
   'src/app/panel/inmobiliaria/contratos/renovaciones/page.tsx',
   'src/app/panel/(landlord)/leases/page.tsx',
   'src/app/panel/(landlord)/contratos/page.tsx',
@@ -170,7 +170,7 @@ describe('ErrorState viejo', () => {
     expect(
       nuevas,
       'ErrorState muestra el mensaje crudo del backend y ofrece reintentar ' +
-        'sobre un 404. Usá <FalloDeCarga>, que clasifica el fallo.',
+        'sobre un 404. Usa <FalloDeCarga>, que clasifica el fallo.',
     ).toEqual([])
   })
 })

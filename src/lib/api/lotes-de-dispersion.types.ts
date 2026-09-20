@@ -45,6 +45,12 @@ export interface LoteResumen {
   motivoDeLaAnulacion: string | null;
   createdAt: string;
   _count?: { items: number };
+  /** El cupo del día en que se armó. `null` mientras la migración no esté aplicada. */
+  disponibleAlArmarCop?: number | null;
+  /** Cuánto se giró por encima del cupo. `0` = alcanzaba. */
+  descubiertoCop?: number | null;
+  /** Qué se decidió sobre la factura al marcar pagado. */
+  facturarAhora?: boolean | null;
 }
 
 /** Una dispersión dentro del lote, con los datos bancarios congelados. */
@@ -64,6 +70,49 @@ export interface ItemDelLote {
   motivoDeExclusion: string | null;
 }
 
+/**
+ * Qué pasó con la factura al propietario al marcar el lote pagado.
+ *
+ * El CEO (2026-09-15), describiendo el giro entero: «archivo plano por banco,
+ * egreso, **factura ahora o después**, correo al propietario». Esto es el
+ * resultado de esa casilla, con número.
+ *
+ * 🔴 Que `fallas` tenga filas NO deshace el pago: la plata ya salió del banco y
+ * el lote quedó PAGADO. Facturar es un paso posterior que se reintenta desde
+ * Facturación.
+ */
+export interface FacturacionDelLote {
+  /** `true` si se pidió facturar ahora. `false` = queda para después. */
+  pedida: boolean;
+  /** Cuántas prefacturas del lado propietario dejó este lote (contrato × mes). */
+  candidatas: number;
+  emitidas: number;
+  /** Ya estaban emitidas. NO es un error: es la llave única haciendo su trabajo. */
+  yaEstaban: number;
+  /** Las que no se numeraron porque el rango de la resolución no alcanzó. */
+  sinNumero: number;
+  totalCop: number;
+  /** Los números DIAN emitidos, para cruzarlos con el egreso. */
+  numeros: string[];
+  /** Lo que no se pudo facturar, por mes y con el motivo en palabras. */
+  fallas: { mes: string; motivo: string }[];
+}
+
+/**
+ * El extracto a cada propietario que el lote cerró en $0.
+ *
+ * Nico y Juan Camilo (2026-09-16): en el mes en que se gira $0 se factura la
+ * administración y se le manda su extracto con las deducciones que explican
+ * por qué no hubo giro. 🔴 Una falla NO deshace el pago: el extracto se
+ * reenvía desde la ficha del propietario.
+ */
+export interface ExtractosDeLosCompensados {
+  /** Cuántos propietarios se cerraron en $0 con este lote. */
+  compensados: number;
+  enviados: number;
+  fallas: { propietarioId: string; nombre: string; motivo: string }[];
+}
+
 /** El lote entero, como lo devuelven `ver`, `aprobar`, `pagado` y `anular`. */
 export interface LoteDeDispersion extends LoteResumen {
   /**
@@ -74,6 +123,28 @@ export interface LoteDeDispersion extends LoteResumen {
   codigoExpiraAt: string | null;
   codigoIntentos: number;
   items: ItemDelLote[];
+  /**
+   * Sólo lo devuelve `POST /:id/pagado`. Ausente en `ver`, `aprobar` y
+   * `anular`, y con un back anterior a la segunda vuelta de facturación.
+   */
+  facturacion?: FacturacionDelLote;
+  /** Sólo en `POST /:id/pagado`, con un back del 2026-09-16 en adelante. */
+  extractosDeCompensados?: ExtractosDeLosCompensados;
+}
+
+/**
+ * Una liquidación que se cierra con el lote SIN girar nada: sus deducciones
+ * cubren el neto del mes. No va en el archivo del banco; al marcar el lote
+ * pagado quedan aplicadas y lo que falte pasa a su siguiente liquidación.
+ */
+export interface FilaCompensada {
+  propietarioId: string;
+  nombre: string;
+  dispersionId: string;
+  /** El neto guardado: cero o en contra. */
+  netoCop: number;
+  /** Lo que pasa a su siguiente liquidación. */
+  saldoEnContraCop: number;
 }
 
 /** A quién le falta un dato, con nombre y motivo. */
@@ -87,6 +158,8 @@ export interface FilaExcluida {
 export interface VistaDelLote {
   lote: LoteDeDispersion;
   excluidos: FilaExcluida[];
+  /** Las que se cierran en $0 por deducciones. Opcional: back anterior al 2026-09-16. */
+  compensados?: FilaCompensada[];
   /** Intentos de código que quedan antes de que el lote se bloquee. */
   intentosRestantes: number;
   bloqueado: boolean;
@@ -95,6 +168,81 @@ export interface VistaDelLote {
 export interface LoteArmado {
   lote: LoteDeDispersion;
   excluidos: FilaExcluida[];
+  compensados?: FilaCompensada[];
+  /** Lo que había en la cuenta cuando se armó. */
+  plata: PlataDisponible;
+  /**
+   * Cuánto de este lote sale de plata de la inmobiliaria porque no alcanzaba.
+   * `0` = alcanzaba. Se puede girar de más (decisión de Nico, 2026-09-15); lo
+   * que no se puede es que el número no se vea antes de mandarlo a aprobación.
+   */
+  descubiertoCop: number;
+}
+
+/**
+ * Cuánta plata hay HOY para girar.
+ *
+ * El CEO (2026-09-15): «la plata que yo tengo en mi cuenta hoy es la que
+ * debería mostrarse para poder dispersar. No necesito que me hayan cobrado ni
+ * que me hayan pagado». Es `entradas del extracto − lo ya comprometido`.
+ */
+export interface PlataDisponible {
+  /** Hasta qué día se contó, `YYYY-MM-DD`. */
+  corte: string;
+  entradasCop: number;
+  comprometidoCop: number;
+  /** Puede ser NEGATIVO: ya se adelantó plata propia. */
+  disponibleCop: number;
+  /**
+   * 🔴 `false` = la inmobiliaria nunca cargó un extracto. Entonces el cupo no
+   * es «no hay plata», es «no sabemos», y la pantalla lo tiene que decir así.
+   */
+  hayExtracto: boolean;
+  ultimoMovimiento: string | null;
+}
+
+/** Cómo se ordena «a quién le pago». */
+export type OrdenDeCandidatos = 'MENOR_A_MAYOR' | 'MAYOR_A_MENOR' | 'NOMBRE';
+
+/** Un propietario al que se le puede pagar, con el acumulado hasta él. */
+export interface CandidatoDeDispersion {
+  dispersionId: string;
+  propietarioId: string;
+  propietarioName: string;
+  month: string;
+  netoCop: number;
+  /** La suma de esta fila y las anteriores, en este orden. */
+  acumuladoCop: number;
+  /** El acumulado todavía cabe en el disponible. NO es un bloqueo. */
+  entraEnElCupo: boolean;
+  /** Por qué no podría ir al banco. `null` = puede. */
+  motivoDeExclusion: string | null;
+  /**
+   * Sus deducciones cubren el neto del mes: se gira $0, pero entra al lote
+   * para cerrarse y pasar el saldo en contra a la siguiente liquidación.
+   */
+  seCompensa?: boolean;
+  /** Lo que pasa a su siguiente liquidación si se cierra en $0. */
+  saldoEnContraCop?: number;
+}
+
+export interface CandidatosDeDispersion {
+  orden: OrdenDeCandidatos;
+  plata: PlataDisponible;
+  candidatos: CandidatoDeDispersion[];
+  /** Los que caben en el tope pedido, para tildarlos de una. */
+  sugeridos: string[];
+  totalCop: number;
+  cantidad: number;
+}
+
+/** Con qué se arma el lote: a quiénes, en qué orden y hasta qué monto. */
+export interface QueMeterEnElLote {
+  month: string;
+  /** Sin la lista, todas las pendientes del mes. */
+  dispersionIds?: string[];
+  orden?: OrdenDeCandidatos;
+  topeCop?: number;
 }
 
 /**

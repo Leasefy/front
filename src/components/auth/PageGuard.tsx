@@ -9,6 +9,8 @@ import type { AgencyRole } from '@/lib/auth/agency-roles';
 interface PageGuardProps {
   /** Module key from effectivePermissions (e.g. "dispersiones", "analytics") */
   module?: string;
+  /** Alternativas a `module`: alcanza con UNO (la agenda: operaciones o pipeline). */
+  modulos?: readonly string[];
   /** Required action — defaults to "view" */
   action?: string;
   /** When true, only isAdmin passes regardless of module permissions */
@@ -37,12 +39,17 @@ interface PageGuardProps {
  * The inner component only mounts when access is confirmed, so its hooks
  * never fire for unauthorized users.
  */
-export function PageGuard({ module, action = 'view', adminOnly = false, roles, children }: PageGuardProps) {
+export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, children }: PageGuardProps) {
   const router = useRouter();
   const { canAccess, isAdmin, isLoading, agencyRole } = usePermissions();
   const sinSenal = useSinSenal();
 
-  const moduleAllowed = module ? canAccess(module, action) : true;
+  const moduleAllowed =
+    modulos && modulos.length > 0
+      ? modulos.some((m) => canAccess(m, action))
+      : module
+        ? canAccess(module, action)
+        : true;
   const roleAllowed =
     !roles || roles.length === 0
       ? true

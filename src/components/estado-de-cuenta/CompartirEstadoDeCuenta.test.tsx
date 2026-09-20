@@ -8,7 +8,8 @@
  *   · E1 — sin el permiso de VER ese documento, las acciones salen apagadas.
  *   · E2 — correo y WhatsApp no salen sin confirmar a quién y por dónde.
  *   · E3 — «Enlaces compartidos…» abre la lista.
- *   · E4 — con filtros, se dice que el enlace va entero.
+ *   · E4 — con filtros, el enlace va FILTRADO y se dice: el recorte viaja con
+ *     el enlace y el back se lo aplica a quien lo abra.
  */
 
 import * as React from 'react';
@@ -83,6 +84,14 @@ async function esperar() {
   });
 }
 
+/** El recorte que la inmobiliaria tiene en pantalla, tal como viaja (E4). */
+const FILTROS = {
+  soloPendientes: true,
+  desde: '',
+  hasta: '',
+  contrato: '',
+};
+
 async function montar(props: Partial<React.ComponentProps<typeof CompartirEstadoDeCuenta>> = {}) {
   host = document.createElement('div');
   document.body.appendChild(host);
@@ -148,7 +157,12 @@ describe('<CompartirEstadoDeCuenta>', () => {
     expect($('[data-testid="confirmar-envio-dialogo"]')!.textContent).toContain('por WhatsApp');
 
     await clic('[data-testid="confirmar-envio"]');
-    expect(api.enviar).toHaveBeenCalledWith('propietario', 'prop-1', 'WHATSAPP');
+    expect(api.enviar).toHaveBeenCalledWith(
+      'propietario',
+      'prop-1',
+      'WHATSAPP',
+      undefined,
+    );
   });
 
   it('E2: cancelar no manda', async () => {
@@ -166,22 +180,34 @@ describe('<CompartirEstadoDeCuenta>', () => {
     expect($('[data-testid="confirmar-envio-dialogo"]')).toBeNull();
   });
 
-  it('🔴 E4: con filtros, los ítems del enlace y el diálogo dicen que va el documento entero', async () => {
-    await montar({ nota: 'Filtrado: pendiente' });
-    expect($('[data-testid="compartir-correo"]')!.textContent).toContain('Va el documento entero');
-    expect($('[data-testid="compartir-enlace"]')!.textContent).toContain('Va el documento entero');
-    // El PDF sí sale filtrado: no lleva la aclaración.
-    expect($('[data-testid="compartir-pdf"]')!.textContent).not.toContain('entero');
+  it('🔴 E4: con filtros, el enlace lleva el recorte y los ítems lo dicen', async () => {
+    // Antes acá decía «Va el documento entero, sin tus filtros»: se avisaba la
+    // fuga en vez de cerrarla. Hoy el filtro viaja con el enlace.
+    await montar({ nota: 'Filtrado: pendiente', filtros: FILTROS });
+    expect($('[data-testid="compartir-correo"]')!.textContent).toContain(
+      'Va con el filtro que tienes puesto',
+    );
+    expect($('[data-testid="compartir-enlace"]')!.textContent).toContain(
+      'Va con el filtro que tienes puesto',
+    );
+    expect($('[data-testid="compartir-pdf"]')!.textContent).not.toContain('filtro');
 
     await clic('[data-testid="compartir-correo"]');
     expect($('[data-testid="confirmar-envio-filtros"]')!.textContent).toContain(
-      'no la vista filtrada',
+      'la MISMA vista filtrada',
     );
+  });
+
+  it('🔴 E4: el filtro VIAJA al back con el envío, no se queda en pantalla', async () => {
+    await montar({ nota: 'Filtrado: pendiente', filtros: FILTROS });
+    await clic('[data-testid="compartir-correo"]');
+    await clic('[data-testid="confirmar-envio"]');
+    expect(api.enviar).toHaveBeenCalledWith('propietario', 'prop-1', 'CORREO', FILTROS);
   });
 
   it('E4: sin filtros no se agrega la aclaración', async () => {
     await montar();
-    expect($('[data-testid="compartir-correo"]')!.textContent).not.toContain('entero');
+    expect($('[data-testid="compartir-correo"]')!.textContent).not.toContain('filtro');
   });
 
   it('🔴 E1: el del propietario pide `dispersiones:view`; sin él, las acciones salen apagadas y dicen por qué', async () => {

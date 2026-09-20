@@ -72,12 +72,22 @@ export interface ResumenAgenda {
   tareas: number;
 }
 
-/** Contrato del listado que el motor (M1) devolverá. */
+/**
+ * Una PÁGINA del feed. El back la resuelve en la base (caso A8 de la auditoría
+ * del 13-09): `eventos` trae sólo lo que se pinta, `total` sigue siendo el
+ * feed entero — son dos números distintos y el pie de la tabla necesita los
+ * dos. `resumen` también lo cuenta la base, no se deduce de `eventos`.
+ */
 export interface AgendaListResponse {
   resumen: ResumenAgenda;
   eventos: EventoAgenda[];
   total: number;
+  page: number;
+  pageSize: number;
 }
+
+/** Lo que muestra la tabla de una (`DEFAULT_PAGE_SIZE` de `useTablePagination`). */
+export const EVENTOS_POR_PAGINA = 10
 
 export const RESUMEN_AGENDA_VACIO: ResumenAgenda = {
   total: 0,

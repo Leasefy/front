@@ -1134,7 +1134,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           dispatches: BackendDispatch[];
         } | null;
         snapshot: ChatSnapshot | null;
-        streamError: string | null;
+        /** El error del evento `error`, con su status cuando el micro lo manda. */
+        streamError: unknown;
       } = { final: null, snapshot: null, streamError: null };
 
       await streamChatTurn({
@@ -1324,14 +1325,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               dispatches: f.dispatches,
             };
           },
-          onError: (message) => {
-            collected.streamError = message;
+          onError: (message, meta) => {
+            // Se guarda el error ENTERO, no sólo su texto: el status es lo que
+            // deja distinguir «sin créditos» (402) de «no pude conectarme».
+            collected.streamError =
+              typeof meta?.status === 'number'
+                ? new ApiError(meta.status, message, meta.code)
+                : new Error(message);
           },
         },
       });
 
       const { final, streamError } = collected;
-      if (streamError && !final) throw new Error(streamError);
+      if (streamError && !final) throw streamError;
       const responseText = final?.responseText || messageText;
       const dispatches =
         final && final.dispatches.length > 0 ? final.dispatches : resultDispatches;
@@ -1867,7 +1873,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ? 'Esa acción ya se resolvió.'
               : status === 403
                 ? 'Tu cuenta no puede ejecutar esta acción.'
-                : 'No se pudo confirmar. Probá de nuevo en un momento.';
+                : 'No se pudo confirmar. Prueba de nuevo en un momento.';
         parcharAccion(messageId, {
           estado: status === 410 ? 'vencida' : 'pendiente',
           error: motivo,

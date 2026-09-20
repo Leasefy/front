@@ -18,7 +18,7 @@
  * fallo posterior no debe borrarlo. Pasa `conservarContenido` para eso.
  */
 
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Spinner } from '@/components/ui'
 import { FalloDeCarga } from './FalloDeCarga'
 
@@ -58,6 +58,12 @@ export function EstadoDeDatos({
   conservarContenido = false,
   children,
 }: EstadoDeDatosProps) {
+  /**
+   * ¿Esta instancia llegó alguna vez a pintar sus datos? Un `useRef` y no un
+   * `useState` a propósito: no tiene que provocar un render, sólo recordar.
+   */
+  const yaHuboContenido = useRef(false)
+
   if (cargando) {
     return (
       <>
@@ -70,7 +76,17 @@ export function EstadoDeDatos({
     )
   }
 
-  if (error && !conservarContenido) {
+  // 🔴 `conservarContenido` conserva lo que YA se mostró — no la primera vez
+  // (18-09-2026). Sin este `yaHuboContenido`, la bandera se tragaba el error
+  // SIEMPRE, incluso en la primera carga, cuando no hay nada que conservar: la
+  // pantalla pintaba `children` con la lista vacía y el resultado era una
+  // tarjeta en blanco, sin mensaje y sin «Intentar de nuevo». Nico lo describió
+  // exacto —«¿esto realmente sí está conectado?»—: un fallo que se ve idéntico
+  // a «no hay nada» es peor que un error, porque nadie lo reporta.
+  //
+  // Son 20 pantallas con la bandera puesta, así que el arreglo va acá y no en
+  // cada una.
+  if (error && !(conservarContenido && yaHuboContenido.current)) {
     return (
       // Sin marco: esto NO es la pantalla, es el hueco de contenido que la
       // página ya envolvió —las tres pantallas que lo usan lo ponen dentro de
@@ -89,5 +105,7 @@ export function EstadoDeDatos({
 
   if (vacio && cuandoVacio) return <>{cuandoVacio}</>
 
+  // Desde acá sí hubo contenido: el próximo fallo de refresco puede conservarlo.
+  yaHuboContenido.current = true
   return <>{children}</>
 }

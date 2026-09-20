@@ -27,8 +27,10 @@ function inquilino(p: Partial<InquilinoEnCartera>): InquilinoEnCartera {
       abonadoCop: 0,
       saldoCop: 1,
       enMoraCop: 0,
+      vencidaEnPlazoCop: 0,
       porVencerCop: 1,
       enSiniestroCop: 0,
+      cuotas: 1,
       cobros: 1,
     },
     ...p,
@@ -64,7 +66,7 @@ describe('conceptos de la cartera', () => {
     expect(filtrarInquilinos(lista, '', false)).toHaveLength(2)
   })
 
-  it('«sólo en mora» deja afuera a quien sólo tiene cobros por vencer', () => {
+  it('«sólo cartera» deja afuera a quien sólo tiene cuotas por vencer', () => {
     const lista = [
       inquilino({ clave: 'a' }),
       inquilino({
@@ -97,8 +99,10 @@ describe('conceptos de la cartera', () => {
         facturadoCop: 105,
         abonadoCop: 0,
         saldoCop: 105,
-        enMoraCop: 105,
+        enMoraCop: 100,
+        vencidaEnPlazoCop: 5,
         porVencerCop: 0,
+        cuotas: 1,
         cobros: 1,
       },
     })
@@ -112,7 +116,9 @@ describe('conceptos de la cartera', () => {
         abonadoCop: 0,
         saldoCop: 57,
         enMoraCop: 0,
+        vencidaEnPlazoCop: 0,
         porVencerCop: 57,
+        cuotas: 2,
         cobros: 2,
       },
     })
@@ -120,7 +126,17 @@ describe('conceptos de la cartera', () => {
     expect(total.saldoPorConcepto).toEqual({ CANON: 150, INTERES_DE_MORA: 5, GASTO_ADMINISTRATIVO: 7 })
     expect(total.saldoCop).toBe(162)
     expect(saldoReconstruido(total.saldoPorConcepto)).toBe(total.saldoCop)
-    expect(total.enMoraCop + total.porVencerCop).toBe(total.saldoCop)
+    /*
+     * 🔴 Los TRES cajones son una partición y tienen que cerrar contra el saldo.
+     * Con dos —el invariante viejo— una cartera con algo vencido dentro del
+     * plazo no cuadraba, y la diferencia se iba a parar a la cifra equivocada.
+     */
+    expect(total.enMoraCop + total.vencidaEnPlazoCop + total.porVencerCop).toBe(total.saldoCop)
+    expect(total.enMoraCop).toBe(100)
+    expect(total.vencidaEnPlazoCop).toBe(5)
+    expect(total.porVencerCop).toBe(57)
+    expect(total.cuotas).toBe(3)
+    // El alias deprecado sigue la misma cuenta mientras el front se renombra.
     expect(total.cobros).toBe(3)
     // Sin nadie en pantalla el pie es cero, no el total general.
     expect(sumarTotales([]).saldoCop).toBe(0)

@@ -48,14 +48,13 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
-import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
-import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { formatDateTime } from '@/lib/format';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { cn } from '@/lib/utils';
 import { NOMBRE_DEL_ESTADO, TONO_DEL_ESTADO } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import { ElegirAQuienPagarle, type EleccionDelLote } from './ElegirAQuienPagarle';
 
 type Filtro = 'todos' | 'en_curso' | 'PAGADO' | 'ANULADO';
 
@@ -274,9 +273,17 @@ export function ListaDeLotes() {
 }
 
 /**
- * Antes de armar, se muestra qué va a tomar: las pendientes del mes según el
- * resumen de dispersiones. El número exacto lo decide el back (descarta las
- * que ya están en un lote vivo), y lo devuelve al armar.
+ * Elegir a quién pagarle y armar el lote.
+ *
+ * Antes este diálogo sólo contaba las pendientes y armaba el mes entero. El CEO
+ * (2026-09-15) pidió lo contrario: varios lotes por mes, eligiendo a quién,
+ * ordenando de menor a mayor y cortando por monto, mirando la plata que hay en
+ * la cuenta. Toda esa decisión vive en `ElegirAQuienPagarle`; acá quedan el
+ * marco y el botón.
+ *
+ * Sin nadie tildado se arma el MES ENTERO — es el comportamiento de siempre y
+ * el que espera quien sólo quiere sacar todo junto—, y el botón lo dice con
+ * esas palabras para que nadie lo descubra después.
  */
 function ArmarLoteDialog({
   abierto,
@@ -289,48 +296,43 @@ function ArmarLoteDialog({
   onCerrar: () => void;
   onArmado: (loteId: string) => void;
 }) {
-  const [resumen, setResumen] = useState<DispersionSummary | null>(null);
-  const [cargandoResumen, setCargandoResumen] = useState(false);
+  const [eleccion, setEleccion] = useState<EleccionDelLote>({
+    dispersionIds: [],
+    orden: 'MENOR_A_MAYOR',
+    totalCop: 0,
+    descubiertoCop: 0,
+  });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!abierto) {
-      setResumen(null);
-      setError(null);
-      return;
-    }
-    let cancelado = false;
-    setCargandoResumen(true);
-    dispersionesApi
-      .getSummary(mes)
-      .then((r) => {
-        if (!cancelado) setResumen(r);
-      })
-      .catch(() => {
-        // Sin resumen se arma igual: el back es quien decide qué entra.
-        if (!cancelado) setResumen(null);
-      })
-      .finally(() => {
-        if (!cancelado) setCargandoResumen(false);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [abierto, mes]);
+    if (!abierto) setError(null);
+  }, [abierto]);
+
+  const elegidos = eleccion.dispersionIds.length;
 
   const armar = async () => {
     setEnviando(true);
     setError(null);
     try {
-      const { lote, excluidos } = await lotesDeDispersionApi.armar(mes);
+      const { lote, excluidos, descubiertoCop } = await lotesDeDispersionApi.armar({
+        month: mes,
+        // Lista vacía = el mes entero. El back rechaza un `[]` explícito
+        // justamente para que «ninguno» y «todos» no sean el mismo cuerpo.
+        dispersionIds: elegidos > 0 ? eleccion.dispersionIds : undefined,
+        orden: eleccion.orden,
+      });
+      const partes = [`${lote.cantidad} pagos por ${formatCurrency(lote.totalCop)}`];
+      if (excluidos.length > 0) {
+        partes.push(
+          `${excluidos.length} ${excluidos.length === 1 ? 'excluido' : 'excluidos'} por datos bancarios incompletos`,
+        );
+      }
+      if (descubiertoCop > 0) {
+        partes.push(`${formatCurrency(descubiertoCop)} salen de plata de la inmobiliaria`);
+      }
       toast.success(`Lote de ${nombreDelMes(mes)} armado`, {
-        description:
-          excluidos.length > 0
-            ? `${lote.cantidad} pagos por ${formatCurrency(lote.totalCop)} · ${excluidos.length} ${
-                excluidos.length === 1 ? 'excluido' : 'excluidos'
-              } por datos bancarios incompletos.`
-            : `${lote.cantidad} pagos por ${formatCurrency(lote.totalCop)}.`,
+        description: `${partes.join(' · ')}.`,
       });
       onArmado(lote.id);
     } catch (e) {
@@ -342,43 +344,16 @@ function ArmarLoteDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-armar-lote">
+      <DialogContent className="max-w-4xl" data-testid="dialogo-armar-lote">
         <DialogHeader>
           <DialogTitle>Armar el lote de {nombreDelMes(mes)}</DialogTitle>
           <DialogDescription>
-            Se congelan las dispersiones pendientes del mes con los datos bancarios de hoy.
+            Elige a quién le pagas y cuánto. Se congelan las dispersiones con los datos bancarios de
+            hoy; todavía no se gira nada.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 px-6 py-4 text-sm">
-          {cargandoResumen ? (
-            <p className="flex items-center gap-2 text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Contando las pendientes…
-            </p>
-          ) : resumen ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-border p-3">
-                <p className="text-xs text-fg-muted">Pendientes del mes</p>
-                <p className="font-mono text-lg font-semibold tabular-nums text-fg">
-                  {resumen.dispersionsPending}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border p-3">
-                <p className="text-xs text-fg-muted">Suman</p>
-                <p className="font-mono text-lg font-semibold tabular-nums text-fg">
-                  {formatCurrency(resumen.totalToDisburse)}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-fg-muted">
-              No se pudo contar las pendientes; el lote se arma igual con las que haya.
-            </p>
-          )}
-          <p className="text-xs text-fg-muted">
-            Las que ya estén en un lote vivo no entran. Las que tengan la cuenta incompleta entran
-            marcadas, para que veas a quién le falta un dato.
-          </p>
+        <div className="max-h-[60vh] space-y-3 overflow-y-auto px-6 py-4 text-sm">
+          {abierto && <ElegirAQuienPagarle mes={mes} onCambio={setEleccion} />}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
@@ -386,7 +361,9 @@ function ArmarLoteDialog({
             Cancelar
           </Button>
           <Button onClick={() => void armar()} isLoading={enviando} hideArrow>
-            Armar lote
+            {elegidos > 0
+              ? `Armar lote con ${elegidos} ${elegidos === 1 ? 'propietario' : 'propietarios'}`
+              : 'Armar lote con el mes entero'}
           </Button>
         </DialogFooter>
       </DialogContent>

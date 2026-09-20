@@ -91,12 +91,19 @@ interface CountCard {
   icon: Icon;
 }
 
-const COUNT_CARDS: CountCard[] = [
-  { key: 'total', label: 'Total', icon: FolderOpen },
-  { key: 'pending', label: 'Pendientes', icon: Clock },
-  { key: 'inReview', label: 'En revisión', icon: Eye },
-  { key: 'approved', label: 'Aprobados', icon: CheckCircle },
-  { key: 'rejected', label: 'Rechazados', icon: XCircle },
+/**
+ * 🔴 Las cinco tarjetas grandes se fueron (18-09-2026). Con la cola vacía —que
+ * es el estado normal la mayor parte del tiempo— ocupaban la primera pantalla
+ * entera para decir cinco veces «0», y las cinco pesaban lo mismo aunque sólo
+ * una sea trabajo: lo que hay POR REVISAR. Ahora la cifra que importa se dice
+ * en una línea y el resto acompaña en chico; cuando no hay nada, no se dibuja
+ * nada. (DESIGN: las tarjetas de número grande son para cuando la cifra ES el
+ * punto de la pantalla; acá el punto es la cola.)
+ */
+const SECUNDARIOS: CountCard[] = [
+  { key: 'inReview', label: 'en revisión', icon: Eye },
+  { key: 'approved', label: 'aprobados', icon: CheckCircle },
+  { key: 'rejected', label: 'rechazados', icon: XCircle },
 ];
 
 /** Una fila por documento: el candidato es una columna, no un encabezado. */
@@ -129,36 +136,42 @@ export function DocumentReviewQueueView({
           </div>
           Soportes de candidatos
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          Revisa los soportes que adjuntan al postularse —cédula, comprobante de ingresos,
-          carta laboral— y apruébalos o recházalos con un motivo.
+        <p className="text-sm text-fg-muted max-w-2xl">
+          Los papeles que el candidato adjunta al postularse —cédula, comprobante
+          de ingresos, carta laboral—. Acá los abres y decides: si apruebas, su
+          postulación sigue; si rechazas, tienes que escribir el motivo, y ese
+          motivo es el que él recibe para volver a mandarlo bien.
         </p>
       </div>
 
-      {/* Counters */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {COUNT_CARDS.map(({ key, label, icon: CardIcon }) => (
-          <div
-            key={key}
-            data-testid={`count-${key}`}
-            className="p-4 rounded-lg border border-border bg-card"
+      {/* El resumen: una cifra que es trabajo, y el resto acompañando. */}
+      <div
+        className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-5 py-4"
+        data-testid="resumen-de-la-cola"
+      >
+        <p className="flex items-baseline gap-2">
+          <span
+            className="text-2xl font-semibold tabular-nums text-fg"
+            data-testid="count-pending"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
-                <CardIcon className="w-5 h-5 text-fg-muted" />
-              </div>
-              <div className="min-w-0">
-                {/* Con la consulta caída, `counts` viene en ceros: cinco
-                    tarjetas afirmando «0 pendientes» sobre un dato que nadie
-                    trajo. Mientras carga tampoco se sabe todavía. */}
-                <p className="text-2xl font-semibold tabular-nums text-fg">
-                  {isLoading || error ? '—' : counts[key]}
-                </p>
-                <p className="text-xs text-fg-muted">{label}</p>
-              </div>
-            </div>
-          </div>
-        ))}
+            {/* Con la consulta caída, `counts` viene en ceros: afirmar «0
+                pendientes» sobre un dato que nadie trajo es inventar. Mientras
+                carga tampoco se sabe todavía. */}
+            {isLoading || error ? '—' : counts.pending}
+          </span>
+          <span className="text-sm text-fg">
+            {counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
+          </span>
+        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
+          {SECUNDARIOS.map(({ key, label, icon: CardIcon }) => (
+            <span key={key} className="flex items-center gap-1.5" data-testid={`count-${key}`}>
+              <CardIcon className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+              <span className="tabular-nums">{isLoading || error ? '—' : counts[key]}</span>
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Body */}
@@ -197,7 +210,7 @@ export function DocumentReviewQueueView({
                       queSon="soportes por revisar"
                       icono={FolderOpen}
                       titulo="No hay soportes por revisar"
-                      descripcion="Los soportes los adjunta el candidato al postularse. Apenas alguien mande los suyos, aparecen acá."
+                      descripcion="No hay nada que revisar hasta que alguien se postule y adjunte sus papeles. Lo que se le pide a cada perfil lo defines en la pestaña «Requisitos»; apenas alguien mande los suyos, la cola aparece acá."
                       accion={
                         <Button asChild variant="outline">
                           <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>

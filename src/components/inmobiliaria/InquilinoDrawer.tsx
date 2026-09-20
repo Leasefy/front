@@ -16,9 +16,18 @@
  * · Contacto y arriendos → `GET /inmobiliaria/inquilinos/:tenantId`, que trae
  *   TODOS los arriendos (también los terminados), no los del filtro de la
  *   lista.
- * · Pagos, mora y recordatorios → `GET /contracts/:id/cobros` por cada
- *   contrato de la persona. Cada cobro trae `pendingAmount`, `daysLate`,
- *   `lateFee` y `remindersSent`: la mora no se calcula acá, se lee.
+ * · 🔴 Lo que DEBE → el resumen de su ESTADO DE CUENTA
+ *   (`GET /inmobiliaria/estado-de-cuenta/inquilino/:ref/resumen`), que suma las
+ *   cuotas de sus contratos. Nico (2026-09-15): la deuda nace con el contrato;
+ *   el cobro es el documento con que se reclama y puede no existir. Hasta el
+ *   16-09 el saldo salía de sumar cobros: en la inmobiliaria migrada (0 cobros,
+ *   30.951 cuotas) TODOS los inquilinos se veían con «—», y la mora salía del
+ *   cobro sin restar el plazo del contrato. El estado lo nombra
+ *   `estadoDeLaDeuda`, con las palabras de Pagos y Cartera: al día · vencido,
+ *   en plazo · en cartera.
+ * · Cobros emitidos y recordatorios → `GET /contracts/:id/cobros` por cada
+ *   contrato. Son DOCUMENTOS: se listan con su estado, pero ningún número de
+ *   deuda sale de ellos.
  *
  * ── Lo que NO muestra, y por qué ───────────────────────────────────────────
  * 🔴 **La calificación de la evaluación.** El pedido la incluía y NO está: el
@@ -63,6 +72,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import {
+  ArrowRight,
   ArrowSquareOut,
   Bell,
   Copy,
@@ -81,7 +91,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
-import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -94,6 +103,8 @@ import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { cn } from '@/lib/utils';
 import { arriendosVigentes, type Inquilino } from '@/lib/api/inquilinos.service';
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
+import { estadoDeLaDeuda } from '@/lib/estado-de-cuenta/estado-de-la-deuda';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
 import type { CobroStatus } from '@/lib/types/inmobiliaria';
 
@@ -118,13 +129,16 @@ export const TONO_DEL_COBRO: Record<
   defaulted: { variant: 'destructive', clave: 'inmobiliaria.cobros.status.defaulted' },
 };
 
+/**
+ * Lo que dicen sus cobros EMITIDOS como documentos: cuándo pagó el último y
+ * cuántas veces se le recordó.
+ *
+ * 🔴 A propósito NO trae saldo ni mora. Tuvo `saldoPendiente`, `enMora` y
+ * `diasDeMora` hasta el 2026-09-16, y eran la deuda leída de los cobros: con
+ * cero cobros daba cero, y los días de mora no restaban el plazo del contrato.
+ * Lo que debe sale del estado de cuenta (`detalle.cuenta`).
+ */
 export interface ResumenDePagos {
-  /** Lo que falta por pagar, sumando todos sus cobros. */
-  saldoPendiente: number;
-  /** Cuántos cobros están en mora (`late` o `defaulted`, como en el panel de cobros). */
-  enMora: number;
-  /** El mayor atraso de sus cobros. Es el que importa: el más viejo sin pagar. */
-  diasDeMora: number;
   /** Fecha del pago más reciente, o `null` si nunca pagó. */
   ultimoPago: string | null;
   /** Recordatorios enviados sobre sus cobros y la fecha del último. */
@@ -132,18 +146,10 @@ export interface ResumenDePagos {
   ultimoRecordatorio: string | null;
 }
 
-/**
- * Los números del inquilino, derivados de sus cobros reales.
- *
- * Nada se estima: `pendingAmount` y `daysLate` los calcula el back y acá sólo
- * se suman y se compara el máximo. Pura y exportada para poder fijarla.
- */
+/** La historia de sus cobros emitidos. Pura y exportada para poder fijarla. */
 export function resumirPagos(cobros: readonly CobroConDesglose[]): ResumenDePagos {
   return cobros.reduce<ResumenDePagos>(
     (acc, c) => ({
-      saldoPendiente: acc.saldoPendiente + (c.pendingAmount ?? 0),
-      enMora: acc.enMora + (c.status === 'late' || c.status === 'defaulted' ? 1 : 0),
-      diasDeMora: Math.max(acc.diasDeMora, c.daysLate ?? 0),
       ultimoPago:
         c.paidDate && (!acc.ultimoPago || c.paidDate > acc.ultimoPago) ? c.paidDate : acc.ultimoPago,
       recordatorios: acc.recordatorios + (c.remindersSent ?? 0),
@@ -153,9 +159,6 @@ export function resumirPagos(cobros: readonly CobroConDesglose[]): ResumenDePago
           : acc.ultimoRecordatorio,
     }),
     {
-      saldoPendiente: 0,
-      enMora: 0,
-      diasDeMora: 0,
       ultimoPago: null,
       recordatorios: 0,
       ultimoRecordatorio: null,
@@ -243,6 +246,10 @@ export function CuerpoDelCajon({
     cargandoPagos,
     errorPagos,
     pagosIncompletos,
+    cuenta,
+    cargandoCuenta,
+    errorCuenta,
+    refDeCuenta,
     reintentar,
   } = detalle;
 
@@ -252,10 +259,21 @@ export function CuerpoDelCajon({
   const visibles = cobros.slice(0, TOPE_DE_COBROS);
   const contratoPrincipal = persona.arriendos[0]?.contractId;
   const sinArriendos = persona.arriendos.length === 0;
-  // Nada de lo que sale de los cobros —el saldo, el conteo de la sección— es
-  // cierto hasta que los cobros llegaron. Mientras tanto no hay número, y eso
-  // se muestra: un cero sobre datos que no llegaron se lee «está al día».
+  // El conteo de cobros emitidos no es cierto hasta que llegaron: una pill en
+  // cero mientras carga es un número inventado.
   const cobrosLlegaron = !cargandoPagos && !errorPagos;
+  /*
+   * Lo que debe, del estado de cuenta. Sin resumen —cargando, caído, o sin un
+   * solo contrato que lo respalde— no hay número: un «$0» sobre datos que no
+   * llegaron se lee «está al día», que es el error más caro de esta pantalla.
+   */
+  const cuentaConocida = cuenta !== null && cuenta.contratos > 0 && !cargandoCuenta;
+  const deuda = cuentaConocida ? estadoDeLaDeuda(cuenta) : null;
+  const enlaceAlEstadoDeCuenta = refDeCuenta
+    ? `${rutaDelEstadoDeCuenta('inquilino', refDeCuenta)}?volver=${encodeURIComponent(
+        '/panel/inmobiliaria/inquilinos',
+      )}`
+    : null;
 
   return (
     <>
@@ -336,18 +354,6 @@ export function CuerpoDelCajon({
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={persona.tenantId} className="mb-4" />
-        {/* El estado de cuenta, resumido, donde se necesita (CEO, 2026-09-13).
-            Se pinta solo si la persona tiene contratos: sin contrato no hay
-            cuotas que diferir, y el propio componente se calla si no hay nada
-            que decir en vez de mostrar un «$0» que se lee «está al día». */}
-        {!sinArriendos && (
-          <ResumenEnLaFicha
-            tipo="inquilino"
-            id={persona.tenantId}
-            volverA="/panel/inmobiliaria/inquilinos"
-            className="mb-4"
-          />
-        )}
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
@@ -373,47 +379,85 @@ export function CuerpoDelCajon({
           </div>
         ) : (
           <div className="space-y-7">
-            {/* La franja. Sin cajas: la jerarquía la pone el dato, no el borde. */}
-            <dl className="grid grid-cols-3 divide-x divide-border">
-              <Numero
-                etiqueta={t(`${NS}.canonVigente`)}
-                valor={formatCurrency(canon)}
-                tono={canon === 0 ? 'apagado' : 'neutro'}
-              />
-              <Numero
-                etiqueta={t(`${NS}.arriendosVigentes`)}
-                valor={String(vigentes.length)}
-                tono={vigentes.length === 0 ? 'apagado' : 'neutro'}
-                detalle={
-                  persona.arriendos.length > vigentes.length
-                    ? t(`${NS}.deTotal`, { n: persona.arriendos.length })
-                    : undefined
-                }
-              />
-              <Numero
-                etiqueta={t(`${NS}.saldoPendiente`)}
-                valor={
-                  // Sin cobros cargados el saldo NO es cero: es desconocido. Un
-                  // «$0» sobre datos que no llegaron dice que está al día.
-                  cobrosLlegaron ? formatCurrency(resumen.saldoPendiente) : '—'
-                }
-                detalle={
-                  resumen.enMora > 0
-                    ? t(`${NS}.diasDeMora`, { n: resumen.diasDeMora })
-                    : cobrosLlegaron && resumen.saldoPendiente === 0 && cobros.length > 0
-                      ? t(`${NS}.alDia`)
+            {/* La franja. Sin cajas: la jerarquía la pone el dato, no el borde.
+                Los dos números de plata salen del ESTADO DE CUENTA, no de los
+                cobros: la deuda nace con el contrato. */}
+            <div className="space-y-3" data-testid="inquilino-cajon-deuda">
+              <dl className="grid grid-cols-3 divide-x divide-border">
+                {/* Cuántos vigentes de cuántos ya lo dice la cabecera. */}
+                <Numero
+                  etiqueta={t(`${NS}.canonVigente`)}
+                  valor={formatCurrency(canon)}
+                  tono={canon === 0 ? 'apagado' : 'neutro'}
+                />
+                <Numero
+                  etiqueta={t(`${NS}.restaPorPagar`)}
+                  valor={cuentaConocida ? formatCurrency(cuenta.restaPorPagar) : '—'}
+                  tono={!cuentaConocida || cuenta.restaPorPagar === 0 ? 'apagado' : 'neutro'}
+                  detalle={
+                    cuentaConocida && cuenta.proximaCuota
+                      ? t(`${NS}.proximaCuota`, {
+                          fecha: formatDate(cuenta.proximaCuota.fecha),
+                          monto: formatCurrency(cuenta.proximaCuota.monto),
+                        })
                       : undefined
-                }
-                tono={
-                  resumen.enMora > 0
-                    ? 'alerta'
-                    : !cobrosLlegaron || resumen.saldoPendiente === 0
-                      ? 'apagado'
-                      : 'neutro'
-                }
-                detalleTono={resumen.enMora > 0 ? 'alerta' : 'bien'}
-              />
-            </dl>
+                  }
+                />
+                <Numero
+                  etiqueta={t(`${NS}.vencidoSinPagar`)}
+                  valor={cuentaConocida ? formatCurrency(cuenta.pendiente) : '—'}
+                  tono={
+                    deuda?.tipo === 'EN_CARTERA'
+                      ? 'alerta'
+                      : deuda?.tipo === 'VENCIDO_EN_PLAZO'
+                        ? 'neutro'
+                        : 'apagado'
+                  }
+                  detalle={
+                    deuda?.tipo === 'EN_CARTERA'
+                      ? deuda.dias === 1
+                        ? t(`${NS}.enCarteraUnDia`)
+                        : t(`${NS}.enCartera`, { n: deuda.dias })
+                      : deuda?.tipo === 'VENCIDO_EN_PLAZO'
+                        ? t(`${NS}.vencidoEnPlazo`)
+                        : deuda?.tipo === 'AL_DIA'
+                          ? t(`${NS}.alDia`)
+                          : undefined
+                  }
+                  detalleTono={
+                    deuda?.tipo === 'EN_CARTERA'
+                      ? 'alerta'
+                      : deuda?.tipo === 'VENCIDO_EN_PLAZO'
+                        ? 'aviso'
+                        : 'bien'
+                  }
+                />
+              </dl>
+
+              {errorCuenta ? (
+                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
+                  <p className="text-sm text-danger" role="alert">
+                    {t(`${NS}.errorCuenta`)}
+                  </p>
+                  <Button variant="outline" size="sm" hideArrow onClick={reintentar}>
+                    {t(`${NS}.reintentar`)}
+                  </Button>
+                </div>
+              ) : !cargandoCuenta && cuenta !== null && cuenta.contratos === 0 ? (
+                /* Tiene arriendos pero ningún contrato responde por él: no se
+                   sabe qué debe, y se dice en vez de pintar un cero. */
+                <Aviso texto={t(`${NS}.sinEstadoDeCuenta`)} />
+              ) : null}
+
+              {enlaceAlEstadoDeCuenta ? (
+                <Button asChild variant="secondary" size="sm" hideArrow>
+                  <Link href={enlaceAlEstadoDeCuenta} data-testid="inquilino-cajon-estado-de-cuenta">
+                    {t(`${NS}.verEstadoDeCuenta`)}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
 
             <Seccion
               titulo={t(`${NS}.arriendos`)}
@@ -450,7 +494,7 @@ export function CuerpoDelCajon({
 
             <div data-testid="inquilino-cajon-pagos">
               <Seccion
-                titulo={t(`${NS}.pagos`)}
+                titulo={t(`${NS}.cobrosEmitidos`)}
                 conteo={cobrosLlegaron ? cobros.length : undefined}
                 meta={
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
@@ -486,17 +530,23 @@ export function CuerpoDelCajon({
                     </Button>
                   </div>
                 ) : cobros.length === 0 ? (
+                  /* 🔴 Sin cobros NO quiere decir sin deuda: el cobro es el
+                     documento con que se reclama, y la deuda ya está en la
+                     franja de arriba. El vacío lo dice y lleva al estado de
+                     cuenta, no a esperar un cobro. */
                   <EmptyState
                     icon={Receipt}
-                    title={t(`${NS}.sinPagosTitulo`)}
-                    description={t(`${NS}.sinPagos`)}
+                    title={t(`${NS}.sinCobrosTitulo`)}
+                    description={t(`${NS}.sinCobros`)}
                     action={
-                      contratoPrincipal
-                        ? {
-                            label: t(`${NS}.verContrato`),
-                            href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
-                          }
-                        : undefined
+                      enlaceAlEstadoDeCuenta
+                        ? { label: t(`${NS}.verEstadoDeCuenta`), href: enlaceAlEstadoDeCuenta }
+                        : contratoPrincipal
+                          ? {
+                              label: t(`${NS}.verContrato`),
+                              href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
+                            }
+                          : undefined
                     }
                     className="rounded-lg bg-surface-muted/40 py-10"
                   />
@@ -570,7 +620,13 @@ function Seccion({
   );
 }
 
-/** Un cobro en una línea: mes, vencimiento, estado, total y saldo. */
+/**
+ * Un cobro emitido en una línea: mes, estado del documento, vencimiento, total
+ * y lo que queda de ese documento.
+ *
+ * Sin «N días de mora»: `daysLate` del cobro no resta el plazo del contrato, y
+ * esa frontera ya la dice la franja de arriba, leída de las cuotas.
+ */
 function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   const tono = TONO_DEL_COBRO[cobro.status];
@@ -587,17 +643,13 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
         {tono ? t(tono.clave) : cobro.status}
       </Badge>
 
-      {cobro.daysLate > 0 ? (
-        <span className="text-xs text-danger tabular-nums">
-          {t(`${NS}.diasDeMora`, { n: cobro.daysLate })}
-        </span>
-      ) : cobro.paidDate ? (
+      {cobro.paidDate && !debe ? (
         <span className="text-xs text-fg-muted">
           {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
         </span>
       ) : (
         <span className="text-xs text-fg-muted">
-          {t(`${NS}.venceEl`, { fecha: formatDate(cobro.dueDate) })}
+          {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
         </span>
       )}
 
@@ -607,8 +659,8 @@ function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
         {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
       </span>
       {debe ? (
-        <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-xs tabular-nums text-danger">
-          {t(`${NS}.debe`, { monto: formatCurrency(cobro.pendingAmount) })}
+        <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
+          {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
         </span>
       ) : (
         <span className="w-28 shrink-0" />
@@ -630,7 +682,7 @@ function Numero({
   valor: string;
   detalle?: string;
   tono?: TonoDelNumero;
-  detalleTono?: 'neutro' | 'alerta' | 'bien';
+  detalleTono?: 'neutro' | 'alerta' | 'aviso' | 'bien';
 }) {
   return (
     <div className="min-w-0 px-4 first:pl-0 last:pr-0">
@@ -649,9 +701,11 @@ function Numero({
             'mt-0.5 truncate text-xs',
             detalleTono === 'alerta'
               ? 'text-danger'
-              : detalleTono === 'bien'
-                ? 'text-success'
-                : 'text-fg-subtle',
+              : detalleTono === 'aviso'
+                ? 'text-warning'
+                : detalleTono === 'bien'
+                  ? 'text-success'
+                  : 'text-fg-subtle',
           )}
         >
           {detalle}

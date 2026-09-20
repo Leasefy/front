@@ -44,6 +44,16 @@ export interface Pqrs {
   inmuebleLabel: string | null;
   asignadoAUserId: string | null;
   asignadoANombre: string | null;
+  /**
+   * Desde cuándo responde esa persona. ISO, o `null` cuando no se sabe: las
+   * solicitudes radicadas antes del 15-09 no tienen ese dato y no se les
+   * inventa uno (la columna `pqrs.asignado_at` es nullable a propósito).
+   *
+   * Opcional en el tipo, no en el back: el back lo manda siempre. Se declara
+   * así para que los fixtures que ya existen sigan compilando sin que cada
+   * pantalla que arma una PQRS de prueba tenga que inventarle una fecha.
+   */
+  asignadoDesde?: string | null;
   estado: PqrsEstado;
   /** ISO. 15 días hábiles desde el radicado (Ley 1755 de 2015, art. 14). */
   slaVenceAt: string;

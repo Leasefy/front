@@ -926,7 +926,7 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
 
     expect(inmueblesImportacionApiMock.descartarLote).toHaveBeenCalledTimes(1);
     expect(pushMock).not.toHaveBeenCalled();
-    expect(container.textContent).toContain('esperá a que termine');
+    expect(container.textContent).toContain('espera a que termine');
   });
 });
 

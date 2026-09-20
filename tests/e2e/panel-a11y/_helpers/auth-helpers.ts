@@ -152,7 +152,7 @@ const FULL_AGENT_PERMISSIONS = {
  *
  *   test('cobranza overview — populated', async ({ page }) => {
  *     await page.route(OVERVIEW_MOCK, ...)
- *     await page.goto('/panel/inmobiliaria/cobros/cobranza')
+ *     await page.goto('/panel/inmobiliaria/pagos/cobranza')
  *     await expect(page.locator('main')).toBeVisible()
  *   })
  */

@@ -54,9 +54,19 @@ const { previewDelContrato } = vi.hoisted(() => ({
   },
 }))
 
-// C9: la tarjeta de cobros le reporta a la ficha que NO pudo traerlos.
+// La tarjeta de cobros: puede fallar, y anota si la ficha le pidió un resumen
+// (🔴 no debe: ningún número del arriendo sale de los cobros).
 const { cobrosDelDoble } = vi.hoisted(() => ({
-  cobrosDelDoble: { fallan: false },
+  cobrosDelDoble: { fallan: false, lePidieronResumen: false },
+}))
+
+/**
+ * Lo que la ficha sabe del estado de cuenta de ESTE contrato. Se dobla el hook
+ * —no la red— para que cada caso se pare en un estado; el hook tiene sus
+ * propias pruebas (`use-cuenta-del-contrato.test.tsx`).
+ */
+const { cuentaDelDoble } = vi.hoisted(() => ({
+  cuentaDelDoble: { valor: null as unknown },
 }))
 
 const { paramsDeBusqueda } = vi.hoisted(() => ({
@@ -183,17 +193,34 @@ vi.mock('@/components/contratos/InvitarInquilino', () => ({
   InvitarInquilino: () =>
     React.createElement('div', { 'data-testid': 'invitar-inquilino' }),
 }))
+// D5/D9/D10 (17-09): acá sólo importa que las secciones estén montadas; lo que
+// muestran se prueba en su propio archivo.
+vi.mock('@/components/contratos/ProrrogaDelContrato', () => ({
+  ProrrogaDelContrato: () => React.createElement('div', { 'data-testid': 'prorroga-montada' }),
+}))
+vi.mock('@/components/contratos/CondicionesDelContrato', () => ({
+  CondicionesDelContrato: () => React.createElement('div', { 'data-testid': 'condiciones-montadas' }),
+}))
+vi.mock('@/components/contratos/GarantiaDeServiciosDelContrato', () => ({
+  GarantiaDeServiciosDelContrato: () => React.createElement('div', { 'data-testid': 'garantia-montada' }),
+}))
 vi.mock('@/components/contratos/ReglasDeMoraDelContrato', () => ({
   ReglasDeMoraDelContrato: () =>
     React.createElement('div', { 'data-testid': 'reglas-de-mora' }),
 }))
 vi.mock('@/components/contratos/CobrosDelContrato', () => ({
   CobrosDelContrato: ({ onResumen }: { onResumen?: (r: unknown) => void }) => {
+    if (onResumen) cobrosDelDoble.lePidieronResumen = true
     React.useEffect(() => {
-      if (cobrosDelDoble.fallan) onResumen?.('fallo')
+      // Un saldo de cobros que NO cuadra con el estado de cuenta: si la ficha
+      // lo pintara en algún lado, se vería.
+      onResumen?.(cobrosDelDoble.fallan ? 'fallo' : { total: 3, saldo: 999_999, enMora: 2, pendientes: 1 })
     }, [onResumen])
     return React.createElement('div', { 'data-testid': 'cobros' })
   },
+}))
+vi.mock('@/lib/hooks/use-cuenta-del-contrato', () => ({
+  useCuentaDelContrato: () => cuentaDelDoble.valor,
 }))
 // El seguimiento de PQRS del contrato (Nico, 2026-09-12). Acá sólo importa
 // que la sección esté montada: lo que muestra se prueba en su propio archivo.
@@ -240,6 +267,38 @@ function contract(overrides: Partial<Contract>): Contract {
   } as Contract
 }
 
+/** El estado de cuenta de ESTE contrato: seis cuotas, las dos primeras pagadas. */
+function estadoDeCuenta() {
+  const arriendos = Array.from({ length: 6 }, (_, i) => {
+    const fecha = `2099-0${i + 1}-05`
+    return {
+      concepto: `Arriendo ${fecha}`,
+      estado: i < 2 ? 'CANCELADA' : 'PENDIENTE',
+      fechaDePago: i < 2 ? fecha : null,
+      valorBruto: 2_000_000,
+      iva: 0,
+      retencion: 0,
+      reteIva: 0,
+      reteIca: 0,
+      valorNeto: 2_000_000,
+      fechaVencimiento: fecha,
+      documentoDePago: null,
+      parcial: false,
+      cuotaId: `q-${i}`,
+    }
+  })
+  return {
+    id: CONTRACT_ID,
+    numero: '99',
+    rol: 'INQUILINO',
+    inmueble: { direccion: 'Cra 76 # 32-11' },
+    vigente: true,
+    secciones: { arriendos, otrosConceptos: [] },
+    totales: { cancelado: 4_000_000, pendiente: 0, restaPorPagar: 8_000_000 },
+    cortes: [],
+  }
+}
+
 function withContract(c: Contract) {
   useContractMock.mockReturnValue({
     contract: c,
@@ -259,6 +318,13 @@ beforeEach(() => {
   root = createRoot(container)
   useContractMock.mockReset()
   cobrosDelDoble.fallan = false
+  cobrosDelDoble.lePidieronResumen = false
+  cuentaDelDoble.valor = {
+    cuenta: { estado: 'listo', contrato: estadoDeCuenta(), tenantRef: 'tenant-1' },
+    agencia: null,
+    esperandoAgencia: false,
+    reintentar: () => {},
+  }
   previewDelContrato.valor = {
     preview: null,
     isLoading: false,
@@ -499,6 +565,22 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
     expect(cobros!.compareDocumentPosition(documento!) & 4).toBe(4)
   })
 
+  it('🔴 17-09: en un contrato activo se montan la prórroga (D5), las condiciones y la garantía de servicios (D10)', async () => {
+    withContract(contract({ status: 'active' }))
+    await renderPage()
+    expect(container.querySelector('[data-testid="prorroga-montada"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="condiciones-montadas"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="garantia-montada"]')).not.toBeNull()
+  })
+
+  it('mientras se firma ya se pactan las condiciones y la garantía (al INICIO se exige al activar), sin prórroga', async () => {
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    expect(container.querySelector('[data-testid="condiciones-montadas"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="garantia-montada"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="prorroga-montada"]')).toBeNull()
+  })
+
   it('mientras se firma, el documento manda: va antes que la cuenta', async () => {
     withContract(contract({ status: 'pending_tenant' }))
 
@@ -579,12 +661,27 @@ describe('ContratoDetallePage — el propietario', () => {
   })
 })
 
-describe('ContratoDetallePage — el resumen de arriba', () => {
-  it('el número es el título y los cuatro números van en la franja', async () => {
+/**
+ * 🔴 EL ARRIENDO, en un solo bloque (Nico, 2026-09-16). Antes eran tres cajas
+ * —una franja de cuatro números, el resumen del estado de cuenta y una caja
+ * verde de «Arriendo en curso»— que se contradecían: «Saldo del inquilino —
+ * sin cobros todavía» (de los COBROS) encima de «Resta por pagar $19.214.516»
+ * (del estado de cuenta).
+ */
+describe('ContratoDetallePage — el bloque del arriendo', () => {
+  afterEach(() => {
+    permisos.puede = false
+  })
+
+  const bloque = () => container.querySelector('[data-testid="arriendo-del-contrato"]')!
+  const $ = (testid: string) => container.querySelector(`[data-testid="${testid}"]`)
+
+  it('el número es el título, y el bloque dice canon, ritmo y fechas en palabras', async () => {
     withContract(
       contract({
         code: 99,
         monthlyRent: 2_100_000,
+        startDate: '2099-01-01T00:00:00.000Z',
         endDate: '2099-12-31T00:00:00.000Z',
         paymentDueDay: 5,
         diasDePlazo: 3,
@@ -593,39 +690,122 @@ describe('ContratoDetallePage — el resumen de arriba', () => {
 
     await renderPage()
 
-    const h1 = container.querySelector('h1')!
-    expect(h1.textContent).toBe('Contrato #99')
-    const franja = container.querySelector('[data-testid="resumen-del-contrato"]')!
-    expect(franja.textContent).toContain('2.100.000')
-    expect(franja.textContent).toContain('31 dic 2099')
-    expect(franja.textContent).toContain('Día 5')
-    expect(franja.textContent).toContain('+3 de plazo')
-    // Activo no lleva banda verde: el chip ya lo dice.
-    expect(container.textContent).not.toContain('Los pagos se registran automáticamente')
+    expect(container.querySelector('h1')!.textContent).toBe('Contrato #99')
+    expect($('canon-del-arriendo')!.textContent).toContain('$2.100.000')
+    expect($('ritmo-de-pago')!.textContent).toBe('Paga el 5 de cada mes, con 3 días de plazo.')
+    expect($('fecha-de-fin')!.textContent).toBe('31 dic 2099')
+    // Las tres cajas de antes ya no están.
+    expect($('resumen-del-contrato')).toBeNull()
+    expect($('resumen-en-la-ficha')).toBeNull()
+    expect(container.textContent).not.toContain('Día 5')
+    expect(container.textContent).not.toContain('+3 de plazo')
   })
 
-  it('un contrato vencido lo dice en la franja, no sólo en el chip', async () => {
-    withContract(contract({ endDate: '2020-01-31T00:00:00.000Z' }))
+  it('🔴 ningún número sale de los cobros: la ficha ni siquiera les pide el resumen', async () => {
+    withContract(contract({ startDate: '2099-01-01', endDate: '2099-12-31' }))
 
     await renderPage()
 
-    expect(container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent).toContain('vencido hace')
+    expect(cobrosDelDoble.lePidieronResumen).toBe(false)
+    expect(container.textContent).not.toContain('999.999')
+    expect(container.textContent).not.toContain('Saldo del inquilino')
+    expect(container.textContent).not.toContain('sin cobros todavía')
+    // Lo que resta sale del estado de cuenta de ESTE contrato.
+    expect($('resta-por-pagar')!.textContent).toBe('$8.000.000')
+    expect($('cuotas-pagadas')!.textContent).toBe('2 de 6 cuotas pagadas')
   })
 
-  /**
-   * 🔴 C9 (P0). Con el GET de cobros caído la franja decía «Saldo del
-   * inquilino — · sin cobros todavía»: le afirmaba «al día» a un moroso.
-   */
-  it('🔴 si los cobros no se pudieron traer, el saldo es una raya que lo dice — nunca «sin cobros»', async () => {
+  it('con los cobros caídos, el bloque sigue diciendo lo del estado de cuenta', async () => {
     cobrosDelDoble.fallan = true
+    withContract(contract({ startDate: '2099-01-01', endDate: '2099-12-31' }))
+
+    await renderPage()
+
+    expect($('resta-por-pagar')!.textContent).toBe('$8.000.000')
+    expect(container.textContent).not.toContain('No se pudo traer el saldo')
+  })
+
+  it('un contrato en curso: sus decisiones van al pie y en voz baja, sin caja verde', async () => {
+    permisos.puede = true
+    withContract(contract({ status: 'active', endDate: '2099-12-31' }))
+
+    await renderPage()
+
+    expect($('etapa-del-arriendo')!.textContent).toBe('Arriendo en curso')
+    expect($('aviso-del-contrato')).toBeNull()
+    const pie = $('acciones-del-arriendo')!
+    expect(pie.textContent).toContain('Terminar el arriendo')
+    expect(pie.textContent).toContain('Cambiar de propietario')
+    expect(bloque().innerHTML).not.toMatch(/success/)
+    expect(container.textContent).not.toContain('Vigente hasta el')
+  })
+
+  it('sin permiso de editar, el bloque se lee igual pero no ofrece decisiones', async () => {
+    permisos.puede = false
+    withContract(contract({ status: 'active', endDate: '2099-12-31' }))
+
+    await renderPage()
+
+    expect(bloque()).not.toBeNull()
+    expect($('acciones-del-arriendo')).toBeNull()
+    expect($('aviso-del-contrato')).toBeNull()
+  })
+
+  it('🔴 un contrato vencido: la etapa, el chip y el aviso lo dicen, con sus dos caminos', async () => {
+    permisos.puede = true
+    withContract(contract({ endDate: '2020-01-31T00:00:00.000Z', startDate: '2019-02-01' }))
+
+    await renderPage()
+
+    expect($('etapa-del-arriendo')!.textContent).toBe('Vencido sin renovar')
+    const chip = container.querySelector('[data-testid="badge"]')!
+    expect(chip.textContent).toBe('Vencido')
+    expect(chip.getAttribute('data-variant')).toBe('warning')
+
+    const aviso = $('aviso-del-contrato')!
+    expect(aviso.getAttribute('data-tono')).toBe('atencion')
+    expect(aviso.textContent).toContain('Vencido desde el 31 ene 2020')
+    expect(aviso.textContent).toContain('Renovar contrato')
+    expect(aviso.textContent).toContain('Terminar el arriendo')
+    expect($('acciones-del-arriendo')!.textContent).toContain('Cambiar de propietario')
+    expect(container.textContent).not.toMatch(/2020-01-31/)
+  })
+
+  it('los pasos de la firma siguen: cada estado con su acción principal', async () => {
+    permisos.puede = true
+    const casos = [
+      ['draft', 'Contrato en borrador', 'Enviar al inquilino'],
+      ['pending_tenant', 'Esperando firma del inquilino', 'Recordar firma'],
+      ['pending_landlord', 'El inquilino ya firmó — firma para cerrar', 'Firmar como propietario'],
+      ['rejected_pending_modifications', 'El inquilino solicitó cambios', 'Corregir contrato'],
+      ['signed', 'Contrato firmado', 'Activar contrato'],
+    ] as const
+    for (const [status, titulo, accion] of casos) {
+      cuentaDelDoble.valor = { ...(cuentaDelDoble.valor as object), cuenta: { estado: 'no-aplica' } }
+      withContract(contract({ status }))
+      await renderPage()
+      const aviso = $('aviso-del-contrato')
+      expect(aviso?.textContent, status).toContain(titulo)
+      expect(aviso?.textContent, status).toContain(accion)
+    }
+  })
+
+  it('un borrador ofrece cancelarlo al pie', async () => {
+    permisos.puede = true
+    withContract(contract({ status: 'draft' }))
+
+    await renderPage()
+
+    expect($('acciones-del-arriendo')!.textContent).toContain('Cancelar contrato')
+  })
+
+  it('la vigencia ya no se repite en una tarjeta aparte', async () => {
     withContract(contract({}))
 
     await renderPage()
 
-    const franja = container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent
-    expect(franja).toContain('No se pudo traer el saldo')
-    expect(franja).not.toContain('sin cobros todavía')
-    expect(franja).not.toContain('al día')
+    const titulos = Array.from(container.querySelectorAll('h3')).map((h) => h.textContent)
+    expect(titulos).not.toContain('Vigencia')
   })
 })
 
@@ -699,7 +879,7 @@ describe('ContratoDetallePage — un contrato que ya terminó', () => {
  * suyo, y debajo dice cuál es el nuestro.
  */
 describe('ContratoDetallePage — el número de la inmobiliaria en el título', () => {
-  it('un contrato migrado se titula con SU número y dice cuál es el de Leasefy', async () => {
+  it('un contrato migrado se titula con SU número, sin el de Leasefy (16-09)', async () => {
     withContract(contract({ code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' }))
 
     await renderPage()
@@ -707,7 +887,7 @@ describe('ContratoDetallePage — el número de la inmobiliaria en el título', 
     expect(container.querySelector('h1')?.textContent).toBe('Contrato 1686')
     const nota = container.querySelector('[data-testid="numero-de-leasefy"]')
     expect(nota?.textContent).toContain('1686 es el número de tu sistema anterior')
-    expect(nota?.textContent).toContain('en Leasefy es el #1839')
+    expect(nota?.textContent).not.toContain('#1839')
     expect(container.textContent).not.toContain('Contrato #1839')
   })
 

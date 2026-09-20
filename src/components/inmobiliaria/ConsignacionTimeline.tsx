@@ -257,10 +257,24 @@ export function ConsignacionTimeline({
 
   useEffect(() => {
     let vivo = true;
+    // Sin inmueble no hay nada que buscar en la agenda: un mandato migrado sin
+    // `propertyId` no puede tener visitas ni inspecciones atadas a él.
+    if (!consignacion.propertyId) {
+      setEventosAgenda([]);
+      setCargandoAgenda(false);
+      setFalloAgenda(false);
+      return;
+    }
     setCargandoAgenda(true);
     setFalloAgenda(false);
+    // 🔴 Antes esto pedía el feed ENTERO de la agencia para quedarse con los
+    // eventos de UN inmueble (caso A8 de la auditoría del 13-09): con la
+    // inmobiliaria migrada, el portafolio completo a la RAM del back cada vez
+    // que alguien abría una ficha. El filtro por inmueble lo hace la base; el
+    // `filter` de abajo se queda como red: sólo pinta lo que cuelga del
+    // inmueble, no de su consignación.
     agendaApi
-      .getAgenda()
+      .getAgenda({ propertyId: consignacion.propertyId, pageSize: 100 })
       .then((r) => {
         if (!vivo) return;
         setEventosAgenda(

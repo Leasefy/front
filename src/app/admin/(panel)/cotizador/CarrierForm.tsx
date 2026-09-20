@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { Pill } from '@/components/admin/Pill'
+import { useHidratado } from '@/lib/hooks/use-hidratado'
 import {
   carrierFormSchema,
   CARRIER_FORM_DEFAULTS,
@@ -77,6 +78,7 @@ export function CarrierForm({
   onSubmit,
   onCancel,
 }: CarrierFormProps) {
+  const hidratado = useHidratado()
   const [values, setValues] = useState<CarrierFormValues>(initialValues ?? CARRIER_FORM_DEFAULTS)
   const [errors, setErrors] = useState<FieldErrors>({})
 
@@ -108,7 +110,11 @@ export function CarrierForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className="card p-6 space-y-6">
+    // `method="post"` y el botón apagado hasta hidratar: el formulario lleva la
+    // contraseña de la aseguradora. Sus campos no tienen `name`, pero un envío
+    // nativo nunca debe poder armar una URL con credenciales (ver
+    // `formularios-con-contrasena.test.ts`).
+    <form method="post" onSubmit={submit} noValidate className="card p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="section-label">{isEdit ? 'editar carrier' : 'nuevo carrier'}</div>
         <span className="pill pill-info">COTIZADOR</span>
@@ -292,7 +298,7 @@ export function CarrierForm({
       )}
 
       <div className="flex items-center gap-3">
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting || !hidratado}>
           {isSubmitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear carrier'}
         </button>
         <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={isSubmitting}>

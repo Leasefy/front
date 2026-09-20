@@ -17,6 +17,8 @@ import { SesionYaAbierta } from './SesionYaAbierta';
 import { MedidorDeContrasena } from './MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
+import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
+import { useHidratado } from '@/lib/hooks/use-hidratado';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -284,6 +286,26 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+
+  /*
+   * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
+   * 2026-09-16). El servidor manda el formulario antes que el JavaScript; si la
+   * persona toca «Iniciar sesión» en ese hueco, no hay `onSubmit` que lo
+   * ataje y el navegador lo envía solo, como GET a esta misma dirección. Los
+   * tres formularios de acá van con `method="post"` —que un envío nativo, si
+   * llegara a pasar, lleve los campos en el cuerpo y no en la barra— y con el
+   * botón apagado hasta que React hidrata, que es lo que de verdad lo impide:
+   * con el botón por defecto deshabilitado, ni el clic ni el Enter envían.
+   */
+  const hidratado = useHidratado();
+  /*
+   * Y si ya se llegó con una de esas URL (historial, pestaña restaurada), la
+   * contraseña se saca de la barra al montar, antes que ningún otro efecto, y
+   * no se lee: ni se precarga ni se intenta entrar con ella.
+   */
+  React.useEffect(() => {
+    limpiarCredencialesDeLaUrl();
+  }, []);
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
@@ -803,7 +825,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
             <MonoDivider>o con email</MonoDivider>
 
-            <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+            <form method="post" onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
               <div className="space-y-1.5">
                 <AuthInput
                   label="Email"
@@ -852,7 +874,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               )}
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !hidratado}
                 className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
                 {isLoading ? (
@@ -896,7 +918,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
             <MonoDivider>o con tu email</MonoDivider>
 
-            <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
+            <form method="post" onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
               <div className="space-y-1.5">
                 <AuthInput
                   label="Email"
@@ -950,7 +972,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               />
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
+              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
@@ -1033,6 +1055,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            method="post"
             onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
             className="space-y-4"
           >
@@ -1058,7 +1081,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             </div>
             {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
-            <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
+            <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
             <p className="text-[12px] text-fg-subtle leading-relaxed">

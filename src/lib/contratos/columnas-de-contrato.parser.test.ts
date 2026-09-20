@@ -577,3 +577,32 @@ describe('la cuota de administración', () => {
     expect(m.map((x) => x.campo)).toEqual(['comision', null])
   })
 })
+
+/**
+ * 🔴 LA REFERENCIA DE RECAUDO (P1.1): con qué número paga el inquilino. Es la
+ * columna que la conciliación necesita para dejar de adivinar por apellido.
+ *
+ * Lo que estas filas protegen: que «Referencia» NO se la lleve el consecutivo,
+ * y que el consecutivo NO se lleve la referencia. Son dos preguntas distintas
+ * —cómo llama la inmobiliaria al contrato vs. qué escribe el banco en el
+ * extracto— y confundirlas cruzaría los pagos contra el número equivocado.
+ */
+describe('referencia de recaudo', () => {
+  it.each([
+    'Referencia de recaudo',
+    'Referencia de pago',
+    'REFERENCIA BANCARIA',
+    'Código de recaudo',
+    'Referencia',
+  ])('«%s» es la referencia de recaudo', (encabezado) => {
+    expect(campoDe(encabezado)).toBe('referenciaDeRecaudo')
+  })
+
+  it.each([
+    'Consecutivo',
+    'Número del contrato',
+    'Código del contrato',
+  ])('«%s» sigue siendo el consecutivo, no la referencia', (encabezado) => {
+    expect(campoDe(encabezado)).toBe('consecutivoContrato')
+  })
+})

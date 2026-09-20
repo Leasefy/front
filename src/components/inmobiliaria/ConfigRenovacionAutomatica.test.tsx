@@ -148,7 +148,10 @@ describe('ConfigRenovacionAutomatica — el interruptor', () => {
     await render()
     expect(q('renovacion-automatica-hint')!.textContent).toContain('Apagado')
     await render({ agency: { ...AGENCY, renovacionAutomatica: true } })
-    expect(q('renovacion-automatica-hint')!.textContent).toContain('propuesta')
+    // D5/D6 (17-09): prendida prorroga y extiende cuotas; ningún correo sale solo.
+    const hint = q('renovacion-automatica-hint')!.textContent
+    expect(hint).toContain('prorroga')
+    expect(hint).toContain('Ningún correo sale solo')
   })
 
   it('sin ser ADMIN no se puede tocar nada y se dice por qué', async () => {
@@ -215,13 +218,20 @@ describe('ConfigRenovacionAutomatica — el IPC vigente', () => {
 })
 
 describe('ConfigRenovacionAutomatica — el pronóstico', () => {
-  it('con movimiento dice cuántos correos y cuántas renovaciones salen', async () => {
-    simularMock.mockResolvedValue({ ...SIN_MOVIMIENTO, propuestas: 7, renovadas: 2 })
+  it('🔴 D5: con movimiento dice cuántos se prorrogan, cuántos quedan en alerta y cuántos esperan confirmación', async () => {
+    simularMock.mockResolvedValue({
+      ...SIN_MOVIMIENTO,
+      renovadas: 7,
+      porConfirmar: 3,
+      alertas: { avisoDeNoRenovacion: 1, sinUso: 1, terminoPorConfirmar: 0, renovacionEnCurso: 0 },
+    })
     await render()
     const aviso = q('renovacion-pronostico')!
-    expect(aviso.textContent).toContain('7')
-    expect(aviso.textContent).toContain('2')
+    expect(aviso.textContent).toContain('7 contratos se prorrogarían')
+    expect(aviso.textContent).toContain('2 quedarían en alerta')
+    expect(aviso.textContent).toContain('3 esperan')
     expect(aviso.textContent).toContain('00:20')
+    expect(aviso.textContent).not.toContain('correo')
   })
 
   it('sin nada que mover no se pinta un aviso vacío', async () => {

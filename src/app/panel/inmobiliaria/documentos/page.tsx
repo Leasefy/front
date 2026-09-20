@@ -57,6 +57,10 @@ import {
 } from '@/components/ui/select';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
+import {
+  CerrarActaSinFirma,
+  sePuedeCerrarSinFirma,
+} from '@/components/inmobiliaria/CerrarActaSinFirma';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
 import {
@@ -154,6 +158,20 @@ function DocumentosContent() {
   // elige el inmueble entre las arrendadas, y con la consulta caída el
   // selector salía vacío y filtrado en silencio.
   const { consignaciones, errorCrudo: errorConsignaciones } = useConsignaciones({ status: 'active' });
+  /*
+   * 🔴 D3 de la auditoría del 13-09, la mitad que faltaba: el selector del acta
+   * SÓLO ofrece inmuebles arrendados —un acta de entrega se levanta sobre un
+   * arriendo en curso, no sobre un inmueble disponible—, pero eso se filtraba
+   * en silencio: quien tiene 40 inmuebles y ve 6 en la lista no sabe si el
+   * resto se cayó, si no tiene permiso o si es a propósito. Ahora se dice, con
+   * los dos números, y el caso «ninguno arrendado» tiene su propio texto en vez
+   * de un selector vacío.
+   */
+  const arrendados = useMemo(
+    () => consignaciones.filter((c) => c.availability === 'rented'),
+    [consignaciones],
+  );
+  const noArrendados = consignaciones.length - arrendados.length;
 
   /*
    * Los dos permisos que gobiernan los botones de esta pantalla, y son
@@ -169,6 +187,7 @@ function DocumentosContent() {
   const [generarAbierto, setGenerarAbierto] = useState(false);
   const [plantillaAbierta, setPlantillaAbierta] = useState<PlantillaDeLaAgencia | null>(null);
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
+  const [cerrandoSinFirma, setCerrandoSinFirma] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
 
   /*
@@ -680,12 +699,29 @@ function DocumentosContent() {
       <Cajon abierto={nuevaActaAbierta} onOpenChange={setNuevaActaAbierta} ancho="sm:max-w-2xl">
         <CajonCabecera titulo={t('inmobiliaria.documentos.newActa')} />
         <CajonCuerpo>
-          <ActaEntregaForm
-            initialData={{ type: 'entrega' }}
-            consignaciones={consignaciones.filter((c) => c.availability === 'rented')}
-            onSave={guardarActa}
-            onCancel={() => setNuevaActaAbierta(false)}
-          />
+          {arrendados.length === 0 ? (
+            <p className="text-body-sm text-fg-muted" data-testid="acta-sin-arrendados">
+              {errorConsignaciones
+                ? 'No se pudieron traer los inmuebles arrendados. Prueba de nuevo en un momento.'
+                : 'Ninguno de tus inmuebles está arrendado ahora mismo. Un acta de entrega se levanta sobre un arriendo en curso, así que todavía no hay sobre cuál hacerla.'}
+            </p>
+          ) : (
+            <>
+              {noArrendados > 0 && (
+                <p className="mb-4 text-caption text-fg-muted" data-testid="acta-solo-arrendados">
+                  Se listan los {arrendados.length} inmuebles arrendados: un acta de entrega se
+                  levanta sobre un arriendo en curso. Los otros {noArrendados} del portafolio no
+                  aparecen por eso, no porque falten.
+                </p>
+              )}
+              <ActaEntregaForm
+                initialData={{ type: 'entrega' }}
+                consignaciones={arrendados}
+                onSave={guardarActa}
+                onCancel={() => setNuevaActaAbierta(false)}
+              />
+            </>
+          )}
         </CajonCuerpo>
       </Cajon>
 
@@ -695,8 +731,44 @@ function DocumentosContent() {
         ancho="sm:max-w-2xl"
       >
         <CajonCabecera titulo={t('inmobiliaria.documentos.actaDetail')} />
-        <CajonCuerpo>{actaVisible && <ActaEntregaViewer acta={actaVisible} />}</CajonCuerpo>
+        <CajonCuerpo>
+          {actaVisible && (
+            <>
+              <ActaEntregaViewer acta={actaVisible} />
+              {/*
+                🔴 I-03: el inquilino no firma y el acta queda abierta para
+                siempre. El botón sólo aparece cuando de verdad se puede —si el
+                inquilino firmó, se cierra por el camino normal— para que nadie
+                consiga un testigo y descubra después que no hacía falta.
+              */}
+              {actaVisible.status !== 'completed' &&
+                sePuedeCerrarSinFirma(actaVisible) && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <Button
+                      variant="secondary"
+                      hideArrow
+                      onClick={() => setCerrandoSinFirma(actaVisible)}
+                    >
+                      Cerrar sin la firma del inquilino
+                    </Button>
+                  </div>
+                )}
+            </>
+          )}
+        </CajonCuerpo>
       </Cajon>
+
+      {cerrandoSinFirma && (
+        <CerrarActaSinFirma
+          acta={cerrandoSinFirma}
+          onCerrar={() => setCerrandoSinFirma(null)}
+          onCerrada={() => {
+            setCerrandoSinFirma(null);
+            setActaAbierta(null);
+            void recargarActas();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -51,9 +51,12 @@ const BLOCKS: SystemBlock[] = [
     iconColor: 'text-success',
     titleKey: 'inmobiliaria.hoy.erpTitle',
     descKey: 'inmobiliaria.hoy.erpDesc',
-    cta: '/panel/inmobiliaria/cobros',
+    cta: '/panel/inmobiliaria/pagos/cartera/cobros',
     items: [
-      { labelKey: 'inmobiliaria.nav.cobros', href: '/panel/inmobiliaria/cobros' },
+      // «Cobros» dejó de ser un módulo el 2026-09-15: la lista de documentos
+      // emitidos es una lectura de Cartera, y se nombra como allá.
+      { labelKey: 'inmobiliaria.nav.cartera', href: '/panel/inmobiliaria/pagos/cartera' },
+      { labelKey: 'cartera.pestanas.cobrosEmitidos', href: '/panel/inmobiliaria/pagos/cartera/cobros' },
       { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
       { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/pagos/liquidaciones' },
       { labelKey: 'inmobiliaria.nav.facturacion', href: '/panel/inmobiliaria/facturacion' },
@@ -71,7 +74,7 @@ const BLOCKS: SystemBlock[] = [
     descKey: 'inmobiliaria.hoy.autopilotDesc',
     cta: '/panel/inmobiliaria/configuracion/agentes',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/cobros/cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/pagos/cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/postulaciones/asegurabilidad' },
     ],
   },

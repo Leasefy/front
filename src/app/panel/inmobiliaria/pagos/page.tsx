@@ -1,68 +1,98 @@
 'use client'
 
 /**
- * /ai/pagos — HOME "Pagos IA", pestaña «Resumen».
+ * /panel/inmobiliaria/pagos — la portada de PAGOS: la plata de la inmobiliaria.
  *
- * ── Qué cambió y por qué (2026-09-02) ────────────────────────────────────────
- * Nico: «no tiene la tabla que usamos, eso de "generar cobros del mes" no se
- * entiende, y la actividad reciente es enorme».
+ * ── El pedido, textual (Nico, 2026-09-16) ────────────────────────────────────
  *
- * 1. LOS 8 KPIs EN «—». No era falta de datos: `useAgentOverview('pagos')`
- *    responde **200 con datos**, pero el microservicio emite otros tres
- *    indicadores (`collected_30d_cop`, `approval_rate_30d`,
- *    `pending_verification`) que no se cruzan con NINGUNO de los 8 ids que esta
- *    pantalla buscaba. Cero intersección ⇒ los 8 caían al `'—'` por defecto, y
- *    como la respuesta fue exitosa `error` quedaba en `null`: un «—» silencioso
- *    que en realidad significaba «pregunté otra cosa».
- *    Y encima era otro dominio: esos KPIs salen de la tabla `payment` del micro,
- *    que sólo escriben los flujos de cobranza por VOZ — no los cobros del ERP.
- *    ⇒ Los 8 slots muertos se retiran. Los indicadores ahora se derivan de los
- *      cobros REALES del mes (back-erp, desplegado), en `CobrosDelMesPanel`.
+ * «Este front debe cambiar primero. **No debe llamarse Pagos IA.** Y mira que
+ *  hasta el CEO decía que no entiende por qué dice *generar los cobros*, si él
+ *  explica otra cosa que no es generar cobros: **el cobro ya está generado**,
+ *  porque en el estado de cuenta el usuario debe pagar en varias etapas, o sea
+ *  cada mes el total del valor del canon por lo que vaya el contrato. Entonces
+ *  **no es que le dé cobrar para poder que paguen**. Él puede pagar antes, o
+ *  hasta el día máximo de cartera definido para ese contrato, y si se pasa ya
+ *  pasa a cartera, o sea que no ha pagado, y ahí comienza a cobrarse por
+ *  diferentes medios usando nuestros servicios de cobranza.»
  *
- * 2. «GENERAR COBROS DEL MES» no se entendía y además no generaba nada: llevaba
- *    a `/ai/pagos/generar`, cuyo modo masivo es una vista previa ILUSTRATIVA con
- *    el CTA en «Próximamente». El endpoint real (`POST /inmobiliaria/cobros/
- *    generate`) existía, estaba desplegado y no lo llamaba nadie.
- *    ⇒ Ahora es «Generar los cobros de {mes}», vive al lado del selector de mes
- *      (para que su alcance se vea) y pasa por una confirmación que dice el mes
- *      y cuántos cobros de ese mes YA existen. Ver `GenerarCobrosDialog`.
+ * ── Las tres cosas que cambiaron ────────────────────────────────────────────
  *
- * 3. LA TABLA QUE FALTABA. Nico (2026-09-03): «aquí tampoco está la tabla que
- *    usamos nosotros» — `CobroTable` NO era la de la casa. Ahora es
- *    `CobrosDelMesTabla` (`Table` del DS + `useTablePagination` +
- *    `TablePagination`, sin título encima, `SinDatos` DENTRO del tbody y la
- *    fila abre `CobroDetail`). Vive en `CobrosDelMesPanel`.
+ * 1. **Ya no se llama «Pagos IA».** Se llama **Pagos**, y el módulo perdió la
+ *    píldora «IA» en `arquitectura-del-panel.ts`: el módulo es la plata de la
+ *    inmobiliaria, no la sala de un agente. Cobranza IA conserva la suya,
+ *    porque ahí sí hay un agente trabajando.
  *
- * 4. ACTIVIDAD RECIENTE. Era una sección a página completa; queda acotada a las
- *    últimas 5 con «ver todo».
+ * 2. **La pantalla dejó de girar alrededor de «generar los cobros».** El
+ *    bloque operativo es `DeudaDelMesPanel`: lee las CUOTAS del contrato
+ *    (`GET /inmobiliaria/cartera/mes`), que existen desde la firma, y no los
+ *    `Cobro`, que son el documento con el que finanzas reclama y que en la
+ *    inmobiliaria migrada no existen para ninguna de sus 30.951 cuotas — por
+ *    eso los cuatro indicadores viejos decían 0, $0, $0 y 0 sobre $8.446
+ *    millones de deuda real. La acción principal es **registrar un pago**.
+ *    «Generar los cobros» bajó a Cartera → Cobros emitidos, que es donde el
+ *    CEO dijo que vive: «que la persona de finanzas decida cuándo cobrar
+ *    basado en la cartera».
  *
- * 5. «DOS MUNDOS» + «CÓMO FUNCIONA» + «OPERACIONES DETALLADAS» eran tres
- *    secciones de texto explicativo (dos con viñetas largas) que ocupaban más
- *    que la operación. Se funden en UNA fila compacta de accesos. La pantalla es
- *    para operar, no para leer.
+ * 3. **La separación inquilinos / propietarios** ahora es un selector
+ *    explícito arriba (ver `SeccionesDelModulo`), no dos rótulos en versalitas
+ *    metidos entre las cards.
  *
- * Tokens del DS en todo (CERO hex). Un solo CTA primary por vista.
+ * ── Y lo que faltaba, el mismo día, más tarde ──────────────────────────────
+ *
+ * «Eso de inquilinos y propietarios **no se entiende realmente**, y que las
+ *  tabs de abajo estén atadas a lo seleccionado arriba. Y esa tab de **generar
+ *  cobros, ¿para qué?** Sigo preguntando si eso está con **estado de cuenta
+ *  atado**, y ya te he explicado tantas veces que **eso va atado al estado de
+ *  cuenta**.»
+ *
+ * Había un TERCER renglón encima del contenido —las pestañas de la Sala del
+ * agente— que decía «Pagos a propietarios» con «Inquilinos» elegido arriba. Se
+ * fue entero; sus nueve pestañas están repartidas o retiradas una por una en
+ * la NOTA al pie de `agentWorkspaceNav.ts`.
+ *
+ * ── Y el 18-09 de noche, el renglón que quedaba de más ──────────────────────
+ *
+ * «Esta navegación no se entiende un culo.» Seguían siendo DOS renglones —la
+ * cara arriba, las secciones abajo— y ése era el problema: dos filas de cosas
+ * horizontales y clicables, una encima de la otra, se leen como dos juegos de
+ * pestañas del mismo nivel por bien pintada que esté cada una. Hoy es UN
+ * renglón: la cara a la izquierda como selector, una línea, y a la derecha lo
+ * que hay dentro de esa cara (`BarraDePestanas`).
+ *
+ * Y esta pantalla pasó a ser de la cara INQUILINOS —lo dice el rótulo del
+ * encabezado y el `cara: 'inquilinos'` de la arquitectura—: antes no era de
+ * ninguna y aparecía como primera card también en «Propietarios», mostrando la
+ * deuda de los inquilinos.
+ *
+ * Y el estado de cuenta tiene camino desde donde se trabaja la plata: cada fila
+ * de la tabla de cuotas abre el del cliente que debe (`CuotasDelMesTabla`).
+ * Hasta hoy la ÚNICA puerta era la tarjeta resumida de las fichas (contrato,
+ * propietario, inquilino: `ResumenEnLaFicha`), y ninguna pantalla de Pagos
+ * llevaba a él.
+ *
+ * ── Lo que se retiró de esta pantalla ───────────────────────────────────────
+ *
+ * La fila «Operaciones detalladas» (Cobros a inquilinos · Pagos a propietarios
+ * · Liquidaciones) era exactamente el mismo mapa que el riel de secciones de
+ * arriba, repetido a media pantalla de distancia. Con las dos caras hechas
+ * explícitas, repetirlo es el ruido que hacía que la separación no se
+ * entendiera.
+ *
+ * Lo que queda del agente —la bandeja de atención y la actividad reciente—
+ * sigue siendo del agente y sigue siendo secundario: aparece sólo cuando hay
+ * algo que mostrar.
  */
 
 import Link from 'next/link'
-import {
-  Receipt,
-  Wallet,
-  CaretRight,
-  Clock,
-  Robot,
-  User as UserIcon,
-  Gear,
-  PaperPlaneTilt,
-} from '@phosphor-icons/react'
-import type { Icon } from '@phosphor-icons/react'
+import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { SectionLabel } from '@/components/ui/section-label'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { Button, Card, Badge } from '@/components/ui'
+import { Card, Badge } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PrioridadInbox } from '@/components/inmobiliaria/pagos/PrioridadInbox'
-import { CobrosDelMesPanel } from '@/components/inmobiliaria/pagos/CobrosDelMesPanel'
+import { DeudaDelMesPanel } from '@/components/inmobiliaria/pagos/DeudaDelMesPanel'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { OverviewFeedEntry } from '@/lib/api/agent-workspace'
@@ -83,29 +113,6 @@ function tiempoRelativo(iso: string): string {
   if (h < 24) return `hace ${h} h`
   return `hace ${Math.round(h / 24)} d`
 }
-
-// ── Accesos (reemplazan «Dos mundos» + «Cómo funciona» + «Operaciones») ──────
-
-const ACCESOS: { claveLabel: string; claveDetalle: string; href: string; icon: Icon }[] = [
-  {
-    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobros',
-    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobrosDetalle',
-    href: '/panel/inmobiliaria/cobros',
-    icon: Receipt,
-  },
-  {
-    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.propietarios',
-    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.propietariosDetalle',
-    href: '/panel/inmobiliaria/pagos/dispersiones',
-    icon: Wallet,
-  },
-  {
-    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.tesoreria',
-    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.tesoreriaDetalle',
-    href: '/panel/inmobiliaria/pagos/liquidaciones',
-    icon: PaperPlaneTilt,
-  },
-]
 
 function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'] }) {
   if (actorType === 'agent') {
@@ -152,7 +159,13 @@ function PagosHome() {
     <div className="space-y-8 p-6 lg:p-8">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          {/* 🔴 La CARA, en el título. El selector de arriba dice de qué lado
+              del contrato estás; si la pantalla no lo repite, al bajar la vista
+              ya no se sabe. Y esta pantalla es de una sola cara: lo que deben
+              los inquilinos (ver `cara: 'inquilinos'` en
+              `arquitectura-del-panel.ts`). */}
+          <SectionLabel>Pagos · inquilinos</SectionLabel>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.pagos_home.title')}
           </h1>
@@ -160,21 +173,29 @@ function PagosHome() {
             {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>
-        {/* Sin «Nueva factura» acá. Nico (2026-09-08): «¿por qué hay facturas
-            si para eso tenemos una sección sólo de facturación?». Registrar una
-            factura de proveedor vive en Facturación → Compras, que es la
-            sección dedicada; esta pantalla es de cobros y giros. El CTA de la
-            vista es «Generar los cobros de {mes}», y vive en el panel de abajo,
-            pegado al selector de mes: es la única forma de que su alcance se
-            lea sin abrir nada. */}
+        {/* 🔴 Acá vivían CINCO enlaces azules apretados a la derecha del
+            título —Tablero financiero · Cuadre del día · Recaudo del banco ·
+            Traslado de la comisión · Pendiente de aplicar—. Nico, 18-09 de
+            noche: «esos links que están al lado derecho menos [se entienden],
+            ¿eso es como tabs? porque está a nivel de UX muy mal logrado».
+
+            Las dos observaciones eran ciertas y la segunda explica la primera:
+            parecían pestañas (texto azul en fila, arriba, donde van las
+            pestañas) sin serlo, y eran cinco pantallas de pleno derecho
+            escondidas en una esquina del encabezado porque nadie las había
+            metido en la navegación. Hoy son secciones de su cara —tres de
+            ellas estrenaron la tercera, «Cuadrar la caja»— y el tablero,
+            que mira las tres, va primero en el riel con su línea.
+
+            La regla que deja: una pantalla que no cabe en la navegación no se
+            cuelga del título. O es una sección, o no existe. */}
       </header>
 
-      {/* Qué necesita tu atención — SÓLO si hay algo.
-          Antes ocupaba media pantalla con un «Todo al día» gigante. Esa bandeja
-          se alimenta de los work-items del micro (tabla `payment`, dominio de
-          cobranza por voz), así que para una agencia del ERP viene vacía casi
-          siempre: reservarle media pantalla a un vacío estructural es regalarle
-          el lugar más valioso de la vista a la nada. */}
+      {/* Qué necesita tu atención — SÓLO si hay algo. Es la bandeja del agente
+          (tabla `payment` del micro, dominio de cobranza por voz), así que para
+          una agencia del ERP viene vacía casi siempre: reservarle media
+          pantalla a un vacío estructural es regalarle el lugar más valioso de
+          la vista a la nada. */}
       {wiError ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
           <h2 className="text-base font-semibold text-fg">
@@ -182,12 +203,8 @@ function PagosHome() {
           </h2>
           {/* 🔴 Antes esto era un cartel rojo fijo, sin salida (Nico,
               2026-09-04: «¿por qué dice que no puede cargar y no da opción de
-              reintentar?»). El hook YA exponía `refetch` y `errorCrudo` y la
-              pantalla los ignoraba: se pintaba un callejón sobre un fallo que
-              la mayoría de las veces es el agente que no contestó.
-              `FalloDeCarga` además distingue los cuatro tipos de fallo y sólo
-              ofrece reintentar cuando reintentar puede cambiar algo — sobre un
-              404 el botón sería una promesa falsa. */}
+              reintentar?»). `FalloDeCarga` distingue los cuatro tipos de fallo
+              y sólo ofrece reintentar cuando reintentar puede cambiar algo. */}
           <FalloDeCarga
             error={wiError}
             queEs="lo que necesita tu atención"
@@ -201,7 +218,7 @@ function PagosHome() {
               {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
             </h2>
             <Link
-              href="/panel/inmobiliaria/pagos/cola"
+              href="/panel/inmobiliaria/pagos/liquidaciones/por-aprobar"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.ai.pagos_home.resumen.atencion.verCola')}
@@ -212,39 +229,9 @@ function PagosHome() {
         </section>
       ) : null}
 
-      {/* El bloque operativo: mes + indicadores reales + acción masiva + tabla. */}
-      <CobrosDelMesPanel />
-
-      {/* Accesos — una fila, no tres secciones de texto. */}
-      <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.accesos.aria')}>
-        <h2 className="text-base font-semibold text-fg">
-          {t('inmobiliaria.ai.pagos_home.resumen.accesos.titulo')}
-        </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {ACCESOS.map((op) => {
-            const OpIcon = op.icon
-            return (
-              <Link
-                key={op.href}
-                href={op.href}
-                className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted transition group-hover:text-fg">
-                  <OpIcon className="h-5 w-5" weight="duotone" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-fg">{t(op.claveLabel)}</span>
-                  <span className="block truncate text-xs text-fg-muted">{t(op.claveDetalle)}</span>
-                </span>
-                <CaretRight
-                  className="h-3.5 w-3.5 shrink-0 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg"
-                  aria-hidden="true"
-                />
-              </Link>
-            )
-          })}
-        </div>
-      </section>
+      {/* El bloque operativo: el mes, lo que se debe, lo pagado, dónde está lo
+          que falta, y el recibo de caja. */}
+      <DeudaDelMesPanel />
 
       {/* Actividad reciente — acotada a 5. */}
       <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.actividad.aria')}>
@@ -254,7 +241,7 @@ function PagosHome() {
           </h2>
           {feed.length > MAX_ACTIVIDAD && (
             <Link
-              href="/panel/inmobiliaria/pagos/cola"
+              href="/panel/inmobiliaria/pagos/liquidaciones/por-aprobar"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
               data-testid="actividad-ver-todo"
             >

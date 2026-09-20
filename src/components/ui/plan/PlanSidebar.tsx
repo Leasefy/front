@@ -10,6 +10,7 @@ import { LeasefyLogo, LeasefySymbol, LeasefyLogotype } from '@/components/brand'
 import { SidebarThemeToggle } from './SidebarThemeToggle';
 import { useAuth } from '@/lib/auth';
 import { useSidebar } from '@/lib/context/SidebarContext';
+import { hrefDeLaFilaActiva } from '@/lib/nav/fila-activa-del-menu';
 import {
   Sheet,
   SheetContent,
@@ -426,10 +427,12 @@ function SidebarContent({
     }
   };
 
-  const isActive = (item: NavItem) => {
-    if (item.exact) return pathname === item.href;
-    return pathname === item.href || pathname.startsWith(`${item.href}/`);
-  };
+  // UNA sola fila marcada: la más específica que calce con la ruta. Con los
+  // agentes en su sección y sus URLs intactas, `/pagos/cobranza` calza con
+  // «Pagos» y con «Cobranza»; marcar las dos era decir que la sala vive en los
+  // dos lados (`fila-activa-del-menu.ts`).
+  const hrefActivo = hrefDeLaFilaActiva(navItems, pathname);
+  const isActive = (item: NavItem) => item.href === hrefActivo;
 
   return (
     // El sidebar NO pisa `--primary`: el primario es el del tema y nada más

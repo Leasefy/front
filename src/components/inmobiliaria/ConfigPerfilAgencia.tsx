@@ -1090,7 +1090,7 @@ export function ConfigPerfilAgencia({
                   Prendido: mandan las reglas de mora (interés diario, gasto administrativo, topes) y los días de plazo.
                 </p>
                 <Link
-                  href="/panel/inmobiliaria/cobros/reglas-de-mora"
+                  href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   Ver reglas de mora

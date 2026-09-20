@@ -243,8 +243,6 @@ const AGENTE_LIST: Agente[] = [
       activeLeases: 0,
       closedThisMonth: 0,
       closedThisYear: 0,
-      totalCommissions: 0,
-      commissionsThisMonth: 0,
       avgDaysToClose: 0,
       conversionRate: 0,
     },

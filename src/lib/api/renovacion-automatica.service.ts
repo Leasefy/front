@@ -24,8 +24,11 @@ export const NOMBRE_DE_LA_PARTE: Record<ParteQueAvisa, string> = {
   INMOBILIARIA: 'La inmobiliaria',
 };
 
-/** Qué va a hacer el sistema con este contrato. */
-export type AccionDeRenovacion = 'nada' | 'proponer' | 'renovar' | 'terminar';
+/**
+ * Qué va a hacer el sistema con este contrato. Desde el 17-09 (D5) un contrato
+ * con aviso de no renovación queda en `alerta`: nada lo termina solo.
+ */
+export type AccionDeRenovacion = 'nada' | 'proponer' | 'renovar' | 'alerta';
 
 /** Por qué un contrato no tiene pronóstico. */
 export type SinPlanPorque = 'CONTRATO_NO_VIGENTE' | 'SIN_VENCIMIENTO' | 'SIN_CANON';
@@ -74,11 +77,22 @@ export interface PlanDelContrato {
 export interface ResumenDeLaCorrida {
   agencias: number;
   revisadas: number;
+  /** Siempre 0 desde el 17-09: ninguna carta sale sola (D6, bandeja de cartas). */
   propuestas: number;
+  /** Contratos que se prorrogan (D5): se extienden sus cuotas. */
   renovadas: number;
+  /** Siempre 0 desde el 17-09: con aviso queda en alerta, no se termina solo. */
   terminadas: number;
   sinCambios: number;
   fallidas: number;
+  /** Vencidos hace más de un término: la prórroga la confirma una persona. */
+  porConfirmar?: number;
+  alertas?: {
+    avisoDeNoRenovacion: number;
+    sinUso: number;
+    terminoPorConfirmar: number;
+    renovacionEnCurso: number;
+  };
   /** `true` = no se tocó nada: es el pronóstico, no la corrida. */
   simulado?: boolean;
 }

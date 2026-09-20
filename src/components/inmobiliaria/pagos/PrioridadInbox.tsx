@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * PrioridadInbox — la tabla "Qué necesita tu atención" de la home de Pagos IA
+ * PrioridadInbox — la tabla "Qué necesita tu atención" de la home de Pagos
  * (visión §3). Recibe los WorkItem[] de useAgentWorkItems('pagos') y los muestra
  * como filas priorizadas: prioridad (alta/media/baja con su tono token) · caso ·
  * motivo (acción sugerida del agente) · acción.

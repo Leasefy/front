@@ -4,7 +4,11 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
+// I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
+// Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
+// (posición, duración, estilos) y produce un aviso que no se parece a los demás
+// del producto — o que no se ve, si el proveedor montado es el del DS.
+import { toast } from '@/components/ui/toast';
 import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';

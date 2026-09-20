@@ -12,6 +12,11 @@
  *
  * Los cuatro estados de la casa (`EstadoDeDatos`): mientras lee, si falla
  * (con reintento), si no hay ninguno abierto, y la lista.
+ *
+ * 🔴 Cada enlace dice QUÉ MUESTRA (E4): desde que el recorte viaja con el
+ * enlace, dos enlaces del mismo cliente pueden entregar cosas distintas —uno
+ * la cartera entera, otro sólo lo pendiente de un contrato—. Decidir cuál
+ * revocar sin saber cuál entrega qué es adivinar.
  */
 
 import * as React from 'react';
@@ -30,6 +35,7 @@ import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { estadoDeCuentaApi, type EnlaceVivo } from '@/lib/api/estado-de-cuenta.service';
+import type { FiltrosDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { fechaLegible } from './filas';
 import { motivoDeCompartir } from './usar-compartir';
 
@@ -130,6 +136,7 @@ export function EnlacesCompartidos({
                       <span className="font-mono tabular-nums">{e.aperturas}</span>{' '}
                       {e.aperturas === 1 ? 'apertura' : 'aperturas'}
                     </p>
+                    <p className="text-caption text-fg-muted">{queMuestra(e.filtro)}</p>
                   </div>
                   <Button
                     variant="outline"
@@ -154,4 +161,25 @@ export function EnlacesCompartidos({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * Qué entrega este enlace, en palabras.
+ *
+ * Sin recorte guardado —los enlaces creados antes de E4, y los que se emiten
+ * mientras la migración del back no esté aplicada— es el documento entero, y
+ * así se dice: lo que ve el cliente no cambia por detrás.
+ */
+export function queMuestra(filtro?: FiltrosDelEstadoDeCuenta | null): string {
+  if (!filtro) return 'Muestra el estado de cuenta entero';
+  const partes: string[] = [];
+  if (filtro.soloPendientes) partes.push('sólo lo pendiente');
+  if (filtro.desde && filtro.hasta) {
+    partes.push(`del ${fechaLegible(filtro.desde)} al ${fechaLegible(filtro.hasta)}`);
+  } else if (filtro.desde) partes.push(`desde el ${fechaLegible(filtro.desde)}`);
+  else if (filtro.hasta) partes.push(`hasta el ${fechaLegible(filtro.hasta)}`);
+  if (filtro.contrato) partes.push(`contrato ${filtro.contrato}`);
+  return partes.length > 0
+    ? `Muestra ${partes.join(', ')}`
+    : 'Muestra el estado de cuenta entero';
 }

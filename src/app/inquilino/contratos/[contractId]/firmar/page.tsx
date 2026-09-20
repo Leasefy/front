@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
+import { FirmaDelInventarioDelInquilino } from '@/components/inmobiliaria/inventario/FirmaDelInventarioDelInquilino';
 import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectContractModal } from '@/components/contract/RejectContractModal';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
@@ -129,6 +130,21 @@ function ContractDocumentView({
         className="rounded-xl border border-border bg-surface p-6 prose prose-sm max-w-none dark:prose-invert"
         {...sanitizeContractHtml(preview.html)}
       />
+    );
+  }
+  if (preview?.origin === 'SIN_DOCUMENTO') {
+    /*
+      🔴 El contrato que tu inmobiliaria trajo de su sistema anterior: ya se
+      firmó en papel y no tiene documento en Leasefy. Antes el back respondía
+      400 y esta vista se quedaba con la ruedita girando para siempre.
+    */
+    return (
+      <div
+        className="rounded-xl border border-border bg-surface p-6 text-sm text-muted-foreground"
+        data-testid="contrato-sin-documento"
+      >
+        Este contrato se firmó fuera de Leasefy y no tiene documento digital acá. Si necesitas una copia, pídesela a tu inmobiliaria.
+      </div>
     );
   }
   return (
@@ -446,6 +462,11 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
       <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <SigningSuccess locale={locale} />
+          {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
+              también el inventario con el que lo recibe. No bloquea nada. */}
+          <div className="mt-8">
+            <FirmaDelInventarioDelInquilino contractId={activeContract.id} />
+          </div>
         </div>
       </div>
     );

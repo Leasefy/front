@@ -85,6 +85,12 @@ const MODULOS_POR_ROL: Record<AgencyRole, Record<string, string[]>> = {
   AGENTE: { configuracion: [], reportes: [] },
   CONTADOR: { configuracion: [], reportes: ['view', 'export'] },
   VIEWER: { configuracion: [], reportes: ['view'] },
+  // O-05 (18-09-2026): los tres roles nuevos, espejados de
+  // `AGENCY_ROLE_DEFAULTS`. Ninguno tiene `configuracion`, y sólo el
+  // coordinador y el auxiliar ven reportes.
+  COORDINADOR: { configuracion: [], reportes: ['view'] },
+  AUXILIAR_CARTERA: { configuracion: [], reportes: ['view'] },
+  ABOGADO_EXTERNO: { configuracion: [], reportes: [] },
 };
 
 function comoRol(rol: AgencyRole) {

@@ -579,7 +579,7 @@ export function ConciliacionDelAgente() {
           <SectionLabel>Cargarle un extracto al agente</SectionLabel>
           <p className="max-w-2xl text-xs text-fg-muted">
             Sólo CSV de Bancolombia o Davivienda, y sólo para que el agente lo clasifique: esto no
-            emite recibos de caja ni toca los cobros. Para conciliar de verdad usá el extracto de
+            emite recibos de caja ni toca los cobros. Para conciliar de verdad usa el extracto de
             arriba.
           </p>
           <div className="flex items-center gap-2">

@@ -54,7 +54,7 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(texto).toContain('Caldas');
   });
 
-  it('🔴 dice de quién es cada número: «Contrato 1298 · Leasefy #1839» en un migrado, «Contrato #14» en un nativo', () => {
+  it('🔴 sin «Leasefy #…» (16-09): «Contrato 1298» en un migrado, «Contrato #14» en un nativo', () => {
     montar(
       <EstadoDeCuentaDocumento
         doc={estadoDeCuenta({
@@ -68,7 +68,8 @@ describe('EstadoDeCuentaDocumento', () => {
     );
     const migrado = host.querySelector('[data-testid="contrato-1298"]')!;
     expect(migrado.textContent).toContain('Contrato 1298');
-    expect(migrado.querySelector('[data-testid="numero-de-leasefy"]')?.textContent).toContain('Leasefy #1839');
+    expect(migrado.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull();
+    expect(migrado.textContent).not.toContain('Leasefy #');
     const nativo = host.querySelector('[data-testid="contrato-14"]')!;
     expect(nativo.textContent).toContain('Contrato #14');
     expect(nativo.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull();

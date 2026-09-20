@@ -10,7 +10,7 @@
 // porque 'mensajes' aún no es módulo del backend. Cuando el backend lo agregue, migrar a
 // canAccess('mensajes', 'view').
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
@@ -24,22 +24,28 @@ import {
   FileText,
   User,
   Buildings,
-  Calendar,
   Clock,
   Info,
   Bell,
   ChatCircle,
   XCircle,
   ShieldCheck,
+  CalendarX,
+  ArrowsClockwise,
+  ArrowsLeftRight,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
+import { TerminarContrato } from '@/components/contratos/TerminarContrato';
+import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
+import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
+import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
+import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
-import { formatDate, formatCanon } from './format';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
+import { ArriendoDelContrato, AvisoDelContrato } from '@/components/contratos/ArriendoDelContrato';
+import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -54,18 +60,25 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
-import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
+import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
-import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
+import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato';
+import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
+import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaDeServiciosDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
-import { Stat, StatStrip } from '@leasefy/cadence';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
+import { CobrosAlArrendarDelContrato } from '@/components/inmobiliaria/mandato/CobrosAlArrendarDelContrato'
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
 import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
 import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
+import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import {
+  bloqueoDelError,
+  type BloqueoPorInventario as BloqueoPorInventarioDatos,
+} from '@/lib/inventario/bloqueo-por-inventario';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -154,22 +167,54 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
-  // `null` = todavía no llegó · `'fallo'` = no se pudo traer · el resumen = llegó.
-  // El fallo es un estado propio: si se fabricara un resumen con ceros, la
-  // franja de arriba le diría «al día» a un inquilino en mora.
-  const [resumenDeCobros, setResumenDeCobros] = useState<ResumenDeCobros | 'fallo' | null>(null);
+  /** Activar sin inventario actualizado del inmueble: se dice con su enlace. */
+  const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [terminarAbierto, setTerminarAbierto] = useState(false);
+  const [cesionAbierta, setCesionAbierta] = useState(false);
+
+  /*
+   * 🔴 Cómo está el contrato HOY, calculado y no guardado: un `active` cuya
+   * fecha de fin pasó es un contrato VENCIDO, aunque su estado siga diciendo
+   * «activo». La misma regla que el back (`vigencia-del-contrato.ts`).
+   *
+   * «Hoy» es el día CIVIL de quien mira, el mismo que usa el bloque del
+   * arriendo para su línea: `vigenciaDelContrato` lee la fecha en UTC, y desde
+   * las 7 p. m. en Bogotá UTC ya es mañana — la etapa diría «Vencido» mientras
+   * la línea todavía dice «Vence hoy».
+   */
+  const hoy = hoyLocal();
+  const vigencia = useMemo<Vigencia>(
+    () =>
+      vigenciaDelContrato(
+        {
+          status: (contract?.status ?? 'draft') as ContractStatus,
+          endDate: contract?.endDate ?? null,
+          terminadoEn: contract?.terminadoEn ?? null,
+          startDate: contract?.startDate ?? null,
+          fechaDeCartera: contract?.fechaDeCartera ?? null,
+        },
+        new Date(`${hoy}T12:00:00.000Z`),
+      ),
+    [contract?.status, contract?.endDate, contract?.terminadoEn, contract?.startDate, contract?.fechaDeCartera, hoy],
+  );
   const [isCancelling, setIsCancelling] = useState(false);
 
   const runAction = useCallback(
     async (key: string, op: () => Promise<unknown>, successMessage?: string) => {
       setActionError(null);
+      setBloqueoDeInventario(null);
       setPendingAction(key);
       try {
         await op();
         await refetch();
       } catch (err) {
+        const bloqueo = bloqueoDelError(err);
+        if (bloqueo) {
+          setBloqueoDeInventario(bloqueo);
+          return;
+        }
         // El motivo del back (400/409) en palabras; un 403 dice que es de permisos.
         setActionError(
           isPermissionError(err)
@@ -274,8 +319,19 @@ function ContratoDetalleContent() {
   // `secondary`, no `neutral`: `neutral` no es una variante del Badge de la
   // casa (es el nombre interno del DS) y un estado desconocido caía en el
   // fallback `default` —cobalto, el mismo del «Firmado»—.
-  const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'secondary';
-  const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
+  //
+  // 🔴 El chip lee la VIGENCIA, como el listado: un `active` cuya fecha de fin
+  // pasó dice «Vencido» en ámbar, no «Activo», y uno terminado dice
+  // «Terminado». Antes el chip decía «Activo» justo encima de «Vencido desde…».
+  const statusVariant: ContractBadgeVariant = vigencia.vencidoSinRenovar
+    ? 'warning'
+    : vigencia.estado === 'TERMINADO_ANTICIPADAMENTE' || vigencia.estado === 'TERMINADO_POR_VENCIMIENTO'
+      ? 'secondary'
+      : CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'secondary';
+  const statusLabel = etiquetaDeVigencia(
+    vigencia,
+    CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status,
+  );
   const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
@@ -327,14 +383,7 @@ function ContratoDetalleContent() {
           ) : null}
           {numero.esDeLaInmobiliaria ? (
             <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
-              {numero.principal} es el número de tu sistema anterior
-              {numero.secundario ? (
-                <>
-                  {' · '}en Leasefy es el{' '}
-                  <span className="font-mono tabular-nums">{numero.secundario.replace('Leasefy ', '')}</span>
-                </>
-              ) : null}
-              .
+              {numero.principal} es el número de tu sistema anterior.
             </p>
           ) : null}
           {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
@@ -365,53 +414,65 @@ function ContratoDetalleContent() {
       </div>
 
       {/*
-        Los cuatro números del contrato, de un vistazo. Antes había que
-        bajar a Términos para el canon y no había cómo saber si el
-        inquilino debía plata sin ir a Cobros.
+        🔴 EL ARRIENDO, en un solo bloque (Nico, 2026-09-16: «esto debe verse
+        más unificado»). Reemplaza a tres cajas que se contradecían: la franja
+        de cuatro números (con un «Saldo del inquilino» que sumaba COBROS), el
+        resumen del estado de cuenta y la caja verde de «Arriendo en curso».
+        Se lee de arriba abajo: en qué va, cuánto va del contrato, cuánto paga
+        y cuándo, cómo va con la plata —desde el ESTADO DE CUENTA, que es la
+        puerta principal— y, al pie, las decisiones del ciclo de vida.
       */}
-      <ResumenDelContrato contract={contract} cobros={resumenDeCobros} />
+      <ArriendoDelContrato
+        contract={contract}
+        vigencia={vigencia}
+        hoy={hoy}
+        {...(canEditContracts
+          ? decisionesDelContrato({
+              contract,
+              isSubmitting: actions.isSubmitting,
+              pendingAction,
+              latestRejectionReason: rejections[0]?.reason,
+              canCancel,
+              vigencia,
+              onSend: handleSend,
+              onActivate: handleActivate,
+              onRemind: handleRemind,
+              onSign: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/firmar`),
+              onEdit: () => router.push(`/panel/inmobiliaria/contratos/${contract.id}/editar`),
+              onCancelRequest: () => setIsCancelModalOpen(true),
+              onTerminar: () => setTerminarAbierto(true),
+              onCeder: () => setCesionAbierta(true),
+            })
+          : {})}
+      />
 
-      {/*
-        El estado de cuenta de ESTE contrato (CEO, 2026-09-13): cuánto resta por
-        pagar de todo el contrato y cuándo es la próxima cuota. `ResumenDelContrato`
-        de arriba dice lo del MES; esto dice lo de los 24 meses, que es la
-        pregunta que se hace al renovar o al cobrar.
+      {/* 17-09: contrato vencido con el inquilino adentro → renovar, nunca prórroga automática. */}
+      {canEditContracts && contract.status === 'active' && (
+        <RenovarContratoVencido contractId={contract.id} onRenovado={() => void refetch()} />
+      )}
 
-        Se pide del lado del INQUILINO, que es quien debe. Un contrato migrado
-        puede no tener `tenantId` (la persona se cargó sin cuenta): ahí se cae a
-        la del propietario, que siempre existe.
-      */}
-      {contract.tenantId ? (
-        <ResumenEnLaFicha
-          tipo="inquilino"
-          id={contract.tenantId}
-          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
-          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
-        />
-      ) : contract.landlordId ? (
-        <ResumenEnLaFicha
-          tipo="propietario"
-          id={contract.landlordId}
-          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
-          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
-        />
-      ) : null}
+      {/* 17-09: incrementos del canon (vivienda al IPC, local comercial digitado) y su carta. */}
+      {(contract.status === 'active' || contract.status === 'signed') && (
+        <IncrementosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+      )}
 
-      {/* Action panel — only shown for users with contratos:edit */}
       {canEditContracts && (
         <>
-          <ActionPanel
-            contract={contract}
-            isSubmitting={actions.isSubmitting}
-            pendingAction={pendingAction}
-            latestRejectionReason={rejections[0]?.reason}
-            canCancel={canCancel}
-            onSend={handleSend}
-            onActivate={handleActivate}
-            onRemind={handleRemind}
-            onSign={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}/firmar`)}
-            onEdit={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}/editar`)}
-            onCancelRequest={() => setIsCancelModalOpen(true)}
+          <TerminarContrato
+            contractId={contract.id}
+            abierto={terminarAbierto}
+            onCerrar={() => setTerminarAbierto(false)}
+            onTerminado={() => void refetch()}
+          />
+
+          <CesionDelInmueble
+            contractId={contract.id}
+            propietarioActual={
+              contract.propietarioDeLaConsignacion?.name ?? contract.landlordName ?? null
+            }
+            abierto={cesionAbierta}
+            onCerrar={() => setCesionAbierta(false)}
+            onRegistrada={() => void refetch()}
           />
 
           <CancelContractModal
@@ -428,6 +489,8 @@ function ContratoDetalleContent() {
       {rejections.length > 0 && (
         <RejectionsHistory rejections={rejections} />
       )}
+
+      {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
       {actionError && (
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
@@ -486,11 +549,9 @@ function ContratoDetalleContent() {
             ) : null}
           </InfoCard>
 
-          <InfoCard title="Vigencia" icon={Calendar}>
-            <InfoRow label="Inicio" value={formatDate(contract.startDate)} />
-            <InfoRow label="Fin" value={formatDate(contract.endDate)} />
-            <Vigencia inicio={contract.startDate} fin={contract.endDate} />
-          </InfoCard>
+          {/* La vigencia —inicio, fin y cuánto va— vive en el bloque del
+              arriendo, arriba. Esta tarjeta la repetía con otro formato de
+              fecha y otra barra. */}
 
           {/* Uso, periodicidad y comisión. Se guardaban desde la migración y no
               se veían en ninguna pantalla — y el uso decide si hay IVA. */}
@@ -554,15 +615,23 @@ function ContratoDetalleContent() {
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/*
-                🔴 Qué va a pasar cuando venza: se renueva sola por el mismo
-                término con el canon incrementado si nadie avisa tres meses
-                antes (Ley 820, arts. 20 y 22). Nico, 2026-09-12.
+                🔴 D5 (Nico, 17-09): qué pasa cuando venza. Sin aviso de no
+                renovación se prorroga por el mismo término (vivienda, Ley 820
+                art. 6) o lo pactado / mes a mes (comercial); con aviso queda en
+                alerta para que una persona decida.
               */}
-              <RenovacionDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <ProrrogaDelContrato
+                contract={contract}
+                puedeEditar={canEditContracts && !esTerminado}
+                onCambio={() => void refetch()}
+              />
+              {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
+              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              {/* D10: la garantía de servicios públicos (anticipo del inquilino). */}
+              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
-                onResumen={setResumenDeCobros}
               />
               {/*
                 La historia contable ANTERIOR a Leasefy: los comprobantes que
@@ -583,6 +652,14 @@ function ContratoDetalleContent() {
               <ComprobantesDelSistemaAnterior contractId={contract.id} />
               {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
               <PqrsDelContrato contractId={contract.id} />
+              {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por
+                  arrendar (se descuenta de su primera liquidación) y la
+                  bitácora del mandato con sus anexos. */}
+              <CobrosAlArrendarDelContrato
+                contractId={contract.id}
+                puedeAplicar={canEditContracts && !esTerminado}
+              />
+              <BitacoraDelContrato contractId={contract.id} />
             </>
           )}
 
@@ -692,10 +769,13 @@ function ContratoDetalleContent() {
               <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/* Se pactan antes de firmar: gastos de cobranza, seguro opcional, póliza, administración. */}
+              <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+              {/* D10 al INICIO: la garantía se exige antes de activar, así que se registra acá. */}
+              <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
-                onResumen={setResumenDeCobros}
               />
             </>
           )}
@@ -722,312 +802,230 @@ function ContratoDetalleContent() {
 
 // ─── Subcomponents ───────────────────────────────────────────────────────────
 
-function ActionPanel({
+/**
+ * Lo que se puede decidir sobre el contrato desde su ficha, repartido en los
+ * dos lugares del bloque del arriendo:
+ *
+ *   · `aviso` — lo que pide atención, debajo de la etapa: el paso de la firma
+ *     que sigue (enviar, recordar, firmar, corregir, activar) o la decisión
+ *     sobre un contrato VENCIDO (renovar o terminar).
+ *   · `acciones` — lo que pasa una vez en la vida del contrato y no compite
+ *     con nada: terminar un arriendo en curso, la venta del inmueble, cancelar
+ *     uno que no se ha firmado. Al pie y en voz baja.
+ *
+ * Antes era una `ActionBar` que pintaba la caja ENTERA del color del estado:
+ * «Arriendo en curso» salía en una caja verde gigante que gritaba algo que no
+ * es urgente (Nico, 2026-09-16: «no uses ese tono verde»).
+ */
+function decisionesDelContrato({
   contract,
   isSubmitting,
   pendingAction,
   latestRejectionReason,
   canCancel,
+  vigencia,
   onSend,
   onSign,
   onActivate,
   onRemind,
   onEdit,
   onCancelRequest,
+  onTerminar,
+  onCeder,
 }: {
   contract: { id: string; status: string };
   isSubmitting: boolean;
   pendingAction: string | null;
   latestRejectionReason?: string;
   canCancel: boolean;
+  /** Cómo está este contrato hoy — de acá sale si está vencido. */
+  vigencia: Vigencia;
   onSend: () => void;
   onSign: () => void;
   onActivate: () => void;
   onRemind: () => void;
   onEdit: () => void;
   onCancelRequest: () => void;
-}) {
+  onTerminar: () => void;
+  onCeder: () => void;
+}): { aviso?: React.ReactNode; acciones?: React.ReactNode } {
   const status = contract.status as ContractStatus;
-  const cancelButton = canCancel ? (
+  const enVozBaja = 'h-auto gap-1.5 px-0 text-caption font-medium text-fg-muted hover:text-fg hover:no-underline';
+
+  /*
+   * La cesión no es destructiva pero tampoco es la acción principal: pasa una
+   * vez en la vida de un contrato y no queremos que compita con «Terminar».
+   */
+  const cesion = (
+    <Button type="button" variant="link" hideArrow onClick={onCeder} className={enVozBaja} data-testid="abrir-cesion">
+      <ArrowsLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
+      Cambiar de propietario
+    </Button>
+  );
+  const terminar = (
+    <Button type="button" variant="link" hideArrow onClick={onTerminar} className={enVozBaja} data-testid="abrir-terminar">
+      <CalendarX className="w-3.5 h-3.5" aria-hidden="true" />
+      Terminar el arriendo
+    </Button>
+  );
+  const cancelar = canCancel ? (
     <Button
       type="button"
       variant="link"
       hideArrow
       onClick={onCancelRequest}
-      className="h-auto gap-1 px-0 text-xs font-medium text-danger hover:text-danger"
+      className="h-auto gap-1.5 px-0 text-caption font-medium text-danger hover:text-danger hover:no-underline"
     >
-      <XCircle className="w-3.5 h-3.5" />
+      <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
       Cancelar contrato
     </Button>
   ) : null;
+  const editar = { label: 'Editar', icon: PencilSimpleLine, onClick: onEdit };
 
   if (status === 'draft') {
-    return (
-      <ActionBar
-        title="Contrato en borrador"
-        subtitle="Cuando lo envíes para firma, el inquilino firmará primero. Después te toca firmar a ti para cerrar."
-        cta={{
-          label: 'Enviar al inquilino',
-          icon: PaperPlaneTilt,
-          onClick: onSend,
-          loading: isSubmitting && pendingAction === 'send',
-        }}
-        secondaryCta={{
-          label: 'Editar',
-          icon: PencilSimpleLine,
-          onClick: onEdit,
-        }}
-        tone="primary"
-        footer={cancelButton}
-      />
-    );
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={FileText}
+          titulo="Contrato en borrador"
+          detalle="Cuando lo envíes para firma, el inquilino firmará primero. Después te toca firmar a ti para cerrar."
+          principal={{
+            label: 'Enviar al inquilino',
+            icon: PaperPlaneTilt,
+            onClick: onSend,
+            loading: isSubmitting && pendingAction === 'send',
+          }}
+          secundaria={editar}
+        />
+      ),
+      acciones: cancelar,
+    };
   }
 
   if (status === 'pending_tenant') {
-    return (
-      <ActionBar
-        title="Esperando firma del inquilino"
-        subtitle="El inquilino recibió el contrato y tiene que firmar primero. Puedes reenviarle un recordatorio si no lo hizo."
-        cta={{
-          label: 'Recordar firma',
-          icon: Bell,
-          onClick: onRemind,
-          loading: isSubmitting && pendingAction === 'remind',
-        }}
-        secondaryCta={{
-          label: 'Editar',
-          icon: PencilSimpleLine,
-          onClick: onEdit,
-        }}
-        tone="info"
-        footer={cancelButton}
-      />
-    );
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={PaperPlaneTilt}
+          titulo="Esperando firma del inquilino"
+          detalle="El inquilino recibió el contrato y tiene que firmar primero. Puedes reenviarle un recordatorio si no lo hizo."
+          principal={{
+            label: 'Recordar firma',
+            icon: Bell,
+            onClick: onRemind,
+            loading: isSubmitting && pendingAction === 'remind',
+          }}
+          secundaria={editar}
+        />
+      ),
+      acciones: cancelar,
+    };
   }
 
   if (status === 'pending_landlord') {
-    return (
-      <ActionBar
-        title="El inquilino ya firmó — firma para cerrar"
-        subtitle="Es tu turno. Firma y el contrato queda listo para activar en la fecha pactada."
-        cta={{
-          label: 'Firmar como propietario',
-          icon: PencilSimpleLine,
-          onClick: onSign,
-        }}
-        secondaryCta={{
-          label: 'Editar',
-          icon: PencilSimpleLine,
-          onClick: onEdit,
-        }}
-        tone="warning"
-        footer={cancelButton}
-      />
-    );
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="atencion"
+          icono={PencilSimpleLine}
+          titulo="El inquilino ya firmó — firma para cerrar"
+          detalle="Es tu turno. Firma y el contrato queda listo para activar en la fecha pactada."
+          principal={{ label: 'Firmar como propietario', icon: PencilSimpleLine, onClick: onSign }}
+          secundaria={editar}
+        />
+      ),
+      acciones: cancelar,
+    };
   }
 
   if (status === 'rejected_pending_modifications') {
     const truncated = latestRejectionReason && latestRejectionReason.length > 180
       ? latestRejectionReason.slice(0, 180).trimEnd() + '…'
       : latestRejectionReason;
-    return (
-      <ActionBar
-        title="El inquilino solicitó cambios"
-        subtitle={truncated ?? 'Edita los términos y vuelve a firmar para enviarlo de nuevo.'}
-        cta={{
-          label: 'Corregir contrato',
-          icon: PencilSimpleLine,
-          onClick: onEdit,
-        }}
-        tone="warning"
-        footer={cancelButton}
-      />
-    );
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="atencion"
+          icono={WarningCircle}
+          titulo="El inquilino solicitó cambios"
+          detalle={truncated ?? 'Edita los términos y vuelve a firmar para enviarlo de nuevo.'}
+          principal={{ label: 'Corregir contrato', icon: PencilSimpleLine, onClick: onEdit }}
+        />
+      ),
+      acciones: cancelar,
+    };
   }
 
   if (status === 'signed') {
-    return (
-      <ActionBar
-        title="Contrato firmado"
-        subtitle="Ambas partes firmaron. Actívalo para iniciar el arrendamiento."
-        cta={{
-          label: 'Activar contrato',
-          icon: CheckCircle,
-          onClick: onActivate,
-          loading: isSubmitting && pendingAction === 'activate',
-        }}
-        tone="success"
-      />
-    );
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={CheckCircle}
+          titulo="Contrato firmado"
+          detalle="Ambas partes firmaron. Actívalo para iniciar el arrendamiento."
+          principal={{
+            label: 'Activar contrato',
+            icon: CheckCircle,
+            onClick: onActivate,
+            loading: isSubmitting && pendingAction === 'activate',
+          }}
+        />
+      ),
+    };
   }
 
-  // Activo: no hay nada que hacer, y el chip del título ya lo dice. Una
-  // banda verde que repite «contrato activo» es una pantalla más larga.
-  return null;
-}
-
-function ActionBar({
-  title,
-  subtitle,
-  cta,
-  secondaryCta,
-  tone,
-  footer,
-}: {
-  title: string;
-  subtitle: string;
-  cta?: { label: string; icon: React.ElementType; onClick: () => void; loading?: boolean };
-  secondaryCta?: { label: string; icon: React.ElementType; onClick: () => void };
-  tone: 'primary' | 'warning' | 'info' | 'success';
-  footer?: React.ReactNode;
-}) {
-  const toneClasses: Record<typeof tone, string> = {
-    primary: 'bg-primary-soft/40 border-primary/30',
-    info: 'bg-primary-soft/40 border-primary/30',
-    warning: 'bg-warning-soft border-warning/30',
-    success: 'bg-success-soft border-success/30',
-  };
-
-  return (
-    <section className={cn('rounded-lg border p-5 space-y-3', toneClasses[tone])}>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-base font-semibold text-foreground">{title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {secondaryCta && (
-            <Button variant="secondary" hideArrow onClick={secondaryCta.onClick} className="gap-2">
-              <secondaryCta.icon className="w-4 h-4" />
-              {secondaryCta.label}
-            </Button>
-          )}
-          {cta && (
-            <Button onClick={cta.onClick} disabled={cta.loading} hideArrow className="gap-2">
-              {cta.loading ? <Spinner size="sm" variant="current" /> : <cta.icon className="w-4 h-4" />}
-              {cta.label}
-            </Button>
-          )}
-        </div>
-      </div>
-      {footer && (
-        <div className="flex justify-end pt-2 border-t border-border/40">
-          {footer}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/**
- * Los cuatro números del contrato: canon, vencimiento, día de pago y lo que
- * debe el inquilino. El saldo viene de los cobros (los carga la tarjeta de
- * abajo y los reporta acá); mientras no llegan, la celda lo dice.
- */
-function ResumenDelContrato({
-  contract,
-  cobros,
-}: {
-  contract: { monthlyRent?: number | null; endDate?: string | null; paymentDueDay?: number | null; diasDePlazo?: number | null; propertyId: string | null };
-  cobros: ResumenDeCobros | 'fallo' | null;
-}) {
-  const dias = diasHasta(contract.endDate);
-  const vence =
-    dias === null
-      ? { delta: undefined, dir: 'neutral' as const }
-      : dias < 0
-        ? { delta: `vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'}`, dir: 'down' as const }
-        : dias <= 90
-          ? { delta: `en ${dias} ${dias === 1 ? 'día' : 'días'}`, dir: 'down' as const }
-          : { delta: `en ${dias} días`, dir: 'neutral' as const };
-
-  // Cuando los cobros no se pudieron traer va una raya, no un cero: un cero
-  // que en realidad es «no lo pudimos traer» afirma «al día», y tranquiliza
-  // justo a quien no debería. El reintento vive en la tarjeta Cobros de abajo.
-  const saldo =
-    cobros === null
-      ? { value: '…', delta: undefined, dir: 'neutral' as const }
-      : cobros === 'fallo'
-        ? { value: '—', delta: 'No se pudo traer el saldo', dir: 'neutral' as const }
-      : cobros.total === 0
-        ? { value: '—', delta: contract.propertyId === null ? 'sin inmueble no hay cobros' : 'sin cobros todavía', dir: 'neutral' as const }
-        : cobros.saldo > 0
-          ? {
-              value: formatCurrency(cobros.saldo),
-              delta: cobros.enMora > 0 ? `${cobros.enMora} en mora` : `${cobros.pendientes} por cobrar`,
-              dir: cobros.enMora > 0 ? ('down' as const) : ('neutral' as const),
-            }
-          : { value: formatCurrency(0), delta: 'al día', dir: 'up' as const };
-
-  return (
-    <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-contrato">
-      <Stat label="Canon" value={contract.monthlyRent ? formatCurrency(contract.monthlyRent) : '—'} compact />
-      <Stat
-        label="Vence"
-        value={fechaCorta(contract.endDate)}
-        delta={vence.delta}
-        deltaDirection={vence.dir}
-        compact
-      />
-      <Stat
-        label="Día de pago"
-        value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : '—'}
-        delta={contract.diasDePlazo != null ? `+${contract.diasDePlazo} de plazo` : undefined}
-        compact
-      />
-      <Stat label="Saldo del inquilino" value={saldo.value} delta={saldo.delta} deltaDirection={saldo.dir} compact />
-    </StatStrip>
-  );
-}
-
-/** Cuánto del contrato ya pasó: una barra con «mes N de M». */
-function Vigencia({ inicio, fin }: { inicio?: string | null; fin?: string | null }) {
-  const a = fechaLocal(inicio);
-  const b = fechaLocal(fin);
-  if (!a || !b || b <= a) return null;
-  const hoy = new Date();
-  const total = b.getTime() - a.getTime();
-  const avance = Math.min(1, Math.max(0, (hoy.getTime() - a.getTime()) / total));
-  const meses = Math.max(1, Math.round(total / (30.44 * 86_400_000)));
-  const mesActual = Math.min(meses, Math.max(1, Math.ceil(avance * meses)));
-  const terminado = hoy > b;
-  return (
-    <div className="space-y-1.5 pt-1" data-testid="vigencia">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn('h-full rounded-full', terminado ? 'bg-muted-foreground/60' : 'bg-primary')}
-          style={{ width: `${Math.round(avance * 100)}%` }}
+  /*
+   * 🔴 Un contrato que YA PASÓ su fecha de fin (auditoría 2026-09-13, N2).
+   * Sigue `active` porque nada lo vence solo —la prórroga tácita es la regla—,
+   * pero no puede seguir leyéndose «en curso»: acá se dice desde cuándo y se
+   * ofrecen los dos caminos. Es lo único de este bloque que conserva un acento
+   * de advertencia, y vive en el círculo del ícono, no en la caja.
+   */
+  if (vigencia.vencidoSinRenovar) {
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="atencion"
+          icono={CalendarX}
+          titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Mientras no decidas, sigue activo.`}
+          principal={{
+            label: 'Renovar contrato',
+            icon: ArrowsClockwise,
+            onClick: () => {
+              document
+                .querySelector('[data-testid="renovacion-del-contrato"]')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            },
+          }}
+          secundaria={{ label: 'Terminar el arriendo', icon: CalendarX, onClick: onTerminar }}
         />
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {terminado ? `Terminó: ${meses} ${meses === 1 ? 'mes' : 'meses'}` : `Mes ${mesActual} de ${meses}`}
-      </p>
-    </div>
-  );
-}
+      ),
+      acciones: cesion,
+    };
+  }
 
-/** Lee la parte YYYY-MM-DD como fecha LOCAL: un DATE en UTC es el día anterior en Bogotá. */
-function fechaLocal(iso?: string | null): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
-  if (!m) return null;
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-}
+  /*
+   * 🔴 Activo y dentro de plazo. Antes de la auditoría del 2026-09-13 (N1 · P0
+   * y C8) esto no ofrecía nada, y un arriendo que se rompía antes de tiempo no
+   * tenía salida en la pantalla. Hoy la salida está, pero al pie: terminar un
+   * arriendo en curso no es lo que se viene a hacer todos los días.
+   */
+  if (status === 'active') {
+    return {
+      acciones: (
+        <>
+          {terminar}
+          {cesion}
+        </>
+      ),
+    };
+  }
 
-function diasHasta(iso?: string | null): number | null {
-  const d = fechaLocal(iso);
-  if (!d) return null;
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - hoy.getTime()) / 86_400_000);
-}
-
-function fechaCorta(iso?: string | null): string {
-  const d = fechaLocal(iso);
-  if (!d) return '—';
-  return d
-    .toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
-    .replace(/ de /g, ' ')
-    .replace(/\.$/, '');
+  return {};
 }
 
 function InfoCard({

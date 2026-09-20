@@ -39,6 +39,7 @@ import { Banner } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,6 +68,8 @@ import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
   lotesDeDispersionApi,
   type ArchivoGenerado,
+  type ExtractosDeLosCompensados,
+  type FacturacionDelLote,
   type FormatoArchivoDePagos,
   type LoteDeDispersion,
   type SolicitudDeAprobacion,
@@ -92,6 +95,12 @@ import {
   type AccionDelLote,
 } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import {
+  AccionesDelGiro,
+  MarcarDevueltoDialog,
+  RegirarDialog,
+  useGirosDevueltos,
+} from './GirosDevueltos';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -101,6 +110,145 @@ type Dialogo =
   | 'marcarPagado'
   | 'anular'
   | null;
+
+/**
+ * 🔴 QUÉ PASÓ CON LA FACTURA AL PROPIETARIO.
+ *
+ * El CEO (2026-09-15): «archivo plano por banco, egreso, **factura ahora o
+ * después**, correo al propietario». Hasta la segunda vuelta la casilla
+ * guardaba un booleano y no emitía nada; ahora emite de verdad, y el resultado
+ * tiene que verse acá y no en otra pantalla.
+ *
+ * Dos cosas que este bloque dice en voz alta y no se pueden suavizar:
+ *
+ *  · **Un fallo NO deshace el pago.** La plata ya salió del banco; el lote
+ *    quedó PAGADO. Lo que falta es emitir, y se reintenta desde Facturación.
+ *  · **«Ya estaban» no es un error.** Es la llave única de facturas haciendo
+ *    su trabajo: nadie facturó dos veces la misma comisión.
+ */
+function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
+  if (!r.pedida) {
+    if (r.candidatas === 0) return null;
+    return (
+      <Banner variant="info" title="La factura al propietario queda para después">
+        <span data-testid="facturacion-del-lote-despues">
+          {r.candidatas}{' '}
+          {r.candidatas === 1 ? 'prefactura queda' : 'prefacturas quedan'}{' '}
+          esperando en Facturación: es la comisión de la inmobiliaria sobre lo
+          que este lote giró. Se emiten desde{' '}
+          <Link
+            href="/panel/inmobiliaria/facturacion"
+            className="underline underline-offset-2"
+          >
+            Facturación
+          </Link>
+          .
+        </span>
+      </Banner>
+    );
+  }
+
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'El lote quedó pagado; falta emitir parte de la facturación'
+          : 'Facturación al propietario emitida'
+      }
+    >
+      <div className="space-y-1" data-testid="facturacion-del-lote">
+        <p>
+          {r.emitidas}{' '}
+          {r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} por{' '}
+          {formatCurrency(r.totalCop)}
+          {r.yaEstaban > 0 &&
+            ` · ${r.yaEstaban} ya ${r.yaEstaban === 1 ? 'estaba' : 'estaban'} emitida${r.yaEstaban === 1 ? '' : 's'}`}
+          {r.sinNumero > 0 && ` · ${r.sinNumero} sin número`}
+          {r.candidatas > 0 && ` · de ${r.candidatas}`}
+        </p>
+        {r.numeros.length > 0 && (
+          <p className="font-mono text-xs text-fg-muted">
+            {r.numeros.slice(0, 8).join(' · ')}
+            {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
+          </p>
+        )}
+        {hayFallas && (
+          <ul className="space-y-0.5">
+            {r.fallas.map((f) => (
+              <li key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
+                {nombreDelMes(f.mes)}: {f.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+        {hayFallas && (
+          <p className="text-fg-muted">
+            La plata ya salió del banco y el lote quedó PAGADO: lo que falta es
+            emitir, y se reintenta desde{' '}
+            <Link
+              href="/panel/inmobiliaria/facturacion"
+              className="underline underline-offset-2"
+            >
+              Facturación
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+    </Banner>
+  );
+}
+
+/**
+ * 🔴 EL EXTRACTO A LOS QUE SE CERRARON EN $0.
+ *
+ * Nico y Juan Camilo (2026-09-16): el mes en que no se le gira nada, al
+ * propietario se le factura la administración igual y se le manda su extracto
+ * con las deducciones. Si alguno no salió, se dice a quién y por qué: el lote
+ * quedó pagado y el extracto se reenvía desde su ficha.
+ */
+function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
+  if (r.compensados === 0) return null;
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'No a todos los que quedaron en $0 les salió el extracto'
+          : r.enviados === 1
+            ? 'Al propietario que quedó en $0 le salió su extracto'
+            : `A los ${r.enviados} propietarios que quedaron en $0 les salió su extracto`
+      }
+    >
+      <div className="space-y-1" data-testid="extractos-de-compensados">
+        <p>
+          {r.enviados} de {r.compensados}{' '}
+          {r.compensados === 1 ? 'extracto enviado' : 'extractos enviados'}, con
+          el detalle de las deducciones que explican por qué este mes no se les
+          giró nada.
+        </p>
+        {hayFallas && (
+          <ul className="space-y-0.5">
+            {r.fallas.map((f) => (
+              <li key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
+                <span className="font-medium">{f.nombre}</span>: {f.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+        {hayFallas && (
+          <p className="text-fg-muted">
+            El lote quedó PAGADO igual. El extracto se reenvía desde la ficha de
+            cada propietario.
+          </p>
+        )}
+      </div>
+    </Banner>
+  );
+}
 
 function mensajeDe(error: unknown, siNo: string): string {
   return error instanceof Error && error.message ? error.message : siNo;
@@ -132,6 +280,18 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const { canAccess } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
+  /*
+   * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
+   * plata que YA salió, así que la columna aparece cuando el lote está PAGADO.
+   * La lectura falla abierto: si no hay migración o la petición se cae, el
+   * detalle del lote se ve entero y sin la columna.
+   */
+  const [giroEnDialogo, setGiroEnDialogo] = useState<{
+    accion: 'devolver' | 'regirar';
+    dispersionId: string;
+    nombreTitular: string;
+    valorCop: number;
+  } | null>(null);
 
   const puede = useCallback(
     (accion: AccionDelLote) => canAccess('dispersiones', PERMISO_DE_LA_ACCION[accion]),
@@ -144,11 +304,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const aplicarLote = useCallback(
     (lote: LoteDeDispersion) => {
       if (!vista) return;
+      // Las compensadas no cambian dentro de un lote: se reconocen por la
+      // dispersión, no por el texto del motivo.
+      const compensadas = new Set((vista.compensados ?? []).map((c) => c.dispersionId));
       setVista({
         ...vista,
         lote,
         excluidos: lote.items
-          .filter((i) => i.motivoDeExclusion !== null)
+          .filter((i) => i.motivoDeExclusion !== null && !compensadas.has(i.dispersionId))
           .map((i) => ({
             propietarioId: i.propietarioId,
             nombre: i.nombreTitular,
@@ -166,6 +329,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * tempranos— porque no se puede llamar condicionalmente.
    */
   const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
+
+  // Igual que el de arriba: antes de los returns tempranos, porque un hook no
+  // se puede llamar condicionalmente.
+  const lotePagado = vista?.lote.estado === 'PAGADO';
+  const giros = useGirosDevueltos(lotePagado);
+  // El contrato pide `dispersiones:edit` para marcar devuelto y para regirar.
+  const puedeTocarGiros = canAccess('dispersiones', 'edit');
 
   if (cargando && !vista) {
     return (
@@ -189,6 +359,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   if (!vista) return null;
 
   const { lote, excluidos, intentosRestantes, bloqueado } = vista;
+  const compensados = vista.compensados ?? [];
+  const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
@@ -232,6 +404,16 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         <Banner variant="danger" title="Lote bloqueado">
           Se agotaron los intentos del código de aprobación. Hay que anularlo y armarlo de nuevo.
         </Banner>
+      )}
+      {/* 🔴 Sólo aparece después de marcar pagado en esta sesión: `facturacion`
+          viene únicamente en la respuesta de `POST /:id/pagado`, nunca en el
+          `ver`. Que no esté no significa que no se facturó — significa que esta
+          pantalla no lo presenció. */}
+      {lote.facturacion && (
+        <ResultadoDeLaFacturacion r={lote.facturacion} />
+      )}
+      {lote.extractosDeCompensados && (
+        <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
       )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
@@ -392,6 +574,43 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </section>
       )}
 
+      {/* ── Compensados: se cierran en $0 ───────────────────────────────── */}
+      {compensados.length > 0 && (
+        <section className="space-y-3" data-testid="compensados-del-lote">
+          <Banner
+            variant="info"
+            title={`${compensados.length} ${compensados.length === 1 ? 'propietario se cierra' : 'propietarios se cierran'} en $0`}
+          >
+            Sus deducciones cubren el neto del mes: no se les gira nada y no van en el archivo del banco.
+            Al marcar el lote pagado su liquidación se cierra, las deducciones quedan aplicadas y lo que
+            falte pasa solo a su siguiente liquidación. La administración se les factura igual y a cada
+            uno le sale su extracto con el detalle de las deducciones.
+          </Banner>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Propietario</TableHead>
+                  <TableHead className="text-right">Se gira</TableHead>
+                  <TableHead className="text-right">Pasa al mes siguiente</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {compensados.map((c) => (
+                  <TableRow key={c.dispersionId}>
+                    <TableCell className="font-medium text-fg">{c.nombre}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatCurrency(0)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-warning">
+                      {formatCurrency(c.saldoEnContraCop)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
@@ -411,6 +630,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                   <TableHead>Cuenta</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Entra</TableHead>
+                  {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -433,12 +653,42 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="h-3.5 w-3.5" /> Sí
                         </span>
+                      ) : idsCompensados.has(item.dispersionId) ? (
+                        <span className="text-fg-muted">Se cierra en $0</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-warning">
                           <X className="h-3.5 w-3.5" /> No
                         </span>
                       )}
                     </TableCell>
+                    {lotePagado ? (
+                      <TableCell>
+                        <AccionesDelGiro
+                          dispersionId={item.dispersionId}
+                          nombreTitular={item.nombreTitular}
+                          valorCop={item.valorCop}
+                          giro={giros.porDispersion.get(item.dispersionId)}
+                          puedeEditar={puedeTocarGiros}
+                          disponible={giros.disponible}
+                          onDevolver={() =>
+                            setGiroEnDialogo({
+                              accion: 'devolver',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                          onRegirar={() =>
+                            setGiroEnDialogo({
+                              accion: 'regirar',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                        />
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
@@ -495,6 +745,25 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         onListo={aplicarLote}
       />
       <AnularDialog abierto={dialogo === 'anular'} lote={lote} onCerrar={cerrar} onListo={aplicarLote} />
+
+      {/* ── Giros devueltos (17-09) ─────────────────────────────────────── */}
+      <MarcarDevueltoDialog
+        abierto={giroEnDialogo?.accion === 'devolver'}
+        dispersionId={giroEnDialogo?.dispersionId ?? null}
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        valorCop={giroEnDialogo?.valorCop ?? 0}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
+      <RegirarDialog
+        abierto={giroEnDialogo?.accion === 'regirar'}
+        giro={
+          giroEnDialogo ? (giros.porDispersion.get(giroEnDialogo.dispersionId) ?? null) : null
+        }
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
     </div>
   );
 }
@@ -1064,12 +1333,24 @@ function MarcarPagadoDialog({
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
   const [referencia, setReferencia] = useState('');
+  /**
+   * El CEO (2026-09-15): «Con factura: se le puede facturar en ese momento o
+   * después».
+   *
+   * 🔴 Tildado EMITE de verdad las facturas del lado propietario (la comisión
+   * de la inmobiliaria y sus impuestos) de las cuotas que este lote giró. Sin
+   * tildar quedan como prefactura pendiente en Facturación. Arranca apagado a
+   * propósito: emitir consume números de la resolución de la DIAN y no se
+   * deshace — una factura emitida se anula con nota crédito, no se borra.
+   */
+  const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setReferencia('');
+      setFacturarAhora(false);
       setError(null);
     }
   }, [abierto]);
@@ -1082,9 +1363,26 @@ function MarcarPagadoDialog({
     setEnviando(true);
     setError(null);
     try {
-      const pagado = await lotesDeDispersionApi.marcarPagado(lote.id, referencia);
+      const pagado = await lotesDeDispersionApi.marcarPagado(
+        lote.id,
+        referencia,
+        facturarAhora,
+      );
       onListo(pagado);
-      toast.success('Lote marcado como pagado');
+      /*
+       * El detalle pinta el resultado completo (`ResultadoDeLaFacturacion`);
+       * el toast sólo resume, y NUNCA dice «emitidas» cuando hubo un fallo: la
+       * plata salió igual, pero la factura no.
+       */
+      const f = pagado.facturacion;
+      toast.success('Lote marcado como pagado', {
+        description:
+          f?.pedida === true
+            ? f.fallas.length > 0
+              ? `Se emitieron ${f.emitidas} facturas y ${f.fallas.length === 1 ? 'quedó 1 mes' : `quedaron ${f.fallas.length} meses`} sin facturar: mira el detalle.`
+              : `${f.emitidas} ${f.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} al propietario.`
+            : undefined,
+      });
       onCerrar();
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo marcar el lote como pagado.'));
@@ -1117,6 +1415,31 @@ function MarcarPagadoDialog({
           />
           <p className="text-xs text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
+          </p>
+
+          <label className="flex items-start gap-2 pt-1" htmlFor="facturar-ahora">
+            <Checkbox
+              id="facturar-ahora"
+              data-testid="facturar-ahora"
+              checked={facturarAhora}
+              onCheckedChange={(v) => setFacturarAhora(v === true)}
+            />
+            <span className="text-xs text-fg-muted">
+              Facturarle ahora a los propietarios: se emite la comisión de la
+              inmobiliaria sobre lo que este lote cierra —también a los que
+              quedan en $0—, con su IVA y sus retenciones.{' '}
+              <strong className="font-medium">
+                Consume números de la resolución de la DIAN y no se deshace: una
+                factura emitida se anula con nota crédito, no se borra.
+              </strong>{' '}
+              Sin tildar queda «después» y se emite desde Facturación.
+            </span>
+          </label>
+
+          <p className="text-xs text-fg-muted">
+            Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
+            el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. A los que quedan en $0
+            les sale su extracto. Su estado de cuenta queda con la dispersión descontada.
           </p>
           {error && <Banner variant="danger">{error}</Banner>}
         </div>

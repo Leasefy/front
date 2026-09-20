@@ -1,12 +1,23 @@
 /**
- * Facturación por mes — el listado de lo que hay que facturar y la emisión.
+ * Facturación — las prefacturas que hay por generar, y la emisión.
  *
  * ── Qué hay del otro lado ───────────────────────────────────────────────────
  *
  * `back-erp/src/inmobiliaria/facturacion/`. Dos rutas:
  *
  *   GET  /inmobiliaria/facturacion/por-generar?mes=2026-09
+ *   GET  /inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-12-31
  *   POST /inmobiliaria/facturacion/generar   { mes, claves? }
+ *
+ * 🔴 Cada prefactura SALE de la cuota del contrato (`contrato_cuotas`, la tabla
+ * de amortización), no de un recálculo del mes: es la misma plata que el cliente
+ * ve en su estado de cuenta. Por eso acá no hay ni una cuenta de canon, IVA ni
+ * retención — el front pinta lo que el back leyó.
+ *
+ * 🔴 Y MOSTRAR NO ES EMITIR. El CEO (2026-09-13): «Si quiero mirar qué facturas
+ * tengo por generar hasta el 31 de diciembre… Lo que NO se puede es enviarlas
+ * [antes de tiempo].» Cada fila trae `emitible` y su `motivoNoEmitible`; el mes
+ * que no empezó se ve y no se emite, y el back devuelve 400 si se intenta.
  *
  * La agencia sale del JWT (`AgencyMemberGuard`); no se manda. Leer pide
  * `cobros:view`; EMITIR pide además rol ADMIN o CONTADOR
@@ -28,6 +39,12 @@
  */
 
 import { apiClient } from './client'
+import type {
+  AvisoDeLaResolucion,
+  EstadoDeLaCorreccion,
+  ResolucionPorTipo,
+  TipoDeDocumento,
+} from './facturacion-electronica.service'
 
 const BASE = '/inmobiliaria/facturacion'
 
@@ -36,7 +53,7 @@ const BASE = '/inmobiliaria/facturacion'
 /** `DestinatarioDeFactura` en `schema.prisma`. */
 export type DestinatarioDeFactura = 'INQUILINO' | 'PROPIETARIO'
 
-/** `TipoDeLinea` en `facturas-del-mes.ts`. */
+/** `TipoDeLinea` en `prefacturas-de-las-cuotas.ts`. */
 export type TipoDeLineaDeFactura =
   | 'CANON'
   | 'ADMINISTRACION'
@@ -45,6 +62,16 @@ export type TipoDeLineaDeFactura =
   | 'COMISION'
   | 'INTERES_DE_MORA'
   | 'GASTO_ADMINISTRATIVO'
+  | 'AJUSTE_MANUAL'
+
+/**
+ * De dónde salió un recargo de mora.
+ *
+ * 🔴 No es cosmético: `COBRO` es un número que finanzas ya liquidó y quedó
+ * escrito; `CUOTA` es el mismo motor corriendo HOY sobre una deuda que ningún
+ * cobro reclamó todavía, y por lo tanto CRECE cada día hasta que se emita.
+ */
+export type OrigenDelRecargo = 'COBRO' | 'CUOTA'
 
 export interface LineaDeFactura {
   tipo: TipoDeLineaDeFactura
@@ -52,11 +79,18 @@ export interface LineaDeFactura {
   /** Siempre positivo: el signo lo pone `resta`. */
   valorCop: number
   resta: boolean
+  /** Sólo en los recargos de mora. Ausente con un back anterior. */
+  origen?: OrigenDelRecargo
 }
 
-/** Un impuesto ya liquidado sobre la factura (`impuestos-de-la-factura.ts`). */
+/**
+ * Un impuesto ya liquidado sobre la factura.
+ *
+ * 🔴 El VALOR sale de la cuota; el `porcentaje` va DEDUCIDO de su base, no leído
+ * de la tarifa de hoy: la cuota se escribió con las tarifas de su día.
+ */
 export interface ImpuestoDeLaFactura {
-  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA'
+  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA' | 'RETEICA'
   sobre: 'ARRENDAMIENTO' | 'COMISION' | 'IVA_DEL_CANON'
   nombre: string
   porcentaje: number
@@ -70,14 +104,22 @@ export interface ImpuestoDeLaFactura {
 }
 
 export interface FacturaDelMes {
-  /** `contractId|mes|destinatario`. Es lo que se manda para emitir. */
+  /**
+   * `contractId|mes|destinatario`. Es lo que se manda para emitir, y es la MISMA
+   * terna que identifica la cuota: por eso emitir dos veces no puede facturar
+   * dos veces el mismo mes.
+   */
   clave: string
+  /** La cuota del estado de cuenta de la que sale esta factura. */
+  cuotaId: string
   contractId: string
   /** Nuestro consecutivo de contrato. */
   codigo: number | null
   /** El número que la inmobiliaria conoce (el Nui). */
   numeroExterno: string | null
   inmueble: string
+  /** `YYYY-MM` del período. En un rango, cada fila dice de qué mes es. */
+  mes: string
   destinatario: DestinatarioDeFactura
   terceroId: string | null
   terceroNombre: string
@@ -106,7 +148,19 @@ export interface FacturaDelMes {
     nombre: string
     certeza: 'CONFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR'
   } | null
-  estado: 'POR_EMITIR' | 'EMITIDA'
+  /**
+   * `GENERADA` (2026-09-16): la factura ya existe como documento —nació el día 1
+   * o con un pago— SIN número; emitirla es numerarla. Se selecciona y se emite
+   * igual que una por emitir.
+   */
+  estado: 'POR_EMITIR' | 'GENERADA' | 'EMITIDA'
+  /**
+   * Lo que los recibos ya abonaron a la factura y su saldo, al día con cada
+   * pago. `null` mientras no hay factura (POR_EMITIR) o si la base no tiene
+   * la migración de facturas generadas. Puede faltar en un back viejo.
+   */
+  abonadoCop?: number | null
+  saldoCop?: number | null
   /** El consecutivo interno de la inmobiliaria. */
   numero: number | null
   /** El número autorizado por la resolución de la DIAN («FE-1042»). */
@@ -115,6 +169,35 @@ export interface FacturaDelMes {
   diasDelMes: number
   /** Lo que el propietario paga y NO se factura: va a deducción del egreso. */
   deduccionAlEgresoCop: number
+  /**
+   * 🔴 `false` en un mes que todavía no empieza: la prefactura se ve, no se
+   * emite. La casilla se apaga y el motivo se muestra.
+   */
+  emitible: boolean
+  /** Por qué no se puede emitir hoy. `null` cuando sí se puede. */
+  motivoNoEmitible: string | null
+  /**
+   * 🔴 La mora de esta cuota y de dónde salió su recargo.
+   *
+   * `null` del lado PROPIETARIO (su comisión no se paga tarde) y ausente con un
+   * back anterior a la segunda vuelta de facturación.
+   */
+  mora?: {
+    esCartera: boolean
+    diasDeMora: number
+    /** El interés de mora y el gasto administrativo que la factura lleva. */
+    recargosCop: number
+    /** `null` cuando la factura no lleva ningún recargo. */
+    origen: OrigenDelRecargo | null
+    /** Por qué está en cartera y aun así no lleva recargo. `null` si lleva. */
+    motivo: string | null
+  } | null
+  /**
+   * Lo que esta fila tiene que decir y no cabe en un número: una cuota en mora
+   * que ninguna regla pudo liquidar, un desglose que hubo que cuadrar contra el
+   * estado de cuenta.
+   */
+  avisos: string[]
 }
 
 export interface ContratoOmitido {
@@ -123,8 +206,66 @@ export interface ContratoOmitido {
   /** El número que la inmobiliaria conoce (el Nui). Ausente con un back anterior. */
   numeroExterno?: string | null
   inmueble: string
+  /** `YYYY-MM` del período que no genera factura. */
+  mes: string
   destinatario: DestinatarioDeFactura
   motivo: string
+}
+
+/** Un contrato que deja de prefacturarse después de un mes concreto. */
+export interface ContratoQueTermina {
+  contractId: string
+  destinatario: DestinatarioDeFactura
+  codigo: number | null
+  numeroExterno: string | null
+  inmueble: string
+  terceroNombre: string
+  /** `YYYY-MM-DD` del fin del contrato. */
+  terminaEl: string | null
+}
+
+/** Un mes del rango, con su carga y si hoy se puede emitir. */
+export interface MesDelRango {
+  mes: string
+  /** `Diciembre de 2026`, ya en palabras. */
+  nombre: string
+  emitible: boolean
+  motivoNoEmitible: string | null
+  inquilinos: ResumenDeLado
+  propietarios: ResumenDeLado
+  /**
+   * 🔴 Los contratos que se CAEN acá: éste es su último mes prefacturado
+   * porque el contrato termina. «Los contratos que finalicen antes se van
+   * eliminando de la prefactura» (el CEO). Sin esto, el total del mes siguiente
+   * baja y no hay forma de saber por qué. Ausente con un back anterior.
+   */
+  terminan?: ContratoQueTermina[]
+}
+
+/**
+ * Un contrato del rango, agrupado. Es la frase del CEO escrita: «ya tengo
+ * prefacturado **10 facturas de un millón**» — `cantidad` son las diez,
+ * `valorTipicoCop` es el millón.
+ */
+export interface ContratoDelRango {
+  contractId: string
+  destinatario: DestinatarioDeFactura
+  codigo: number | null
+  numeroExterno: string | null
+  inmueble: string
+  terceroNombre: string
+  cantidad: number
+  totalCop: number
+  /** El total que MÁS se repite entre sus meses, no un promedio. */
+  valorTipicoCop: number
+  /** `true` si todos sus meses valen lo mismo. */
+  valorParejo: boolean
+  primerMes: string
+  ultimoMes: string
+  /** 🔴 El contrato se acaba dentro del rango: deja de prefacturarse. */
+  terminaEnElRango: boolean
+  /** `YYYY-MM-DD` del fin del contrato, cuando lo tiene. */
+  terminaEl: string | null
 }
 
 export interface ResumenDeLado {
@@ -164,17 +305,40 @@ export interface EstadoDeLaResolucion {
 }
 
 export interface FacturasPorGenerar {
+  /** El primer mes mirado, `YYYY-MM`. */
+  desde: string
+  /** El último mes mirado, `YYYY-MM`. */
+  hasta: string
+  /** El primer mes del rango: es el que se emite. */
   mes: string
   inquilinos: FacturaDelMes[]
   propietarios: FacturaDelMes[]
   omitidos: ContratoOmitido[]
+  /** Mes por mes: cuánto pesa cada uno y si hoy se puede emitir. */
+  meses: MesDelRango[]
+  /** Contrato por contrato: «10 facturas de un millón». */
+  porContrato: ContratoDelRango[]
   totales: {
-    contratosDelMes: number
+    /** Cuántos contratos distintos aparecen en el rango. */
+    contratos: number
+    /** Cuántos meses trae el rango. */
+    meses: number
+    /** Las que hoy se pueden emitir, y lo que suman. */
+    emitiblesHoy: number
+    totalEmitibleHoyCop: number
     inquilinos: ResumenDeLado
     propietarios: ResumenDeLado
   }
   /** Sin resolución vigente el back NO emite: el botón tiene que decirlo. */
   resolucion: EstadoDeLaResolucion
+}
+
+/** Hasta dónde mirar. Sin nada, el mes en curso. */
+export interface RangoDePrefacturas {
+  /** `YYYY-MM`. */
+  desde?: string
+  /** `YYYY-MM` o `YYYY-MM-DD`: la persona piensa «hasta el 31 de diciembre». */
+  hasta?: string
 }
 
 export interface ResultadoDeGeneracion {
@@ -201,6 +365,13 @@ export interface ResolucionDeFacturacion {
   numero: string
   fechaResolucion: string
   prefijo: string
+  /**
+   * 🔴 Qué TIPO de documento numera (17-09-2026). `null` = cualquiera, que es
+   * lo que hacen las resoluciones ya cargadas: esta tanda no le cambia la
+   * numeración a nadie.
+   */
+  tipoDeDocumento: TipoDeDocumento | null
+  tipoNombre: string
   desde: number
   hasta: number
   vigenteDesde: string
@@ -218,6 +389,13 @@ export interface ResolucionDeFacturacion {
 export interface ResolucionesDeLaAgencia {
   resoluciones: ResolucionDeFacturacion[]
   vigente: EstadoDeLaResolucion
+  /** `false` sin la migración 20260918000000: no se puede elegir tipo. */
+  porTipoDisponible: boolean
+  /** Con qué resolución se numera hoy cada tipo de documento. */
+  porTipo: ResolucionPorTipo[]
+  umbrales: { numeros: number; dias: number }
+  /** Qué hay que avisar hoy: rango por agotarse, vencimiento cerca, bloqueos. */
+  avisos: AvisoDeLaResolucion[]
 }
 
 /** Lo que se manda para cargar una resolución. Las fechas van «YYYY-MM-DD». */
@@ -230,16 +408,114 @@ export interface NuevaResolucion {
   vigenteDesde: string
   vigenteHasta: string
   ultimoNumeroUsado?: number
+  /** Ausente = numera cualquier tipo (una sola resolución para todo). */
+  tipoDeDocumento?: TipoDeDocumento
 }
 
 // ══ Llamadas ════════════════════════════════════════════════════════════════
 
+// ══ Anular una factura emitida: la nota crédito ═════════════════════════════
+//
+// 🔴 DECISIÓN DE NEGOCIO (Nico, 2026-09-15) — CAMBIABLE. Una factura emitida no
+// se borra: lleva un número que la DIAN autorizó. Anular es emitir OTRO
+// documento —la nota crédito— con concepto y motivo obligatorios; quedan los
+// dos. Y cuando no se puede, la pantalla lo DICE en vez de ofrecer el botón.
+// Las reglas están en `back-erp/src/inmobiliaria/facturacion/nota-credito.ts`.
+
+/** `ConceptoDeNotaCredito` en `schema.prisma`. */
+export type ConceptoDeNotaCredito =
+  | 'DEVOLUCION'
+  | 'ANULACION'
+  | 'REBAJA'
+  | 'AJUSTE_DE_PRECIO'
+  | 'OTROS'
+
+/** El nombre del concepto tal como lo lee una persona. */
+export const NOMBRE_DEL_CONCEPTO: Record<ConceptoDeNotaCredito, string> = {
+  DEVOLUCION: 'Devolución del servicio o del valor cobrado',
+  ANULACION: 'Anulación de la factura',
+  REBAJA: 'Rebaja o descuento',
+  AJUSTE_DE_PRECIO: 'Ajuste de precio',
+  OTROS: 'Otro',
+}
+
+export type BloqueoDeNotaCredito =
+  | 'SIN_NUMERO_DIAN'
+  | 'YA_ANULADA'
+  | 'MIGRACION_PENDIENTE'
+
+export interface EstadoDeLaAnulacion {
+  puede: boolean
+  bloqueo: BloqueoDeNotaCredito | null
+  /** Qué decirle a la persona cuando no se puede. */
+  explicacion: string | null
+}
+
+export interface NotaCreditoDeLaFactura {
+  id: string
+  /** `NC-12`: consecutivo PROPIO, no el de las facturas. */
+  numero: string
+  concepto: ConceptoDeNotaCredito
+  motivo: string
+  valorCop: number
+  /** `true` = acredita sólo una parte de la factura (17-09-2026). */
+  parcial: boolean
+  /** Qué pasó en el libro, o por qué no pasó nada. */
+  notaContable: string | null
+  createdAt: string
+}
+
+export interface FacturaEmitida {
+  id: string
+  numero: number
+  /** Con prefijo (`FE-1042`). `null` = se emitió sin resolución cargada. */
+  numeroDian: string | null
+  destinatario: DestinatarioDeFactura
+  terceroNombre: string
+  terceroDocumento: string | null
+  inmueble: string
+  contractId: string
+  mes: string
+  baseCop: number
+  ivaCop: number
+  retencionesCop: number
+  totalCop: number
+  netoCop: number
+  createdAt: string
+  /** La nota TOTAL, si la tiene. Es lo que la pantalla leía antes. */
+  notaCredito: NotaCreditoDeLaFactura | null
+  /** 🔴 TODAS sus notas, incluidas las PARCIALES (17-09-2026). */
+  notasCredito: NotaCreditoDeLaFactura[]
+  anulacion: EstadoDeLaAnulacion
+  /** Qué se le puede hacer hoy: anular, acreditar en parte o cobrar de más. */
+  correccion: EstadoDeLaCorreccion
+}
+
+export interface FacturasEmitidasDelMes {
+  mes: string
+  /** `false` = esta base todavía no tiene la tabla de notas crédito. */
+  anulacionDisponible: boolean
+  /** `false` sin la migración 20260918000000: sólo existe la nota TOTAL. */
+  notaParcialDisponible: boolean
+  facturas: FacturaEmitida[]
+}
+
 export const facturacionPorMesService = {
-  /** El listado COMPLETO del mes, separado en inquilinos y propietarios. */
-  porGenerar: (mes: string) =>
-    apiClient.get<FacturasPorGenerar>(
-      `${BASE}/por-generar?mes=${encodeURIComponent(mes)}`,
-    ),
+  /**
+   * Las prefacturas del rango, separadas en inquilinos y propietarios.
+   *
+   * Con un solo mes (`{ desde: m, hasta: m }`) responde ese mes, que es lo que
+   * respondía `?mes=`. Sin nada, el mes en curso.
+   */
+  porGenerar: (rango: RangoDePrefacturas = {}) => {
+    const query = new URLSearchParams()
+    if (rango.desde) query.set('desde', rango.desde)
+    if (rango.hasta) query.set('hasta', rango.hasta)
+    const cola = query.toString()
+    return apiClient.get<FacturasPorGenerar>(
+      cola ? `${BASE}/por-generar?${cola}` : `${BASE}/por-generar`,
+    )
+  },
 
   /**
    * Emite las elegidas. Sin `claves` —o con la lista vacía— el back emite
@@ -272,6 +548,9 @@ export const facturacionPorMesService = {
       ...(typeof datos.ultimoNumeroUsado === 'number'
         ? { ultimoNumeroUsado: datos.ultimoNumeroUsado }
         : {}),
+      ...(datos.tipoDeDocumento
+        ? { tipoDeDocumento: datos.tipoDeDocumento }
+        : {}),
     }),
 
   /**
@@ -285,6 +564,29 @@ export const facturacionPorMesService = {
     apiClient.post<ResolucionDeFacturacion>(
       `${BASE}/resolucion/${id}/anular`,
       { motivo },
+    ),
+
+  /** Lo YA emitido del mes, con el estado de su anulación. */
+  emitidas: (mes: string) =>
+    apiClient.get<FacturasEmitidasDelMes>(
+      `${BASE}/emitidas?mes=${encodeURIComponent(mes)}`,
+    ),
+
+  /**
+   * Anula una factura emitiendo una nota crédito.
+   *
+   * 🔴 `concepto` y `motivo` son obligatorios en el back (mínimo 10 caracteres;
+   * sólo espacios es 400). Un 409 trae `code`: `YA_ANULADA`, `SIN_NUMERO_DIAN`
+   * o `MIGRACION_PENDIENTE`, y la pantalla lo lee para decir qué pasó en vez de
+   * un «error» pelado.
+   */
+  emitirNotaCredito: (
+    facturaId: string,
+    datos: { concepto: ConceptoDeNotaCredito; motivo: string },
+  ) =>
+    apiClient.post<{ id: string; numeroDeLaNota: string; valorCop: number }>(
+      `${BASE}/${facturaId}/nota-credito`,
+      { concepto: datos.concepto, motivo: datos.motivo },
     ),
 }
 

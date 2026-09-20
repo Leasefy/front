@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * Perfil de la inmobiliaria: los datos de la empresa, el extracto mensual al
- * propietario y la renovación automática. Los tres guardan por el MISMO
- * endpoint (`PUT /inmobiliaria/agency`) y con el mismo `guardar`, que sólo
- * manda los campos cambiados.
+ * Perfil de la inmobiliaria: los datos de la empresa, cómo mide su tasa de
+ * recaudo, el extracto mensual al propietario y la renovación automática.
+ * Todos guardan por el MISMO endpoint (`PUT /inmobiliaria/agency`) y con el
+ * mismo `guardar`, que sólo manda los campos cambiados.
  */
 
+import { ConfigPenalidadDeTerminacion } from '@/components/inmobiliaria/ConfigPenalidadDeTerminacion';
+import { ConfigCicloDeVidaDelContrato } from '@/components/inmobiliaria/ConfigCicloDeVidaDelContrato';
 import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
@@ -16,6 +18,7 @@ import {
   ConfigPerfilAgencia,
   ConfigExtractoMensual,
   ConfigRenovacionAutomatica,
+  ConfigTasaDeRecaudo,
 } from '@/components/inmobiliaria';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
@@ -99,6 +102,11 @@ export function SeccionPerfil() {
             </div>
           )}
           <ConfigPerfilAgencia agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          {/* Justo después de los datos de la empresa: es una decisión del
+              negocio que cambia un número de todas las pantallas. */}
+          <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
         </div>

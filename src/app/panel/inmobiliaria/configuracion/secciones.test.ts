@@ -127,7 +127,7 @@ describe('URLs de las secciones', () => {
     // La ficha de un miembro sigue siendo Equipo.
     expect(seccionDeLaRuta(`${RAIZ_CONFIGURACION}/equipo/abc-123`)?.id).toBe('equipo');
     expect(seccionDeLaRuta(`${RAIZ_CONFIGURACION}/no-existe`)).toBeNull();
-    expect(seccionDeLaRuta('/panel/inmobiliaria/cobros')).toBeNull();
+    expect(seccionDeLaRuta('/panel/inmobiliaria/pagos/cartera/cobros')).toBeNull();
   });
 
   it('la ficha de un miembro se reconoce sola (ahí el marco se aparta)', () => {

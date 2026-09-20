@@ -19,12 +19,14 @@ import {
  * ── La regla que evita perder una puerta ───────────────────────────────────
  *
  * Varias pantallas que hoy son pestañas eran ANTES entradas propias del
- * sidebar, con su propio gate y su propio encuadre: Cobranza (`cobranza`),
- * Avalúos (`avaluos`), Tickets (`mantenimiento`), Soportes (administración),
- * Agentes IA y Aprendizaje (todo miembro)… Si la raíz del módulo no pasa pero
+ * sidebar, con su propio gate y su propio encuadre: Recaudo y Cartera
+ * (`cobros`), Soportes (administración)… Si la raíz del módulo no pasa pero
  * una de sus pantallas sí, la entrada se muestra igual y apunta a ESA
  * pantalla, heredando su gate y su encuadre. Nadie pierde por el sidebar una
  * pantalla a la que antes llegaba por el sidebar; y nadie gana una.
+ *
+ * (Cobranza y Avalúos fueron el caso de manual hasta el 2026-09-16, cuando
+ * volvieron a ser filas propias en «Agentes IA», con el mismo gate.)
  *
  * `filterAgencyNav` corre después, como siempre, sobre lo que sale de acá.
  */
@@ -76,8 +78,13 @@ export function filasDelSidebar(
         href: entrada.href,
         icon: m.icon,
         module: entrada.module,
+        modulos: entrada.modulos,
         roles: entrada.roles,
         scope: entrada.scope,
+        // 🔴 El módulo de PAGO viaja con la fila para que `filterAgencyNav` lo
+        // vuelva a mirar: `resolverEntradaDeModulo` ya lo miró al elegir pantalla,
+        // pero el filtro final es el que decide qué se pinta.
+        moduloPago: entrada.moduloPago ?? m.moduloPago,
         exact: m.exact,
         ai: m.ia,
         hint: m.hintKey ? t(m.hintKey) : undefined,

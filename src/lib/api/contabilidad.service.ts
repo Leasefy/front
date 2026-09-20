@@ -29,6 +29,23 @@
  * Por eso `soloClaves()` filtra cada cuerpo contra la lista de su DTO, y por
  * eso el test de este archivo compara esas listas contra copias escritas a
  * mano de los DTOs, no contra sí mismas.
+ *
+ * ── Lo que se agregó el 18-09 (contrato de la contabilidad completa) ────────
+ *
+ * Dos piezas, las dos colgadas de `/mapeo` porque es el mismo controller:
+ *
+ *   §2 Eventos de gasto  → `MapeoContable.eventosDeGasto` y los siete valores
+ *                          nuevos del enum. `hayEventosDeGasto: false` (o
+ *                          ausente) = la base no los tiene y el bloque se
+ *                          muestra explicando qué falta, sin editar.
+ *   §1 Rubros del P&G    → `mapeo.rubros()` y compañía: qué cuenta del PUC es
+ *                          cada rubro del presupuesto, que es lo que cierra el
+ *                          «—» del real en `finanzas/presupuesto`.
+ *
+ * Las otras tres piezas del contrato viven en archivos propios porque son otros
+ * controllers: `gastos.service.ts` (facturas de proveedor y egresos),
+ * `estados-financieros.service.ts` (P&G, balance, mayor, terceros) y
+ * `exogena.service.ts`.
  */
 
 import { apiClient } from './client';
@@ -68,6 +85,17 @@ export interface CuentaPuc {
   padreId: string | null;
   imputable: boolean;
   activa: boolean;
+  /**
+   * 🔴 El gasto de esta cuenta NO es deducible (contrato del 19-09, §3).
+   * «Todo deducible salvo lo marcado»: lo marcado va a la columna «Pago o
+   * abono no deducible» del formato 1001.
+   *
+   * `undefined` = la base no tiene la columna todavía (migración 70; el back
+   * la omite en toda lectura) y no hay nada marcado. `null` = la columna
+   * existe y la cuenta no está marcada. Ninguno de los dos se pinta como una
+   * casilla marcada, y `undefined` no se pinta como «no deducible: no».
+   */
+  noDeducible?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -122,14 +150,25 @@ export interface CuentaNueva {
 }
 
 /** `ActualizarCuentaDto`. 🔴 `codigo` NO está: un código no se cambia, se
- * crea otra cuenta. Mandarlo es un 400. */
-export const CLAVES_DE_ACTUALIZAR_CUENTA = ['nombre', 'naturaleza', 'activa', 'imputable'] as const;
+ * crea otra cuenta. Mandarlo es un 400.
+ *
+ * `noDeducible` se agregó el 19-09 (§3): sin la migración 70 el back responde
+ * 503 `NO_DEDUCIBLE_SIN_MIGRAR` — pero SÓLO si la clave viaja, así que el
+ * resto de la edición del PUC sigue funcionando mientras no se marque nada. */
+export const CLAVES_DE_ACTUALIZAR_CUENTA = [
+  'nombre',
+  'naturaleza',
+  'activa',
+  'imputable',
+  'noDeducible',
+] as const;
 
 export interface CambiosDeCuenta {
   nombre?: string;
   naturaleza?: NaturalezaContable;
   activa?: boolean;
   imputable?: boolean;
+  noDeducible?: boolean;
 }
 
 export const LARGO_MAXIMO_DE_CODIGO = 20;
@@ -352,6 +391,72 @@ export interface ResultadoDeCierre {
   /** Asientos que quedaron bloqueados con este cierre. */
   cerrados: number;
   fronteraAnterior: string | null;
+}
+
+// ── Reabrir un mes cerrado (contrato del 19-09, §1) ────────────────────────
+
+/**
+ * `ReabrirDto`, con la trampa entera adentro.
+ *
+ * 🔴 `hasta` es **el primer día que se vuelve a poder escribir**, NO hasta
+ * dónde queda cerrado. Con la contabilidad cerrada al 31-dic, «reabrir
+ * diciembre» es `2025-12-01` y deja la frontera en el 30-nov — el back hace
+ * `fronteraNueva = hasta - 1 día`. Sin `hasta` se reabre TODO y la
+ * contabilidad queda sin ninguna fecha cerrada.
+ *
+ * Es el mismo nombre de campo que `CerrarPeriodoDto` y significa lo contrario;
+ * por eso la pantalla muestra el resultado ANTES de confirmar y por eso esta
+ * frase está acá y no sólo en el componente.
+ */
+export const CLAVES_DE_REABRIR = ['hasta', 'motivo'] as const;
+
+/** `MinLength(3)` en el DTO: un motivo de dos letras es un 400. */
+export const LARGO_MINIMO_DEL_MOTIVO_DE_REAPERTURA = 3;
+export const LARGO_MAXIMO_DEL_MOTIVO_DE_REAPERTURA = 500;
+
+/**
+ * Una fila de `reaperturas_contables`, tal como la devuelve Prisma.
+ *
+ * 🔴 `fronteraAnterior` y `fronteraNueva` acá son `@db.Date` serializados
+ * (`2025-12-31T00:00:00.000Z`), NO el `AAAA-MM-DD` pelado del nivel de arriba
+ * de la respuesta. Pasalos siempre por `diaDe`/`diaLegible`.
+ */
+export interface ReaperturaContable {
+  id: string;
+  agencyId: string;
+  fronteraAnterior: string;
+  /** `null` = se reabrió todo: no queda ninguna fecha cerrada. */
+  fronteraNueva: string | null;
+  motivo: string;
+  reabiertoPorUserId: string | null;
+  reabiertoAt: string;
+}
+
+/** Respuesta de `POST /asientos/reabrir`. */
+export interface ResultadoDeReapertura {
+  reapertura: ReaperturaContable;
+  /** `AAAA-MM-DD`: hasta dónde estaba cerrada antes. */
+  fronteraAnterior: string;
+  /** `AAAA-MM-DD`, o `null` si se reabrió todo. */
+  fronteraNueva: string | null;
+  /**
+   * El texto del back: los asientos marcados NO se desmarcan y corregir sigue
+   * siendo por reversa. Se muestra tal cual — es la mitad de la operación que
+   * nadie espera.
+   */
+  aviso: string;
+}
+
+/**
+ * `GET /asientos/reaperturas`. Lectura de CUALQUIER miembro: que se pueda ver
+ * quién deshizo un cierre es justamente el punto.
+ *
+ * `disponible: false` = falta la migración 68; `motivo` la nombra.
+ */
+export interface BitacoraDeReaperturas {
+  disponible: boolean;
+  motivo: string | null;
+  reaperturas: ReaperturaContable[];
 }
 
 // ── Reportes ───────────────────────────────────────────────────────────────
@@ -654,8 +759,36 @@ export interface DocumentoMigrado {
 
 export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';
 
-/** Cómo se resolvió el contrato de un comprobante. `ninguno` = no se resolvió. */
-export type AsociadoPor = 'documento' | 'nombre' | 'ninguno';
+/**
+ * Cómo se resolvió el contrato de un comprobante. `ninguno` = no se resolvió.
+ *
+ * `numero_contrato` y `codigo_inmueble` (2026-09-16): el concepto escribe
+ * «CONTRATO 854» o «COD. 127». Con el código, el contrato es el que estaba
+ * vigente en ese inmueble el día del comprobante; con varios o ninguno el
+ * back no adivina.
+ *
+ * `solo_inmueble` (2026-09-17): el concepto dice el código de un inmueble que
+ * ese día no tenía contrato vigente —o nunca tuvo uno—. Queda colgado SÓLO del
+ * inmueble: sale en su ficha, no en la de ningún contrato.
+ */
+export type AsociadoPor =
+  | 'documento'
+  | 'nombre'
+  | 'numero_contrato'
+  | 'codigo_inmueble'
+  | 'solo_inmueble'
+  | 'ninguno';
+
+/** Cómo se dice, en una frase corta, por dónde quedó asociado. */
+export const COMO_SE_ASOCIO: Record<AsociadoPor, string> = {
+  documento: 'por el documento del tercero',
+  nombre: 'por el nombre del tercero',
+  numero_contrato: 'por el número de contrato del concepto',
+  codigo_inmueble: 'por el código del inmueble del concepto',
+  solo_inmueble:
+    'sólo al inmueble, por el código del concepto: ese día no tenía contrato vigente',
+  ninguno: 'sin contrato',
+};
 
 export interface AsociacionDeDocumento {
   contractId?: string;
@@ -681,7 +814,17 @@ export interface RevisionDeDocumentos {
   yaMigrados: number;
   rechazados: number;
   /** Cuántos quedaron colgados de un contrato, y por qué camino. */
-  asociados: { porDocumento: number; porNombre: number; sinContrato: number };
+  asociados: {
+    porDocumento: number;
+    porNombre: number;
+    /** «CONTRATO 854» en el concepto. */
+    porNumeroDeContrato: number;
+    /** «COD. 127» en el concepto: el contrato vigente de ese inmueble ese día. */
+    porCodigoDeInmueble: number;
+    /** «COD. 127» de un inmueble sin contrato vigente ese día: colgado SÓLO del inmueble. */
+    soloInmueble: number;
+    sinContrato: number;
+  };
   /** Los motivos agrupados: 40.000 filas iguales son UNA línea del informe. */
   motivos: { motivo: string; filas: number[] }[];
   filas: FilaDeDocumento[];
@@ -736,6 +879,50 @@ export interface DocumentoMigradoVista {
   asociadoPor: AsociadoPor;
   /** A qué pestaña va. Viene decidido del back. */
   clase: ClaseDeComprobante;
+  /**
+   * La fila del archivo tal como llegó («$5,561,832.00», «26,766»), para
+   * auditar sin el CSV. `null` en lo migrado antes del 2026-09-16 y mientras
+   * la base no tenga la migración que la guarda.
+   */
+  datos: Record<string, unknown> | null;
+}
+
+/**
+ * Por qué un comprobante quedó sin contrato — o sea, sin inquilino ni
+ * propietario. Lo decide el back con las mismas reglas que asocian:
+ *
+ * - `EXPORT_SIN_TERCERO`: el concepto es sólo el tipo y el número («Factura
+ *   57521») o viene vacío. El export no trae a quién, y eso no se arregla acá.
+ * - `REFERENCIA_SIN_RESOLVER`: dice «CONTRATO N» o «COD. N», pero el número no
+ *   existe, o el inmueble tenía varios contratos vigentes —o ninguno— ese día.
+ * - `TERCERO_SIN_CONTRATO`: nombra a alguien que no es inquilino ni
+ *   propietario de ningún contrato de la inmobiliaria.
+ * - `CONCEPTO_SIN_TERCERO`: texto libre que no nombra a nadie (gastos,
+ *   nómina, notas bancarias).
+ * - `SOLO_INMUEBLE`: sin contrato pero colgado de su inmueble (el código del
+ *   concepto, sin contrato vigente ese día). Sale en la ficha del inmueble.
+ */
+export type MotivoSinContrato =
+  | 'SOLO_INMUEBLE'
+  | 'EXPORT_SIN_TERCERO'
+  | 'REFERENCIA_SIN_RESOLVER'
+  | 'TERCERO_SIN_CONTRATO'
+  | 'CONCEPTO_SIN_TERCERO';
+
+export interface SinContratoDeLaClase {
+  total: number;
+  conContrato: number;
+  sinContrato: number;
+  /** Los cuatro motivos, siempre presentes. */
+  motivos: Record<MotivoSinContrato, number>;
+}
+
+/** `GET .../migracion/documentos/sin-contrato`: lo guardado, por pestaña y por qué. */
+export interface ResumenSinContrato {
+  total: number;
+  conContrato: number;
+  sinContrato: number;
+  porClase: Record<ClaseDeComprobante, SinContratoDeLaClase>;
 }
 
 export interface PaginaDeDocumentosMigrados {
@@ -782,7 +969,7 @@ export interface HistoriaDeComprobantes {
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
 /** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
-export type EventoContable =
+export type EventoDeRecaudoOGiro =
   | 'CARTERA_INQUILINOS'
   | 'RECIBO_BANCOS'
   | 'RECIBO_CAJA'
@@ -791,9 +978,46 @@ export type EventoContable =
   | 'RECAUDO_OTROS_TERCEROS'
   | 'INGRESO_COMISION'
   | 'IVA_GENERADO'
-  | 'GIRO_PROPIETARIO_BANCOS';
+  | 'GIRO_PROPIETARIO_BANCOS'
+  /** Opcional (2026-09-16): sin cuenta propia, el ajuste va a «otros recaudos». */
+  | 'AJUSTE_AL_PESO';
 
-export const EVENTOS_CONTABLES: readonly EventoContable[] = [
+/**
+ * Los SIETE eventos de gasto (contrato del 18-09 §2): los que necesita la
+ * factura de proveedor para causarse y el egreso para pagarse.
+ *
+ * 🔴 **NO son valores del enum `EventoContable`**, y eso cambia dónde se
+ * guardan. Agregar un valor a un enum de Postgres es irreversible, así que el
+ * back los guarda como TEXTO con un CHECK en una tabla propia. Consecuencia
+ * para esta capa: se leen con `GET /mapeo/gastos`, se guardan con
+ * `PUT /mapeo/gastos` y se siembran con `POST /mapeo/gastos/semilla` —
+ * `PUT /mapeo` sigue siendo el de los diez del recaudo, y mandarle uno de gasto
+ * es 400 `EVENTO_DESCONOCIDO`.
+ *
+ * Van aparte de los de recaudo y giro también en la pantalla. `GET /mapeo` los
+ * devuelve en `eventosDeGasto` con su propio `completoGastos`, porque el mapeo
+ * de recaudo puede estar completo —y los recibos asentándose— mientras el de
+ * gasto está vacío. Meterlos en la misma lista haría que la inmobiliaria que
+ * nunca registró una factura de proveedor viera su paso 5 «incompleto» de un
+ * día para otro, sin haber cambiado nada.
+ */
+export type EventoDeGasto =
+  | 'GASTO_SIN_RUBRO'
+  | 'IVA_DESCONTABLE'
+  | 'GASTO_POR_PAGAR'
+  | 'RETEFUENTE_PRACTICADA'
+  | 'RETEIVA_PRACTICADA'
+  | 'RETEICA_PRACTICADA'
+  | 'EGRESO_BANCOS';
+
+/**
+ * El vocabulario que la pantalla maneja, unido. Ojo: la UNIÓN es de la pantalla,
+ * no de la base — los de recaudo son un enum de Postgres y los de gasto, texto
+ * con CHECK en otra tabla. Por eso hay dos rutas para guardarlos.
+ */
+export type EventoContable = EventoDeRecaudoOGiro | EventoDeGasto;
+
+export const EVENTOS_CONTABLES: readonly EventoDeRecaudoOGiro[] = [
   'CARTERA_INQUILINOS',
   'RECIBO_BANCOS',
   'RECIBO_CAJA',
@@ -803,7 +1027,29 @@ export const EVENTOS_CONTABLES: readonly EventoContable[] = [
   'INGRESO_COMISION',
   'IVA_GENERADO',
   'GIRO_PROPIETARIO_BANCOS',
+  'AJUSTE_AL_PESO',
 ];
+
+export const EVENTOS_DE_GASTO: readonly EventoDeGasto[] = [
+  'GASTO_SIN_RUBRO',
+  'IVA_DESCONTABLE',
+  'GASTO_POR_PAGAR',
+  'RETEFUENTE_PRACTICADA',
+  'RETEIVA_PRACTICADA',
+  'RETEICA_PRACTICADA',
+  'EGRESO_BANCOS',
+];
+
+/** Qué hace cada evento de gasto, para el caso en que el back no lo diga. */
+export const PARA_QUE_SIRVE_EL_GASTO: Record<EventoDeGasto, string> = {
+  GASTO_SIN_RUBRO: 'La cuenta del gasto cuando la línea de la factura no dice cuál.',
+  IVA_DESCONTABLE: 'El IVA de la factura del proveedor.',
+  GASTO_POR_PAGAR: 'La cuenta por pagar al proveedor.',
+  RETEFUENTE_PRACTICADA: 'La retefuente que se le practica al proveedor.',
+  RETEIVA_PRACTICADA: 'El reteIVA que se le practica al proveedor.',
+  RETEICA_PRACTICADA: 'El reteICA que se le practica al proveedor.',
+  EGRESO_BANCOS: 'La plata que sale del banco al pagarle.',
+};
 
 /** `GET /asientos/faltantes`: lo que pasó sin asiento por falta de mapeo. */
 export interface AsientosFaltantes {
@@ -839,11 +1085,43 @@ export interface MapeoDeEvento {
   explicacion: string;
   lado: LadoDelEvento;
   codigoPropuesto: string;
+  /**
+   * Un evento opcional (hoy, «Ajuste al peso») no deja el mapeo incompleto ni
+   * apaga asientos: sin cuenta, su valor va a la cuenta de siempre. Sólo llega
+   * si la base tiene la migración.
+   */
+  opcional?: boolean;
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
 }
 
 export interface MapeoContable {
+  eventos: MapeoDeEvento[];
+  completo: boolean;
+  faltantes: EventoContable[];
+  /**
+   * Los siete de gasto (migración 49). `undefined` en un back anterior al
+   * 18-09: ausente ⇒ no se afirma nada y el bloque no se dibuja, nunca una
+   * lista vacía que se lea como «no falta ninguno».
+   */
+  eventosDeGasto?: MapeoDeEvento[];
+  completoGastos?: boolean;
+  faltantesGastos?: EventoContable[];
+  /**
+   * `false` = falta la migración 49 (la tabla donde viven). El bloque de gasto
+   * se muestra explicando qué falta y NO editable: `PUT /mapeo/gastos`
+   * devolvería 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribiría nada.
+   */
+  hayEventosDeGasto?: boolean;
+  /** El texto del 503 cuando `hayEventosDeGasto` es `false`. */
+  motivoDeLosGastos?: string | null;
+}
+
+/** Lo que devuelve `GET /mapeo/gastos`: los siete, solos. */
+export interface MapeoDeGastos {
+  /** `false` = falta la migración 49. */
+  disponible: boolean;
+  motivo: string | null;
   eventos: MapeoDeEvento[];
   completo: boolean;
   faltantes: EventoContable[];
@@ -857,12 +1135,119 @@ export interface EntradaDeMapeo {
   cuentaId: string;
 }
 
+/**
+ * 🔴 Los eventos de gasto se guardan por SU PROPIA ruta (`PUT /mapeo/gastos`),
+ * no por `PUT /mapeo` — que sigue siendo el de los diez del recaudo.
+ *
+ * Mandar uno de gasto por la ruta vieja no es un error de estilo: son dos
+ * controladores con dos validaciones distintas, y el back contesta
+ * 400 `EVENTO_DESCONOCIDO`. Sin la migración 49, `PUT /mapeo/gastos` responde
+ * 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribe nada — por eso la pantalla no
+ * dibuja el bloque editable cuando `hayEventosDeGasto` no es `true`.
+ */
+export const MAPEO_DE_RUBROS_SIN_MIGRAR = 'MAPEO_DE_RUBROS_SIN_MIGRAR';
+export const EVENTO_DESCONOCIDO = 'EVENTO_DESCONOCIDO';
+
 /** Respuesta de `POST /mapeo/semilla`. */
 export interface ResultadoDeSemillaDeMapeo {
   asignados: EventoContable[];
   yaEstaban: EventoContable[];
   sinCuenta: { evento: EventoContable; codigo: string }[];
   mapeo: MapeoContable;
+}
+
+// ── Mapeo rubro del P&G → cuentas del PUC ──────────────────────────────────
+
+/**
+ * El mapeo que cierra el «—» del presupuesto (contrato del 18-09, §1).
+ *
+ * Hoy `finanzas/presupuesto` muestra guion en el real de `gastos` y `nomina`
+ * porque nadie dijo qué cuenta del PUC es cada rubro. Esto lo dice: un rubro a
+ * UNA O VARIAS cuentas, y puede ser una cuenta MAYOR (no imputable) — el real
+ * suma la cuenta y todas sus hijas. Es lo que un contador espera cuando dice
+ * «gastos = todo el 51».
+ *
+ * 🔴 `naturaleza` NO se configura: la dice el PUC (clase 4 → INGRESO, 5/6/7 →
+ * COSTO). Un rubro mapeado a cuentas de clases distintas devuelve `MIXTO` y un
+ * aviso, en vez de elegir una por su cuenta.
+ */
+export type NaturalezaDelRubro = 'INGRESO' | 'COSTO' | 'MIXTO';
+
+/**
+ * De dónde sale el real de un rubro. Los tres primeros son fuentes propias que
+ * el mapeo del PUC NO reemplaza: siguen midiéndose donde se medían, y lo del
+ * libro va al lado como segunda lectura para que el contador vea si el libro y
+ * la operación dicen lo mismo.
+ */
+export type FuenteDelReal =
+  | 'COMISION_CAUSADA'
+  | 'RECARGOS_RECAUDADOS'
+  | 'COSTOS_DE_LA_PLATA'
+  | 'CUENTAS_DEL_PUC'
+  | 'SIN_FUENTE';
+
+export interface CuentaDelRubro {
+  id: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable;
+  /** `false` = es una cuenta mayor: el real suma ella y todas sus hijas. */
+  imputable: boolean;
+}
+
+export interface MapeoDeRubro {
+  rubro: string;
+  nombre: string;
+  naturaleza: NaturalezaDelRubro;
+  fuenteDelReal: FuenteDelReal;
+  /** Por qué este rubro no tiene real. `null` = lo tiene. */
+  motivoSinReal: string | null;
+  /** `true` = está en el catálogo; `false` = lo inventó la inmobiliaria. */
+  sugerido: boolean;
+  cuentas: CuentaDelRubro[];
+  /** Las cuentas del preset que SÍ existen en el plan de esta agencia. */
+  propuestas: CuentaDelRubro[];
+  /** Los códigos que el preset propone, existan o no. */
+  codigosPropuestos: string[];
+}
+
+export interface MapeoDeRubros {
+  /** `false` = falta la migración 49 (`mapeos_de_rubro`). Se ve, no se guarda. */
+  disponible: boolean;
+  /** El texto del 503, con el nombre de la migración. */
+  motivo: string | null;
+  /** ¿Todos los rubros SUGERIDOS tienen cuenta? */
+  completo: boolean;
+  faltantes: string[];
+  rubros: MapeoDeRubro[];
+  /**
+   * 🔴 Lo que el back detectó y esta capa NO puede deducir: cuentas AMBIGUAS
+   * (dos rubros reclaman el mismo código, así que su plata se cuenta dos veces)
+   * y códigos HUÉRFANOS (un rubro mapeado a una cuenta que ya no existe: da
+   * cero, y ese cero NO significa «no se gastó»).
+   *
+   * Los dos casos producen un número que se ve razonable, que es lo que los
+   * hace peligrosos. Se muestran tal cual llegan.
+   */
+  avisos?: string[];
+}
+
+/** `GuardarMapeoDeRubroDto`. La lista REEMPLAZA el juego completo del rubro. */
+export const CLAVES_DE_MAPEO_DE_RUBRO = ['rubro', 'cuentaIds'] as const;
+
+export interface MapeoDeRubroNuevo {
+  rubro: string;
+  /** Vacía = deja el rubro sin mapear (no es un borrado del rubro). */
+  cuentaIds: string[];
+}
+
+/** Respuesta de `POST /mapeo/rubros/sembrar`. No pisa lo ya asignado. */
+export interface ResultadoDeSembrarRubros {
+  asignados: string[];
+  yaEstaban: string[];
+  /** Los rubros cuyo preset no existe en el plan de la agencia, con sus códigos. */
+  sinCuenta: { rubro: string; codigos: string[] }[];
+  mapeo: MapeoDeRubros;
 }
 
 // ══ API ═════════════════════════════════════════════════════════════════════
@@ -994,9 +1379,58 @@ export const contabilidadApi = {
         soloClaves({ hasta }, CLAVES_DE_CERRAR),
       );
     },
+
+    /**
+     * Mueve la frontera HACIA ATRÁS. Sólo ADMIN (`SoloAdministradorGuard`):
+     * el contador cierra, y deshacer el cierre es otra decisión — a los demás
+     * el back les responde 403 con esa frase.
+     *
+     * 🔴 `hasta` es el PRIMER día que se vuelve a poder escribir. `null`
+     * reabre todo. 503 `REAPERTURA_SIN_MIGRAR` sin la migración 68.
+     */
+    async reabrir(hasta: string | null, motivo: string): Promise<ResultadoDeReapertura> {
+      return apiClient.post<ResultadoDeReapertura>(
+        `${BASE}/asientos/reabrir`,
+        // `hasta: null` se convierte en AUSENTE en vez de viajar como `null`.
+        // Las dos formas funcionan —`@IsOptional()` de class-validator se
+        // saltea la validación con `null` igual que con `undefined`, y el
+        // servicio hace `dto.hasta ? … : null`—, pero la ausencia es la que el
+        // DTO documenta («sin esto se reabre todo») y la que no depende de ese
+        // detalle de la librería.
+        soloClaves({ hasta: hasta ?? undefined, motivo }, CLAVES_DE_REABRIR),
+      );
+    },
+
+    /** La bitácora de reaperturas. La lee cualquier miembro. */
+    async reaperturas(limite?: number): Promise<BitacoraDeReaperturas> {
+      return apiClient.get<BitacoraDeReaperturas>(
+        conQuery(`${BASE}/asientos/reaperturas`, {
+          limite: limite === undefined ? undefined : String(limite),
+        }),
+      );
+    },
   },
 
   reportes: {
+    /**
+     * El libro del rango en CSV, armado POR EL SERVIDOR (CT3).
+     *
+     * 🔴 Antes el archivo se armaba en el navegador: se pedían todas las
+     * páginas de `GET /asientos`, se juntaban en memoria y se concatenaba un
+     * string — con un tope que dejaba el libro incompleto justo cuando el
+     * rango era largo, que es cuando el contador lo necesita. Ahora la base
+     * ordena y pagina y el archivo baja por partes; acá sólo se recibe el
+     * blob ya hecho.
+     */
+    async libroCsv(filtros: { desde?: string; hasta?: string } = {}): Promise<Blob> {
+      return apiClient.getBlob(
+        conQuery(`${BASE}/reportes/libro.csv`, {
+          desde: filtros.desde,
+          hasta: filtros.hasta,
+        }),
+      );
+    },
+
     async balanceDePrueba(filtros: FiltrosDeBalance = {}): Promise<BalanceDePrueba> {
       return apiClient.get<BalanceDePrueba>(
         conQuery(`${BASE}/reportes/balance-de-prueba`, {
@@ -1045,6 +1479,57 @@ export const contabilidadApi = {
     /** Asigna las cuentas propuestas a los eventos vacíos; no pisa lo asignado. */
     async sembrar(): Promise<ResultadoDeSemillaDeMapeo> {
       return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/semilla`, {});
+    },
+
+    /**
+     * Los siete eventos de gasto, solos. `GET /mapeo` ya los trae, así que
+     * esto es para la pantalla que sólo quiere ese bloque.
+     */
+    async gastos(): Promise<MapeoDeGastos> {
+      return apiClient.get<MapeoDeGastos>(`${BASE}/mapeo/gastos`);
+    },
+
+    /**
+     * 🔴 Su propia ruta, no `PUT /mapeo`: los de gasto no viven en el enum
+     * `EventoContable` sino en una tabla con CHECK. Mandarlos por la ruta de
+     * recaudo es 400 `EVENTO_DESCONOCIDO`; sin la migración 49 esta ruta
+     * responde 503 `MAPEO_DE_RUBROS_SIN_MIGRAR` y no escribe nada.
+     */
+    async guardarGastos(entradas: EntradaDeMapeo[]): Promise<MapeoDeGastos> {
+      return apiClient.put<MapeoDeGastos>(`${BASE}/mapeo/gastos`, {
+        entradas: entradas.map((e) => soloClaves(e, CLAVES_DE_ENTRADA_DE_MAPEO)),
+      });
+    },
+
+    /** Asigna las cuentas propuestas a los eventos de gasto vacíos. */
+    async sembrarGastos(): Promise<ResultadoDeSemillaDeMapeo> {
+      return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/gastos/semilla`, {});
+    },
+
+    /** Los rubros del P&G con sus cuentas del PUC y las que el preset propone. */
+    async rubros(): Promise<MapeoDeRubros> {
+      return apiClient.get<MapeoDeRubros>(`${BASE}/mapeo/rubros`);
+    },
+
+    /**
+     * REEMPLAZA el juego completo de cuentas de un rubro. Una lista vacía lo
+     * deja sin mapear — no es lo mismo que borrarlo, que es `borrarRubro`.
+     */
+    async guardarRubro(entrada: MapeoDeRubroNuevo): Promise<MapeoDeRubros> {
+      return apiClient.put<MapeoDeRubros>(
+        `${BASE}/mapeo/rubros`,
+        soloClaves(entrada, CLAVES_DE_MAPEO_DE_RUBRO),
+      );
+    },
+
+    /** Asigna el preset a los rubros vacíos; no pisa lo asignado. */
+    async sembrarRubros(): Promise<ResultadoDeSembrarRubros> {
+      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/sembrar`, {});
+    },
+
+    /** 204. Saca el rubro del mapeo, con sus cuentas. */
+    async borrarRubro(rubro: string): Promise<void> {
+      return apiClient.delete<void>(`${BASE}/mapeo/rubros/${encodeURIComponent(rubro)}`);
     },
   },
 
@@ -1099,6 +1584,18 @@ export const contabilidadApi = {
             page: filtros.page === undefined ? undefined : String(filtros.page),
             pageSize: filtros.pageSize === undefined ? undefined : String(filtros.pageSize),
           }),
+        );
+      },
+
+      /**
+       * Cuántos de los comprobantes YA guardados quedaron sin contrato, por
+       * pestaña (facturas, ingresos, egresos, otros) y por qué. Es lo que la
+       * pantalla de migración explica, incluido qué pedirle al sistema
+       * anterior cuando el export no trae el cliente.
+       */
+      async sinContrato(): Promise<ResumenSinContrato> {
+        return apiClient.get<ResumenSinContrato>(
+          `${BASE}/migracion/documentos/sin-contrato`,
         );
       },
 

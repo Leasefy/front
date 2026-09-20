@@ -25,7 +25,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
-import type { Dispersion } from '@/lib/types/inmobiliaria';
+import type {
+  CuotasTardias,
+  Dispersion,
+  DispersionItem,
+  PorQueElMesVieneVacio,
+} from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
@@ -35,6 +40,18 @@ import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
 import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
+import { motivoDelMesVacio } from './dispersion-mes-vacio';
+import {
+  ResumenDelMandato,
+  RotuloDelMandato,
+  type NumerosDelMandato,
+} from './mandato/ElMandatoEnLaLiquidacion';
+import { CuotasQueLlegaronTarde } from './CuotasQueLlegaronTarde';
+import {
+  ROTULO_DEL_CANON,
+  baseDeLaLiquidacion,
+  type BaseDelCanon,
+} from '@/lib/propietarios/base-del-canon';
 
 /**
  * Lo que el asistente dice cuando el back no liquidó, en tres escalones:
@@ -75,6 +92,20 @@ function FalloDelAsistente({
   );
 }
 
+/** El vacío del paso 2, con la razón que contó el back. */
+function MesSinGiros({ motivo }: { motivo: { titulo: string; detalle: string } }) {
+  return (
+    <div
+      className="p-12 text-center rounded-lg border border-dashed border-border"
+      data-testid="asistente-mes-vacio"
+    >
+      <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+      <h3 className="text-lg font-semibold text-foreground mb-2">{motivo.titulo}</h3>
+      <p className="text-muted-foreground">{motivo.detalle}</p>
+    </div>
+  );
+}
+
 interface DispersionWizardProps {
   initialMonth?: string;
   /** `month` es el que se acaba de generar: la lista tiene que abrir ahí. */
@@ -105,14 +136,20 @@ interface DispersionDraft {
   totalConceptosACargo: number;
   /** Lo que la inmobiliaria le abona: devoluciones, reajustes. */
   totalConceptosAFavor: number;
-  items: {
-    cobroId: string;
+  items: ({
+    /** El documento, si existe. Desde el 16-09 es `null`: la plata sale de la cuota. */
+    cobroId: string | null;
+    /** La cuota del propietario que se gira. Es la identidad de la línea. */
+    cuotaId: string | null;
     propertyTitle: string;
     rentCollected: number;
     commissionPercent: number;
     commissionAmount: number;
     netAmount: number;
-  }[];
+  } & Pick<
+    DispersionItem,
+    'modalidad' | 'fuenteDeLaModalidad' | 'mesDeLaCuota' | 'sinRecaudoCop' | 'interesDelRecibo'
+  >)[];
   totalCollected: number;
   totalCommission: number;
   netToPropietario: number;
@@ -120,7 +157,9 @@ interface DispersionDraft {
 
 const STEPS = [
   { id: 1, label: 'Mes', icon: Calendar },
-  { id: 2, label: 'Cobros', icon: CurrencyCircleDollar },
+  // «Cobros» nombraba una fuente que ya no es: el giro sale de la cuota del
+  // propietario de cada contrato (16-09), haya pagado el inquilino o no.
+  { id: 2, label: 'Cuotas', icon: CurrencyCircleDollar },
   { id: 3, label: 'Comisiones', icon: Percent },
   { id: 4, label: 'Netos', icon: Calculator },
   // «Aprobar» prometía una aprobación que no ocurría en ninguna parte: el paso
@@ -218,6 +257,28 @@ export function DispersionWizard({
   const [errorAlGenerar, setErrorAlGenerar] = useState<unknown>(null);
   /** Cuántas ya existen: sin esto, «no hay nada» tapa «ya se generaron». */
   const [yaGenerados, setYaGenerados] = useState(0);
+  /** Por qué el mes vino vacío, contado por el back en las cuotas. */
+  const [vacio, setVacio] = useState<PorQueElMesVieneVacio | null>(null);
+  /**
+   * Con qué base liquidó el back la vista previa. Rotula el canon —«Canon
+   * causado» o «Canon recaudado»— y no toca un número. El asistente no manda
+   * `?base=`, así que es la del back por defecto: CAUSADO.
+   */
+  const [base, setBase] = useState<BaseDelCanon>('CAUSADO');
+  /**
+   * Los que ya tienen su liquidación del mes y tienen cuotas que llegaron
+   * tarde. Los que `seSuman` viajan en el `generate` aunque no estén en los
+   * borradores: sin su id, el back no los mira y esas cuotas no se giran nunca.
+   */
+  const [tardias, setTardias] = useState<CuotasTardias[]>([]);
+  /**
+   * D1/D2 del mes, tal como los calculó el back: lo que se giraría sin recaudo
+   * (garantizado) y los intereses de mora del propietario. Vacío con un back
+   * sin las migraciones del mandato.
+   */
+  const [mandato, setMandato] = useState<NumerosDelMandato>({});
+  const tardiasQueSeSuman = useMemo(() => tardias.filter((t) => t.seSuman), [tardias]);
+  const haySumables = tardiasQueSeSuman.length > 0;
 
   useEffect(() => {
     let cancelado = false;
@@ -229,6 +290,13 @@ export function DispersionWizard({
       .then((previa) => {
         if (cancelado) return;
         setYaGenerados(previa.yaGenerados);
+        setTardias(previa.tardias ?? []);
+        setVacio(previa.vacio ?? null);
+        setBase(baseDeLaLiquidacion(previa));
+        setMandato({
+          cuentaPorCobrarAlInquilinoCop: previa.totalCuentaPorCobrarAlInquilino,
+          interesesCop: previa.totalIntereses,
+        });
         const borradores = previa.propietarios
           .filter((p) => !p.yaExiste)
           .map((p) => ({
@@ -252,6 +320,8 @@ export function DispersionWizard({
         }));
       })
       .catch((error: unknown) => {
+        if (!cancelado) setTardias([]);
+        if (!cancelado) setMandato({});
         if (!cancelado) setErrorPrevia(error);
       })
       .finally(() => {
@@ -290,20 +360,19 @@ export function DispersionWizard({
     switch (currentStep) {
       case 1:
         return Boolean(state.month);
+      // Un mes sin borradores nuevos pero con cuotas tardías que se suman
+      // también tiene qué generar: sumarlas a la liquidación que ya existe.
       case 2:
-        return state.dispersionDrafts.length > 0;
       case 3:
-        return state.dispersionDrafts.length > 0;
       case 4:
-        return state.dispersionDrafts.length > 0;
+        return state.dispersionDrafts.length > 0 || haySumables;
       case 5:
-        return state.seleccionados.length > 0;
       case 6:
-        return state.seleccionados.length > 0;
+        return state.seleccionados.length > 0 || haySumables;
       default:
         return false;
     }
-  }, [currentStep, state]);
+  }, [currentStep, state, haySumables]);
 
   /*
    * Lo que se muestra sale de los MISMOS borradores que se van a mandar: el
@@ -397,15 +466,37 @@ export function DispersionWizard({
        */
       const resultado = await dispersionesApi.generate(
         state.month,
-        state.seleccionados,
+        [
+          ...new Set([
+            ...state.seleccionados,
+            ...tardiasQueSeSuman.map((t) => t.propietarioId),
+          ]),
+        ],
       );
+      const sumadas = resultado.tardias?.sumadas ?? [];
+      const sinSumar = resultado.tardias?.sinSumar ?? [];
+      const cuotasSumadas = sumadas.reduce((n, t) => n + t.cuotas, 0);
+      const deLasTardias = [
+        sumadas.length > 0
+          ? `${cuotasSumadas === 1 ? 'Se sumó 1 cuota que llegó tarde' : `Se sumaron ${cuotasSumadas} cuotas que llegaron tarde`} a ${sumadas.length} ${sumadas.length === 1 ? 'liquidación' : 'liquidaciones'} del mes.`
+          : '',
+        sinSumar.length > 0
+          ? `${sinSumar.length} ${sinSumar.length === 1 ? 'propietario tiene' : 'propietarios tienen'} cuotas tardías que no se pudieron sumar.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
 
-      if (resultado.created === 0) {
+      if (resultado.created === 0 && sumadas.length > 0) {
+        toast.success('Cuotas sumadas a las liquidaciones del mes', {
+          description: deLasTardias,
+        });
+      } else if (resultado.created === 0) {
         toast.info('No se generó ninguna dispersión', {
           description:
             resultado.skipped > 0
               ? `Ya existían las ${resultado.skipped} dispersiones de ${formatMonth(state.month)}.`
-              : `No hay cobros pagados en ${formatMonth(state.month)}.`,
+              : `No quedaba ninguna cuota de propietario por girar en ${formatMonth(state.month)}.`,
         });
       } else {
         toast.success('Dispersiones generadas correctamente', {
@@ -413,9 +504,14 @@ export function DispersionWizard({
             // Los que quedaron fuera se dicen: sin esto, «se generaron 3» se
             // lee igual en un mes de 3 propietarios que en uno de 40 donde
             // alguien destildó 37 sin darse cuenta.
-            resultado.noElegidos > 0
-              ? `${resultado.created} para ${formatMonth(state.month)}. ${resultado.noElegidos} quedaron fuera de la selección.`
-              : `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+            [
+              resultado.noElegidos > 0
+                ? `${resultado.created} para ${formatMonth(state.month)}. ${resultado.noElegidos} quedaron fuera de la selección.`
+                : `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+              deLasTardias,
+            ]
+              .filter(Boolean)
+              .join(' '),
         });
       }
 
@@ -436,7 +532,7 @@ export function DispersionWizard({
       setIsSubmitting(false);
     }
     // El back hace la cuenta; de acá sólo viajan el mes y a quiénes.
-  }, [state.month, state.seleccionados, onComplete]);
+  }, [state.month, state.seleccionados, tardiasQueSeSuman, onComplete]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -535,11 +631,14 @@ export function DispersionWizard({
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Cobros Recibidos
+                Cuotas del propietario
               </h3>
               <p className="text-sm text-muted-foreground">
-                Cobros pagados en {formatMonth(state.month)} que se incluiran en las
-                dispersiones
+                Lo que le toca a cada propietario en {formatMonth(state.month)}, leído de la
+                cuota de su contrato.{' '}
+                {base === 'RECAUDADO'
+                  ? 'Sólo entran las cuotas del mes que el inquilino ya pagó completas.'
+                  : 'No depende de que el inquilino haya pagado.'}
               </p>
             </div>
 
@@ -552,12 +651,16 @@ export function DispersionWizard({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Recaudado</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Canon del mes</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>
               </div>
             </div>
+
+            {/* D1/D2 (17-09): qué parte de este mes se gira sin recaudo y qué
+                intereses de mora le tocan al propietario. */}
+            <ResumenDelMandato numeros={mandato} />
 
             {/* Grouped by Propietario */}
             <div className="space-y-4">
@@ -587,12 +690,15 @@ export function DispersionWizard({
                   <div className="space-y-2 ml-13">
                     {draft.items.map((item) => (
                       <div
-                        key={item.cobroId}
+                        key={item.cuotaId ?? item.cobroId}
                         className="flex items-center justify-between text-sm"
                       >
                         <span className="flex items-center gap-2 text-muted-foreground">
                           <Buildings className="w-4 h-4" />
-                          {item.propertyTitle}
+                          <span className="flex flex-col">
+                            {item.propertyTitle}
+                            <RotuloDelMandato item={item} mesDeLaLiquidacion={state.month} />
+                          </span>
                         </span>
                         <span className="font-medium text-foreground">
                           {formatCurrency(item.rentCollected)}
@@ -604,11 +710,13 @@ export function DispersionWizard({
               ))}
             </div>
 
-            {/* Empty state */}
             {/* Tres estados, no uno: cargando, error y vacío dicen cosas
-                distintas, y el vacío tiene DOS causas — o nadie pagó, o ya se
-                generaron todas. Meterlas en el mismo cartel manda a buscar el
-                problema donde no está. */}
+                distintas. Y el vacío dice su causa VERDADERA, contada por el
+                back en las cuotas del propietario (`motivoDelMesVacio`): sin
+                contratos vigentes, sin cuota ese mes, ya en una dispersión, del
+                sistema anterior… Hasta el 16-09 decía «Sin cobros pagados»,
+                una causa que dejó de existir cuando el giro pasó a salir de la
+                cuota, y mandaba a esperar un pago que no cambiaba nada. */}
             {cargandoPrevia ? (
               <div className="p-12 text-center rounded-lg border border-dashed border-border">
                 <p className="text-muted-foreground">Calculando…</p>
@@ -619,21 +727,13 @@ export function DispersionWizard({
                 queNoSalio="No pudimos calcular este mes"
                 onReintentar={() => setIntentoPrevia((n) => n + 1)}
               />
-            ) : state.dispersionDrafts.length === 0 ? (
-              <div className="p-12 text-center rounded-lg border border-dashed border-border">
-                <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {yaGenerados > 0
-                    ? 'Ya están generadas'
-                    : 'Sin cobros pagados'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {yaGenerados > 0
-                    ? `Las ${yaGenerados} dispersiones de ${formatMonth(state.month)} ya existen. Buscalas en la lista.`
-                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elige otro mes o esperá a que se registren pagos.`}
-                </p>
-              </div>
+            ) : state.dispersionDrafts.length === 0 && !haySumables ? (
+              <MesSinGiros
+                motivo={motivoDelMesVacio({ mes: state.month, yaGenerados, vacio })}
+              />
             ) : null}
+
+            {!cargandoPrevia && !errorPrevia && <CuotasQueLlegaronTarde tardias={tardias} />}
           </div>
         );
 
@@ -652,7 +752,7 @@ export function DispersionWizard({
             {/* Summary Stats */}
             <div className="flex items-center gap-8 pb-4 border-b border-border">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Recaudado</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Canon</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>
@@ -689,8 +789,11 @@ export function DispersionWizard({
                   </div>
                   {/* Expandable Detail */}
                   <ComisionDesglose
+                    baseDelCanon={base}
+                    mesDeLaLiquidacion={state.month}
                     items={draft.items.map((i) => ({
                       cobroId: i.cobroId,
+                      cuotaId: i.cuotaId,
                       propertyTitle: i.propertyTitle,
                       rentCollected: i.rentCollected,
                       commissionPercent: i.commissionPercent,
@@ -699,6 +802,13 @@ export function DispersionWizard({
                       conceptosAFavor: 0,
                       conceptosACargo: 0,
                       deTerceros: 0,
+                      // D1/D2: el renglón dice de dónde sale (modalidad, mes de
+                      // la cuota, sin recaudo, intereses del recibo).
+                      modalidad: i.modalidad,
+                      fuenteDeLaModalidad: i.fuenteDeLaModalidad,
+                      mesDeLaCuota: i.mesDeLaCuota,
+                      sinRecaudoCop: i.sinRecaudoCop,
+                      interesDelRecibo: i.interesDelRecibo,
                     }))}
                     variant="compact"
                     showPercentages
@@ -760,7 +870,11 @@ export function DispersionWizard({
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Recaudado</span>
+                      {/* 🔴 Decía «Recaudado» sobre el canon de la cuota del
+                          mes, que con base CAUSADO no se ha pagado todavía. */}
+                      <span className="text-muted-foreground" data-testid="asistente-rotulo-canon">
+                        {ROTULO_DEL_CANON[base]}
+                      </span>
                       <span className="font-medium text-foreground">
                         {formatCurrency(draft.totalCollected)}
                       </span>
@@ -946,6 +1060,15 @@ export function DispersionWizard({
                       {sinSeleccionar === 1 ? 'queda' : 'quedan'} fuera.
                     </span>
                   </>
+                )}
+                {haySumables && (
+                  <span className="block mt-1" data-testid="confirmacion-tardias">
+                    Y a {tardiasQueSeSuman.length}{' '}
+                    {tardiasQueSeSuman.length === 1
+                      ? 'liquidación que ya existe se le suman'
+                      : 'liquidaciones que ya existen se les suman'}{' '}
+                    las cuotas que llegaron tarde.
+                  </span>
                 )}
               </p>
             </div>

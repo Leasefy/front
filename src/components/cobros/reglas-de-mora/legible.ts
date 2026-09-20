@@ -24,7 +24,8 @@ export const NOMBRE_DEL_CONCEPTO: Record<ConceptoDeRegla, string> = {
 
 export const NOMBRE_DEL_DISPARADOR: Record<DisparadorDeRegla, string> = {
   DIAS_DE_MORA: 'Días de mora',
-  DIA_DEL_MES: 'Día del mes',
+  // 17-09: el número de una regla vieja «día del mes» se lee como días de mora.
+  DIA_DEL_MES: 'Días de mora',
 };
 
 export const NOMBRE_DE_LA_FORMULA: Record<FormulaDeRegla, string> = {
@@ -72,7 +73,8 @@ export function describirDisparador(regla: {
   disparadorDia: number;
 }): string {
   const dia = regla.disparadorDia;
-  if (regla.disparador === 'DIA_DEL_MES') return `el día ${dia} de cada mes`;
+  // Nico, 17-09: los dos disparadores son «a los N días de mora» (el número de
+  // una regla vieja «pasado el día M» se lee como M días), una vez por cuota.
   if (dia <= 0) return 'apenas vence el plazo';
   if (dia === 1) return 'desde el primer día de mora';
   return `a los ${dia} días de mora`;

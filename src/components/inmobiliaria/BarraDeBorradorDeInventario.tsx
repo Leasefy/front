@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * «Tenés un inventario sin subir de este inmueble, de las 3:12 p. m.»
+ * «Tienes un inventario sin subir de este inmueble, de las 3:12 p. m.»
  *
  * 🔴 Nico, 2026-09-12: el inventario se llena en apartamentos donde no hay
  * señal. Esta barra es lo único que la persona ve de toda esa maquinaria, así
@@ -82,14 +82,14 @@ export function BarraDeBorradorDeInventario({
                 ? `Subiendo el inventario… ${avance.fotosSubidas} de ${avance.fotosTotales} fotos`
                 : 'Subiendo el inventario…'
               : actualizadoEn
-                ? `Tenés un inventario sin subir de este inmueble, de las ${hora(actualizadoEn)}`
-                : 'Tenés un inventario sin subir de este inmueble.'}
+                ? `Tienes un inventario sin subir de este inmueble, de las ${hora(actualizadoEn)}`
+                : 'Tienes un inventario sin subir de este inmueble.'}
           </p>
           <p className="text-body-sm text-fg-muted mt-0.5">
             {subiendo
               ? 'No cierres la pantalla hasta que termine.'
               : sinSenal
-                ? 'Está guardado en este teléfono. Lo subimos apenas haya señal; podés seguir agregando ítems mientras tanto.'
+                ? 'Está guardado en este teléfono. Lo subimos apenas haya señal; puedes seguir agregando ítems mientras tanto.'
                 : 'Está guardado en este teléfono y todavía no llegó al inmueble ni al contrato.'}
             {!subiendo && fotosSinSubir > 0 && (
               <>

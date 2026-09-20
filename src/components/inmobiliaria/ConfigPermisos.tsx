@@ -582,6 +582,26 @@ export function ConfigPermisos({
                 <span>{t('inmobiliaria.config.permissions.legendNoPermission')}</span>
               </div>
             </div>
+
+            {/*
+              🔴 Lo que un módulo no alcanza a decir (17-09-2026): el portafolio
+              es uno solo y lo que parte un inmueble del otro es si tiene un
+              contrato vigente. El back lo deriva de estos dos permisos
+              (`alcance-del-miembro.ts`); decirlo acá es lo que hace que la
+              matriz sea honesta sobre lo que abre cada casilla.
+            */}
+            <div
+              className="mt-4 rounded-md border border-border bg-surface-muted p-4 text-sm text-fg-muted space-y-1"
+              data-testid="permisos-alcance-derivado"
+            >
+              <p className="font-medium text-fg">{t('inmobiliaria.config.permissions.alcanceTitulo')}</p>
+              <p>{t('inmobiliaria.config.permissions.alcanceArrendados')}</p>
+              <p>{t('inmobiliaria.config.permissions.alcancePlata')}</p>
+              <p>{t('inmobiliaria.config.permissions.alcanceContabilidad')}</p>
+              {role === 'agente' && (
+                <p className="text-fg">{t('inmobiliaria.config.permissions.alcanceAsesor')}</p>
+              )}
+            </div>
           </TabsContent>
         ))}
       </Tabs>

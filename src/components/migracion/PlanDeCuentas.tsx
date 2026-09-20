@@ -13,6 +13,16 @@
  * por el contador, así que se le muestra bien arriba, no escondida en el
  * árbol.
  *
+ * ── «No deducible», el 19-09 ───────────────────────────────────────────────
+ *
+ * Nico: «todo deducible salvo lo marcado». La casilla vive en la cuenta —el
+ * contador lo sabe una vez y sirve para todos los años— y lo marcado sale en el
+ * árbol con su distintivo, porque una decisión tributaria escondida detrás del
+ * lápiz de edición no la ve nadie. Sin la migración 70 la columna no existe:
+ * ahí la casilla no se apaga en silencio, se explica, y sobre todo la clave NO
+ * viaja en el PATCH — mandarla sería un 503 que tumbaría la edición entera de
+ * la cuenta por un campo que nadie tocó (`lib/contabilidad/no-deducible.ts`).
+ *
  * ── Lo que esta pantalla NO hace ───────────────────────────────────────────
  *
  * No cambia códigos (el DTO de actualizar no lo admite: un código es una
@@ -33,10 +43,17 @@ import {
   MagnifyingGlass,
   PencilSimple,
   Plus,
+  Receipt,
   Warning,
   X,
 } from '@phosphor-icons/react';
 
+import {
+  cambiosDeLaCuenta,
+  estaMarcadaNoDeducible,
+  frasesDeLoNoDeducible,
+  soportaNoDeducible,
+} from '@/lib/contabilidad/no-deducible';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -766,6 +783,18 @@ function Nodo({
             Imputable
           </span>
         ) : null}
+        {/* 🔴 Visible en el árbol: una cuenta marcada cambia el 1001 de la
+            exógena, y eso no puede vivir sólo dentro del formulario. */}
+        {estaMarcadaNoDeducible(nodo) ? (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] text-warning"
+            data-testid={`puc-no-deducible-${nodo.codigo}`}
+            title="El gasto de esta cuenta va a la columna «Pago o abono no deducible» del formato 1001."
+          >
+            <Receipt className="h-3 w-3" aria-hidden="true" />
+            No deducible
+          </span>
+        ) : null}
         {!nodo.activa ? (
           <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-subtle">
             Inactiva
@@ -834,6 +863,14 @@ function FormularioDeCuenta({
   const [padreId, setPadreId] = useState<string>(padreInicial?.id ?? SIN_PADRE);
   const [imputable, setImputable] = useState(editando?.imputable ?? true);
   const [activa, setActiva] = useState(editando?.activa ?? true);
+  const [noDeducible, setNoDeducible] = useState(estaMarcadaNoDeducible(editando));
+  /*
+   * ¿Esta base tiene la columna? Se sabe porque el back la OMITE cuando falta.
+   * Decide si la clave viaja: sin ella el PATCH sería 503 y se perdería el
+   * nombre, la naturaleza y el activa junto con ella.
+   */
+  const soportaLoNoDeducible = soportaNoDeducible(editando);
+  const frasesNoDeducible = frasesDeLoNoDeducible(soportaLoNoDeducible);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -857,12 +894,13 @@ function FormularioDeCuenta({
     setError(null);
     try {
       if (editando) {
-        await contabilidadApi.puc.actualizar(editando.id, {
-          nombre: nombre.trim(),
-          naturaleza,
-          imputable,
-          activa,
-        });
+        await contabilidadApi.puc.actualizar(
+          editando.id,
+          cambiosDeLaCuenta(
+            { nombre, naturaleza, imputable, activa, noDeducible },
+            soportaLoNoDeducible,
+          ),
+        );
       } else {
         await contabilidadApi.puc.crear({
           codigo,
@@ -1014,6 +1052,24 @@ function FormularioDeCuenta({
               Activa
               <span className="block text-xs text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
+              </span>
+            </span>
+          </label>
+        ) : null}
+        {/* 🔴 Sólo al editar: `CrearCuentaDto` no admite `noDeducible`, y
+            mandarlo al crear sería un 400 por `forbidNonWhitelisted`. */}
+        {editando ? (
+          <label className="flex items-start gap-2 text-sm text-fg">
+            <Checkbox
+              checked={noDeducible}
+              disabled={!soportaLoNoDeducible}
+              onCheckedChange={(c) => setNoDeducible(c === true)}
+              data-testid="puc-no-deducible"
+            />
+            <span>
+              {frasesNoDeducible.titulo}
+              <span className="block max-w-prose text-xs text-fg-subtle">
+                {frasesNoDeducible.explicacion}
               </span>
             </span>
           </label>

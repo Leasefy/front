@@ -16,6 +16,7 @@ import type {
   NuevaCotizacion,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import {
   useMantenimientos,
   useConsignaciones,
@@ -30,6 +31,13 @@ import {
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
+import { BandejaDeAprobacionesDelPropietario } from '@/components/inmobiliaria/deducciones/BandejaDeAprobacionesDelPropietario';
+import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
+import type {
+  EmergenciaDeLaReparacion,
+  LoQueSeAprueba,
+} from '@/lib/types/deducciones';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -137,7 +145,7 @@ function StatCard({
  * Route: /panel/inmobiliaria/mantenimientos
  */
 function MantenimientosContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   /*
    * Quién puede MOVER una solicitud y quién sólo puede mirarla.
    *
@@ -313,17 +321,106 @@ function MantenimientosContent() {
     [t, recargarMantenimientos, handleMantenimientoViewerClose]
   );
 
+  /**
+   * «Aprobar cotización» abre la pregunta de a cargo de quién queda la
+   * reparación (Nico y Juan Camilo, 2026-09-16): no se aprueba sin decirlo.
+   * Las dos puertas —la lista y el comparador del detalle— llegan acá.
+   */
+  const [cotizacionPorAprobar, setCotizacionPorAprobar] = useState<{
+    solicitudId: string;
+    quoteId: string;
+  } | null>(null);
+
   const handleApproveQuote = useCallback(async (solicitudId: string, quoteId: string) => {
-    try {
-      await mantenimientoApi.approveQuote(solicitudId, quoteId);
-      await recargarMantenimientos();
-      toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
-    } catch (error) {
-      toast.error('No se pudo aprobar la cotización', {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    }
-  }, [t, recargarMantenimientos]);
+    setCotizacionPorAprobar({ solicitudId, quoteId });
+  }, []);
+
+  /** Sube cada vez que se aprueba algo: la bandeja del propietario se relee. */
+  const [versionDeAprobaciones, setVersionDeAprobaciones] = useState(0);
+
+  const aprobarCotizacion = useCallback(
+    async (lo: LoQueSeAprueba, emergencia?: EmergenciaDeLaReparacion) => {
+      if (!cotizacionPorAprobar) return;
+      try {
+        /*
+         * 🔴 D12: a cargo del propietario NO se descuenta al aprobar — se le
+         * pide su aprobación. Por emergencia (motivo + soporte) sí, de una, y
+         * el aviso queda generado.
+         */
+        const aprobada = emergencia
+          ? await aprobacionesDeReparacionApi.registrarEmergencia(
+              cotizacionPorAprobar.solicitudId,
+              cotizacionPorAprobar.quoteId,
+              emergencia.motivo,
+              emergencia.soporte,
+            )
+          : await mantenimientoApi.approveQuote(
+              cotizacionPorAprobar.solicitudId,
+              cotizacionPorAprobar.quoteId,
+              lo,
+            );
+        await recargarMantenimientos();
+        setVersionDeAprobaciones((v) => v + 1);
+        if (emergencia) {
+          toast.success(t('inmobiliaria.deducciones.aCargoDe.emergenciaRegistrada'), {
+            description: aprobada.cargo?.aprobacionDelPropietario?.aviso?.asunto,
+          });
+          return;
+        }
+        // Con el cargo puesto en su cuota se dice dónde quedó; sin él (base
+        // sin la migración), los avisos del back dicen que se cobra aparte.
+        const cargoAlInquilino = aprobada.cargo?.cargoAlInquilino;
+        const descripcion = cargoAlInquilino
+          ? t('inmobiliaria.deducciones.cargoAlInquilino.aprobada', {
+              valor: formatCurrency(cargoAlInquilino.valorCop),
+              mes: mesEnTitulo(cargoAlInquilino.mes, locale === 'en' ? 'en' : 'es'),
+            })
+          : aprobada.cargo?.avisos?.join(' ');
+        /*
+         * 🔴 H-03: cada forma tiene su frase. Con una sola («aprobada») la
+         * persona no sabría si quedó compartida o a cargo de la inmobiliaria,
+         * que es justo lo que acaba de decidir.
+         */
+        const cerrada = {
+          PROPIETARIO: 'inmobiliaria.deducciones.aCargoDe.aprobadaPropietario',
+          INQUILINO: 'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
+          COMPARTIDA: 'inmobiliaria.deducciones.aCargoDe.aprobadaCompartida',
+          INMOBILIARIA: 'inmobiliaria.deducciones.aCargoDe.aprobadaInmobiliaria',
+        } as const;
+        toast.success(
+          t(cerrada[lo.aCargoDe]),
+          descripcion ? { description: descripcion } : undefined,
+        );
+      } catch (error) {
+        toast.error('No se pudo aprobar la cotización', {
+          description: error instanceof Error ? error.message : undefined,
+        });
+        throw error;
+      }
+    },
+    [cotizacionPorAprobar, t, locale, recargarMantenimientos],
+  );
+
+  /** La cotización que se está aprobando, para decir en el diálogo cuál es. */
+  const quoteDelDialogo = cotizacionPorAprobar
+    ? mantenimientos
+        .find((m) => m.id === cotizacionPorAprobar.solicitudId)
+        ?.quotes.find((q) => q.id === cotizacionPorAprobar.quoteId)
+    : undefined;
+  const cotizacionDelDialogo = quoteDelDialogo
+    ? { proveedor: quoteDelDialogo.providerName, valorCop: quoteDelDialogo.amount }
+    : null;
+  /** La sugerencia del agente, si la dejó para esta misma cotización (o sin cotización). */
+  const propuestaDelDialogo = cotizacionPorAprobar
+    ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)?.propuesta
+    : undefined;
+  const sugerenciaDelDialogo =
+    propuestaDelDialogo &&
+    !propuestaDelDialogo.atendidaAt &&
+    (propuestaDelDialogo.quoteId === null ||
+      propuestaDelDialogo.quoteId === cotizacionPorAprobar?.quoteId)
+      ? propuestaDelDialogo.aCargoDeSugerido
+      : null;
 
   /**
    * La misma transición, para quien NO espera la promesa (los botones del
@@ -481,6 +578,15 @@ function MantenimientosContent() {
         </motion.div>
       )}
 
+      {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
+      <BandejaDeAprobacionesDelPropietario
+        version={versionDeAprobaciones}
+        onAbrir={(solicitudId) => {
+          const solicitud = mantenimientos.find((m) => m.id === solicitudId);
+          if (solicitud) handleViewMantenimiento(solicitud);
+        }}
+      />
+
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}
       <motion.div
@@ -561,10 +667,13 @@ function MantenimientosContent() {
                 exit={{ opacity: 0 }}
                 className="p-5"
               >
+                {/* M6: el tablero vacío eran cinco columnas en cero y ninguna
+                    salida. Ahora ofrece lo mismo que la lista hermana. */}
                 <MantenimientoKanban
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
+                  onCrear={handleNewMantenimiento}
                 />
               </motion.div>
             ) : (
@@ -616,6 +725,17 @@ function MantenimientosContent() {
         abierto={isCotizacionDialogOpen}
         onOpenChange={setIsCotizacionDialogOpen}
         onGuardar={handleGuardarCotizacion}
+      />
+
+      {/* A cargo de quién queda la reparación, antes de aprobar la cotización. */}
+      <ACargoDeDialog
+        abierto={cotizacionPorAprobar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) setCotizacionPorAprobar(null);
+        }}
+        cotizacion={cotizacionDelDialogo}
+        sugerencia={sugerenciaDelDialogo}
+        onConfirmar={aprobarCotizacion}
       />
 
       {/* Mantenimiento Form Sheet */}

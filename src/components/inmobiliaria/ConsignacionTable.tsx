@@ -178,6 +178,16 @@ export function ConsignacionTable({
   const puedeRetirar = canAccess('portafolio', 'delete');
   const puedeCrearMandato = canAccess('portafolio', 'create');
   const puedePedirCita = canAccess('operaciones', 'edit');
+  /**
+   * «Preparar para trabajar sin señal» pide `portafolio:view`, NO `edit`: no
+   * escribe nada en el back, guarda una copia local de la ficha para poder
+   * abrirla sin datos. Pedirle `edit` le quitaría a un CONTADOR o a un VIEWER
+   * algo que sí puede hacer — la ficha ya la puede abrir. Va explícito igual
+   * que las demás: era la única acción del menú sin permiso escrito, y una
+   * regla implícita («ya está la guarda de la página») es la que después nadie
+   * encuentra al mover el componente a otra pantalla.
+   */
+  const puedeVerPortafolio = canAccess('portafolio', 'view');
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -632,7 +642,7 @@ export function ConsignacionTable({
                               </span>
                             </DropdownListItem>
                           )}
-                          {onPrepararSinSenal && (
+                          {onPrepararSinSenal && puedeVerPortafolio && (
                             <DropdownListItem
                               className="gap-3"
                               onClick={() => onPrepararSinSenal(row)}

@@ -38,7 +38,10 @@ vi.mock('sonner', () => ({ toast: toastMock }))
 let _puedeEditar = true
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
-    canAccess: (m: string, a: string) => (m === 'operaciones' && a === 'edit' ? _puedeEditar : true),
+    // Desde el 17-09-2026 escribe quien tiene `operaciones:edit` o `pipeline:edit`
+    // (el asesor comercial): el doble de CONTADOR/VIEWER no tiene ninguno.
+    canAccess: (m: string, a: string) =>
+      (m === 'operaciones' || m === 'pipeline') && a === 'edit' ? _puedeEditar : true,
     isLoading: false,
   }),
 }))
@@ -59,7 +62,7 @@ const getAgendaMock = vi.fn()
 const aceptarCitaMock = vi.fn()
 vi.mock('@/lib/api/agenda.service', () => ({
   agendaApi: {
-    getAgenda: () => getAgendaMock(),
+    getAgenda: (pedido?: unknown) => getAgendaMock(pedido),
     aceptarCita: (id: string) => aceptarCitaMock(id),
   },
 }))
@@ -420,5 +423,89 @@ describe('agenda — la columna de la persona no se lee al revés', () => {
 
     const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
     expect(rol?.textContent).toContain('colResponsable')
+  })
+})
+
+/**
+ * A8 de la auditoría del 13-09 — la página la resuelve el BACK.
+ *
+ * Antes `getAgenda()` traía el feed entero y `useTablePagination` cortaba de a
+ * diez acá. Con una inmobiliaria real eso era traerle el portafolio completo a
+ * la RAM del back en cada carga de la pantalla.
+ */
+describe('agenda — la paginación la resuelve el servidor', () => {
+  const filas = (n: number, desde = 0) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `expire-${desde + i}`,
+      tipo: 'vencimiento_contrato',
+      origen: 'sistema',
+      estado: 'pendiente',
+      fecha: '2026-11-05T00:00:00',
+      titulo: `Vence el contrato · Apto ${desde + i}`,
+      vinculoTipo: 'contrato',
+      vinculoLabel: `Apto ${desde + i}`,
+    }))
+
+  it('pide la primera página con su tamaño, no el feed entero', async () => {
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: filas(10),
+      total: 25,
+      page: 1,
+      pageSize: 10,
+    })
+    await montar()
+
+    expect(getAgendaMock).toHaveBeenCalledWith({ page: 1, pageSize: 10 })
+    // El pie cuenta el feed ENTERO, no las filas que llegaron.
+    expect(container.textContent).toContain('25')
+  })
+
+  it('pasar de página es una consulta nueva, no un corte en memoria', async () => {
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: filas(10),
+      total: 25,
+      page: 1,
+      pageSize: 10,
+    })
+    await montar()
+    getAgendaMock.mockClear()
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: filas(10, 10),
+      total: 25,
+      page: 2,
+      pageSize: 10,
+    })
+
+    const siguiente = [...container.querySelectorAll('button')].find((b) =>
+      /next|siguiente/i.test(`${b.getAttribute('aria-label') ?? ''} ${b.textContent ?? ''}`),
+    )
+    expect(siguiente).toBeDefined()
+    await act(async () => {
+      siguiente!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(getAgendaMock).toHaveBeenCalledWith({ page: 2, pageSize: 10 })
+    expect(container.textContent).toContain('Apto 10')
+  })
+
+  it('una página con filas NO dice «no hay nada agendado» mientras recarga', async () => {
+    // 🔴 El vacío es del FEED (`total`), no de la página: si se leyera de
+    // `eventos`, un refresco a medio camino pintaría el estado vacío encima de
+    // una agenda llena.
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: filas(10),
+      total: 25,
+      page: 1,
+      pageSize: 10,
+    })
+    await montar()
+    expect(container.textContent).not.toContain('emptyTitle')
   })
 })

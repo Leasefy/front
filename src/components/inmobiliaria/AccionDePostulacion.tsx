@@ -7,11 +7,28 @@
  * **Postulaciones** dejó de mandar al usuario a la pantalla del inmueble para
  * abrir el detalle: las dos pantallas ofrecen las mismas cuatro acciones y una
  * copia aparte se habría desincronizado en la primera corrección de copy.
+ *
+ * S6 — antes era un `<div className="fixed inset-0">` a mano: sin portal (lo
+ * tapaba cualquier contenedor con `overflow` o `z-index` propio), sin
+ * `role="dialog"` ni foco atrapado (un lector de pantalla seguía leyendo la
+ * tabla de atrás), sin cerrar con Escape y sin frenar el scroll suave de Lenis,
+ * que seguía corriendo la página debajo del modal. Ahora usa el patrón de la
+ * casa (`ResponsiveDialog`, §17 de DESIGN.md), que además lo vuelve una hoja
+ * desde abajo en móvil, como el resto de los diálogos del panel.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useLenis } from '@/components/providers/SmoothScroll';
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
 
 export type ActionType = 'approve' | 'reject' | 'request-info';
 
@@ -71,6 +88,15 @@ export function AccionDePostulacion({
   // Error de una ACCIÓN, no de carga: acá el mensaje sí se muestra tal cual,
   // porque describe lo que la persona acaba de intentar hacer.
   const [error, setError] = useState<string | null>(null);
+  const lenis = useLenis();
+
+  // El scroll suave seguía corriendo la página debajo del modal.
+  useEffect(() => {
+    lenis?.stop();
+    return () => {
+      lenis?.start();
+    };
+  }, [lenis]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,16 +114,32 @@ export function AccionDePostulacion({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-lg border border-border">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">{cfg.title}</h2>
-          <p className="text-sm text-fg-muted mt-0.5">{candidateName}</p>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <ResponsiveDialog
+      open
+      onOpenChange={(abierto) => {
+        // Escape, clic afuera o la X: todos cierran por acá. Mientras se está
+        // mandando no se cierra — la acción ya salió y cerrar dejaría a la
+        // persona sin saber cómo terminó.
+        if (!abierto && !isSubmitting) onClose();
+      }}
+    >
+      <ResponsiveDialogContent
+        className="max-w-md max-h-[90dvh] overflow-y-auto"
+        data-lenis-prevent
+        style={{ overscrollBehavior: 'contain' }}
+      >
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>{cfg.title}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{candidateName}</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-fg">{cfg.label}</label>
+            <label className="text-sm font-medium text-fg" htmlFor="accion-postulacion-texto">
+              {cfg.label}
+            </label>
             <Textarea
+              id="accion-postulacion-texto"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={cfg.placeholder}
@@ -107,10 +149,21 @@ export function AccionDePostulacion({
             />
           </div>
 
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          )}
 
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="secondary" hideArrow onClick={onClose} className="flex-1">
+          <ResponsiveDialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              hideArrow
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
               Cancelar
             </Button>
             <Button
@@ -123,9 +176,9 @@ export function AccionDePostulacion({
             >
               {cfg.confirmLabel}
             </Button>
-          </div>
+          </ResponsiveDialogFooter>
         </form>
-      </div>
-    </div>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

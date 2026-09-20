@@ -463,6 +463,13 @@ describe('Documentos — contadores, errores del acta y consignaciones caídas (
     vi.mocked(actasApi.create).mockRejectedValue(
       new ApiError(409, 'El inmueble ya tiene un acta de entrega abierta'),
     )
+    // Hace falta un inmueble ARRENDADO: sin ninguno el cajón ya no abre el
+    // formulario, lo dice (D3).
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [{ id: 'c-1', availability: 'rented', propertyTitle: 'Inmueble c-1' }],
+      isLoading: false,
+      errorCrudo: null,
+    })
     await renderPage()
     await abrirNuevaActa()
 
@@ -497,12 +504,58 @@ describe('Documentos — contadores, errores del acta y consignaciones caídas (
     expect(container.querySelector('[data-testid="acta-form-guardar"]')).toBeNull()
   })
 
-  it('con las consignaciones bien, «Nueva acta» abre el formulario', async () => {
+  /** Un inmueble del portafolio, arrendado o no. */
+  const inmueble = (id: string, availability: string) =>
+    ({ id, availability, propertyTitle: `Inmueble ${id}` }) as never
+
+  it('con un inmueble arrendado, «Nueva acta» abre el formulario', async () => {
     canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [inmueble('c-1', 'rented')],
+      isLoading: false,
+      errorCrudo: null,
+    })
     await renderPage()
     await abrirNuevaActa()
 
     expect(container.querySelector('[data-testid="acta-form-guardar"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="acta-solo-arrendados"]')).toBeNull()
     expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 D3: el selector esconde los inmuebles NO arrendados y ahora lo dice, con los dos números', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [
+        inmueble('c-1', 'rented'),
+        inmueble('c-2', 'available'),
+        inmueble('c-3', 'available'),
+      ],
+      isLoading: false,
+      errorCrudo: null,
+    })
+    await renderPage()
+    await abrirNuevaActa()
+
+    const aviso = container.querySelector('[data-testid="acta-solo-arrendados"]')
+    expect(aviso).not.toBeNull()
+    // Los dos números: cuántos se listan y cuántos se escondieron, y por qué.
+    expect(aviso!.textContent).toContain('1')
+    expect(aviso!.textContent).toContain('2')
+    expect(container.querySelector('[data-testid="acta-form-guardar"]')).not.toBeNull()
+  })
+
+  it('🔴 D3: sin ningún inmueble arrendado lo dice, en vez de abrir un selector vacío', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [inmueble('c-2', 'available')],
+      isLoading: false,
+      errorCrudo: null,
+    })
+    await renderPage()
+    await abrirNuevaActa()
+
+    expect(container.querySelector('[data-testid="acta-sin-arrendados"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="acta-form-guardar"]')).toBeNull()
   })
 })

@@ -8,6 +8,9 @@
  * `/configuracion/ia` y el legado `?tab=`) no puedan divergir.
  */
 
+import { SeccionAvisos } from './SeccionAvisos';
+import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
+import { SeccionBitacora } from './SeccionBitacora';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -16,7 +19,11 @@ import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
+import { SeccionMandato } from './SeccionMandato';
+import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
+import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
+import { SeccionSedes } from './SeccionSedes';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
 import { SeccionPermisos } from './SeccionPermisos';
@@ -38,10 +45,26 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionPermisos />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
+    case 'medios-de-recibo':
+      return <SeccionMediosDeRecibo />;
+    case 'costos-de-la-plata':
+      return <SeccionCostosDeLaPlata />;
+    case 'sedes':
+      return <SeccionSedes />;
+    case 'mandato':
+      return <SeccionMandato />;
     case 'migracion':
       return <SeccionMigracion />;
     case 'integraciones':
       return <SeccionIntegraciones />;
+    // 🔴 18-09-2026: qué le llega SOLO a tus clientes. Todo arranca apagado.
+    // 🔴 18-09-2026: quién movió plata. Sólo lectura, para el dueño.
+    case 'bitacora':
+      return <SeccionBitacora />;
+    case 'avisos':
+      return <SeccionAvisos />;
+    case 'sla-de-pqrs':
+      return <SeccionSlaDePqrs />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':

@@ -40,6 +40,8 @@ import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
 import Link from 'next/link';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
+import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
+import { ResumenDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -598,7 +600,16 @@ export function DispersionDetail({
           </h3>
           <div className="grid grid-cols-3 gap-3">
             <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
+              {/* 🔴 Decía «Recaudado» siempre, y la dispersión gira por defecto
+                  con base CAUSADO: el canon del mes, haya pagado el inquilino
+                  o no. El rótulo sigue a `baseDelCanon`; el número no cambia. */}
+              <p className="text-xs text-muted-foreground mb-1" data-testid="dispersion-rotulo-canon">
+                {t(
+                  dispersion.baseDelCanon === 'RECAUDADO'
+                    ? 'inmobiliaria.dispersiones.detailView.canonRecaudado'
+                    : 'inmobiliaria.dispersiones.detailView.canonCausado',
+                )}
+              </p>
               <p className="text-lg font-bold text-foreground">
                 {formatCurrency(dispersion.totalCollected)}
               </p>
@@ -611,11 +622,29 @@ export function DispersionDetail({
             </div>
             <div className="p-4 rounded-lg bg-success-soft text-center">
               <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
-              <p className="text-lg font-bold text-success">
-                {formatCurrency(dispersion.netToPropietario)}
+              {/* Con deducciones, lo que se gira es el neto a girar del back
+                  (entero o $0), no el neto guardado, que puede quedar en contra. */}
+              <p className="text-lg font-bold text-success" data-testid="dispersion-neto">
+                {formatCurrency(
+                  dispersion.conDeducciones ? dispersion.conDeducciones.aGirarCop : dispersion.netToPropietario,
+                )}
               </p>
             </div>
           </div>
+          <BloqueDeDeducciones bloque={dispersion.conDeducciones} propietarioId={dispersion.propietarioId} />
+          {/* D1/D2 (17-09): lo girado sin recaudo y los intereses del propietario. */}
+          <ResumenDelMandato
+            numeros={{
+              cuentaPorCobrarAlInquilinoCop: dispersion.cuentaPorCobrarAlInquilinoCop,
+              interesesCop: dispersion.interesesCop,
+            }}
+          />
+          {/* «Causado» no se entiende solo, y es la diferencia con lo recaudado. */}
+          {dispersion.baseDelCanon !== 'RECAUDADO' && (
+            <p className="text-xs text-muted-foreground" data-testid="dispersion-que-es-el-canon">
+              {t('inmobiliaria.dispersiones.detailView.queEsCanonCausado')}
+            </p>
+          )}
         </motion.section>
 
         {/* Commission Breakdown Section */}
@@ -631,6 +660,8 @@ export function DispersionDetail({
           </h3>
           <ComisionDesglose
             items={dispersion.items}
+            baseDelCanon={dispersion.baseDelCanon}
+            mesDeLaLiquidacion={dispersion.month}
             variant="compact"
             showPercentages={true}
           />

@@ -118,7 +118,18 @@ export interface BackendContract {
    * `diasDePlazo: null` = hereda los de la inmobiliaria.
    */
   prorratearPrimerMes?: boolean;
+  /** Terminación anticipada. Ausentes si la migración 20260915170000 no está aplicada. */
+  terminadoEn?: string | null;
+  motivoDeTerminacion?: string | null;
+  notaDeTerminacion?: string | null;
+  finPactadoOriginal?: string | null;
   diasDePlazo?: number | null;
+  /**
+   * 🔴 Con qué número paga el inquilino (columna `referencia_de_recaudo`).
+   * Ausente = el back es anterior a esta rama, o la base todavía no tiene la
+   * columna (migración 20260915040000): se cae al consecutivo `code`.
+   */
+  referenciaDeRecaudo?: string | null;
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
@@ -318,10 +329,17 @@ export interface VerifyOtpResponse {
   expiresAt: string;
 }
 
-/** Shape returned by GET /contracts/:id/preview */
+/**
+ * Shape returned by GET /contracts/:id/preview.
+ *
+ * `SIN_DOCUMENTO` NO es un error: es el contrato que entró por la migración,
+ * ya firmado en papel, que nunca tuvo HTML ni PDF en Leasefy. Antes el back
+ * respondía 400 y cada pantalla lo adivinaba por el texto; ahora lo dice.
+ */
 export type ContractPreview =
   | { origin: 'GENERATED'; html: string }
-  | { origin: 'UPLOADED_PDF'; pdfUrl: string; expiresAt: string };
+  | { origin: 'UPLOADED_PDF'; pdfUrl: string; expiresAt: string }
+  | { origin: 'SIN_DOCUMENTO'; motivo: 'MIGRADO' };
 
 /**
  * Shape returned by GET /contracts/:id/pdf — signed URL para descargar el PDF actual.

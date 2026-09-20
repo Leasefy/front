@@ -57,6 +57,13 @@ vi.mock('@/components/inmobiliaria', () => ({
 vi.mock('@/components/inmobiliaria/AvisoIpcQueFalta', () => ({
   AvisoIpcQueFalta: () => React.createElement('div', { 'data-testid': 'aviso-ipc-que-falta-montado' }),
 }));
+vi.mock('@/components/contratos/BandejaDeCartasDelIncremento', () => ({
+  BandejaDeCartasDelIncremento: ({ puedeEditar }: { puedeEditar: boolean }) =>
+    React.createElement('div', { 'data-testid': 'bandeja-de-cartas-montada', 'data-editable': String(puedeEditar) }),
+}));
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true }),
+}));
 
 import RenovacionesPage from './page';
 
@@ -92,7 +99,9 @@ async function montarConElCajonAbierto(): Promise<PropsDelCajon> {
   await act(async () => {
     root.render(React.createElement(RenovacionesPage));
   });
-  const abrir = h.tabla.props?.onStartRenewal as (r: Renovacion) => void;
+  // 🔴 Era `onStartRenewal`, una de las CINCO props que la página cableaba
+  // al mismo `openWorkflow`. Desde el 19-09 hay una sola: `onAbrir`.
+  const abrir = h.tabla.props?.onAbrir as (r: Renovacion) => void;
   await act(async () => {
     abrir(RENOVACION);
   });
@@ -172,5 +181,7 @@ describe('Renovaciones — N3', () => {
       root.render(React.createElement(RenovacionesPage));
     });
     expect(container.querySelector('[data-testid="aviso-ipc-que-falta-montado"]')).not.toBeNull();
+    // D6 (17-09): la bandeja de cartas del incremento vive en la misma pantalla.
+    expect(container.querySelector('[data-testid="bandeja-de-cartas-montada"]')).not.toBeNull();
   });
 });

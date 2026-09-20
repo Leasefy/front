@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { motion } from 'framer-motion';
 import {
@@ -22,11 +22,16 @@ import { Button } from '@/components/ui';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
+import { AnularCobroDialog } from './AnularCobroDialog';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import type { CobroAnulado } from '@/lib/api/inmobiliaria.service';
 
 interface CobroCardProps {
   cobro: Cobro;
   onClick?: (cobro: Cobro) => void;
   onRegisterPayment?: (cobro: Cobro) => void;
+  /** Tras anular (con motivo). Sin él la tarjeta no ofrece «Anular cobro». */
+  onCobroAnulado?: (resultado: CobroAnulado) => void;
   compact?: boolean;
 }
 
@@ -54,8 +59,12 @@ export function CobroCard({
   cobro,
   onClick,
   onRegisterPayment,
+  onCobroAnulado,
   compact = false,
 }: CobroCardProps) {
+  const [anulando, setAnulando] = useState(false);
+  const { canAccess, isLoading: cargandoPermisos } = usePermissions();
+  const puedeAnular = !cargandoPermisos && canAccess('cobros', 'edit');
   const { t, locale } = useI18n();
   // La vista de tarjetas pide el mismo `cobros:create` que la tabla y el cajón
   // (C6): sin él, «Hacer recibo» queda a la vista, deshabilitado y con el porqué.
@@ -294,6 +303,32 @@ export function CobroCard({
             )}
           </div>
         )}
+        {cobro.anuladoAt && (
+          <div className="flex flex-col text-sm text-fg-muted" data-testid={`cobro-anulado-${cobro.id}`}>
+            <span className="font-medium">{t('inmobiliaria.cobros.anular.anuladoBadge')}</span>
+            {cobro.motivoDeLaAnulacion && <span className="text-xs">{cobro.motivoDeLaAnulacion}</span>}
+          </div>
+        )}
+        {onCobroAnulado && !cobro.anuladoAt && (
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              hideArrow
+              disabled={!puedeAnular}
+              data-testid={`anular-cobro-${cobro.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (puedeAnular) setAnulando(true);
+              }}
+            >
+              {t('inmobiliaria.cobros.anular.accion')}
+            </Button>
+            {!puedeAnular && (
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.cobros.anular.sinPermiso')}</span>
+            )}
+          </div>
+        )}
         {cobro.status === 'paid' && (
           <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
@@ -307,6 +342,13 @@ export function CobroCard({
           </div>
         )}
       </div>
+      {onCobroAnulado && (
+        <AnularCobroDialog
+          cobro={anulando ? cobro : null}
+          onOpenChange={(abierto) => setAnulando(abierto)}
+          onAnulado={onCobroAnulado}
+        />
+      )}
     </motion.div>
   );
 }

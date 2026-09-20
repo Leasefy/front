@@ -400,7 +400,7 @@ function ConciliacionLiquidaciones() {
                       queSon="registros"
                       icono={Receipt}
                       titulo="Sin liquidaciones"
-                      descripcion="Aún no hay liquidaciones a propietario. Generá la primera con las cifras del periodo."
+                      descripcion="Aún no hay liquidaciones a propietario. Genera la primera con las cifras del periodo."
                       crear={{
                         label: 'Generar liquidación',
                         onClick: () => {

@@ -517,10 +517,53 @@ function PurchaseModal({
 // Default export
 // ============================================================================
 
+/**
+ * 🔴 P-03 (18-09-2026): «TODO INCLUIDO EN EL PLAN — no hay créditos de IA; el
+ * precio por contrato cubre el uso (el estudio lo sigue pagando el inquilino)».
+ *
+ * La pantalla NO SE BORRA: quien tenía saldo comprado tiene que poder verlo, y
+ * borrar la ruta dejaría un 404 a quien la tenga guardada. Lo que se retira es
+ * la COMPRA — el back responde 410 a `POST /agent-credits/purchase`, así que un
+ * botón que la ofreciera llevaría a un error.
+ *
+ * Se apaga desde el front con `NEXT_PUBLIC_CREDITOS_DE_IA_ENABLED`, que espeja
+ * `CREDITOS_DE_IA_ENABLED` del back. Los dos por defecto: apagado.
+ */
+export const CREDITOS_APAGADOS =
+  process.env.NEXT_PUBLIC_CREDITOS_DE_IA_ENABLED !== 'true';
+
+function CreditosIncluidosEnElPlan() {
+  return (
+    <div
+      className="mx-auto max-w-2xl space-y-4 p-6"
+      data-testid="creditos-incluidos-en-el-plan"
+    >
+      <BackButton />
+      <div className="rounded-lg border border-border bg-surface p-6">
+        <h1 className="text-lg font-semibold text-fg">
+          El uso de IA va incluido en tu plan
+        </h1>
+        <p className="mt-2 text-sm text-fg-muted">
+          Ya no hay créditos que comprar: el precio por contrato activo cubre el
+          uso de los agentes. El estudio del inquilino lo sigue pagando el
+          solicitante, con su recibo y su factura.
+        </p>
+        <p className="mt-2 text-sm text-fg-muted">
+          Si te quedó saldo comprado, no se perdió: escríbenos a{' '}
+          <a className="text-primary" href="mailto:hola@leasefy.co">
+            hola@leasefy.co
+          </a>{' '}
+          y lo resolvemos contigo.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function CreditosPage() {
   return (
     <PageGuard module="configuracion">
-      <CreditosContent />
+      {CREDITOS_APAGADOS ? <CreditosIncluidosEnElPlan /> : <CreditosContent />}
     </PageGuard>
   );
 }

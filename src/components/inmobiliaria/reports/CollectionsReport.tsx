@@ -12,6 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -34,7 +35,7 @@ interface CollectionsReportProps {
  * Pure CSS/Tailwind visualizations (no charting library).
  */
 export function CollectionsReport({ data }: CollectionsReportProps) {
-  const { formatCurrency } = useI18n();
+  const { formatCurrency, t } = useI18n();
 
   const { summary, byMonth, topDelinquents } = data;
 
@@ -67,7 +68,8 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
         {/* Sin nadie atrasado no hay atraso promedio: el «Prom. 0 dias» decía
             que la cartera estaba medida y al día, no que estaba vacía. */}
         <KPICard
-          label="Tasa de recuperacion"
+          // Con qué fórmula se midió: la tasa de recaudo de la inmobiliaria.
+          label={t(claveDelRotulo(summary.baseDeLaTasa ?? BASE_POR_DEFECTO))}
           value={textoDeTasa(summary.recoveryRate)}
           icon={ArrowClockwise}
           color="violet"
@@ -226,7 +228,9 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                   <TableCell className="py-2.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1 text-muted-foreground">
                       <Phone className="w-3.5 h-3.5" />
-                      {d.attempts}
+                      {/* Sin cobro emitido no hay intentos que contar: un 0
+                          afirmaría que nadie lo llamó, y no es lo que sabemos. */}
+                      {d.attempts ?? '—'}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -40,6 +40,12 @@ export interface SignatureFormProps {
   requireOTP?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /**
+   * Los textos que dicen QUÉ se firma. Por defecto, el contrato. La firma del
+   * inventario del contrato (Nico, 2026-09-17) usa este mismo formulario —el
+   * mismo trazo y el mismo OTP— con sus propias palabras.
+   */
+  textos?: { firmado?: string; aceptacion?: string; boton?: string };
 }
 
 // ============================================================================
@@ -66,6 +72,7 @@ export function SignatureForm({
   signerName,
   requireOTP = true,
   className,
+  textos,
 }: SignatureFormProps) {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -136,7 +143,7 @@ export function SignatureForm({
               <Check className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-success">Contrato firmado</p>
+              <p className="font-semibold text-success">{textos?.firmado ?? 'Contrato firmado'}</p>
               <p className="text-sm text-success">
                 {signerName ? `Por ${signerName}` : 'Firma completada exitosamente'}
               </p>
@@ -195,7 +202,7 @@ export function SignatureForm({
                 ? 'text-fg'
                 : 'text-fg-muted'
             )}>
-              Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.
+              {textos?.aceptacion ?? 'Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.'}
             </span>
           </label>
 
@@ -290,7 +297,7 @@ export function SignatureForm({
           ) : (
             <>
               <FileText className="w-4 h-4" />
-              Firmar contrato
+              {textos?.boton ?? 'Firmar contrato'}
               <ArrowRight className="w-4 h-4" />
             </>
           )}

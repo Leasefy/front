@@ -109,6 +109,24 @@ vi.mock('@/components/ui/error-state', () => ({
     ),
 }))
 
+// S6 — `AccionDePostulacion` pasó al `ResponsiveDialog` de la casa (portal,
+// role, Escape, Lenis). Acá se reemplaza por envoltorios planos: el portal
+// montaría el modal fuera del contenedor de la prueba, y lo que se verifica es
+// el contenido, no el diálogo del design system.
+vi.mock('@/components/ui/responsive-dialog', () => {
+  const Pasa = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children);
+  return {
+    ResponsiveDialog: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+      open === false ? null : React.createElement('div', { role: 'dialog' }, children),
+    ResponsiveDialogContent: Pasa,
+    ResponsiveDialogHeader: Pasa,
+    ResponsiveDialogTitle: Pasa,
+    ResponsiveDialogDescription: Pasa,
+    ResponsiveDialogFooter: Pasa,
+  };
+});
+
 vi.mock('@leasefy/cadence', () => ({
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.

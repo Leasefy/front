@@ -1,12 +1,14 @@
 /**
- * El desplegable de zonas sólo existe si hay zonas.
+ * 🔴 El desplegable de zonas ya NO existe (RP2, auditoría del 13-09).
  *
- * Antes la página le pasaba a este filtro seis nombres escritos a mano, así
- * que el control siempre estaba y siempre tenía opciones. Ahora las zonas
- * salen del reporte de ocupación: mientras carga, o si la agencia no tiene
- * ninguna, la lista llega vacía. Un desplegable vacío que igual dice «Todas
- * las zonas» es peor que no tenerlo: afirma que hay zonas y que las estamos
- * mostrando todas.
+ * Primero la página le pasaba seis nombres escritos a mano («Chapinero», «El
+ * Poblado»…); después salieron del reporte de ocupación. Pero el filtro NUNCA
+ * filtró: `filteredReports` mira categoría, favoritos y búsqueda, y ningún
+ * endpoint de reportes acepta una zona. Un control que no cambia un solo
+ * número, en la pantalla donde el dato se vuelve decisión, hace creer que lo
+ * que se está mirando es de esa zona.
+ *
+ * Esta prueba es lo que impide que vuelva sin filtrar.
  */
 
 import * as React from 'react';
@@ -45,14 +47,13 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function pintar(zones: string[]) {
+function pintar() {
   act(() => {
     root.render(
       <ReporteFilters
         filters={FILTROS}
         onFiltersChange={() => {}}
         reportCounts={CONTEOS}
-        zones={zones}
       />,
     );
   });
@@ -61,18 +62,13 @@ function pintar(zones: string[]) {
 const texto = () => document.body.textContent ?? '';
 
 describe('<ReporteFilters> — zonas', () => {
-  it('sin zonas no ofrece el desplegable', () => {
-    pintar([]);
+  it('🔴 no ofrece ningún filtro de zona: no filtraba nada', () => {
+    pintar();
     expect(texto()).not.toContain('Todas las zonas');
   });
 
-  it('con zonas reales sí lo ofrece', () => {
-    pintar(['Ciudad Jardín']);
-    expect(texto()).toContain('Todas las zonas');
-  });
-
   it('nunca pinta las zonas que estaban quemadas en la página', () => {
-    pintar([]);
+    pintar();
     for (const inventada of ['Chapinero', 'El Poblado', 'Usaquen', 'Suba']) {
       expect(texto()).not.toContain(inventada);
     }

@@ -3,7 +3,24 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
+import type {
+  CargoAlInquilino,
+  DeduccionesDeLaLiquidacion,
+  PropuestaDelAgente,
+  AprobacionDeReparacion,
+} from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
+/*
+ * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
+ * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
+ * terminan llamando distinto a lo mismo.
+ */
+import type { CajonDeLaCuota, EstadoDeCuota } from '@/lib/api/cartera.types';
+import type {
+  BaseDeLaTasaDeRecaudo,
+  MedidaDeLaTasa,
+  TasaDeRecaudo,
+} from '@/lib/tasa-de-recaudo';
 
 // ============================================================================
 // Propietario (Property Owner/Client)
@@ -133,14 +150,22 @@ export type AgenteRole = 'agent' | 'coordinator' | 'director';
 // Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
 export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 
+/**
+ * 🔴 17-09 (Nico): «la comisión de los asesores va por FUERA de Leasefy». Acá
+ * ya no hay pesos por asesor —`totalCommissions` y `commissionsThisMonth` se
+ * quitaron del back y de la pantalla—: queda quién captó y quién arrendó.
+ */
 export interface AgenteMetrics {
   assignedProperties: number;
   activeLeases: number;
   closedThisMonth: number;
   closedThisYear: number;
-  totalCommissions: number;
-  commissionsThisMonth: number;
   avgDaysToClose: number;
+  /**
+   * PORCENTAJE de 0 a 100 (dos decimales), como lo calcula el back
+   * (`agentes.service.ts`: `completados / leads * 100`). NO es una fracción:
+   * multiplicarlo por 100 pintaba «3333%».
+   */
   conversionRate: number;
 }
 
@@ -359,6 +384,11 @@ export interface InventoryItem {
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   notes?: string;
   photoUrl?: string;
+  /**
+   * Dónde está («Cocina», «Alcoba principal»). Sólo lo usa el inventario por
+   * versiones del inmueble; la lista vieja de la consignación no lo acepta.
+   */
+  espacio?: string;
 }
 
 export interface ConsignacionFormData {
@@ -580,6 +610,10 @@ export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: 
 export type CobroStatus = 'pending' | 'paid' | 'partial' | 'late' | 'defaulted';
 
 export interface Cobro {
+  /** Con fecha = cobro ANULADO (nunca se borra). Sólo llega con el filtro «Anulados». */
+  anuladoAt?: string | null;
+  /** Por qué se anuló. */
+  motivoDeLaAnulacion?: string | null;
   id: string;
   leaseId: string;
   consignacionId: string;
@@ -638,6 +672,11 @@ export interface CobroSummary {
   cobrosPaid: number;
   cobrosPending: number;
   cobrosLate: number;
+  /**
+   * 🔴 La tasa de recaudo del mes, medida como la eligió la inmobiliaria y con
+   * su fórmula. `collectionRate` es su `pct`: la pantalla ya no la divide.
+   */
+  tasaDeRecaudo: TasaDeRecaudo | null;
 }
 
 // ============================================================================
@@ -647,9 +686,21 @@ export interface CobroSummary {
 export type DispersionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface DispersionItem {
-  cobroId: string;
+  /**
+   * 🔴 El documento, cuando existe. Es `null` en toda dispersión generada desde
+   * el 16-09: la plata del propietario sale de su CUOTA, no de un cobro del
+   * inquilino, y la inmobiliaria migrada no tiene un solo cobro contra 33.640
+   * cuotas de propietario. Llavear una lista por esto colisiona todas las filas.
+   */
+  cobroId: string | null;
+  /** La cuota del propietario que se gira. Es la identidad de la línea. */
+  cuotaId: string | null;
   propertyTitle: string;
-  /** Canon recaudado, SIN la administración: ésa es de la copropiedad. */
+  /**
+   * El canon liquidado, SIN la administración: ésa es de la copropiedad. 🔴 Con
+   * la base CAUSADO (el default) es el canon del mes aunque el inquilino no haya
+   * pagado: no es necesariamente plata recaudada.
+   */
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
@@ -660,7 +711,41 @@ export interface DispersionItem {
   conceptosACargo: number;
   /** Lo que entró y no es suyo: administración, seguros, mora. */
   deTerceros: number;
+
+  /**
+   * 🔴 D1 (17-09) — con qué modalidad entró este renglón. `null` o ausente = el
+   * mandato no tiene modalidad y la liquidación es la de siempre.
+   */
+  modalidad?: ModalidadDelMandato | null;
+  /** De dónde salió: del mandato del inmueble o del default de la inmobiliaria. */
+  fuenteDeLaModalidad?: 'MANDATO' | 'INMOBILIARIA' | null;
+  /**
+   * El mes de la cuota, cuando NO es el de la liquidación: sobre recaudo, una
+   * cuota que el inquilino pagó tarde entra en la liquidación siguiente.
+   */
+  mesDeLaCuota?: string | null;
+  /**
+   * Garantizado: lo que de este renglón el inquilino todavía no pagó. Es la
+   * cuenta por cobrar al inquilino que la inmobiliaria recupera cuando pague.
+   */
+  sinRecaudoCop?: number;
+  /**
+   * D2: el recibo de caja cuyos intereses de mora y gastos de cobranza gira
+   * este renglón (cuando son del propietario). Sin recibo, es un canon.
+   */
+  interesDelRecibo?: {
+    reciboDeCajaId: string;
+    reciboNumero: number | null;
+    reciboFecha: string | null;
+    destino: 'PROPIETARIO' | 'REPARTO';
+    porcentajeAlPropietario: number;
+    interesesCop: number;
+    gastosDeCobranzaCop: number;
+  } | null;
 }
+
+/** D1: con qué base se le gira al propietario. */
+export type ModalidadDelMandato = 'GARANTIZADO' | 'SOBRE_RECAUDO';
 
 export interface Dispersion {
   id: string;
@@ -676,14 +761,33 @@ export interface Dispersion {
   month: string; // '2026-02'
   items: DispersionItem[];
 
+  /**
+   * Con qué base salió el canon (`totalCollected` y el `rentCollected` de cada
+   * línea): `CAUSADO` —lo que el contrato cobra ese mes, haya pagado o no el
+   * inquilino; el default— o `RECAUDADO` —lo que el inquilino pagó—. Rotula el
+   * canon, no cambia ningún número. La resuelve `adaptarDispersion` con
+   * `lib/propietarios/base-del-canon.ts::baseDeLaDispersion`.
+   */
+  baseDelCanon: 'CAUSADO' | 'RECAUDADO';
+
   // Totals
-  /** Canon recaudado del mes, sin administración. */
+  /** Canon liquidado del mes, sin administración (causado o recaudado según `baseDelCanon`). */
   totalCollected: number;
   totalCommission: number;
   totalConceptosAFavor: number;
   totalConceptosACargo: number;
   totalDeTerceros: number;
   netToPropietario: number;
+  /** Las deducciones de esta liquidación y lo que se gira. Opcional: back viejo. */
+  conDeducciones?: DeduccionesDeLaLiquidacion;
+
+  /**
+   * D1 garantizado: de lo girado, lo que el inquilino todavía no pagó. Queda
+   * como cuenta por cobrar al inquilino. Opcional: back anterior al 17-09.
+   */
+  cuentaPorCobrarAlInquilinoCop?: number;
+  /** D2: intereses de mora y gastos de cobranza recaudados que se le giran. */
+  interesesCop?: number;
 
   // Status
   status: DispersionStatus;
@@ -703,13 +807,75 @@ export interface Dispersion {
  * Sale del MISMO cálculo que `generate`: lo que se muestra antes de apretar el
  * botón es lo que se va a guardar.
  */
+/**
+ * Por qué un mes no deja nada que girar, contado por el back en las cuotas del
+ * lado PROPIETARIO (`dispersiones.service.ts::porQueElMesVieneVacio`). La
+ * dispersión sale de esas cuotas —no de los cobros pagados— desde el 16-09.
+ */
+export interface PorQueElMesVieneVacio {
+  /** Cuotas de propietario de ese mes, en cualquier estado. */
+  cuotasDelMes: number;
+  /** De ésas, las que ya quedaron en una dispersión (generada o girada). */
+  enUnaDispersion: number;
+  /** Sin dispersión, vivas y con saldo: las que se girarían. */
+  porGirar: number;
+  /** Sin dispersión y del sistema del que se migró. */
+  delSistemaAnterior: number;
+  /** Contratos vigentes (ACTIVE o SIGNED) de la inmobiliaria. */
+  contratosVigentes: number;
+}
+
+/**
+ * Las cuotas que llegaron TARDE a un mes que ya tiene la liquidación de ese
+ * propietario: un contrato activado después, una tabla regenerada, la parte de
+ * un copropietario. Antes se saltaban enteras; ahora, si la liquidación sigue
+ * abierta, se le suman al generar, y si no, el back dice por qué no.
+ */
+export interface CuotasTardias {
+  propietarioId: string;
+  propietarioName: string;
+  dispersionId: string;
+  cuotas: number;
+  netoCop: number;
+  /** `true` = se le suman a su liquidación del mes al generar. */
+  seSuman: boolean;
+  /** Por qué no se pueden sumar. `null` si se suman. */
+  motivo: string | null;
+}
+
 export interface VistaPreviaDeDispersiones {
   month: string;
+  /**
+   * Con qué regla se liquidó: `CAUSADO` (el default del back: el canon del mes,
+   * haya pagado el inquilino o no) o `RECAUDADO` (sólo lo que el inquilino ya
+   * pagó). Rotula el canon —«Canon causado» / «Canon recaudado»— y no cambia
+   * ningún número. Ver `lib/propietarios/base-del-canon.ts`.
+   */
+  base?: 'CAUSADO' | 'RECAUDADO';
   totalPropietarios: number;
   /** Los que ya tienen dispersión de este mes: generar los saltaría. */
   yaGenerados: number;
+  /**
+   * De los que ya tienen dispersión, los que tienen cuotas que llegaron tarde.
+   * Opcional: un back anterior no lo manda (y saltaba esas cuotas).
+   */
+  tardias?: CuotasTardias[];
+  /**
+   * Sin un solo borrador, la razón contada; con alguno, `null`. Opcional: un
+   * back anterior al 16-09 no lo manda, y entonces la pantalla dice la frase
+   * general.
+   */
+  vacio?: PorQueElMesVieneVacio | null;
   totalAGirar: number;
   totalComisiones: number;
+  /** Lo que se descuenta este mes por deducciones. Opcional: back anterior al 2026-09-16. */
+  totalDeducciones?: number;
+  /** Lo que queda en contra y pasa a la siguiente liquidación. */
+  totalSaldoEnContra?: number;
+  /** D1 garantizado: lo que se giraría sin recaudo del inquilino. */
+  totalCuentaPorCobrarAlInquilino?: number;
+  /** D2: intereses de mora y gastos de cobranza del propietario que se girarían. */
+  totalIntereses?: number;
   propietarios: {
     propietarioId: string;
     propietarioName: string;
@@ -721,18 +887,15 @@ export interface VistaPreviaDeDispersiones {
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
+    /** Con deducciones, el neto del mes MENOS ellas: puede ser negativo. */
     netToPropietario: number;
-    items: {
-      cobroId: string;
-      propertyTitle: string;
-      rentCollected: number;
-      commissionPercent: number;
-      commissionAmount: number;
-      netAmount: number;
-      conceptosAFavor: number;
-      conceptosACargo: number;
-      deTerceros: number;
-    }[];
+    /**
+     * Las deducciones del mes y lo que se gira de verdad (`aGirarCop`, entero o
+     * nada), calculados por el back con su regla única. Sin esto (back viejo),
+     * el neto es el de siempre.
+     */
+    conDeducciones?: DeduccionesDeLaLiquidacion;
+    items: DispersionItem[];
   }[];
 }
 
@@ -813,6 +976,19 @@ export interface SolicitudMantenimiento {
   completedAt?: string;
   completionNotes?: string;
   completionPhotoUrls?: string[];
+
+  /**
+   * Lo que dejó propuesto el agente de mantenimiento, esperando a una persona.
+   * Ausente con un back anterior; `null` sin propuesta.
+   */
+  propuesta?: PropuestaDelAgente | null;
+  /** El cargo vivo en el estado de cuenta del inquilino, si quedó a su cargo. */
+  cargoAlInquilino?: CargoAlInquilino | null;
+  /**
+   * 🔴 D12: la última solicitud de aprobación al propietario (pendiente,
+   * aprobada, RECHAZADA, de emergencia o anulada). Ausente con un back viejo.
+   */
+  aprobacionDelPropietario?: AprobacionDeReparacion | null;
 
   createdAt: string;
   updatedAt: string;
@@ -909,9 +1085,23 @@ export interface ExtractoPropietario {
   month: string;
   generatedAt: string;
 
+  /**
+   * Las deducciones del mes (reparaciones, descuentos con soporte, saldo en
+   * contra del mes anterior) y lo que se gira de verdad. Lo calcula el back con
+   * la regla única; opcional para un back anterior al 2026-09-16.
+   */
+  conDeducciones?: DeduccionesDeLaLiquidacion;
+
   lineItems: {
-    cobroId: string;
-    consignacionId: string;
+    /**
+     * 🔴 La identidad de la fila desde el 16-09: la deuda del dueño vive en su
+     * CUOTA. `cobroId` es el documento del OTRO lado del contrato y viene
+     * `null` en todo extracto nuevo — llavear la lista por él colisiona.
+     */
+    cuotaId: string | null;
+    cobroId: string | null;
+    contractId: string | null;
+    consignacionId: string | null;
     propertyTitle: string;
     propertyAddress: string | null;
     tenantName: string | null;
@@ -933,16 +1123,52 @@ export interface ExtractoPropietario {
     commissionAmount: number;
     /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
-    /** Canon efectivamente recaudado, SIN la administración. */
+    /**
+     * El canon de la liquidación, SIN la administración. 🔴 Pese al nombre, no
+     * siempre es plata recaudada: lo dice `baseDelCanon`.
+     */
     rentCollected: number;
+    /**
+     * `CAUSADO` en una línea de cuota (el canon del mes, pagado o no);
+     * `RECAUDADO` en una línea vieja armada sobre un cobro. Opcional: un back
+     * anterior al 2026-09-16 no la manda (ver `baseDeLaLinea`).
+     */
+    baseDelCanon?: 'CAUSADO' | 'RECAUDADO';
     /** Conceptos que suman a su favor (devoluciones, reajustes). */
     conceptosAFavor: number;
     /** Conceptos que él paga (predial, reparaciones a su cargo). */
     conceptosACargo: number;
     /** Lo que entró y no es suyo: administración, seguros, mora. */
     deTerceros: number;
+    /** La dispersión que se llevó esta cuota, si ya salió. */
+    dispersionId: string | null;
+    /** Lo ya girado, lo que va en un lote sin pagar y lo que falta. Suman `netAmount`. */
+    giradoCop: number;
+    enGiroCop: number;
+    porGirarCop: number;
+    /**
+     * `SIN_DATO` es una línea vieja armada sobre un cobro: el modelo anterior no
+     * guardaba en qué iba el giro, y decir «por girar» afirmaría algo que no consta.
+     */
+    estadoDelGiro: 'GIRADO' | 'EN_GIRO' | 'POR_GIRAR' | 'SIN_DATO';
     renglones: RenglonDeLiquidacion[];
   }[];
+
+  /**
+   * Por qué el extracto viene sin líneas, cuando viene sin líneas. Sin esto la
+   * pantalla no puede distinguir «este dueño no tiene inmuebles» de «este mes
+   * no se movió nada», y las dos se leen igual: en blanco.
+   */
+  sinMovimiento: {
+    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
+    mensaje: string;
+  } | null;
+
+  /**
+   * La base del canon del extracto entero: `MIXTA` cuando conviven líneas de
+   * cuotas y de cobros viejos. Opcional por los back anteriores al 2026-09-16.
+   */
+  baseDelCanon?: 'CAUSADO' | 'RECAUDADO' | 'MIXTA';
 
   totals: {
     totalRent: number;
@@ -953,6 +1179,9 @@ export interface ExtractoPropietario {
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
+    totalGirado: number;
+    totalEnGiro: number;
+    totalPorGirar: number;
   };
 
   bankInfo: {
@@ -964,67 +1193,198 @@ export interface ExtractoPropietario {
 }
 
 /**
- * Una deuda de la cartera, como la manda `GET /inmobiliaria/reports/cartera`.
+ * El INTERÉS DE MORA de una cuota, tal como lo manda el back
+ * (`InteresEnPantalla`, en `back-erp/src/inmobiliaria/cartera/lo-que-liquida-el-interes.ts`).
  *
- * Este tipo declaraba antes seis campos que el back nunca enviaba
- * (`propertyAddress`, `tenantPhone`, `propietarioName`, `agenteId`,
- * `agenteName`, `bucket`). Una pantalla que los pintara habría mostrado
- * `undefined` con tsc en verde. Ahora el back sí los manda — menos `bucket`,
- * que se calcula acá para poder separar lo que aún no vence de la mora.
+ * Es UNA lectura para todas las pantallas —la cartera por edad y por concepto,
+ * la cartera del mes, el informe, el estado de cuenta y el recibo de caja—,
+ * liquidada con la MISMA regla que la prefactura. El front no calcula un peso:
+ * pinta esto. Capital e interés viajan SIEMPRE por separado.
+ *
+ * Donde una fila lo trae es opcional a propósito: un back anterior no lo manda,
+ * y «no vino el interés» no es «el interés es cero».
+ */
+export interface InteresDeMora {
+  /** Lo liquidado: interés diario y gasto administrativo de cobranza. */
+  liquidadoCop: number;
+  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
+  abonadoCop: number;
+  /** 🔴 Lo que falta de interés hoy. */
+  pendienteCop: number;
+  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
+  origen: 'COBRO' | 'CUOTA' | null;
+  /** El capital ya se pagó, pero se pagó cuando la cuota ya era cartera. */
+  pagadaEnMora: boolean;
+  diasDeMora: number;
+  /** Por qué está en mora y no lleva interés. `null` si lleva o no es cartera. */
+  motivo: string | null;
+  /** El motivo es que la inmobiliaria no tiene reglas de mora activas. */
+  sinReglas: boolean;
+}
+
+/** Una fila cualquiera de cartera, con lo que el back le agrega de mora. */
+export type ConInteres<T> = T & {
+  interes?: InteresDeMora;
+  /** Capital + interés pendiente de la fila. */
+  totalConInteresCop?: number;
+};
+
+/**
+ * Una fila del informe de cartera: UNA CUOTA de un contrato.
+ *
+ * 🔴 Cambió la UNIDAD y cambió la MEDIDA (back, 2026-09-16):
+ *
+ * · La unidad era el `Cobro`. Ahora es la CUOTA del contrato
+ *   (`contrato_cuotas`). El cobro es el documento con el que finanzas reclama
+ *   una parte de la deuda, y la inmobiliaria migrada no tiene ni uno: el
+ *   informe salía en cero con $8.446,8 millones pendientes encima. Por eso
+ *   `cuotaId` es la llave de la fila y `cobroId` puede ser `null`.
+ * · `daysLate` se llama ahora `diasDeMora` y significa otra cosa: los días
+ *   DESPUÉS del plazo del contrato, no los días desde el vencimiento. El
+ *   nombre cambió a propósito para que ningún lector siga usando el viejo
+ *   creyendo que mide lo mismo.
+ *
+ * El vocabulario es el de `@/lib/api/cartera.types` —el de «Cartera por
+ * concepto»— para que las dos pantallas de cartera cuenten la misma historia
+ * con las mismas palabras.
  */
 export interface CarteraItem {
-  cobroId: string;
-  consignacionId: string;
+  /** 🔴 La identidad de la fila. Es la `key` de React, no `cobroId`. */
+  cuotaId: string;
+  /** El documento de cobro, si finanzas ya lo emitió. `null` es lo normal. */
+  cobroId: string | null;
+  contractId: string;
+  /** El número que la inmobiliaria conoce (el suyo si el contrato es migrado). */
+  contrato: string | null;
+  /** Nuestro consecutivo, rotulado, sólo cuando `contrato` es el de ella. */
+  contratoDeLeasefy: string | null;
+  /** `null` cuando el contrato migrado no tiene inmueble cargado. */
+  propertyId: string | null;
+  /** `null` cuando el inmueble no tiene mandato en esta inmobiliaria. */
+  consignacionId: string | null;
   propertyTitle: string;
   propertyAddress: string | null;
   tenantName: string | null;
   tenantPhone: string | null;
+  tenantDocument: string | null;
   propietarioId: string | null;
   propietarioName: string | null;
   agenteId: string | null;
   agenteName: string | null;
+  /** `YYYY-MM`: el período de la cuota. */
   month: string;
-  dueDate: string;
+  /** `YYYY-MM-DD`: el día de cartera del período. De acá arranca el plazo. */
+  vence: string;
+  estado: EstadoDeCuota;
+  /** 🔴 En cuál de los tres cajones cae. Los tres no se solapan. */
+  cajon: CajonDeLaCuota;
+  /** 🔴 Días DESPUÉS del plazo. `0` mientras el plazo del contrato corre. */
+  diasDeMora: number;
+  /** Los días de plazo que rigen para este contrato, ya resueltos. */
+  diasDePlazo: number;
+  /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
+  esVencida: boolean;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  daysLate: number;
-  status: string;
-  /** Recordatorios efectivamente enviados. Es el dato, no un cero fijo. */
-  remindersSent: number;
+  /**
+   * Recordatorios efectivamente enviados. 🔴 `null` —y no `0`— cuando la cuota
+   * no tiene cobro emitido: «no le hemos escrito» y «no hay documento desde el
+   * cual escribirle» son dos cosas distintas, y un cero las tapa.
+   */
+  remindersSent: number | null;
   lastReminderDate: string | null;
+  /** El interés de mora de la cuota. Ver `InteresDeMora`. */
+  interes?: InteresDeMora;
+  /** `pendingAmount + interes.pendienteCop`. */
+  totalConInteresCop?: number;
+}
+
+/**
+ * Las cinco cifras del informe. 🔴 NO se pueden sumar en una sola.
+ *
+ * Las tres del medio son una PARTICIÓN de `deudaTotalCop`: suman el total por
+ * construcción. Son las mismas palabras y los mismos números que la franja de
+ * «Cartera por concepto» (`TotalesDeCartera` en `@/lib/api/cartera.types`),
+ * donde `enMoraCop` es esta `carteraCop`.
+ */
+export interface CarteraSummary {
+  /** Toda la deuda pendiente del contrato, venza cuando venza. */
+  deudaTotalCop: number;
+  /** Todavía no vence. Es deuda, NO es cartera. */
+  porVencerCop: number;
+  /** Venció, pero el plazo del contrato sigue corriendo. Tampoco es cartera. */
+  vencidaEnPlazoCop: number;
+  /** 🔴 LA CARTERA: pasó el plazo. Siniestros incluidos. */
+  carteraCop: number;
+  /** Cartera − siniestros: lo que sigue siendo cobranza. Suman los tramos. */
+  carteraVivaCop: number;
+  enSiniestroCop: number;
+  /** Los tramos por edad, sobre la mora REAL y sobre la cartera viva. */
+  bucket0to30: number;
+  bucket31to60: number;
+  bucket61to90: number;
+  bucket90plus: number;
+  cuotas: number;
+  cuotasPorVencer: number;
+  cuotasVencidasEnPlazo: number;
+  cuotasEnCartera: number;
+  cuotasEnSiniestro: number;
+  /** 🔴 El interés de mora que falta, sumado. Va aparte del capital. */
+  interesCop?: number;
+  /** De ese interés, el de los casos en siniestro. */
+  interesEnSiniestroCop?: number;
+  /** `carteraCop + interesCop`. */
+  carteraConInteresCop?: number;
+  /** `deudaTotalCop + interesCop`. */
+  deudaTotalConInteresCop?: number;
+  /** Cuotas ya pagadas que siguen debiendo el interés de su mora. */
+  cuotasPagadasEnMora?: number;
+}
+
+/** Cuántas filas quedaron sin cada dato. Es el respaldo de `avisos`. */
+export interface CarteraSinCamino {
+  sinInmueble: number;
+  sinMandato: number;
+  sinPropietario: number;
+  sinAgente: number;
+  sinDireccion: number;
+  sinTelefono: number;
 }
 
 export interface CarteraReport {
-  generatedAt: string;
+  generadoEn: string;
+  /** `YYYY-MM-DD` en Bogotá: contra qué día se midieron los días de mora. */
+  hoy: string;
+  /** Los tres cajones. Los siniestros van aparte, en `siniestros`. */
   items: CarteraItem[];
-  summary: {
-    totalPending: number;
-    bucket0to30: number;
-    bucket31to60: number;
-    bucket61to90: number;
-    bucket90plus: number;
-  };
-  /** Optional monthly breakdown (backend may not return this yet) */
+  summary: CarteraSummary;
   byMonth?: CarteraMonthItem[];
-  /**
-   * Los casos en siniestro: `diasParaSiniestro` días de mora con saldo. Van
-   * aparte de `items` — ya no son cobranza, son reclamación a la aseguradora.
-   * Opcional porque un back anterior no lo manda.
-   */
-  siniestros?: CarteraSiniestros;
+  siniestros: CarteraSiniestros;
+  sinCamino: CarteraSinCamino;
+  /** Contratos vigentes sin tabla de amortización: su deuda NO está acá. */
+  contratosSinCuotas: number;
+  /** Lo que estos números NO cuentan, escrito para que lo lea una persona. */
+  avisos: string[];
+  /** La agencia no tiene reglas de mora activas y hay cartera: el 0 no es «sin mora». */
+  sinReglasDeMora?: boolean;
 }
 
-/** Un caso en siniestro, con cuándo pasó y cuántos días lleva ahí. */
+/** Un caso en siniestro, con desde cuándo lo es. */
 export interface CarteraSiniestro extends CarteraItem {
-  siniestroAt: string | null;
+  /**
+   * `YYYY-MM-DD`, DERIVADO de la regla (vencimiento + plazo +
+   * `diasParaSiniestro`), no un sello de auditoría. El informe habla de la
+   * regla, que es lo que se puede explicar y recalcular.
+   */
+  siniestroDesde: string;
   diasEnSiniestro: number;
 }
 
 export interface CarteraSiniestros {
   cantidad: number;
   totalCop: number;
-  /** A los cuántos días de mora pasa un cobro a siniestro en esta agencia. */
+  /** A los cuántos días de mora un caso pasa a siniestro en esta agencia. */
   diasParaSiniestro: number;
   items: CarteraSiniestro[];
 }
@@ -1064,10 +1424,20 @@ export interface OcupacionTrendItem {
 
 export interface CarteraMonthItem {
   month: string;
+  /** Lo pactado en las cuotas del mes (sin las anuladas ni las del sistema anterior). */
   total: number;
   collected: number;
+  /** 🔴 Lo que pasó el plazo del contrato, no todo lo vencido. */
   overdue: number;
+  /** Cuántas cuotas hay detrás del mes. Antes era `cobroCount`. */
+  cuotas: number;
   collectionRate: number;
+  /**
+   * 🔴 La tasa del mes medida como la eligió la inmobiliaria, con su fórmula.
+   * Sobre lo emitido, `collected`/`total` NO son su numerador ni su
+   * denominador. Una respuesta de antes del 2026-09-16 no la trae.
+   */
+  tasaDeRecaudo?: TasaDeRecaudo;
 }
 
 /**
@@ -1131,26 +1501,53 @@ export interface OcupacionReport {
 // Comisiones Agente Report
 // ============================================================================
 
-export interface ComisionAgente {
-  agenteId: string;
-  agenteName: string;
-  agenteAvatar?: string;
-  closedDeals: number;
-  totalCommission: number;
-  avgCommissionPerDeal: number;
-  topPropertyTitle?: string;
-  previousPeriodCommission?: number;
-  trend: 'up' | 'down' | 'stable';
+/**
+ * El informe de comisiones, desde el 17-09: la comisión es de la
+ * INMOBILIARIA (un solo total) y por asesor sólo quedan los arriendos
+ * cerrados del embudo. Ni un peso atribuido a una persona.
+ */
+export interface ComisionesAgenteReport {
+  period: string; // '2026-02'
+  /** La comisión de administración causada del mes: es de la inmobiliaria. */
+  comisionDeLaAgenciaCop: number;
+  /** Contratos que generaron comisión ese mes. */
+  contratosConComision: number;
+  /** Arriendos cerrados del embudo, por asesor. Sin pesos. */
+  agentes: { userId: string; closedDeals: number }[];
+  totalClosedDeals: number;
+  /** Quién cerró más. `null` si nadie cerró nada. */
+  topAgentUserId: string | null;
 }
 
-export interface ComisionesAgenteReport {
-  generatedAt: string;
-  period: string; // '2026-02' or '2026-Q1'
-  totalCommissions: number;
-  avgCommissionPerAgent: number;
-  totalClosedDeals: number;
-  topAgentName: string;
-  agentes: ComisionAgente[];
+/** `GET /inmobiliaria/agentes/captaciones-y-arriendos`: quién captó y quién arrendó. */
+export interface CaptacionesYArriendos {
+  desde: string;
+  hasta: string;
+  asesores: {
+    userId: string;
+    nombre: string;
+    activo: boolean;
+    captados: number;
+    arrendados: number;
+  }[];
+  sinAsesor: { captados: number; arrendados: number };
+  captaciones: {
+    consignacionId: string;
+    inmueble: string;
+    propietario: string | null;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
+  arriendos: {
+    pipelineItemId: string;
+    consignacionId: string | null;
+    inmueble: string | null;
+    inquilino: string;
+    fecha: string;
+    agenteUserId: string | null;
+    agenteNombre: string | null;
+  }[];
 }
 
 // ============================================================================
@@ -1215,8 +1612,17 @@ export interface FlujoCajaReport {
 // porcentajes vienen en 0-100 con dos decimales. `rentabilidadNetaAnualPct`
 // en `null` significa «sin valor comercial registrado»: no se inventa.
 
-/** De dónde salió la ocupación: del historial de contratos o de los cobros. */
-export type RentabilidadOcupacionFuente = 'leases' | 'cobros';
+/**
+ * De dónde salió la ocupación: del historial de contratos o de las cuotas.
+ *
+ * 🔴 `'cuotas'` se llamaba `'cobros'` hasta el 2026-09-16, en los dos lados. El
+ * respaldo —para cuando el inmueble no tiene arriendo registrado— dejó de ser
+ * «tuvo cobro ese mes», que en una inmobiliaria migrada es SIEMPRE falso porque
+ * no tiene ni un cobro emitido, y pasó a ser «tuvo cuota ese mes», que es el
+ * rastro fechado que deja el contrato desde que se firma. Espejo de
+ * `back-erp/src/inmobiliaria/reports/rentabilidad-por-inmueble.ts`.
+ */
+export type RentabilidadOcupacionFuente = 'leases' | 'cuotas';
 
 export interface RentabilidadFila {
   consignacionId: string;
@@ -1279,6 +1685,11 @@ export interface RentabilidadReport {
   hasta: string;
   meses: number;
   generatedAt: string;
+  /**
+   * Con qué fórmula se midió `tasaDeRecaudoPct`, en las filas y en los totales.
+   * Una respuesta de antes del 2026-09-16 no la trae: era sobre lo causado.
+   */
+  medidaDeLaTasa?: MedidaDeLaTasa;
   /** Ordenadas por `netoPropietarioCop` descendente. */
   filas: RentabilidadFila[];
   totales: RentabilidadTotales;
@@ -1315,6 +1726,12 @@ export interface InmobiliariaDashboardKPIs {
   pendingCollections: number;
   lateCollections: number;
   collectionRate: number;
+  /**
+   * 🔴 La tasa de recaudo del mes medida como la eligió la inmobiliaria, con su
+   * fórmula y sus dos cifras. Una respuesta de antes del 2026-09-16 no la trae:
+   * ver `tasaDelTablero`.
+   */
+  tasaDeRecaudo?: TasaDeRecaudo;
   totalCommissions: number;
 
   // Trends (signed % change vs previous month)
@@ -1335,6 +1752,43 @@ export interface InmobiliariaDashboardKPIs {
   // Owners
   totalPropietarios: number;
   pendingDispersions: number;
+
+  /**
+   * La deuda del contrato, leída de las cuotas (back `dashboard/plata-del-mes.ts`).
+   * Opcional: una respuesta de un back anterior al 16-09 no la trae.
+   */
+  deuda?: DeudaDelTablero;
+}
+
+/** Los tres cajones de una deuda: por vencer, vencida en plazo y cartera. */
+export interface CajonesDeLaDeuda {
+  totalCop: number;
+  porVencerCop: number;
+  vencidaEnPlazoCop: number;
+  carteraCop: number;
+  cuotas: number;
+  cuotasPorVencer: number;
+  cuotasVencidasEnPlazo: number;
+  cuotasEnCartera: number;
+}
+
+/** `deuda` de `GET /inmobiliaria/analytics/kpis`. */
+export interface DeudaDelTablero {
+  month: string;
+  hoy: string;
+  /** Toda la deuda viva de la inmobiliaria. */
+  total: CajonesDeLaDeuda;
+  /** Sólo las cuotas del mes consultado. */
+  delMes: CajonesDeLaDeuda;
+  causadoDelMesCop: number;
+  abonadoDelMesCop: number;
+  /** Recibos de caja con fecha en el mes, estén o no imputados a una cuota. */
+  recaudadoEnCajaCop: number;
+  porGirarAPropietariosCop: number;
+  cuotasDeInquilino: number;
+  contratosSinCuotas: number;
+  /** Lo que el back vio raro y hay que decir (p. ej. plata en caja sin imputar). */
+  avisos: string[];
 }
 
 // ============================================================================
@@ -1837,6 +2291,24 @@ export interface AgencyProfile {
   extractoMensualDia?: number;
   /** Renovación automática (Ley 820, arts. 20 y 22): el cron de las 00:20 propone, renueva y sube el canon. */
   renovacionAutomatica?: boolean;
+  /** Cómo mide su tasa de recaudo. `null` o ausente = sobre lo causado (por defecto). */
+  tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
+  /** Penalidad por defecto por terminación anticipada, en cánones (17-09). */
+  penalidadTerminacionCanones?: number | null;
+  /** D6: cuántos días antes del aniversario aparece la carta del incremento. `null` = 30. */
+  diasAntesCartaIncremento?: number | null;
+  /** D9: si los contratos pactan gastos de cobranza cuando no lo dicen. `null` = como hoy. */
+  pactaGastosDeCobranza?: boolean | null;
+  /** D10: cuándo se exige la garantía de servicios. `null` = no se exige. */
+  garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
+  /** D10: tope de la garantía. `null` = sin tope (validar con abogado). */
+  garantiaServiciosTopeCop?: number | null;
+  /** 🔴 D10 corregido (17-09): el tope en PERÍODOS de facturación. `null` = 2. */
+  garantiaServiciosTopePeriodos?: number | null;
+  /** 🔴 Cuántos días vale el estudio aprobado (Nico, 17-09). `null` = 60. */
+  vigenciaEstudioDias?: number | null;
+  /** 🔴 El seguro opcional como % del canon, POR PLAN: `{"BASIC":1.5}`. */
+  seguroOpcionalPctPorPlan?: Record<string, number> | null;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
@@ -1916,6 +2388,23 @@ export interface UpdateAgencyPayload {
   /** 1..28 */
   extractoMensualDia?: number;
   renovacionAutomatica?: boolean;
+  /** Cómo mide la inmobiliaria su tasa de recaudo. `null` vuelve al valor por defecto (sobre lo causado). */
+  tasaDeRecaudoSobre?: BaseDeLaTasaDeRecaudo | null;
+  /** Penalidad por defecto por terminación anticipada, en cánones (17-09). */
+  penalidadTerminacionCanones?: number | null;
+  /**
+   * D4 (17-09): si la inmobiliaria es responsable de IVA. Decide si la comisión
+   * de administración lleva IVA (con `ivaPorcentaje`). `null` = no se sabe: sin IVA.
+   */
+  responsableIva?: boolean | null;
+  diasAntesCartaIncremento?: number | null;
+  pactaGastosDeCobranza?: boolean | null;
+  garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;
+  garantiaServiciosTopeCop?: number | null;
+  garantiaServiciosTopePeriodos?: number | null;
+  vigenciaEstudioDias?: number | null;
+  /** El mapa ENTERO del % por plan (reemplaza al guardado): un plan se quita mandándolo sin él. */
+  seguroOpcionalPctPorPlan?: Record<string, number> | null;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
   /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */
@@ -2146,7 +2635,8 @@ const NEUTRAL_BADGE_COLOR =
 export function getRoleLabel(role: AgencyRole | null | undefined): string {
   const labels: Record<AgencyRole, string> = {
     admin: 'Administrador',
-    agente: 'Agente',
+    // «Asesor» (Nico, 17-09-2026): el rol AGENTE es el asesor comercial.
+    agente: 'Asesor comercial',
     contador: 'Contador',
     viewer: 'Solo Lectura',
   };
@@ -2236,17 +2726,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
     ],
   },
+  // El ASESOR COMERCIAL (Nico, 17-09-2026): «sólo los apartados comerciales,
+  // nada de operaciones». Espejo de `AGENCY_ROLE_DEFAULTS` del back.
   agente: {
     role: 'agente',
     permissions: [
-      { module: 'dashboard', actions: ['view'] },
-      { module: 'propietarios', actions: ['view'] },
-      { module: 'portafolio', actions: ['view', 'edit'] },
+      { module: 'propietarios', actions: ['view', 'create', 'edit'] },
+      { module: 'portafolio', actions: ['view', 'create', 'edit'] },
       { module: 'pipeline', actions: ['view', 'create', 'edit'] },
       { module: 'agentes', actions: ['view'] },
-      { module: 'cobros', actions: ['view'] },
-      { module: 'operaciones', actions: ['view', 'edit'] },
-      { module: 'documentos', actions: ['view'] },
+      { module: 'documentos', actions: ['view', 'create', 'edit'] },
+      { module: 'subscription', actions: ['view'] },
       { module: 'avaluos', actions: ['view', 'create'] },
     ],
   },

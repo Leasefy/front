@@ -114,11 +114,26 @@ function buttonByText(text: string): HTMLButtonElement | undefined {
 }
 
 describe('<DocumentReviewQueueView>', () => {
-  it('renders the five counters from counts', () => {
+  it('🔴 la cifra grande es la única que es TRABAJO: lo que falta revisar', () => {
+    // Antes eran cinco tarjetas del mismo tamaño —Total, Pendientes, En
+    // revisión, Aprobados, Rechazados— ocupando la primera pantalla entera
+    // para decir cinco veces «0» cuando la cola está vacía, que es el estado
+    // normal. Sólo una de las cinco es algo que alguien tiene que hacer.
     render(baseProps());
-    expect(container.querySelector('[data-testid="count-total"]')?.textContent).toContain('3');
+    expect(container.querySelector('[data-testid="count-pending"]')?.textContent).toContain('1');
+    const resumen = container.querySelector('[data-testid="resumen-de-la-cola"]');
+    expect(resumen?.textContent).toContain('soporte por revisar');
+    // Los otros tres acompañan, en chico.
+    expect(container.querySelector('[data-testid="count-inReview"]')?.textContent).toContain('1');
     expect(container.querySelector('[data-testid="count-approved"]')?.textContent).toContain('1');
     expect(container.querySelector('[data-testid="count-rejected"]')?.textContent).toContain('0');
+  });
+
+  it('🔴 con la consulta caída no afirma «0»: dice que no sabe', () => {
+    // `counts` llega en ceros cuando la consulta falló. Pintar «0 por revisar»
+    // sobre un dato que nadie trajo es inventar un hecho tranquilizador.
+    render({ ...baseProps(), error: new Error('se cayó') });
+    expect(container.querySelector('[data-testid="count-pending"]')?.textContent).toContain('—');
   });
 
   it('una fila por documento en la tabla de la casa, con el candidato como columna', () => {

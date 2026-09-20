@@ -76,6 +76,12 @@ export const AGENT_INTROS: AgentIntroConfig[] = [
     descriptionKey: 'inmobiliaria.ai.intro.matching.description',
     image: '/images/features/leasefy-brand-07.jpg',
   },
+  // 🔴 Sin workspace desde el 2026-09-16: `/pagos` dejó de ser la Sala del
+  // agente de Pagos (NOTA al pie de `agentWorkspaceNav.ts`), así que
+  // `findAgentWorkspace` ya no devuelve este slug y la presentación no se
+  // muestra. Es lo correcto: anunciar «acá trabaja el agente de pagos» sobre la
+  // plata de la inmobiliaria era la confusión que se retiró. Queda en la lista,
+  // igual que `estudio`, para `resetAgentIntros` y para cuando el equipo vuelva.
   {
     id: 'pagos',
     slug: 'pagos',

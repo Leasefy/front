@@ -23,9 +23,14 @@ const numero = (version: string) => version.slice(version.lastIndexOf('-v') + 1)
 
 describe('las versiones legales no se separan de lo publicado', () => {
   it('la versión de la política es la que muestra /privacidad', () => {
-    expect(leer('src/app/privacidad/page.tsx')).toContain(
-      numero(VERSION_POLITICA_DE_TRATAMIENTO),
-    )
+    // Desde la v3.0 la página NO escribe el número a mano: importa la constante
+    // y la pinta. Es más fuerte que lo de antes —un literal y una constante
+    // podían separarse sin que nadie lo notara, que es justo el defecto que
+    // este archivo existe para impedir— así que lo que se asegura ahora es que
+    // la página siga leyendo de la fuente y no vuelva a escribirlo suelto.
+    const pagina = leer('src/app/privacidad/page.tsx')
+    expect(pagina).toContain('VERSION_POLITICA_DE_TRATAMIENTO')
+    expect(pagina).toContain('@/lib/legal/versiones')
   })
 
   it('la versión de los términos es la que muestra /terminos', () => {

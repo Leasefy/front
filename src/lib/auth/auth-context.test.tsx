@@ -33,6 +33,7 @@ const {
   listFactorsMock,
   setAccessTokenMock,
   setMfaPendingFlagMock,
+  currentTokenHolder,
 } = vi.hoisted(() => ({
   getMock: vi.fn(),
   // Resolves so the single-session claim (POST /auth/session/claim) in the
@@ -49,6 +50,11 @@ const {
   listFactorsMock: vi.fn().mockResolvedValue({ data: { totp: [] } }),
   setAccessTokenMock: vi.fn(),
   setMfaPendingFlagMock: vi.fn(),
+  // T-0099 WU-4: tracks what setAccessToken was last called with, so tests
+  // can assert a gated consumer fetched with the CURRENT (post-verify aal2)
+  // token, not a hardcoded string — mirrors what the real apiClient module
+  // does with its own `_accessToken`.
+  currentTokenHolder: { current: 'jwt-token' },
 }))
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -85,8 +91,11 @@ vi.mock('@/lib/api/client', () => {
       patch: vi.fn(),
     },
     ApiError,
-    getAccessToken: () => 'jwt-token',
-    setAccessToken: (...args: unknown[]) => setAccessTokenMock(...args),
+    getAccessToken: () => currentTokenHolder.current,
+    setAccessToken: (...args: unknown[]) => {
+      currentTokenHolder.current = args[0] as string
+      setAccessTokenMock(...args)
+    },
     setUnauthorizedHandler: vi.fn(),
     setTokenRefresher: vi.fn(),
     clearInFlightGets: vi.fn(),
@@ -100,7 +109,7 @@ vi.mock('@/lib/firebase/messaging', () => ({
 }))
 
 import { AuthProvider, AuthContext, AUTH_BOOTSTRAP_ERROR_KEY, fetchAgencyWithTimeout } from './auth-context'
-import { ApiError } from '@/lib/api/client'
+import { ApiError, apiClient, getAccessToken } from '@/lib/api/client'
 import type { AuthContextType } from './types'
 
 const fakeSession = {
@@ -182,6 +191,7 @@ beforeEach(() => {
   listFactorsMock.mockReset().mockResolvedValue({ data: { totp: [] } })
   setAccessTokenMock.mockClear()
   setMfaPendingFlagMock.mockClear()
+  currentTokenHolder.current = 'jwt-token'
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -1175,5 +1185,78 @@ describe('AuthProvider — T-0099 WU-4: SIGNED_OUT clears MFA pending state (mfa
     expect(captured!.mfaEnrollRequired).toBe(false)
     expect(captured!.mfaRequired).toBe(false)
     expect(captured!.user?.role).toBe('tenant')
+  })
+})
+
+/**
+ * T-0099 WU-4 (verify caveat): contract §3's fourth row — "exigido:true,
+ * factor enrolled, aal2 → release, protected fetches fire once with the
+ * aal2 token" — had no direct test. `GatedProbe` mimics the REAL gate every
+ * protected hook lives behind (`ProtectedRoute`'s
+ * `!isLoading && !mfaRequired && !mfaEnrollRequired` condition,
+ * `ProtectedRoute.tsx`) so this exercises the actual state transition, not
+ * a restatement of the flags.
+ */
+describe('AuthProvider — T-0099 WU-4: contract §3 release row (gate opens once, gated fetch fires once, with the aal2 token)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function GatedProbe() {
+    const ctx = React.useContext(AuthContext)
+    const gateOpen = !!ctx && !ctx.isLoading && !ctx.mfaRequired && !ctx.mfaEnrollRequired
+    React.useEffect(() => {
+      if (!gateOpen) return
+      // Mirrors what a real protected hook does on mount — one GET with the
+      // CURRENT token (apiClient/getAccessToken, both from the mocked
+      // '@/lib/api/client', wired to auth-context's own setAccessToken calls).
+      void apiClient.get('/inmobiliaria/config', getAccessToken())
+    }, [gateOpen])
+    return null
+  }
+
+  it('exigido:true + factor enrolled + aal1 (verify-pending): gate closed, no fetch. MFA_CHALLENGE_VERIFIED → aal2: gate opens once, fetch fires exactly once with the fresh aal2 token', async () => {
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+          <GatedProbe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.mfaRequired).toBe(true)
+    expect(getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/config')).toHaveLength(0)
+
+    // Act: mfa.verify() succeeds — Supabase upgrades the session to aal2.
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    const verifiedSession = { ...fakeSession, access_token: 'jwt-token-aal2' }
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('MFA_CHALLENGE_VERIFIED', verifiedSession)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    const configCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/config')
+    expect(configCalls).toHaveLength(1)
+    expect(configCalls[0][1]).toBe('jwt-token-aal2')
   })
 })

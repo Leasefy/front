@@ -80,7 +80,7 @@ export const COMO_SE_CONECTA: Record<string, ComoSeConecta> = {
     rotuloDelIdentificador: 'Usuario de integración',
     ejemploDelIdentificador: 'El que te dio tu asesor de Metrocuadrado',
     cuidado:
-      '🔴 No son tus datos de entrar al portal: Metrocuadrado entrega credenciales aparte, sólo para integración.',
+      'No son tus datos de entrar al portal: Metrocuadrado entrega credenciales aparte, sólo para integración.',
     paraConectarloDeVerdad: [
       'Que Metrocuadrado habilite la opción «Integración» en tu usuario.',
       'Cuatro datos del asesor: usuario, contraseña, identificación (tu NIT) y API Key.',
@@ -108,7 +108,7 @@ export const COMO_SE_CONECTA: Record<string, ComoSeConecta> = {
     paraConectarloDeVerdad: [
       'Autorizar a Leasefy desde tu cuenta administradora (un botón, no una clave).',
       'Tener tu usuario activado como inmobiliaria: se pide por el formulario de soporte de Mercado Libre.',
-      '🔴 Un paquete de publicaciones vigente. Sin cupos disponibles, el aviso no se crea.',
+      'Un paquete de publicaciones vigente. Sin cupos disponibles, el aviso no se crea.',
     ],
     fuente: 'developers.mercadolibre.com.co · guía «Publica Inmuebles», 28-08-2026.',
   },

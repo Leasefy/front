@@ -168,11 +168,83 @@ afterEach(() => {
 })
 
 describe('Publicación en portales', () => {
-  it('P7 — dice que hoy ningún portal de afuera publica solo', async () => {
+  /*
+   * 🔴 19-09-2026 · Este test EXIGÍA una afirmación falsa.
+   *
+   * Decía: «dice que hoy ningún portal de afuera publica solo», y comprobaba
+   * que la pantalla lo escribiera. Es mentira —Mercado Libre tiene API pública
+   * documentada y su app de DevCenter es autoservicio en Colombia; Ciencuadras
+   * también se conecta sin intermediario— y la mentira servía de excusa para no
+   * construir ninguna integración. El back ya se corrigió el 19-09; el texto de
+   * la pantalla y esta prueba se habían quedado con la versión vieja.
+   *
+   * Lo que la pantalla SÍ tiene que decir, porque es cierto y es lo que le
+   * importa a quien está mirando: que la publicación la termina una persona
+   * porque NOSOTROS no hemos construido la integración, y cuál portal pide qué.
+   */
+  it('🔴 P7 — la razón que da es la nuestra, no una afirmación falsa sobre los portales', async () => {
     await montar()
     const aviso = porTestId('aviso-sin-api')
     expect(aviso).not.toBeNull()
-    expect(aviso!.textContent).toMatch(/ning[uú]n portal de afuera publica solo/i)
+    expect(aviso!.textContent).toMatch(/no hemos construido ninguna de las integraciones/i)
+    expect(aviso!.textContent).not.toMatch(/ning[uú]n portal de afuera publica solo/i)
+  })
+
+  /*
+   * 🔴 19-09 · Visto en el navegador: las seis tarjetas decían EXACTAMENTE la
+   * misma frase («Para publicar aquí necesitamos los datos de tu cuenta de este
+   * portal»), así que la pantalla contestaba «lo mismo» a la pregunta de Nico
+   * del 18: «creo que hasta para conectar con cada portal puede ser diferente
+   * cada portal». El detalle por portal ya existía, pero vivía dentro del
+   * diálogo: había que abrir seis para descubrir que piden cosas distintas.
+   */
+  it('🔴 P7d — cada tarjeta dice qué pide SU portal, sin abrir el diálogo', async () => {
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [
+        FINCARAIZ,
+        { portal: 'MERCADO_LIBRE', nombre: 'Mercado Libre', tieneApi: false, cuenta: null },
+        { portal: 'CIENCUADRAS', nombre: 'Ciencuadras', tieneApi: false, cuenta: null },
+        { portal: 'PROPERATI', nombre: 'Properati', tieneApi: false, cuenta: null },
+      ],
+    })
+    await montar()
+    const dice = (portal: string) =>
+      porTestId(`portal-${portal}`)!.textContent!.replace(/\s+/g, ' ')
+
+    // Sólo los que NO tienen cuenta anotada: en este falso Metrocuadrado ya
+    // tiene una, y esa tarjeta habla de su publicación, no de qué pedirle.
+    expect(dice('FINCARAIZ')).toMatch(/ID de Cliente/i)
+    expect(dice('MERCADO_LIBRE')).toMatch(/se autoriza con un bot[oó]n/i)
+    expect(dice('CIENCUADRAS')).toMatch(/WS3/)
+    expect(dice('PROPERATI')).toMatch(/Proppit/)
+
+    // Y no vuelven a decir todas lo mismo.
+    expect(dice('FINCARAIZ')).not.toMatch(/WS3/)
+    expect(dice('CIENCUADRAS')).not.toMatch(/ID de Cliente/i)
+  })
+
+  it('los nombres propios no se aplastan a minúsculas', async () => {
+    // Un `toLowerCase()` los rompía: «mercado libre», «proppit», «ciencuadras».
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [
+        { portal: 'MERCADO_LIBRE', nombre: 'Mercado Libre', tieneApi: false, cuenta: null },
+        { portal: 'PROPERATI', nombre: 'Properati', tieneApi: false, cuenta: null },
+      ],
+    })
+    await montar()
+    expect(porTestId('portal-MERCADO_LIBRE')!.textContent).toContain('Mercado Libre')
+    expect(porTestId('portal-PROPERATI')!.textContent).toContain('Proppit')
+  })
+
+  it('P7c — y distingue a los que SÍ se conectan solos de los que piden acuerdo', async () => {
+    await montar()
+    const aviso = porTestId('aviso-sin-api')!.textContent ?? ''
+    expect(aviso).toMatch(/Mercado Libre y Ciencuadras/i)
+    expect(aviso).toMatch(/Fincara[ií]z y Metrocuadrado/i)
   })
 
   it('P7b — los cuatro pasos están, y numerados en orden', async () => {
@@ -186,7 +258,9 @@ describe('Publicación en portales', () => {
   it('P1 — sin cuenta anotada dice que ese portal NO puede recibir avisos', async () => {
     await montar()
     const fila = porTestId('portal-FINCARAIZ')!
-    expect(fila.textContent).toMatch(/necesitamos los datos de tu cuenta/i)
+    // 🔴 19-09: acá se esperaba la frase genérica que decían los SEIS portales.
+    // Ahora cada tarjeta nombra el dato que pide el suyo (ver P7d).
+    expect(fila.textContent).toMatch(/necesitamos tu/i)
     // Y ofrece anotarla, que es lo que faltaba en todo el producto.
     expect(porTestId('cuenta-FINCARAIZ')!.textContent).toMatch(/Configurar/)
   })

@@ -34,13 +34,26 @@
  *
  * ── 🔴 Lo que esta pantalla dice sin rodeos ────────────────────────────────
  *
- * **Hoy ningún portal de afuera se publica solo.** Fincaraíz, Metrocuadrado y
- * Mercado Libre no dan credenciales de publicación sin convenio de integración,
- * y Leasefy no tiene ninguno. Así que el estado real de una publicación pedida
- * es «por subir al portal», y la pantalla lo dice en la cara con el botón de
- * descargar el archivo al lado — en vez de un interruptor que promete algo que
- * no pasa. Cuando exista el convenio, la cuenta pasa a modo API y el mismo
- * tablero cambia de estado solo.
+ * **Hoy Leasefy no publica solo en ningún portal de afuera** — y eso es una
+ * afirmación sobre NOSOTROS, no sobre el mercado.
+ *
+ * 🔴 19-09-2026 · Acá decía «ningún portal de afuera publica solo todavía:
+ * Fincaraíz, Metrocuadrado y Mercado Libre piden firmar un convenio de
+ * integración». Era FALSO, y lo peor: servía de excusa para no construir nada.
+ * Mercado Libre tiene una API pública documentada y su app de DevCenter es
+ * autoservicio en Colombia; Ciencuadras también se conecta sin intermediario.
+ * Properati no existe como destino: se publica en Proppit, que reparte. Los
+ * únicos donde de verdad hay que hablar con alguien son Fincaraíz y
+ * Metrocuadrado. La corrección de fondo está en
+ * `back-erp/src/inmobiliaria/publicacion/portales.ts` y el detalle por portal
+ * en `@/lib/portales/como-se-conecta`; este comentario y el párrafo de la
+ * pantalla se habían quedado con la versión vieja.
+ *
+ * El estado real de una publicación pedida es «por subir al portal», y la
+ * pantalla lo dice en la cara con el botón de descargar el archivo al lado —
+ * en vez de un interruptor que promete algo que no pasa. El día que se
+ * construya una integración, la cuenta pasa a modo API y el mismo tablero
+ * cambia de estado solo.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -707,8 +720,31 @@ function TarjetaDePortal({
           </>
         ) : !p.cuenta ? (
           <>
-            Para publicar aquí necesitamos los datos de tu cuenta de este
-            portal — la que tu inmobiliaria ya paga.
+            {/*
+              🔴 19-09 (visto en el navegador): las seis tarjetas decían EXACTAMENTE
+              la misma frase, así que la pantalla contestaba «lo mismo» a la
+              pregunta de Nico del 18 —«creo que hasta para conectar con cada
+              portal puede ser diferente cada portal»—. El detalle por portal ya
+              existía (`como-se-conecta.ts`) pero vivía escondido dentro del
+              diálogo, a un clic de distancia: había que abrir seis diálogos para
+              descubrir que piden cosas distintas. Ahora la tarjeta dice con qué
+              se identifica ESTE portal, que es lo primero que cambia entre uno y
+              otro.
+            */}
+            Para publicar aquí necesitamos tu{' '}
+            <span className="font-medium text-fg">
+              {/* Sin `toLowerCase()`: son nombres propios y los rompía
+                  («mercado libre», «proppit», «ciencuadras»). */}
+              {comoSeConecta(p.portal).rotuloDelIdentificador}
+            </span>
+            {comoSeConecta(p.portal).cuidado ? (
+              <>
+                {'. '}
+                {comoSeConecta(p.portal).cuidado}
+              </>
+            ) : (
+              ' — la cuenta que tu inmobiliaria ya paga.'
+            )}
           </>
         ) : p.cuenta.modoEfectivo === 'API' ? (
           'Los avisos se publican y se bajan automático.'
@@ -809,14 +845,15 @@ function ComoFunciona() {
         className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-fg-muted"
         data-testid="aviso-sin-api"
       >
-        Los pasos 3 y 4 los hace una persona, y no es un descuido nuestro:{' '}
+        Los pasos 3 y 4 los hace una persona porque{' '}
         <span className="font-medium text-fg">
-          ningún portal de afuera publica solo todavía
+          todavía no hemos construido ninguna de las integraciones
         </span>
-        . Fincaraíz, Metrocuadrado y Mercado Libre piden firmar un convenio de
-        integración y Leasefy no tiene ninguno. Sólo «Sitio propio» —el catálogo
-        de Leasefy— sale solo. El día que exista el convenio, este mismo tablero
-        cambia de estado sin que tengas que hacer nada.
+        , no porque los portales no las tengan. Mercado Libre y Ciencuadras se
+        conectan por cuenta propia, sin hablar con nadie; Properati va por
+        Proppit, que hay que pedir que lo habilite; Fincaraíz y Metrocuadrado sí
+        exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
+        Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
       </p>
     </section>
   )

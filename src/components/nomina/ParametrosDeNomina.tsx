@@ -49,7 +49,7 @@ const GRUPOS: {
   {
     titulo: 'Horas extras y recargos',
     explicacion:
-      'En puntos básicos sobre la hora ordinaria: 25 % = 2500. 🔴 Una HORA EXTRA paga la hora más el recargo; un RECARGO paga sólo el recargo, porque el salario del mes ya pagó esa hora.',
+      'En puntos básicos sobre la hora ordinaria: 25 % = 2500. Una HORA EXTRA paga la hora más el recargo; un RECARGO paga sólo el recargo, porque el salario del mes ya pagó esa hora.',
     campos: [
       { campo: 'extraDiurnaBps', etiqueta: 'Hora extra diurna', unidad: 'bps' },
       { campo: 'extraNocturnaBps', etiqueta: 'Hora extra nocturna', unidad: 'bps' },
@@ -94,7 +94,7 @@ const GRUPOS: {
   {
     titulo: 'Prestaciones sociales',
     explicacion:
-      'El porcentaje MENSUAL que se provisiona. 🔴 La base de vacaciones NO lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
+      'El porcentaje MENSUAL que se provisiona. La base de vacaciones NO lleva auxilio de transporte ni horas extras (CST art. 192); las otras tres sí. Eso no se configura: es ley.',
     campos: [
       { campo: 'primaBps', etiqueta: 'Prima de servicios', unidad: 'bps' },
       { campo: 'cesantiasBps', etiqueta: 'Cesantías', unidad: 'bps' },

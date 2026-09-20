@@ -1147,6 +1147,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setPersistedContext(null)
           clearActiveContext()
           setMfaRequired(false)
+          // T-0099 WU-4: mfaEnrollRequired/segundoFactorExigidoRef were left
+          // out of this reset — an asymmetry with mfaRequired above. Inert
+          // today (isLoading gating + hard redirects mean nothing reads the
+          // stale value before the next sign-in's own bootstrap overwrites
+          // it), but a logout while enroll-pending followed by a DIFFERENT
+          // user logging in must start clean, not carry the previous
+          // member's pending state for even one render.
+          setMfaEnrollRequired(false)
+          segundoFactorExigidoRef.current = false
           setNeedsOnboarding(false)
           setPerfilElegido(null)
           setIsLoading(false)

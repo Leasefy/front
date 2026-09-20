@@ -1099,3 +1099,81 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(listFactorsMock).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * T-0099 WU-4 (verify caveat): SIGNED_OUT reset `mfaRequired` but never
+ * `mfaEnrollRequired` or `segundoFactorExigidoRef` — an asymmetry. Inert
+ * today (isLoading gating + hard redirects mean nothing reads the stale
+ * value before the next sign-in's own bootstrap overwrites it), but a
+ * logout while enroll-pending followed by a DIFFERENT user logging in must
+ * start from a clean slate, not carry over the previous member's pending
+ * state for even one render.
+ */
+describe('AuthProvider — T-0099 WU-4: SIGNED_OUT clears MFA pending state (mfaRequired, mfaEnrollRequired)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('sign in exigido:true + no factor → enroll-pending; SIGNED_OUT clears it; sign in as a DIFFERENT user with exigido:false → no gate at all', async () => {
+    // Arrange: first user, enroll-pending.
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
+
+    // Act: sign out.
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_OUT', null)
+    })
+
+    // Assert: BOTH pending flags are clean, not just mfaRequired.
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+
+    // Act: a DIFFERENT user signs in, no requirement at all.
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u2', email: 'ines@example.com', firstName: 'Inés', lastName: 'Gómez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+      [],
+      { exigido: false },
+    ))
+    const secondSession = { ...fakeSession, access_token: 'jwt-token-2', user: { ...fakeSession.user, id: 'sb-user-2' } }
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', secondSession)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    // If segundoFactorExigidoRef had survived SIGNED_OUT uncleared, this
+    // assertion would still pass here (the new bootstrap overwrites it) —
+    // the REAL assertion is the SIGNED_OUT check above; this just confirms
+    // the second sign-in ends up correct too.
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.user?.role).toBe('tenant')
+  })
+})

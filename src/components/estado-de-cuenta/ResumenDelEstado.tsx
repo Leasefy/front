@@ -244,19 +244,39 @@ export function BarraDeAmortizacion({
           />
         )}
       </div>
+      {/*
+        🔴 19-09-2026 · La leyenda lleva la PLATA de cada tramo, y ya no es
+        decorativa.
+        
+        Antes decía sólo los nombres de los colores y estaba `aria-hidden`.
+        Arriba se leía «$ 0 de $ 142.350.000» y abajo «Resta por pagar
+        $ 98.550.000»: faltaban $ 43.800.000 que no estaban ni pagados ni
+        pendientes —las cuotas del sistema anterior—, y ninguna cifra del
+        documento los nombraba. Con los tres montos acá, los tres suman lo
+        pactado y cualquiera lo puede cuadrar a ojo. Es un documento que se le
+        manda al cliente: no puede tener plata sin explicar.
+      */}
       {a.anteriores > 0 && (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-fg-muted" aria-hidden="true">
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-fg-muted">
           <li className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-success" />
+            <span className="inline-block h-2 w-2 rounded-full bg-success" aria-hidden="true" />
             {t('estadoDeCuenta.leyendaPagadas')}
+            <span className="font-mono tabular-nums">{formatCurrency(a.pagadoCop)}</span>
           </li>
-          <li className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-border-strong" />
+          <li className="flex items-center gap-1.5" data-testid="leyenda-anteriores">
+            <span className="inline-block h-2 w-2 rounded-full bg-border-strong" aria-hidden="true" />
             {t('estadoDeCuenta.leyendaAnteriores')}
+            <span className="font-mono tabular-nums">{formatCurrency(a.anterioresCop)}</span>
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-surface-muted ring-1 ring-border" />
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-surface-muted ring-1 ring-border"
+              aria-hidden="true"
+            />
             {t('estadoDeCuenta.leyendaPorPagar')}
+            <span className="font-mono tabular-nums">
+              {formatCurrency(a.pactadoCop - a.pagadoCop - a.anterioresCop)}
+            </span>
           </li>
         </ul>
       )}

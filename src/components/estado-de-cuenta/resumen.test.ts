@@ -203,6 +203,44 @@ describe('amortizacionDe', () => {
     expect(a.porcentajeAnterior).toBe(50);
   });
 
+  /*
+   * 🔴 19-09-2026 · Visto en el navegador con un contrato real de la agencia
+   * de QA: arriba «$ 0 de $ 142.350.000», abajo «Resta por pagar
+   * $ 98.550.000». Faltaban $ 43.800.000 —las 4 cuotas del sistema anterior—
+   * que no estaban ni pagadas ni pendientes, y NINGUNA cifra del documento
+   * los nombraba: la barra pintaba su tramo en gris y su plata no se decía.
+   * Este documento se le manda al cliente; no puede tener plata sin explicar.
+   */
+  it('🔴 la plata del sistema anterior se cuenta, para que los tres tramos sumen', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({ estado: 'CANCELADA', valorNeto: 100 }),
+          fila({ estado: 'ANTERIOR', valorNeto: 400 }),
+          fila({ estado: 'ANTERIOR', valorNeto: 400 }),
+          fila({ estado: 'PENDIENTE', valorNeto: 900 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const a = amortizacionDe(c);
+    expect(a.anterioresCop).toBe(800);
+    // Lo pagado + lo del sistema anterior + lo que falta = lo pactado.
+    const porPagar = a.pactadoCop - a.pagadoCop - a.anterioresCop;
+    expect(porPagar).toBe(900);
+    expect(a.pagadoCop + a.anterioresCop + porPagar).toBe(a.pactadoCop);
+  });
+
+  it('sin cuotas del sistema anterior la plata de ese tramo es cero', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [fila({ estado: 'CANCELADA', valorNeto: 100 })],
+        otrosConceptos: [],
+      },
+    });
+    expect(amortizacionDe(c).anterioresCop).toBe(0);
+  });
+
   it('una cuota ANULADA sale del total: dejó de existir', () => {
     const c = contrato({
       secciones: {

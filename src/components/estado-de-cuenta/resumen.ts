@@ -165,6 +165,17 @@ export interface AmortizacionDelContrato {
   /** Todas las cuotas del contrato menos las anuladas. */
   total: number;
   pagadoCop: number;
+  /**
+   * 🔴 19-09-2026 · Lo que valen las cuotas del sistema anterior.
+   *
+   * La barra ya pintaba ese tramo en gris, pero su plata NO se decía en
+   * ninguna parte. Visto en el navegador con un contrato real: arriba
+   * «$ 0 de $ 142.350.000» y abajo «Resta por pagar $ 98.550.000». Faltaban
+   * $ 43.800.000 —las 4 cuotas del sistema anterior— que no estaban ni
+   * pagadas ni pendientes, y este documento se le manda al cliente: alguien
+   * que suma no lo puede cuadrar.
+   */
+  anterioresCop: number;
   pactadoCop: number;
   /** 0–100. Lo que va pagado sobre lo pactado. */
   porcentaje: number;
@@ -190,6 +201,9 @@ export function amortizacionDe(
   const anteriores = filas.filter((f) => f.estado === 'ANTERIOR').length;
 
   const pagadoCop = pagadasFilas.reduce((s, f) => s + f.valorNeto, 0);
+  const anterioresCop = filas
+    .filter((f) => f.estado === 'ANTERIOR')
+    .reduce((s, f) => s + f.valorNeto, 0);
   const pactadoCop = filas.reduce((s, f) => s + f.valorNeto, 0);
   const total = filas.length;
 
@@ -198,6 +212,7 @@ export function amortizacionDe(
     anteriores,
     total,
     pagadoCop,
+    anterioresCop,
     pactadoCop,
     porcentaje: total === 0 ? 0 : Math.round((pagadasFilas.length / total) * 100),
     porcentajeAnterior: total === 0 ? 0 : Math.round((anteriores / total) * 100),

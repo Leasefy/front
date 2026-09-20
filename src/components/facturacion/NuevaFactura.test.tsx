@@ -503,6 +503,74 @@ describe('NuevaFactura', () => {
      * las demás fallan con «rango agotado», así que apretar dejaba 50
      * emitidas, 158 errores y a alguien preguntándose qué pasó.
      */
+    /*
+     * 🔴 19-09-2026 (Nico) · «veo separadas cosas que no deberían estar
+     * separadas» — mandó la captura con «TOT | ESTADO» partido al medio.
+     *
+     * La causa era mía, de esta misma tarde: para que el botón «Generar esta»
+     * dejara de caer fuera de la pantalla anclé la columna «Estado» a la
+     * derecha. En su inmobiliaria IVA y Retenciones están en CERO en las 730
+     * filas, así que la tabla llevaba dos columnas de «—» que no aportaban
+     * nada, no cabía, y la columna anclada terminaba tapando «Total». Cambié
+     * un defecto por otro.
+     *
+     * Una columna vacía en TODAS sus filas es ancho gastado en nada: ahora
+     * sólo aparecen si alguna fila tiene algo que poner.
+     */
+    it('🔴 sin IVA ni retenciones en ninguna fila, esas columnas no se dibujan', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false })],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      expect(cab).not.toContain('IVA');
+      expect(cab).not.toContain('Retenciones');
+      // Lo que NO se puede perder: base, total y estado siguen ahí.
+      expect(cab).toContain('Base');
+      expect(cab).toContain('Total');
+      expect(cab).toContain('Estado');
+    });
+
+    it('con IVA en alguna fila, la columna vuelve', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false }),
+            factura({ clave: 'otra', ivaCop: 342_000, retencionesCop: 0 }),
+          ],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      expect(cab).toContain('IVA');
+      expect(cab).not.toContain('Retenciones');
+    });
+
+    it('🔴 y la marca «sin confirmar» no se pierde: se muda al lado de la base', async () => {
+      // Es por fila y decide si esa factura sale con o sin impuestos.
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: true })],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      // `impuestosSinConfirmar` cuenta como «hay algo que poner» en IVA.
+      expect(cab).toContain('IVA');
+      expect(q('table')!.textContent).toMatch(/sin confirmar/i);
+    });
+
     it('🔴 avisa ANTES si la selección no cabe en el rango de la resolución', async () => {
       porGenerarMock.mockResolvedValue(
         respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),

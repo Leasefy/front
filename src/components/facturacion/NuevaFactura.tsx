@@ -292,6 +292,21 @@ function TablaDeFacturas({
   // cuota, y hasta la segunda vuelta de facturación NO se estaba cobrando.
   const conMora = filas.filter((f) => moraDe(f) > 0)
   const moraCop = conMora.reduce((s, f) => s + moraDe(f), 0)
+  /*
+   * 🔴 19-09-2026 (Nico) · Una columna que dice «—» en TODAS sus filas es
+   * ancho gastado en nada — y acá costaba caro: con IVA y Retenciones vacías
+   * la tabla no cabía, «Total» quedaba tapado por la columna anclada y Nico
+   * vio «TOT | ESTADO» partido al medio. Su palabra fue: «veo separadas cosas
+   * que no deberían estar separadas».
+   *
+   * Las dos columnas aparecen sólo si ALGUNA fila tiene algo que poner. Lo que
+   * no se pierde: los totales de IVA y retenciones siguen en el encabezado de
+   * la sección, y la marca «sin confirmar» —que es por fila y sí importa— se
+   * muda al lado de la base cuando la columna del IVA no está.
+   */
+  const hayIva = filas.some((f) => f.ivaCop > 0 || f.impuestosSinConfirmar)
+  const hayRetenciones = filas.some((f) => f.retencionesCop > 0)
+
   const elegidas = porEmitir.filter((c) => seleccion.has(c))
   const todas = porEmitir.length > 0 && elegidas.length === porEmitir.length
   const algunas = elegidas.length > 0 && !todas
@@ -408,11 +423,13 @@ function TablaDeFacturas({
               <TableHead className="whitespace-nowrap">Inmueble</TableHead>
               <TableHead className="whitespace-nowrap">Concepto</TableHead>
               <TableHead className="whitespace-nowrap text-right">Base</TableHead>
-              <TableHead className="whitespace-nowrap text-right">IVA</TableHead>
+              {hayIva && <TableHead className="whitespace-nowrap text-right">IVA</TableHead>}
               {/* La retención NO se resta del total: la practica quien recibe
                   la factura al pagar. Por eso está en su propia columna y no
                   metida en el total. */}
-              <TableHead className="whitespace-nowrap text-right">Retenciones</TableHead>
+              {hayRetenciones && (
+                <TableHead className="whitespace-nowrap text-right">Retenciones</TableHead>
+              )}
               <TableHead className="whitespace-nowrap text-right">Total</TableHead>
               {/*
                 🔴 19-09 (medido en el navegador, no deducido): esta tabla mide
@@ -432,7 +449,7 @@ function TablaDeFacturas({
           <TableBody>
             {pageItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="p-0">
+                <TableCell colSpan={8 + (hayIva ? 1 : 0) + (hayRetenciones ? 1 : 0)} className="p-0">
                   <SinDatos
                     hayFiltros={busqueda.trim() !== ''}
                     queSon={`facturas de ${titulo.toLowerCase()} este mes`}
@@ -543,25 +560,37 @@ function TablaDeFacturas({
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
                       {formatCurrency(factura.baseCop)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                      {/* 🔴 Un cero y un «sin confirmar» no son lo mismo, y la
-                          columna tiene que distinguirlos: la factura sin IVA
-                          por escenario confirmado dice «—»; la que no lo pudo
-                          calcular lleva la marca. */}
-                      {factura.ivaCop > 0 ? (
-                        formatCurrency(factura.ivaCop)
-                      ) : factura.impuestosSinConfirmar ? (
-                        <ImpuestosSinConfirmar factura={factura} />
-                      ) : (
-                        '—'
+                      {/* Sin columna de IVA, la marca de «sin confirmar» vive
+                          acá: es por fila y decide si esa factura sale con o
+                          sin impuestos. No se puede perder. */}
+                      {!hayIva && factura.impuestosSinConfirmar && (
+                        <span className="mt-0.5 block font-sans">
+                          <ImpuestosSinConfirmar factura={factura} />
+                        </span>
                       )}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                      {factura.retencionesCop > 0
-                        ? `−${formatCurrency(factura.retencionesCop)}`
-                        : '—'}
-                    </TableCell>
+                    {hayIva && (
+                      <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                        {/* 🔴 Un cero y un «sin confirmar» no son lo mismo, y la
+                            columna tiene que distinguirlos: la factura sin IVA
+                            por escenario confirmado dice «—»; la que no lo pudo
+                            calcular lleva la marca. */}
+                        {factura.ivaCop > 0 ? (
+                          formatCurrency(factura.ivaCop)
+                        ) : factura.impuestosSinConfirmar ? (
+                          <ImpuestosSinConfirmar factura={factura} />
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    )}
+                    {hayRetenciones && (
+                      <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                        {factura.retencionesCop > 0
+                          ? `−${formatCurrency(factura.retencionesCop)}`
+                          : '—'}
+                      </TableCell>
+                    )}
                     <TableCell className="whitespace-nowrap text-right tabular-nums font-medium text-fg">
                       {formatCurrency(factura.totalCop)}
                       {factura.retencionesCop > 0 && (

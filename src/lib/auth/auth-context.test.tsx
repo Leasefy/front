@@ -772,6 +772,20 @@ describe('AuthProvider — single bootstrap owner (signInWithEmail delegates to 
  * branches are now aligned with it.
  */
 describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release before mfaRequired is known)', () => {
+  // Fake timers make the "callback returned, but the setTimeout(0) hasn't
+  // fired yet" window deterministic. Under real timers this window is only
+  // ONE macrotask wide — a single extra microtask hop inside `fetchUser`/
+  // `fetchBootstrap`'s mock resolution (V8/event-loop scheduling, not
+  // anything this test controls) was enough to occasionally let the
+  // setTimeout(0) fire before the assertion ran, flaking the test both ways.
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('TOKEN_REFRESHED as the very first event (documented page-load edge case) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
     getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
     getMock.mockResolvedValue({
@@ -800,7 +814,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     expect(captured!.isLoading).toBe(true)
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
     })
 
     expect(captured!.isLoading).toBe(false)
@@ -832,7 +846,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     expect(captured!.isLoading).toBe(true)
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
     })
 
     expect(captured!.isLoading).toBe(false)
@@ -854,7 +868,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     })
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('TOKEN_REFRESHED', fakeSession)
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
     })
 
     expect(captured!.isLoading).toBe(false)

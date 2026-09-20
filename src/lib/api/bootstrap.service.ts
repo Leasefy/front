@@ -20,6 +20,7 @@ import type { AgencyMemberRole } from '@/lib/auth/types'
 import type { MemberPermissionsResponse } from './inmobiliaria.service'
 import type { AgencySubscriptionState } from './agency-subscription.types'
 import type { BackendSubscriptionMeResponse } from './subscriptions.types'
+import type { components } from './generated/back'
 
 export type BootstrapRole = 'TENANT' | 'LANDLORD' | 'AGENT' | 'ADMIN'
 
@@ -67,18 +68,27 @@ export interface BootstrapOnboarding {
 
 /**
  * T-0099 contract (`.orchestration/tasks/T-0099-mfa-pending-gate/contract.md`
- * §2) — additive, OPTIONAL field. `exigido: true` means the back will 403
- * SEGUNDO_FACTOR_REQUERIDO on protected routes unless the session token is
- * aal2, computed by the back with the guard's own policy (mandatory roles
- * plus the agency's configured extras) on the member role the bootstrap
- * resolved. This is a narrow, documented widening at the seam that reads
- * bootstrap — the generated client (`src/lib/api/generated/back.ts`) does
- * not carry this field yet and must be regenerated (`pnpm api:gen:back`)
- * once the back's OpenAPI snapshot lands; do not hand-edit that file.
+ * §2) — additive field on `GET /users/me/bootstrap`. `exigido: true` means
+ * the back will 403 SEGUNDO_FACTOR_REQUERIDO on protected routes unless the
+ * session token is aal2, computed by the back with the guard's own policy
+ * (mandatory roles plus the agency's configured extras) on the member role
+ * the bootstrap resolved.
+ *
+ * Type-aliased to the generated `SegundoFactorDto` (`pnpm api:gen:back`,
+ * `src/lib/api/generated/back.ts` — WU-2/WU-3, T-0099) rather than
+ * hand-declared, so the shape can never silently drift from what the back's
+ * Swagger actually publishes. This is a compile-time-only alias, not a
+ * runtime import of the generated client — the rest of this file keeps the
+ * usual mirror-and-map pattern (`FRONTEND.md` §4: never import backend DTOs
+ * directly for runtime use).
+ *
+ * OPTIONAL on the wire regardless of what the current back always sends
+ * (contract §2, degradation column): an older back build omits the whole
+ * `segundoFactor` key. `getBootstrap` below normalizes that absence to
+ * `{ exigido: false }` — today's behaviour, no pre-emptive gate — so no
+ * caller needs its own version-skew fallback.
  */
-export interface BootstrapSegundoFactor {
-  exigido: boolean
-}
+export type BootstrapSegundoFactor = components['schemas']['SegundoFactorDto']
 
 export interface BootstrapResponse {
   user: BootstrapUser

@@ -32,13 +32,21 @@ export type FiltroDeEstado = 'activos' | 'terminados' | 'todos';
 
 /** Un arriendo de la persona con ESTA inmobiliaria. */
 export interface ArriendoDeInquilino {
-  leaseId: string;
+  /**
+   * 🔴 `null` cuando el contrato nunca generó `Lease`. Desde el 20-09 la lista
+   * sale del CONTRATO y no del `Lease`: un contrato migrado sin cuenta del
+   * inquilino nunca generó uno, y sus inquilinos —13 personas que pagan
+   * $39.045.650 de arriendo al mes en la agencia de QA— no aparecían en esta
+   * pantalla en ninguna parte.
+   */
+  leaseId: string | null;
   contractId: string;
   estado: EstadoDeArriendo;
   /** ISO. El back lo guarda como `@db.Date`, así que no hay hora que mostrar. */
-  desde: string;
-  hasta: string;
-  /** Entero en pesos: `Lease.monthlyRent` es `Int`, no decimal. */
+  desde: string | null;
+  /** `null` si el contrato no dice hasta cuándo. */
+  hasta: string | null;
+  /** Entero en pesos: `Contract.monthlyRent` es `Int`, no decimal. */
   canonCop: number;
   /** `null` cuando el arriendo quedó sin inmueble (migración incompleta). */
   inmueble: { id: string; title: string; address: string; city: string } | null;

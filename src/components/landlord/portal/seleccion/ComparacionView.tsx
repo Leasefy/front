@@ -70,7 +70,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
           <CaretLeft className="w-4 h-4" /> Elegir inquilino
         </Link>
 
-        <h1 className="text-2xl font-semibold">Compará y elige</h1>
+        <h1 className="text-2xl font-semibold">Compara y elige</h1>
         <p className="text-sm text-fg-muted mt-1">
           Postulados asegurables de tu inmueble. Tu elección se auto-valida y habilita el contrato.
         </p>

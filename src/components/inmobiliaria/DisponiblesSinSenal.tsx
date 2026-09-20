@@ -84,10 +84,20 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
         <h2 className="text-sm font-medium text-fg">
           {t('inmobiliaria.sinSenal.listaTitulo')}
         </h2>
+        {/* 🔴 «2 / 25» no significa nada por sí solo (Nico, 18-09-2026: «¿qué
+            significa esto?»). Son inmuebles que este teléfono ya tiene
+            descargados para abrirlos sin internet, y 25 es el tope. Se dice
+            con palabras. */}
         <span className="text-xs text-fg-muted">
-          {copias.length} / {MAXIMO_DE_COPIAS}
+          {copias.length} de {MAXIMO_DE_COPIAS}
         </span>
       </div>
+
+      <p className="text-xs text-fg-muted">
+        {copias.length === 1
+          ? 'Este inmueble ya está descargado en este dispositivo: puedes abrirlo y llenar su inventario aunque no haya señal, y se sube cuando vuelvas a tener.'
+          : 'Estos inmuebles ya están descargados en este dispositivo: puedes abrirlos y llenar su inventario aunque no haya señal, y se suben cuando vuelvas a tener.'}
+      </p>
 
       {aviso && (
         <p

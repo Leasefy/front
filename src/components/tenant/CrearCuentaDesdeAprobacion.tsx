@@ -32,6 +32,7 @@ import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena'
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo'
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena'
 import { useAuth } from '@/lib/auth/use-auth'
+import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { useTf, type Tf } from '@/lib/i18n/use-tf'
 
 const NS = 'inquilino.crearCuenta'
@@ -68,6 +69,10 @@ export function CrearCuentaDesdeAprobacion({
   const router = useRouter()
   const { signUpWithEmail } = useAuth()
   const tf = useTf()
+  // Misma guarda que el login: sin React detrás, un clic enviaría el `<form>`
+  // solo. Los campos no llevan `name` (no viajaría nada), pero la guarda no
+  // puede depender de eso.
+  const hidratado = useHidratado()
 
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
@@ -155,7 +160,7 @@ export function CrearCuentaDesdeAprobacion({
           </ul>
         </div>
 
-        <form onSubmit={crear} className="space-y-5" noValidate>
+        <form method="post" onSubmit={crear} className="space-y-5" noValidate>
           <Campo id="nombre" label={tf(`${NS}.nombre`, 'Nombre')} error={errores.nombre}>
             <Input
               id="nombre"
@@ -194,7 +199,7 @@ export function CrearCuentaDesdeAprobacion({
           )}
 
           <div className="space-y-2">
-            <Button type="submit" className="w-full" isLoading={enviando} disabled={enviando}>
+            <Button type="submit" className="w-full" isLoading={enviando} disabled={enviando || !hidratado}>
               {tf(`${NS}.cta`, 'Crear cuenta y ver mi catálogo')}
             </Button>
             <Button type="button" variant="ghost" className="w-full" onClick={onCancelar} hideArrow>

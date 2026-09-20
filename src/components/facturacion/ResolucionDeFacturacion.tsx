@@ -44,6 +44,10 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  erroresDeLaResolucion,
+  hayErrores,
+} from '@/lib/facturacion/errores-de-la-resolucion'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -70,6 +74,12 @@ import {
   type ResolucionDeFacturacion as Resolucion,
   type ResolucionesDeLaAgencia,
 } from '@/lib/api/facturacion-por-mes.service'
+import {
+  NOMBRE_DEL_TIPO,
+  TIPOS_EN_ORDEN,
+  type TipoDeDocumento,
+} from '@/lib/api/facturacion-electronica.service'
+import { NumeracionPorTipo } from './NumeracionPorTipo'
 
 /** El tope del back (`AnularResolucionDto`). */
 export const MAX_MOTIVO_DE_ANULACION = 500
@@ -84,6 +94,12 @@ interface Formulario {
   vigenteDesde: string
   vigenteHasta: string
   ultimoNumeroUsado: string
+  /**
+   * 🔴 Qué TIPO de documento numera (17-09-2026). Vacío = cualquiera, que es lo
+   * que hacen las resoluciones ya cargadas: no hay valor por defecto, porque
+   * elegir uno le cambiaría la numeración a quien no pidió nada.
+   */
+  tipoDeDocumento: string
 }
 
 const VACIO: Formulario = {
@@ -95,6 +111,7 @@ const VACIO: Formulario = {
   vigenteDesde: '',
   vigenteHasta: '',
   ultimoNumeroUsado: '',
+  tipoDeDocumento: '',
 }
 
 export function ResolucionDeFacturacion() {
@@ -134,6 +151,14 @@ export function ResolucionDeFacturacion() {
    * pelado. `ultimoNumeroUsado` tampoco: sólo hace falta cuando la inmobiliaria
    * ya gastó parte del rango en otro sistema.
    */
+  /*
+   * 🔴 F5 (auditoría 13-09): lo que está mal se dice AL LADO DEL CAMPO, no en
+   * un toast que se va solo a los cinco segundos justo cuando la persona baja
+   * la vista al formulario. Son las mismas cuatro reglas del back, que las
+   * sigue aplicando: esto no lo reemplaza, lo adelanta.
+   */
+  const errores = erroresDeLaResolucion(form)
+
   const completo =
     form.numero.trim() !== '' &&
     form.fechaResolucion !== '' &&
@@ -143,7 +168,7 @@ export function ResolucionDeFacturacion() {
     form.vigenteHasta !== ''
 
   async function guardar() {
-    if (!completo) return
+    if (!completo || hayErrores(errores)) return
     setGuardando(true)
     try {
       await facturacionPorMesService.crearResolucion({
@@ -156,6 +181,9 @@ export function ResolucionDeFacturacion() {
         vigenteHasta: form.vigenteHasta,
         ...(form.ultimoNumeroUsado !== ''
           ? { ultimoNumeroUsado: Number(form.ultimoNumeroUsado) }
+          : {}),
+        ...(form.tipoDeDocumento !== ''
+          ? { tipoDeDocumento: form.tipoDeDocumento as TipoDeDocumento }
           : {}),
       })
       toast.success('Resolución cargada')
@@ -241,6 +269,8 @@ export function ResolucionDeFacturacion() {
         </div>
       )}
 
+      {datos && <NumeracionPorTipo datos={datos} />}
+
       <EstadoDeDatos
         cargando={cargando}
         error={error}
@@ -269,6 +299,7 @@ export function ResolucionDeFacturacion() {
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Resolución</TableHead>
                     <TableHead className="whitespace-nowrap">Prefijo</TableHead>
+                    <TableHead className="whitespace-nowrap">Numera</TableHead>
                     <TableHead className="whitespace-nowrap">Rango</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Usados</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Disponibles</TableHead>
@@ -280,7 +311,7 @@ export function ResolucionDeFacturacion() {
                 <TableBody>
                   {datos.resoluciones.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="p-0">
+                      <TableCell colSpan={9} className="p-0">
                         <SinDatos
                           queSon="resoluciones de facturación"
                           icono={Certificate}
@@ -299,6 +330,9 @@ export function ResolucionDeFacturacion() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-fg-muted">
                           {r.prefijo || '—'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-fg-muted">
+                          {r.tipoNombre ?? 'Cualquier tipo de documento'}
                         </TableCell>
                         <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                           {r.desde}–{r.hasta}
@@ -392,6 +426,29 @@ export function ResolucionDeFacturacion() {
               Déjalo vacío si tu resolución no tiene prefijo.
             </p>
           </div>
+          {datos?.porTipoDisponible && (
+            <div className="space-y-1.5">
+              <Label htmlFor="resolucion-tipo">Qué documento numera</Label>
+              <select
+                id="resolucion-tipo"
+                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                value={form.tipoDeDocumento}
+                onChange={(e) => campo('tipoDeDocumento')(e.target.value)}
+                data-testid="resolucion-campo-tipo"
+              >
+                <option value="">Cualquier tipo de documento</option>
+                {TIPOS_EN_ORDEN.map((t) => (
+                  <option key={t} value={t}>
+                    {NOMBRE_DEL_TIPO[t]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-caption text-fg-muted">
+                La DIAN autoriza un prefijo y un rango por tipo de documento.
+                Déjalo en «cualquiera» si tienes una sola resolución para todo.
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
             <Input
@@ -415,7 +472,19 @@ export function ResolucionDeFacturacion() {
               onChange={(e) => campo('desde')(e.target.value)}
               placeholder="1"
               data-testid="resolucion-campo-desde"
+              aria-invalid={errores.desde ? true : undefined}
+              aria-describedby={errores.desde ? 'resolucion-error-desde' : undefined}
             />
+            {errores.desde ? (
+              <p
+                id="resolucion-error-desde"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-desde"
+              >
+                {errores.desde}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-hasta">Rango hasta</Label>
@@ -426,7 +495,19 @@ export function ResolucionDeFacturacion() {
               onChange={(e) => campo('hasta')(e.target.value)}
               placeholder="5000"
               data-testid="resolucion-campo-hasta"
+              aria-invalid={errores.hasta ? true : undefined}
+              aria-describedby={errores.hasta ? 'resolucion-error-hasta' : undefined}
             />
+            {errores.hasta ? (
+              <p
+                id="resolucion-error-hasta"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-hasta"
+              >
+                {errores.hasta}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-desde">Vigente desde</Label>
@@ -436,7 +517,19 @@ export function ResolucionDeFacturacion() {
               value={form.vigenteDesde}
               onChange={(e) => campo('vigenteDesde')(e.target.value)}
               data-testid="resolucion-campo-vigente-desde"
+              aria-invalid={errores.vigenteDesde ? true : undefined}
+              aria-describedby={errores.vigenteDesde ? 'resolucion-error-vigente-desde' : undefined}
             />
+            {errores.vigenteDesde ? (
+              <p
+                id="resolucion-error-vigente-desde"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-vigente-desde"
+              >
+                {errores.vigenteDesde}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-hasta">Vigente hasta</Label>
@@ -446,14 +539,26 @@ export function ResolucionDeFacturacion() {
               value={form.vigenteHasta}
               onChange={(e) => campo('vigenteHasta')(e.target.value)}
               data-testid="resolucion-campo-vigente-hasta"
+              aria-invalid={errores.vigenteHasta ? true : undefined}
+              aria-describedby={errores.vigenteHasta ? 'resolucion-error-vigente-hasta' : undefined}
             />
+            {errores.vigenteHasta ? (
+              <p
+                id="resolucion-error-vigente-hasta"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-vigente-hasta"
+              >
+                {errores.vigenteHasta}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <div className="flex justify-end">
           <Button
             hideArrow
-            disabled={!completo || guardando}
+            disabled={!completo || guardando || hayErrores(errores)}
             onClick={() => void guardar()}
             data-testid="resolucion-guardar"
           >

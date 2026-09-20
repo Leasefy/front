@@ -481,9 +481,223 @@ describe('<DetalleDelLote> — cierre', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-20260907-00123');
+    // `false` = «se factura después», que es lo que queda sin tildar la
+    // casilla. Viaja explícito: es una decisión del CEO que se REGISTRA, y un
+    // `undefined` no distingue «después» de «nadie decidió».
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(
+      ID,
+      'BC-20260907-00123',
+      false,
+    );
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Pagado');
     expect(container.querySelector('[data-testid="acciones-del-lote"]')).toBeNull();
+  });
+
+  /**
+   * 🔴 «Factura ahora o después», y qué pasó con ella.
+   *
+   * El CEO (2026-09-15): «archivo plano por banco, egreso, factura ahora o
+   * después, correo al propietario». Hasta la segunda vuelta la casilla
+   * guardaba un booleano y no emitía nada. Lo que estos tests fijan:
+   *
+   *  · que tildar la casilla mande `true` y que el resultado se VEA;
+   *  · que un fallo de facturación NO se lea como «el lote no se pagó»: la
+   *    plata ya salió del banco;
+   *  · que «ya estaban» no se pinte como error.
+   */
+  const listoParaPagar = () =>
+    vista(
+      lote({
+        estado: 'ARCHIVO_GENERADO',
+        formatoArchivo: 'BANCOLOMBIA_PAB',
+        archivoHash: 'x',
+      }),
+    );
+
+  const pagadoCon = (facturacion: LoteDeDispersion['facturacion']) =>
+    lote({
+      estado: 'PAGADO',
+      pagadoAt: '2026-09-02T10:00:00.000Z',
+      referenciaBanco: 'BC-1',
+      facturacion,
+    });
+
+  async function pagar(conFactura: boolean) {
+    await clic('Marcar pagado');
+    await escribir('referencia-del-banco', 'BC-1');
+    if (conFactura) {
+      await act(async () => {
+        (
+          document.querySelector(
+            '[data-testid="facturar-ahora"]',
+          ) as HTMLElement | null
+        )?.click();
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    }
+    const confirmar = botones('Marcar pagado').find((b) =>
+      b.closest('[data-testid="dialogo-pagado"]'),
+    );
+    await act(async () => {
+      confirmar?.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('🔴 tildar «facturar ahora» manda `true` y muestra cuántas se emitieron', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 2,
+        emitidas: 2,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 360_000,
+        numeros: ['FE-1042', 'FE-1043'],
+        fallas: [],
+      }),
+    );
+
+    await pagar(true);
+
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-1', true);
+    const bloque = container.querySelector('[data-testid="facturacion-del-lote"]');
+    expect(bloque?.textContent).toContain('2 facturas emitidas');
+    expect(bloque?.textContent).toContain('360.000');
+    expect(bloque?.textContent).toContain('FE-1042');
+  });
+
+  it('🔴 si la facturación falla, se dice que el lote quedó PAGADO igual', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 2,
+        emitidas: 0,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [
+          {
+            mes: '2026-08',
+            motivo: 'La resolución 18764003394379 venció el 15/01/2028.',
+          },
+        ],
+      }),
+    );
+
+    await pagar(true);
+
+    // La plata salió: el lote está pagado y no se ofrece nada más.
+    expect(
+      container.querySelector('[data-testid="estado-del-lote"]')?.textContent,
+    ).toBe('Pagado');
+    const falla = container.querySelector('[data-testid="falla-2026-08"]');
+    expect(falla?.textContent).toContain('venció el 15/01/2028');
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote"]')?.textContent,
+    ).toContain('La plata ya salió del banco');
+  });
+
+  it('«ya estaban» se cuenta, no se pinta como error', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 1,
+        emitidas: 0,
+        yaEstaban: 1,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [],
+      }),
+    );
+
+    await pagar(true);
+
+    const bloque = container.querySelector('[data-testid="facturacion-del-lote"]');
+    expect(bloque?.textContent).toContain('1 ya estaba emitida');
+    expect(container.querySelector('[data-testid="falla-2026-08"]')).toBeNull();
+  });
+
+  it('sin tildar, dice cuántas prefacturas quedan esperando en Facturación', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: false,
+        candidatas: 3,
+        emitidas: 0,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [],
+      }),
+    );
+
+    await pagar(false);
+
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-1', false);
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote-despues"]')
+        ?.textContent,
+    ).toContain('3 prefacturas quedan');
+  });
+
+  it('🔴 a los que quedaron en $0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: {
+        compensados: 2,
+        enviados: 1,
+        fallas: [
+          {
+            propietarioId: 'p-4',
+            nombre: 'Elena Mora',
+            motivo: 'El propietario no tiene correo registrado',
+          },
+        ],
+      },
+    });
+
+    await pagar(false);
+
+    const bloque = container.querySelector('[data-testid="extractos-de-compensados"]');
+    expect(bloque?.textContent).toContain('1 de 2 extractos enviados');
+    expect(
+      container.querySelector('[data-testid="extracto-fallido-p-4"]')?.textContent,
+    ).toContain('Elena Mora: El propietario no tiene correo registrado');
+    expect(bloque?.textContent).toContain('El lote quedó PAGADO igual');
+  });
+
+  it('sin compensados en el lote no aparece el bloque de extractos', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: { compensados: 0, enviados: 0, fallas: [] },
+    });
+
+    await pagar(false);
+
+    expect(container.querySelector('[data-testid="extractos-de-compensados"]')).toBeNull();
+  });
+
+  it('un back anterior sin `facturacion` no pinta ningún bloque', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon(undefined),
+    );
+
+    await pagar(false);
+
+    expect(container.querySelector('[data-testid="facturacion-del-lote"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote-despues"]'),
+    ).toBeNull();
   });
 
   it('anular exige motivo (5 a 300) antes de pegarle al back, y después manda el motivo', async () => {
@@ -515,5 +729,57 @@ describe('<DetalleDelLote> — cierre', () => {
 
     expect(container.textContent).toContain('Lote bloqueado');
     expect(boton('Aprobar').disabled).toBe(true);
+  });
+});
+
+describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
+  const MOTIVO =
+    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
+
+  function conCompensada(): VistaDelLote {
+    const base = lote();
+    const l: LoteDeDispersion = {
+      ...base,
+      items: [
+        ...base.items,
+        {
+          id: 'i-4',
+          loteId: ID,
+          dispersionId: 'd-4',
+          propietarioId: 'p-4',
+          nombreTitular: 'Elena Mora',
+          documento: '43111222',
+          tipoDocumento: 'CC',
+          banco: 'Bancolombia',
+          tipoDeCuenta: 'AHORROS',
+          numeroDeCuenta: '55566677',
+          valorCop: -250_000,
+          motivoDeExclusion: MOTIVO,
+        },
+      ],
+    };
+    // El back no la cuenta como excluida: la manda aparte.
+    return vista(l, {
+      excluidos: vista(base).excluidos,
+      compensados: [
+        { propietarioId: 'p-4', nombre: 'Elena Mora', dispersionId: 'd-4', netoCop: -250_000, saldoEnContraCop: 250_000 },
+      ],
+    });
+  }
+
+  it('🔴 se ve aparte de los excluidos: $0 girado y cuánto pasa al mes siguiente', async () => {
+    await render(conCompensada());
+
+    const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
+    expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
+    expect(seccion?.textContent).toContain('Elena Mora');
+    expect(seccion?.textContent).toContain('$250.000');
+    expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
+    expect(container.textContent).toContain('Se cierra en $0');
+  });
+
+  it('sin compensados no aparece la sección', async () => {
+    await render(vista(lote()));
+    expect(container.querySelector('[data-testid="compensados-del-lote"]')).toBeNull();
   });
 });

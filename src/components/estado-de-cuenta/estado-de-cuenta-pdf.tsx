@@ -72,6 +72,7 @@ import {
 } from './resumen';
 import { texto } from './textos';
 import { numeroDelContratoDelEstado } from './numero';
+import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 // ══ Paleta ══════════════════════════════════════════════════════════════════
 //
@@ -91,6 +92,8 @@ const COLOR = {
   verdeSuave: '#E8F4EA',
   rojo: '#C0392B',
   rojoSuave: '#FBE9E6',
+  ambar: '#8A5A00',
+  ambarSuave: '#FBF1DC',
 } as const;
 
 const SANS = 'Helvetica';
@@ -229,17 +232,14 @@ export function paraElPapel(entrada: string): string {
 
 /** `texto()` pasado por el filtro. TODO rótulo del documento sale por acá. */
 /**
- * «Contrato 1686 · Leasefy #1839» en un migrado, «Contrato #14» en un nativo:
- * el papel dice de quién es cada número, igual que la pantalla.
+ * «Contrato 1686» en un migrado, «Contrato #14» en un nativo: el número que el
+ * cliente conoce, sin el de Leasefy (Nico, 16-09).
  */
 function tituloDelContratoEnElPapel(
   contrato: Pick<ContratoDelEstadoDeCuenta, 'numero' | 'numeroDeLeasefy'>,
 ): string {
   const numero = numeroDelContratoDelEstado(contrato);
-  const titulo = frase('estadoDeCuenta.contrato', { numero: numero.principal });
-  return numero.numeroDeLeasefy != null
-    ? `${titulo} · ${frase('estadoDeCuenta.numeroDeLeasefy', { numero: numero.numeroDeLeasefy })}`
-    : titulo;
+  return frase('estadoDeCuenta.contrato', { numero: numero.principal });
 }
 
 function frase(clave: string, params?: Record<string, string | number>): string {
@@ -446,6 +446,19 @@ const estilos = StyleSheet.create({
     paddingTop: 7,
   },
   totalesRotulo: { fontSize: 7, color: COLOR.tenue, marginRight: 'auto' },
+
+  // ── Intereses de mora: aparte del capital ─────────────────────────────────
+  interesFila: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLOR.hairline,
+    paddingVertical: 4,
+  },
+  interesConcepto: { flexGrow: 1, flexShrink: 1, fontSize: 7.5, paddingRight: 8 },
+  interesNota: { fontSize: 6.5, color: COLOR.tenue, marginTop: 1.5 },
+  interesDias: { width: 70, fontFamily: MONO, fontSize: 7.5, color: COLOR.apagado, textAlign: 'right' },
+  interesCifra: { width: 90, fontFamily: MONO, fontSize: 8, textAlign: 'right' },
   totalCelda: { marginLeft: 28, alignItems: 'flex-end' },
   totalCifra: { fontFamily: MONO, fontSize: 12, marginTop: 3 },
   totalCifraApagada: { fontFamily: MONO, fontSize: 10, color: COLOR.apagado, marginTop: 3 },
@@ -503,6 +516,7 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
 
 function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
   const resumen = resumirElCliente(doc, hoy);
+  const interesesDelDoc = interesesDelEstado(doc);
   const heroe = formatCurrency(resumen.restaPorPagar);
   const logo = urlDeLogoUsable(doc.inmobiliaria.logoUrl);
   const ciudadYFecha = doc.inmobiliaria.ciudad
@@ -571,6 +585,16 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
             {heroe}
           </Text>
           <Text style={estilos.heroePie}>{frase('estadoDeCuenta.totalGeneral')}</Text>
+          {/* El héroe es CAPITAL. El interés de mora va aparte, con su total. */}
+          {interesesDelDoc && interesesDelDoc.pendiente > 0 ? (
+            <Text style={[estilos.heroePie, { color: COLOR.rojo }]}>
+              {`${frase('estadoDeCuenta.masIntereses', {
+                monto: formatCurrency(interesesDelDoc.pendiente),
+              })}  ·  ${frase('estadoDeCuenta.conIntereses')} ${formatCurrency(
+                interesesDelDoc.restaPorPagarConIntereses,
+              )}`}
+            </Text>
+          ) : null}
         </View>
 
         <View style={[estilos.heroeCelda, { width: 140 }]}>
@@ -600,13 +624,22 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
               estilos.chip,
               resumen.enMora
                 ? { color: COLOR.rojo, backgroundColor: COLOR.rojoSuave }
-                : { color: COLOR.verde, backgroundColor: COLOR.verdeSuave },
+                : resumen.enPlazo
+                  ? { color: COLOR.ambar, backgroundColor: COLOR.ambarSuave }
+                  : { color: COLOR.verde, backgroundColor: COLOR.verdeSuave },
             ]}
           >
             {resumen.enMora
               ? frase('estadoDeCuenta.enMoraDias', { dias: resumen.diasDeMora })
-              : frase('estadoDeCuenta.alDia')}
+              : resumen.enPlazo
+                ? frase('estadoDeCuenta.vencidoEnPlazo')
+                : frase('estadoDeCuenta.alDia')}
           </Text>
+          {resumen.enPlazo ? (
+            <Text style={estilos.heroePie}>
+              {frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
+            </Text>
+          ) : null}
           {resumen.enMora ? (
             <Text style={estilos.heroePie}>
               {/* «1 cuotas vencidas» en la portada del documento insignia, no. */}
@@ -757,6 +790,8 @@ function PaginaDelContrato({
   hoy: string;
 }) {
   const todas = [...contrato.secciones.arriendos, ...contrato.secciones.otrosConceptos];
+  const intereses = interesesDelContrato(contrato);
+  const conIntereses = Boolean(intereses && intereses.filas.length > 0);
   const columnas = columnasDeImpuestos(todas);
   const omitidas = columnasOmitidas(todas, contrato.rol === 'PROPIETARIO');
   const medidas = medidasDeLaTabla(columnas.length);
@@ -833,6 +868,55 @@ function PaginaDelContrato({
         </Text>
       ) : null}
 
+      {/* Los intereses de mora, en su propia sección: el mismo número que la
+          pantalla y la prefactura, aparte del capital. */}
+      {conIntereses && intereses ? (
+        <View>
+          <View style={estilos.seccion} minPresenceAhead={40}>
+            <Text style={estilos.seccionTexto}>{frase('estadoDeCuenta.intereses')}</Text>
+          </View>
+          {intereses.filas.map((f) => (
+            <View key={f.cuotaId} style={estilos.interesFila} wrap={false}>
+              <View style={estilos.interesConcepto}>
+                <Text>{paraElPapel(f.concepto)}</Text>
+                {f.pagadaEnMora ? (
+                  <Text style={estilos.interesNota}>
+                    {frase('estadoDeCuenta.pagadaEnMora')}
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={estilos.interesDias}>
+                {f.diasDeMora === 1
+                  ? frase('estadoDeCuenta.unDia')
+                  : frase('estadoDeCuenta.nDias', { n: f.diasDeMora })}
+              </Text>
+              <Text style={estilos.interesCifra}>{formatCurrency(f.pendiente)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {/* 🔴 D11: la deuda subrogada a la aseguradora, visible y SEPARADA de lo
+          que se le debe a la inmobiliaria. */}
+      {contrato.subrogacion && contrato.subrogacion.totalCop > 0 ? (
+        <View style={estilos.totales} wrap={false}>
+          <Text style={estilos.totalesRotulo}>
+            {frase('estadoDeCuenta.deudaSubrogada')}
+          </Text>
+          {contrato.subrogacion.aseguradoras.map((a) => (
+            <View style={estilos.totalCelda} key={a.nit}>
+              <Text style={estilos.rotulo}>{paraElPapel(`${a.nombre} · NIT ${a.nit}`)}</Text>
+              <Text
+                data-testid={`subrogacion-contrato-${contrato.numero}`}
+                style={estilos.totalCifraApagada}
+              >
+                {formatCurrency(a.valorCop)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <View style={estilos.totales} wrap={false}>
         <Text style={estilos.totalesRotulo}>
           {frase('estadoDeCuenta.totalesDelContrato', { numero: contrato.numero })}
@@ -847,11 +931,30 @@ function PaginaDelContrato({
           <Text style={estilos.rotulo}>{frase('estadoDeCuenta.restaPorPagar')}</Text>
           <Text
             data-testid={`total-contrato-${contrato.numero}`}
-            style={estilos.totalCifra}
+            style={conIntereses ? estilos.totalCifraApagada : estilos.totalCifra}
           >
             {formatCurrency(contrato.totales.restaPorPagar)}
           </Text>
         </View>
+        {conIntereses && intereses ? (
+          <>
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>{frase('estadoDeCuenta.interesesDeMora')}</Text>
+              <Text style={estilos.totalCifraApagada}>
+                {formatCurrency(intereses.pendiente)}
+              </Text>
+            </View>
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>{frase('estadoDeCuenta.conIntereses')}</Text>
+              <Text
+                data-testid={`total-con-intereses-${contrato.numero}`}
+                style={estilos.totalCifra}
+              >
+                {formatCurrency(intereses.restaPorPagarConIntereses)}
+              </Text>
+            </View>
+          </>
+        ) : null}
       </View>
 
       <PieDePagina doc={doc} />
@@ -1084,6 +1187,14 @@ function FilaDeLaTabla({
             <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue, marginTop: 1 }}>
               {paraElPapel(fila.documentoDePago.descripcion)}
             </Text>
+            {/* 🔴 D11: la pagó una aseguradora. */}
+            {fila.subrogadaA ? (
+              <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue, marginTop: 1 }}>
+                {paraElPapel(
+                  frase('estadoDeCuenta.subrogadaA', { nombre: fila.subrogadaA.nombre }),
+                )}
+              </Text>
+            ) : null}
           </>
         ) : (
           <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue }}>

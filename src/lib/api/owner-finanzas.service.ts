@@ -53,6 +53,23 @@ export const ownerFinanzasApi = {
     return ownerGet<FinanzasPagos>(agencyId, `/inmuebles/${propertyRef}/pagos${suffix}`);
   },
 
+  /**
+   * GET /recaudo/anual CON el estado (O3): una tarjeta que desaparece no dice
+   * si falló o si no hay nada, y en una pantalla de plata esas dos cosas se
+   * arreglan distinto.
+   */
+  getRecaudoAnualConEstado: (
+    agencyId: string | null,
+    year: number,
+  ): Promise<ResultadoDelPortal<FinanzasRecaudoAnual>> =>
+    ownerGetConEstado<FinanzasRecaudoAnual>(agencyId, `/recaudo/anual?year=${year}`),
+
+  /** GET /proyeccion CON el estado (O3), por lo mismo. */
+  getProyeccionConEstado: (
+    agencyId: string | null,
+  ): Promise<ResultadoDelPortal<FinanzasProyeccion>> =>
+    ownerGetConEstado<FinanzasProyeccion>(agencyId, '/proyeccion'),
+
   /** GET /recaudo/anual — totales del año por concepto. */
   getRecaudoAnual: (agencyId: string | null, year: number): Promise<FinanzasRecaudoAnual | null> =>
     ownerGet<FinanzasRecaudoAnual>(agencyId, `/recaudo/anual?year=${year}`),

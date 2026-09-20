@@ -243,7 +243,7 @@ const ACCIONES_RAPIDAS: AccionRapida[] = [
     id: 'qa-cobranza',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cobranza',
     icono: ChatCircleText,
-    href: '/panel/inmobiliaria/cobros/cobranza',
+    href: '/panel/inmobiliaria/pagos/cobranza',
     permission: { module: 'cobranza', action: 'view' },
   },
   {

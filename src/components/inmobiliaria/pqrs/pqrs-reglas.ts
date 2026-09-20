@@ -156,10 +156,27 @@ export const PQRS_FORMULARIO_VACIO: PqrsFormulario = {
 export const ASUNTO_MAX = 200
 export const DESCRIPCION_MAX = 2000
 
-/** Campo → mensaje. Vacío = se puede radicar. */
-export function validarPqrs(form: PqrsFormulario): Record<string, string> {
+/**
+ * Campo → mensaje. Vacío = se puede radicar.
+ *
+ * 🔴 DECISIÓN DE NEGOCIO (Nico, 2026-09-15): una PQRS no puede quedar sin
+ * responsable, así que elegir quién responde es obligatorio para radicarla.
+ * El back tiene la misma regla y, si igual llega sin responsable, deja
+ * respondiendo a quien la radicó. Se cambia acá y en `pqrs.service.ts`.
+ *
+ * `hayAgentes` existe para el único caso en que la regla no se puede cumplir:
+ * una agencia sin ningún miembro en la lista. Ahí exigirlo dejaría la pantalla
+ * trabada sin salida, y el back pone de responsable a quien radica.
+ */
+export function validarPqrs(
+  form: PqrsFormulario,
+  hayAgentes = true,
+): Record<string, string> {
   const errores: Record<string, string> = {}
   if (!form.solicitanteNombre.trim()) errores.solicitanteNombre = 'Escribe quién la presenta.'
+  if (hayAgentes && !form.asignadoAUserId) {
+    errores.asignadoAUserId = 'Elige quién responde: una solicitud no puede quedar sin responsable.'
+  }
   const asunto = form.asunto.trim()
   if (!asunto) errores.asunto = 'Escribe de qué se trata.'
   else if (asunto.length > ASUNTO_MAX) errores.asunto = `Máximo ${ASUNTO_MAX} caracteres.`

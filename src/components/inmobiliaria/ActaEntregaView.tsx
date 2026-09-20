@@ -59,6 +59,13 @@ interface ActaEntregaViewProps {
    * que se asocie mejor» — suelto debajo de la tarjeta parecía de otra cosa.
    */
   enlace?: { href: string; texto: string; testid?: string };
+  /**
+   * 🔴 Una franja DENTRO de la tarjeta, arriba del encabezado (Nico,
+   * 18-09-2026: «¿por qué no unificaste estas dos cards?»). «Trabajar sin
+   * señal» es la copia de ESTE inventario para llevárselo a la visita: flotando
+   * como tarjeta aparte parecía de otra cosa.
+   */
+  franja?: React.ReactNode;
 }
 
 // Condition styling
@@ -115,6 +122,7 @@ export function ActaEntregaView({
   onPrint,
   onDownload,
   enlace,
+  franja,
 }: ActaEntregaViewProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +163,11 @@ export function ActaEntregaView({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
+      {franja ? (
+        <div className="border-b border-border bg-surface px-5 py-3" data-testid="franja-del-acta">
+          {franja}
+        </div>
+      ) : null}
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between gap-3 mb-2">
@@ -285,6 +298,12 @@ export function ActaEntregaView({
                           <span className="font-medium text-fg text-sm">
                             {item.name}
                           </span>
+                          {/* El espacio del inventario por versiones («Cocina»). */}
+                          {item.espacio && (
+                            <span className="block text-xs text-fg-muted" data-testid="item-espacio">
+                              {item.espacio}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="py-3 px-2 text-center">
                           <span className="text-fg-muted text-sm">
@@ -387,6 +406,7 @@ export function ActaEntregaView({
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-medium text-fg">{item.name}</p>
+                        {item.espacio && <p className="text-xs text-fg-muted">{item.espacio}</p>}
                         <p className="text-sm text-fg-muted">
                           {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>

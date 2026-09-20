@@ -1,6 +1,6 @@
 // Tier-B estudio UX — list/inbox route shell (build-kit §5).
 // Server component: wraps EstudiosListClient in PageGuard module="estudio".
-// Mirrors src/app/panel/inmobiliaria/cobros/cobranza/deudores/page.tsx.
+// Mirrors src/app/panel/inmobiliaria/pagos/cobranza/deudores/page.tsx.
 
 import type { Metadata } from 'next'
 import { PageGuard } from '@/components/auth/PageGuard'

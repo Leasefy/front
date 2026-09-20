@@ -48,11 +48,29 @@ beforeEach(() => {
 })
 
 describe('porGenerar', () => {
-  it('pide el mes por query, escapado', () => {
-    void facturacionPorMesService.porGenerar('2026-09')
+  it('un solo mes va como desde = hasta', () => {
+    void facturacionPorMesService.porGenerar({
+      desde: '2026-09',
+      hasta: '2026-09',
+    })
     expect(getMock).toHaveBeenCalledWith(
-      '/inmobiliaria/facturacion/por-generar?mes=2026-09',
+      '/inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-09',
     )
+  })
+
+  it('🔴 «hasta el 31 de diciembre» viaja tal cual: el back descarta el día', () => {
+    void facturacionPorMesService.porGenerar({
+      desde: '2026-09',
+      hasta: '2026-12-31',
+    })
+    expect(getMock).toHaveBeenCalledWith(
+      '/inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-12-31',
+    )
+  })
+
+  it('sin rango no manda query: el back responde el mes en curso', () => {
+    void facturacionPorMesService.porGenerar()
+    expect(getMock).toHaveBeenCalledWith('/inmobiliaria/facturacion/por-generar')
   })
 })
 

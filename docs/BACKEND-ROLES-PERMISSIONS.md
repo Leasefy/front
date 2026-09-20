@@ -191,7 +191,7 @@ Cuando un propietario invita miembros a su equipo, estos tienen acceso **dentro 
 | `/panel/inmobiliaria/pipeline` | Pipeline (Kanban) | **R**: Ver aplicaciones por etapa. **U**: Mover entre etapas, asignar agente |
 | `/panel/inmobiliaria/configuracion/equipo` | Agentes | **R**: Listar agentes. **C**: Agregar agente. **U**: Editar, asignar propiedades |
 | `/panel/inmobiliaria/configuracion/equipo/[id]` | Detalle agente | **R**: Perfil, métricas, comisiones. **U**: Asignar propiedades |
-| `/panel/inmobiliaria/cobros` | Cobros | **R**: Ver pagos cobrados. **C**: Registrar pago. **U**: Actualizar estado |
+| `/panel/inmobiliaria/pagos/cartera/cobros` | Cobros emitidos | **R**: Ver pagos cobrados. **C**: Registrar pago. **U**: Actualizar estado |
 | `/panel/inmobiliaria/pagos/dispersiones` | Dispersiones | **R**: Ver pendientes. **C**: Programar dispersión. **U**: Aprobar |
 | `/panel/inmobiliaria/pagos/dispersiones/generar` | Generar dispersión | **C**: Crear lote de dispersión, seleccionar pagos |
 | `/panel/inmobiliaria/mantenimientos` | Operaciones | **R**: Ver solicitudes mantenimiento. **C**: Crear solicitud. **U**: Actualizar estado, aprobar cotización |

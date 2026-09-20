@@ -11,8 +11,9 @@
  * ── De dónde sale el número ─────────────────────────────────────────────────
  *
  * Del MISMO cálculo que hace la dispersión (`preview`/`generate` en el back):
- * canon recaudado a su nombre + conceptos a su favor − comisión − conceptos a
- * su cargo. No se rehace acá: tres cuentas distintas para la misma plata fue
+ * canon CAUSADO a su nombre (sin dispersión generada el back liquida con esa
+ * base: lo que el contrato causa en el mes, pagado o no) + conceptos a su
+ * favor − comisión − conceptos a su cargo. No se rehace acá: tres cuentas distintas para la misma plata fue
  * exactamente lo que hubo que arreglar entre el extracto y la dispersión.
  *
  * Un mes que ya tiene dispersión generada muestra ESA, con su estado; un mes
@@ -35,9 +36,17 @@
  * 2. **Callar un mes que no se pudo liquidar.** La liquidación se niega a
  *    repartir impuestos entre copropietarios; ese mes sale con su aviso y con
  *    lo que sí tiene dispersión, en vez de aparecer en cero.
+ *
+ * ── 🔴 De cada fila se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ──────────
+ *
+ * Es la cara PROPIETARIOS del mismo documento: un propietario con 15 contratos
+ * tiene UN estado de cuenta (CEO, 13-09). Acá siempre se puede abrir, porque
+ * la fila trae `propietarioId` — a diferencia del inquilino, que muchas veces
+ * sólo tiene documento.
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { CaretDown, CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
 
 import { Input } from '@/components/ui/input'
@@ -53,14 +62,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { PropietariosQueDeben } from '@/components/cartera/PropietariosQueDeben'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraConPropietarios } from '@/lib/hooks/use-cartera'
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import type { MesDelPropietario, PropietarioEnCartera } from '@/lib/api/cartera.types'
 import { NOMBRE_DEL_ESTADO_DEL_GIRO, filtrarPropietarios } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 /** Columnas fijas: propietario · meses · neto · girado · pendiente. */
 const COLUMNAS = 5
@@ -79,6 +91,7 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
 }
 
 export function CarteraDePropietarios() {
+  const { t } = useI18n()
   const { datos, cargando, error, recargar } = useCarteraConPropietarios()
   const [busqueda, setBusqueda] = useState('')
   const [abiertos, setAbiertos] = useState<ReadonlySet<string>>(new Set())
@@ -212,7 +225,7 @@ export function CarteraDePropietarios() {
                       queSon="propietarios por pagar"
                       icono={Users}
                       titulo="No le debes nada a nadie"
-                      descripcion="Todavía no hay canon recaudado que repartir, o ya se giró todo."
+                      descripcion={t('cartera.porPagar.nadaQueRepartir')}
                       onLimpiarFiltros={hayFiltros ? () => setBusqueda('') : undefined}
                     />
                   </TableCell>
@@ -263,15 +276,28 @@ export function CarteraDePropietarios() {
           )}
         </section>
 
-        <p className="text-xs text-fg-muted">
-          El neto es el mismo que calcula la dispersión: canon recaudado más lo que está a favor
-          del propietario, menos la comisión y lo que se le cobra a él. Sólo se le debe lo que el
-          inquilino efectivamente pagó.
+        {/* El otro sentido: los que le deben a la inmobiliaria (se les cobra). */}
+        <PropietariosQueDeben />
+
+        {/*
+          🔴 El pie tiene que decir la base que de verdad se usa. Sin dispersión
+          generada, el back liquida con base CAUSADO (`liquidacionDelMes`): lo
+          que el contrato causa en el mes, lo haya pagado el inquilino o no. Decía
+          «sólo se le debe lo que el inquilino efectivamente pagó», que es la base
+          RECAUDADO. La base no se cambia acá —la decide Nico—; se dice la verdad.
+          Convención compartida: «Canon causado» con CAUSADO, «Canon recaudado»
+          sólo con RECAUDADO.
+        */}
+        <p className="text-xs text-fg-muted" data-testid="pie-de-la-base">
+          {t('cartera.porPagar.pieCausado')}
         </p>
       </div>
     </EstadoDeDatos>
   )
 }
+
+/** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
+const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/por-pagar'
 
 function FilasDelPropietario({
   propietario,
@@ -296,6 +322,16 @@ function FilasDelPropietario({
             <Caret className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
             {propietario.nombre || 'Sin nombre'}
           </button>
+          {/* Fuera del `button`: un enlace no vive dentro de otro control.
+              Alineado con el nombre (el caret ocupa ~24 px). */}
+          <Link
+            href={`${rutaDelEstadoDeCuenta('propietario', propietario.propietarioId)}?volver=${encodeURIComponent(VOLVER_A)}`}
+            data-testid="propietario-estado-de-cuenta"
+            title={`Ver el estado de cuenta de ${propietario.nombre || 'este propietario'}`}
+            className="ml-6 mt-0.5 inline-block text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Estado de cuenta
+          </Link>
         </TableCell>
         <TableCell className="text-right font-mono tabular-nums text-fg-muted">
           {propietario.meses.length}
@@ -330,12 +366,13 @@ function FilasDelPropietario({
  * lo que se busca— quedaría empujado fuera de la pantalla.
  */
 function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
+  const { t } = useI18n()
   return (
     <Table data-testid="detalle-de-meses">
       <TableHeader>
         <TableRow>
           <TableHead className="whitespace-nowrap">Mes</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Recaudado</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t('cartera.porPagar.canonCausado')}</TableHead>
           <TableHead className="whitespace-nowrap text-right">Comisión</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su favor</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su cargo</TableHead>

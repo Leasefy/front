@@ -3,6 +3,24 @@ import type { BackendContract } from '@/lib/api/contracts.types';
 
 vi.mock('@/lib/api/client', () => ({ getAccessToken: () => 'token-1' }));
 
+/*
+ * 🔴 19-09-2026 · Por qué `matchesQuery` y `numeroQueCoincide` se importan
+ * ARRIBA y no con un `await import()` dentro de cada test.
+ *
+ * Este archivo tumbó la suite completa tres veces el mismo día, siempre con
+ * `Test timed out in 5000ms`, y siempre pasaba solo. La causa no era el
+ * código que prueba: el `beforeEach` hace `vi.resetModules()` y cada test
+ * volvía a importar el módulo entero —que arrastra `@phosphor-icons/react`,
+ * un paquete enorme— DENTRO del reloj de 5 segundos del test. Solo tarda
+ * 1,3 s; con la máquina ocupada, 5,9 s y falla.
+ *
+ * Los dos helpers son PUROS: no leen la URL del back ni nada del entorno, así
+ * que no tienen por qué pagar un módulo fresco. El único test que sí lo
+ * necesita —el que corre `contratosSource.run` con un `fetch` falso— conserva
+ * su `await import()` y su `resetModules`.
+ */
+import { matchesQuery, numeroQueCoincide } from './contratos-source';
+
 /**
  * 🔴 Nico, 2026-09-12: buscar «1686» (el número de SU sistema) tiene que
  * encontrar el contrato que en Leasefy es el #1839 — y el resultado tiene que
@@ -36,25 +54,21 @@ describe('contratosSource — el número que coincidió', () => {
     vi.unstubAllGlobals();
   });
 
-  it('el de Nui encuentra el contrato y se muestra tal cual', async () => {
-    const { matchesQuery, numeroQueCoincide } = await import('./contratos-source');
+  it('el de Nui encuentra el contrato y se muestra tal cual', () => {
     expect(matchesQuery(contrato(), '1686')).toBe(true);
     expect(numeroQueCoincide(contrato(), '1686')).toBe('1686');
   });
 
-  it('el nuestro también encuentra, pero se muestra rotulado para que no se confunda', async () => {
-    const { matchesQuery, numeroQueCoincide } = await import('./contratos-source');
+  it('el nuestro también encuentra, pero se muestra rotulado para que no se confunda', () => {
     expect(matchesQuery(contrato(), '1839')).toBe(true);
     expect(numeroQueCoincide(contrato(), '1839')).toBe('Leasefy #1839');
   });
 
-  it('en un contrato nativo el nuestro es EL número: «#14» sin rótulo', async () => {
-    const { numeroQueCoincide } = await import('./contratos-source');
+  it('en un contrato nativo el nuestro es EL número: «#14» sin rótulo', () => {
     expect(numeroQueCoincide(contrato({ code: 14, externalId: null }), '14')).toBe('#14');
   });
 
-  it('si lo que empató fue el nombre o la dirección, no hay número que resaltar', async () => {
-    const { numeroQueCoincide } = await import('./contratos-source');
+  it('si lo que empató fue el nombre o la dirección, no hay número que resaltar', () => {
     expect(numeroQueCoincide(contrato(), 'nubia')).toBeNull();
     expect(numeroQueCoincide(contrato(), '')).toBeNull();
   });

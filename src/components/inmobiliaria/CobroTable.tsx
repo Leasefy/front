@@ -14,6 +14,7 @@ import {
   HouseLine,
   Envelope,
   WhatsappLogo,
+  Prohibit,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -35,6 +36,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
+import { AnularCobroDialog } from './AnularCobroDialog';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import type { CobroAnulado } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -65,6 +69,11 @@ interface CobroTableProps {
   cobros: Cobro[];
   onCobroClick?: (cobro: Cobro) => void;
   onRegisterPayment?: (cobro: Cobro) => void;
+  /**
+   * Tras anular un cobro (con motivo, nunca borrarlo). Sin este callback la
+   * acción «Anular cobro» no se ofrece: la lista no se podría refrescar.
+   */
+  onCobroAnulado?: (resultado: CobroAnulado) => void;
   showSummary?: boolean;
 }
 
@@ -76,8 +85,12 @@ export function CobroTable({
   cobros,
   onCobroClick,
   onRegisterPayment,
+  onCobroAnulado,
   showSummary = false,
 }: CobroTableProps) {
+  const [cobroPorAnular, setCobroPorAnular] = useState<Cobro | null>(null);
+  const { canAccess, isLoading: cargandoPermisos } = usePermissions();
+  const puedeAnular = !cargandoPermisos && canAccess('cobros', 'edit');
   const { t, formatDate, formatCurrency } = useI18n();
   const puedeHacerRecibo = usePuedeHacerRecibo();
   const [sortField, setSortField] = useState<SortField>('dueDate');
@@ -336,9 +349,18 @@ export function CobroTable({
 
                 {/* Status */}
                 <TableCell className="p-4">
-                  <Badge variant={STATUS_BADGE_VARIANT[cobro.status]}>
-                    {statusLabel}
-                  </Badge>
+                  {cobro.anuladoAt ? (
+                    <span className="flex flex-col gap-0.5" data-testid={`cobro-anulado-${cobro.id}`}>
+                      <Badge variant="outline">{t('inmobiliaria.cobros.anular.anuladoBadge')}</Badge>
+                      {cobro.motivoDeLaAnulacion && (
+                        <span className="text-xs text-fg-muted">{cobro.motivoDeLaAnulacion}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <Badge variant={STATUS_BADGE_VARIANT[cobro.status]}>
+                      {statusLabel}
+                    </Badge>
+                  )}
                 </TableCell>
 
                 {/* Days Late */}
@@ -387,6 +409,26 @@ export function CobroTable({
                             <span className="text-sm">{t('recibos.hacerCorto')}</span>
                             {!puedeHacerRecibo && (
                               <span className="text-xs text-fg-muted">{MOTIVO_SIN_PERMISO_DE_RECIBO}</span>
+                            )}
+                          </span>
+                        </DropdownListItem>
+                      )}
+                      {onCobroAnulado && (
+                        // Anular es anular con motivo, nunca borrar. Sin
+                        // `cobros:edit` queda a la vista, deshabilitada y
+                        // diciendo por qué.
+                        <DropdownListItem
+                          disabled={!puedeAnular}
+                          onSelect={() => setCobroPorAnular(cobro)}
+                          className="text-danger"
+                        >
+                          <Prohibit className="w-4 h-4" />
+                          <span className="flex flex-col">
+                            <span className="text-sm">{t('inmobiliaria.cobros.anular.accion')}</span>
+                            {!puedeAnular && (
+                              <span className="text-xs text-fg-muted">
+                                {t('inmobiliaria.cobros.anular.sinPermiso')}
+                              </span>
                             )}
                           </span>
                         </DropdownListItem>
@@ -442,6 +484,16 @@ export function CobroTable({
             {t('inmobiliaria.cobros.table.noCollectionsDesc')}
           </p>
         </div>
+      )}
+
+      {onCobroAnulado && (
+        <AnularCobroDialog
+          cobro={cobroPorAnular}
+          onOpenChange={(abierto) => {
+            if (!abierto) setCobroPorAnular(null);
+          }}
+          onAnulado={onCobroAnulado}
+        />
       )}
     </div>
   );

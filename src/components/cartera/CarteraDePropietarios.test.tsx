@@ -21,6 +21,7 @@ import { act } from 'react'
 
 import type { CarteraConPropietarios, MesDelPropietario } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import es from '@/lib/i18n/locales/es.json'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -45,6 +46,11 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
       { 'data-testid': 'fallo-de-carga' },
       `${queEs}: ${error instanceof Error ? error.message : String(error)}`,
     ),
+}))
+
+const deudasMock = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/api/deducciones.service', () => ({
+  deduccionesApi: { deudasDeLaAgencia: () => deudasMock() },
 }))
 
 import { CarteraDePropietarios } from './CarteraDePropietarios'
@@ -158,6 +164,13 @@ function escribir(input: HTMLInputElement, valor: string) {
 
 beforeEach(() => {
   carteraMock.mockReset()
+  // Por defecto nadie le debe a la inmobiliaria: la sección no aparece.
+  deudasMock.mockReset().mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    totalCop: 0,
+    propietarios: [],
+  })
 })
 
 afterEach(() => {
@@ -268,5 +281,96 @@ describe('CarteraDePropietarios', () => {
 
     expect($('[data-testid="tabla-por-pagar"]').textContent).toContain('No le debes nada a nadie')
     expect(host.querySelector('[data-testid="totales-por-pagar"]')).toBeNull()
+  })
+})
+
+describe('🔴 la puerta al estado de cuenta del PROPIETARIO (Nico, 2026-09-16)', () => {
+  it('cada propietario abre SU estado de cuenta, con el regreso a esta lectura', () => {
+    conDatos(datosDe())
+    montar()
+    const enlaces = todos('[data-testid="propietario-estado-de-cuenta"]')
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual([
+      '/panel/inmobiliaria/estado-de-cuenta/propietario/p1?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fpor-pagar',
+      '/panel/inmobiliaria/estado-de-cuenta/propietario/p2?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fpor-pagar',
+    ])
+  })
+
+  it('el enlace NO vive dentro del botón que abre la fila', () => {
+    conDatos(datosDe())
+    montar()
+    expect(host.querySelector('button [data-testid="propietario-estado-de-cuenta"]')).toBeNull()
+  })
+})
+
+/*
+ * 🔴 El pie decía «sólo se le debe lo que el inquilino efectivamente pagó»,
+ * que es la base RECAUDADO, y el número sale con base CAUSADO
+ * (`DispersionesService.liquidacionDelMes`, llamado sin base desde la cartera).
+ * La base no se cambia acá: se dice la verdad, con la convención compartida
+ * («Canon causado» con CAUSADO).
+ */
+describe('🔴 el pie dice la base con que se liquida', () => {
+  it('habla de canon CAUSADO, no de lo que el inquilino pagó', () => {
+    conDatos(datosDe())
+    montar()
+    expect($('[data-testid="pie-de-la-base"]').textContent).toBe('cartera.porPagar.pieCausado')
+    expect(host.textContent).not.toContain('efectivamente pagó')
+  })
+
+  it('el texto del diccionario dice «causado», pagado o no, y no promete sólo lo recaudado', () => {
+    const pie = (es as { cartera: { porPagar: { pieCausado: string; canonCausado: string } } })
+      .cartera.porPagar
+    expect(pie.pieCausado).toContain('canon causado')
+    expect(pie.pieCausado).toContain('lo haya pagado el inquilino o no')
+    expect(pie.canonCausado).toBe('Canon causado')
+  })
+})
+
+describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
+  it('sin nadie que deba no aparece la sección', async () => {
+    conDatos(datosDe())
+    montar()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(host.querySelector('[data-testid="propietarios-que-deben"]')).toBeNull()
+  })
+
+  it('🔴 lista a quién se le cobra, cuánto, desde cuándo y con qué cuenta de cobro', async () => {
+    deudasMock.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      totalCop: 380_000,
+      propietarios: [
+        {
+          propietarioId: 'p9',
+          nombre: 'Luis Cárdenas',
+          debeCop: 300_000,
+          desde: '2026-10',
+          sinCuentaDeCobroCop: 0,
+          ultimaCuentaDeCobro: { id: 'cc-1', numero: 7, emitidaAt: '2026-10-02T15:00:00.000Z' },
+        },
+        {
+          propietarioId: 'p8',
+          nombre: 'Ana Ruiz',
+          debeCop: 80_000,
+          desde: '2026-11',
+          sinCuentaDeCobroCop: 80_000,
+          ultimaCuentaDeCobro: null,
+        },
+      ],
+    })
+    conDatos(datosDe())
+    montar()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const filas = todos('[data-testid="propietario-que-debe"]')
+    expect(filas).toHaveLength(2)
+    expect(filas[0]!.textContent).toContain('Luis Cárdenas')
+    expect(filas[0]!.querySelector('a[href$="/cuenta-de-cobro/cc-1"]')).not.toBeNull()
+    expect(filas[1]!.textContent).toContain('inmobiliaria.deducciones.cartera.sinCuenta')
+    expect($('[data-testid="total-que-deben"]').textContent).toContain(formatCurrency(380_000))
   })
 })

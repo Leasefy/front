@@ -5,6 +5,7 @@ import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
+import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { OnboardingSessionPaymentProviderRequest } from '@/lib/api/generated/agency'
 import {
@@ -39,6 +40,10 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
     setError,
     formState: { errors },
   } = useForm<PaymentProviderStepFormValues>({ defaultValues: PAYMENT_PROVIDER_STEP_DEFAULT_VALUES })
+  // La API key y el event secret van registrados con `name`: un envío nativo
+  // antes de hidratar los pondría en la URL. `method="post"` y el botón apagado
+  // hasta hidratar, igual que el login.
+  const hidratado = useHidratado()
 
   const submit = handleSubmit(async (values) => {
     const parsed = paymentProviderStepSchema.safeParse(values)
@@ -52,7 +57,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
   })
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-5" data-testid="payment-provider-step-form">
+    <form method="post" noValidate onSubmit={submit} className="space-y-5" data-testid="payment-provider-step-form">
       <p className="text-body-sm text-fg-muted">
         Conecta la pasarela de pago que usará tu inmobiliaria para cobrar los arriendos.
       </p>
@@ -133,7 +138,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting || !hidratado} hideArrow size="lg" className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />

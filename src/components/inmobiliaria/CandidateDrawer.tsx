@@ -27,6 +27,7 @@ import { Spinner as DSSpinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
+import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -515,6 +516,10 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
+            {/* 17-09-2026: el estudio lo paga el solicitante a la inmobiliaria
+                (recibo + factura) y, vigente, no se le vuelve a cobrar. Sólo
+                dentro del panel de la inmobiliaria. */}
+            <EstudioPagadoALaInmobiliaria applicationId={candidate.id} />
           </section>
 
           {/* AI Scoring Block */}
@@ -1022,6 +1027,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
           <p className="text-xs text-fg-muted">Monto máximo asegurable</p>
           <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
             {formatCurrency(study.maxAsegurableCop)}
+          </p>
+          {/*
+            D13 (Nico y Juan Camilo, 17-09-2026, «como Portofino»): el tope es un
+            DATO, no un bloqueo. Un canon por encima no frena la postulación; lo
+            decide la inmobiliaria, sin registro ni aviso obligatorio.
+          */}
+          <p className="text-xs text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
+            Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.
           </p>
         </div>
       ) : (

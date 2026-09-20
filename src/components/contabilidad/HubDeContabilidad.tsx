@@ -44,6 +44,26 @@
  * dice está verificado contra `asientos-automaticos.service.ts#reprocesar`:
  * asienta cobros, recibos y lotes que NO tienen asiento; los que ya lo tienen
  * no se tocan.
+ *
+ * ── Lo que se agregó el 18-09 (la contabilidad completa, §8) ───────────────
+ *
+ * Cuatro destinos nuevos y cuatro consultas más, cada una con su alerta:
+ *
+ *   rubros    → `GET /mapeo/rubros`      · mapeo de rubros del P&G incompleto
+ *   facturas  → `GET /gastos/facturas`   · facturas de proveedor sin causar
+ *   lotes     → `GET /egresos/lotes`     · lotes de egreso por aprobar
+ *   exogena   → `GET /exogena?anio=`     · formatos sin visto bueno del contador
+ *
+ * 🔴 Las cuatro viven en migraciones sin aplicar. Cuando una responde
+ * `disponible: false` **no se genera alerta y tampoco se reporta como revisión
+ * caída**: no hay nada que revisar todavía, y un renglón rojo por una pieza que
+ * no existe entrena a ignorar los renglones rojos. Lo que sí entra a
+ * «No pude revisar todo el libro» es el FALLO — un 500, una red caída—, porque
+ * ahí «no hay alertas» deja de significar «está todo en orden».
+ *
+ * El año de la exógena es el ANTERIOR: la de 2026 se presenta en 2027, y en
+ * septiembre de 2026 sus formatos están a medio año de estar completos. Gritar
+ * por el año en curso sería gritar todos los meses.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -51,11 +71,17 @@ import Link from 'next/link';
 import {
   ArrowRight,
   ArrowsClockwise,
+  Bank,
   BookOpenText,
   ChartBar,
+  ChartPieSlice,
   DownloadSimple,
+  Certificate,
+  FileCsv,
   Info,
   Plugs,
+  Receipt,
+  Scales,
   TreeStructure,
   Warning,
   WarningCircle,
@@ -82,18 +108,22 @@ import {
   type AsientosFaltantes,
   type Cierre,
 } from '@/lib/api/contabilidad.service';
+import { gastosApi } from '@/lib/api/gastos.service';
+import { exogenaApi } from '@/lib/api/exogena.service';
 import {
   alertasDeContabilidad,
   describirAlerta,
   type AlertaDescrita,
+  type EstadoDeExogena,
+  type EstadoDeFacturas,
+  type EstadoDeLotes,
+  type EstadoDeRubros,
   type MesAnterior,
 } from '@/lib/contabilidad/alertas';
-import {
-  LibroDemasiadoGrande,
-  csvDeAsientos,
-  nombreDelCsv,
-  todosLosAsientos,
-} from '@/lib/contabilidad/csv';
+import { faltantesSugeridos } from '@/lib/contabilidad/rubros-del-pyg';
+import { formatosConFilas, formatosSinVistoBueno } from '@/lib/contabilidad/exogena';
+// Sólo el nombre del archivo: armarlo ya no es tarea del navegador (CT3).
+import { nombreDelCsv } from '@/lib/contabilidad/csv';
 import {
   diaLegible,
   hoy,
@@ -123,7 +153,12 @@ export type ConsultaDeLaPortada =
   | 'cierre'
   | 'faltantes'
   | 'balance'
-  | 'anterior';
+  | 'anterior'
+  // Las cuatro del 18-09. Cada una se reintenta sola, como las de siempre.
+  | 'rubros'
+  | 'facturas'
+  | 'lotes'
+  | 'exogena';
 
 interface Portada {
   cuentasActivas: number | null;
@@ -135,6 +170,14 @@ interface Portada {
   faltantes: AsientosFaltantes | null;
   balance: { cuadra: boolean; diferenciaCop: number } | null;
   mesAnterior: MesAnterior | null;
+  /**
+   * Las cuatro del 18-09. `null` = no se pudo preguntar, o la pieza todavía no
+   * existe (`disponible: false`): en los dos casos no hay alerta.
+   */
+  rubros: EstadoDeRubros | null;
+  facturas: EstadoDeFacturas | null;
+  lotes: EstadoDeLotes | null;
+  exogena: EstadoDeExogena | null;
   /** Lo que tiró cada consulta que falló, entero. Ausente = no falló. */
   fallos: Partial<Record<ConsultaDeLaPortada, unknown>>;
 }
@@ -150,6 +193,10 @@ const nadaTodavia = (): Portada => ({
   faltantes: null,
   balance: null,
   mesAnterior: null,
+  rubros: null,
+  facturas: null,
+  lotes: null,
+  exogena: null,
   fallos: {},
 });
 
@@ -177,6 +224,65 @@ const PEDIDOS: Record<ConsultaDeLaPortada, () => Promise<Parche>> = {
     const mes = rangoDelMesAnterior();
     const r = await contabilidadApi.asientos.listar({ desde: mes.desde, hasta: mes.hasta, limite: 1 });
     return { mesAnterior: { mes: mes.mes, hasta: mes.hasta, asientos: r.total } };
+  },
+
+  /*
+   * 🔴 Las cuatro del 18-09 devuelven `null` cuando su pieza NO ESTÁ DISPONIBLE
+   * (falta la migración). No es lo mismo que fallar: no hay nada que revisar, y
+   * una alerta por algo que todavía no existe es ruido que entrena a ignorar las
+   * alertas. Un fallo real sí llega a `fallos` por el `allSettled`.
+   */
+  rubros: async () => {
+    const mapeo = await contabilidadApi.mapeo.rubros();
+    if (!mapeo.disponible) return { rubros: null };
+    return {
+      rubros: {
+        completo: mapeo.completo,
+        // Los NOMBRES, no las claves: la alerta los va a leer una persona.
+        faltantes: faltantesSugeridos(mapeo).map((r) => r.nombre),
+      },
+    };
+  },
+
+  facturas: async () => {
+    const pagina = await gastosApi.facturas.listar({ estado: 'BORRADOR', limite: 1 });
+    if (!pagina.disponible) return { facturas: null };
+    return {
+      facturas: { sinCausar: pagina.total, totalCop: pagina.totales?.totalCop ?? 0 },
+    };
+  },
+
+  lotes: async () => {
+    const lista = await gastosApi.lotes.listar();
+    if (!lista.disponible) return { lotes: null };
+    const porAprobar = lista.lotes.filter(
+      (l) => l.estado === 'BORRADOR' || l.estado === 'ESPERANDO_APROBACION',
+    );
+    return {
+      lotes: {
+        porAprobar: porAprobar.length,
+        totalCop: porAprobar.reduce((suma, l) => suma + l.totalCop, 0),
+      },
+    };
+  },
+
+  exogena: async () => {
+    /*
+     * El año ANTERIOR: la exógena de 2026 se presenta en 2027, y en septiembre
+     * de 2026 sus formatos están a medio año de estar completos. Gritar por el
+     * año en curso sería gritar todos los meses del año.
+     */
+    const anio = new Date().getFullYear() - 1;
+    const resumen = await exogenaApi.resumen(anio);
+    const conFilas = formatosConFilas(resumen);
+    const sinVisto = formatosSinVistoBueno({ ...resumen, formatos: conFilas });
+    return {
+      exogena: {
+        anio,
+        sinVistoBueno: sinVisto.length,
+        conBloqueos: sinVisto.filter((f) => f.bloqueos.length > 0).length,
+      },
+    };
   },
 };
 
@@ -447,15 +553,23 @@ function ParaElContador() {
   const descargar = async () => {
     setBajando(true);
     try {
-      const asientos = await todosLosAsientos(
-        (f) => contabilidadApi.asientos.listar(f),
-        { desde: rango.desde || undefined, hasta: rango.hasta || undefined },
-      );
-      if (asientos.length === 0) {
-        toast.warning('No hay asientos en ese rango: el archivo saldría vacío.');
-        return;
-      }
-      const blob = new Blob([csvDeAsientos(asientos)], { type: 'text/csv;charset=utf-8' });
+      /*
+       * 🔴 CT3 (auditoría 13-09): el libro lo arma el SERVIDOR y baja por
+       * partes. Acá se pedían todas las páginas de `GET /asientos`, se
+       * juntaban en memoria del navegador y se concatenaba un string; con un
+       * año de una inmobiliaria mediana son decenas de miles de movimientos, y
+       * había un tope que dejaba el libro INCOMPLETO justo cuando el rango es
+       * largo — que es cuando el contador lo pide.
+       *
+       * Lo que se pierde a cambio, y es a propósito: ya no se puede decir
+       * «1.240 asientos en el archivo» antes de bajarlo, porque contarlos
+       * obligaría a traerlos. Prometer un número que no se midió es peor que
+       * no darlo, así que el aviso dice lo que sí se sabe.
+       */
+      const blob = await contabilidadApi.reportes.libroCsv({
+        desde: rango.desde || undefined,
+        hasta: rango.hasta || undefined,
+      });
       const url = URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;
@@ -464,17 +578,9 @@ function ParaElContador() {
       enlace.click();
       enlace.remove();
       URL.revokeObjectURL(url);
-      toast.success(
-        asientos.length === 1
-          ? '1 asiento en el archivo.'
-          : `${asientos.length.toLocaleString('es-CO')} asientos en el archivo.`,
-      );
+      toast.success('El libro del rango quedó descargado.');
     } catch (e) {
-      toast.error(
-        e instanceof LibroDemasiadoGrande
-          ? e.message
-          : mensajeDeContabilidad(e, 'No se pudo armar el archivo.'),
-      );
+      toast.error(mensajeDeContabilidad(e, 'No se pudo armar el archivo.'));
     } finally {
       setBajando(false);
     }
@@ -503,29 +609,110 @@ function ParaElContador() {
         {bajando ? 'Armando el archivo…' : 'Descargar el libro en CSV'}
       </Button>
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
-        <Link
-          href={`${BASE}/reportes?informe=balance`}
-          className="text-caption text-primary hover:underline"
-        >
-          Balance de prueba
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=auxiliar`}
-          className="text-caption text-primary hover:underline"
-        >
-          Libro auxiliar por cuenta
-        </Link>
-        <Link
-          href={`${BASE}/reportes?informe=tercero`}
-          className="text-caption text-primary hover:underline"
-        >
-          Estado de cuenta
-        </Link>
+      {/* 🔴 20-09 · Eran ONCE enlaces azules en una fila envuelta, todos con
+          el mismo peso y sin decir qué es qué: «Balance de prueba · Libro
+          auxiliar por cuenta · Estado de cuenta · Deterioro de cartera ·
+          Certificados de retención · Presupuesto · Estado de resultados ·
+          Balance general · Libro mayor · Auxiliar por tercero · Exógena».
+          Nico: «la sección de contabilidad necesita un glow up».
+
+          Dos cosas estaban mal. Una, que once acentos compitiendo entre sí no
+          son un acento (DESIGN §1): el azul se reserva para la acción de la
+          tarjeta —bajar el libro— y los informes se leen en el color del
+          texto. La otra, que un contador no busca «un informe»: busca EL
+          libro, o LOS estados, o la cartera. Agrupados, son cuatro decisiones
+          de tres opciones en vez de una de once. */}
+      <div className="mt-auto grid gap-x-6 gap-y-3 border-t border-border pt-3 sm:grid-cols-2">
+        {INFORMES_DEL_CONTADOR.map((grupo) => (
+          <div key={grupo.titulo} className="min-w-0 space-y-1">
+            <p className="text-caption uppercase tracking-wide text-fg-subtle">
+              {grupo.titulo}
+            </p>
+            <ul className="space-y-0.5">
+              {grupo.informes.map((informe) => (
+                <li key={informe.href}>
+                  <Link
+                    href={informe.href}
+                    className="text-caption text-fg underline-offset-2 hover:text-primary hover:underline"
+                    data-testid={informe.testid}
+                  >
+                    {informe.nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
+
+/**
+ * Los informes que el contador pide por nombre, agrupados por la pregunta que
+ * contesta cada grupo. El orden es el del trabajo: primero el libro, después
+ * lo que se firma con él, después lo que se le debe a alguien.
+ */
+const INFORMES_DEL_CONTADOR: ReadonlyArray<{
+  titulo: string;
+  informes: ReadonlyArray<{ href: string; nombre: string; testid?: string }>;
+}> = [
+  {
+    titulo: 'El libro',
+    informes: [
+      { href: `${BASE}/reportes?informe=balance`, nombre: 'Balance de prueba' },
+      { href: `${BASE}/reportes?informe=mayor`, nombre: 'Libro mayor', testid: 'ir-al-mayor' },
+      { href: `${BASE}/reportes?informe=auxiliar`, nombre: 'Libro auxiliar por cuenta' },
+      {
+        href: `${BASE}/reportes?informe=terceros`,
+        nombre: 'Auxiliar por tercero',
+        testid: 'ir-a-terceros',
+      },
+    ],
+  },
+  {
+    titulo: 'Lo que se firma',
+    informes: [
+      {
+        href: `${BASE}/estados-financieros?informe=pyg`,
+        nombre: 'Estado de resultados',
+        testid: 'ir-al-pyg',
+      },
+      {
+        href: `${BASE}/estados-financieros?informe=balance`,
+        nombre: 'Balance general',
+        testid: 'ir-al-balance-general',
+      },
+    ],
+  },
+  {
+    titulo: 'Cartera y terceros',
+    informes: [
+      { href: `${BASE}/reportes?informe=tercero`, nombre: 'Estado de cuenta' },
+      {
+        href: `${BASE}/deterioro`,
+        nombre: 'Deterioro de cartera',
+        testid: 'ir-al-deterioro',
+      },
+      {
+        href: `${BASE}/certificados`,
+        nombre: 'Certificados de retención',
+        testid: 'ir-a-certificados',
+      },
+    ],
+  },
+  {
+    titulo: 'Obligaciones y control',
+    informes: [
+      { href: `${BASE}/exogena`, nombre: 'Exógena', testid: 'ir-a-la-exogena' },
+      {
+        href: `${BASE}/presupuesto`,
+        nombre: 'Presupuesto',
+        testid: 'ir-al-presupuesto',
+      },
+    ],
+  },
+];
 
 interface Destino {
   href: string;
@@ -559,6 +746,51 @@ const DESTINOS: Destino[] = [
     titulo: 'Mapeo contable',
     texto: 'A qué cuenta va cada asiento automático.',
   },
+  // 17-09: las dos piezas que el contador cierra a mano. El deterioro se
+  // aprueba CADA MES antes de asentarlo; el certificado de retenciones se
+  // emite una vez al año y fija número y fecha.
+  {
+    href: `${BASE}/deterioro`,
+    icono: Scales,
+    titulo: 'Deterioro de cartera',
+    texto: 'La provisión por edades: sugerida, editable y aprobada cada mes.',
+  },
+  {
+    href: `${BASE}/certificados`,
+    icono: Certificate,
+    titulo: 'Certificados de retención',
+    texto: 'Lo que le retuvieron a cada propietario en el año, para declarar.',
+  },
+  /*
+   * Las cuatro del 18-09. «Estados financieros» va primero de las cuatro porque
+   * es la que cierra el círculo: las otras tres existen para que ésa tenga
+   * números — gastos propios, la plata que sale, y lo que se le declara a la
+   * DIAN sobre los dos.
+   */
+  {
+    href: `${BASE}/estados-financieros`,
+    icono: ChartPieSlice,
+    titulo: 'Estados financieros',
+    texto: 'El P&G y el balance general, contra el presupuesto y el año pasado.',
+  },
+  {
+    href: `${BASE}/gastos`,
+    icono: Receipt,
+    titulo: 'Gastos',
+    texto: 'Las facturas de los proveedores: registrar, causar y anular.',
+  },
+  {
+    href: `${BASE}/egresos`,
+    icono: Bank,
+    titulo: 'Egresos',
+    texto: 'Lo que se le paga a proveedores y técnicos, en lotes que aprueba otra persona.',
+  },
+  {
+    href: `${BASE}/exogena`,
+    icono: FileCsv,
+    titulo: 'Exógena',
+    texto: 'Los seis formatos de la DIAN, armados contra el libro.',
+  },
 ];
 
 /**
@@ -569,6 +801,10 @@ const REVISIONES: { consulta: ConsultaDeLaPortada; que: string }[] = [
   { consulta: 'faltantes', que: 'Si hay movimientos sin asiento' },
   { consulta: 'balance', que: 'Si el libro cuadra' },
   { consulta: 'anterior', que: 'Si el mes anterior quedó por cerrar' },
+  { consulta: 'rubros', que: 'Si los rubros del P&G tienen su cuenta' },
+  { consulta: 'facturas', que: 'Si hay facturas de proveedor sin causar' },
+  { consulta: 'lotes', que: 'Si hay lotes de egreso esperando aprobación' },
+  { consulta: 'exogena', que: 'Si la exógena del año pasado tiene visto bueno' },
 ];
 
 function plural(n: number, singular: string, varios: string): string {
@@ -602,6 +838,10 @@ export function HubDeContabilidad() {
         balance: datos.balance,
         cierre: datos.cierre,
         mesAnterior: datos.mesAnterior,
+        rubros: datos.rubros,
+        facturas: datos.facturas,
+        lotes: datos.lotes,
+        exogena: datos.exogena,
       }).map((a) => describirAlerta(a, formatCurrency)),
     [datos, formatCurrency],
   );
@@ -740,6 +980,7 @@ export function HubDeContabilidad() {
           cargando={cargando}
           fallo={'cierre' in datos.fallos}
           onCerrado={() => void recargar()}
+          onReabierto={() => void recargar()}
         />
         {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
       </div>

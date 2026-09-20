@@ -17,16 +17,7 @@ import { formatCurrency } from '@/lib/format'
 import { leerArriendoEnCurso, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { ConfirmarSalidaDelArriendo } from '@/components/aprobacion/ConfirmarSalidaDelArriendo'
 import { PhoneField } from '@/components/ui/phone-field'
 import {
   Select,
@@ -302,27 +293,12 @@ export default function AprobacionPage() {
       {/* Preguntar antes de salir: no es un formulario cualquiera, es lo único
           que hay entre esta persona y poder arrendar ese inmueble, y quien
           cierra acá casi nunca vuelve (Nico, 2026-09-15). */}
-      <AlertDialog open={confirmandoSalida} onOpenChange={setConfirmandoSalida}>
-        <AlertDialogContent data-testid="confirmar-salida-aprobacion">
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Sales de tu solicitud?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription>
-            {arriendo
-              ? `Todavía no sabemos si te podemos arrendar ${arriendo.titulo}. Mientras tanto, otra persona puede tomarlo.`
-              : 'Todavía no sabemos hasta cuánto te podemos arrendar, y sin eso no puedes postularte a ningún inmueble.'}{' '}
-            Te toma un par de minutos terminar.
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="seguir-en-aprobacion">
-              Seguir con mi solicitud
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={salirDelFlujo} data-testid="salir-de-aprobacion">
-              Salir de todos modos
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmarSalidaDelArriendo
+        abierto={confirmandoSalida}
+        onAbiertoChange={setConfirmandoSalida}
+        tituloDelInmueble={arriendo?.titulo}
+        onSalir={salirDelFlujo}
+      />
 
       {/* Nico, 14-09: el paso 2 se arma como el paso 1 (`/arrendar/[id]`) — los
           pasos en su propia franja, FUERA del formulario, y debajo una sola

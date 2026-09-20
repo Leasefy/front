@@ -16,6 +16,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompartirEstadoDeCuenta } from '@/components/estado-de-cuenta/CompartirEstadoDeCuenta';
 import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/PantallaDelEstadoDeCuenta';
+import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 
@@ -28,9 +29,18 @@ function Contenido() {
 
   return (
     <PantallaDelEstadoDeCuenta
-      cargar={() => estadoDeCuentaApi.inquilino(id)}
+      /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
+         el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
+         quien abre el enlace compartido. */
+      cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
       volverA={{ href: volver }}
-      acciones={(doc, nota) => (
+      /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
+         a configurar las reglas. El portal y el enlace no lo pasan. */
+      reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}
+      /* El anticipo del contrato (lo que se descuenta mes a mes) sólo se
+         lee desde el panel. */
+      conAnticipoDelContrato
+      acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}
           hoy={doc.fecha}
@@ -41,6 +51,8 @@ function Contenido() {
              no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
           personaId={id}
           nota={nota}
+          /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
+          filtros={filtros}
         />
       )}
     />

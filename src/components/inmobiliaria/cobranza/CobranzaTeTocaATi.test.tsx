@@ -69,7 +69,7 @@ function item(over: Partial<PendienteItem> & Pick<PendienteItem, 'key' | 'grupo'
     montoCop: null,
     dueDate: null,
     fecha: hace(1),
-    href: '/panel/inmobiliaria/cobros/cobranza/pendientes',
+    href: '/panel/inmobiliaria/pagos/cobranza/pendientes',
     cta: 'revisar',
     ...over,
   }

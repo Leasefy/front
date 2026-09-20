@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CaretLeft,
@@ -20,6 +21,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  ANIOS_HACIA_ADELANTE,
+  ANIOS_HACIA_ATRAS,
+  CANON_MAXIMO_COP,
+  dentroDe,
+  hace,
+  oneYearAheadISO,
+  todayISO,
+} from './fechas-y-topes';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -70,6 +81,13 @@ import type {
   BorradorDeContrato,
   UsoDelInmueble,
 } from '@/lib/api/contratos-plantilla.service';
+import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
+import {
+  bloqueoDeLaConsulta,
+  bloqueoDelError,
+  type BloqueoPorInventario as BloqueoPorInventarioDatos,
+} from '@/lib/inventario/bloqueo-por-inventario';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -92,14 +110,6 @@ interface FormState {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-function oneYearAheadISO(from: string): string {
-  const d = new Date(from);
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
-}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -136,6 +146,16 @@ function NuevoContratoContent() {
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /*
+   * 🔴 El error CRUDO, además del mensaje (auditoría 2026-09-13, C20). Con el
+   * string suelto, `FalloDeCarga` no puede distinguir un 404 de un corte de
+   * red y ofrece «Reintentar» sobre algo que no existe. `intento` es lo que
+   * hace que ese botón vuelva a correr la carga: el efecto depende de él.
+   */
+  const [loadErrorCrudo, setLoadErrorCrudo] = useState<unknown>(null);
+  const [intento, setIntento] = useState(0);
+  /** El PDF que ya viajó al bucket, para que un reintento no suba otro (C19). */
+  const pdfYaSubido = useRef<{ huella: string; path: string } | null>(null);
 
   const [form, setForm] = useState<FormState>(() => {
     const start = todayISO();
@@ -157,6 +177,13 @@ function NuevoContratoContent() {
   // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
   // selector y se borra apenas se elige otro inmueble.
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
+  /**
+   * 🔴 Nico y Juan Camilo, 2026-09-16: iniciar un contrato exige el inventario
+   * del inmueble completo y actualizado. Se pregunta al elegir el inmueble
+   * (para no dejar llenar todo el formulario en vano) y se vuelve a leer del
+   * 409 del back al crear, que es quien decide.
+   */
+  const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
   // se registraba en ningún lado, así que meses después nadie sabía a quién
@@ -171,6 +198,8 @@ function NuevoContratoContent() {
       setIsLoading(false);
       return;
     }
+    setLoadError(null);
+    setLoadErrorCrudo(null);
 
     let cancelled = false;
     async function load() {
@@ -225,6 +254,7 @@ function NuevoContratoContent() {
         }
       } catch (err) {
         if (cancelled) return;
+        setLoadErrorCrudo(err);
         setLoadError(err instanceof Error ? err.message : 'No se pudo cargar la aplicación');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -232,7 +262,9 @@ function NuevoContratoContent() {
     }
     load();
     return () => { cancelled = true; };
-  }, [applicationId, esManual]);
+  // `intento` está acá para que «Reintentar» del `FalloDeCarga` vuelva a correr
+  // esta carga: es el único disparador que tiene esa pantalla.
+  }, [applicationId, esManual, intento]);
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -324,8 +356,34 @@ function NuevoContratoContent() {
     if (form.startDate && form.endDate && form.endDate <= form.startDate) {
       errors.endDate = 'La fecha fin debe ser posterior a la de inicio';
     }
+    /*
+     * 🔴 C22 (auditoría 2026-09-13): había piso y no había techo. Un canon de
+     * 1e15 pasaba la validación y llegaba al back, donde `monthly_rent` es un
+     * `int4` que topa en 2.147.483.647: reventaba como un 500 ilegible, o —
+     * peor— entraba truncado y facturaba ese número todos los meses. El tope
+     * está por debajo del límite de la columna a propósito: mil millones de
+     * canon mensual no existe en Colombia, y un número así siempre es un dedo.
+     */
     const rent = Number(form.monthlyRent);
     if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
+    else if (rent > CANON_MAXIMO_COP) {
+      errors.monthlyRent = 'Ese canon es demasiado alto: revisa los ceros.';
+    }
+
+    /*
+     * Y no había ningún tope de AÑO. Un «2016» o un «2036» tecleados por error
+     * creaban un contrato con diez años de cartera vencida o diez años sin
+     * cobrar, y nadie se enteraba hasta la primera corrida del mes. Retrofechar
+     * sigue siendo legítimo —un contrato que empezó el mes pasado se carga
+     * hoy—: lo que se bloquea es el año equivocado, no el pasado.
+     */
+    if (form.startDate) {
+      if (form.startDate < hace(ANIOS_HACIA_ATRAS)) {
+        errors.startDate = `No puede empezar hace más de ${ANIOS_HACIA_ATRAS} año(s). Revisa el año.`;
+      } else if (form.startDate > dentroDe(ANIOS_HACIA_ADELANTE)) {
+        errors.startDate = `No puede empezar dentro de más de ${ANIOS_HACIA_ADELANTE} año(s). Revisa el año.`;
+      }
+    }
     const dep = Number(form.deposit);
     if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
     const day = Number(form.paymentDay);
@@ -357,6 +415,26 @@ function NuevoContratoContent() {
 
   const isValid = Object.keys(validation).length === 0 && respaldoValido;
 
+  const inmuebleParaIniciar = (esManual ? partes.propertyId : property?.id) || null;
+  useEffect(() => {
+    setBloqueoDeInventario(null);
+    if (!inmuebleParaIniciar) return;
+    let vivo = true;
+    // `Promise.resolve().then` y no la llamada suelta: un fallo síncrono del
+    // cliente también cae en el `catch` en vez de tumbar el formulario.
+    Promise.resolve()
+      .then(() => inventarioDelInmuebleApi.paraIniciar(inmuebleParaIniciar))
+      .then((r) => {
+        if (vivo) setBloqueoDeInventario(bloqueoDeLaConsulta(r));
+      })
+      .catch(() => {
+        /* Sin respuesta no se bloquea acá: al crear, el back decide. */
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [inmuebleParaIniciar]);
+
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,12 +446,28 @@ function NuevoContratoContent() {
       let contractOrigin: ContractOrigin | undefined;
 
       if (form.mode === 'upload' && form.pdfFile) {
-        const uploaded = await actions.uploadPdf(form.pdfFile);
-        if (!uploaded) {
-          setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
-          return;
+        /*
+         * 🔴 C19 (auditoría 2026-09-13): subir el PDF y crear el contrato son
+         * dos llamadas. Si la segunda falla —un 400 de canon, un corte— el
+         * blob YA está en el bucket, y el reintento subía OTRO: un archivo
+         * huérfano en Supabase por cada intento, ninguno referenciado por
+         * nada. Se recuerda el que ya subió ESTE archivo (por nombre y tamaño,
+         * que es lo que distingue un PDF de otro en un formulario) y se reusa.
+         * Cambiar de archivo invalida el recuerdo y vuelve a subir, que es lo
+         * correcto: es otro documento.
+         */
+        const huella = `${form.pdfFile.name}:${form.pdfFile.size}`;
+        if (pdfYaSubido.current?.huella === huella) {
+          uploadedPdfPath = pdfYaSubido.current.path;
+        } else {
+          const uploaded = await actions.uploadPdf(form.pdfFile);
+          if (!uploaded) {
+            setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
+            return;
+          }
+          uploadedPdfPath = uploaded.uploadedPdfPath;
+          pdfYaSubido.current = { huella, path: uploaded.uploadedPdfPath };
         }
-        uploadedPdfPath = uploaded.uploadedPdfPath;
         contractOrigin = 'UPLOADED_PDF';
       }
 
@@ -448,6 +542,12 @@ function NuevoContratoContent() {
        *   - postulación que ya tiene contrato → se recupera y se redirige;
        *   - el resto → el motivo del back en palabras.
        */
+      const bloqueo = bloqueoDelError(err);
+      if (bloqueo) {
+        setBloqueoDeInventario(bloqueo);
+        setSubmitError(null);
+        return;
+      }
       const ocupado = inmuebleOcupado(err);
       if (ocupado && esManual) {
         setErrorDeInmueble(ocupado);
@@ -481,16 +581,22 @@ function NuevoContratoContent() {
     );
   }
 
+  /*
+   * 🔴 C20 (auditoría 2026-09-13): esto era una tarjeta roja a mano, sin
+   * «Reintentar» ni «Volver» — un corte de red dejaba a la persona en un
+   * callejón sin salida, con el único camino de escribir la URL a mano.
+   * `FalloDeCarga` es el patrón de la casa: clasifica el error (404 vs. red),
+   * ofrece reintentar cuando tiene sentido y siempre da por dónde salir.
+   */
   if (loadError || (!application && !esManual)) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
-            <p className="text-sm text-danger mt-1">{loadError}</p>
-          </div>
-        </div>
+        <FalloDeCarga
+          error={loadErrorCrudo ?? loadError ?? 'No se pudo cargar la postulación'}
+          queEs="esta postulación"
+          onReintentar={() => setIntento((n) => n + 1)}
+          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+        />
       </div>
     );
   }
@@ -564,7 +670,7 @@ function NuevoContratoContent() {
               active={form.mode === 'upload'}
               onClick={() => updateForm('mode', 'upload')}
               title="Subir PDF propio"
-              desc="Usá un contrato que tu inmobiliaria ya tenga preparado."
+              desc="Usa un contrato que tu inmobiliaria ya tenga preparado."
               icon={UploadSimple}
             />
             <ModeOption
@@ -727,7 +833,7 @@ function NuevoContratoContent() {
             <Field label="Depósito (COP)" error={validation.deposit}>
               <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
             </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
+            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -741,7 +847,7 @@ function NuevoContratoContent() {
             <Field
               label="Días de plazo antes de la mora"
               error={validation.diasDePlazo}
-              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+              hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
             >
               <Input
                 type="number"
@@ -777,11 +883,10 @@ function NuevoContratoContent() {
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
             <div className="space-y-1">
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
-                Prorratear el primer mes
+                {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground">
-                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
-                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
             </div>
             <Switch
@@ -830,6 +935,8 @@ function NuevoContratoContent() {
           </div>
         )}
 
+        {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
+
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
@@ -842,7 +949,7 @@ function NuevoContratoContent() {
           <Button
             type="submit"
             hideArrow
-            disabled={!isValid || actions.isSubmitting}
+            disabled={!isValid || actions.isSubmitting || bloqueoDeInventario !== null}
             className="gap-2"
           >
             {actions.isSubmitting ? (

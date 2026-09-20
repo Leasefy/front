@@ -111,9 +111,12 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
           icon={ChartLineUp}
           color="blue"
         />
+        {/* 🔴 17-09: era «Ingresos totales» sumando la comisión atribuida a
+            cada asesor. La comisión es de la INMOBILIARIA y la de los asesores
+            se liquida por fuera de Leasefy. */}
         <KPICard
-          label="Ingresos totales"
-          value={formatCurrency(teamSummary.totalRevenue)}
+          label="Comisión de la inmobiliaria"
+          value={formatCurrency(teamSummary.comisionDeLaAgenciaCop)}
           icon={CurrencyDollar}
           color="emerald"
         />
@@ -151,9 +154,6 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                 </TableHead>
                 <TableHead className="text-right py-3 px-4">
                   Prom. dias
-                </TableHead>
-                <TableHead className="text-right py-3 px-4">
-                  Ingresos
                 </TableHead>
                 <TableHead className="text-right py-3 px-4">
                   Leads activos
@@ -232,11 +232,6 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                     {/* Avg Days */}
                     <TableCell className="py-3 px-4 text-right text-muted-foreground">
                       {agent.avgDaysToClose}d
-                    </TableCell>
-
-                    {/* Revenue */}
-                    <TableCell className="py-3 px-4 text-right font-medium text-foreground">
-                      {formatCurrency(agent.totalRevenue)}
                     </TableCell>
 
                     {/* Active Leads */}

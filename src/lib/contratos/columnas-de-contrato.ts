@@ -69,6 +69,7 @@ export type CampoDeContrato =
    */
   | "propiedadCodigoYDireccion"
   | "consecutivoContrato"
+  | "referenciaDeRecaudo"
   | "estratoInmueble"
   | "canonTotal"
   | "escenario"
@@ -717,6 +718,34 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
      */
     campo: "propiedadCodigoYDireccion",
     terminos: ["propiedad", "inmueble", "predio"],
+  },
+  {
+    /*
+     * 🔴 LA REFERENCIA DE RECAUDO: con qué número paga el INQUILINO — la que
+     * la inmobiliaria le puso en el recibo y la que el banco escribe en la
+     * línea del extracto (Nico, 2026-09-15: la conciliación «no los está
+     * relacionando con la referencia»).
+     *
+     * Va ANTES de `consecutivoContrato` en el diccionario a propósito: los
+     * términos de acá son más específicos («referencia de pago», «referencia de
+     * recaudo») y no pueden perder contra un empate genérico. NO es lo mismo
+     * que el consecutivo —ése es el número con el que la inmobiliaria conoce el
+     * contrato puertas adentro—, aunque muchas veces sean el mismo número.
+     */
+    campo: "referenciaDeRecaudo",
+    terminos: [
+      "referencia de recaudo",
+      "referencia de pago",
+      "referencia de recaudo del contrato",
+      "referencia del contrato",
+      "referencia bancaria",
+      "referencia de convenio",
+      "codigo de recaudo",
+      "codigo de pago",
+      "referencia recaudo",
+      "referencia pago",
+      "referencia",
+    ],
   },
   {
     campo: "consecutivoContrato",

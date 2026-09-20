@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
+import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
+import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -20,7 +22,7 @@ const PENDING_NAME_KEY = 'pending-invitation-name';
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
   AGENT: 'Agente',
-  AGENTE: 'Agente',
+  AGENTE: 'Asesor comercial',
   CONTADOR: 'Contador',
   VIEWER: 'Observador',
 };
@@ -48,6 +50,20 @@ function RegistroContent() {
 
   const { signUpWithEmail, signInWithEmail, signOut, user, isAuthenticated, needsOnboarding, isLoading } = useAuth();
   const codeExchangedRef = useRef(false);
+
+  /*
+   * 🔴 Los dos formularios de acá, igual que el login (`AuthForm`): con
+   * `method="post"` y el botón apagado hasta que React hidrata. Sin eso, un
+   * clic antes de tiempo envía el `<form>` como GET nativo y el nombre, el
+   * correo y la contraseña quedan en la URL. Y si ya se llegó con una así, se
+   * limpia antes que nada: `handleRegister` usa `window.location.href` como
+   * destino del enlace de confirmación, y la contraseña terminaría viajando
+   * dentro del correo.
+   */
+  const hidratado = useHidratado();
+  useEffect(() => {
+    limpiarCredencialesDeLaUrl();
+  }, []);
 
   // Persist/recover invitation token
   useEffect(() => {
@@ -223,7 +239,7 @@ function RegistroContent() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setFormError('Este email ya tiene una cuenta. Usá "Ya tengo cuenta" para ingresar.');
+        setFormError('Este email ya tiene una cuenta. Usa "Ya tengo cuenta" para ingresar.');
       } else {
         setFormError('Error al crear la cuenta. Intenta de nuevo.');
       }
@@ -396,7 +412,7 @@ function RegistroContent() {
                   </p>
                 </div>
 
-                <form onSubmit={profileForm.handleSubmit(handleCompleteProfile)} className="space-y-4">
+                <form method="post" onSubmit={profileForm.handleSubmit(handleCompleteProfile)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
@@ -446,7 +462,7 @@ function RegistroContent() {
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !hidratado}
                     className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                   >
                     {isSubmitting ? (
@@ -478,7 +494,7 @@ function RegistroContent() {
                     <p className="text-[12px] text-muted-foreground">Puedes cerrar esta pestaña.</p>
                   </div>
                 ) : (
-                  <form onSubmit={authForm.handleSubmit(handleRegister)} className="space-y-4">
+                  <form method="post" onSubmit={authForm.handleSubmit(handleRegister)} className="space-y-4">
                     <div className="mb-5">
                       <h2 className="text-[16px] font-semibold text-foreground">Crear cuenta</h2>
                       <p className="text-[13px] text-muted-foreground mt-1">Completa tus datos para unirte a <strong>{invitation?.agencyName}</strong>.</p>
@@ -570,7 +586,7 @@ function RegistroContent() {
 
                     <button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !hidratado}
                       className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                     >
                       {isSubmitting ? (

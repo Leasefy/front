@@ -26,6 +26,7 @@ import {
   contabilidadApi,
   CLAVES_DE_CREAR_CUENTA,
   CLAVES_DE_ACTUALIZAR_CUENTA,
+  CLAVES_DE_REABRIR,
   CLAVES_DE_CREAR_ASIENTO,
   CLAVES_DE_MOVIMIENTO,
   CLAVES_DE_REVERSAR,
@@ -46,8 +47,12 @@ const BASE = '/inmobiliaria/contabilidad';
 /** `CrearCuentaDto` (back-erp/src/inmobiliaria/contabilidad/puc/dto/crear-cuenta.dto.ts). */
 const DTO_CREAR_CUENTA = ['codigo', 'nombre', 'naturaleza', 'padreId', 'imputable'];
 
-/** `ActualizarCuentaDto` (…/puc/dto/actualizar-cuenta.dto.ts). Sin `codigo`. */
-const DTO_ACTUALIZAR_CUENTA = ['nombre', 'naturaleza', 'activa', 'imputable'];
+/**
+ * `ActualizarCuentaDto` (…/puc/dto/actualizar-cuenta.dto.ts). Sin `codigo`.
+ * `noDeducible` entró el 19-09 (contrato §3): «todo deducible salvo lo
+ * marcado».
+ */
+const DTO_ACTUALIZAR_CUENTA = ['nombre', 'naturaleza', 'activa', 'imputable', 'noDeducible'];
 
 /** `ListarCuentasDto` (…/puc/dto/listar-cuentas.dto.ts). */
 const DTO_LISTAR_CUENTAS = ['soloActivas', 'soloImputables', 'busqueda'];
@@ -66,6 +71,9 @@ const DTO_LISTAR_ASIENTOS = ['desde', 'hasta', 'origen', 'cuentaId', 'cerrado', 
 
 /** `ReversarAsientoDto` (…/asientos/dto/reversar-asiento.dto.ts). */
 const DTO_REVERSAR = ['fecha', 'motivo'];
+
+/** `ReabrirDto` (…/asientos/dto/cerrar-periodo.dto.ts). */
+const DTO_REABRIR = ['hasta', 'motivo'];
 
 /** `MigrarLoteDto` + `MigrarAsientoDto` + `MigrarMovimientoDto` (…/migracion/dto/index.ts). */
 const DTO_LOTE = ['lote', 'asientos'];
@@ -121,6 +129,7 @@ describe('las listas de claves del servicio SON los DTOs del back', () => {
     ['CrearAsientoDto', CLAVES_DE_CREAR_ASIENTO, DTO_CREAR_ASIENTO],
     ['MovimientoDto', CLAVES_DE_MOVIMIENTO, DTO_MOVIMIENTO],
     ['ReversarAsientoDto', CLAVES_DE_REVERSAR, DTO_REVERSAR],
+    ['ReabrirDto', CLAVES_DE_REABRIR, DTO_REABRIR],
     ['MigrarLoteDto', CLAVES_DE_LOTE, DTO_LOTE],
     ['MigrarAsientoDto', CLAVES_DE_ASIENTO_MIGRADO, DTO_ASIENTO_MIGRADO],
     ['MigrarMovimientoDto', CLAVES_DE_MOVIMIENTO_MIGRADO, DTO_MOVIMIENTO_MIGRADO],

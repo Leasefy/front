@@ -37,6 +37,7 @@ import {
 import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
+import { baseDeLasDispersiones, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 
 type SortField =
   | 'propietarioName'
@@ -69,6 +70,19 @@ interface DispersionTableProps {
 // formatMonth removed - now uses i18n formatDate
 
 /**
+ * 🔴 La columna decía «Recaudado» sobre `totalCollected`, y la dispersión gira
+ * por defecto con base CAUSADO: el canon de la cuota del mes, haya pagado el
+ * inquilino o no. El encabezado sigue a la base de las filas que se ven
+ * (`lib/propietarios/base-del-canon.ts`); con las dos bases a la vez dice
+ * «Canon» y cada fila dice la suya. Ningún número cambia.
+ */
+const COLUMNA_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
+  CAUSADO: 'inmobiliaria.dispersiones.tableView.canonCausado',
+  RECAUDADO: 'inmobiliaria.dispersiones.tableView.canonRecaudado',
+  MIXTA: 'inmobiliaria.dispersiones.tableView.canon',
+};
+
+/**
  * DispersionTable - Data table for dispersiones (disbursements)
  * Pure display component with sorting and row actions
  * Filtering and pagination handled by parent
@@ -82,6 +96,7 @@ export function DispersionTable({
   showSummary = false,
 }: DispersionTableProps) {
   const { t, formatDate, formatCurrency } = useI18n();
+  const baseDelCanon = useMemo(() => baseDeLasDispersiones(dispersiones), [dispersiones]);
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -215,7 +230,7 @@ export function DispersionTable({
             <SortableHeader field="propietarioName">{t('inmobiliaria.dispersiones.tableView.propietario')}</SortableHeader>
             <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>
             <SortableHeader field="properties">{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
-            <SortableHeader field="totalCollected">{t('inmobiliaria.dispersiones.tableView.collected')}</SortableHeader>
+            <SortableHeader field="totalCollected">{t(COLUMNA_DEL_CANON[baseDelCanon])}</SortableHeader>
             <SortableHeader field="totalCommission">{t('inmobiliaria.dispersiones.tableView.commission')}</SortableHeader>
             <SortableHeader field="netToPropietario">{t('inmobiliaria.dispersiones.tableView.net')}</SortableHeader>
             <SortableHeader field="status">{t('inmobiliaria.dispersiones.tableView.status')}</SortableHeader>
@@ -274,11 +289,20 @@ export function DispersionTable({
                   </span>
                 </TableCell>
 
-                {/* Total Collected */}
+                {/* Canon (causado o recaudado, según la base de la fila) */}
                 <TableCell className="p-4">
                   <span className="font-semibold text-foreground tabular-nums">
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
+                  {baseDelCanon === 'MIXTA' && (
+                    <span className="block text-xs text-muted-foreground" data-testid="dispersion-base-de-la-fila">
+                      {t(
+                        dispersion.baseDelCanon === 'RECAUDADO'
+                          ? 'inmobiliaria.dispersiones.tableView.filaRecaudado'
+                          : 'inmobiliaria.dispersiones.tableView.filaCausado',
+                      )}
+                    </span>
+                  )}
                 </TableCell>
 
                 {/* Commission */}

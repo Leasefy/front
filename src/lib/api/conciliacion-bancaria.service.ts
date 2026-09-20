@@ -10,8 +10,11 @@
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
+  DestinoDeConciliacion,
   FilaDeExtracto,
   FiltrosDeMovimientos,
+  LoteActual,
+  LoteDeConciliacion,
   MovimientoBancario,
   PaginaDeMovimientos,
   ResultadoDeCarga,
@@ -43,11 +46,23 @@ export function filaParaElBack(fila: FilaDeExtracto): Record<string, unknown> {
 }
 
 export const conciliacionBancariaApi = {
-  async cargarExtracto(nombreArchivo: string, filas: FilaDeExtracto[]): Promise<ResultadoDeCarga> {
-    const res = await apiClient.post<ResultadoDeCarga>(`${BASE}/extracto`, {
+  /**
+   * 🔴 `cuentaBancaria` (18-09-2026) es lo que le permite al back impedir que el
+   * mismo pago entre por el extracto Y por el archivo de recaudo del convenio.
+   * Va sólo si se sabe: sin ella el extracto entra como siempre y la respuesta
+   * avisa que no se pudo proteger.
+   */
+  async cargarExtracto(
+    nombreArchivo: string,
+    filas: FilaDeExtracto[],
+    cuentaBancaria?: string,
+  ): Promise<ResultadoDeCarga> {
+    const cuerpo: Record<string, unknown> = {
       nombreArchivo,
       filas: filas.map(filaParaElBack),
-    });
+    };
+    if (cuentaBancaria) cuerpo.cuentaBancaria = cuentaBancaria;
+    const res = await apiClient.post<ResultadoDeCarga>(`${BASE}/extracto`, cuerpo);
     invalidar('cobros');
     return res;
   },
@@ -68,10 +83,24 @@ export const conciliacionBancariaApi = {
     return apiClient.get<ResumenDeConciliacion>(`${BASE}/resumen`);
   },
 
-  async conciliar(movimientoId: string, cobroId: string): Promise<ResultadoDeConciliar> {
+  /**
+   * Concilia una línea del banco contra un cobro (el atajo) o contra un CLIENTE
+   * (el camino completo: deuda más vieja primero, mes en curso al vuelo y
+   * sobrante a favor).
+   *
+   * 🔴 El cuerpo lleva EXACTAMENTE una de las dos claves: el back valida con
+   * `forbidNonWhitelisted` y mandar las dos es un 400 con la petición entera
+   * rechazada. Por eso se arma desde el destino y no con un spread.
+   */
+  async conciliar(
+    movimientoId: string,
+    destino: DestinoDeConciliacion,
+  ): Promise<ResultadoDeConciliar> {
+    const cuerpo =
+      'cobroId' in destino ? { cobroId: destino.cobroId } : { tenantId: destino.tenantId };
     const res = await apiClient.post<ResultadoDeConciliar>(
       `${BASE}/movimientos/${movimientoId}/conciliar`,
-      { cobroId },
+      cuerpo,
     );
     invalidar('cobros');
     return res;
@@ -89,6 +118,34 @@ export const conciliacionBancariaApi = {
 
   async conciliarSeguros(): Promise<ResultadoDeSeguros> {
     const res = await apiClient.post<ResultadoDeSeguros>(`${BASE}/conciliar-seguros`, {});
+    invalidar('cobros');
+    return res;
+  },
+
+  // ── El lote de lo que calza EXACTO (17-09-2026) ───────────────────────────
+
+  /** El lote propuesto (esperando aprobación) y los últimos aprobados o reversados. */
+  async loteActual(): Promise<LoteActual> {
+    return apiClient.get<LoteActual>(`${BASE}/lotes/actual`);
+  },
+
+  /** Arma (o rearma) el lote de lo que calza exacto. No emite recibos. `null` si nada calza. */
+  async armarLote(): Promise<LoteDeConciliacion | null> {
+    return apiClient.post<LoteDeConciliacion | null>(`${BASE}/lotes`, {});
+  },
+
+  /** Un funcionario aprueba el lote de una vez: ahí se emiten los recibos. */
+  async aprobarLote(loteId: string): Promise<LoteDeConciliacion> {
+    const res = await apiClient.post<LoteDeConciliacion>(`${BASE}/lotes/${loteId}/aprobar`, {});
+    invalidar('cobros');
+    return res;
+  },
+
+  /** Sólo un administrador, con motivo: anula los recibos que emitió el lote. */
+  async reversarLote(loteId: string, motivo: string): Promise<LoteDeConciliacion> {
+    const res = await apiClient.post<LoteDeConciliacion>(`${BASE}/lotes/${loteId}/reversar`, {
+      motivo,
+    });
     invalidar('cobros');
     return res;
   },

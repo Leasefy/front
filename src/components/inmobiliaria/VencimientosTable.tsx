@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -36,6 +36,7 @@ import {
   DropdownListItem,
 } from '@/components/ui/dropdown-menu';
 import { TablePagination } from '@/components/ui/pagination';
+import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
@@ -228,8 +229,6 @@ export function VencimientosTable({
     </TableHead>
   );
 
-  const hasSelection = selectedItems.size > 0;
-
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -337,44 +336,6 @@ export function VencimientosTable({
           />
         </div>
 
-        {/* Bulk Actions */}
-        <AnimatePresence>
-          {hasSelection && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="flex items-center gap-2"
-            >
-              <span className="text-sm text-fg-muted dark:text-fg-subtle">
-                {selectedItems.size} {t('inmobiliaria.finance.expirations.selected')}
-              </span>
-              {onBulkRenewal && (
-                <Button
-                  size="sm"
-                  hideArrow
-                  onClick={() => onBulkRenewal(Array.from(selectedItems))}
-                  className="gap-2"
-                >
-                  <ArrowsClockwise className="w-4 h-4" />
-                  {t('inmobiliaria.finance.expirations.startRenewal')}
-                </Button>
-              )}
-              {onBulkReminder && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  hideArrow
-                  onClick={() => onBulkReminder(Array.from(selectedItems))}
-                  className="gap-2"
-                >
-                  <EnvelopeSimple className="w-4 h-4" />
-                  {t('inmobiliaria.finance.expirations.sendReminders')}
-                </Button>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Data Table */}
@@ -577,7 +538,55 @@ export function VencimientosTable({
             </p>
           </div>
         )}
+        {/* 🔴 19-09 · Lo marcado y lo que se puede hacer con ello, en la MISMA
+            pieza que el resto del panel (`BarraDeAccionesMasivas`). Antes era un
+            renglón que aparecía y desaparecía con animación metido en la franja
+            de filtros: estaba arriba de la tabla, o sea que marcando en la fila
+            40 las acciones quedaban fuera de la pantalla, y al no haber nada
+            marcado desaparecía —que es lo que hace creer que la función no
+            existe—. Nico, sobre Facturación: «este tipo de tablas que tienen
+            acciones masivas deben de verse muy bien y que sí estén juntas […]
+            revisa también el resto de tablas para que tengan consistencia». */}
+        {(onBulkRenewal || onBulkReminder) && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="vencimientos-acciones"
+            marcadas={selectedItems.size}
+            queSon={['contrato', 'contratos']}
+            onQuitar={() => setSelectedItems(new Set())}
+            cuandoNoHayNada="No hay ningún contrato marcado. Marca los que quieras renovar o recordar."
+          >
+            {onBulkReminder && (
+              <Button
+                variant="secondary"
+                size="sm"
+                hideArrow
+                disabled={selectedItems.size === 0}
+                onClick={() => onBulkReminder(Array.from(selectedItems))}
+                className="gap-2"
+                data-testid="vencimientos-recordatorios"
+              >
+                <EnvelopeSimple className="w-4 h-4" />
+                {t('inmobiliaria.finance.expirations.sendReminders')}
+              </Button>
+            )}
+            {onBulkRenewal && (
+              <Button
+                size="sm"
+                hideArrow
+                disabled={selectedItems.size === 0}
+                onClick={() => onBulkRenewal(Array.from(selectedItems))}
+                className="gap-2"
+                data-testid="vencimientos-renovar"
+              >
+                <ArrowsClockwise className="w-4 h-4" />
+                {t('inmobiliaria.finance.expirations.startRenewal')}
+              </Button>
+            )}
+          </BarraDeAccionesMasivas>
+        )}
       </div>
+
     </div>
   );
 }

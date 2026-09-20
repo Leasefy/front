@@ -62,6 +62,16 @@ function render(props: Partial<React.ComponentProps<typeof RenovacionesTable>>) 
   });
 }
 
+/** Escribir en el buscador de la tabla (input controlado por React). */
+function escribir(texto: string) {
+  const input = container.querySelector('[data-testid="buscar-renovaciones"]') as HTMLInputElement;
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(input, texto);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
 function chip(texto: string) {
   return Array.from(container.querySelectorAll('button')).find((b) =>
     b.textContent?.startsWith(texto),
@@ -140,11 +150,141 @@ describe('<RenovacionesTable>', () => {
     expect(container.querySelector('[data-testid="renovacion-c"]')).not.toBeNull();
   });
 
+  /*
+   * 🔴 19-09 · Visto en el navegador con las 28 de la agencia de QA: la franja
+   * decía «Todas 28» y al lado «Críticas 6 · Urgentes 8 · Próximas 6», que
+   * suman 20. Las otras ocho caían en `'90+'`, un cajón que el tipo del back
+   * SIEMPRE tuvo y que la franja no dibujaba: ocho filas imposibles de aislar
+   * y un número que no cuadraba con los de al lado.
+   */
+  it('🔴 los cuatro cajones suman lo que dice «Todas»', () => {
+    render({
+      data: [
+        renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
+        renovacion({ id: 'b', daysUntilExpiry: 45, urgencyBucket: '31-60' }),
+        renovacion({ id: 'c', daysUntilExpiry: 80, urgencyBucket: '61-90' }),
+        renovacion({ id: 'd', daysUntilExpiry: 200, urgencyBucket: '90+' }),
+        renovacion({ id: 'e', daysUntilExpiry: 310, urgencyBucket: '90+' }),
+      ],
+    });
+    const n = (etiqueta: string) =>
+      Number(chip(etiqueta).textContent!.replace(etiqueta, '').trim());
+    expect(n('Más de 90 días')).toBe(2);
+    expect(n('Críticas') + n('Urgentes') + n('Próximas') + n('Más de 90 días')).toBe(
+      n('Todas'),
+    );
+  });
+
+  it('🔴 y ese cajón se puede mirar solo', () => {
+    render({
+      data: [
+        renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' }),
+        renovacion({ id: 'd', daysUntilExpiry: 200, urgencyBucket: '90+' }),
+      ],
+    });
+    act(() => chip('Más de 90 días').click());
+    expect(container.querySelectorAll('tbody tr').length).toBe(1);
+    expect(container.querySelector('[data-testid="renovacion-d"]')).not.toBeNull();
+  });
+
+  it('sin ninguna a más de 90 días el chip no aparece: sería una puerta a un cuarto vacío', () => {
+    render({
+      data: [renovacion({ id: 'a', daysUntilExpiry: 10, urgencyBucket: '0-30' })],
+    });
+    const etiquetas = Array.from(container.querySelectorAll('button')).map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(etiquetas.some((t) => t?.startsWith('Más de 90'))).toBe(false);
+  });
+
   it('tocar la fila abre el detalle', () => {
-    const onViewDetails = vi.fn();
-    render({ data: [renovacion()], onViewDetails });
+    const onAbrir = vi.fn();
+    render({ data: [renovacion()], onAbrir });
 
     act(() => (container.querySelector('[data-testid="renovacion-r-1"]') as HTMLTableRowElement).click());
-    expect(onViewDetails).toHaveBeenCalledWith(expect.objectContaining({ id: 'r-1' }));
+    expect(onAbrir).toHaveBeenCalledWith(expect.objectContaining({ id: 'r-1' }));
+  });
+});
+
+/**
+ * 🔴 Los tres arreglos del 19-09-2026, y por qué cada uno es un defecto y no
+ * una preferencia.
+ */
+describe('<RenovacionesTable> — lo que se arregló el 19-09', () => {
+  it('🔴 NO hay un menú de cinco puertas a la misma habitación', () => {
+    // La última celda tenía «Ver detalle», «Notificar al inquilino», «Iniciar
+    // negociación», «Calcular IPC» y «Ver historial»: cinco rótulos, cinco
+    // `onSelect`, y la página cableaba los cinco al MISMO `openWorkflow`.
+    // Encima de una fila que ya abría ese cajón sola. Un menú que ofrece cinco
+    // cosas y hace una enseña que los rótulos de esta pantalla no significan
+    // nada.
+    const onAbrir = vi.fn();
+    render({ data: [renovacion()], onAbrir });
+    expect(container.querySelector('[aria-label="Acciones"]')).toBeNull();
+    for (const texto of ['Notificar', 'Calcular', 'historial', 'negociación']) {
+      expect(container.textContent, texto).not.toContain(texto);
+    }
+    // Queda lo único cierto: esta fila se abre.
+    expect(container.querySelector('[data-testid="abrir-r-1"]')).not.toBeNull();
+  });
+
+  it('🔴 se puede buscar, y por el NÚMERO DE CONTRATO', () => {
+    // 183 renovaciones en la agencia migrada. Sin buscador, llegar a una es
+    // pasar páginas — y el número del contrato, que es como la inmobiliaria
+    // nombra las cosas, ni siquiera se mostraba.
+    render({
+      data: [
+        renovacion({ id: 'r-1', contractNumero: '1686', tenantName: 'Ana Gómez' }),
+        renovacion({ id: 'r-2', contractNumero: '4120', tenantName: 'Beto Ruiz' }),
+      ],
+    });
+    expect(container.querySelectorAll('[data-testid^="renovacion-r-"]')).toHaveLength(2);
+    escribir('1686');
+    expect(container.querySelector('[data-testid="renovacion-r-1"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="renovacion-r-2"]')).toBeNull();
+    // Y el número se VE en la fila, no sólo se busca.
+    expect(container.querySelector('[data-testid="renovacion-r-1"]')!.textContent).toContain(
+      'Contrato 1686',
+    );
+  });
+
+  it('busca por inquilino y propietario, sin tildes', () => {
+    render({
+      data: [
+        renovacion({ id: 'r-1', tenantName: 'Ana Gómez' }),
+        renovacion({ id: 'r-2', tenantName: 'Beto Ruiz' }),
+      ],
+    });
+    escribir('gomez');
+    expect(container.querySelector('[data-testid="renovacion-r-1"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="renovacion-r-2"]')).toBeNull();
+  });
+
+  it('🔴 los filtros están todos en UNA franja, no repartidos en dos', () => {
+    // El `Select` de estado vivía en el encabezado de la tarjeta, arriba a la
+    // derecha, y los cajones de urgencia en otra franja: dos controles que
+    // hacen lo mismo, con dos formas, en dos lugares.
+    render({ data: [renovacion()] });
+    const franja = container.querySelector('[data-testid="filtro-estado"]')!.closest('div.flex.flex-col.gap-3')!;
+    expect(franja.querySelector('[data-testid="buscar-renovaciones"]')).not.toBeNull();
+    expect(franja.textContent).toContain('Críticas');
+  });
+
+  it('con la búsqueda puesta dice el alcance y deja quitarlo', () => {
+    render({
+      data: [
+        renovacion({ id: 'r-1', tenantName: 'Ana Gómez' }),
+        renovacion({ id: 'r-2', tenantName: 'Beto Ruiz' }),
+      ],
+    });
+    expect(container.querySelector('[data-testid="alcance-de-renovaciones"]')).toBeNull();
+    escribir('gomez');
+    expect(container.querySelector('[data-testid="alcance-de-renovaciones"]')!.textContent).toContain(
+      '1 de 2 renovaciones',
+    );
+    act(() =>
+      (container.querySelector('[data-testid="limpiar-filtros-renovaciones"]') as HTMLButtonElement).click(),
+    );
+    expect(container.querySelectorAll('[data-testid^="renovacion-r-"]')).toHaveLength(2);
   });
 });

@@ -8,6 +8,7 @@ import { NavItem } from '@/components/ui/plan/PlanSidebar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { MobileNavSheet } from '@/components/layout/MobileNavSheet';
+import { hrefDeLaFilaActiva } from '@/lib/nav/fila-activa-del-menu';
 
 interface MobileNavBarProps {
   navItems: NavItem[];
@@ -24,11 +25,11 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
   const overflowItems = navigable.slice(5);
   const hasOverflow = navigable.length > 5;
 
+  // Se calcula sobre TODAS las filas, no sólo las cinco de la barra: si la
+  // más específica quedó en el «más», ninguna de arriba se marca por prefijo.
+  const hrefActivo = hrefDeLaFilaActiva(navigable, pathname);
   function isActive(item: NavItem): boolean {
-    if (item.exact) {
-      return pathname === item.href;
-    }
-    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+    return item.href === hrefActivo;
   }
 
   return (
@@ -89,6 +90,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
         <MobileNavSheet
           open={moreOpen}
           items={overflowItems}
+          hrefActivo={hrefActivo}
           onClose={() => setMoreOpen(false)}
         />
       )}

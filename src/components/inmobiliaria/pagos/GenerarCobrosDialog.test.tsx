@@ -29,7 +29,7 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   },
 }))
 
-import { GenerarCobrosDialog } from './GenerarCobrosDialog'
+import { GenerarCobrosDialog, ordenarVencidos } from './GenerarCobrosDialog'
 
 // El diálogo del DS usa un portal: el contenido NO cuelga del container.
 const dialogo = () =>
@@ -124,5 +124,104 @@ describe('GenerarCobrosDialog', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
     expect(onGenerado).not.toHaveBeenCalled()
     expect(document.body.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+  })
+})
+
+/**
+ * 🔴 Los contratos VENCIDOS que la corrida deja fuera (15-09).
+ *
+ * El back los excluye y los devuelve en `omitidosPorContratoVencido`. Si la
+ * pantalla no los muestra, la exclusión pasa en silencio — que es exactamente
+ * lo que vino a evitar: un contrato vencido deja de cobrarse y nadie se entera
+ * hasta que el propietario reclama.
+ */
+describe('GenerarCobrosDialog · contratos vencidos', () => {
+  const vencido = (over: Record<string, unknown> = {}) => ({
+    consignacionId: 'cons-1',
+    contractId: 'ct-1',
+    code: 1839,
+    externalId: '1686',
+    tenantName: 'Nubia Amparo David',
+    propertyAddress: 'Cra 76 #45-12 apto 302',
+    endDate: '2026-03-31',
+    diasVencido: 168,
+    leyenda: 'Vencido desde el 2026-03-31 (168 días)',
+    tieneRenovacionAbierta: false,
+    ...over,
+  })
+
+  async function generar() {
+    await act(async () => {
+      porTestId('generar-confirmar')?.click()
+    })
+  }
+
+  it('los lista, dice cuántos son y enlaza a cada contrato', async () => {
+    generate.mockResolvedValue({
+      month: '2026-09',
+      created: 812,
+      omitidosPorContratoVencido: {
+        consultado: true,
+        cuantos: 1,
+        contratos: [vencido()],
+      },
+    })
+    const { onOpenChange } = montar()
+    await generar()
+
+    const bloque = porTestId('vencidos-omitidos')
+    expect(bloque).not.toBeNull()
+    expect(bloque?.textContent).toContain('Nubia Amparo David')
+    expect(bloque?.textContent).toContain('Vencido desde el 2026-03-31')
+    expect(
+      porTestId('ir-al-contrato-ct-1')?.getAttribute('href'),
+    ).toBe('/panel/inmobiliaria/contratos/ct-1')
+    // 🔴 El diálogo NO se cierra solo: si se cerrara, nadie vería la lista.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false)
+  })
+
+  it('🔴 primero los que ya tienen una renovación abierta; después, el más vencido', () => {
+    const orden = ordenarVencidos([
+      vencido({ contractId: 'a', diasVencido: 10, tieneRenovacionAbierta: false }),
+      vencido({ contractId: 'b', diasVencido: 200, tieneRenovacionAbierta: false }),
+      vencido({ contractId: 'c', diasVencido: 5, tieneRenovacionAbierta: true }),
+    ])
+    expect(orden.map((c) => c.contractId)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('🔴 «no se pudo verificar» NO se dice como «no hay vencidos»', async () => {
+    generate.mockResolvedValue({
+      month: '2026-09',
+      created: 812,
+      omitidosPorContratoVencido: {
+        consultado: false,
+        motivo: 'La migración de terminación no está aplicada en esta base.',
+        cuantos: 0,
+        contratos: [],
+      },
+    })
+    montar()
+    await generar()
+
+    const aviso = porTestId('vencidos-no-verificado')
+    expect(aviso).not.toBeNull()
+    expect(aviso?.textContent).toContain('NO excluyó a ninguno')
+    expect(aviso?.textContent).toContain('La migración de terminación')
+    // Y no se dibuja la lista de omitidos, que no existe.
+    expect(porTestId('vencidos-omitidos')).toBeNull()
+  })
+
+  it('sin vencidos y con la consulta hecha, el diálogo se cierra como siempre', async () => {
+    generate.mockResolvedValue({
+      month: '2026-09',
+      created: 812,
+      omitidosPorContratoVencido: { consultado: true, cuantos: 0, contratos: [] },
+    })
+    const { onOpenChange, onGenerado } = montar()
+    await generar()
+
+    expect(onGenerado).toHaveBeenCalled()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(porTestId('vencidos-omitidos')).toBeNull()
   })
 })

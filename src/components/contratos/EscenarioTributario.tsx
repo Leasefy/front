@@ -78,7 +78,7 @@ export function EscenarioTributario({ contract }: Props) {
          */
         <p className="text-sm text-muted-foreground" data-testid="escenario-sin-dato">
           Esta versión del servidor todavía no calcula el escenario de este
-          contrato. Recargá la página; si sigue igual, el back necesita
+          contrato. Recarga la página; si sigue igual, el back necesita
           actualizarse.
         </p>
       ) : (

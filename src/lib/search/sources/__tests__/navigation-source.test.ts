@@ -44,9 +44,21 @@ describe('navigationSource — chips', () => {
   });
 
   it('el contexto viaja en subtitle: es lo que se pinta a la derecha', async () => {
+    // Decía «Cobros», que era el módulo dueño. Desde el 2026-09-15 la plata es
+    // un solo módulo con dos caras, y el contexto dice de cuál es cada fila.
     const filas = await buscar('cartera');
     const cartera = filas.find((f) => f.title === 'Cartera');
-    expect(cartera?.subtitle).toBe('Cobros');
+    expect(cartera?.subtitle).toBe('Pagos · inquilinos');
+  });
+
+  it('«cobros» sigue encontrando la lista de cobros emitidos, que ya no es un módulo', async () => {
+    // Era el nombre de una fila del sidebar y la gente lo escribe. Si el
+    // buscador dejara de contestarlo, la unificación se leería como una
+    // función borrada.
+    const filas = await buscar('cobros');
+    const emitidos = filas.find((f) => f.title === 'Cobros emitidos');
+    expect(emitidos?.href).toBe('/panel/inmobiliaria/pagos/cartera/cobros');
+    expect(emitidos?.subtitle).toBe('Cartera');
   });
 
   it('Agenda se busca bajo «Captación y arriendo», no bajo «Operación»', async () => {
@@ -59,6 +71,28 @@ describe('navigationSource — chips', () => {
     expect(agenda, 'la página Agenda tiene que estar en el catálogo').toBeDefined();
     expect(agenda?.subtitle).toBe('Captación y arriendo');
   });
+
+  it('🔴 los agentes se buscan bajo «Agentes IA», como en el menú (Nico, 2026-09-16)', async () => {
+    // Antes decían «Inmuebles», «Postulaciones», «Pagos · inquilinos», «Dinero»
+    // o «Reportes»: el módulo que los hospedaba. Las URLs no cambiaron.
+    const contexto = async (q: string, titulo: string) =>
+      (await buscar(q)).find((f) => f.title === titulo)?.subtitle
+    expect(await contexto('cobranza', 'Cobranza')).toBe('Agentes IA')
+    expect(await contexto('matching', 'Matching')).toBe('Agentes IA')
+    expect(await contexto('asegurabilidad', 'Asegurabilidad')).toBe('Agentes IA')
+    expect(await contexto('avalúo', 'Avalúos')).toBe('Agentes IA')
+    expect(await contexto('conciliación', 'Conciliación')).toBe('Agentes IA')
+    expect(await contexto('desempeño', 'Desempeño IA')).toBe('Agentes IA')
+  })
+
+  it('el equipo de pagos se encuentra por su nombre y por sus agentes, y no se confunde con Pagos', async () => {
+    const porNombre = (await buscar('agente de pagos')).find((f) => f.title === 'Agente de pagos')
+    expect(porNombre?.href).toBe('/panel/inmobiliaria/pagos/agente')
+    expect(porNombre?.subtitle).toBe('Agentes IA')
+    expect((await buscar('valentina')).map((f) => f.title)).toContain('Agente de pagos')
+    // «Pagos» es la plata de la inmobiliaria, no un agente.
+    expect((await buscar('pagos')).find((f) => f.title === 'Pagos')?.subtitle).toBe('Dinero')
+  })
 
   it('respeta canAccess: sin permiso de portafolio no sale la consignación', async () => {
     const sinPortafolio: SearchSourceContext = {

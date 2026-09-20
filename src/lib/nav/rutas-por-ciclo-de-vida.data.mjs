@@ -4,7 +4,7 @@
  *
  * El sidebar tenía 38 entradas en 7 grupos, once bajo un namespace paralelo
  * `/ai/*` que repetía módulos que ya existían afuera. Ahora la IA vive dentro
- * de cada módulo (Cobros → Cobranza, Pagos → la Sala, Postulaciones → el flujo
+ * de cada módulo (Pagos → Cobranza y la Sala, Postulaciones → el flujo
  * del candidato…), los grupos siguen el ciclo de vida y el rol filtra en vez
  * de bifurcar. La fuente de la estructura es
  * `src/lib/nav/arquitectura-del-panel.ts`.
@@ -30,9 +30,14 @@ const P = '/panel/inmobiliaria'
 /** @type {Array<{ source: string, destination: string, permanent: boolean }>} */
 export const RUTAS_POR_CICLO_DE_VIDA_DATA = [
   // ── Dinero ────────────────────────────────────────────────────────────────
-  { source: `${P}/ai/cobranza/:path*`, destination: `${P}/cobros/cobranza/:path*`, permanent: false },
-  { source: `${P}/cartera`, destination: `${P}/cobros/cartera`, permanent: false },
-  { source: `${P}/recaudo`, destination: `${P}/cobros/recaudo`, permanent: false },
+  // Los tres destinos se repuntaron a `/pagos/*` el 2026-09-15, cuando «Cobros»
+  // dejó de ser un módulo (ver `un-solo-modulo-de-plata.data.mjs`). Repuntarlos
+  // y no encadenarlos es deliberado: dos saltos son dos viajes al servidor y la
+  // primera regla que calza gana, así que una cadena se rompe sola el día que
+  // alguien reordene las tablas.
+  { source: `${P}/ai/cobranza/:path*`, destination: `${P}/pagos/cobranza/:path*`, permanent: false },
+  { source: `${P}/cartera`, destination: `${P}/pagos/cartera`, permanent: false },
+  { source: `${P}/recaudo`, destination: `${P}/pagos/recaudo`, permanent: false },
   { source: `${P}/ai/pagos/:path*`, destination: `${P}/pagos/:path*`, permanent: false },
   { source: `${P}/dispersiones/:path*`, destination: `${P}/pagos/dispersiones/:path*`, permanent: false },
   { source: `${P}/tesoreria/ap/:path*`, destination: `${P}/pagos/cxp/:path*`, permanent: false },

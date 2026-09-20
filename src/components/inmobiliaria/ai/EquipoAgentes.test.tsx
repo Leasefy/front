@@ -163,7 +163,7 @@ describe('EquipoAgentes — happy path', () => {
     // cobranza's human queue is escalaciones
     expect(
       container.querySelector('[data-testid="equipo-cola-cobranza"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/cobros/cobranza/escalaciones')
+    ).toBe('/panel/inmobiliaria/pagos/cobranza/escalaciones')
 
     // cotizador's cola
     expect(

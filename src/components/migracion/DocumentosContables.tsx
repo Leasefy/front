@@ -56,6 +56,7 @@ import {
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
 
+import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 
 /** El acumulado de todos los lotes: es lo que la persona lee al final. */
@@ -66,6 +67,9 @@ interface Acumulado {
   rechazados: number;
   porDocumento: number;
   porNombre: number;
+  porNumeroDeContrato: number;
+  porCodigoDeInmueble: number;
+  soloInmueble: number;
   sinContrato: number;
   migrados: number;
   /** Motivo → cuántas filas. Agrupado: 40.000 filas iguales son UNA línea. */
@@ -80,6 +84,9 @@ function acumuladoVacio(): Acumulado {
     rechazados: 0,
     porDocumento: 0,
     porNombre: 0,
+    porNumeroDeContrato: 0,
+    porCodigoDeInmueble: 0,
+    soloInmueble: 0,
     sinContrato: 0,
     migrados: 0,
     motivos: new Map(),
@@ -101,6 +108,10 @@ function sumar(
     rechazados: acc.rechazados + r.rechazados,
     porDocumento: acc.porDocumento + r.asociados.porDocumento,
     porNombre: acc.porNombre + r.asociados.porNombre,
+    // `?? 0`: un back sin la regla nueva no manda estas dos claves.
+    porNumeroDeContrato: acc.porNumeroDeContrato + (r.asociados.porNumeroDeContrato ?? 0),
+    porCodigoDeInmueble: acc.porCodigoDeInmueble + (r.asociados.porCodigoDeInmueble ?? 0),
+    soloInmueble: acc.soloInmueble + (r.asociados.soloInmueble ?? 0),
     sinContrato: acc.sinContrato + r.asociados.sinContrato,
     migrados: acc.migrados + (r.migrados ?? 0),
     motivos,
@@ -123,6 +134,8 @@ export function DocumentosContables({
   const [leidas, setLeidas] = useState(0);
   const [acumulado, setAcumulado] = useState<Acumulado | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Sube cada vez que termina una migración: lo guardado cambió. */
+  const [migraciones, setMigraciones] = useState(0);
   const cancelar = useRef(false);
 
   const ocupado = fase === "leyendo" || fase === "migrando";
@@ -181,15 +194,18 @@ export function DocumentosContables({
         });
         setLeidas(resultado.filas);
         setFase(modo === "revisar" ? "revisado" : "listo");
+        if (modo === "migrar") setMigraciones((v) => v + 1);
       } catch (e) {
         setError(
           `${mensajeDeContabilidad(e, "No pudimos procesar el archivo.")} ` +
             `Lo que ya entró NO se duplica al reintentar: cada comprobante se ` +
-            `identifica por su prefijo y consecutivo.`,
+            `identifica por su número, su fecha, su concepto y sus montos, así ` +
+            `que dos facturas distintas con el mismo número entran las dos.`,
         );
         // Se conserva lo acumulado: cortar a la mitad y mostrar 0 escondería
         // los 40.000 que sí entraron.
         setFase(modo === "revisar" ? "revisado" : "listo");
+        if (modo === "migrar") setMigraciones((v) => v + 1);
       }
     },
     [mapeo],
@@ -354,6 +370,10 @@ export function DocumentosContables({
           onMigrar={archivo ? () => void recorrer(archivo, "migrar") : undefined}
         />
       ) : null}
+
+      {/* Lo que ya está guardado, subas o no un archivo ahora: cuántos quedaron
+          sin inquilino, por tipo y por qué. Se recuenta al terminar de migrar. */}
+      {!ocupado ? <ComprobantesSinContrato version={migraciones} /> : null}
     </section>
   );
 }
@@ -372,7 +392,11 @@ function ResumenDeDocumentos({
   fase: Fase;
   onMigrar?: () => void;
 }) {
-  const conContrato = acumulado.porDocumento + acumulado.porNombre;
+  const conContrato =
+    acumulado.porDocumento +
+    acumulado.porNombre +
+    acumulado.porNumeroDeContrato +
+    acumulado.porCodigoDeInmueble;
   const motivos = [...acumulado.motivos.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   const yaSeEscribio = fase === "listo";
 
@@ -419,15 +443,43 @@ function ResumenDeDocumentos({
             por el nombre del tercero, cuando el concepto no traía documento.
           </span>
         </p>
+        <p className="text-fg" data-testid="documentos-por-numero-de-contrato">
+          <span className="font-mono tabular-nums">
+            {acumulado.porNumeroDeContrato.toLocaleString("es-CO")}
+          </span>{" "}
+          <span className="text-fg-muted">
+            porque el concepto dice «CONTRATO N» y ése es el número del contrato
+            en el sistema anterior.
+          </span>
+        </p>
+        <p className="text-fg" data-testid="documentos-por-codigo-de-inmueble">
+          <span className="font-mono tabular-nums">
+            {acumulado.porCodigoDeInmueble.toLocaleString("es-CO")}
+          </span>{" "}
+          <span className="text-fg-muted">
+            porque el concepto dice el código del inmueble («COD. 127») y ese
+            inmueble tenía un solo contrato vigente el día del comprobante.
+          </span>
+        </p>
+        <p className="text-fg" data-testid="documentos-solo-inmueble">
+          <span className="font-mono tabular-nums">
+            {acumulado.soloInmueble.toLocaleString("es-CO")}
+          </span>{" "}
+          <span className="text-fg-muted">
+            quedaron colgados SÓLO de su inmueble: el concepto dice el código,
+            pero ese día el inmueble no tenía contrato vigente. No tienen
+            inquilino, pero salen en la ficha del inmueble.
+          </span>
+        </p>
         <p className="text-fg">
           <span className="font-mono tabular-nums">
             {acumulado.sinContrato.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron SIN contrato: el concepto no nombra a ningún tercero que
-            esté en un contrato de tu agencia. Se guardan igual, con su
-            concepto, y se pueden buscar; lo que no se hace es inventarles un
-            contrato.
+            quedaron SIN contrato: el concepto no nombra a ningún tercero,
+            contrato ni inmueble de tu agencia que se pueda resolver sin
+            adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo
+            que no se hace es inventarles un contrato.
           </span>
         </p>
       </div>

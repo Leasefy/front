@@ -173,6 +173,21 @@ const TARGET_SLUG: Record<BackendActionTarget, string> = {
 };
 
 /**
+ * 🔴 Targets que nombran una PANTALLA real del panel que ya no es la sala de
+ * un agente.
+ *
+ * Hoy es uno solo: `pagos`. Hasta el 2026-09-16 su ruta la resolvía
+ * `AGENT_WORKSPACES`, porque `/pagos` era la Sala del agente de Pagos. Esa
+ * Sala se fue (NOTA al pie de `agentWorkspaceNav.ts`) pero la pantalla sigue
+ * ahí —es la raíz del módulo de la plata—, y el asistente sigue proponiendo
+ * «ver pagos». Sin esta tabla, ese botón habría dejado de navegar en silencio
+ * y habría caído al Piloto.
+ */
+const PANTALLA_SIN_AGENTE: Partial<Record<BackendActionTarget, string>> = {
+  pagos: '/panel/inmobiliaria/pagos',
+};
+
+/**
  * Front route for a suggested-action target. Unknown or unregistered targets
  * fall back to Inicio (el Piloto, la torre de control de los agentes) — never
  * a dead/404 link.
@@ -180,7 +195,7 @@ const TARGET_SLUG: Record<BackendActionTarget, string> = {
 export function targetToHref(target: BackendActionTarget): string {
   const slug = TARGET_SLUG[target];
   const ws = slug ? AGENT_WORKSPACES.find((w) => w.slug === slug) : undefined;
-  return ws?.basePath ?? '/panel/inmobiliaria/piloto';
+  return ws?.basePath ?? PANTALLA_SIN_AGENTE[target] ?? '/panel/inmobiliaria/piloto';
 }
 
 /**
@@ -193,6 +208,7 @@ export function targetToHref(target: BackendActionTarget): string {
  * sigue preguntándole al asistente, que es lo único que puede responderla.
  */
 export function targetTienePantalla(target: BackendActionTarget): boolean {
+  if (PANTALLA_SIN_AGENTE[target]) return true;
   const slug = TARGET_SLUG[target];
   return Boolean(slug && AGENT_WORKSPACES.some((w) => w.slug === slug));
 }
@@ -282,7 +298,16 @@ export interface ChatStreamHandlers {
     dispatches: BackendDispatch[];
     generatedAt: string;
   }) => void;
-  onError?: (message: string) => void;
+  /**
+   * Un fallo ANUNCIADO dentro del stream (evento `error`).
+   *
+   * 🔴 `status` y `code` viajan porque la respuesta HTTP ya salió con 200 —es
+   * un stream— así que sin ellos no queda NINGÚN código en ningún lado: el
+   * panel leía cualquier corte como «no pude conectarme», incluida la cuenta
+   * sin saldo, que es la única que se arregla recargando créditos (auditoría
+   * 13-09, caso B2).
+   */
+  onError?: (message: string, meta?: { status?: number; code?: string }) => void;
 }
 
 /**
@@ -404,7 +429,10 @@ export function handleSSEEvent(
       });
       break;
     case 'error':
-      handlers.onError?.(String(obj.error ?? 'stream error'));
+      handlers.onError?.(String(obj.error ?? 'stream error'), {
+        ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
+        ...(typeof obj.code === 'string' ? { code: obj.code } : {}),
+      });
       break;
     default:
       break;

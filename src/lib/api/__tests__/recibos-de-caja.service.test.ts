@@ -307,6 +307,27 @@ describe('recibosDeCajaApi.cartera', () => {
       urlDe(fetchMock).endsWith('/inmobiliaria/recibos-de-caja/cartera-por-cobro/cobro-1'),
     ).toBe(true);
   });
+
+  /*
+   * 🔴 La vista previa del recibo (2026-09-16): el interés se liquida hasta el
+   * día elegido, así que la fecha TIENE que viajar. Sin fecha, la URL de
+   * siempre: el back la lee como hoy.
+   */
+  it('con fecha, la manda como `?fecha=YYYY-MM-DD` por los dos caminos', async () => {
+    const porPersona = mockFetchOnce(CARTERA);
+    await recibosDeCajaApi.cartera('inq-1', '2026-08-20');
+    expect(
+      urlDe(porPersona).endsWith('/inmobiliaria/recibos-de-caja/cartera/inq-1?fecha=2026-08-20'),
+    ).toBe(true);
+
+    const porCobro = mockFetchOnce(CARTERA);
+    await recibosDeCajaApi.carteraPorCobro('cobro-1', '2026-08-20');
+    expect(
+      urlDe(porCobro).endsWith(
+        '/inmobiliaria/recibos-de-caja/cartera-por-cobro/cobro-1?fecha=2026-08-20',
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('recibosDeCajaApi.listar', () => {

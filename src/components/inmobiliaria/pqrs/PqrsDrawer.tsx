@@ -61,13 +61,32 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
   const { agentes } = useAgentes({ skip: !open })
   const [guardando, setGuardando] = useState(false)
 
-  const opcionesAgente = useMemo(
-    () =>
-      agentes
-        .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
-        .map((a) => ({ value: a.userId, label: a.name })),
-    [agentes],
-  )
+  /*
+   * 🔴 19-09-2026 · Quien YA responde entra siempre en la lista, aunque no
+   * esté entre los agentes activos.
+   *
+   * Visto en una captura de Nico: arriba el cajón decía «RESPONSABLE · victor
+   * ortiz» y tres renglones más abajo, en el control del MISMO campo, decía
+   * «Sin agentes activos». El `Combobox` recibía un `value` que no existía
+   * entre sus opciones, no encontraba cómo rotularlo y caía al placeholder.
+   * Dos afirmaciones contrarias sobre el mismo dato, en la misma pantalla, a
+   * treinta píxeles de distancia — y la que gana es la que parece un control,
+   * o sea la falsa.
+   *
+   * Pasa siempre que quien responde dejó de estar activo en la inmobiliaria:
+   * la PQRS no se reasigna sola, así que el caso es normal, no un borde raro.
+   */
+  const opcionesAgente = useMemo(() => {
+    const activos = agentes
+      .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
+      .map((a) => ({ value: a.userId, label: a.name }))
+    const actual = pqrs?.asignadoAUserId
+    if (!actual || activos.some((o) => o.value === actual)) return activos
+    return [
+      { value: actual, label: pqrs?.asignadoANombre ?? 'Responsable actual' },
+      ...activos,
+    ]
+  }, [agentes, pqrs?.asignadoAUserId, pqrs?.asignadoANombre])
 
   const siguientes = pqrs ? estadosSiguientes(pqrs.estado) : []
   const sla = pqrs ? textoSla(pqrs.slaVenceAt, pqrs.estado) : null
@@ -136,8 +155,23 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
               <Dato etiqueta="Inmueble">
                 {pqrs.inmuebleLabel ?? <span className="text-fg-subtle">Sin inmueble</span>}
               </Dato>
-              <Dato etiqueta="Asignado a">
-                {pqrs.asignadoANombre ?? <span className="text-fg-subtle">Sin asignar</span>}
+              {/* Quién responde y DESDE CUÁNDO (Nico, 2026-09-15: una PQRS no
+                  puede quedar sin responsable). «Sin asignar» sólo se ve en
+                  solicitudes viejas: las nuevas nacen con responsable. La
+                  fecha falta en las anteriores a la migración y no se inventa. */}
+              <Dato etiqueta="Responsable">
+                {pqrs.asignadoANombre ? (
+                  <>
+                    <span className="font-medium">{pqrs.asignadoANombre}</span>
+                    {pqrs.asignadoDesde ? (
+                      <span className="block text-fg-muted" data-testid="pqrs-responsable-desde">
+                        responde desde el {fecha(pqrs.asignadoDesde)}
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="text-fg-subtle">Sin asignar</span>
+                )}
               </Dato>
               <Dato etiqueta="Radicada el">{fecha(pqrs.createdAt)}</Dato>
               <Dato etiqueta="SLA">
@@ -155,7 +189,14 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
             <section className="space-y-4 border-t border-border pt-5">
               <div className="space-y-1.5">
                 <Label htmlFor="pqrs-mover">Estado</Label>
-                {siguientes.length > 0 ? (
+                {/* Sin responsable no se avanza: el back lo rechaza con un 400
+                    y ofrecer el selector sería mandar a la gente contra un muro. */}
+                {!pqrs.asignadoAUserId && siguientes.length > 0 ? (
+                  <p className="text-sm text-fg-muted" data-testid="pqrs-falta-responsable">
+                    Asigna un responsable abajo para poder moverla: el plazo de ley corre
+                    para alguien.
+                  </p>
+                ) : siguientes.length > 0 ? (
                   <Combobox
                     data-testid="pqrs-mover"
                     options={siguientes.map((e) => ({ value: e, label: ESTADO_LABEL[e] }))}
@@ -173,15 +214,19 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pqrs-asignar">Asignar a</Label>
+                <Label htmlFor="pqrs-asignar">Responsable</Label>
                 <Combobox
                   data-testid="pqrs-asignar"
                   options={opcionesAgente}
                   value={pqrs.asignadoAUserId ?? undefined}
                   onChange={(v) => {
                     if (v === (pqrs.asignadoAUserId ?? undefined)) return
+                    // 🔴 Sólo se REASIGNA, nunca se desasigna: una PQRS no puede
+                    // quedar sin responsable (Nico, 2026-09-15). El back tiene la
+                    // misma regla y responde 400 si igual le llega un `null`.
+                    if (!v) return
                     const nombre = opcionesAgente.find((o) => o.value === v)?.label
-                    void actualizar({ asignadoAUserId: v ?? null }, nombre ? `Asignada a ${nombre}` : 'Sin asignar')
+                    void actualizar({ asignadoAUserId: v }, nombre ? `Responde ${nombre}` : 'Reasignada')
                   }}
                   placeholder={opcionesAgente.length ? 'Elegir un responsable' : 'Sin agentes activos'}
                   searchPlaceholder="Nombre del agente"

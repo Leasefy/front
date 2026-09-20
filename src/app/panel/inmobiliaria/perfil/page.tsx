@@ -81,9 +81,13 @@ export function oNulo(valor: string): string | null {
 
 const AGENCY_ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
-  AGENTE: 'Agente',
+  AGENTE: 'Asesor comercial',
   CONTADOR: 'Contador',
   VIEWER: 'Visualizador',
+  // O-05 (18-09-2026): los tres roles nuevos.
+  COORDINADOR: 'Coordinador',
+  AUXILIAR_CARTERA: 'Auxiliar de cartera',
+  ABOGADO_EXTERNO: 'Abogado externo',
 };
 
 const AGENCY_ROLE_DESC: Record<string, string> = {
@@ -91,6 +95,9 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
   AGENTE: 'Gestión de propiedades y pipeline',
   CONTADOR: 'Acceso financiero y contable',
   VIEWER: 'Solo lectura',
+  COORDINADOR: 'Ve el equipo y reasigna. No mueve plata.',
+  AUXILIAR_CARTERA: 'Hace recibos. No anula ni condona.',
+  ABOGADO_EXTERNO: 'Sólo sus casos jurídicos.',
 };
 
 export default function InmobiliariaPerfilPage() {

@@ -7,7 +7,11 @@ import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './man
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
-import { tasaMedida } from '@/lib/tasas';
+import type { ComoSeMideLaTasa, TasaDeRecaudo } from '@/lib/tasa-de-recaudo';
+import type {
+  CargoDeLaReparacion,
+  LoQueSeAprueba,
+} from '@/lib/types/deducciones';
 import type {
   DocumentType,
   AgencyProfile,
@@ -44,6 +48,7 @@ import type {
   AgencyInvoicesResponse,
   CarteraReport,
   OcupacionReport,
+  CaptacionesYArriendos,
   ComisionesAgenteReport,
   RendimientoAgentesReport,
   VencimientosReport,
@@ -64,7 +69,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
-import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -112,6 +117,16 @@ export interface MemberPermissionsResponse {
   effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
   usingDefaults: boolean;
   note?: string;
+  /**
+   * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
+   *
+   * Sólo lo trae `GET /inmobiliaria/agency/my-permissions`; el endpoint que un
+   * admin usa para ver los permisos de OTRO miembro NO lo lleva, porque un
+   * entitlement de pago no se edita desde la agencia. Opcional en el tipo para
+   * que las respuestas de un back sin desplegar no rompan nada: ausente se lee
+   * como ninguno.
+   */
+  modulosPagos?: string[];
 }
 
 // ============================================================================
@@ -154,7 +169,7 @@ const ACCOUNT_TYPE_TO_WIRE: Record<AccountType, string> = {
  * same rule T-0011 established for `PropertyType` (see
  * `properties.mapper.ts` / `ConsignacionWizard.tsx`'s `TYPE_TO_BACKEND` throw).
  */
-function mapBankCodeToWire(code: BankCode): string {
+export function mapBankCodeToWire(code: BankCode): string {
   const wire = BANK_CODE_TO_WIRE[code];
   if (!wire) {
     throw new Error(
@@ -472,6 +487,21 @@ export const agentesApi = {
   async getLeaderboard(): Promise<Agente[]> {
     const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes/leaderboard`);
     return lista(res);
+  },
+
+  /**
+   * 🔴 17-09: quién captó y quién arrendó, SIN PLATA. Reemplaza a
+   * `GET /inmobiliaria/agentes/comisiones`, que atribuía pesos a cada asesor.
+   */
+  async captacionesYArriendos(rango?: {
+    desde?: string;
+    hasta?: string;
+  }): Promise<CaptacionesYArriendos> {
+    const q = new URLSearchParams();
+    if (rango?.desde) q.set('desde', rango.desde);
+    if (rango?.hasta) q.set('hasta', rango.hasta);
+    const cola = q.toString() ? `?${q.toString()}` : '';
+    return apiClient.get<CaptacionesYArriendos>(`${BASE}/agentes/captaciones-y-arriendos${cola}`);
   },
 };
 
@@ -1039,6 +1069,49 @@ export function normalizeCobro<T extends Cobro>(raw: T): T {
   };
 }
 
+/**
+ * Una consignación que quedó FUERA de la corrida porque su contrato venció.
+ * Espeja `ConsignacionConContratoVencido` en
+ * `back-erp/src/inmobiliaria/cobros/cobros.service.ts`.
+ */
+export interface ConsignacionConContratoVencido {
+  consignacionId: string;
+  contractId: string;
+  /** Nuestro consecutivo. */
+  code: number;
+  /** El número que la inmobiliaria conoce (el Nui de un contrato migrado). */
+  externalId: string | null;
+  tenantName: string | null;
+  propertyAddress: string | null;
+  /** `YYYY-MM-DD` del fin pactado que ya pasó. */
+  endDate: string;
+  diasVencido: number;
+  /** Lista para mostrar: «Vencido desde el 2026-03-31 (168 días)». */
+  leyenda: string;
+  /** Alguien ya abrió una renovación: la pantalla los pone primero. */
+  tieneRenovacionAbierta: boolean;
+}
+
+/** Lo que devuelve `POST /inmobiliaria/cobros/generate`. */
+export interface ResultadoDeLaGeneracion {
+  month?: string;
+  created?: number;
+  skipped?: number;
+  skippedCanonDesconocido?: number;
+  /**
+   * 🔴 `consultado: false` NO es «no hay vencidos»: es «no se pudo saber» (la
+   * migración de terminación no está aplicada o la consulta falló). La corrida
+   * se comportó como siempre y NO excluyó a nadie. Son dos hechos distintos y
+   * la pantalla tiene que decirlos distinto.
+   */
+  omitidosPorContratoVencido?: {
+    consultado: boolean;
+    motivo?: string | null;
+    cuantos: number;
+    contratos: ConsignacionConContratoVencido[];
+  };
+}
+
 export const cobrosApi = {
   /**
    * Sin `month` trae TODOS los meses. `consignacionId` (el mandato del
@@ -1051,8 +1124,11 @@ export const cobrosApi = {
     status?: string;
     propietarioId?: string;
     consignacionId?: string;
+    /** `true` = sólo los ANULADOS (filtro «Anulados»). */
+    anulados?: boolean;
   }): Promise<Cobro[]> {
     const query = new URLSearchParams();
+    if (params?.anulados) query.set('anulados', 'true');
     if (params?.month) query.set('month', params.month);
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
@@ -1106,9 +1182,9 @@ export const cobrosApi = {
 
   async getSummary(month: string): Promise<CobroSummary> {
     // Backend returns { month, totalCobros, totalExpected, totalCollected,
-    // totalPending, totalLate, countByStatus } (bare or wrapped in { data }).
-    // The front CobroSummary needs collectionRate + per-status counts, so derive
-    // them here and default every field (avoids undefined.toFixed crashes).
+    // totalPending, totalLate, countByStatus, tasaDeRecaudo } (bare or wrapped
+    // in { data }). The per-status counts are derived here and every field is
+    // defaulted (avoids undefined.toFixed crashes).
     const res = await apiClient.get<Record<string, unknown> | { data: Record<string, unknown> }>(
       `${BASE}/cobros/summary?month=${month}`,
     );
@@ -1118,8 +1194,8 @@ export const cobrosApi = {
       totalCollected?: number;
       totalPending?: number;
       totalLate?: number;
-      collectionRate?: number;
       countByStatus?: Record<string, number>;
+      tasaDeRecaudo?: TasaDeRecaudo | null;
     };
     const totalExpected = raw.totalExpected ?? 0;
     const totalCollected = raw.totalCollected ?? 0;
@@ -1131,20 +1207,31 @@ export const cobrosApi = {
       totalPending: raw.totalPending ?? 0,
       totalLate: raw.totalLate ?? 0,
       /*
-       * Sin nada esperado no hay tasa: `null`, no 0. El `: 0` que había acá
-       * llegaba a la pantalla como «0.0% · Bajo ↘» en un mes sin un solo
-       * cobro. El back tampoco manda `collectionRate` hoy (su `getSummary`
-       * no lo devuelve), así que este es el único lugar donde se decide.
+       * 🔴 La tasa la mide el BACK como la eligió la inmobiliaria (sobre lo
+       * causado por defecto, o sobre lo emitido) y viaja con su fórmula. Acá
+       * se dividía `totalCollected / totalExpected` —pagado de lo emitido— y
+       * el Resumen medía sobre lo causado: 43,6 % acá y 2,2 % allá para la
+       * misma agencia, con el mismo nombre. `null` sigue siendo «no se midió»:
+       * sin tasa del back no se inventa una.
        */
-      collectionRate: raw.collectionRate ?? tasaMedida(totalCollected, totalExpected),
+      collectionRate: raw.tasaDeRecaudo?.pct ?? null,
+      tasaDeRecaudo: raw.tasaDeRecaudo ?? null,
       cobrosPaid: counts['PAID'] ?? 0,
       cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
       cobrosLate: counts['LATE'] ?? 0,
     };
   },
 
-  async generate(month: string): Promise<void> {
-    await apiClient.post(`${BASE}/cobros/generate`, { month });
+  /**
+   * La corrida del mes. Devuelve el resultado ENTERO, no `void`: desde el
+   * 2026-09-15 el back excluye los contratos VENCIDOS y los devuelve con su
+   * lista, y una corrida que deja gente afuera en silencio es exactamente lo
+   * que esa exclusión vino a evitar.
+   */
+  async generate(month: string): Promise<ResultadoDeLaGeneracion> {
+    return apiClient.post<ResultadoDeLaGeneracion>(`${BASE}/cobros/generate`, {
+      month,
+    });
   },
 
   /**
@@ -1174,7 +1261,31 @@ export const cobrosApi = {
   async sendReminder(id: string): Promise<void> {
     await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },
+
+  /**
+   * Anula un cobro con motivo (nunca lo borra). La deuda de la cuota no
+   * cambia; si tenía factura, el back genera su nota crédito sin número.
+   * Errores con `code`: COBRO_CON_RECIBOS · COBRO_YA_ANULADO ·
+   * COBRO_NO_ENCONTRADO · MOTIVO_REQUERIDO · ANULAR_COBRO_NO_DISPONIBLE (503).
+   */
+  async anular(id: string, motivo: string): Promise<CobroAnulado> {
+    return apiClient.post<CobroAnulado>(`${BASE}/cobros/${id}/anular`, { motivo });
+  },
 };
+
+/** Respuesta de `POST /inmobiliaria/cobros/:id/anular`. */
+export interface CobroAnulado {
+  cobroId: string;
+  anuladoAt: string;
+  motivo: string;
+  cuotasDesvinculadas: number;
+  factura: {
+    facturaId: string;
+    estado: 'GENERADA' | 'EMITIDA';
+    notaCreditoId: string | null;
+    notaCreditoGenerada: boolean;
+  } | null;
+}
 
 // ============================================================================
 // Avalúos (agency records-by-state)
@@ -1338,6 +1449,11 @@ export const dispersionesApi = {
     skipped: number;
     /** Los del mes que quedaron fuera por la selección. */
     noElegidos: number;
+    /**
+     * Las cuotas que llegaron tarde: las que se sumaron a una liquidación
+     * abierta y las que no, con el motivo. Opcional: back anterior.
+     */
+    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[] };
   }> {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
@@ -1470,8 +1586,56 @@ export const mantenimientoApi = {
     return apiClient.post<MantenimientoQuote>(`${BASE}/mantenimiento/${id}/quote`, data);
   },
 
-  async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId }));
+  /**
+   * Aprueba una cotización diciendo A CARGO DE QUIÉN queda la reparación
+   * (Nico y Juan Camilo, 2026-09-16). El back lo exige.
+   *
+   * 🔴 H-03 (18-09-2026): son CUATRO formas, no dos. `COMPARTIDA` viaja con
+   * los dos porcentajes (suman 100) e `INMOBILIARIA` con el motivo — el back
+   * los exige y la base los tiene en un CHECK, así que mandarlos a medias es
+   * un 400 con el motivo en español.
+   *
+   * `cargo.reparto` vuelve con cuánto le tocó a cada lado, en pesos, y
+   * `cargo.avisos` con lo que la pantalla tiene que decir.
+   */
+  async approveQuote(
+    id: string,
+    quoteId: string,
+    lo: LoQueSeAprueba,
+  ): Promise<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }> {
+    const respuesta = await apiClient.put<SolicitudMantenimiento & { cargo?: CargoDeLaReparacion }>(
+      `${BASE}/mantenimiento/${id}/select-quote`,
+      {
+        quoteId,
+        aCargoDe: lo.aCargoDe,
+        ...(lo.porcentajes
+          ? {
+              propietarioPct: lo.porcentajes.propietarioPct,
+              inquilinoPct: lo.porcentajes.inquilinoPct,
+            }
+          : {}),
+        ...(lo.motivoInmobiliaria
+          ? { motivoInmobiliaria: lo.motivoInmobiliaria }
+          : {}),
+        ...(lo.proveedorId ? { proveedorId: lo.proveedorId } : {}),
+      },
+    );
+    return { ...mantenimientoDelBack(respuesta), cargo: respuesta.cargo };
+  },
+
+  /**
+   * 🔴 H-05: el problema volvió dentro de la garantía. Crea una solicitud
+   * NUEVA atada a ésta, SIN COSTO para el propietario ni el inquilino.
+   */
+  async reabrirPorGarantia(
+    id: string,
+    descripcion?: string,
+  ): Promise<SolicitudMantenimiento> {
+    const respuesta = await apiClient.post<SolicitudMantenimiento>(
+      `${BASE}/mantenimiento/${id}/reabrir-por-garantia`,
+      descripcion ? { descripcion } : {},
+    );
+    return mantenimientoDelBack(respuesta);
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
@@ -1804,6 +1968,30 @@ export const actasApi = {
   async complete(id: string): Promise<ActaEntrega> {
     return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/complete`, {});
   },
+
+  /**
+   * 🔴 I-03: el inquilino no firma. El asesor la cierra con fotos y un TESTIGO,
+   * y al inquilino se le manda copia con 5 días para objetar (Nico, 18-09-2026).
+   *
+   * El back exige cuatro cosas y responde 400/409 con su código si falta alguna:
+   * que el inquilino NO haya firmado (`EL_INQUILINO_SI_FIRMO` — si firmó, se
+   * cierra por el camino normal), que el ASESOR sí (`FALTA_LA_FIRMA_DEL_ASESOR`:
+   * alguien de la inmobiliaria responde por este cierre), que estén las fotos
+   * por espacio (`ACTA_SIN_FOTOS_POR_ESPACIO`) y el testigo con nombre y cédula
+   * — sin documento «un testigo» es un nombre cualquiera y no sirve el día que
+   * haya que sostener el acta.
+   */
+  async cerrarSinFirma(
+    id: string,
+    testigo: { testigoNombre: string; testigoDocumento: string },
+  ): Promise<ActaEntrega> {
+    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo);
+  },
+
+  /** El inquilino objeta dentro de los 5 días. NO reabre el acta: deja escrito. */
+  async objetar(id: string, texto: string): Promise<ActaEntrega> {
+    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto });
+  },
 };
 
 // ============================================================================
@@ -1898,6 +2086,16 @@ export const inmobiliariaConfigApi = {
 export const inmobiliariaDashboardApi = {
   async getKPIs(): Promise<InmobiliariaDashboardKPIs> {
     return apiClient.get<InmobiliariaDashboardKPIs>(`${BASE}/analytics/kpis`);
+  },
+
+  /**
+   * Cómo mide la inmobiliaria su tasa de recaudo, si se puede cambiar, y lo que
+   * daría cada una de las dos medidas en el mes con sus números. Cambiarla es
+   * `agencyApi.updateAgency({ tasaDeRecaudoSobre })`.
+   */
+  async getTasaDeRecaudo(month?: string): Promise<ComoSeMideLaTasa> {
+    const qs = month ? `?month=${encodeURIComponent(month)}` : '';
+    return apiClient.get<ComoSeMideLaTasa>(`${BASE}/dashboard/tasa-de-recaudo${qs}`);
   },
 };
 

@@ -126,6 +126,16 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Un back anterior a esta rama no los manda: el default es el del esquema.
     prorratearPrimerMes: bc.prorratearPrimerMes ?? false,
     diasDePlazo: bc.diasDePlazo ?? null,
+    // Terminación anticipada: `?? null` y no `?? undefined` — cuando el back
+    // las omite (migración sin aplicar) llegan `undefined`, y `null` es lo que
+    // la pantalla ya sabe leer como «no se terminó».
+    terminadoEn: bc.terminadoEn ?? null,
+    motivoDeTerminacion: bc.motivoDeTerminacion ?? null,
+    notaDeTerminacion: bc.notaDeTerminacion ?? null,
+    finPactadoOriginal: bc.finPactadoOriginal ?? null,
+    // `null` y ausente se tratan igual a propósito: los dos significan «no hay
+    // referencia propia», y quien la muestra se cae al consecutivo.
+    referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,
     usoInmueble: bc.usoInmueble ?? null,
     periodicidad: bc.periodicidad ?? null,
     // Decimal de Prisma: viaja como string ("10.00"). Sin esto, `12 > 10`
@@ -217,12 +227,12 @@ export function mapBackendContract(bc: BackendContract): Contract {
  * los 1.836 de Nico—. No tener documento es el estado NORMAL de esos
  * contratos, y se cuenta en tono neutro.
  *
- * 🔴 Se decide por el TEXTO porque el back tira un `BadRequestException`
- * pelado, sin `code`. Conviene que mande uno (p. ej. `CONTRATO_SIN_DOCUMENTO`)
- * y que esto pase a leer sólo `err.code`: el texto es inglés de adentro del
- * back y cualquiera lo reescribe sin saber que una pantalla depende de él. Si
- * el 400 YA trae un `code`, se respeta: un código distinto es otro motivo, y
- * ése sí es un error.
+ * 🔴 Desde el 2026-09-16 el back ya NO responde 400 para ese caso: devuelve
+ * 200 `{ origin: 'SIN_DOCUMENTO' }` y `useContractPreview` lo lee de ahí. Esto
+ * queda para un back sin desplegar, que todavía manda el 400 pelado y sólo se
+ * reconoce por el TEXTO. El back nuevo le pone `code` a lo que sí es un fallo
+ * (`DOCUMENTO_NO_GENERADO`): un 400 con código distinto es otro motivo, y ése
+ * sí es un error.
  */
 export function esContratoSinDocumento(error: unknown): boolean {
   if (!(error instanceof ApiError) || error.status !== 400) return false;
@@ -564,6 +574,21 @@ export const contractsApi = {
         desdeFila,
       });
     },
+
+    /**
+     * La SEGUNDA opinión sobre los contratos ya migrados del lote.
+     *
+     * No cambia nada: contrasta lo que quedó guardado contra lo que el archivo
+     * dice, campo por campo. Cursor y presupuesto de reloj como `reconciliar`,
+     * para que el número sea del LOTE COMPLETO y no de una muestra: el cliente
+     * llama con `ultimaFila + 1` hasta que `terminado` sea true.
+     */
+    async verificar(lote?: string, desdeFila = 0): Promise<ResultadoDeVerificacion> {
+      return apiClient.post<ResultadoDeVerificacion>('/contracts/migrar/verificar', {
+        lote,
+        desdeFila,
+      });
+    },
   },
 
   async create(dto: CreateContractDto): Promise<Contract> {
@@ -750,7 +775,13 @@ export const contractsApi = {
        * inmobiliaria. La mora corre desde el día de pago + plazo.
        */
       diasDePlazo?: number | null;
+      penalidadTerminacionCanones?: number | null;
       prorratearPrimerMes?: boolean;
+      /**
+       * 🔴 La referencia de recaudo: con qué número paga el inquilino. Cadena
+       * vacía o `null` = borrarla y volver al consecutivo del contrato.
+       */
+      referenciaDeRecaudo?: string | null;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(
@@ -871,6 +902,13 @@ export interface FilaAMigrar {
   startDate?: string;
   /** Desde cuándo se COBRA. Ausente = se usa `startDate`. */
   fechaDeCartera?: string;
+  /**
+   * 🔴 LA REFERENCIA DE RECAUDO: el número con el que paga el inquilino y que
+   * el banco escribe en la línea del extracto. Es lo que deja que la
+   * conciliación reconozca el pago en vez de adivinar por apellido. Ausente =
+   * el archivo no la traía; el contrato se paga con su consecutivo.
+   */
+  referenciaDeRecaudo?: string;
   endDate?: string;
   monthlyRent?: number;
   deposit?: number;
@@ -975,6 +1013,8 @@ export type Faltante =
   | 'canon'
   | 'uso'
   | 'dia_de_pago'
+  /** La fecha de cartera es anterior a la de inicio (regla 3, 16-09). */
+  | 'cartera_antes_del_inicio'
   /**
    * La plata por dueño de «Valor Canon» no cuadra con los dueños o con el
    * canon. No se inventa un 50/50: se corrige el archivo o se quita esa
@@ -1163,6 +1203,11 @@ export interface ConceptoDelContrato {
   valorCop: number;
   /** Si entra en el cobro de cada mes. Falso = una sola vez. */
   recurrente: boolean;
+  /**
+   * 🔴 17-09: si entra en la base de la comisión de administración. `null` o
+   * ausente = no (y un back sin la migración del mandato no lo manda).
+   */
+  comisionable?: boolean | null;
 }
 
 /**
@@ -1371,6 +1416,74 @@ export interface ResultadoDeFila {
   inquilinoDocumentoAjeno?: boolean;
 }
 
+/**
+ * ── LA SEGUNDA OPINIÓN sobre un contrato migrado ────────────────────────────
+ *
+ * Nico, 2026-09-15: «para que haya una doble verificación del trabajo, ya que
+ * el contrato es supremamente importante porque todo queda asociado ahí».
+ *
+ * El back lee lo que la migración dejó guardado, vuelve a leer la fila del
+ * archivo por su cuenta —sin usar ninguna función del asociador— y los
+ * contrasta campo por campo.
+ */
+
+/** Un campo que no cuadra, con las dos versiones y la frase lista para pintar. */
+export interface DiferenciaVerificada {
+  /** Llave estable para agrupar sin leer la frase (`inmueble`, `canon`…). */
+  campo: string
+  /** El nombre del campo en castellano. */
+  etiqueta: string
+  /** De dónde sale la verdad de este campo. Se muestra tal cual. */
+  fuente: string
+  diceElArchivo: string
+  quedoGuardado: string
+  /** «Inmueble: el contrato quedó con … y el archivo dice ….» */
+  frase: string
+}
+
+/** Un campo que NO se pudo cotejar, y por qué. 🔴 Nunca es una aprobación. */
+export interface CampoSinCotejar {
+  campo: string
+  etiqueta: string
+  motivo: string
+}
+
+export interface VeredictoDeFila {
+  fila: number
+  veredicto: 'coincide' | 'difiere' | 'no_verificable'
+  contratoId: string | null
+  diferencias: DiferenciaVerificada[]
+  sinCotejar: CampoSinCotejar[]
+  /** Los campos que SÍ se contrastaron y cuadraron: la evidencia de que se miró. */
+  cotejados: string[]
+  /** Con `no_verificable`, por qué no se pudo juzgar. */
+  motivo?: string
+}
+
+/** Lo que devuelve una llamada a `POST migrar/verificar` (una tanda). */
+export interface ResultadoDeVerificacion {
+  /** Filas miradas en ESTA llamada. */
+  verificadas: number
+  coinciden: number
+  difieren: number
+  /** 🔴 Estas NO son «bien»: son las que no se pudieron juzgar. */
+  noVerificables: number
+  /** El detalle, con lo que difiere primero. Topado en el back. */
+  veredictos: VeredictoDeFila[]
+  veredictosTruncados: boolean
+  /** Cursor para la siguiente llamada. `null` = no miró ninguna. */
+  ultimaFila: number | null
+  /** No queda nada por verificar en el alcance: la vuelta terminó. */
+  terminado: boolean
+  /** Cuántas filas del alcance faltan por mirar. */
+  restantes: number
+  /**
+   * Si el veredicto quedó guardado. `false` = la migración de base todavía no
+   * se aplicó: los números son ciertos, pero se pierden al recargar.
+   */
+  guardado: boolean
+}
+
 /** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */
 export interface ResultadoReconciliacion {
   /** Filas miradas en ESTA llamada. */
@@ -1435,6 +1548,17 @@ export interface ResumenActivacion {
    * tienen cobros o facturas: hay que mirarlos a mano.
    */
   porRevisarAMano?: number;
+  /**
+   * 2026-09-15 — la SEGUNDA opinión sobre lo que ESTA corrida escribió.
+   *
+   * 🔴 Ausente NO significa «todo bien»: significa que no se verificó. La
+   * pantalla tiene que decir eso y no callarlo — un silencio acá se lee
+   * exactamente igual que una aprobación, que es lo contrario de lo que este
+   * campo existe para dar. `avisoDeVerificacion` explica por qué no se pudo.
+   */
+  verificacion?: ResultadoDeVerificacion;
+  /** Por qué no se verificó, cuando no se pudo. Viaja con `verificacion` ausente. */
+  avisoDeVerificacion?: string;
   resultados: ResultadoDeFila[];
 }
 

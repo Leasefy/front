@@ -95,6 +95,7 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
   CLASES_DE_COMPROBANTE,
+  COMO_SE_ASOCIO,
   contabilidadApi,
   type ClaseDeComprobante,
   type ConteoPorClase,
@@ -427,6 +428,18 @@ function TablaDeComprobantes({
                     {d.terceroAnticipo ? ` · ${d.terceroAnticipo}` : ''}
                   </span>
                 ) : null}
+                {/* Por dónde quedó colgado de este contrato. Importa sobre todo
+                    con las dos reglas del 2026-09-16 («CONTRATO N», «COD. N»):
+                    quien lee la ficha puede comprobar que el concepto lo dice. */}
+                {d.asociadoPor !== 'ninguno' ? (
+                  <span
+                    className="block text-xs text-fg-subtle"
+                    data-testid="comprobante-asociado-por"
+                  >
+                    Asociado {COMO_SE_ASOCIO[d.asociadoPor] ?? d.asociadoPor}
+                  </span>
+                ) : null}
+                {d.datos ? <FilaDelArchivo datos={d.datos} /> : null}
               </TableCell>
               <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                 {/* `null` es «no se pudo leer el monto» y se muestra así.
@@ -446,5 +459,31 @@ function TablaDeComprobantes({
       </Table>
       {pie}
     </div>
+  )
+}
+
+/**
+ * La fila del export tal como llegó, para comprobar un comprobante sin abrir
+ * el CSV. Sólo existe en lo migrado desde el 2026-09-16: lo anterior no la
+ * guardó, y no se le inventa.
+ */
+function FilaDelArchivo({ datos }: { datos: Record<string, unknown> }) {
+  const campos = Object.entries(datos).filter(
+    ([, valor]) => valor !== '' && valor !== null && valor !== undefined,
+  )
+  return (
+    <details className="mt-1 text-xs" data-testid="comprobante-fila-del-archivo">
+      <summary className="cursor-pointer text-fg-subtle hover:text-fg">
+        Ver la fila del archivo
+      </summary>
+      <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 rounded-md border border-border bg-surface-muted p-2">
+        {campos.map(([campo, valor]) => (
+          <div key={campo} className="contents">
+            <dt className="text-fg-subtle">{campo}</dt>
+            <dd className="break-words font-mono text-fg">{String(valor)}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   )
 }

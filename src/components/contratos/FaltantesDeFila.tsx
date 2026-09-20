@@ -105,6 +105,11 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Sin él no se puede programar el cobro ni los recordatorios de vencimiento.",
   },
+  cartera_antes_del_inicio: {
+    titulo: "La fecha de cartera es anterior al inicio",
+    porque:
+      "Se cobra desde que el inquilino recibe el inmueble, y eso no pasa antes de que arranque el contrato. Corrige la fecha de cartera (o la de inicio) en el archivo y vuelve a subirlo.",
+  },
   reparto_del_canon: {
     titulo: "La plata por dueño no cuadra",
     porque:

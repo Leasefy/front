@@ -22,6 +22,42 @@
  *
  * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders + 404→notAvailable
  * pattern of `agent-workspace.ts`.
+ *
+ * ── 🔴 Quién lo usa hoy (2026-09-16) ───────────────────────────────────────
+ *
+ * `fetchPagosHome` lo consume la pantalla «Agente de pagos» de «Agentes IA»
+ * (`/pagos/agente`, vía `useAgenteDePagos`): muestra el tablero del equipo SÓLO
+ * cuando esto devuelve datos, y mientras devuelva `notAvailable` dice con
+ * palabras que el tablero todavía no está publicado. Así se prende sola el día
+ * que el micro publique estas rutas, sin tocar el front.
+ *
+ * `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
+ * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` siguen sin consumidor. No
+ * es olvido: son el PUENTE con un backend que no está desplegado, y tirarlos
+ * obligaría a reescribir el contrato cuando llegue.
+ *
+ * Dónde está ese backend (verificado con `git ls-tree` en el micro,
+ * `~/rent/agent`): el equipo —Payu, el conductor, cuya persona pública es
+ * Gabriela; y Laura, Nicolás, Valentina, Samuel y Sofía— está en
+ * `src/mastra/agents/pagos/` en `cambios-nico-6` (tip `6ddd953b`) y registrado
+ * en `src/mastra/index.ts`. Corre por un solo camino: `POST /pagos/dispatch` →
+ * `payment-orchestration-workflow`, que sólo se registra con `PAGOS_ENABLED`.
+ * Las rutas `/api/agency/{id}/pagos/home/*` que lee este archivo NO existen en
+ * esa rama: hoy responden 404.
+ *
+ * DÓNDE SE ENCHUFA CADA ESPECIALISTA. No en una «Sala de Pagos» en la raíz del
+ * módulo: ese renglón se retiró el 2026-09-16 porque contradecía la separación
+ * inquilinos/propietarios y porque arranca en «generar el cobro», cuando la
+ * deuda ya nació con el contrato (el porqué completo, con el mapeo agente ↔
+ * pantalla, está en la NOTA al pie de `src/lib/nav/agentWorkspaceNav.ts`).
+ * Cada especialista entra DENTRO de la pantalla cuyo trabajo automatiza:
+ *
+ *   Valentina → `/pagos/cobranza/fallidos`
+ *   Sofía     → `/pagos/cobranza/recordatorios`
+ *   Samuel    → `/pagos/liquidaciones`
+ *   Laura     → `/pagos/cartera/cobros`, que es donde el CEO puso la decisión
+ *               de cobrar («que la persona de finanzas decida cuándo cobrar
+ *               basado en la cartera»), leyendo las CUOTAS del contrato.
  */
 
 import { agentAuthHeaders } from './agent-auth'

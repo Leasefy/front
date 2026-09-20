@@ -34,6 +34,17 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
+import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
+import { ColaDeTransmision } from '@/components/facturacion/ColaDeTransmision';
+import { EntregasYAcuse } from '@/components/facturacion/EntregasYAcuse';
+import { DocumentoSoporte } from '@/components/facturacion/DocumentoSoporte';
+import { CertificacionDelMandatario } from '@/components/facturacion/CertificacionDelMandatario';
+import { TercerosSinCorreo } from '@/components/facturacion/TercerosSinCorreo';
+import {
+  mesActual,
+  mesesParaElegir,
+  mesLegible,
+} from '@/lib/api/facturacion-por-mes.service';
 import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
@@ -84,15 +95,44 @@ const TABS: readonly TabDef[] = [
  * clientes: dos cosas que se llaman igual y no son lo mismo. Toda esta pantalla
  * ya está detrás de ADMIN y CONTADOR, que son los dos roles que pueden tocarlo.
  */
-type PestanaDeFacturacion = FacturacionTab | 'nueva' | 'resolucion';
+/**
+ * 🔴 Y tres pestañas más con la facturación electrónica (17-09-2026), por lo
+ * mismo que «Nueva factura» y «Resolución»: no listan documentos de
+ * `FacturacionTab`, hacen otra cosa.
+ *
+ *   · `soporte` — el documento soporte de los proveedores que no facturan.
+ *   · `mandato` — la certificación del mandatario (lo que cada propietario
+ *     necesita para declarar) y los terceros a los que les falta el correo.
+ *
+ * «Electrónica (DIAN)» sí es de `FacturacionTab` y ahora tiene de dónde leer:
+ * la cola de transmisión y las entregas.
+ */
+type PestanaDeFacturacion =
+  | FacturacionTab
+  | 'nueva'
+  | 'resolucion'
+  | 'soporte'
+  | 'mandato';
 
 const esTab = (v: string): v is PestanaDeFacturacion =>
-  v === 'nueva' || v === 'resolucion' || TABS.some((x) => x.key === v);
+  v === 'nueva' ||
+  v === 'resolucion' ||
+  v === 'soporte' ||
+  v === 'mandato' ||
+  TABS.some((x) => x.key === v);
 
 function FacturacionContent() {
   const { t } = useI18n();
   const [active, setActive] = useState<PestanaDeFacturacion>('nueva');
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
+
+  /*
+   * El mes de los listados de documentos. «Ventas» y «Notas» leen
+   * `GET /facturacion/emitidas?mes=`, que es por mes como todo lo demás de
+   * facturación; las otras dos pestañas todavía no tienen de dónde leer.
+   */
+  const [mes, setMes] = useState(mesActual());
+  const meses = mesesParaElegir();
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -107,7 +147,7 @@ function FacturacionContent() {
           —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
           con sus propias palabras: dos avisos distintos sobre lo mismo, uno
           encima del otro, no los lee nadie. */}
-      {active !== 'nueva' && active !== 'resolucion' && (
+      {active === 'ventas' || active === 'compras' || active === 'notas' ? (
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -115,7 +155,7 @@ function FacturacionContent() {
           <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
-      )}
+      ) : null}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
       <Tabs
@@ -124,8 +164,16 @@ function FacturacionContent() {
           if (esTab(v)) setActive(v);
         }}
       >
+        {/* 🔴 `overflow-x-clip`, NO `overflow-hidden`.
+            `overflow: hidden` convierte a esta tarjeta en el contenedor de
+            desplazamiento más cercano, y eso MATA cualquier `position: sticky`
+            de adentro: la barra de acciones masivas del pie de «Nueva factura»
+            quedaba dibujada a 2.889 px, fuera de la pantalla, en vez de pegada
+            al borde de abajo. `overflow-x: clip` recorta igual contra las
+            esquinas redondeadas pero no crea contenedor de desplazamiento, así
+            que lo pegajoso vuelve a medirse contra la ventana. */}
         <section
-          className="rounded-lg border border-border bg-surface overflow-hidden"
+          className="rounded-lg border border-border bg-surface overflow-x-clip"
           data-testid="facturacion-tarjeta"
         >
           <div className="border-b border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -138,6 +186,12 @@ function FacturacionContent() {
                   {t(k(`tab_${x.key}`))}
                 </TabsTrigger>
               ))}
+              <TabsTrigger value="soporte" className="whitespace-nowrap">
+                {t(k('tab_soporte'))}
+              </TabsTrigger>
+              <TabsTrigger value="mandato" className="whitespace-nowrap">
+                {t(k('tab_mandato'))}
+              </TabsTrigger>
               <TabsTrigger value="resolucion" className="whitespace-nowrap">
                 {t(k('tab_resolucion'))}
               </TabsTrigger>
@@ -163,7 +217,9 @@ function FacturacionContent() {
 
           <TabsContent value="nueva" className="mt-0">
             <div className="p-4">
-              <NuevaFactura />
+              {/* La pestaña es estado local: sin el callback, «Cargar la
+                  resolución» sería un texto que dice a dónde ir sin llevar. */}
+              <NuevaFactura onIrAResolucion={() => setActive('resolucion')} />
             </div>
           </TabsContent>
 
@@ -173,7 +229,75 @@ function FacturacionContent() {
             </div>
           </TabsContent>
 
-          {TABS.map((tab) => (
+          {/* 🔴 «Electrónica (DIAN)» ya no es un vacío honesto: es la cola de
+              transmisión y las entregas. Las dos van juntas porque responden la
+              misma pregunta —«¿este documento existe ante la DIAN y le llegó al
+              cliente?»— y son dos estados distintos: se puede estar aceptado
+              por la DIAN y sin entregar. */}
+          <TabsContent value="electronica" className="mt-0">
+            <div className="space-y-6 p-4">
+              <ColaDeTransmision />
+              <EntregasYAcuse />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="soporte" className="mt-0">
+            <div className="p-4">
+              <DocumentoSoporte />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="mandato" className="mt-0">
+            <div className="space-y-6 p-4">
+              <CertificacionDelMandatario />
+              <TercerosSinCorreo />
+            </div>
+          </TabsContent>
+
+          {/* 🔴 «Ventas» y «Notas» YA tienen de dónde leer.
+              F4 de la auditoría del 13-09: estas pestañas decían «todavía no
+              tienes facturas de venta» después de emitir 800, porque no había
+              ninguna ruta que listara lo emitido. Ahora existe
+              `GET /facturacion/emitidas`, y con ella la anulación por NOTA
+              CRÉDITO (decisión de negocio de Nico del 15-09: una factura
+              emitida no se borra, se netea con otro documento). «Compras» y
+              «Electrónica» siguen con su vacío honesto: esas sí dependen del
+              motor DIAN. */}
+          {(['ventas', 'notas'] as const).map((clave) => (
+            <TabsContent key={clave} value={clave} className="mt-0">
+              <div className="space-y-4 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor="facturacion-mes-emitidas"
+                    className="text-caption text-fg-muted"
+                  >
+                    Mes
+                  </label>
+                  <select
+                    id="facturacion-mes-emitidas"
+                    className="h-9 rounded-md border border-border bg-surface px-3 text-sm"
+                    value={mes}
+                    onChange={(e) => setMes(e.target.value)}
+                    data-testid="facturacion-mes-emitidas"
+                  >
+                    {meses.map((m) => (
+                      <option key={m} value={m}>
+                        {mesLegible(m)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <FacturasEmitidas mes={mes} vista={clave} />
+              </div>
+            </TabsContent>
+          ))}
+
+          {/* 🔴 «Compras» es la ÚNICA pestaña que sigue sin listado propio: las
+              facturas de proveedor viven en Pagos → cuentas por pagar. Las
+              otras tres que estaban acá («Electrónica», y ahora «Documento
+              soporte» y «Mandato») ya tienen motor y pintan sus propias
+              tablas. */}
+          {TABS.filter((x) => x.key === 'compras').map((tab) => (
             <TabsContent key={tab.key} value={tab.key} className="mt-0">
               <Table>
                 <TableHeader>
@@ -189,45 +313,23 @@ function FacturacionContent() {
                   {/* El vacío vive dentro del cuerpo para que los encabezados
                       se sigan viendo.
 
-                      🔴 F4 (auditoría 13-09): estas cuatro pestañas NO tienen de
-                      dónde leer — no hay ruta en el back que liste documentos
-                      emitidos (sólo `por-generar`, `:id` y las resoluciones).
-                      El vacío decía «Todavía no tienes facturas de venta»
-                      después de emitir 800 en «Nueva factura»: una afirmación
-                      falsa sobre los datos de la persona. Ahora dice que el
-                      listado no existe todavía y a dónde ir a verlas. */}
+                      🔴 F4 (auditoría 13-09): decía «Todavía no tienes facturas
+                      de compra» sobre un listado que no puede leer. Una
+                      pantalla que no puede leer no afirma nada sobre los datos
+                      de la persona: dice dónde están de verdad. */}
                   <TableRow>
                     <TableCell colSpan={tab.columns.length} className="p-0">
-                      {tab.key === 'compras' ? (
-                        <SinDatos
-                          queSon={t(k('queSon_compras'))}
-                          icono={Receipt}
-                          titulo="Este listado todavía no trae tus compras"
-                          descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
-                          accion={
-                            <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
-                              <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
-                            </Button>
-                          }
-                        />
-                      ) : (
-                        <SinDatos
-                          queSon={t(k(`queSon_${tab.key}`))}
-                          icono={Receipt}
-                          titulo="El listado llega con el motor DIAN"
-                          descripcion={`${t(k(`desc_${tab.key}`))} El listado de documentos electrónicos llega con el motor DIAN. Las facturas que emitiste están en «Nueva factura», con su número, eligiendo el mes.`}
-                          accion={
-                            <Button
-                              variant="outline"
-                              hideArrow
-                              onClick={() => setActive('nueva')}
-                              data-testid={`facturacion-ver-emitidas-${tab.key}`}
-                            >
-                              Ver las facturas emitidas
-                            </Button>
-                          }
-                        />
-                      )}
+                      <SinDatos
+                        queSon={t(k('queSon_compras'))}
+                        icono={Receipt}
+                        titulo="Este listado todavía no trae tus compras"
+                        descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
+                        accion={
+                          <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
+                            <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
+                          </Button>
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 </TableBody>

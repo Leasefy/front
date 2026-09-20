@@ -52,7 +52,7 @@ export interface CuentaDeCobroProps {
  * el papel no tiene modo oscuro, y sin esto quien imprima desde el tema
  * oscuro se lleva texto gris claro sobre blanco.
  */
-const CSS_DE_IMPRESION = `
+export const CSS_DE_IMPRESION = `
 @media print {
   @page { size: A4 portrait; margin: 14mm; }
   aside,

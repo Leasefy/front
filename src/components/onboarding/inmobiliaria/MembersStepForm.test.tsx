@@ -180,7 +180,7 @@ describe('<MembersStepForm>', () => {
       'VIEWER',
     ])
     expect(MEMBER_ROLE_OPTIONS.map((option) => option.label)).toEqual([
-      'Agente',
+      'Asesor comercial',
       'Contador',
       'Administrador',
       'Solo lectura',

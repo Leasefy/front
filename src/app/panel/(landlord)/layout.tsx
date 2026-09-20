@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, Wrench } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -62,6 +62,13 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Estado de cuenta',
     href: '/panel/estado-de-cuenta',
     icon: Receipt,
+  },
+  // 🔴 D12 (17-09-2026): las reparaciones a su cargo las aprueba él, con un
+  // clic. Es real (back), no un shell «Pronto».
+  {
+    label: 'Aprobar reparaciones',
+    href: '/panel/aprobaciones',
+    icon: Wrench,
   },
   {
     label: 'Mensajes',

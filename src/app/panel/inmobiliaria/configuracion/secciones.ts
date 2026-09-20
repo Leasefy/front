@@ -11,6 +11,13 @@ import {
   Users,
   Wallet,
   ArrowsClockwise,
+  Coins,
+  HandCoins,
+  Receipt,
+  Storefront,
+  Megaphone,
+  ClipboardText,
+  Clock,
 } from '@phosphor-icons/react';
 
 /**
@@ -52,8 +59,15 @@ export type SeccionId =
   | 'equipo'
   | 'permisos'
   | 'medios-de-pago'
+  | 'medios-de-recibo'
+  | 'costos-de-la-plata'
+  | 'sedes'
+  | 'mandato'
   | 'integraciones'
   | 'migracion'
+  | 'avisos'
+  | 'sla-de-pqrs'
+  | 'bitacora'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -146,6 +160,51 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     gate: { tipo: 'admin' },
   },
   {
+    // 17-09: modalidad por defecto de los mandatos, cobros al arrendar e IVA
+    // de la comisión. Del ADMIN, como el resto de los ajustes de la casa.
+    id: 'mandato',
+    grupo: 'dinero',
+    slug: 'mandato',
+    labelKey: 'inmobiliaria.config.tabs.mandato',
+    descKey: 'inmobiliaria.config.tabs.mandatoDesc',
+    icon: HandCoins,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: con qué puede la persona de caja registrar que entró plata. NO es
+    // «Medios de pago» —eso es lo que el inquilino ve en «Cómo pagar»—: son dos
+    // cosas distintas y por eso son dos secciones.
+    id: 'medios-de-recibo',
+    grupo: 'dinero',
+    slug: 'medios-de-recibo',
+    labelKey: 'inmobiliaria.config.tabs.mediosDeRecibo',
+    descKey: 'inmobiliaria.config.tabs.mediosDeReciboDesc',
+    icon: Receipt,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: el 4x1000 y la pasarela, y a quién se le trasladan. Por defecto
+    // los asume la inmobiliaria contra su comisión.
+    id: 'costos-de-la-plata',
+    grupo: 'dinero',
+    slug: 'costos-de-la-plata',
+    labelKey: 'inmobiliaria.config.tabs.costosDeLaPlata',
+    descKey: 'inmobiliaria.config.tabs.costosDeLaPlataDesc',
+    icon: Coins,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 17-09: los centros de costo. El tablero financiero y el deterioro se
+    // pueden mirar consolidados o por sede.
+    id: 'sedes',
+    grupo: 'inmobiliaria',
+    slug: 'sedes',
+    labelKey: 'inmobiliaria.config.tabs.sedes',
+    descKey: 'inmobiliaria.config.tabs.sedesDesc',
+    icon: Storefront,
+    gate: { tipo: 'admin' },
+  },
+  {
     id: 'migracion',
     grupo: 'inmobiliaria',
     slug: 'migracion',
@@ -179,6 +238,56 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.preferencias',
     descKey: 'inmobiliaria.config.tabs.preferenciasDesc',
     icon: Globe,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 Los avisos automáticos (18-09-2026): qué le llega solo a los clientes
+     * de la inmobiliaria. Es de ADMIN, como seguridad: decidir qué correos
+     * salen a nombre de la inmobiliaria no es del asesor ni del auxiliar.
+     */
+    id: 'avisos',
+    grupo: 'sistema',
+    slug: 'avisos',
+    labelKey: 'inmobiliaria.config.tabs.avisos',
+    descKey: 'inmobiliaria.config.tabs.avisosDesc',
+    // La campana es de «Notificaciones», que son las que te llegan A VOS. Éstos
+    // son los que SALEN a los clientes de la inmobiliaria: no son la misma cosa
+    // y no pueden verse igual.
+    icon: Megaphone,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 El tiempo máximo de una PQRS (18-09-2026). Va en el grupo «sistema» y
+     * es de ADMIN por la misma razón que los avisos: cambiar lo que la
+     * inmobiliaria le PROMETE a sus clientes no es decisión de quien atiende
+     * el caso. Quien atiende lo VE (el back lo deja leer con
+     * `operaciones:view`), pero no lo cambia.
+     */
+    id: 'sla-de-pqrs',
+    grupo: 'sistema',
+    slug: 'sla-de-pqrs',
+    labelKey: 'inmobiliaria.config.tabs.slaDePqrs',
+    descKey: 'inmobiliaria.config.tabs.slaDePqrsDesc',
+    icon: Clock,
+    gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 La bitácora de plata (18-09-2026). De ADMIN: Nico la pidió «visible
+     * para el DUEÑO de la inmobiliaria», y de los siete roles sólo el
+     * administrador tiene `configuracion:view` por defecto.
+     */
+    id: 'bitacora',
+    grupo: 'sistema',
+    slug: 'bitacora',
+    labelKey: 'inmobiliaria.config.tabs.bitacora',
+    descKey: 'inmobiliaria.config.tabs.bitacoraDesc',
+    // El escudo es de «Seguridad». Una bitácora no protege: REGISTRA quién hizo
+    // qué con la plata. Leerlas como la misma cosa es justo lo que hace que
+    // nadie abra la que necesita.
+    icon: ClipboardText,
     gate: { tipo: 'admin' },
   },
   {

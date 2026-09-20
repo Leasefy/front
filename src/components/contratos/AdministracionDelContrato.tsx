@@ -13,6 +13,7 @@
  * PATCH /contracts/:id/administracion, no por el PATCH que edita el canon.
  */
 
+import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
@@ -84,6 +85,16 @@ export function AdministracionDelContrato({
     contract.diasDePlazo != null ? String(contract.diasDePlazo) : '',
   )
   const [prorratear, setProrratear] = useState(contract.prorratearPrimerMes ?? false)
+  // Penalidad por terminación en cánones (17-09). Vacío = la de la inmobiliaria.
+  const [penalidad, setPenalidad] = useState(
+    contract.penalidadTerminacionCanones != null ? String(contract.penalidadTerminacionCanones) : '',
+  )
+  /*
+   * 🔴 La referencia de recaudo: con qué número paga el inquilino. Vacío NO es
+   * «déjalo como estaba»: es «bórrala y vuelve al consecutivo», y por eso se
+   * manda igual (ver `guardar`).
+   */
+  const [referencia, setReferencia] = useState(contract.referenciaDeRecaudo ?? '')
 
   /*
    * El perfil tributario del inquilino. Es el ÚNICO de los tres que vive en el
@@ -148,6 +159,11 @@ export function AdministracionDelContrato({
         setError('Los días de plazo van entre 0 y 60, sin decimales.')
         return
       }
+      const canones = penalidad.trim() === '' ? null : Number(penalidad.replace(',', '.'))
+      if (canones !== null && (!Number.isFinite(canones) || canones < 0 || canones > 99)) {
+        setError('La penalidad va en cánones, entre 0 y 99.')
+        return
+      }
       const actualizado = await contractsApi.actualizarAdministracion(contract.id, {
         usoInmueble: uso === '' ? undefined : uso,
         periodicidad: periodicidad === '' ? undefined : periodicidad,
@@ -155,6 +171,14 @@ export function AdministracionDelContrato({
         // `null` = volver a heredar los días de la inmobiliaria.
         diasDePlazo: plazo,
         prorratearPrimerMes: prorratear,
+        // Sólo si cambió: con la migración sin aplicar el back responde 503.
+        ...(canones !== (contract.penalidadTerminacionCanones ?? null)
+          ? { penalidadTerminacionCanones: canones }
+          : {}),
+        // Vacío se manda como `null` a propósito: borra la referencia y el
+        // contrato vuelve a pagarse con su consecutivo. Guardar '' dejaría un
+        // identificador que no empata con ninguna línea del extracto.
+        referenciaDeRecaudo: referencia.trim() === '' ? null : referencia.trim(),
         // `null` es una acción: «vuelve a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         arrendadorResponsableIva: deTernario(arrendadorIva),
@@ -172,6 +196,9 @@ export function AdministracionDelContrato({
       setGuardando(false)
     }
   }
+
+  /** Lo que la inmobiliaria cargó, si cargó algo. Vacío o espacios = no cargó. */
+  const referenciaPropia = (contract.referenciaDeRecaudo ?? '').trim()
 
   const regimen = contract.regimenTributario ?? null
   /*
@@ -228,9 +255,36 @@ export function AdministracionDelContrato({
           ausente="Los días de la inmobiliaria"
         />
         <Fila
+          etiqueta="Penalidad por terminar antes"
+          valor={
+            contract.penalidadTerminacionCanones != null
+              ? `${contract.penalidadTerminacionCanones} cánones`
+              : null
+          }
+          ausente="La de la inmobiliaria"
+        />
+        <Fila
           etiqueta="Primer mes"
-          valor={contract.prorratearPrimerMes ? 'Prorrateado por días' : 'Mes completo'}
+          valor={contract.prorratearPrimerMes ? 'Prorrateado: se genera el 1, base 30' : 'Fecha a fecha, sin prorrateo'}
           ausente=""
+        />
+        {/*
+          🔴 Con qué paga el inquilino. Se muestra SIEMPRE con un valor: si la
+          inmobiliaria no cargó una, la referencia es el consecutivo del
+          contrato, y decirlo así es lo que invita a corregirla — una ficha que
+          dijera «sin definir» dejaría al auxiliar sin saber qué dictarle al
+          inquilino.
+        */}
+        <Fila
+          etiqueta="Referencia de recaudo"
+          valor={
+            referenciaPropia
+              ? referenciaPropia
+              : contract.code != null
+                ? `${contract.code} (el consecutivo de Leasefy)`
+                : null
+          }
+          ausente="Sin definir"
         />
         <Fila
           etiqueta="Comisión"
@@ -409,8 +463,49 @@ export function AdministracionDelContrato({
                   data-testid="dias-de-plazo"
                 />
                 <p className="text-xs text-muted-foreground">
-                  La mora corre desde el día de pago más este plazo. Vacío = los
-                  días de la inmobiliaria.
+                  El día del vencimiento cuenta como el primero: con 3, del 1 al 3
+                  está en plazo y desde el 4 corre la mora. Vacío = los días de la
+                  inmobiliaria.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor="penalidad-canones">
+                  Penalidad por terminación anticipada (cánones)
+                </label>
+                <Input
+                  id="penalidad-canones"
+                  inputMode="decimal"
+                  value={penalidad}
+                  onChange={(e) => setPenalidad(e.target.value)}
+                  placeholder="La de la inmobiliaria"
+                  data-testid="penalidad-canones"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se le cobra al inquilino si termina antes; al propietario le llega
+                  menos la comisión. Vacío = la de la inmobiliaria.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Referencia de recaudo
+                </label>
+                <Input
+                  value={referencia}
+                  onChange={(e) => setReferencia(e.target.value)}
+                  maxLength={60}
+                  placeholder={
+                    contract.code != null
+                      ? `El consecutivo ${contract.code}`
+                      : 'El consecutivo del contrato'
+                  }
+                  data-testid="referencia-de-recaudo"
+                />
+                <p className="text-xs text-muted-foreground">
+                  El número con el que el inquilino paga y que viene escrito en
+                  el extracto: es lo que deja que la conciliación reconozca el
+                  pago sola. Vacío = se usa el consecutivo del contrato.
                 </p>
               </div>
 
@@ -422,10 +517,9 @@ export function AdministracionDelContrato({
                   data-testid="prorratear-primer-mes"
                 />
                 <span>
-                  Prorratear el primer mes
-                  <span className="block text-xs text-muted-foreground">
-                    El primer cobro sale por los días ocupados, no por el mes
-                    completo.
+                  {PREGUNTA_DEL_PRORRATEO}
+                  <span className="block text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                    {prorratear ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
                   </span>
                 </span>
               </label>

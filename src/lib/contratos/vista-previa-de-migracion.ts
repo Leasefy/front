@@ -116,6 +116,10 @@ function valorLegible(
       return origen.codigoDeOrigen ? `${origen.codigoDeOrigen} · ${f.direccion}` : f.direccion || null
     case 'consecutivoContrato':
       return origen.consecutivo ?? null
+    // Con qué número paga el inquilino: se muestra para que alguien la vea
+    // ANTES de guardar, que es todo el punto de la vista previa.
+    case 'referenciaDeRecaudo':
+      return f.referenciaDeRecaudo ?? null
     case 'canonTotal':
       return f.monthlyRent === undefined ? null : formatCurrency(f.monthlyRent)
     case 'estratoInmueble':

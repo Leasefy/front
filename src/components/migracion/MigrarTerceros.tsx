@@ -922,7 +922,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 Hay columnas nuevas que esta pantalla todavía no sabe mandar
               </p>
               <p className="mt-0.5 text-sm text-fg-muted">
-                {noSoportadas.map((c) => c.titulo).join(' · ')} — se van a ignorar. Avisale al
+                {noSoportadas.map((c) => c.titulo).join(' · ')} — se van a ignorar. Avísale al
                 equipo antes de seguir para no perder ese dato.
               </p>
             </div>

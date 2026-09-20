@@ -110,6 +110,34 @@ export function arriendoPrincipal(persona: Inquilino): ArriendoDeInquilino | und
   return arriendosVigentes(persona)[0] ?? persona.arriendos[0];
 }
 
+/**
+ * El DÍA de una vigencia, listo para `formatDate`.
+ *
+ * `desde` y `hasta` son días (`@db.Date`), pero `/inmobiliaria/inquilinos` los
+ * manda a medianoche UTC (`2026-06-05T00:00:00.000Z`). `formatDate` sólo arma
+ * en el calendario local un `YYYY-MM-DD` suelto; con hora lo toma por instante,
+ * y en Bogotá eso es el 4 a las 19:00. La lista y el cajón decían «4 de jun» de
+ * un arriendo que la ficha del contrato —bien— dice que empieza el 5.
+ */
+export function diaDeVigencia(fecha: string | null): string | null {
+  return fecha === null ? null : fecha.slice(0, 10);
+}
+
+/**
+ * Una fecha de vigencia, o un «—» si el contrato no la dice.
+ *
+ * 🔴 Desde el 20-09 los arriendos salen del CONTRATO y no del `Lease`: ahí las
+ * dos fechas son opcionales —un contrato a término indefinido no tiene hasta
+ * cuándo— y `formatDate(null)` pintaría «Invalid Date» en la tabla.
+ */
+function fechaOGuion(
+  fecha: string | null,
+  formatDate: (f: string | Date) => string,
+): string {
+  const dia = diaDeVigencia(fecha);
+  return dia === null ? '—' : formatDate(dia);
+}
+
 /** Ordena sin mutar. El nombre con `localeCompare` es-CO: «Ñ» va donde debe. */
 export function ordenarInquilinos(
   inquilinos: readonly Inquilino[],
@@ -439,8 +467,8 @@ function FilaDeInquilino({
                2027» son ~230 px y empujaban la última columna fuera de la
                pantalla. */
             <div className="whitespace-nowrap font-mono text-xs tabular-nums text-fg-muted">
-              <div>{formatDate(principal.desde)}</div>
-              <div className="text-fg-subtle">→ {formatDate(principal.hasta)}</div>
+              <div>{fechaOGuion(principal.desde, formatDate)}</div>
+              <div className="text-fg-subtle">→ {fechaOGuion(principal.hasta, formatDate)}</div>
             </div>
           )}
         </TableCell>
@@ -452,7 +480,10 @@ function FilaDeInquilino({
           <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
-                <li key={a.leaseId}>
+                /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09
+                   un arriendo migrado puede no tener `Lease`, y dos `null`
+                   como llave de React son la misma llave. */
+                <li key={a.contractId}>
                   <RenglonDeArriendo arriendo={a} />
                 </li>
               ))}
@@ -493,7 +524,7 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
         {formatCurrency(arriendo.canonCop)}
       </span>
       <span className="font-mono text-xs tabular-nums text-fg-muted">
-        {formatDate(arriendo.desde)} — {formatDate(arriendo.hasta)}
+        {fechaOGuion(arriendo.desde, formatDate)} — {fechaOGuion(arriendo.hasta, formatDate)}
       </span>
     </div>
   );

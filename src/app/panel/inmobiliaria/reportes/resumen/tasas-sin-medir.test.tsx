@@ -188,6 +188,41 @@ describe('Resumen del negocio — con operación de verdad', () => {
     expect(tarjeta('Ocupación').textContent).toContain('80.0%');
   });
 
+  it('🔴 la tasa dice con qué fórmula se midió, y es la que mandó el back', async () => {
+    /*
+     * La agencia de QA eligió medir sobre lo emitido: el Resumen tiene que
+     * decir 43,6 % «Pagado de lo emitido», no rehacer la cuenta con lo causado
+     * (8,2 M de 364,8 M = 2,2 %) y rotularla igual.
+     */
+    datos.kpis = enCero({
+      totalProperties: 4,
+      expectedRevenue: 364_795_650,
+      collectedRevenue: 8_200_000,
+      collectionRate: 43.62,
+      tasaDeRecaudo: {
+        base: 'EMITIDO',
+        porDefecto: false,
+        rotulo: 'Pagado de lo emitido',
+        definicion: '',
+        numeradorCop: 8_200_000,
+        denominadorCop: 18_800_000,
+        pct: 43.617,
+      },
+    });
+    await montar();
+    expect(texto('resumen-tasa-de-recaudo')).toBe('43.6%');
+    expect(texto('resumen-rotulo-de-la-tasa')).toBe('Pagado de lo emitido');
+    expect(texto('resumen-cifras-de-la-tasa')).toContain('pagados de');
+    expect(tarjeta('Recaudo del Mes').textContent).toContain('43.6% · Pagado de lo emitido');
+  });
+
+  it('una respuesta de antes, sin la tasa, se lee como lo que era: sobre lo causado', async () => {
+    datos.kpis = enCero({ expectedRevenue: 10_000_000, collectedRevenue: 9_000_000, collectionRate: 90 });
+    await montar();
+    expect(texto('resumen-tasa-de-recaudo')).toBe('90.0%');
+    expect(texto('resumen-rotulo-de-la-tasa')).toBe('Recaudo sobre lo causado');
+  });
+
   it('un recaudo MEDIDO en cero no es una raya: se esperaba plata y no entró', async () => {
     // La distinción entera: 0 de $10M es una mora del 100%, no «sin datos».
     datos.kpis = enCero({

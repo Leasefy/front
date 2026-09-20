@@ -9,9 +9,9 @@
  * The catalog is static and mirrors `src/lib/nav/arquitectura-del-panel.ts`
  * (same deliberate duplication as QUICK_ACTIONS in CommandPalette — no runtime
  * import from a layout). Keep the three in sync when the nav changes. The
- * `context` column is the GROUP or MODULE of the new architecture (Captación y
- * arriendo · Operación · Dinero · Directorio, or the owning module), so what
- * the palette says matches what the sidebar and the tabs say.
+ * `context` column is the GROUP or MODULE of the new architecture (Agentes IA ·
+ * Captación y arriendo · Operación · Dinero · Directorio, or the owning module),
+ * so what the palette says matches what the sidebar and the tabs say.
  *
  * Per-item permission gating uses ctx.canAccess when provided; items with
  * `module: null` are visible to every role (their pages self-guard).
@@ -41,6 +41,27 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Inicio', context: 'Inicio', href: `${P}/piloto`, keywords: 'inicio piloto automatico torre control bandeja briefing autonomia agentes home' },
   { kind: 'page', title: 'Chat', context: 'Inicio', href: P, keywords: 'asistente chat ia preguntar' },
 
+  // ── Agentes IA ────────────────────────────────────────────────────────────
+  // Nico, 2026-09-16: una sección sólo de agentes, arriba de Captación. El
+  // `context` es el grupo del sidebar, así que los seis que se mudaron dejan de
+  // decir «Inmuebles», «Postulaciones», «Pagos · inquilinos», «Dinero» o
+  // «Reportes»: el buscador dice lo mismo que el menú. Las URLs no cambiaron.
+  { kind: 'page', title: 'Avalúos', context: 'Agentes IA', href: `${P}/inmuebles/avaluos`, keywords: 'valoracion precio canon avaluo ia agente', permission: { module: 'avaluos', action: 'view' } },
+  { kind: 'action', title: 'Solicitar avalúo', context: 'Avalúos', href: `${P}/inmuebles/avaluos`, keywords: 'crear avaluo valoracion solicitar nuevo', permission: { module: 'avaluos', action: 'create' } },
+  { kind: 'page', title: 'Matching', context: 'Agentes IA', href: `${P}/postulaciones/matching`, keywords: 'buscar propiedades perfil compatibles ia agente', permission: { module: 'matching', action: 'view' } },
+  { kind: 'page', title: 'Asegurabilidad', context: 'Agentes IA', href: `${P}/postulaciones/asegurabilidad`, keywords: 'cotizador seguros polizas garantias afianzable agente ia', permission: { module: 'cotizador', action: 'view' } },
+  { kind: 'page', title: 'Cobranza', context: 'Agentes IA', href: `${P}/pagos/cobranza`, keywords: 'deudores cartera mora agente ia llamadas acuerdos', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Pagos fallidos', context: 'Cobranza', href: `${P}/pagos/cobranza/fallidos`, keywords: 'fallidos link vencido banco rechazo pasarela intento fallido reintentar', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Recordatorios', context: 'Cobranza', href: `${P}/pagos/cobranza/recordatorios`, keywords: 'recordatorios secuencia avisos mensajes antes de vencer', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Conciliación', context: 'Agentes IA', href: `${P}/conciliacion`, keywords: 'conciliacion bancos extractos pagos ia agente' },
+  { kind: 'page', title: 'Extracto bancario', context: 'Conciliación', href: `${P}/conciliacion/movimientos`, keywords: 'conciliacion bancaria extracto banco movimientos recibos automaticos', permission: { module: 'cobros', action: 'view' } },
+  // El EQUIPO de agentes de pagos, no el módulo de la plata («Pagos», en
+  // Dinero). Se encuentra por los nombres de sus agentes y por lo que hace.
+  // Sin `permission`: la fila se gatea por rol (ADMIN y CONTADOR) y la página
+  // se defiende sola, igual que Conciliación.
+  { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela laura nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' },
+  { kind: 'page', title: 'Desempeño IA', context: 'Agentes IA', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
+
   // ── Captación y arriendo ──────────────────────────────────────────────────
   { kind: 'page', title: 'Pipeline', context: 'Captación y arriendo', href: `${P}/pipeline`, keywords: 'prospeccion leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   // Agenda dejó de ser de Operación (Nico, 2026-09-12: «la sección de agenda la
@@ -53,16 +74,12 @@ const NAV_CATALOG: NavEntry[] = [
   // propietario, así que entrar uno es siempre una consignación.
   { kind: 'action', title: 'Nueva consignación', context: 'Inmuebles', href: `${P}/inmuebles/nuevo`, keywords: 'crear consignar propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'action', title: 'Importar propiedades', context: 'Inmuebles', href: `${P}/inmuebles/importar`, keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
-  { kind: 'page', title: 'Avalúos', context: 'Inmuebles', href: `${P}/inmuebles/avaluos`, keywords: 'valoracion precio canon avaluo ia', permission: { module: 'avaluos', action: 'view' } },
-  { kind: 'action', title: 'Solicitar avalúo', context: 'Avalúos', href: `${P}/inmuebles/avaluos`, keywords: 'crear avaluo valoracion solicitar nuevo', permission: { module: 'avaluos', action: 'create' } },
   { kind: 'page', title: 'Postulaciones', context: 'Captación y arriendo', href: `${P}/postulaciones`, keywords: 'candidatos aplicaciones solicitudes recorrido' },
-  { kind: 'page', title: 'Matching', context: 'Postulaciones', href: `${P}/postulaciones/matching`, keywords: 'buscar propiedades perfil compatibles ia', permission: { module: 'matching', action: 'view' } },
   // «Evaluación de candidatos» (`/postulaciones/estudio`) está OCULTA por ahora
   // (Nico, 2026-09-08; ver `arquitectura-del-panel.ts`): ofrecerla acá sería
   // mandar a una puerta que devuelve a Postulaciones.
   // { kind: 'page', title: 'Evaluación de candidatos', context: 'Postulaciones', href: `${P}/postulaciones/estudio`, keywords: 'estudio scoring evaluacion candidato riesgo ia', permission: { module: 'estudio', action: 'view' } },
   { kind: 'page', title: 'Soportes', context: 'Postulaciones', href: `${P}/postulaciones/soportes`, keywords: 'soportes de candidatos documentos revision papeles', permission: { module: 'documentos', action: 'view' } },
-  { kind: 'page', title: 'Asegurabilidad', context: 'Postulaciones', href: `${P}/postulaciones/asegurabilidad`, keywords: 'cotizador seguros polizas garantias afianzable', permission: { module: 'cotizador', action: 'view' } },
   { kind: 'page', title: 'Contratos', context: 'Captación y arriendo', href: `${P}/contratos`, keywords: 'arriendos leasing', permission: { module: 'contratos', action: 'view' } },
   // Al listado, no a /contratos/nuevo: esa pantalla exige `?applicationId=` y
   // desde el buscador no hay de dónde sacarlo.
@@ -76,26 +93,40 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Mensajes', context: 'Operación', href: `${P}/mensajes`, keywords: 'chat conversaciones inbox' },
 
   // ── Dinero ────────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Cobros', context: 'Dinero', href: `${P}/cobros`, keywords: 'recaudo pagos recibir recibo de caja abono', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Recaudo', context: 'Cobros', href: `${P}/cobros/recaudo`, keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Cartera', context: 'Cobros', href: `${P}/cobros/cartera`, keywords: 'cartera mora edades deuda vencido', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Cobranza', context: 'Cobros', href: `${P}/cobros/cobranza`, keywords: 'deudores cartera mora agente ia llamadas acuerdos', permission: { module: 'cobranza', action: 'view' } },
-  { kind: 'page', title: 'Reglas de mora', context: 'Cobros', href: `${P}/cobros/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'agente ia pagos por aprobar facturas proveedores recaudos transacciones' },
-  { kind: 'page', title: 'Liquidaciones', context: 'Pagos', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios' },
-  { kind: 'page', title: 'Dispersiones', context: 'Pagos', href: `${P}/pagos/dispersiones`, keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
+  // Un solo módulo de plata (2026-09-15): «Cobros» dejó de ser una fila y sus
+  // pantallas viven bajo `/pagos`. El `context` dice de qué cara es cada una
+  // —«Pagos · inquilinos» / «Pagos · propietarios»— porque el buscador muestra
+  // el contexto al lado del título y «Cobros» ya no nombra nada.
+  // 🔴 «estado de cuenta» es lo que la gente escribe cuando quiere ver cuánto
+  // debe un cliente, y ese documento no tiene URL propia sin un id: se abre
+  // desde la fila del cliente. Por eso la palabra vive en las keywords de las
+  // cuatro pantallas que sí lo ofrecen, y no como una entrada suelta que
+  // llevaría a un 404. Ver `RUTAS_FUERA_DEL_SIDEBAR`.
+  // Sin «agente ia» en las keywords desde el 2026-09-16: el módulo de la plata
+  // no es un agente, y el equipo de agentes de pagos tiene su propia entrada
+  // arriba, en «Agentes IA».
+  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'pagos por aprobar facturas proveedores recaudos transacciones plata dinero cobros deuda del mes cuotas estado de cuenta' },
+  { kind: 'page', title: 'Recaudo', context: 'Pagos · inquilinos', href: `${P}/pagos/recaudo`, keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Cartera', context: 'Pagos · inquilinos', href: `${P}/pagos/cartera`, keywords: 'cartera mora edades deuda vencido estado de cuenta', permission: { module: 'cobros', action: 'view' } },
+  // Sigue buscándose por «cobros»: era el nombre de un módulo y la gente lo
+  // escribe. Lleva a la lista de documentos emitidos, que es lo que buscaba.
+  { kind: 'page', title: 'Cobros emitidos', context: 'Cartera', href: `${P}/pagos/cartera/cobros`, keywords: 'cobros recibir recibo de caja abono cuenta de cobro documento factura del mes', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Reglas de mora', context: 'Cartera', href: `${P}/pagos/cartera/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro reglas de pagos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Liquidaciones', context: 'Pagos · propietarios', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios pagos a propietarios' },
+  // Las tres que bajaron del tercer renglón de Pagos el 2026-09-16 (NOTA al pie
+  // de `agentWorkspaceNav.ts`). Se buscan por el nombre que tenían allá.
+  { kind: 'page', title: 'Por aprobar', context: 'Liquidaciones', href: `${P}/pagos/liquidaciones/por-aprobar`, keywords: 'cola aprobaciones facturas de proveedor cuentas por pagar ap firmar' },
+  { kind: 'page', title: 'Dispersiones', context: 'Pagos · propietarios', href: `${P}/pagos/dispersiones`, keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Lotes al banco', context: 'Dispersiones', href: `${P}/pagos/dispersiones/lotes`, keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Facturación', context: 'Dinero', href: `${P}/facturacion`, keywords: 'facturas cobrar dian' },
-  { kind: 'page', title: 'Conciliación', context: 'Dinero', href: `${P}/conciliacion`, keywords: 'conciliacion bancos extractos pagos ia' },
-  { kind: 'page', title: 'Extracto bancario', context: 'Conciliación', href: `${P}/conciliacion/movimientos`, keywords: 'conciliacion bancaria extracto banco movimientos recibos automaticos', permission: { module: 'cobros', action: 'view' } },
   { kind: 'page', title: 'Contabilidad', context: 'Dinero', href: `${P}/contabilidad`, keywords: 'puc cuentas asientos partida doble balance de prueba libro auxiliar estado de cuenta cierre contabilidad general' },
   { kind: 'page', title: 'Mapeo contable', context: 'Contabilidad', href: `${P}/contabilidad/mapeo`, keywords: 'contabilidad mapeo cuentas asientos automaticos puc eventos' },
   { kind: 'action', title: 'Migrar el plan de cuentas (PUC)', context: 'Contabilidad', href: `${P}/migracion/puc`, keywords: 'importar puc cuentas contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'action', title: 'Migrar registros contables', context: 'Contabilidad', href: `${P}/migracion/contables`, keywords: 'importar asientos apertura saldos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
 
   // ── Directorio ────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Propietarios', context: 'Directorio', href: `${P}/propietarios`, keywords: 'dueños landlords', permission: { module: 'propietarios', action: 'view' } },
-  { kind: 'page', title: 'Inquilinos', context: 'Directorio', href: `${P}/inquilinos`, keywords: 'arrendatarios tenants quien vive', permission: { module: 'contratos', action: 'view' } },
+  { kind: 'page', title: 'Propietarios', context: 'Directorio', href: `${P}/propietarios`, keywords: 'dueños landlords estado de cuenta extracto', permission: { module: 'propietarios', action: 'view' } },
+  { kind: 'page', title: 'Inquilinos', context: 'Directorio', href: `${P}/inquilinos`, keywords: 'arrendatarios tenants quien vive estado de cuenta', permission: { module: 'contratos', action: 'view' } },
   { kind: 'action', title: 'Migrar propietarios e inquilinos', context: 'Directorio', href: `${P}/migracion/terceros`, keywords: 'importar traer terceros propietarios inquilinos excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Documentos', context: 'Directorio', href: `${P}/documentos`, keywords: 'archivos adjuntos actas plantillas', permission: { module: 'documentos', action: 'view' } },
 
@@ -103,7 +134,6 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Reportes', context: 'Reportes', href: `${P}/reportes`, keywords: 'informes estadisticas', permission: { module: 'reportes', action: 'view' } },
   { kind: 'page', title: 'Resumen del negocio', context: 'Reportes', href: `${P}/reportes/resumen`, keywords: 'dashboard resumen indicadores kpi', permission: { module: 'dashboard', action: 'view' } },
   { kind: 'page', title: 'Rentabilidad', context: 'Reportes', href: `${P}/reportes/rentabilidad`, keywords: 'rentabilidad margen ingresos egresos', permission: { module: 'reportes', action: 'view' } },
-  { kind: 'page', title: 'Desempeño IA', context: 'Reportes', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
   { kind: 'page', title: 'Configuración', context: 'Configuración', href: `${P}/configuracion`, keywords: 'ajustes settings plan cuenta' },
   { kind: 'page', title: 'Medios de pago', context: 'Configuración', href: `${P}/configuracion/medios-de-pago`, keywords: 'medios de pago transferencia efectivo pse nequi enlace cobre', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Configuración', href: `${P}/configuracion/equipo`, keywords: 'agentes usuarios miembros equipo humano', permission: { module: 'agentes', action: 'view' } },

@@ -196,7 +196,7 @@ describe('EstadoDeCuentaPDF', () => {
     expect(letraDe(conNota[1])).not.toContain(filtrado);
   });
 
-  it('🔴 el papel rotula los dos números: «Contrato 1298 · Leasefy #1839»; un nativo va como «Contrato #14»', () => {
+  it('🔴 el papel dice sólo el número del cliente: «Contrato 1298» (sin «Leasefy #», 16-09); un nativo va como «Contrato #14»', () => {
     const hojasConNumero = paginasDe(
       EstadoDeCuentaPDF({
         doc: estadoDeCuenta({
@@ -208,7 +208,8 @@ describe('EstadoDeCuentaPDF', () => {
         hoy: HOY,
       }),
     );
-    expect(letraDe(hojasConNumero[1])).toContain('Contrato 1298 · Leasefy #1839');
+    expect(letraDe(hojasConNumero[1])).toContain('Contrato 1298');
+    expect(letraDe(hojasConNumero[1])).not.toContain('Leasefy #1839');
     expect(letraDe(hojasConNumero[2])).toContain('Contrato #14');
     expect(letraDe(hojasConNumero[2])).not.toContain('Leasefy #14');
   });

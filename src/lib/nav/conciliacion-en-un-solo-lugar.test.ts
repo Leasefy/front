@@ -117,7 +117,7 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
     expect(pagina).toContain('idDeCarga="upload"')
   })
 
-  it('el extracto del ERP conserva el recibo, el Excel y el lote de seguros', () => {
+  it('el extracto del ERP conserva el recibo, el Excel y el lote de lo que calza exacto', () => {
     const extracto = readFileSync(
       join(RAIZ, 'components/cobros/extracto-bancario/ExtractoBancario.tsx'),
       'utf8',
@@ -125,8 +125,10 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
     // Conciliar emite un recibo de caja y lo dice por su número.
     expect(extracto).toContain('conciliacionBancariaApi.conciliar(')
     expect(extracto).toMatch(/Recibo N\.º \$\{r\.recibo\.numero\}/)
-    // El lote de seguros.
-    expect(extracto).toContain('conciliacionBancariaApi.conciliarSeguros()')
+    // 🔴 (17-09-2026) El lote de lo que calza exacto, que un funcionario aprueba
+    // de una vez. «Conciliar los seguros» (recibos sin aprobación) ya no está.
+    expect(extracto).toContain('<LoteDeLoQueCalzaExacto')
+    expect(extracto).not.toContain('conciliacionBancariaApi.conciliarSeguros()')
     // La carga del archivo (CSV **y** Excel) vive en `<CargarExtracto />`.
     expect(extracto).toContain('<CargarExtracto')
 

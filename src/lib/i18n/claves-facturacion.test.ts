@@ -61,6 +61,16 @@ const CLAVES_EN_USO = [
   // entra en `FacturacionTab`: esa lista describe los cuatro listados del
   // motor DIAN, y esta pestaña no lista documentos, calcula los que faltan.
   'tab_nueva',
+  // 🔴 Y las dos de la facturación electrónica (17-09-2026), por lo mismo: no
+  // listan documentos de `FacturacionTab`, hacen otra cosa. «Resolución» ya
+  // estaba en el mismo caso y por eso también se nombra acá.
+  'tab_resolucion',
+  'tab_soporte',
+  'tab_mandato',
+  'queSon_soporte',
+  'desc_soporte',
+  'queSon_mandato',
+  'desc_mandato',
   'm2BannerTitle',
   'm2BannerDesc',
   ...TABS.map((t) => `tab_${t}`),

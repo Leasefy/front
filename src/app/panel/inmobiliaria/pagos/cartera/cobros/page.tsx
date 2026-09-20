@@ -1,0 +1,837 @@
+'use client';
+import { PageGuard } from '@/components/auth/PageGuard';
+import { mesEnTitulo } from '@/lib/utils/mes';
+
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  CurrencyCircleDollar,
+  GearSix,
+  Scales,
+  Table,
+  SquaresFour,
+  Plus,
+  CaretLeft,
+  CaretRight,
+} from '@phosphor-icons/react';
+import { useI18n } from '@/lib/i18n';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { Button } from '@/components/ui';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  FranjaDelResumen,
+  contarPorEstado,
+  conteosDePestanas,
+  type ConteosPorEstado,
+  hayFiltrosDeCobros,
+  puedeAvanzarAlMesSiguiente,
+} from './estado-de-cobros';
+import {
+  MOTIVO_SIN_PERMISO_DE_RECIBO,
+  usePuedeHacerRecibo,
+} from '@/components/inmobiliaria/permiso-de-recibo';
+import { IconButton, SegmentedControl } from '@leasefy/cadence';
+import {
+  useCobros,
+  useCobroSummary,
+  useConsignaciones,
+  usePropietarios,
+  useInmobiliariaConfig,
+  cobrosApi,
+} from '@/lib/hooks/useInmobiliaria';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type {
+  CobroConDesglose,
+  ConciliacionDePagoAnterior,
+  NuevoReciboPorCliente,
+} from '@/lib/api/recibos-de-caja.types';
+import {
+  CobroResumen,
+  CobroFilters,
+  CobroTable,
+  RegistrarPagoModal,
+  RecordatorioConfig,
+  CobroDetail,
+  type CobroFiltersState,
+} from '@/components/inmobiliaria';
+import { CobroCard } from '@/components/inmobiliaria/CobroCard';
+import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
+import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog';
+import { type RecordatorioConfigData } from '@/components/inmobiliaria/RecordatorioConfig';
+import {
+  RUTA_DE_LA_MIGRACION,
+  useCopyDeMigracionEnLista,
+} from '@/components/migracion/VeredictoDeMigracion';
+import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+
+// View modes
+type ViewMode = 'table' | 'cards';
+
+// Get current month in YYYY-MM format
+function getCurrentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * CobrosPage - Main page for collection management
+ * Route: /panel/inmobiliaria/pagos/cartera/cobros
+ */
+function CobrosContent() {
+  const { t, locale } = useI18n();
+  const searchParams = useSearchParams();
+  const puedeHacerRecibo = usePuedeHacerRecibo();
+
+  // State for filters
+  const [filters, setFilters] = useState<CobroFiltersState>({
+    month: getCurrentMonth(),
+    status: 'all',
+    consignacionId: undefined,
+    propietarioId: undefined,
+    search: undefined,
+  });
+  // Filtro «Anulados»: un cobro anulado nunca se borra; acá se ve con su motivo.
+  const [verAnulados, setVerAnulados] = useState(false);
+
+  // Fetch cobros from API
+  const {
+    cobros: apiCobros,
+    isLoading: cobrosLoading,
+    errorCrudo: cobrosError,
+    refetch: refetchCobros,
+    setData: setCobrosData,
+  } = useCobros({
+    month: filters.month,
+    status: filters.status === 'all' ? undefined : filters.status,
+    propietarioId: filters.propietarioId,
+    anulados: verAnulados || undefined,
+  });
+
+  // Fetch summary from API
+  const {
+    summary: apiSummary,
+    isLoading: summaryLoading,
+    errorCrudo: summaryError,
+    refetch: refetchSummary,
+  } = useCobroSummary(filters.month);
+
+  // Fetch consignaciones for filters
+  const { consignaciones, isLoading: consignacionesLoading } = useConsignaciones();
+
+  // Fetch propietarios for filters
+  const { propietarios, isLoading: propietariosLoading } = usePropietarios();
+
+  // Fetch config for reminder defaults
+  const { config: inmobiliariaConfig, isLoading: configLoading } = useInmobiliariaConfig();
+
+  // State for view mode.
+  // `null` = no explicit user choice → default from viewport (cards under md).
+  // useIsMobile is false on SSR + first client render and only flips after
+  // mount, so the server and client first paint agree ('table') and the
+  // mobile default applies post-hydration without a mismatch.
+  const isMobile = useIsMobile();
+  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
+  const setViewMode = setViewModeOverride;
+
+  // State for modals
+  const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [paymentCobro, setPaymentCobro] = useState<Cobro | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  /*
+   * 🔴 «Generar los cobros» vive ACÁ desde el 2026-09-16, y es una acción
+   * SECUNDARIA. Era el CTA principal de la portada de Pagos, y el CEO no
+   * entendía qué significaba: «el cobro ya está generado» — la deuda nace con
+   * el contrato y se difiere por mes, así que nadie necesita emitir nada para
+   * poder cobrar. El cobro es el DOCUMENTO con el que finanzas reclama una
+   * parte de esa deuda, y el CEO fue explícito sobre dónde se decide: «el
+   * cobro… por lo general es la cartera… ni siquiera debería generarse de
+   * forma automática: que la persona de finanzas decida cuándo cobrar basado
+   * en la cartera». Esta pantalla ES la lista de esos documentos.
+   */
+  const [isGenerarOpen, setIsGenerarOpen] = useState(false);
+
+  // State for reminder config (initialized from API config)
+  const [reminderConfig, setReminderConfig] = useState<RecordatorioConfigData>({
+    daysBefore: inmobiliariaConfig?.agency?.reminderDaysBefore ?? [5],
+    daysAfter: inmobiliariaConfig?.agency?.reminderDaysAfter ?? [3],
+    channels: ['email', 'whatsapp'],
+  });
+
+  // Update reminder config when API config loads
+  useEffect(() => {
+    if (inmobiliariaConfig?.agency) {
+      setReminderConfig((prev) => ({
+        ...prev,
+        daysBefore: inmobiliariaConfig.agency.reminderDaysBefore ?? prev.daysBefore,
+        daysAfter: inmobiliariaConfig.agency.reminderDaysAfter ?? prev.daysAfter,
+      }));
+    }
+  }, [inmobiliariaConfig]);
+
+  // Read status from URL query params
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && ['pending', 'paid', 'partial', 'late', 'defaulted'].includes(statusParam)) {
+      setFilters((prev) => ({ ...prev, status: statusParam as CobroStatus }));
+    }
+  }, [searchParams]);
+
+  // Filter cobros based on current filters (client-side filtering for consignacion and search)
+  const filteredCobros = useMemo(() => {
+    let result = apiCobros || [];
+
+    // Filter by consignacion (property) - client-side only
+    if (filters.consignacionId) {
+      result = result.filter((c) => c.consignacionId === filters.consignacionId);
+    }
+
+    /*
+     * Filter by search (tenant name, property title, property address).
+     *
+     * 🔴 `texto()` y no `c.tenantName.toLowerCase()`: los tres campos son
+     * `string` en el tipo y NO en la base — un cobro migrado a nombre de nadie
+     * llega con `tenantName: null`. Escribir una letra en el buscador tiraba
+     * un `Cannot read properties of undefined (reading 'toLowerCase')` que el
+     * límite de error convertía en «Esta sección se rompió»: la pantalla
+     * entera de Cobros, caída por UNA celda vacía. Visto en el navegador con
+     * la cuenta de QA, que tiene cuatro cobros así.
+     */
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
+      const texto = (v: string | null | undefined) => (v ?? '').toLowerCase();
+      result = result.filter(
+        (c) =>
+          texto(c.tenantName).includes(query) ||
+          texto(c.propertyTitle).includes(query) ||
+          texto(c.propertyAddress).includes(query)
+      );
+    }
+
+    return result;
+  }, [apiCobros, filters.consignacionId, filters.search]);
+
+  // Paginación — el pie canónico del panel (`useTablePagination` +
+  // `TablePagination`, el mismo de Solicitudes e Inmuebles). Antes era un
+  // slice a mano de 6 por página con el paginador de ventana: no dejaba
+  // elegir cuántas filas ver ni decía cuántas había en total.
+  // `resetKey` lleva todo lo que cambia el conjunto de filas: el mes y el
+  // estado los resuelve el backend, la consignación y la búsqueda acá.
+  const {
+    pageItems: paginatedCobros,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredCobros, {
+    resetKey: `${filters.month}|${filters.status}|${filters.consignacionId ?? ''}|${filters.search}`,
+  });
+
+  /*
+   * ¿La tabla está vacía por la migración a medias? Sin inmueble no hay
+   * consignación y sin consignación no hay cobro: 89 contratos migrados
+   * dejan esta pantalla en cero sin que nada lo explique. Sólo cuando NO hay
+   * filtros puestos — con un filtro, el vacío es del filtro.
+   */
+  const deudaDeMigracion = useMigracionConDeuda();
+  const armarCopyDeMigracion = useCopyDeMigracionEnLista();
+  const sinFiltrosPropios =
+    filters.status === 'all' && !filters.consignacionId && !filters.search;
+  const copyDeMigracion =
+    sinFiltrosPropios && deudaDeMigracion && vacioPorMigracion(deudaDeMigracion)
+      ? armarCopyDeMigracion(deudaDeMigracion)
+      : null;
+
+  /*
+   * 🔴 C2: acá se armaba un resumen de ceros cuando el del servidor no estaba,
+   * y sobre un 500 la franja decía «$0 recaudado». Ya no hay resumen de
+   * respaldo: `FranjaDelResumen` pinta esqueleto, fallo con reintento o los
+   * números de verdad.
+   */
+
+  /*
+   * 🔴 C3: el filtro de estado viaja al servidor, así que con «En mora» puesto
+   * el listado sólo trae los de mora y las demás pestañas caían a 0. Se
+   * recuerda el último conteo SIN filtro de este mes y propietario, y
+   * `conteosDePestanas` decide de dónde sale cada número.
+   */
+  const alcanceDeLosConteos = `${filters.month}|${filters.propietarioId ?? ''}`;
+  const [conteosSinFiltro, setConteosSinFiltro] = useState<{
+    alcance: string;
+    conteos: ConteosPorEstado;
+  } | null>(null);
+  useEffect(() => {
+    if (filters.status !== 'all' || cobrosLoading || cobrosError || !apiCobros) return;
+    setConteosSinFiltro({ alcance: alcanceDeLosConteos, conteos: contarPorEstado(apiCobros) });
+  }, [filters.status, cobrosLoading, cobrosError, apiCobros, alcanceDeLosConteos]);
+
+  const cobroCountByStatus = useMemo(
+    () =>
+      conteosDePestanas({
+        estado: filters.status,
+        cobros: cobrosLoading || cobrosError ? null : (apiCobros ?? null),
+        recordados:
+          conteosSinFiltro?.alcance === alcanceDeLosConteos ? conteosSinFiltro.conteos : null,
+        resumen: apiSummary,
+        filtradoPorPropietario: Boolean(filters.propietarioId),
+      }),
+    [
+      filters.status,
+      filters.propietarioId,
+      cobrosLoading,
+      cobrosError,
+      apiCobros,
+      conteosSinFiltro,
+      alcanceDeLosConteos,
+      apiSummary,
+    ],
+  );
+
+  // Handle cobro click - open detail modal
+  const handleCobroClick = useCallback((cobro: Cobro) => {
+    setSelectedCobro(cobro);
+    setIsDetailOpen(true);
+  }, []);
+
+  // Handle register payment click - open payment modal
+  const handleRegisterPaymentClick = useCallback((cobro: Cobro) => {
+    setPaymentCobro(cobro);
+    setIsPaymentModalOpen(true);
+  }, []);
+
+  /**
+   * Pone en la tabla el cobro que devolvió el back.
+   *
+   * 🔴 Antes esto se calculaba a mano (`paidAmount + monto`, y si daba <= 0
+   * entonces «pagado»). Esa cuenta se equivocaba con cualquier cosa que el back
+   * recomponga y nosotros no sepamos: mora que dejó de correr, un descuento,
+   * un recibo anulado. El endpoint de recibo de caja devuelve el cobro YA
+   * recompuesto justamente para no tener que adivinarlo.
+   */
+  const aplicarCobro = useCallback(
+    (actualizado: Cobro) => {
+      setCobrosData((prev) => {
+        if (!prev) return prev;
+        return prev.map((c) => (c.id === actualizado.id ? { ...c, ...actualizado } : c));
+      });
+      refetchSummary();
+    },
+    [setCobrosData, refetchSummary],
+  );
+
+  /**
+   * Emitir el recibo de caja.
+   *
+   * 🔴 RELANZA el error a propósito: el 400 del sobrepago trae el máximo
+   * abonable y el 409 dice que hay plata vieja sin conciliar. Los dos se
+   * resuelven DENTRO del formulario; tragarlos acá con un `console.error`
+   * —como estaba— dejaba al usuario apretando un botón que no hacía nada.
+   */
+  const emitirRecibo = useCallback(
+    async (datos: NuevoReciboPorCliente) => {
+      const res = await recibosDeCajaApi.crearPorCliente(datos);
+      // Un pago puede tocar VARIOS cobros (se reparte por antigüedad): se
+      // refrescan todos, no sólo el de la fila desde la que se abrió.
+      for (const cobro of res.cobros) aplicarCobro(cobro);
+      refetchCobros();
+      return res;
+    },
+    [aplicarCobro, refetchCobros],
+  );
+
+  /** Cuadrar la plata que el cobro ya registraba sin recibo (cartera vieja y PSE). */
+  const conciliarPagoAnterior = useCallback(
+    async (cobroId: string, datos: ConciliacionDePagoAnterior) => {
+      const res = await recibosDeCajaApi.conciliar(cobroId, datos);
+      aplicarCobro(res.cobro);
+      return res;
+    },
+    [aplicarCobro],
+  );
+
+  /** Anular un recibo devuelve plata al saldo: la fila tiene que enterarse. */
+  const handleCobroActualizado = useCallback(
+    (actualizado: CobroConDesglose) => aplicarCobro(actualizado),
+    [aplicarCobro],
+  );
+
+  /**
+   * Mandar el recordatorio.
+   *
+   * 🔴 NO atrapa el error (C1): lo dice el cajón que apretó el botón. Antes se
+   * tragaba acá con un `console.error` y el cajón anunciaba «Recordatorio
+   * enviado» sobre un 500. El contador sube sólo DESPUÉS de que el envío
+   * volvió bien: si el `await` lanza, esa línea no corre.
+   */
+  const handleSendReminder = useCallback(
+    async (cobro: Cobro) => {
+      await cobrosApi.sendReminder(cobro.id);
+
+      setCobrosData((prev) => {
+        if (!prev) return prev;
+        return prev.map((c) =>
+          c.id === cobro.id
+            ? {
+                ...c,
+                remindersSent: c.remindersSent + 1,
+                lastReminderDate: new Date().toISOString().split('T')[0],
+                updatedAt: new Date().toISOString(),
+              }
+            : c
+        );
+      });
+    },
+    [setCobrosData]
+  );
+
+  // Handle filter change
+  // La vuelta a la página 1 la hace `useTablePagination` por `resetKey`, no acá.
+  const handleFilterChange = useCallback((newFilters: CobroFiltersState) => {
+    setFilters(newFilters);
+  }, []);
+
+  /**
+   * Guardar los recordatorios — de verdad.
+   *
+   * Esto era `setReminderConfig(config)` a secas mientras el cajón anunciaba
+   * «Configuración guardada»: ningún request. Los días viven en
+   * `agency.reminderDaysBefore/After` y se recargan al volver a entrar, así que
+   * lo editado se perdía y el back seguía mandando con lo viejo.
+   *
+   * Los CANALES no se mandan: el back no tiene dónde guardarlos
+   * (`UpdateAgencyDto` sólo acepta los dos arreglos de días). Mandarlos sería
+   * un 400 por `forbidNonWhitelisted`; el cajón lo dice en pantalla.
+   */
+  const handleConfigSave = useCallback(async (config: RecordatorioConfigData) => {
+    await agencyApi.updateAgency({
+      reminderDaysBefore: config.daysBefore,
+      reminderDaysAfter: config.daysAfter,
+    });
+    setReminderConfig(config);
+  }, []);
+
+  // Handle detail modal close
+  const handleDetailClose = useCallback(() => {
+    setIsDetailOpen(false);
+    setTimeout(() => setSelectedCobro(null), 300);
+  }, []);
+
+  // Handle payment modal close
+  const handlePaymentModalClose = useCallback(() => {
+    setIsPaymentModalOpen(false);
+    setTimeout(() => setPaymentCobro(null), 300);
+  }, []);
+
+  // Handle view pending filter
+  const handleViewPending = useCallback(() => {
+    setFilters((prev) => ({ ...prev, status: 'pending' }));
+  }, []);
+
+  // Handle view late filter
+  const handleViewLate = useCallback(() => {
+    setFilters((prev) => ({ ...prev, status: 'late' }));
+  }, []);
+
+
+  /*
+   * C7 (auditoría 13-09) — el mes no avanza más allá del corriente.
+   *
+   * La flecha «siguiente» no tenía tope: se podía llegar a noviembre de 2031 y
+   * la pantalla mostraba una tabla vacía perfectamente convincente, sin decir
+   * que ese mes simplemente no existe todavía. Un vacío que se ve igual que
+   * «no hay cobros» es peor que un botón apagado.
+   *
+   * El techo es el mes corriente en Bogotá —no el del servidor ni el del
+   * navegador— porque es el mes que la inmobiliaria está facturando. Los meses
+   * pasados siguen abiertos: ahí sí hay cartera vieja que mirar.
+   */
+  const mesTope = useMemo(() => getCurrentMonth(), []);
+  const puedeAvanzarDeMes = puedeAvanzarAlMesSiguiente(filters.month, mesTope);
+
+  /**
+   * C4 — ¿la persona está filtrando? Es lo que separa «no hay cobros» de «tus
+   * filtros no dan nada».
+   *
+   * El MES no cuenta como filtro: siempre hay uno puesto, así que contarlo
+   * haría que el vacío dijera «quita los filtros» todas las veces, incluso en
+   * una inmobiliaria recién creada que nunca generó un cobro.
+   */
+  const hayFiltrosPuestos = hayFiltrosDeCobros(filters);
+
+  const limpiarFiltros = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      status: 'all',
+      search: '',
+      consignacionId: undefined,
+      propietarioId: undefined,
+    }));
+  }, []);
+
+  // Step the selected month backward/forward (handles year rollover).
+  const shiftMonth = useCallback(
+    (delta: number) => {
+      setFilters((prev) => {
+        const [y, m] = prev.month.split('-').map(Number);
+        const d = new Date(y, m - 1 + delta, 1);
+        const siguiente = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        // El guard va acá y no sólo en el botón: el teclado y cualquier otro
+        // camino a esta función tienen que toparse con el mismo techo.
+        if (!puedeAvanzarAlMesSiguiente(prev.month, mesTope)) return prev;
+        return { ...prev, month: siguiente };
+      });
+    },
+    [mesTope],
+  );
+
+  // Format month for display. Build the Date in LOCAL time (Y, M-1, 1) — parsing
+  // `'YYYY-MM-01'` as a string is treated as UTC and shifts to the previous month
+  // in negative-offset timezones (e.g. Colombia UTC-5 rendered July as "junio").
+  const [monthDisplayYear, monthDisplayMonth] = filters.month.split('-').map(Number);
+  const monthDisplay = mesEnTitulo(
+    `${monthDisplayYear}-${String(monthDisplayMonth).padStart(2, '0')}`,
+    locale === 'en' ? 'en' : 'es',
+  );
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-h2 text-fg">{t('inmobiliaria.cobros.title')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+            {t('inmobiliaria.cobros.subtitle')}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* El engranaje va PRIMERO y sin texto: es la acción que menos se
+              usa y la que menos tiene que pesar (Nico, 2026-09-03). El
+              extracto bancario ya no se enlaza desde acá — vive en
+              Conciliación, que es otra sección. */}
+          <IconButton
+            variant="outline"
+            icon={<GearSix className="w-4 h-4" />}
+            aria-label="Configuración de cobros"
+            title="Configuración de cobros"
+            data-testid="configuracion-de-cobros"
+            onClick={() => setIsConfigOpen(true)}
+          />
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
+              <Scales className="w-4 h-4" />
+              <span className="hidden sm:inline">Reglas de mora</span>
+            </Link>
+          </Button>
+          {/* Emitir el documento de cobro del mes que se está viendo. Es
+              secundario a propósito: lo principal de esta plata es el recibo
+              de caja, que no necesita ningún cobro para recibir. */}
+          <Button
+            variant="secondary"
+            hideArrow
+            onClick={() => setIsGenerarOpen(true)}
+            data-testid="abrir-generar-cobros"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Generar los cobros de {monthDisplay}</span>
+            <span className="sm:hidden">Generar cobros</span>
+          </Button>
+          {/* Sin `cobros:create` queda a la vista y deshabilitado, con el
+              porqué (C6): esconderlo se lee como «falta la función». */}
+          <span
+            className="inline-flex"
+            title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
+          >
+            <Button
+              hideArrow
+              disabled={!puedeHacerRecibo}
+              onClick={() => {
+                setPaymentCobro(null);
+                setIsPaymentModalOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              {t('recibos.hacer')}
+            </Button>
+          </span>
+        </div>
+      </div>
+
+      {/* Las otras lecturas de la misma plata: un cobro es un DOCUMENTO sobre
+          la cartera, no un módulo aparte (Nico + CEO, 2026-09-15). */}
+      <PestanasDeCartera />
+
+      {/* Summary Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <FranjaDelResumen
+          resumen={apiSummary}
+          cargando={summaryLoading}
+          error={summaryError}
+          onReintentar={refetchSummary}
+        >
+          {(resumen) => (
+            <CobroResumen
+              summary={resumen}
+              onViewPending={handleViewPending}
+              onViewLate={handleViewLate}
+            />
+          )}
+        </FranjaDelResumen>
+      </motion.div>
+
+      {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-lg border border-border bg-card"
+      >
+        {/* View Toggle Header - FIRST (Primary hierarchy) */}
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+          <SegmentedControl
+            aria-label={t('inmobiliaria.cobros.viewTable')}
+            value={viewMode}
+            onChange={(v) => setViewMode(v as ViewMode)}
+            options={[
+              {
+                value: 'table',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Table className="w-4 h-4" />
+                    {t('inmobiliaria.cobros.viewTable')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.cobros.viewTable'),
+              },
+              {
+                value: 'cards',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <SquaresFour className="w-4 h-4" />
+                    {t('inmobiliaria.cobros.viewCards')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.cobros.viewCards'),
+              },
+            ]}
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <IconButton
+                variant="ghost"
+                icon={<CaretLeft className="w-4 h-4" />}
+                aria-label="Mes anterior"
+                onClick={() => shiftMonth(-1)}
+              />
+              <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
+                {monthDisplay}
+              </span>
+              <IconButton
+                variant="ghost"
+                icon={<CaretRight className="w-4 h-4" />}
+                aria-label="Mes siguiente"
+                disabled={!puedeAvanzarDeMes}
+                title={puedeAvanzarDeMes ? undefined : 'Es el mes corriente: todavía no hay meses después de este.'}
+                onClick={() => shiftMonth(1)}
+              />
+            </div>
+            <span className="text-xs text-fg-muted tabular-nums">
+              {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
+            </span>
+            <SegmentedControl
+              aria-label={t('inmobiliaria.cobros.anular.anulados')}
+              value={verAnulados ? 'anulados' : 'vigentes'}
+              onChange={(v) => setVerAnulados(v === 'anulados')}
+              options={[
+                { value: 'vigentes', label: t('inmobiliaria.cobros.anular.vigentes') },
+                { value: 'anulados', label: t('inmobiliaria.cobros.anular.anulados') },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Filters Section - SECOND (Search + collapsible filters) */}
+        <CobroFilters
+          consignaciones={consignaciones}
+          propietarios={propietarios}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          cobroCountByStatus={cobroCountByStatus}
+        />
+
+        {/* Content */}
+        <div>
+          {cobrosLoading ? (
+            /*
+             * C5 (auditoría 13-09) — era un spinner centrado con «Cargando
+             * cobros...»: la tabla desaparecía entera y volvía, así que cada
+             * recarga era un salto de layout y, por un instante, la pantalla
+             * decía menos de lo que ya sabía. El esqueleto conserva la forma
+             * de lo que va a llegar.
+             */
+            <EsqueletoTabla filas={8} columnas={6} />
+          ) : cobrosError ? (
+            /* Mostraba `description={cobrosError}`: el mensaje crudo del
+               backend, en inglés, dentro de la tarjeta de la tabla. */
+            <FalloDeCarga
+              error={cobrosError}
+              queEs="los cobros"
+              onReintentar={() => refetchCobros()}
+              enmarcado={false}
+            />
+          ) : paginatedCobros.length > 0 ? (
+            viewMode === 'table' ? (
+              <CobroTable
+                cobros={paginatedCobros}
+                onCobroClick={handleCobroClick}
+                onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
+                // Un cobro anulado sale de la lista: se vuelve a leer del back.
+                onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
+                showSummary
+              />
+            ) : (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedCobros.map((cobro) => (
+                  <CobroCard
+                    key={cobro.id}
+                    cobro={cobro}
+                    onClick={handleCobroClick}
+                    onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
+                    onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
+                  />
+                ))}
+              </div>
+            )
+          ) : hayFiltrosPuestos ? (
+            /*
+             * C4 (auditoría 13-09) — «no hay cobros» y «tus filtros no dan
+             * nada» eran el mismo cartel, así que buscar mal se leía como
+             * cartera vacía. Son hechos distintos y la salida también: acá la
+             * salida es quitar los filtros, no ir a la migración.
+             */
+            <SinDatos
+              queSon="cobros"
+              icono={CurrencyCircleDollar}
+              hayFiltros
+              onLimpiarFiltros={limpiarFiltros}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+                <CurrencyCircleDollar
+                  weight="duotone"
+                  className="h-6 w-6 text-fg-muted"
+                  aria-hidden="true"
+                />
+              </div>
+              {/*
+                Un cobro sale de la consignación del inmueble. Si la migración
+                dejó contratos sin inmueble o sin propietario, esta tabla está
+                vacía POR ESO — decir «todavía no generaste cobros» es cierto y
+                a la vez inútil: esconde la causa. Una línea, con el botón.
+              */}
+              <div className="space-y-1.5">
+                <p className="text-base font-semibold text-fg">
+                  {verAnulados
+                    ? t('inmobiliaria.cobros.anular.sinAnulados')
+                    : (copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments'))}
+                </p>
+                {!verAnulados && (
+                  <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
+                    {copyDeMigracion?.detalle ?? t('inmobiliaria.cobros.noPaymentsDesc')}
+                  </p>
+                )}
+              </div>
+              {copyDeMigracion && !verAnulados && (
+                <Button asChild hideArrow>
+                  <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Pie de tabla del design system: «X cobros · Filas por página · n/m».
+            Se monta con una sola fila también — decirle a alguien que tiene 3
+            cobros cuántos hay y dejarlo elegir el tamaño es parte de que la
+            tabla se lea como tabla. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </motion.div>
+
+      {/* Cobro Detail Modal */}
+      <CobroDetail
+        isOpen={isDetailOpen}
+        onClose={handleDetailClose}
+        cobro={selectedCobro}
+        onRegisterPayment={handleRegisterPaymentClick}
+        onSendReminder={handleSendReminder}
+        onCobroActualizado={handleCobroActualizado}
+      />
+
+      {/* Recibo de caja */}
+      <RegistrarPagoModal
+        isOpen={isPaymentModalOpen}
+        onClose={handlePaymentModalClose}
+        cobro={paymentCobro}
+        onSubmit={emitirRecibo}
+        onConciliar={conciliarPagoAnterior}
+      />
+
+      {/* Generar los cobros del mes que se está viendo. `yaGenerados` es la
+          cuenta REAL de la tabla de al lado, no un número traído de otro lado. */}
+      <GenerarCobrosDialog
+        open={isGenerarOpen}
+        onOpenChange={setIsGenerarOpen}
+        mes={filters.month}
+        yaGenerados={apiCobros?.length ?? 0}
+        onGenerado={() => {
+          refetchCobros();
+          refetchSummary();
+        }}
+      />
+
+      {/* Reminder Configuration Sheet */}
+      <RecordatorioConfig
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        config={reminderConfig}
+        onSave={handleConfigSave}
+      />
+    </div>
+  );
+}
+
+export default function CobrosPage() {
+  return (
+    <PageGuard module="cobros">
+      <CobrosContent />
+    </PageGuard>
+  );
+}

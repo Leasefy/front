@@ -285,15 +285,74 @@ describe('cobrosApi.sendReminder — matches backend @Put(:id/send-reminder)', (
 });
 
 describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quote)', () => {
-  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId }', async () => {
-    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId, aCargoDe }', async () => {
+    const fetchMock = mockFetchOnce({
+      id: 'sol-1',
+      status: 'IN_PROGRESS',
+      cargo: { aCargoDe: 'PROPIETARIO', deduccionIds: ['d-1'], avisos: [] },
+    });
 
-    await mantenimientoApi.approveQuote('sol-1', 'quote-9');
+    const aprobada = await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'PROPIETARIO',
+    });
 
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/select-quote')).toBe(true);
     expect(opts.method).toBe('PUT');
-    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9' });
+    // A cargo de quién queda la reparación viaja SIEMPRE: el back lo exige.
+    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9', aCargoDe: 'PROPIETARIO' });
+    expect(aprobada.cargo).toEqual({ aCargoDe: 'PROPIETARIO', deduccionIds: ['d-1'], avisos: [] });
+  });
+
+  /**
+   * 🔴 H-03 (18-09-2026): las dos formas nuevas viajan con lo que el back
+   * EXIGE. Sin esta prueba, mandar `COMPARTIDA` sin porcentajes compila igual
+   * y revienta en la base con un CHECK.
+   */
+  it('COMPARTIDA manda los DOS porcentajes', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'COMPARTIDA',
+      porcentajes: { propietarioPct: 60, inquilinoPct: 40 },
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(opts.body as string)).toEqual({
+      quoteId: 'quote-9',
+      aCargoDe: 'COMPARTIDA',
+      propietarioPct: 60,
+      inquilinoPct: 40,
+    });
+  });
+
+  it('INMOBILIARIA manda el motivo', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'INMOBILIARIA',
+      motivoInmobiliaria: 'Garantía del proveedor.',
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(opts.body as string)).toEqual({
+      quoteId: 'quote-9',
+      aCargoDe: 'INMOBILIARIA',
+      motivoInmobiliaria: 'Garantía del proveedor.',
+    });
+  });
+
+  it('🔴 las dos de siempre NO mandan porcentajes colgados', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'INQUILINO',
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const cuerpo = JSON.parse(opts.body as string) as Record<string, unknown>;
+    expect('propietarioPct' in cuerpo).toBe(false);
+    expect('motivoInmobiliaria' in cuerpo).toBe(false);
   });
 });
 

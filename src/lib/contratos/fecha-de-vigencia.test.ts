@@ -43,6 +43,22 @@ describe('fechaDeVigencia — un día es un día, no un instante', () => {
     expect(fechaDeVigencia('2026-05-01')!.toLocaleDateString('es-CO', { day: '2-digit' })).toBe('01')
   })
 
+  it('🔴 el día que el back manda a medianoche UTC (`@db.Date` de Prisma) es el MISMO día', () => {
+    // Prueba en navegador, 16-09: `GET /contracts` manda `2026-06-05T00:00:00.000Z`
+    // y la lista decía «04 de jun». Leído como instante, en Bogotá es el 4 a las
+    // 19:00. En un runner en UTC el corrimiento no existe; por eso se compara
+    // contra el día suelto, que es lo que tiene que dar en cualquier zona.
+    for (const [conHora, dia] of [
+      ['2026-06-05T00:00:00.000Z', '2026-06-05'],
+      ['2027-02-28T00:00:00Z', '2027-02-28'],
+      ['2026-03-01T00:00:00.000Z', '2026-03-01'],
+    ] as const) {
+      const f = fechaDeVigencia(conHora)!
+      expect(f.getTime()).toBe(fechaDeVigencia(dia)!.getTime())
+      expect(f.getDate()).toBe(Number(dia.slice(8, 10)))
+    }
+  })
+
   it('un ISO con hora sigue siendo un instante y se convierte como tal', () => {
     const f = fechaDeVigencia('2026-05-01T15:00:00.000Z')!
     expect(f.toISOString()).toBe('2026-05-01T15:00:00.000Z')

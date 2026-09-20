@@ -22,6 +22,7 @@ import {
 // Components
 import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
 import { AgenteMetrics } from '@/components/inmobiliaria/AgenteMetrics';
+import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
@@ -160,34 +161,17 @@ function AgenteDetailContent() {
             <AgentePipeline pipelineItems={pipelineItems} />
           </motion.div>
 
-          {/* Commission History Placeholder */}
+          {/* 🔴 17-09: acá había un «Historial de comisiones — próximamente».
+              La comisión del asesor se liquida por fuera de Leasefy, así que
+              esa pantalla no va a existir; lo que sí es un hecho —qué captó y
+              qué arrendó— es esto. */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-lg border border-border bg-card overflow-hidden"
+            className="rounded-lg border border-border bg-card p-5"
           >
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
-                <Clock className="w-4 h-4 text-fg-muted" />
-              </div>
-              <h3 className="text-base font-semibold text-fg">
-                {t('inmobiliaria.agentes.detail.commissions')}
-              </h3>
-            </div>
-            <div className="flex flex-col items-center p-8 text-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-surface-muted flex items-center justify-center">
-                <Clock weight="duotone" className="w-6 h-6 text-fg-muted" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-fg">
-                  {t('inmobiliaria.agentes.detail.comingSoon')}
-                </p>
-                <p className="text-xs text-fg-muted">
-                  {t('inmobiliaria.agentes.detail.commissionsDesc')}
-                </p>
-              </div>
-            </div>
+            <CaptacionesYArriendos userId={agente.userId} />
           </motion.div>
         </div>
       </div>

@@ -73,7 +73,12 @@ describe('DocumentsSection', () => {
     act(() => root.render(<DocumentsSection consignacion={base} />))
     const acta = container.querySelector<HTMLAnchorElement>('[data-testid="documento-acta"]')
     expect(acta?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/c-1/acta')
-    expect(acta?.textContent).toContain('handoverReportOpen')
+    // 🔴 Sin texto de acción adentro (Nico, 18-09-2026): el renglón ENTERO es
+    // el enlace, y nombrar la acción otra vez la hacía parecer un link aparte
+    // dentro de algo que ya era clickeable. El renglón dice qué es y en qué
+    // estado está; a dónde lleva lo dice el `href`.
+    expect(acta?.textContent).not.toContain('handoverReportOpen')
+    expect(acta?.textContent).toContain('inventoryItemsCount')
   })
 
   it('sin contrato cargado lo dice y deja adjuntar el PDF firmado', () => {
@@ -82,7 +87,7 @@ describe('DocumentsSection', () => {
     const adjuntar = container.querySelector<HTMLButtonElement>('[data-testid="documento-contrato-adjuntar"]')
     expect(adjuntar?.tagName).toBe('BUTTON')
     expect(adjuntar?.textContent).toContain('consignmentContractMissing')
-    expect(adjuntar?.textContent).toContain('consignmentContractAttach')
+    expect(adjuntar?.textContent).not.toContain('consignmentContractAttach')
     const input = container.querySelector<HTMLInputElement>('[data-testid="documento-contrato-input"]')
     expect(input?.getAttribute('accept')).toBe('application/pdf')
     expect(container.querySelector('button[disabled]')).toBeNull()

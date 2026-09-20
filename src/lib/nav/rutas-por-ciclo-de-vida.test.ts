@@ -99,10 +99,12 @@ describe('rutas por ciclo de vida — las 38 entradas de ayer', () => {
     [`${P}/pqrs`, `${P}/solicitudes`],
     [`${P}/documentos/revision`, `${P}/postulaciones/soportes`],
     // Finanzas
-    [`${P}/ai/cobranza`, `${P}/cobros/cobranza`],
-    [`${P}/ai/cobranza/deudores/9`, `${P}/cobros/cobranza/deudores/9`],
-    [`${P}/cartera`, `${P}/cobros/cartera`],
-    [`${P}/recaudo`, `${P}/cobros/recaudo`],
+    // Los cuatro se repuntaron a `/pagos/*` el 2026-09-15 (un solo módulo de
+    // plata): el destino cambió, la fuente no, y no hay cadena de dos saltos.
+    [`${P}/ai/cobranza`, `${P}/pagos/cobranza`],
+    [`${P}/ai/cobranza/deudores/9`, `${P}/pagos/cobranza/deudores/9`],
+    [`${P}/cartera`, `${P}/pagos/cartera`],
+    [`${P}/recaudo`, `${P}/pagos/recaudo`],
     [`${P}/ai/conciliacion/movimientos`, `${P}/conciliacion/movimientos`],
     [`${P}/ai/pagos`, `${P}/pagos`],
     [`${P}/ai/pagos/cola`, `${P}/pagos/cola`],
@@ -132,7 +134,10 @@ describe('rutas por ciclo de vida — las 38 entradas de ayer', () => {
   });
 
   it('lo que no cambió no se toca', () => {
-    for (const quieta of ['/piloto', '', '/pipeline', '/inmuebles', '/postulaciones', '/contratos', '/mensajes', '/agenda', '/cobros', '/facturacion', '/contabilidad', '/propietarios', '/inquilinos', '/documentos', '/reportes', '/configuracion', '/cobros/reglas-de-mora', '/contratos/nuevo', '/contratos/riesgo', '/contratos/aprobar', '/contratos/retencion']) {
+    // `/cobros` y `/cobros/reglas-de-mora` salieron de esta lista el
+    // 2026-09-15: ya NO están quietas, redirigen — pero desde la tabla de
+    // `un-solo-modulo-de-plata`, no desde ésta, así que acá siguen sin calzar.
+    for (const quieta of ['/piloto', '', '/pipeline', '/inmuebles', '/postulaciones', '/contratos', '/mensajes', '/agenda', '/facturacion', '/contabilidad', '/propietarios', '/inquilinos', '/documentos', '/reportes', '/configuracion', '/contratos/nuevo', '/contratos/riesgo', '/contratos/aprobar', '/contratos/retencion']) {
       expect(resolver(`${P}${quieta}`), quieta).toBeNull();
     }
   });

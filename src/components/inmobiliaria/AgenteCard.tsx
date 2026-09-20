@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Buildings,
   Handshake,
-  CurrencyDollar,
+  CalendarCheck,
   ChartLineUp,
   CaretRight,
   Eye,
@@ -16,7 +16,6 @@ import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 interface AgenteCardProps {
   agente: Agente;
@@ -269,14 +268,15 @@ export function AgenteCard({
             </p>
           </div>
 
-          {/* Commissions this month */}
+          {/* Arriendos del año — la comisión del asesor va por fuera de
+              Leasefy (17-09), así que acá no hay pesos. */}
           <div className="p-3 rounded-lg bg-surface-muted">
             <div className="flex items-center gap-2 mb-1">
-              <CurrencyDollar className="w-4 h-4 text-fg-muted" />
-              <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.commissions')}</span>
+              <CalendarCheck className="w-4 h-4 text-fg-muted" />
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.agente.closingsThisYear')}</span>
             </div>
             <p className="text-base font-semibold font-mono tabular-nums text-fg truncate">
-              {formatCurrency(agente.metrics.commissionsThisMonth)}
+              {agente.metrics.closedThisYear}
             </p>
           </div>
         </div>

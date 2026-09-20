@@ -47,7 +47,9 @@ import { NuevaFactura } from './NuevaFactura';
 function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {
     clave: 'ct-1|2026-09|INQUILINO',
+    cuotaId: 'cu-i-2026-09',
     contractId: 'ct-1',
+    mes: '2026-09',
     codigo: 1839,
     numeroExterno: '1686',
     inmueble: 'Cra 76 #45-12 apto 302',
@@ -78,6 +80,10 @@ function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
     diasFacturados: 30,
     diasDelMes: 30,
     deduccionAlEgresoCop: 0,
+    // Septiembre es el mes en curso de estas pruebas: se puede emitir.
+    emitible: true,
+    motivoNoEmitible: null,
+    avisos: [],
     ...over,
   };
 }
@@ -134,15 +140,39 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
       netoCop: 180_000,
     }),
   ];
+  const totalesInquilinos = lado({
+    porEmitir: inquilinos.length,
+    totalCop: 1_800_000,
+  });
+  const totalesPropietarios = lado({
+    porEmitir: propietarios.length,
+    totalCop: 180_000,
+  });
   return {
+    desde: '2026-09',
+    hasta: '2026-09',
     mes: '2026-09',
     inquilinos,
     propietarios,
     omitidos: over.omitidos ?? [],
+    meses: over.meses ?? [
+      {
+        mes: '2026-09',
+        nombre: 'Septiembre de 2026',
+        emitible: true,
+        motivoNoEmitible: null,
+        inquilinos: totalesInquilinos,
+        propietarios: totalesPropietarios,
+      },
+    ],
+    porContrato: over.porContrato ?? [],
     totales: {
-      contratosDelMes: 1,
-      inquilinos: lado({ porEmitir: inquilinos.length, totalCop: 1_800_000 }),
-      propietarios: lado({ porEmitir: propietarios.length, totalCop: 180_000 }),
+      contratos: 1,
+      meses: 1,
+      emitiblesHoy: inquilinos.length + propietarios.length,
+      totalEmitibleHoyCop: 1_980_000,
+      inquilinos: totalesInquilinos,
+      propietarios: totalesPropietarios,
     },
     resolucion: resolucionVigente(),
     ...over,
@@ -152,18 +182,42 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
 let host: HTMLDivElement;
 let root: Root;
 
+const irAResolucion = vi.fn();
+
 async function montar() {
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => {
-    root.render(<NuevaFactura />);
+    root.render(<NuevaFactura onIrAResolucion={irAResolucion} />);
+  });
+}
+
+/** Escribir en un input controlado por React. */
+async function escribir(sel: string, texto: string) {
+  const input = q(sel) as HTMLInputElement;
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    setter.call(input, texto);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+async function clic(sel: string) {
+  await act(async () => {
+    (q(sel) as HTMLElement | null)?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
   });
 }
 
 beforeEach(() => {
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
+  irAResolucion.mockReset();
   toastOk.mockReset();
   toastErr.mockReset();
 });
@@ -178,20 +232,168 @@ afterEach(() => {
 const q = (s: string) => host.querySelector(s);
 const qa = (s: string) => Array.from(host.querySelectorAll(s));
 
+/**
+ * Cambiar de pestaña. Desde el 19-09 se ve UNA tabla a la vez (Nico: «debe
+ * haber algo para que sólo se pueda ver la tabla de inquilino y otra la de
+ * propietarios, como un switch tab»), y eso es lo que hace posible que la
+ * acción masiva viva DENTRO de la tabla en vez de suelta debajo.
+ */
+async function verA(quien: 'Inquilinos' | 'Propietarios') {
+  const boton = qa('button').find((b) => (b.textContent ?? '').startsWith(quien));
+  if (!boton) throw new Error(`No hay pestaña «${quien}»`);
+  await act(async () => {
+    boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
 describe('NuevaFactura', () => {
-  it('pide el mes corriente al abrir y pinta las DOS listas', async () => {
+  it('🔴 abre en inquilinos y muestra UNA tabla; la otra está a un clic', async () => {
+    /*
+     * 🔴 19-09 · Antes las dos tablas se pintaban una encima de la otra, y por
+     * eso la acción masiva no cabía dentro de ninguna: una sola selección
+     * repartida en dos tablas obliga a sacar el botón afuera.
+     */
     await montar();
     expect(porGenerarMock).toHaveBeenCalledTimes(1);
     expect(q('[data-testid="facturacion-inquilinos"]')).not.toBeNull();
-    expect(q('[data-testid="facturacion-propietarios"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-propietarios"]')).toBeNull();
     expect(host.textContent).toContain('Nubia Amparo David');
+
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-propietarios"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-inquilinos"]')).toBeNull();
     expect(host.textContent).toContain('Jorge Restrepo');
   });
 
   it('🔴 todo lo que está por emitir arranca seleccionado: no se marcan 800 casillas a mano', async () => {
     await montar();
     const boton = q('[data-testid="facturacion-generar"]')!;
-    expect(boton.textContent).toContain('Generar 2 facturas');
+    // Es la tanda de ESTA tabla: la de propietarios se emite en su pestaña.
+    expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
+      'Generar 1 factura de propietarios',
+    );
+  });
+
+  /*
+   * 🔴 19-09 · Nico: «veo arriba la acción masiva y ya vienen seleccionadas
+   * sin que el usuario seleccione algo, es raro eso, quizás ya eso es una
+   * sugerencia y debe verse de otra forma». La preselección se queda —«el
+   * pedido es facturar el mes, no ir marcando 800 casillas»— pero tiene que
+   * DECIR que es nuestra, y tener salida.
+   */
+  describe('🔴 la preselección se lee como sugerencia', () => {
+    it('lo dice con todas las letras, y ofrece la salida', async () => {
+      await montar();
+      const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
+      expect(resumen.textContent).toContain('Preseleccionamos');
+      expect(resumen.textContent).toContain('1 factura de inquilinos');
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).not.toBeNull();
+      expect(q('[data-testid="facturacion-acciones-quitar"]')).not.toBeNull();
+    });
+
+    it('en cuanto la persona toca una casilla, la selección es SUYA', async () => {
+      await montar();
+      const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
+      await act(async () => {
+        casilla.click();
+      });
+      const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
+      expect(resumen.textContent).not.toContain('Preseleccionamos');
+      // Se destildó la única de inquilinos: queda en cero y lo dice.
+      expect(resumen.textContent).toContain('No hay ninguna factura marcada');
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).toBeNull();
+    });
+
+    it('«Quitar la selección» deja el botón apagado y dice qué hacer', async () => {
+      await montar();
+      await act(async () => {
+        (q('[data-testid="facturacion-acciones-quitar"]') as HTMLButtonElement).click();
+      });
+      const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+      // 🔴 Sigue A LA VISTA: esconderlo se lee como «falta la función».
+      expect(boton).not.toBeNull();
+      expect(boton.disabled).toBe(true);
+      expect(q('[data-testid="facturacion-acciones-resumen"]')!.textContent).toContain(
+        'No hay ninguna factura marcada',
+      );
+      // Y sin nada marcado no hay nada que quitar.
+      expect(q('[data-testid="facturacion-acciones-quitar"]')).toBeNull();
+    });
+  });
+
+  /*
+   * 🔴 El botón vivía arriba de todo, lejos de las casillas: con dos tablas
+   * debajo —Inquilinos y Propietarios— se marcaba en la de abajo y el botón
+   * que emite estaba fuera de la pantalla. Ahora es el pie de las dos.
+   */
+  it('🔴 el pie de acciones masivas vive DENTRO de la tabla, no suelto debajo', async () => {
+    /*
+     * 🔴 19-09 · Nico, viendo la barra flotando bajo la tarjeta: «mira que
+     * dejaste separado lo de acciones masivas con donde se seleccionan, y
+     * sabes que cuando hay acciones masivas deben quedar también en la
+     * tabla». Una barra con su propio borde debajo de otra caja con borde son
+     * dos objetos; el que actúa sobre las casillas tiene que ser el mismo
+     * objeto que las casillas.
+     */
+    await montar();
+    const barra = q('[data-testid="facturacion-acciones"]')!;
+    const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+    expect(tabla.contains(barra)).toBe(true);
+    expect(barra.querySelector('[data-testid="facturacion-generar"]')).not.toBeNull();
+    // Pegada al borde de abajo mientras se recorren las filas…
+    expect(barra.className).toContain('sticky');
+    expect(barra.className).toContain('bottom-0');
+    // …y sin marco propio: es el último renglón de la tabla, no otra caja.
+    expect(barra.className).not.toContain('rounded-lg');
+    expect(barra.className).toContain('border-t');
+    // 🔴 Y la tarjeta NO puede recortar con `overflow-hidden`: eso la vuelve
+    // el contenedor de desplazamiento más cercano y mata lo pegajoso.
+    expect(tabla.className).not.toContain('overflow-hidden');
+    expect(tabla.className).toContain('overflow-x-clip');
+  });
+
+  it('🔴 el mes, las pestañas y la tabla son UNA tarjeta, no tres cajas', async () => {
+    /*
+     * Nico, 20-09, viendo los tres bloques sueltos uno encima del otro:
+     * «¿por qué esto no está pegado a la tabla de cada uno, inquilino y
+     * propietario?». Es el mismo chasis que ya había pedido para Pagos el 18:
+     * el control con el que se filtra una tabla no es otro objeto que la tabla.
+     */
+    await montar();
+    const tarjeta = q('[data-testid="facturacion-inquilinos"]')!.closest('section')!
+      .parentElement as HTMLElement;
+    // La tarjeta que contiene la tabla contiene también el selector de mes,
+    // las pestañas y el pie de acciones masivas.
+    for (const parte of [
+      'facturacion-selector-mes',
+      'facturacion-hasta',
+      'facturacion-inquilinos',
+      'facturacion-acciones',
+    ]) {
+      expect(tarjeta.querySelector(`[data-testid="${parte}"]`), parte).not.toBeNull();
+    }
+    // Y la tabla ya no dibuja su propio marco: dos bordes anidados a 1 px se
+    // leen como dos objetos.
+    const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+    expect(tabla.className).not.toContain('rounded-lg');
+    expect(tabla.className).not.toContain('border-border');
+  });
+
+  it('🔴 emitir es por tabla, y la otra pestaña avisa de lo suyo', async () => {
+    /*
+     * Emitir pasó a ser por tabla —es lo que hace posible que el botón viva
+     * dentro de ella—, así que el mes NO queda facturado con una sola tanda.
+     * Sin este renglón alguien emite los de inquilinos y cree que terminó.
+     */
+    await montar();
+    const aviso = q('[data-testid="facturacion-marcadas-en-la-otra"]')!;
+    expect(aviso.textContent).toContain('propietarios');
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-marcadas-en-la-otra"]')!.textContent).toContain(
+      'inquilinos',
+    );
   });
 
   it('lo ya emitido se ve con su número y sin casilla, en vez de esconderse', async () => {
@@ -204,9 +406,17 @@ describe('NuevaFactura', () => {
     );
     await montar();
     expect(host.textContent).toContain('FE-41');
-    // La suya queda deshabilitada; sigue habiendo una del propietario.
-    const boton = q('[data-testid="facturacion-generar"]')!;
-    expect(boton.textContent).toContain('Generar 1 factura');
+    // La única de inquilinos ya está emitida: no queda ninguna por emitir acá.
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    // 🔴 Y se dice POR QUÉ la tanda es más chica que la tabla.
+    expect(q('[data-testid="facturacion-fuera-de-la-tanda"]')!.textContent).toContain(
+      'ya está emitida',
+    );
+    // La del propietario sigue viva, en su pestaña.
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
+      'Generar 1 factura de propietarios',
+    );
   });
 
   it('destildar una fila baja la cuenta del botón', async () => {
@@ -215,9 +425,10 @@ describe('NuevaFactura', () => {
     await act(async () => {
       casilla.click();
     });
-    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
-      'Generar 1 factura',
-    );
+    // Sin nada marcado el botón queda A LA VISTA y apagado, sin decir «0».
+    const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Generar facturas');
+    expect(boton.disabled).toBe(true);
   });
 
   it('generar manda el mes y las claves elegidas, y vuelve a pedir el listado', async () => {
@@ -235,9 +446,9 @@ describe('NuevaFactura', () => {
     expect(generarMock).toHaveBeenCalledTimes(1);
     const [mes, claves] = generarMock.mock.calls[0] as [string, string[]];
     expect(mes).toBe('2026-09');
-    expect(claves.sort()).toEqual(
-      ['ct-1|2026-09|INQUILINO', 'ct-1|2026-09|PROPIETARIO'].sort(),
-    );
+    // 🔴 Sólo las de ESTA tabla: la del propietario se emite en su pestaña.
+    // Es lo que hace posible que el botón viva dentro de la tabla.
+    expect(claves).toEqual(['ct-1|2026-09|INQUILINO']);
     // Se recarga para que las recién emitidas aparezcan como emitidas.
     expect(porGenerarMock).toHaveBeenCalledTimes(2);
     expect(toastOk).toHaveBeenCalled();
@@ -275,8 +486,12 @@ describe('NuevaFactura', () => {
       respuesta({
         inquilinos: [],
         propietarios: [],
+        meses: [],
         totales: {
-          contratosDelMes: 0,
+          contratos: 0,
+          meses: 0,
+          emitiblesHoy: 0,
+          totalEmitibleHoyCop: 0,
           inquilinos: lado(),
           propietarios: lado(),
         },
@@ -301,6 +516,7 @@ describe('NuevaFactura', () => {
             codigo: 1839,
             numeroExterno: '1686',
             inmueble: 'Cra 76 #45-12 apto 302',
+            mes: '2026-09',
             destinatario: 'INQUILINO',
             motivo: 'No hay nada que cobrarle al inquilino este mes.',
           },
@@ -320,6 +536,7 @@ describe('NuevaFactura', () => {
             contractId: 'ct-2',
             codigo: 94,
             inmueble: 'Casa en Laureles',
+            mes: '2026-09',
             destinatario: 'PROPIETARIO',
             motivo: 'El mandato no pactó comisión de administración.',
           },
@@ -328,7 +545,7 @@ describe('NuevaFactura', () => {
     );
     await montar();
     const bloque = q('[data-testid="facturacion-omitidos"]')!;
-    expect(bloque.textContent).toContain('1 contratos del mes no generan factura');
+    expect(bloque.textContent).toContain('1 cuota no genera factura');
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
@@ -433,6 +650,109 @@ describe('NuevaFactura', () => {
       expect(
         (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled,
       ).toBe(true);
+    });
+
+    /*
+     * 🔴 19-09 · Visto en el navegador con los datos reales de QA: el botón
+     * decía «Generar 208 facturas» y justo encima, en la misma tarjeta,
+     * «50 números disponibles». La pantalla tenía los dos números y no sacaba
+     * la cuenta. Probado contra el back el 19-09: numera las que alcanzan y
+     * las demás fallan con «rango agotado», así que apretar dejaba 50
+     * emitidas, 158 errores y a alguien preguntándose qué pasó.
+     */
+    /*
+     * 🔴 19-09-2026 (Nico) · «veo separadas cosas que no deberían estar
+     * separadas» — mandó la captura con «TOT | ESTADO» partido al medio.
+     *
+     * La causa era mía, de esta misma tarde: para que el botón «Generar esta»
+     * dejara de caer fuera de la pantalla anclé la columna «Estado» a la
+     * derecha. En su inmobiliaria IVA y Retenciones están en CERO en las 730
+     * filas, así que la tabla llevaba dos columnas de «—» que no aportaban
+     * nada, no cabía, y la columna anclada terminaba tapando «Total». Cambié
+     * un defecto por otro.
+     *
+     * Una columna vacía en TODAS sus filas es ancho gastado en nada: ahora
+     * sólo aparecen si alguna fila tiene algo que poner.
+     */
+    it('🔴 sin IVA ni retenciones en ninguna fila, esas columnas no se dibujan', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false })],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      expect(cab).not.toContain('IVA');
+      expect(cab).not.toContain('Retenciones');
+      // Lo que NO se puede perder: base, total y estado siguen ahí.
+      expect(cab).toContain('Base');
+      expect(cab).toContain('Total');
+      expect(cab).toContain('Estado');
+    });
+
+    it('con IVA en alguna fila, la columna vuelve', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false }),
+            factura({ clave: 'otra', ivaCop: 342_000, retencionesCop: 0 }),
+          ],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      expect(cab).toContain('IVA');
+      expect(cab).not.toContain('Retenciones');
+    });
+
+    it('🔴 y la marca «sin confirmar» no se pierde: se muda al lado de la base', async () => {
+      // Es por fila y decide si esa factura sale con o sin impuestos.
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: true })],
+          propietarios: [],
+        }),
+      );
+      await montar();
+      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
+        th.textContent!.trim(),
+      );
+      // `impuestosSinConfirmar` cuenta como «hay algo que poner» en IVA.
+      expect(cab).toContain('IVA');
+      expect(q('table')!.textContent).toMatch(/sin confirmar/i);
+    });
+
+    it('🔴 avisa ANTES si la selección no cabe en el rango de la resolución', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+      );
+      await montar();
+      const aviso = q('[data-testid="facturacion-rango-corto"]')!;
+      expect(aviso).not.toBeNull();
+      expect(aviso.textContent).toContain('sólo tiene 1');
+      expect(aviso.textContent).toContain('rango agotado');
+    });
+
+    it('🔴 avisar NO es apagar: emitir las que caben es trabajo legítimo', async () => {
+      // Apagar el botón obligaría a deseleccionar a mano las que no caben.
+      porGenerarMock.mockResolvedValue(
+        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+      );
+      await montar();
+      expect(
+        (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled,
+      ).toBe(false);
+    });
+
+    it('si el rango alcanza, no hay aviso', async () => {
+      await montar();
+      expect(q('[data-testid="facturacion-rango-corto"]')).toBeNull();
     });
 
     it('si el rango no alcanzó, se avisa aparte del éxito', async () => {
@@ -575,5 +895,422 @@ describe('NuevaFactura', () => {
       });
       expect(q('[data-testid="facturacion-informe"]')).toBeNull();
     });
+  });
+  /**
+   * 🔴 «Hasta el 31 de diciembre», y la línea que no se cruza.
+   *
+   * CEO (2026-09-13): «Si quiero mirar qué facturas tengo por generar hasta el
+   * 31 de diciembre… Lo que NO se puede es enviarlas [antes de tiempo].» Lo que
+   * se protege: que mirar más lejos no vuelva emitible un mes que no empezó, y
+   * que la razón se diga.
+   */
+  describe('el rango y la línea entre mirar y emitir', () => {
+    /** La misma respuesta, con diciembre pegado y todavía sin empezar. */
+    const conDiciembre = () => {
+      const diciembre = factura({
+        clave: 'ct-1|2026-12|INQUILINO',
+        cuotaId: 'cu-i-2026-12',
+        mes: '2026-12',
+        emitible: false,
+        motivoNoEmitible:
+          'Diciembre de 2026 todavía no empieza: faltan 3 meses. Se puede ver la prefactura, no emitirla.',
+      });
+      const base = respuesta();
+      return respuesta({
+        desde: '2026-09',
+        hasta: '2026-12',
+        inquilinos: [...base.inquilinos, diciembre],
+        meses: [
+          ...base.meses,
+          {
+            mes: '2026-12',
+            nombre: 'Diciembre de 2026',
+            emitible: false,
+            motivoNoEmitible:
+              'Diciembre de 2026 todavía no empieza: faltan 3 meses. Se puede ver la prefactura, no emitirla.',
+            inquilinos: lado({ porEmitir: 1, totalCop: 1_800_000 }),
+            propietarios: lado(),
+          },
+        ],
+        porContrato: [
+          {
+            contractId: 'ct-1',
+            destinatario: 'INQUILINO',
+            codigo: 1839,
+            numeroExterno: '1686',
+            inmueble: 'Cra 76 #45-12 apto 302',
+            terceroNombre: 'Nubia Amparo David',
+            cantidad: 10,
+            totalCop: 18_000_000,
+            valorTipicoCop: 1_800_000,
+            valorParejo: true,
+            primerMes: '2026-09',
+            ultimoMes: '2027-06',
+            terminaEnElRango: false,
+            terminaEl: null,
+          },
+        ],
+        totales: {
+          contratos: 1,
+          meses: 2,
+          emitiblesHoy: 2,
+          totalEmitibleHoyCop: 1_980_000,
+          inquilinos: lado({ porEmitir: 2, totalCop: 3_600_000 }),
+          propietarios: lado({ porEmitir: 1, totalCop: 180_000 }),
+        },
+      });
+    };
+
+    it('con un solo mes NO aparece el bloque del rango: la pantalla de siempre', async () => {
+      await montar();
+      expect(q('[data-testid="prefacturas-del-rango"]')).toBeNull();
+    });
+
+    it('«Hasta diciembre» estira la consulta hasta el 31 de diciembre', async () => {
+      await montar();
+      await act(async () => {
+        (
+          q('[data-testid="facturacion-hasta-fin-de-anio"]') as HTMLButtonElement
+        ).click();
+      });
+      const ultima = porGenerarMock.mock.calls.at(-1)?.[0] as {
+        desde: string;
+        hasta: string;
+      };
+      expect(ultima.hasta).toMatch(/^\d{4}-12$/);
+      expect(ultima.desde).toBe(ultima.hasta.slice(0, 4) + '-09');
+    });
+
+    it('🔴 la factura de un mes que no empezó NO entra a la selección', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      // Diciembre existe en la respuesta y NO suma al botón: siguen siendo las
+      // de septiembre de esta tabla.
+      const boton = q('[data-testid="facturacion-generar"]')!;
+      expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+    });
+
+    it('🔴 y el mes dice POR QUÉ todavía no se emite, con las palabras del back', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const motivo = q('[data-testid="rango-motivo-2026-12"]');
+      expect(motivo?.textContent).toContain('todavía no empieza');
+      expect(q('[data-testid="rango-no-emitible-2026-12"]')).not.toBeNull();
+      expect(q('[data-testid="rango-emitible-2026-09"]')).not.toBeNull();
+    });
+
+    it('🔴 «10 facturas de un millón»: el agrupado por contrato se ve', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const grupo = q('[data-testid="rango-contrato-ct-1-INQUILINO"]')!;
+      expect(grupo.textContent).toContain('10');
+      expect(grupo.textContent).toContain('1.800.000');
+    });
+
+    it('la tabla del mes elegido NO trae las filas de los otros meses', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+      expect(tabla.querySelector('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+      expect(tabla.querySelector('[data-testid="factura-ct-1|2026-12|INQUILINO"]')).toBeNull();
+    });
+  });
+
+  /**
+   * 🔴 La plata que la factura NO lleva, dicha en voz alta.
+   *
+   * Cuando la cuota ya es cartera y no hay con qué liquidar el interés, el back
+   * manda un `aviso` en vez de inventar el número — y la pantalla lo muestra.
+   */
+  describe('los avisos de la fila', () => {
+    it('una cuota en mora que nadie pudo liquidar lo reclama en la fila', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            factura({
+              avisos: [
+                'Esta cuota está en mora hace 42 días y la factura NO lleva intereses. La inmobiliaria no tiene reglas de mora activas.',
+              ],
+            }),
+          ],
+        }),
+      );
+      await montar();
+      const aviso = q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]');
+      expect(aviso?.textContent).toContain('NO lleva intereses');
+    });
+
+    it('sin avisos no se pinta ninguna advertencia', async () => {
+      await montar();
+      expect(q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    });
+  });
+
+  /**
+   * 🔴 EL INTERÉS DE MORA, Y CON QUÉ AUTORIDAD.
+   *
+   * Nico: «el interés sí se va cargando a la factura cada vez que se genera.»
+   * `del cobro` es un número escrito que no se mueve; `sobre la cuota` es el
+   * motor corriendo hoy y CRECE cada día hasta que se emita. Pintarlos igual
+   * hace que la persona decida con información falsa.
+   */
+  describe('el interés de mora', () => {
+    const conMora = (over: Partial<FacturaDelMes['mora'] & object> = {}) =>
+      factura({
+        totalCop: 1_841_000,
+        mora: {
+          esCartera: true,
+          diasDeMora: 41,
+          recargosCop: 41_000,
+          origen: 'CUOTA',
+          motivo: null,
+          ...over,
+        },
+      });
+
+    it('🔴 muestra el valor, los días y que se calculó SOBRE LA CUOTA', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
+      expect(mora?.textContent).toContain('41.000');
+      expect(mora?.textContent).toContain('41 días');
+      expect(mora?.textContent).toContain('sobre la cuota');
+    });
+
+    it('🔴 un interés que ya liquidó el cobro se marca «del cobro»', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [conMora({ origen: 'COBRO' })] }),
+      );
+      await montar();
+      const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
+      expect(mora?.textContent).toContain('del cobro');
+      expect(mora?.textContent).not.toContain('sobre la cuota');
+    });
+
+    it('el encabezado totaliza la mora aparte de la base y el IVA', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const total = q('[data-testid="facturacion-inquilinos-mora"]');
+      expect(total?.textContent).toContain('41.000');
+      expect(total?.textContent).toContain('1 factura');
+    });
+
+    it('el total se rotula «Recargos», no «Interés»: suma también el gasto administrativo', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const total = q('[data-testid="facturacion-inquilinos-mora"]');
+      expect(total?.textContent).toContain('Recargos de mora');
+      expect(total?.textContent).not.toContain('Interés de mora');
+    });
+
+    it('sin mora no se pinta la línea ni el total', async () => {
+      await montar();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
+      expect(q('[data-testid="facturacion-inquilinos-mora"]')).toBeNull();
+    });
+
+    it('una cuota en cartera con recargo en CERO no pinta una línea vacía', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            conMora({ recargosCop: 0, origen: null, motivo: 'Sin reglas.' }),
+          ],
+        }),
+      );
+      await montar();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    });
+
+    it('un back anterior sin el campo `mora` no rompe la fila', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [factura({ mora: undefined })] }),
+      );
+      await montar();
+      expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    });
+  });
+});
+
+/**
+ * 🔴 Lo que Nico pidió el 18-09 de noche, mirando 730 contratos en pantalla:
+ *
+ *   «Selecciono sólo una y no da el poder generar factura de sólo esa, y
+ *    agrega un buscador a la tabla.»
+ *
+ * NO contradice el pedido del 12 («no que me ponga a escoger una»): ahí
+ * rechazó una pantalla que OBLIGABA a elegir un contrato para poder ver algo.
+ * La lista completa y premarcada se queda; lo que faltaba era poder actuar
+ * sobre UNA fila y poder encontrarla. Este bloque es el que impide que
+ * arreglar una de las dos cosas rompa la otra.
+ */
+describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
+  const DOS = () =>
+    respuesta({
+      inquilinos: [
+        factura({
+          clave: 'ct-1|2026-09|INQUILINO',
+          terceroNombre: 'Miguel Lorenzo Ramirez',
+          terceroDocumento: '94476481',
+          inmueble: 'CL 52 A SUR 67 - 16 SAN ANTONIO',
+        }),
+        factura({
+          clave: 'ct-2|2026-09|INQUILINO',
+          codigo: 3,
+          terceroNombre: 'J y C Papas S.A.S',
+          terceroDocumento: '901559008',
+          inmueble: 'CL 129 SUR 56 53 LC 01 MEDELLÍN',
+        }),
+      ],
+    });
+
+  it('🔴 «Generar esta» emite ESA fila y ninguna otra', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 1,
+      yaEstaban: 0,
+      totalCop: 1_800_000,
+      facturas: [],
+    });
+    await montar();
+    await clic('[data-testid="generar-una-ct-2|2026-09|INQUILINO"]');
+    expect(generarMock).toHaveBeenCalledTimes(1);
+    const [mes, claves] = generarMock.mock.calls[0] as [string, string[]];
+    expect(mes).toBe('2026-09');
+    // UNA, aunque las tres estén marcadas: no hay que limpiar la selección
+    // primero, que era exactamente lo que no se podía hacer.
+    expect(claves).toEqual(['ct-2|2026-09|INQUILINO']);
+  });
+
+  it('el buscador deja la fila que se busca, sin desmarcar nada', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    // Dos filas: las de inquilinos. La del propietario vive en su pestaña.
+    expect(qa('[data-testid^="factura-ct-"]')).toHaveLength(2);
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    expect(q('[data-testid="factura-ct-2|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    // 🔴 Buscar ESCONDE, nunca desmarca: perder 700 facturas por escribir en
+    // un campo sería mucho peor que no tener buscador. Las dos de inquilinos
+    // siguen marcadas aunque sólo se vea una.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain(
+      'Generar 2 facturas de inquilinos',
+    );
+  });
+
+  it('busca por documento, por inmueble y sin tildes', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    for (const [texto, clave] of [
+      ['901559008', 'ct-2|2026-09|INQUILINO'],
+      ['medellin', 'ct-2|2026-09|INQUILINO'],
+      ['san antonio', 'ct-1|2026-09|INQUILINO'],
+    ] as const) {
+      await escribir('[data-testid="facturacion-inquilinos-buscar"]', texto);
+      expect(q(`[data-testid="factura-${clave}"]`), texto).not.toBeNull();
+    }
+  });
+
+  it('las cifras del mes NO se mueven con la búsqueda, y se dice cuántas se ven', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    const alcance = q('[data-testid="facturacion-inquilinos-alcance"]')!;
+    expect(alcance.textContent).toContain('1 de 2 facturas');
+    // La cabecera de la tarjeta sigue hablando del mes completo.
+    expect(q('[data-testid="facturacion-inquilinos"]')!.textContent).toContain(
+      '2 facturas',
+    );
+  });
+
+  it('🔴 la casilla de la cabecera LIMPIA cuando hay algo marcado', async () => {
+    // Antes «si están TODAS, quita»: estando en 726 de 730 apretarla subía a
+    // 730, y para dejar una sola había que apretarla dos veces adivinando el
+    // orden. Es media explicación de «selecciono sólo una y no da».
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
+
+    /*
+     * 🔴 EL CASO QUE DISCRIMINA: una desmarcada a mano — el estado real de
+     * Nico, 726 de 730 —. Con la regla vieja («si están TODAS, quita») esto
+     * SUBÍA a 2; con la nueva («si hay ALGUNA, quita») baja a 0, que es lo que
+     * cualquiera espera de una casilla a medias. Sin este paso, el test pasaba
+     * con las dos reglas y no probaba nada.
+     */
+    await clic(
+      '[data-testid="factura-ct-1|2026-09|INQUILINO"] [role="checkbox"], ' +
+        '[data-testid="factura-ct-1|2026-09|INQUILINO"] input[type="checkbox"]',
+    );
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
+    await clic('[data-testid="facturacion-inquilinos-todas"]');
+    // Se fueron las dos de inquilinos. La del propietario vive en su pestaña.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Generar facturas');
+    // Y volver a apretarla las marca de nuevo.
+    await clic('[data-testid="facturacion-inquilinos-todas"]');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
+  });
+
+  it('con búsqueda puesta, marcar toca SÓLO lo que se ve', async () => {
+    porGenerarMock.mockResolvedValue(DOS());
+    await montar();
+    await clic('[data-testid="facturacion-inquilinos-todas"]'); // limpia las dos
+    await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
+    await clic('[data-testid="facturacion-inquilinos-todas"]'); // marca la encontrada
+    // Marcó SÓLO la que se ve: la otra de inquilinos sigue sin marcar.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
+  });
+});
+
+describe('🔴 un botón apagado tiene que decir por qué, y al lado', () => {
+  /*
+   * Nico apretó «Generar», no pasó nada, y lo leyó como «no da el poder
+   * generar factura». Estaba apagado con razón —la inmobiliaria no tiene
+   * resolución de la DIAN para «Canon del inquilino»— pero el porqué vivía
+   * en un banner arriba de todo, a media pantalla del botón.
+   */
+  const SIN_RESOLUCION = () =>
+    respuesta({
+      resolucion: resolucionVigente({
+        puedeNumerar: false,
+        motivo: 'SIN_RESOLUCION',
+        explicacion:
+          'La inmobiliaria no tiene ninguna resolución de facturación que numere «Canon del inquilino».',
+        siguiente: null,
+      }),
+    });
+
+  it('el motivo está AL LADO del botón, no sólo arriba de todo', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(q('[data-testid="facturacion-motivo-apagado"]')!.textContent).toContain(
+      'no tiene ninguna resolución',
+    );
+  });
+
+  it('y la salida LLEVA a la resolución, no sólo la nombra', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    await clic('[data-testid="facturacion-ir-a-resolucion"]');
+    expect(irAResolucion).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Generar esta» también se apaga, y con el mismo motivo en el title', async () => {
+    porGenerarMock.mockResolvedValue(SIN_RESOLUCION());
+    await montar();
+    const boton = q('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(boton.getAttribute('title')).toContain('no tiene ninguna resolución');
+    // Y no manda nada al back aunque alguien lo dispare igual.
+    await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
+    expect(generarMock).not.toHaveBeenCalled();
+  });
+
+  it('con resolución vigente no hay motivo que mostrar', async () => {
+    await montar();
+    expect(q('[data-testid="facturacion-motivo-apagado"]')).toBeNull();
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(false);
   });
 });

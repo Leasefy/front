@@ -18,6 +18,12 @@
  *     responde 404.
  *   · E5 — los fallos se tragaban con `catch {}` y un mensaje fijo: un 403, la
  *     red caída y un 500 decían lo mismo. Ahora cada uno dice lo suyo.
+ *   · E4 — el enlace entregaba el documento ENTERO aunque la pantalla
+ *     estuviera filtrada. Ahora el filtro VIAJA con el enlace y el back se lo
+ *     aplica a quien lo abra. Acá se manda y se COMPRUEBA: el back responde
+ *     `filtro` con lo que efectivamente quedó guardado, y si volvió `null`
+ *     teniendo filtro puesto —la columna todavía sin migrar— se dice en el
+ *     aviso, en vez de dejar creer que el cliente va a ver la vista recortada.
  */
 
 import * as React from 'react';
@@ -26,8 +32,11 @@ import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { clasificarFallo } from '@/lib/errores/clasificar';
-import type { EnlaceCompartido } from '@/lib/types/estado-de-cuenta';
-import { fechaLegible } from './filas';
+import type {
+  EnlaceCompartido,
+  FiltrosDelEstadoDeCuenta,
+} from '@/lib/types/estado-de-cuenta';
+import { fechaLegible, hayFiltros } from './filas';
 import { texto } from './textos';
 
 export type TareaDeCompartir = 'enlace' | 'correo' | 'whatsapp';
@@ -52,7 +61,37 @@ export interface OpcionesDeCompartir {
   tipo: 'inquilino' | 'propietario';
   /** `tenantRef` o `propietarioId`. */
   id: string;
+  /**
+   * El recorte que hay en pantalla. Viaja con el enlace y el back se lo aplica
+   * a quien lo abra (E4).
+   */
+  filtros?: FiltrosDelEstadoDeCuenta;
 }
+
+/**
+ * ¿El recorte viajó de verdad?
+ *
+ * El back responde con el filtro que quedó GUARDADO. `null` con filtro puesto
+ * significa que el enlace entrega el documento entero —la columna todavía sin
+ * migrar—, y eso hay que decirlo: prometer un recorte que no viajó es el mismo
+ * defecto E4 al revés.
+ */
+export function avisoDelRecorte(
+  enlace: EnlaceCompartido,
+  filtros?: FiltrosDelEstadoDeCuenta,
+): string | null {
+  if (!hayFiltros(filtros ?? SIN_RECORTE)) return null;
+  return enlace.filtro
+    ? null
+    : 'Ojo: el enlace muestra el estado de cuenta entero, no tu vista filtrada.';
+}
+
+const SIN_RECORTE: FiltrosDelEstadoDeCuenta = {
+  soloPendientes: false,
+  desde: '',
+  hasta: '',
+  contrato: '',
+};
 
 /**
  * Por qué falló compartir, en palabras (E5).
@@ -95,6 +134,7 @@ export function motivoDeCompartir(error: unknown, respaldo: string): string {
 export function useCompartirEstado({
   tipo,
   id,
+  filtros,
 }: OpcionesDeCompartir): UsarCompartir {
   const [ocupado, setOcupado] = React.useState<TareaDeCompartir | null>(null);
   const [envioPorConfirmar, setEnvioPorConfirmar] = React.useState<CanalDeEnvio | null>(null);
@@ -105,24 +145,37 @@ export function useCompartirEstado({
    */
   const enlace = React.useRef<EnlaceCompartido | null>(null);
 
+  /*
+   * Otro cliente —u otro RECORTE— es otro enlace: reutilizar el que se emitió
+   * con el filtro anterior le mandaría al cliente una vista que ya no es la
+   * que la inmobiliaria está mirando. La huella es el filtro serializado, no
+   * el objeto: los controles crean uno nuevo en cada render.
+   */
+  const huellaDelFiltro = JSON.stringify(filtros ?? null);
   React.useEffect(() => {
-    // Otro cliente, otro enlace.
     enlace.current = null;
     setEnvioPorConfirmar(null);
-  }, [tipo, id]);
+  }, [tipo, id, huellaDelFiltro]);
 
   const pedirEnlace = React.useCallback(async (): Promise<EnlaceCompartido> => {
     if (enlace.current) return enlace.current;
-    const nuevo = await estadoDeCuentaApi.compartir(tipo, id);
+    const nuevo = await estadoDeCuentaApi.compartir(tipo, id, filtros);
     enlace.current = nuevo;
     return nuevo;
-  }, [tipo, id]);
+  }, [tipo, id, filtros]);
 
   const copiarEnlace = React.useCallback(async () => {
     setOcupado('enlace');
     try {
-      const { url, venceEl } = await pedirEnlace();
-      const vence = texto('estadoDeCuenta.enlaceVence', { fecha: fechaLegible(venceEl) });
+      const nuevo = await pedirEnlace();
+      const { url, venceEl } = nuevo;
+      const aviso = avisoDelRecorte(nuevo, filtros);
+      const vence = [
+        texto('estadoDeCuenta.enlaceVence', { fecha: fechaLegible(venceEl) }),
+        aviso,
+      ]
+        .filter(Boolean)
+        .join(' ');
       try {
         await navigator.clipboard.writeText(url);
         toast.success(texto('estadoDeCuenta.enlaceCopiado'), { description: vence });
@@ -139,7 +192,7 @@ export function useCompartirEstado({
     } finally {
       setOcupado(null);
     }
-  }, [pedirEnlace]);
+  }, [pedirEnlace, filtros]);
 
   /**
    * Mandar el enlace, por el canal que sea.
@@ -157,11 +210,12 @@ export function useCompartirEstado({
         canal === 'CORREO' ? 'estadoDeCuenta.falloCorreo' : 'estadoDeCuenta.sinWhatsapp',
       );
       try {
-        const r = await estadoDeCuentaApi.enviar(tipo, id, canal);
+        const r = await estadoDeCuentaApi.enviar(tipo, id, canal, filtros);
         // El enlace que devuelve el envío sirve para el «Copiar enlace» de
         // después: no hace falta emitir otro.
         enlace.current = r.enlace ?? enlace.current;
         if (r.enviado) {
+          const aviso = r.enlace ? avisoDelRecorte(r.enlace, filtros) : null;
           toast.success(
             texto(
               canal === 'CORREO'
@@ -169,6 +223,7 @@ export function useCompartirEstado({
                 : 'estadoDeCuenta.whatsappEnviado',
               { correo: r.destino, telefono: r.destino },
             ),
+            aviso ? { description: aviso } : undefined,
           );
         } else {
           toast.error(r.motivo ?? respaldo);
@@ -179,7 +234,7 @@ export function useCompartirEstado({
         setOcupado(null);
       }
     },
-    [tipo, id],
+    [tipo, id, filtros],
   );
 
   const enviarPorCorreo = React.useCallback(() => mandar('CORREO'), [mandar]);

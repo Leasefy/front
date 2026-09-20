@@ -7,6 +7,21 @@ export const AGENCY_ROLES = {
   AGENTE: 'AGENTE',
   CONTADOR: 'CONTADOR',
   VIEWER: 'VIEWER',
+  /**
+   * 🔴 O-05 (18-09-2026): los TRES roles nuevos. Se SUMAN a los cuatro de
+   * siempre; ninguno de ésos cambia.
+   *
+   * · COORDINADOR — ve el equipo y reasigna. No mueve plata.
+   * · AUXILIAR_CARTERA — hace recibos; no anula ni condona.
+   * · ABOGADO_EXTERNO — sólo sus casos (el back le recorta las rutas de
+   *   cartera además de los módulos).
+   *
+   * ⚠️ Asignarlos exige la migración `20260918183000` en la base: sin ella el
+   * back responde 503 con su nombre, no un 500.
+   */
+  COORDINADOR: 'COORDINADOR',
+  AUXILIAR_CARTERA: 'AUXILIAR_CARTERA',
+  ABOGADO_EXTERNO: 'ABOGADO_EXTERNO',
 } as const;
 
 export type AgencyRole = typeof AGENCY_ROLES[keyof typeof AGENCY_ROLES];

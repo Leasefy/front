@@ -62,9 +62,11 @@ export const PASOS_DEL_TOUR: readonly PasoDelTour[] = [
   paso('postulaciones', '[data-tour-target="sidebar-postulaciones"]'),
   // Lo que se firma, y la cuenta que abre.
   paso('contratos', '[data-tour-target="sidebar-contratos"]'),
-  // La plata que entra.
-  paso('cobros', '[data-tour-target="sidebar-cobros"]'),
-  // La plata que sale.
+  // La plata, entera. Eran DOS paradas —«Cobros» y «Pagos»— porque eran dos
+  // filas del sidebar; desde el 2026-09-15 son un solo módulo con dos caras
+  // (lo que entra y lo que sale), así que es una sola parada que las nombra a
+  // las dos. Su ancla es la fila que quedó (`sidebar-pagos`); `sidebar-cobros`
+  // ya no existe y un paso apuntando ahí se caía en silencio.
   paso('pagos', '[data-tour-target="sidebar-pagos"]'),
   // Medir el negocio.
   paso('reportes', '[data-tour-target="sidebar-reportes"]'),

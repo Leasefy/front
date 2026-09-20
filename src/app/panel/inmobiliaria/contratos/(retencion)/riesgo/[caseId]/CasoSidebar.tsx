@@ -1,6 +1,6 @@
 'use client'
 
-import { Scales, Clock, UserGear, CurrencyDollar } from '@phosphor-icons/react'
+import { Scales, Clock, UserGear, CurrencyDollar, Warning } from '@phosphor-icons/react'
 import { formatCop } from '@/lib/data/mock-retencion'
 import type { CaseBundle } from '@/lib/types/retencion'
 
@@ -57,7 +57,13 @@ export function CasoSidebar({ bundle }: { bundle: CaseBundle }) {
           <GuardRow ok={guard.retentionRecommended} label="Retención recomendada" />
           {guard.escalateLegal ? (
             <li className="inline-flex items-center gap-1.5 rounded-md bg-danger-soft px-2 py-1 text-danger">
-              ⚠️ Escalar a jurídico
+              {/* 🔴 19-09: acá había un emoji ⚠️ literal. El panel marca las
+                  alertas con iconos de Phosphor; un emoji se pinta con la
+                  fuente del sistema, cambia de forma en cada plataforma y no
+                  hereda `currentColor`, así que en oscuro queda de otro color
+                  que el texto al que acompaña. */}
+              <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden="true" />
+              Escalar a jurídico
             </li>
           ) : null}
         </ul>

@@ -6,9 +6,13 @@
  *   GET  /inmobiliaria/estado-de-cuenta/inquilino/:tenantRef
  *   GET  /inmobiliaria/estado-de-cuenta/propietario/:propietarioId
  *   GET  /inmobiliaria/estado-de-cuenta/:tipo/:id/resumen
- *   GET  /inmobiliaria/estado-de-cuenta/prefacturas?hasta=YYYY-MM-DD
  *   POST /inmobiliaria/estado-de-cuenta/:tipo/:id/compartir
  *   POST /inmobiliaria/estado-de-cuenta/:tipo/:id/compartir/correo|whatsapp
+ *
+ * 🔴 El FILTRO viaja (auditoría 13-09, E4): por query en las dos lecturas del
+ * panel, en el cuerpo en las tres que emiten un enlace —y ahí queda guardado,
+ * para que quien abra el enlace vea lo que se le quiso mostrar y no el
+ * documento entero—. El recorte lo hace el back; acá sólo se manda y se pinta.
  *
  * Y dos que NO piden sesión de inmobiliaria:
  *
@@ -26,35 +30,67 @@ import type {
   EnlaceCompartido,
   EstadoDeCuenta,
   EnvioDelEnlace,
-  PrefacturasHasta,
+  FiltrosDelEstadoDeCuenta,
   ResumenDelEstadoDeCuenta,
 } from '@/lib/types/estado-de-cuenta';
 
 const BASE = '/inmobiliaria/estado-de-cuenta';
 
+/**
+ * El filtro como query, y sólo lo que está puesto.
+ *
+ * 🔴 El RECORTE lo hace el back (auditoría 13-09, E4): el front manda qué se
+ * quiere ver y pinta lo que vuelve. Acá no se decide qué fila pasa — mandar un
+ * campo vacío sería pedirle al back que filtre por «nada», que no es lo mismo
+ * que no filtrar.
+ */
+export function queryDelFiltro(f?: FiltrosDelEstadoDeCuenta | null): string {
+  if (!f) return '';
+  const q = new URLSearchParams();
+  if (f.soloPendientes) q.set('soloPendientes', 'true');
+  if (f.desde) q.set('desde', f.desde);
+  if (f.hasta) q.set('hasta', f.hasta);
+  if (f.contrato) q.set('contrato', f.contrato);
+  const texto = q.toString();
+  return texto ? `?${texto}` : '';
+}
+
+/** El mismo filtro como cuerpo, para las tres rutas que emiten un enlace. */
+export function cuerpoDelFiltro(
+  f?: FiltrosDelEstadoDeCuenta | null,
+): Record<string, unknown> {
+  if (!f) return {};
+  return {
+    ...(f.soloPendientes ? { soloPendientes: true } : {}),
+    ...(f.desde ? { desde: f.desde } : {}),
+    ...(f.hasta ? { hasta: f.hasta } : {}),
+    ...(f.contrato ? { contrato: f.contrato } : {}),
+  };
+}
+
 export const estadoDeCuentaApi = {
-  /** Todo lo que un inquilino debe y pagó, contrato por contrato. */
-  inquilino(tenantRef: string): Promise<EstadoDeCuenta> {
+  /**
+   * Todo lo que un inquilino debe y pagó, contrato por contrato.
+   *
+   * Con `filtro`, el back devuelve el documento YA recortado y con los totales
+   * recalculados, y dice en `filtro` con qué recorte lo armó. Sin él, entero.
+   */
+  inquilino(
+    tenantRef: string,
+    filtro?: FiltrosDelEstadoDeCuenta | null,
+  ): Promise<EstadoDeCuenta> {
     return apiClient.get<EstadoDeCuenta>(
-      `${BASE}/inquilino/${encodeURIComponent(tenantRef)}`,
+      `${BASE}/inquilino/${encodeURIComponent(tenantRef)}${queryDelFiltro(filtro)}`,
     );
   },
 
   /** Lo mismo del lado del propietario: lo girado y lo que se le debe girar. */
-  propietario(propietarioId: string): Promise<EstadoDeCuenta> {
+  propietario(
+    propietarioId: string,
+    filtro?: FiltrosDelEstadoDeCuenta | null,
+  ): Promise<EstadoDeCuenta> {
     return apiClient.get<EstadoDeCuenta>(
-      `${BASE}/propietario/${encodeURIComponent(propietarioId)}`,
-    );
-  },
-
-  /**
-   * Todas las facturas que saldrían de acá hasta `hasta` (`YYYY-MM-DD`),
-   * agrupadas por mes. Es una consulta, no una emisión: generar sigue siendo
-   * por mes.
-   */
-  prefacturas(hasta: string): Promise<PrefacturasHasta> {
-    return apiClient.get<PrefacturasHasta>(
-      `${BASE}/prefacturas?hasta=${encodeURIComponent(hasta)}`,
+      `${BASE}/propietario/${encodeURIComponent(propietarioId)}${queryDelFiltro(filtro)}`,
     );
   },
 
@@ -106,11 +142,12 @@ export const estadoDeCuentaApi = {
     tipo: 'inquilino' | 'propietario',
     id: string,
     canal: 'CORREO' | 'WHATSAPP',
+    filtro?: FiltrosDelEstadoDeCuenta | null,
   ): Promise<EnvioDelEnlace> {
     const camino = canal === 'CORREO' ? 'correo' : 'whatsapp';
     return apiClient.post<EnvioDelEnlace>(
       `${BASE}/${tipo}/${encodeURIComponent(id)}/compartir/${camino}`,
-      {},
+      cuerpoDelFiltro(filtro),
     );
   },
 
@@ -123,10 +160,11 @@ export const estadoDeCuentaApi = {
   compartir(
     tipo: 'inquilino' | 'propietario',
     id: string,
+    filtro?: FiltrosDelEstadoDeCuenta | null,
   ): Promise<EnlaceCompartido> {
     return apiClient.post<EnlaceCompartido>(
       `${BASE}/${tipo}/${encodeURIComponent(id)}/compartir`,
-      {},
+      cuerpoDelFiltro(filtro),
     );
   },
 
@@ -159,6 +197,12 @@ export interface EnlaceVivo {
   aperturas: number;
   /** ISO-8601. */
   creadoEl: string;
+  /**
+   * Qué muestra ESTE enlace: el recorte con el que se compartió, o `null` si
+   * entrega el documento entero. Revocar el que sobra sólo se puede decidir
+   * sabiendo cuál entrega qué.
+   */
+  filtro?: FiltrosDelEstadoDeCuenta | null;
 }
 
 /**

@@ -37,7 +37,12 @@ import { PagoCasoDetalle } from '@/components/inmobiliaria/pagos/PagoCasoDetalle
 import { useI18n } from '@/lib/i18n'
 
 const SALA_HREF = '/panel/inmobiliaria/pagos'
-const COLA_HREF = '/panel/inmobiliaria/pagos/cola'
+/*
+ * 🔴 La cola se mudó el 2026-09-16 (NOTA al pie de `agentWorkspaceNav.ts`).
+ * Son facturas de proveedor esperando aprobación del contador: plata que SALE,
+ * así que viven dentro de Liquidaciones y no sueltas en la raíz del módulo.
+ */
+const COLA_HREF = '/panel/inmobiliaria/pagos/liquidaciones/por-aprobar'
 const TESORERIA_HREF = '/panel/inmobiliaria/pagos/liquidaciones'
 
 function PagosCaso() {

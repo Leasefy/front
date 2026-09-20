@@ -340,6 +340,10 @@ describe('<ConsignacionTable> — el menú de la fila respeta permisos y ocupaci
     onAgendarCita: vi.fn(),
     onEliminar: vi.fn(),
     onCandidatos: vi.fn(),
+    // 🔴 Faltaba, y por eso las pruebas de L2 pasaban con «Preparar para
+    // trabajar sin señal» dibujándose sin mirar ningún permiso: la acción
+    // nunca se montaba porque nadie pasaba el callback.
+    onPrepararSinSenal: vi.fn(),
   };
 
   it('un VIEWER ve el detalle y los candidatos, pero ni Editar, ni Pedir cita, ni Retirar', () => {
@@ -402,6 +406,28 @@ describe('<ConsignacionTable> — el menú de la fila respeta permisos y ocupaci
     abrirMenu();
 
     expect(opciones().some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(true);
+  });
+
+  /**
+   * «Preparar para trabajar sin señal» no escribe nada en el back: guarda una
+   * copia local de la ficha. Por eso pide `portafolio:view` y no `edit` — un
+   * CONTADOR o un VIEWER pueden abrir esa ficha, así que también pueden
+   * llevársela sin datos. Lo que no puede es NO tener permiso escrito.
+   */
+  it('«Preparar para trabajar sin señal» le sale al VIEWER: mira, no escribe', () => {
+    permisos.concedidos = new Set(['portafolio:view', 'operaciones:view']);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.sinSenal.preparar'))).toBe(true);
+  });
+
+  it('sin portafolio:view no se dibuja: la acción tiene su permiso, no la guarda de la página', () => {
+    permisos.concedidos = new Set(['operaciones:view']);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.sinSenal.preparar'))).toBe(false);
   });
 
   it('sin portafolio:create, una fila sin mandato no tiene menú y completar el mandato no hace nada', () => {

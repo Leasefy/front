@@ -446,28 +446,67 @@ export function nombreDelDestinatario(p: DestinatarioPersona): string {
 // Pendientes de la conversación — qué le puedo mandar a esta persona
 // ============================================================================
 
-/** Un cobro sin pagar del inquilino. Los importes son enteros en pesos. */
-export interface CobroPendienteDelHilo {
+/**
+ * En qué cajón está una cuota con saldo, con las palabras de Pagos y Cartera:
+ * por vencer · vencida dentro del plazo · cartera (pasó el plazo del contrato).
+ */
+export type CajonDeLaDeudaDelHilo = 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA';
+
+/**
+ * Una cuota del INQUILINO con saldo: la deuda, leída del contrato. Importes
+ * enteros en pesos.
+ *
+ * 🔴 Reemplazó a `CobroPendienteDelHilo` el 2026-09-16. La deuda nace con el
+ * contrato y vive en sus cuotas; el cobro es el documento con que se reclama y
+ * puede no existir (en la inmobiliaria migrada no existe ninguno). Leída de los
+ * cobros, el panel le decía «no tiene cobros pendientes» a quien debía millones.
+ */
+export interface CuotaPendienteDelHilo {
+  /** Id de la cuota del contrato. */
   id: string;
   /** 'YYYY-MM'. */
   mes: string;
+  /** Lo que el período le cuesta. */
   totalCop: number;
   pendienteCop: number;
   /** 'YYYY-MM-DD'. Fecha calendario: NUNCA un timestamp (en UTC-5 se corre un día). */
   vencimiento: string;
+  cajon: CajonDeLaDeudaDelHilo;
+  /** Días pasado el PLAZO del contrato; 0 mientras el plazo corre. */
   diasDeMora: number;
-  estado: string;
-  contractId: string | null;
+  diasDePlazo: number;
+  contractId: string;
   inmueble: string | null;
+  /** El cobro que la reclamó, si finanzas lo emitió. Un documento, no la deuda. */
+  cobroId: string | null;
 }
 
-/** Plata que la inmobiliaria le debe al propietario. */
-export interface DispersionPendienteDelHilo {
+/**
+ * Una cuota del PROPIETARIO sin girar: plata que la inmobiliaria le debe.
+ * `pendienteCop` es SU parte cuando el inmueble tiene varios dueños.
+ */
+export interface GiroPendienteDelHilo {
   id: string;
   mes: string;
-  netoCop: number;
-  estado: string;
+  pendienteCop: number;
+  /** 'YYYY-MM-DD'. */
+  vencimiento: string;
+  contractId: string;
   inmueble: string | null;
+  /** La dispersión que ya la tomó, si se generó. La plata todavía no salió. */
+  dispersionId: string | null;
+}
+
+/** Las sumas sin tope: las listas se cortan, la plata no. */
+export interface TotalesDelHilo {
+  /** Todo lo que falta de sus contratos como inquilino, vencido o no. */
+  debeCop: number;
+  /** De eso, lo vencido (en plazo o en cartera). */
+  vencidoCop: number;
+  /** De eso, lo que pasó el plazo. */
+  enCarteraCop: number;
+  /** Todo lo que falta girarle como propietario (su parte). */
+  porGirarCop: number;
 }
 
 /** Un archivo que ya existe y se puede compartir en el hilo. */
@@ -479,12 +518,15 @@ export interface DocumentoDelHilo {
 }
 
 /**
- * Las tres claves viajan siempre, aunque vengan vacías. En un hilo que no es
- * directo las tres son `[]`: preguntar «qué le debe esta persona» no tiene
- * sentido sobre la consulta de un aviso.
+ * `GET /conversations/:id/pendientes`. Las cuatro claves viajan siempre. En un
+ * hilo que no es directo las listas son `[]` y los totales cero: preguntar «qué
+ * le debe esta persona» no tiene sentido sobre la consulta de un aviso.
+ *
+ * Hasta el 2026-09-16 era `{ cobros, dispersiones, documentos }`.
  */
 export interface PendientesDeLaConversacion {
-  cobros: CobroPendienteDelHilo[];
-  dispersiones: DispersionPendienteDelHilo[];
+  cuotas: CuotaPendienteDelHilo[];
+  giros: GiroPendienteDelHilo[];
   documentos: DocumentoDelHilo[];
+  totales: TotalesDelHilo;
 }

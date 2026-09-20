@@ -76,7 +76,7 @@ export function TablaDeBalance({ balance }: { balance: Balance }) {
             <p className="font-medium text-danger">
               No cuadra: hay una diferencia de <Monto valor={Math.abs(balance.diferenciaCop)} />{' '}
               {balance.diferenciaCop > 0 ? 'a favor de los débitos' : 'a favor de los créditos'}. Es
-              un defecto del libro, no de este informe — avisale a quien lo administra.
+              un defecto del libro, no de este informe — avísale a quien lo administra.
             </p>
           )}
         </div>

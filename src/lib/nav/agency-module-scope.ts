@@ -44,6 +44,21 @@ export const ROLE_MODULE_SCOPE: Record<AgencyRole, readonly BusinessModule[]> = 
   // Solo lectura: el alcance no se recorta — el backend ya le niega las
   // acciones. Recortarle además el menú lo dejaría sin poder consultar nada.
   [AGENCY_ROLES.VIEWER]: BUSINESS_MODULES,
+  /*
+   * 🔴 O-05 (18-09-2026), los tres roles nuevos.
+   *
+   * · COORDINADOR reparte trabajo: comercial y administración. NO finanzas —
+   *   «no mueve plata» es la mitad del rol, y dejarle el menú de finanzas
+   *   visible para que después el back se lo niegue es enseñarle puertas
+   *   cerradas.
+   * · AUXILIAR_CARTERA hace recibos: administración (donde vive el recibo) y
+   *   finanzas para ver la cartera que está cobrando.
+   * · ABOGADO_EXTERNO es de AFUERA: administración es donde vive lo jurídico,
+   *   y nada más. El back además le recorta las rutas de cartera por fila.
+   */
+  [AGENCY_ROLES.COORDINADOR]: ['comercial', 'administracion', 'general'],
+  [AGENCY_ROLES.AUXILIAR_CARTERA]: ['administracion', 'finanzas', 'general'],
+  [AGENCY_ROLES.ABOGADO_EXTERNO]: ['administracion', 'general'],
 };
 
 export interface ModuleScopeContext {

@@ -98,6 +98,65 @@ describe('resumirElCliente', () => {
     expect(r.diasDeMora).toBe(0);
   });
 
+  /*
+   * 🔴 Bug C de la prueba en navegador (16-09): el contrato #77 decía 100 días
+   * de mora en la ficha y en el cajón, y 105 acá. El back manda en cada fila el
+   * cajón y los días con el plazo del contrato; el resumen los LEE y no vuelve
+   * a restar fechas. Si alguien vuelve a contar desde el vencimiento, esto da
+   * 105 y se pone rojo.
+   */
+  it('🔴 los días de mora son los del back, con el plazo: 100, no los 105 desde el vencimiento', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-06-01',
+            cajon: 'CARTERA',
+            diasDeMora: 100,
+          }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const r = resumirElCliente(estadoDeCuenta({ contratos: [c] }), '2026-09-14');
+    expect(diasEntre('2026-06-01', '2026-09-14')).toBe(105);
+    expect(r).toMatchObject({ enMora: true, diasDeMora: 100, enPlazo: false, cuotasVencidas: 1 });
+  });
+
+  it('🔴 lo vencido DENTRO del plazo no es mora: se dice «Vencido, en plazo»', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-09-10',
+            cajon: 'VENCIDA_EN_PLAZO',
+            diasDeMora: 0,
+            valorNeto: 700,
+          }),
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-10-05',
+            cajon: 'POR_VENCER',
+            diasDeMora: 0,
+          }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const r = resumirElCliente(estadoDeCuenta({ contratos: [c] }), HOY);
+    expect(r).toMatchObject({
+      enMora: false,
+      diasDeMora: 0,
+      enPlazo: true,
+      cuotasEnPlazo: 1,
+      cuotasVencidas: 1,
+      vencidoCop: 700,
+    });
+    expect(r.proxima?.fecha).toBe('2026-10-05');
+  });
+
   it('una cuota ANTERIOR no pone a nadie en mora: la gestionó el sistema viejo', () => {
     const c = contrato({
       secciones: {
@@ -142,6 +201,44 @@ describe('amortizacionDe', () => {
     expect(a.total).toBe(2);
     expect(a.porcentaje).toBe(50);
     expect(a.porcentajeAnterior).toBe(50);
+  });
+
+  /*
+   * 🔴 19-09-2026 · Visto en el navegador con un contrato real de la agencia
+   * de QA: arriba «$ 0 de $ 142.350.000», abajo «Resta por pagar
+   * $ 98.550.000». Faltaban $ 43.800.000 —las 4 cuotas del sistema anterior—
+   * que no estaban ni pagadas ni pendientes, y NINGUNA cifra del documento
+   * los nombraba: la barra pintaba su tramo en gris y su plata no se decía.
+   * Este documento se le manda al cliente; no puede tener plata sin explicar.
+   */
+  it('🔴 la plata del sistema anterior se cuenta, para que los tres tramos sumen', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({ estado: 'CANCELADA', valorNeto: 100 }),
+          fila({ estado: 'ANTERIOR', valorNeto: 400 }),
+          fila({ estado: 'ANTERIOR', valorNeto: 400 }),
+          fila({ estado: 'PENDIENTE', valorNeto: 900 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const a = amortizacionDe(c);
+    expect(a.anterioresCop).toBe(800);
+    // Lo pagado + lo del sistema anterior + lo que falta = lo pactado.
+    const porPagar = a.pactadoCop - a.pagadoCop - a.anterioresCop;
+    expect(porPagar).toBe(900);
+    expect(a.pagadoCop + a.anterioresCop + porPagar).toBe(a.pactadoCop);
+  });
+
+  it('sin cuotas del sistema anterior la plata de ese tramo es cero', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [fila({ estado: 'CANCELADA', valorNeto: 100 })],
+        otrosConceptos: [],
+      },
+    });
+    expect(amortizacionDe(c).anterioresCop).toBe(0);
   });
 
   it('una cuota ANULADA sale del total: dejó de existir', () => {

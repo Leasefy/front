@@ -289,3 +289,30 @@ describe('clasificarFallo — sin créditos y tardó demasiado', () => {
     expect(fallo.tipo).toBe('noExiste')
   })
 })
+
+describe('🔴 el 403 del segundo factor no es «no tienes acceso»', () => {
+  // El defecto: el back exige segundo factor y devuelve 403 en TODO el panel.
+  // Pintado como un 403 cualquiera, el cartel le dice «pídele a un
+  // administrador que te lo habilite» a la persona que ES el administrador —
+  // en las 25 secciones, sin una sola salida.
+  it('dice qué hacer, y lo hace la persona misma', () => {
+    const fallo = clasificarFallo(
+      new ApiError(403, 'Tu rol exige segundo factor.', 'SEGUNDO_FACTOR_REQUERIDO'),
+    )
+    expect(fallo.tipo).toBe('sinSegundoFactor')
+    expect(fallo.titulo).not.toMatch(/no tienes acceso/i)
+    expect(fallo.descripcion).not.toMatch(/p[ií]dele a un administrador/i)
+    expect(fallo.descripcion).toMatch(/Seguridad/)
+  })
+
+  it('no ofrece reintentar: el token de esta sesión ya nació sin el factor', () => {
+    const fallo = clasificarFallo(
+      new ApiError(403, 'x', 'SEGUNDO_FACTOR_REQUERIDO'),
+    )
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('un 403 sin ese código sigue siendo el de siempre', () => {
+    expect(clasificarFallo(new ApiError(403, 'Forbidden')).tipo).toBe('sinPermiso')
+  })
+})

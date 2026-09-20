@@ -1,49 +1,140 @@
 /**
- * Discriminar la cartera por edad de la deuda.
+ * Discriminar la cartera: primero por CAJÓN, y sólo dentro de la cartera por
+ * EDAD.
  *
- * ── Por qué esto no se toma del `summary` del back ──────────────────────────
+ * ── Lo que cambió el 2026-09-16, y por qué importa ──────────────────────────
  *
- * El back agrupa con `daysLate <= 30 → bucket0to30`, y `daysLate` es
- * `max(0, hoy - vencimiento)`. Eso mete en el mismo balde un cobro que **aún no
- * venció** y uno con 29 días de mora. Son cosas distintas: lo primero es plata
- * que va a entrar, lo segundo es plata que hay que salir a buscar. Sumarlas da
- * una mora inflada, y una mora inflada todos los meses enseña a ignorarla.
+ * Antes este archivo hacía dos cuentas que el back no sabía hacer: separaba lo
+ * que aún no vencía (`daysLate <= 0`) de la mora, porque el back agrupaba todo
+ * con `daysLate <= 30`. Hoy el back sale de `contrato_cuotas` y trae la
+ * frontera ya resuelta, con los días de plazo del contrato adentro
+ * (`cuota-es-cartera.ts`). Así que acá ya no se define nada: se AGRUPA lo que
+ * el back clasificó.
  *
- * Acá se separan, y «por vencer» no cuenta como mora.
+ * La diferencia no es cosmética. «Venció» dejó de significar «hay que ir a
+ * buscarlo»:
+ *
+ *   · `POR_VENCER` ...... todavía no vence. Es deuda del contrato, no cartera.
+ *   · `VENCIDA_EN_PLAZO`  venció, pero los días de plazo que la inmobiliaria
+ *                         misma pactó siguen corriendo. Sigue siendo deuda: no
+ *                         le corre interés y la cobranza no la toca.
+ *   · `CARTERA` ......... pasó el vencimiento MÁS el plazo. Ahí —y sólo ahí—
+ *                         entra la cobranza.
+ *
+ * Los tres son una PARTICIÓN: cada cuota cae en uno, así que suman la deuda
+ * total sin que nadie tenga que mantener el invariante. Es el mismo
+ * vocabulario de «Cartera por concepto» (`@/lib/api/cartera.types`).
+ *
+ * Y la EDAD se mide sobre `diasDeMora`, que son los días DESPUÉS del plazo.
+ * Una deuda que ayer decía «30 días» hoy puede decir 27: es la primera vez que
+ * el tramo respeta el plazo del contrato.
+ *
+ * ── 🔴 El siniestro es PARTE de la cartera (bug A, prueba en navegador 16-09) ─
+ *
+ * «Por edad» decía deuda total $2.687 M y cartera $364,8 M; «Por concepto»,
+ * $5.326 M y $3.003,9 M. Mismas etiquetas, números distintos, y la diferencia
+ * era lo que está en siniestro: el informe lo manda en su propia sección y acá
+ * se sumaba sólo `items`. Ahora «Deuda total» y «Cartera» significan lo mismo
+ * en las dos pestañas —siniestro incluido— y el siniestro se muestra APARTE
+ * como la parte de la cartera que ya no es cobranza: su propia cifra y su
+ * propio tramo, que con los cuatro de edad suma la cartera.
  */
 
-import type { CarteraItem } from '@/lib/types/inmobiliaria'
+import type { CajonDeLaCuota } from '@/lib/api/cartera.types'
+import type { CarteraItem, CarteraSiniestro } from '@/lib/types/inmobiliaria'
+import { interesPendiente, totalConInteres } from '@/components/cartera/interes-de-mora'
 
-export type Edad = 'por_vencer' | '1-30' | '31-60' | '61-90' | '90+'
+/** Los tres cajones que una deuda puede ocupar. `SIN_DEUDA` no llega al informe. */
+export type Cajon = Exclude<CajonDeLaCuota, 'SIN_DEUDA'>
 
-export const EDADES: Edad[] = ['por_vencer', '1-30', '31-60', '61-90', '90+']
+export const CAJONES: Cajon[] = ['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA']
+
+/** Las MISMAS palabras que la franja de «Cartera por concepto». */
+export const NOMBRE_DEL_CAJON: Record<Cajon, string> = {
+  POR_VENCER: 'Por vencer',
+  VENCIDA_EN_PLAZO: 'Vencido, en plazo',
+  CARTERA: 'Cartera',
+}
+
+export const QUE_SIGNIFICA_EL_CAJON: Record<Cajon, string> = {
+  POR_VENCER: 'Todavía no vence. Es deuda, no cartera.',
+  VENCIDA_EN_PLAZO: 'Venció, pero el plazo del contrato sigue corriendo.',
+  CARTERA: 'Pasó el plazo. Es lo único que la cobranza persigue.',
+}
+
+/** Los tramos por edad. Sólo se le aplican a lo que YA es cartera. */
+export type Edad = '0-30' | '31-60' | '61-90' | '90+'
+
+export const EDADES: Edad[] = ['0-30', '31-60', '61-90', '90+']
 
 export const NOMBRE_DE_EDAD: Record<Edad, string> = {
-  por_vencer: 'Por vencer',
-  '1-30': '1 a 30 días',
+  '0-30': '0 a 30 días',
   '31-60': '31 a 60 días',
   '61-90': '61 a 90 días',
   '90+': 'Más de 90 días',
 }
 
 /**
- * Qué significa cada tramo para la inmobiliaria. No es decoración: a los 90
- * días el problema deja de ser de cobranza y pasa a ser jurídico.
+ * Qué significa cada tramo. No es decoración: a los 90 días el problema deja
+ * de ser de cobranza y pasa a ser jurídico.
  */
 export const QUE_SIGNIFICA: Record<Edad, string> = {
-  por_vencer: 'Todavía no se vence. No es mora.',
-  '1-30': 'Mora temprana: casi siempre se resuelve con un recordatorio.',
+  '0-30': 'Mora temprana: casi siempre se resuelve con un recordatorio.',
   '31-60': 'Ya no es un olvido. Acá entra la gestión de cobranza.',
   '61-90': 'Riesgo de perder el mes. Conviene un acuerdo de pago.',
   '90+': 'Deja de ser cobranza. Es jurídico y reclamación a la aseguradora.',
 }
 
-export function edadDe(item: CarteraItem): Edad {
-  if (item.daysLate <= 0) return 'por_vencer'
-  if (item.daysLate <= 30) return '1-30'
-  if (item.daysLate <= 60) return '31-60'
-  if (item.daysLate <= 90) return '61-90'
+/** ¿Esta deuda es un caso en siniestro? Son las filas de `siniestros.items`. */
+export function esSiniestro(item: CarteraItem): item is CarteraSiniestro {
+  return 'siniestroDesde' in item
+}
+
+/**
+ * En qué tramo cae. `null` mientras no sea cartera: una deuda que todavía no
+ * pasó el plazo NO tiene edad de mora, y ponerle «0-30» la metería en la lista
+ * de a quién llamar. Tampoco el siniestro: tiene su propio tramo.
+ */
+export function edadDe(item: CarteraItem): Edad | null {
+  if (item.cajon !== 'CARTERA' || esSiniestro(item)) return null
+  if (item.diasDeMora <= 30) return '0-30'
+  if (item.diasDeMora <= 60) return '31-60'
+  if (item.diasDeMora <= 90) return '61-90'
   return '90+'
+}
+
+/**
+ * Lo peor que le puede pasar a una deuda, de menos a más grave.
+ *
+ * Es una escala sola —cajón y edad en la misma recta— porque la columna «Lo
+ * peor» de la tabla por propietario tiene que poder comparar una deuda futura
+ * con una de 95 días sin que la pantalla sepa cuál de las dos dimensiones
+ * mirar.
+ */
+export const GRAVEDAD = [
+  'POR_VENCER',
+  'VENCIDA_EN_PLAZO',
+  '0-30',
+  '31-60',
+  '61-90',
+  '90+',
+  'SINIESTRO',
+] as const
+export type Gravedad = (typeof GRAVEDAD)[number]
+
+export const NOMBRE_DE_GRAVEDAD: Record<Gravedad, string> = {
+  POR_VENCER: NOMBRE_DEL_CAJON.POR_VENCER,
+  VENCIDA_EN_PLAZO: NOMBRE_DEL_CAJON.VENCIDA_EN_PLAZO,
+  '0-30': NOMBRE_DE_EDAD['0-30'],
+  '31-60': NOMBRE_DE_EDAD['31-60'],
+  '61-90': NOMBRE_DE_EDAD['61-90'],
+  '90+': NOMBRE_DE_EDAD['90+'],
+  SINIESTRO: 'En siniestro',
+}
+
+export function gravedadDe(item: CarteraItem): Gravedad {
+  if (esSiniestro(item)) return 'SINIESTRO'
+  return edadDe(item) ?? (item.cajon as Exclude<Cajon, 'CARTERA'>)
 }
 
 export interface TramoDeCartera {
@@ -52,41 +143,75 @@ export interface TramoDeCartera {
   monto: number
 }
 
-export interface CarteraDiscriminada {
-  tramos: TramoDeCartera[]
-  /** Lo que aún no vence. NO es mora. */
-  porVencer: number
-  /** La mora de verdad: todo lo vencido. */
-  enMora: number
-  /** Cuántas deudas vencidas hay, no cuánta plata. */
-  deudasEnMora: number
-  total: number
+export interface MontoDelCajon {
+  cajon: Cajon
+  items: CarteraItem[]
+  monto: number
 }
 
-export function discriminar(items: CarteraItem[]): CarteraDiscriminada {
+export interface CarteraDiscriminada {
+  /**
+   * Los tres cajones, siempre los tres, aunque alguno vaya en cero. 🔴 El de
+   * CARTERA incluye los casos en siniestro (filas y monto): es la MISMA
+   * «Cartera» de «Por concepto».
+   */
+  cajones: MontoDelCajon[]
+  /** Los cuatro tramos de la cartera VIVA, siempre los cuatro. */
+  tramos: TramoDeCartera[]
+  /** El quinto tramo: la parte de la cartera que ya es reclamación. */
+  enSiniestro: { items: CarteraItem[]; monto: number }
+  /** Toda la deuda: la suma de los tres cajones, siniestro incluido. */
+  deudaTotal: number
+}
+
+/**
+ * Agrupa las filas por cajón y por edad.
+ *
+ * 🔴 Los montos salen de las MISMAS filas que la lista, no del `summary`: así
+ * la cifra de una ficha y las filas que se ven al tocarla no pueden discrepar.
+ * Con los siniestros adentro suman lo mismo que el `summary` del back
+ * (`deudaTotalCop`, `carteraCop`) y que «Por concepto».
+ */
+export function discriminar(
+  items: readonly CarteraItem[],
+  siniestros: readonly CarteraItem[] = [],
+): CarteraDiscriminada {
+  const porCajon = new Map<Cajon, CarteraItem[]>(CAJONES.map((c) => [c, []]))
   const porEdad = new Map<Edad, CarteraItem[]>(EDADES.map((e) => [e, []]))
+  const enSiniestro: CarteraItem[] = []
+
+  // Los casos en siniestro vienen en su propia lista: son cartera, con su tramo.
+  for (const caso of siniestros) {
+    enSiniestro.push(caso)
+    porCajon.get('CARTERA')!.push(caso)
+  }
   for (const item of items) {
-    porEdad.get(edadDe(item))!.push(item)
+    if (esSiniestro(item)) {
+      enSiniestro.push(item)
+      porCajon.get('CARTERA')!.push(item)
+      continue
+    }
+    porCajon.get(item.cajon as Cajon)?.push(item)
+    const edad = edadDe(item)
+    if (edad) porEdad.get(edad)!.push(item)
   }
 
-  const tramos = EDADES.map((edad) => {
-    const suyos = porEdad.get(edad)!
-    return {
-      edad,
-      items: suyos,
-      monto: suyos.reduce((s, i) => s + i.pendingAmount, 0),
-    }
+  const sumar = (suyos: readonly CarteraItem[]) =>
+    suyos.reduce((s, i) => s + i.pendingAmount, 0)
+
+  const cajones = CAJONES.map((cajon) => {
+    const suyos = porCajon.get(cajon)!
+    return { cajon, items: suyos, monto: sumar(suyos) }
   })
 
-  const porVencer = tramos.find((t) => t.edad === 'por_vencer')!.monto
-  const vencidos = tramos.filter((t) => t.edad !== 'por_vencer')
-
   return {
-    tramos,
-    porVencer,
-    enMora: vencidos.reduce((s, t) => s + t.monto, 0),
-    deudasEnMora: vencidos.reduce((s, t) => s + t.items.length, 0),
-    total: porVencer + vencidos.reduce((s, t) => s + t.monto, 0),
+    cajones,
+    tramos: EDADES.map((edad) => {
+      const suyos = porEdad.get(edad)!
+      return { edad, items: suyos, monto: sumar(suyos) }
+    }),
+    enSiniestro: { items: enSiniestro, monto: sumar(enSiniestro) },
+    deudaTotal: cajones.reduce((s, c) => s + c.monto, 0),
   }
 }
 
@@ -94,23 +219,29 @@ export function discriminar(items: CarteraItem[]): CarteraDiscriminada {
  * La cartera agrupada por propietario.
  *
  * Es la pregunta que la inmobiliaria hace de verdad: no «cuánto se debe», sino
- * «a quién le estoy quedando mal». Un propietario con cuatro inmuebles en mora
- * se va, y eso no se ve en una lista ordenada por monto.
+ * «a quién le estoy quedando mal». Un propietario con cuatro inmuebles en
+ * cartera se va, y eso no se ve en una lista ordenada por monto.
  */
 export interface DeudaDePropietario {
   propietarioId: string | null
   propietarioName: string
+  /** El CAPITAL que se le debe al propietario por sus inmuebles. */
   monto: number
+  /** 🔴 El interés de mora de esas deudas, aparte, con la lectura del back. */
+  interes: number
+  /** `monto + interes`: lo que hoy hay que cobrarle a sus inquilinos. */
+  totalConInteres: number
   deudas: number
-  /** Cuántos inmuebles DISTINTOS tienen deuda: cuatro cobros de un mismo apto son un inmueble. */
+  /** Cuántos inmuebles DISTINTOS deben: cuatro cuotas de un mismo apto son uno. */
   inmuebles: number
-  peorEdad: Edad
+  /** Lo peor que tiene encima, en la escala única cajón + edad. */
+  peor: Gravedad
 }
 
 export const SIN_PROPIETARIO = 'Sin propietario registrado'
 
-export function porPropietario(items: CarteraItem[]): DeudaDePropietario[] {
-  const mapa = new Map<string, DeudaDePropietario & { consignaciones: Set<string> }>()
+export function porPropietario(items: readonly CarteraItem[]): DeudaDePropietario[] {
+  const mapa = new Map<string, DeudaDePropietario & { inmueblesVistos: Set<string> }>()
   for (const item of items) {
     /*
      * Sin propietario la deuda no desaparece: se agrupa bajo una clave propia
@@ -122,36 +253,46 @@ export function porPropietario(items: CarteraItem[]): DeudaDePropietario[] {
       propietarioId: item.propietarioId,
       propietarioName: item.propietarioName ?? SIN_PROPIETARIO,
       monto: 0,
+      interes: 0,
+      totalConInteres: 0,
       deudas: 0,
       inmuebles: 0,
-      peorEdad: 'por_vencer' as Edad,
-      consignaciones: new Set<string>(),
+      peor: 'POR_VENCER' as Gravedad,
+      inmueblesVistos: new Set<string>(),
     }
     actual.monto += item.pendingAmount
+    actual.interes += interesPendiente(item)
+    actual.totalConInteres += totalConInteres(item, item.pendingAmount)
     actual.deudas += 1
-    actual.consignaciones.add(item.consignacionId)
-    actual.inmuebles = actual.consignaciones.size
-    if (EDADES.indexOf(edadDe(item)) > EDADES.indexOf(actual.peorEdad)) {
-      actual.peorEdad = edadDe(item)
+    /*
+     * El inmueble se cuenta por `propertyId`; un contrato migrado sin inmueble
+     * cuenta como uno propio en vez de fundirse con los demás huérfanos.
+     */
+    actual.inmueblesVistos.add(item.propertyId ?? `contrato:${item.contractId}`)
+    actual.inmuebles = actual.inmueblesVistos.size
+    const gravedad = gravedadDe(item)
+    if (GRAVEDAD.indexOf(gravedad) > GRAVEDAD.indexOf(actual.peor)) {
+      actual.peor = gravedad
     }
     mapa.set(clave, actual)
   }
   return [...mapa.values()]
-    .map(({ consignaciones: _c, ...p }) => p)
-    .sort((a, b) => b.monto - a.monto)
+    .map(({ inmueblesVistos: _i, ...p }) => p)
+    .sort((a, b) => b.totalConInteres - a.totalConInteres || b.monto - a.monto)
 }
 
 // ── Filtros ────────────────────────────────────────────────────────────────
 //
-// La pantalla tiene tres filtros que se combinan: el tramo (una ficha de
-// arriba), la búsqueda (la caja de la tabla) y el propietario (al tocar una
-// fila de «Por propietario»). Viven acá, puros, para que la pantalla no
-// tenga que saber cómo se compara un nombre con una búsqueda.
+// La pantalla combina cuatro: el cajón (una cifra de la franja), el tramo (una
+// ficha de edad), la búsqueda y el propietario. Viven acá, puros, para que la
+// pantalla no tenga que saber cómo se compara un nombre con una búsqueda.
 
 export interface FiltroDeCartera {
-  /** Un tramo, o nada. */
+  /** Un cajón, o nada. Elegir un tramo ya implica `CARTERA`. */
+  cajon?: Cajon | null
+  /** Un tramo de edad, o nada. */
   edad?: Edad | null
-  /** Texto libre contra inquilino, inmueble y propietario. */
+  /** Texto libre contra inquilino, inmueble, propietario y contrato. */
   busqueda?: string
   /**
    * `undefined` = sin filtro. `null` = SÓLO las deudas sin propietario (la
@@ -161,22 +302,37 @@ export interface FiltroDeCartera {
 }
 
 /** ¿Alguno de los textos contiene la búsqueda? Sin búsqueda, todo coincide. */
-export function coincide(textos: ReadonlyArray<string | null | undefined>, busqueda: string): boolean {
+export function coincide(
+  textos: ReadonlyArray<string | null | undefined>,
+  busqueda: string,
+): boolean {
   const q = busqueda.trim().toLowerCase()
   if (!q) return true
   return textos.some((t) => Boolean(t) && t!.toLowerCase().includes(q))
 }
 
 export function hayFiltrosDeCartera(f: FiltroDeCartera): boolean {
-  return Boolean(f.edad) || (f.busqueda?.trim().length ?? 0) > 0 || f.propietarioId !== undefined
+  return (
+    Boolean(f.cajon) ||
+    Boolean(f.edad) ||
+    (f.busqueda?.trim().length ?? 0) > 0 ||
+    f.propietarioId !== undefined
+  )
 }
 
 /** Sirve para las deudas y para los siniestros: comparten la forma. */
-export function filtrarCartera<T extends CarteraItem>(items: readonly T[], f: FiltroDeCartera): T[] {
+export function filtrarCartera<T extends CarteraItem>(
+  items: readonly T[],
+  f: FiltroDeCartera,
+): T[] {
   return items.filter((i) => {
+    if (f.cajon && i.cajon !== f.cajon) return false
     if (f.edad && edadDe(i) !== f.edad) return false
     if (f.propietarioId !== undefined && i.propietarioId !== f.propietarioId) return false
-    return coincide([i.tenantName, i.propertyTitle, i.propertyAddress, i.propietarioName], f.busqueda ?? '')
+    return coincide(
+      [i.tenantName, i.propertyTitle, i.propertyAddress, i.propietarioName, i.contrato],
+      f.busqueda ?? '',
+    )
   })
 }
 

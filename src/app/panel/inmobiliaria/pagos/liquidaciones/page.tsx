@@ -8,13 +8,27 @@
  * constante con un badge «Ejemplo», y la tabla de egresos con un `EmptyState`
  * fijo — cero `fetch`. El back ya calculaba exactamente esto y nadie lo
  * llamaba: `GET /inmobiliaria/dispersiones/preview` devuelve, propietario por
- * propietario, canon recaudado, comisión, conceptos a favor y a cargo, y el
+ * propietario, el canon, la comisión, los conceptos a favor y a cargo, y el
  * neto a girar. Es la MISMA cuenta que `generate`, así que lo que se ve acá es
  * lo que se va a girar en Dispersiones — no una fórmula parecida.
+ *
+ * 🔴 El canon decía «Canon recibido», y con la base por defecto (CAUSADO) es lo
+ * que los contratos cobran en el mes, haya pagado el inquilino o no: se puede
+ * girar más de lo recaudado. El rótulo sigue a `vista.base` —«Canon causado» o
+ * «Canon recaudado»— y ningún número cambia (`lib/propietarios/base-del-canon`).
  *
  * El desglose de IVA no se muestra: el back lo devuelve dentro de los conceptos
  * y separarlo acá sería una cuenta distinta de la del giro. La columna «IVA
  * com.» se retiró en vez de rellenarse con un cálculo del navegador.
+ *
+ * 🔴 Deducciones (2026-09-16): la liquidación del propietario es lo que el
+ * contrato cobra MENOS sus deducciones (reparaciones a su cargo, descuentos con
+ * soporte, saldo en contra del mes anterior). El back manda el bloque
+ * `conDeducciones` con la regla única; acá se pinta: una columna con lo que se
+ * descuenta y el neto que de verdad se gira, entero o nada. Si las deducciones
+ * superan el neto, se gira $0 y se dice cuánto pasa al mes siguiente — no
+ * «queda debiendo»: no hay cuenta de cobro. Con un back anterior, sin el
+ * bloque, la pantalla es la de siempre.
  *
  * Un solo estado a la vez (auditoría 2026-09-13, L1): con el back caído la
  * pantalla decía TRES cosas juntas —el cartel de error, «este mes todavía no
@@ -28,6 +42,7 @@ import { Wallet, CalendarBlank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
+import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import {
@@ -48,9 +63,10 @@ import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { baseDeLaLiquidacion } from '@/lib/propietarios/base-del-canon';
 
 const COLUMNS = [
-  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
+  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colDeducciones', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
 ];
 
 /** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
@@ -123,25 +139,45 @@ function TesoreriaContent() {
   const frenada = leerLiquidacionFrenada(error);
 
   const propietarios: Propietario[] = vista?.propietarios ?? [];
+  // Con qué regla liquidó el back: decide el rótulo del canon, nada más.
+  const base = baseDeLaLiquidacion(vista);
   const suma = (campo: keyof Propietario) =>
     propietarios.reduce((s, p) => s + (p[campo] as number), 0);
 
   // La fórmula, sobre la plata de VERDAD del mes. Las cuatro filas cierran
   // contra el neto por construcción: el back lo calcula igual.
   const resumen = [
-    { labelKey: 'fCanon', value: suma('totalCollected'), sign: '', tone: 'text-fg' },
+    {
+      labelKey: base === 'RECAUDADO' ? 'fCanonRecaudado' : 'fCanonCausado',
+      value: suma('totalCollected'),
+      sign: '',
+      tone: 'text-fg',
+    },
     { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
     { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
   const neto = suma('netToPropietario');
   /*
-   * El back reparte en negativo cuando lo que paga el propietario (predial,
-   * reparaciones) supera lo recaudado: el propietario queda DEBIENDO. Antes el
-   * neto se pintaba siempre en verde, y un «−$300.000» verde se lee como plata
-   * a favor.
+   * Con deducciones el back manda el bloque de cada propietario. Lo que se
+   * SUMA acá son totales de varios propietarios; lo que se gira a cada uno
+   * (`aGirarCop`) y lo que le queda en contra ya vienen calculados.
    */
-  const quedanDebiendo = propietarios.filter((p) => p.netToPropietario < 0).length;
+  const conDeducciones = propietarios.some((p) => p.conDeducciones);
+  const sumaDelBloque = (campo: 'deduccionesCop' | 'aGirarCop' | 'saldoEnContraCop') =>
+    propietarios.reduce((s, p) => s + (p.conDeducciones?.[campo] ?? 0), 0);
+  const deduccionesDelMes = sumaDelBloque('deduccionesCop');
+  const aGirarDelMes = sumaDelBloque('aGirarCop');
+  const enContraDelMes = sumaDelBloque('saldoEnContraCop');
+  const quedanEnCero = propietarios.filter((p) => (p.conDeducciones?.saldoEnContraCop ?? 0) > 0).length;
+  /*
+   * El back reparte en negativo cuando lo que paga el propietario (predial,
+   * reparaciones) supera su canon del mes: el propietario queda DEBIENDO. Antes el
+   * neto se pintaba siempre en verde, y un «−$300.000» verde se lee como plata
+   * a favor. Con deducciones esto ya no es «deuda»: pasa a la siguiente
+   * liquidación (`quedanEnCero`).
+   */
+  const quedanDebiendo = conDeducciones ? 0 : propietarios.filter((p) => p.netToPropietario < 0).length;
 
   const vacio = !cargando && !error && propietarios.length === 0;
   // El fallo y el vacío no traen tarjeta propia (van dentro del hueco de
@@ -186,6 +222,8 @@ function TesoreriaContent() {
         </div>
       </header>
 
+      <PestanasDeLiquidaciones />
+
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />
       ) : (
@@ -210,7 +248,7 @@ function TesoreriaContent() {
                 queSon="liquidaciones"
                 icono={Wallet}
                 titulo={t(k('emptyTitle'))}
-                descripcion={t(k('emptyDesc'))}
+                descripcion={t(k(base === 'RECAUDADO' ? 'emptyDescRecaudado' : 'emptyDesc'))}
               />
             }
           >
@@ -222,12 +260,26 @@ function TesoreriaContent() {
                   <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
                 </div>
                 <div className="space-y-2.5">
-                  {resumen.map((row) => (
-                    <div key={row.labelKey} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
-                      <span className={cn('font-mono tabular-nums', row.tone)}>
-                        {row.sign}{formatCurrency(row.value)}
-                      </span>
+                  {resumen.map((row, i) => (
+                    <div key={row.labelKey}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span
+                          className="text-muted-foreground"
+                          data-testid={i === 0 ? 'tesoreria-rotulo-canon' : undefined}
+                        >
+                          {t(k(row.labelKey))}
+                        </span>
+                        <span className={cn('font-mono tabular-nums', row.tone)}>
+                          {row.sign}{formatCurrency(row.value)}
+                        </span>
+                      </div>
+                      {/* Qué es ese canon, en una línea: «causado» no se
+                          entiende solo, y es la diferencia con lo recaudado. */}
+                      {i === 0 && (
+                        <p className="mt-0.5 text-xs text-fg-muted" data-testid="tesoreria-que-es-el-canon">
+                          {t(k(base === 'RECAUDADO' ? 'fCanonQueEsRecaudado' : 'fCanonQueEsCausado'))}
+                        </p>
+                      )}
                     </div>
                   ))}
                   <div className="border-t border-border pt-2.5 flex items-center justify-between">
@@ -245,11 +297,42 @@ function TesoreriaContent() {
                       {formatCurrency(neto)}
                     </span>
                   </div>
+                  {deduccionesDelMes > 0 && (
+                    <div className="flex items-center justify-between text-sm" data-testid="tesoreria-deducciones-total">
+                      <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
+                      <span className="font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
+                    </div>
+                  )}
+                  {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
+                        <span className="font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
+                          {formatCurrency(aGirarDelMes)}
+                        </span>
+                      </div>
+                      {enContraDelMes > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{t(k('fSaldoEnContra'))}</span>
+                          <span className="font-mono tabular-nums text-warning">{formatCurrency(enContraDelMes)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {quedanEnCero > 0 && (
+                    <p className="text-xs text-warning" data-testid="tesoreria-quedan-en-cero">
+                      {quedanEnCero === 1
+                        ? t('inmobiliaria.deducciones.liquidacion.quedanEnContraUno')
+                        : t('inmobiliaria.deducciones.liquidacion.quedanEnContraVarios', { cuantos: quedanEnCero })}
+                    </p>
+                  )}
                   {quedanDebiendo > 0 && (
                     <p className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                      {/* Con base CAUSADO no se compara contra lo recaudado:
+                          contra el canon del mes, pagado o no. */}
                       {quedanDebiendo === 1
-                        ? '1 propietario queda debiendo este mes: lo que paga supera lo recaudado.'
-                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera lo recaudado.`}
+                        ? `1 propietario queda debiendo este mes: lo que paga supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`
+                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`}
                     </p>
                   )}
                 </div>
@@ -285,18 +368,44 @@ function TesoreriaContent() {
                           <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
                           <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
                           <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
-                          <TableCell
-                            className={cn(
-                              'font-mono tabular-nums font-semibold',
-                              p.netToPropietario < 0 ? 'text-danger' : 'text-success',
-                            )}
-                            data-testid="tesoreria-neto-fila"
-                          >
-                            {formatCurrency(p.netToPropietario)}
-                            {p.netToPropietario < 0 && (
-                              <span className="block text-[11px] font-normal font-sans">Queda debiendo</span>
-                            )}
+                          <TableCell className="font-mono tabular-nums text-danger" data-testid="tesoreria-deducciones-fila">
+                            {p.conDeducciones && p.conDeducciones.deduccionesCop > 0
+                              ? `−${formatCurrency(p.conDeducciones.deduccionesCop)}`
+                              : '—'}
                           </TableCell>
+                          {p.conDeducciones ? (
+                            /* Lo que se gira de verdad: entero o $0. Si queda en
+                               contra no es «queda debiendo»: pasa al mes siguiente. */
+                            <TableCell
+                              className={cn(
+                                'font-mono tabular-nums font-semibold',
+                                p.conDeducciones.aGirarCop > 0 ? 'text-success' : 'text-fg-muted',
+                              )}
+                              data-testid="tesoreria-neto-fila"
+                            >
+                              {formatCurrency(p.conDeducciones.aGirarCop)}
+                              {p.conDeducciones.saldoEnContraCop > 0 && (
+                                <span className="block text-[11px] font-normal font-sans text-warning" data-testid="tesoreria-en-contra-fila">
+                                  {t('inmobiliaria.deducciones.liquidacion.enContraFila', {
+                                    valor: formatCurrency(p.conDeducciones.saldoEnContraCop),
+                                  })}
+                                </span>
+                              )}
+                            </TableCell>
+                          ) : (
+                            <TableCell
+                              className={cn(
+                                'font-mono tabular-nums font-semibold',
+                                p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                              )}
+                              data-testid="tesoreria-neto-fila"
+                            >
+                              {formatCurrency(p.netToPropietario)}
+                              {p.netToPropietario < 0 && (
+                                <span className="block text-[11px] font-normal font-sans">Queda debiendo</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="text-xs text-fg-muted whitespace-nowrap">
                             {p.propietarioBankAccount
                               ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()

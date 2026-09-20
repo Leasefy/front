@@ -25,6 +25,7 @@ const { replaceMock, refreshUserMock, authState } = vi.hoisted(() => {
       isAuthenticated: true,
       isLoading: false,
       mfaRequired: false,
+      mfaEnrollRequired: false,
       needsOnboarding: false,
       perfilElegido: null as string | null,
       agencyRole: null as string | null,
@@ -57,6 +58,7 @@ beforeEach(() => {
   authState.isAuthenticated = true
   authState.isLoading = false
   authState.mfaRequired = false
+  authState.mfaEnrollRequired = false
   authState.needsOnboarding = false
   authState.perfilElegido = null
   authState.agencyRole = null
@@ -177,6 +179,29 @@ describe('ProtectedRoute — T-0099: MFA-pending gate (session assurance level, 
 
     expect(childMounted()).toBe(true)
     expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('with mfaEnrollRequired=true (no factor to even step up to): children do NOT render, redirects to /auth/mfa-enroll — takes priority over mfaRequired', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaEnrollRequired = true
+    authState.mfaRequired = false
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('once mfaEnrollRequired flips back to false (enrolled + verified): children mount normally, no redirect', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaEnrollRequired = false
+    authState.mfaRequired = false
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-enroll')
   })
 })
 

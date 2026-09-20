@@ -65,6 +65,21 @@ export interface BootstrapOnboarding {
   complete: boolean
 }
 
+/**
+ * T-0099 contract (`.orchestration/tasks/T-0099-mfa-pending-gate/contract.md`
+ * §2) — additive, OPTIONAL field. `exigido: true` means the back will 403
+ * SEGUNDO_FACTOR_REQUERIDO on protected routes unless the session token is
+ * aal2, computed by the back with the guard's own policy (mandatory roles
+ * plus the agency's configured extras) on the member role the bootstrap
+ * resolved. This is a narrow, documented widening at the seam that reads
+ * bootstrap — the generated client (`src/lib/api/generated/back.ts`) does
+ * not carry this field yet and must be regenerated (`pnpm api:gen:back`)
+ * once the back's OpenAPI snapshot lands; do not hand-edit that file.
+ */
+export interface BootstrapSegundoFactor {
+  exigido: boolean
+}
+
 export interface BootstrapResponse {
   user: BootstrapUser
   role: BootstrapRole
@@ -75,24 +90,41 @@ export interface BootstrapResponse {
    *  missing (an old front build talking to a new back, or vice versa).
    *  Never throw on it. See `getBootstrap` below. */
   errors: string[]
+  /**
+   * Normalized here — always present. Absent on an older back build (contract
+   * §2, degradation column) becomes `{ exigido: false }` (today's behaviour,
+   * no pre-emptive gate). See `getBootstrap` below.
+   */
+  segundoFactor: BootstrapSegundoFactor
 }
 
-/** Raw shape before the `errors` normalization — everything else is required
- *  by the contract, but `errors`' "absent key ≡ []" rule is the one back-compat
- *  case this file must handle defensively. */
-type RawBootstrapResponse = Omit<BootstrapResponse, 'errors'> & { errors?: string[] }
+/** Raw shape before normalization — everything else is required by the
+ *  contract, but `errors`' "absent key ≡ []" and `segundoFactor`'s "absent
+ *  key ≡ { exigido: false }" are the back-compat cases this file must handle
+ *  defensively. */
+type RawBootstrapResponse = Omit<BootstrapResponse, 'errors' | 'segundoFactor'> & {
+  errors?: string[]
+  segundoFactor?: BootstrapSegundoFactor
+}
 
 /**
- * GET /users/me/bootstrap. Normalizes a missing `errors` key to `[]` — the
- * contract's explicit back-compat rule (§3.2) — so no caller ever has to
- * null-check it. Every other failure mode (401, 409, 5xx) propagates as an
- * `ApiError`, identical to `GET /users/me` today (contract.md §3.3): the
+ * GET /users/me/bootstrap. Normalizes a missing `errors` key to `[]` (the
+ * contract's explicit back-compat rule, §3.2) and a missing `segundoFactor`
+ * key to `{ exigido: false }` (T-0099 contract §2) — so no caller ever has to
+ * null-check either. Every other failure mode (401, 409, 5xx) propagates as
+ * an `ApiError`, identical to `GET /users/me` today (contract.md §3.3): the
  * caller (`auth-context.tsx`'s `fetchBootstrap`) handles those exactly like
  * it already handles `fetchUser`'s.
  */
 export async function getBootstrap(token?: string): Promise<BootstrapResponse> {
   const raw = await apiClient.get<RawBootstrapResponse>('/users/me/bootstrap', token)
-  return { ...raw, errors: Array.isArray(raw.errors) ? raw.errors : [] }
+  return {
+    ...raw,
+    errors: Array.isArray(raw.errors) ? raw.errors : [],
+    segundoFactor: raw.segundoFactor && typeof raw.segundoFactor.exigido === 'boolean'
+      ? raw.segundoFactor
+      : { exigido: false },
+  }
 }
 
 export const bootstrapApi = { get: getBootstrap }

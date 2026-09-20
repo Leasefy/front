@@ -30,6 +30,7 @@ const {
   signInWithPasswordMock,
   authCallbacks,
   getAalMock,
+  listFactorsMock,
   setAccessTokenMock,
   setMfaPendingFlagMock,
 } = vi.hoisted(() => ({
@@ -43,6 +44,9 @@ const {
   // T-0099: controllable per test — the default (no aal data) matches "MFA
   // not required", most tests don't care about it.
   getAalMock: vi.fn().mockResolvedValue({ data: null }),
+  // T-0099: only consulted when segundoFactorExigidoRef is true AND
+  // nextLevel isn't already 'aal2' — most tests never reach it.
+  listFactorsMock: vi.fn().mockResolvedValue({ data: { totp: [] } }),
   setAccessTokenMock: vi.fn(),
   setMfaPendingFlagMock: vi.fn(),
 }))
@@ -58,6 +62,7 @@ vi.mock('@/lib/supabase/client', () => ({
       signInWithPassword: (...args: unknown[]) => signInWithPasswordMock(...args),
       mfa: {
         getAuthenticatorAssuranceLevel: (...args: unknown[]) => getAalMock(...args),
+        listFactors: (...args: unknown[]) => listFactorsMock(...args),
       },
     },
   }),
@@ -120,8 +125,11 @@ function bootstrapEnvelope(
   role: string,
   agency: Record<string, unknown> | null = null,
   errors: string[] = [],
+  // T-0099: omitted entirely by default — exercises the "older back build"
+  // degradation path (getBootstrap defaults it to { exigido: false }).
+  segundoFactor?: { exigido: boolean },
 ) {
-  return { user, role, agency, subscription: null, onboarding: null, errors }
+  return { user, role, agency, subscription: null, onboarding: null, errors, segundoFactor }
 }
 
 let container: HTMLDivElement
@@ -171,6 +179,7 @@ beforeEach(() => {
   supabaseSignOutMock.mockClear()
   signInWithPasswordMock.mockReset()
   getAalMock.mockReset().mockResolvedValue({ data: null })
+  listFactorsMock.mockReset().mockResolvedValue({ data: { totp: [] } })
   setAccessTokenMock.mockClear()
   setMfaPendingFlagMock.mockClear()
   container = document.createElement('div')
@@ -955,5 +964,124 @@ describe('AuthProvider — T-0099: mirrors mfaRequired into apiClient (setMfaPen
     })
 
     expect(setMfaPendingFlagMock).toHaveBeenLastCalledWith(false)
+  })
+})
+
+/**
+ * T-0099 contract (`.orchestration/tasks/T-0099-mfa-pending-gate/contract.md`
+ * §3): the back's `segundoFactor.exigido` (bootstrap) tells the front a role
+ * requires aal2 even when Supabase's own aal pair can't — a user with NO
+ * enrolled factor has `nextLevel: 'aal1'`, identical to "no requirement at
+ * all". `mfaEnrollRequired` covers exactly that gap; `mfaRequired` keeps
+ * covering "has a factor, hasn't stepped up this sign-in".
+ */
+describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no factor enrolled)', () => {
+  it('exigido:true + no verified TOTP factor + aal1 → enroll-pending (mfaEnrollRequired), NOT verify-pending', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(listFactorsMock).toHaveBeenCalled()
+  })
+
+  it('exigido:true + a verified TOTP factor exists + aal1 → verify-pending (mfaRequired), NOT enroll-pending — no listFactors needed', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.mfaRequired).toBe(true)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    // nextLevel already proved a factor exists — asking again is redundant.
+    expect(listFactorsMock).not.toHaveBeenCalled()
+  })
+
+  it('bootstrap omits `segundoFactor` entirely (older back build) → treated as exigido:false, no pre-emptive gate at all', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      // no segundoFactor arg — omitted, exactly like an older back build
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(listFactorsMock).not.toHaveBeenCalled()
+  })
+
+  it('exigido:true + aal2 already (verified this session): releases both pending states, no listFactors call', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(listFactorsMock).not.toHaveBeenCalled()
   })
 })

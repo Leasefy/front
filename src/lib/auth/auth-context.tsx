@@ -249,6 +249,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
+  // T-0099 — see AuthState['mfaEnrollRequired'] in types.ts.
+  const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
   // El perfil elegido en «Selecciona tu perfil». Vive en `user_metadata` de
   // Supabase y se relee de la sesión en cada evento (ver perfil-de-onboarding.ts).
@@ -329,6 +331,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * required either way and is sufficient on its own.
    */
   const sessionGenerationRef = useRef(0)
+
+  /**
+   * T-0099: mirrors the bootstrap's `segundoFactor.exigido` (contract.md
+   * T-0099 §2) outside React state — `checkMfaLevel` reads it without
+   * needing it in its `useCallback` deps (keeping that callback's identity
+   * stable, same reasoning as every other ref in this file). Written by
+   * `fetchBootstrap`, gated on the session generation like everything else
+   * it sets.
+   */
+  const segundoFactorExigidoRef = useRef(false)
 
   /**
    * Fetch the user profile from the backend.
@@ -476,6 +488,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
             : null,
         })
+        // T-0099: read BEFORE the deferred `checkMfaLevel` runs (it reads this
+        // ref) — `fetchBootstrap` always resolves before `alSoltarElLock`
+        // schedules that check in every caller.
+        segundoFactorExigidoRef.current = data.segundoFactor.exigido
       }
       return {
         user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
@@ -765,10 +781,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user, fetchUser, probeAgencyMembership])
 
-  /** Check MFA assurance level and update mfaRequired state.
+  /** Check MFA assurance level and update mfaRequired/mfaEnrollRequired.
    *  `miGeneracion`, when passed, gates the write: a deferred MFA check
    *  (see `alSoltarElLock` below) that settles after the session has moved
-   *  on must not flip `mfaRequired` for whoever is signed in NOW. */
+   *  on must not flip these for whoever is signed in NOW.
+   *
+   *  T-0099: two DIFFERENT pending states share this one check, per
+   *  contract.md T-0099 §3 —
+   *    - `mfaRequired` ("verify-pending"): a factor exists, the session just
+   *      hasn't stepped up to it THIS sign-in. Supabase's own `nextLevel`
+   *      already answers this — unchanged from before this task.
+   *    - `mfaEnrollRequired` ("enroll-pending"): the back's role policy
+   *      (`segundoFactor.exigido`, mirrored in `segundoFactorExigidoRef`)
+   *      requires aal2 but there is NO factor to even step up to —
+   *      something Supabase's aal pair alone cannot say (`nextLevel` stays
+   *      `'aal1'` with nothing enrolled, identical to "no requirement at
+   *      all"). `listFactors()` is only called to break that tie — never
+   *      when `nextLevel === 'aal2'` already proves a factor exists. */
   const checkMfaLevel = useCallback(async (miGeneracion?: number) => {
     const supabase = getSupabase()
     if (!supabase) return
@@ -779,6 +808,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setMfaRequired(true)
       } else if (aal?.currentLevel === 'aal2') {
         setMfaRequired(false)
+      }
+      if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
+        setMfaEnrollRequired(false)
+      } else {
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
+        const tieneFactorVerificado = (factors?.totp ?? []).some((f) => f.status === 'verified')
+        setMfaEnrollRequired(!tieneFactorVerificado)
       }
     } catch {
       // MFA not available — ignore
@@ -1515,6 +1552,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     mfaRequired,
+    mfaEnrollRequired,
     needsOnboarding,
     perfilElegido,
     agency,

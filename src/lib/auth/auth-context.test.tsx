@@ -23,7 +23,16 @@ void React // jsx-preserve
 
 type AuthEventCallback = (event: string, session: unknown) => Promise<void> | void
 
-const { getMock, postMock, supabaseSignOutMock, signInWithPasswordMock, authCallbacks } = vi.hoisted(() => ({
+const {
+  getMock,
+  postMock,
+  supabaseSignOutMock,
+  signInWithPasswordMock,
+  authCallbacks,
+  getAalMock,
+  setAccessTokenMock,
+  setMfaPendingFlagMock,
+} = vi.hoisted(() => ({
   getMock: vi.fn(),
   // Resolves so the single-session claim (POST /auth/session/claim) in the
   // bootstrap path returns a promise (its .catch/await must not throw).
@@ -31,6 +40,11 @@ const { getMock, postMock, supabaseSignOutMock, signInWithPasswordMock, authCall
   supabaseSignOutMock: vi.fn().mockResolvedValue({ error: null }),
   signInWithPasswordMock: vi.fn(),
   authCallbacks: [] as AuthEventCallback[],
+  // T-0099: controllable per test — the default (no aal data) matches "MFA
+  // not required", most tests don't care about it.
+  getAalMock: vi.fn().mockResolvedValue({ data: null }),
+  setAccessTokenMock: vi.fn(),
+  setMfaPendingFlagMock: vi.fn(),
 }))
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -43,7 +57,7 @@ vi.mock('@/lib/supabase/client', () => ({
       signOut: supabaseSignOutMock,
       signInWithPassword: (...args: unknown[]) => signInWithPasswordMock(...args),
       mfa: {
-        getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: null }),
+        getAuthenticatorAssuranceLevel: (...args: unknown[]) => getAalMock(...args),
       },
     },
   }),
@@ -67,10 +81,11 @@ vi.mock('@/lib/api/client', () => {
     },
     ApiError,
     getAccessToken: () => 'jwt-token',
-    setAccessToken: vi.fn(),
+    setAccessToken: (...args: unknown[]) => setAccessTokenMock(...args),
     setUnauthorizedHandler: vi.fn(),
     setTokenRefresher: vi.fn(),
     clearInFlightGets: vi.fn(),
+    setMfaPendingFlag: (...args: unknown[]) => setMfaPendingFlagMock(...args),
   }
 })
 
@@ -155,6 +170,9 @@ beforeEach(() => {
   postMock.mockReset().mockResolvedValue({ superseded: false })
   supabaseSignOutMock.mockClear()
   signInWithPasswordMock.mockReset()
+  getAalMock.mockReset().mockResolvedValue({ data: null })
+  setAccessTokenMock.mockClear()
+  setMfaPendingFlagMock.mockClear()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -717,5 +735,225 @@ describe('AuthProvider — single bootstrap owner (signInWithEmail delegates to 
     // signInWithEmail (which no longer calls the bootstrap at all).
     const bootstrapCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me/bootstrap')
     expect(bootstrapCalls).toHaveLength(1)
+  })
+})
+
+/**
+ * T-0099: the back requires aal2 for ADMIN/CONTADOR agency roles. `isLoading`
+ * starts `true` at mount and is released by whichever auth event fires
+ * FIRST. Two branches released it BEFORE the deferred MFA check
+ * (`alSoltarElLock`, a setTimeout(0) — auth-js holds its session lock across
+ * the callback, so `checkMfaLevel` can never run synchronously inside it)
+ * had a chance to set `mfaRequired`:
+ *
+ *  - `TOKEN_REFRESHED`, which the file's own comment already documents as
+ *    able to be "the very first event on page load" (Supabase auto-refreshed
+ *    an expired token before ever emitting INITIAL_SESSION — the classic
+ *    "left the panel tab open overnight, came back" case);
+ *  - `SIGNED_IN` when it is the first event a fresh AuthProvider mount ever
+ *    sees (`setSession` from `/auth/enlace`'s magic-link code exchange, not
+ *    behind a prior INITIAL_SESSION on the same mount).
+ *
+ * In that one-macrotask window ProtectedRoute saw isLoading=false +
+ * mfaRequired=false (stale default) and mounted the agency panel — firing
+ * every protected hook/provider under it with an aal1 token, all 403ing with
+ * SEGUNDO_FACTOR_REQUERIDO — before the MFA check landed a tick later and
+ * redirected to /auth/mfa-verify. INITIAL_SESSION never had this bug (it
+ * already deferred isLoading's release until after the MFA check); both
+ * branches are now aligned with it.
+ */
+describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release before mfaRequired is known)', () => {
+  it('TOKEN_REFRESHED as the very first event (documented page-load edge case) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue({
+      id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', role: 'AGENT',
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+
+    // isLoading is still the default `true` — no prior auth event has fired
+    // on this mount.
+    expect(captured!.isLoading).toBe(true)
+
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('TOKEN_REFRESHED', fakeSession)
+    })
+
+    // The callback already returned — auth-js's lock is free — but the
+    // deferred MFA check (next macrotask) has not run yet. This is EXACTLY
+    // the window ProtectedRoute reads via `isLoading`/`mfaRequired`.
+    expect(captured!.isLoading).toBe(true)
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.mfaRequired).toBe(true)
+  })
+
+  it('SIGNED_IN as the very first event (e.g. /auth/enlace magic-link exchange) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+
+    expect(captured!.isLoading).toBe(true)
+
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+
+    expect(captured!.isLoading).toBe(true)
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.mfaRequired).toBe(true)
+  })
+
+  it('TOKEN_REFRESHED with no MFA requirement (aal1→aal1): releases isLoading normally, no regression for non-MFA users', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue({
+      id: 'u2', email: 'ines@example.com', firstName: 'Inés', lastName: 'Gómez', role: 'TENANT',
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('TOKEN_REFRESHED', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.user?.role).toBe('tenant')
+  })
+})
+
+/**
+ * T-0099: `supabase.auth.mfa.verify()` (called from /auth/mfa-verify)
+ * upgrades the session to aal2 and notifies subscribers with
+ * `MFA_CHALLENGE_VERIFIED` (see @supabase/auth-js GoTrueClient#_verify) —
+ * an event `onAuthStateChange` did not handle at all before this fix. The
+ * in-memory token `apiClient` uses (`setAccessToken`) was therefore never
+ * updated to the fresh aal2 token: the panel's very first post-verify
+ * fetches could still 403 with a token that LOOKED released
+ * (`mfaRequired` had been flipped by the page's own optimistic
+ * `setMfaVerified()`) but was still aal1 under the hood.
+ */
+describe('AuthProvider — T-0099: MFA_CHALLENGE_VERIFIED releases the gate with the NEW aal2 token', () => {
+  it('updates the access token synchronously within the event, then clears mfaRequired once the deferred recheck confirms aal2', async () => {
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(captured!.mfaRequired).toBe(true)
+
+    setAccessTokenMock.mockClear()
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    const verifiedSession = { ...fakeSession, access_token: 'jwt-token-aal2' }
+
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('MFA_CHALLENGE_VERIFIED', verifiedSession)
+    })
+
+    // Synchronous within the event — no `await` needed to see it, matching
+    // every other branch's `setAccessToken(session.access_token)`.
+    expect(setAccessTokenMock).toHaveBeenCalledWith('jwt-token-aal2')
+    // mfaRequired has NOT been recomputed yet — checkMfaLevel is deferred,
+    // same reason as everywhere else (auth-js's session lock).
+    expect(captured!.mfaRequired).toBe(true)
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(captured!.mfaRequired).toBe(false)
+  })
+})
+
+/**
+ * T-0099: `clasificar.ts` cannot read React context — it mirrors
+ * `mfaRequired` into `apiClient`'s module state (`setMfaPendingFlag`) so a
+ * SEGUNDO_FACTOR_REQUERIDO 403 that slips through during the pending window
+ * can be told apart from a user who genuinely never enabled MFA.
+ */
+describe('AuthProvider — T-0099: mirrors mfaRequired into apiClient (setMfaPendingFlag)', () => {
+  it('pushes true once the pending step-up is known, and false once MFA_CHALLENGE_VERIFIED releases it', async () => {
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(setMfaPendingFlagMock).toHaveBeenLastCalledWith(true)
+
+    getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1](
+        'MFA_CHALLENGE_VERIFIED',
+        { ...fakeSession, access_token: 'jwt-token-aal2' },
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(setMfaPendingFlagMock).toHaveBeenLastCalledWith(false)
   })
 })

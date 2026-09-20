@@ -385,7 +385,7 @@ export function PlanDeCuentas({
         />
       ) : null}
 
-      {hayCuentas ? (
+      {hayCuentas && !sinPaso5 ? (
         /*
          * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
          * PUC, porque es lo que le falta al plan para que el motor asiente:
@@ -395,6 +395,19 @@ export function PlanDeCuentas({
          * Va ANTES del árbol de cuentas: es lo que decide si el paso está
          * hecho, y debajo de 99 cuentas nadie lo encontraba — Nico se quedó
          * en el paso 5 sin saber por qué no avanzaba (2026-09-02 12:42).
+         *
+         * 🔴 20-09 · `!sinPaso5`: SÓLO dentro de la migración. Abriendo
+         * `/contabilidad/puc` en el navegador apareció la pantalla de
+         * `/contabilidad/mapeo` ENTERA incrustada acá —los mismos nueve
+         * eventos, los mismos selectores que escriben— y esa pantalla tiene su
+         * propia tarjeta en el hub. Dos lugares para hacer lo mismo, con la
+         * misma tabla editable, y nadie sabe cuál manda: es el mismo defecto
+         * que tenía la portada con sus dos navegaciones.
+         *
+         * Dentro de la migración SÍ va junto, porque ahí es una secuencia:
+         * cargas el plan y, sin cambiar de pantalla, dices a qué cuenta va
+         * cada asiento. Fuera de ella son dos tareas distintas y basta con el
+         * enlace de abajo.
          */
         <section
           ref={mapeoRef}
@@ -413,6 +426,21 @@ export function PlanDeCuentas({
           </div>
           <MapeoContable onEstado={setMapeo} />
         </section>
+      ) : null}
+
+      {hayCuentas && sinPaso5 ? (
+        /* Fuera de la migración, el mapeo es su propia pantalla: acá va el
+           camino, no la tabla. */
+        <p className="text-sm text-fg-muted" data-testid="ir-al-mapeo-desde-el-puc">
+          A qué cuenta va cada asiento automático se decide en{' '}
+          <Link
+            href="/panel/inmobiliaria/contabilidad/mapeo"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            Contabilidad → Mapeo contable
+          </Link>
+          . Sin ese mapeo el plan existe pero nada se asienta solo.
+        </p>
       ) : null}
 
       {hayCuentas ? (

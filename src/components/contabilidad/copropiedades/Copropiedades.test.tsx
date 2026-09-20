@@ -108,8 +108,15 @@ describe('Copropiedades', () => {
     await montar();
     expect($('[data-testid="abrir-nueva-copropiedad"]')).toBeNull();
     expect(texto()).not.toContain('Registrar la primera');
-    expect($('[data-testid="falta-la-migracion"]')).not.toBeNull();
-    expect(texto()).toContain('20260920090000_copropiedades_como_tercero');
+    const cartel = $('[data-testid="falta-la-migracion"]')!;
+    expect(cartel).not.toBeNull();
+    /* 🔴 El identificador de la migración NO se le muestra al cliente —no
+       puede aplicarla y no sabe qué es— pero tampoco se pierde: queda en el
+       `title` para quien tenga que diagnosticar. */
+    expect(texto()).not.toContain('20260920090000_copropiedades_como_tercero');
+    expect(cartel.querySelector('[title]')?.getAttribute('title')).toContain(
+      '20260920090000_copropiedades_como_tercero',
+    );
   });
 
   it('con la migración aplicada y sin filas, SÍ ofrece registrar la primera', async () => {

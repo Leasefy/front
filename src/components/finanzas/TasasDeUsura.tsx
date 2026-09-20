@@ -318,7 +318,7 @@ export function TasasDeUsuraPanel() {
  */
 export function explicar(error: unknown, porDefecto: string): string {
   const mensaje = mensajeDelFallo(error, porDefecto);
-  return codigoSinMigrar(error) ? `${mensaje} (la aplica Víctor)` : mensaje;
+  return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
 function EditorDeTasa({

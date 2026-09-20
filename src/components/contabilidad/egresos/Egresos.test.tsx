@@ -181,7 +181,12 @@ describe('<Egresos>', () => {
 
     await pintar();
 
-    expect(q('egresos-sin-migracion')!.textContent).toContain('lotes_de_egreso');
+    /* 🔴 El identificador va al `title`, no al texto: el cliente no puede
+       aplicar una migración y no sabe qué es. */
+    expect(q('egresos-sin-migracion')!.textContent).not.toContain('lotes_de_egreso');
+    expect(
+      q('egresos-sin-migracion')!.querySelector('[title]')?.getAttribute('title'),
+    ).toContain('lotes_de_egreso');
     expect(q('egresos-sin-migracion')!.textContent).toContain('sigue siendo manual');
     expect(q('egresos')).toBeNull();
   });

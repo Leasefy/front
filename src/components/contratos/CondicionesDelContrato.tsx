@@ -542,8 +542,9 @@ function ACualCopropiedad({
   if (!sePuede) {
     return (
       <p className="text-xs text-muted-foreground" data-testid="copropiedad-sin-migracion">
-        Todavía no se puede decir a qué copropiedad pertenece este inmueble: falta una migración de
-        base de datos que aplica Víctor. Mientras tanto la cuota se asienta sin tercero, como hoy.
+        Todavía no se puede decir a qué copropiedad pertenece este inmueble: esta función todavía no está
+        disponible y nuestro equipo la está habilitando. Mientras tanto la cuota se asienta sin
+        tercero, como hoy.
       </p>
     );
   }

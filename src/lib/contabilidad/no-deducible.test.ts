@@ -85,9 +85,10 @@ describe('frasesDeLoNoDeducible', () => {
     expect(frasesDeLoNoDeducible(true).explicacion).toContain('formato 1001');
   });
 
-  it('sin la columna no promete nada y nombra a quién espera', () => {
+  it('sin la columna no promete nada, y no le echa la culpa a nadie por su nombre', () => {
     const f = frasesDeLoNoDeducible(false);
-    expect(f.explicacion).toContain('Víctor');
+    expect(f.explicacion).not.toContain('Víctor');
+    expect(f.explicacion).toContain('todavía no está disponible');
     expect(f.explicacion).toContain('todo el gasto se declara deducible');
   });
 });

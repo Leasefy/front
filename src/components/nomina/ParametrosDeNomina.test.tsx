@@ -426,6 +426,6 @@ describe('las tres formas de «no se puede»', () => {
     expect(
       contenedor.querySelector('[data-testid="nomina-sin-migracion"]')
         ?.textContent,
-    ).toContain('Víctor');
+    ).not.toContain('Víctor');
   });
 });

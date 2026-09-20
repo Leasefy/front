@@ -356,7 +356,7 @@ function DialogoDeCarga({
       const codigo = codigoSinMigrar(error);
       toast.error(
         codigo
-          ? 'Todavía no se puede cargar el presupuesto: falta la migración. La aplica Víctor.'
+          ? 'Todavía no se puede cargar el presupuesto: esta función aún no está disponible. Nuestro equipo la está habilitando.'
           : mensajeDelFallo(error, 'No se pudo cargar el presupuesto.'),
       );
     } finally {

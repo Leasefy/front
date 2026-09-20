@@ -273,8 +273,8 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         <Nota testId="exogena-sin-migracion">
           <p>
             Los formatos se calculan y se descargan igual. Lo que todavía no se puede es guardar el
-            mapeo de conceptos ni dejar constancia de quién dio el visto bueno: falta la migración
-            que crea esas tablas, y la aplica Víctor.
+            mapeo de conceptos ni dejar constancia de quién dio el visto bueno: esta función todavía no está
+            disponible y nuestro equipo la está habilitando.
           </p>
         </Nota>
       ) : null}

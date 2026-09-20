@@ -181,11 +181,16 @@ export function LibroDeAsientos() {
 
   return (
     <div className="space-y-6">
-      {/* ── Filtros + acción ─────────────────────────────────────────────── */}
+      {/* ── Filtros y tabla: UNA tarjeta ──────────────────────────────────
+          🔴 20-09 · Eran dos, separadas por 24 px. Nico lo dijo de
+          Facturación —«porque esto no está pegado a la tabla»— y valía igual
+          acá: al bajar por 1.094 asientos el filtro se va de pantalla y la
+          tabla queda sin decir de qué rango habla. */}
       <section
-        className="space-y-4 rounded-lg border border-border bg-surface p-4"
+        className="overflow-x-clip rounded-lg border border-border bg-surface"
         aria-label="Filtros del libro"
       >
+      <div className="space-y-4 border-b border-border p-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_minmax(240px,1fr)_160px_150px]">
             <RangoDeFechas
@@ -257,10 +262,8 @@ export function LibroDeAsientos() {
             tener opciones hasta recargar.
           </p>
         ) : null}
-      </section>
+      </div>
 
-      {/* ── La tabla, sola en su tarjeta y sin título encima ─────────────── */}
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <EstadoDeDatos
           cargando={cargando && datos === null}
           error={error}

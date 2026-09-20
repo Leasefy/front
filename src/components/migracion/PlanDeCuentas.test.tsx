@@ -118,12 +118,12 @@ const PENDIENTES = {
 let container: HTMLDivElement;
 let root: Root | null = null;
 
-async function pintar() {
+async function pintar(sinPaso5 = false) {
   container = document.createElement('div');
   document.body.appendChild(container);
   await act(async () => {
     root = createRoot(container);
-    root.render(<PlanDeCuentas />);
+    root.render(<PlanDeCuentas sinPaso5={sinPaso5} />);
   });
   await act(async () => {});
 }
@@ -236,6 +236,35 @@ describe('la semilla', () => {
     // Y el mapeo de los asientos automáticos vive en este mismo paso.
     expect(q('puc-mapeo')).not.toBeNull();
     expect(q('mapeo-contable-embebido')).not.toBeNull();
+  });
+
+  /**
+   * 🔴 20-09 · EL DEFECTO QUE SÓLO SE VIO ABRIENDO `/contabilidad/puc`.
+   *
+   * Esa ruta monta este mismo componente con `sinPaso5`, y traía la pantalla
+   * de `/contabilidad/mapeo` ENTERA incrustada: los mismos nueve eventos, los
+   * mismos selectores que ESCRIBEN. Y «Mapeo contable» tiene su propia
+   * tarjeta en el hub de Contabilidad. Dos lugares para hacer lo mismo, con la
+   * misma tabla editable y sin forma de saber cuál manda — el mismo defecto
+   * que tenía la portada con sus dos navegaciones.
+   *
+   * Dentro de la migración SÍ va junto (es una secuencia: cargas el plan y
+   * mapeas sin cambiar de pantalla). Fuera de ella, un enlace.
+   */
+  it('🔴 fuera de la migración NO incrusta la pantalla de mapeo: la enlaza', async () => {
+    pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    await pintar(true);
+
+    expect(q('puc-mapeo')).toBeNull();
+    expect(q('mapeo-contable-embebido')).toBeNull();
+
+    const enlace = q('ir-al-mapeo-desde-el-puc');
+    expect(enlace).not.toBeNull();
+    expect(enlace!.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contabilidad/mapeo',
+    );
+    // Y tampoco el pie que manda al paso 5: fuera de la migración no hay secuencia.
+    expect(q('puc-continuar')).toBeNull();
   });
 
   it('dice qué pasó con el mapeo que se sembró junto con el plan', async () => {
@@ -510,7 +539,7 @@ describe('la casilla «No deducible»', () => {
     await act(async () => editar('511580').click());
     const casilla = q('puc-no-deducible') as HTMLButtonElement;
     expect(casilla.hasAttribute('disabled')).toBe(true);
-    expect((q('puc-formulario') as HTMLElement).textContent).toContain('la aplica Víctor');
+    expect((q('puc-formulario') as HTMLElement).textContent).not.toContain('Víctor');
 
     await act(async () => (q('puc-guardar') as HTMLButtonElement).click());
 

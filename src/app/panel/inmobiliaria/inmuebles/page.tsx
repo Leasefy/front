@@ -49,13 +49,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { KpiValor } from '@/components/estado/KpiValor';
 import type { Consignacion, PortafolioRow, InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
+import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
@@ -128,7 +128,7 @@ function PortafolioContent() {
   // distintas. Una sección que se llama «Inmuebles» muestra los inmuebles.
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
-    availability: 'all',
+    cajon: 'all',
     agenteId: 'all',
     propietarioId: 'all',
     city: 'all',
@@ -185,9 +185,16 @@ function PortafolioContent() {
       );
     }
 
-    // Availability filter — sólo mandatos tienen availability.
-    if (filters.availability !== 'all') {
-      result = result.filter((c) => c.kind === 'consignacion' && normalize(c.availability) === filters.availability);
+    /*
+     * 🔴 El cajón, con la MISMA función que la franja de arriba. Antes acá
+     * decía `normalize(c.availability) === filters.availability` mientras la
+     * ficha «Arrendadas» preguntaba por el CONTRATO: la ficha decía 105 y el
+     * chip mostraba 104, sobre los mismos datos. Y como `availability` sólo la
+     * tienen los mandatos, los 25 inmuebles sin mandato quedaban fuera de
+     * todos los chips.
+     */
+    if (filters.cajon !== 'all') {
+      result = result.filter((c) => cajonDelInmueble(c) === filters.cajon);
     }
 
     // Agente filter — sólo mandatos tienen agente asignado.
@@ -225,7 +232,7 @@ function PortafolioContent() {
   // «quita los filtros» en vez de «crea el primero».
   const hayFiltrosPuestos =
     Boolean(filters.search) ||
-    filters.availability !== 'all' ||
+    filters.cajon !== 'all' ||
     filters.agenteId !== 'all' ||
     filters.propietarioId !== 'all' ||
     filters.city !== 'all' ||
@@ -236,7 +243,7 @@ function PortafolioContent() {
   const limpiarFiltros = useCallback(() => {
     setFilters({
       search: '',
-      availability: 'all',
+      cajon: 'all',
       agenteId: 'all',
       propietarioId: 'all',
       city: 'all',
@@ -252,34 +259,32 @@ function PortafolioContent() {
   // los contadores de disponibilidad ni la suma de canon la incluyen
   // (contract.md T-0030 §3.2, "stats tiles"): no tiene `availability`, y
   // sumar su canon inflaría el número sin que haya comisión real detrás.
-  const stats = useMemo(() => {
-    const total = filteredConsignaciones.length;
-    const mandatos = filteredConsignaciones.filter(
-      (c): c is Extract<PortafolioRow, { kind: 'consignacion' }> => c.kind === 'consignacion',
-    );
-    /*
-     * 🔴 «Arrendadas» lo dice el CONTRATO vigente (`arrendado`), no la
-     * disponibilidad del mandato — Nico, 2026-09-12: «no me está relacionando
-     * bien los inmuebles arrendados porque tengo 741 contratos activos pero me
-     * dice que solo tengo 674 inmuebles arrendados». En su base había 63
-     * contratos migrados sin `Lease`, así que el mandato seguía diciendo
-     * «disponible» sobre un inmueble ocupado. Si la fila viene de una
-     * respuesta vieja sin el campo, se cae a lo de antes en vez de contar 0.
-     * «Disponibles» es su complemento: en catálogo y sin contrato.
-     */
-    const estaArrendado = (c: Extract<PortafolioRow, { kind: 'consignacion' }>) =>
-      c.arrendado ?? c.availability === 'rented';
-    const rented = mandatos.filter(estaArrendado).length;
-    const available = mandatos.filter(
-      (c) => !estaArrendado(c) && c.availability === 'available',
-    ).length;
-    const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
-    const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
-    // L4: aquí también se sumaba el canon mensual (`totalMonthlyRent`), que no
-    // se pintaba en ningún tile: un cálculo muerto que hacía creer que la
-    // pantalla lo mostraba.
-    return { total, available, rented, inProcess, maintenance };
-  }, [filteredConsignaciones]);
+  /*
+   * 🔴 19-09, visto en el navegador con los 133 de la agencia de QA: la franja
+   * decía «133 Total» y sus cuatro fichas sumaban 109. Tres defectos encimados
+   * —25 inmuebles sin cajón, una fila contada dos veces, y la ficha y el chip
+   * contando cosas distintas—, todos explicados en `cajon-del-inmueble.ts`.
+   *
+   * Los conteos salen de la PARTICIÓN, que es exhaustiva y disjunta por
+   * construcción: los cinco cajones suman el total, siempre.
+   *
+   * Y van EN LOS CHIPS, no en una franja de fichas de sólo lectura encima de
+   * la tabla: es el pedido que Nico ya hizo dos veces este mes —«esto tiene
+   * que hacer parte de la tabla»— y el que evita que el número y la forma de
+   * ver ese número vuelvan a ser dos controles distintos.
+   */
+  const conteoPorCajon = useMemo(
+    () =>
+      /*
+       * 🔴 `null` mientras carga o si falló: un cero es un dato y «no sé» no
+       * es cero. Ése era el defecto L1 de las fichas viejas —con el back caído
+       * decían «0 totales · 0 arrendados» encima de una tabla que sí avisaba
+       * del fallo—, y al mudar los números a los chips había que traerse la
+       * protección, no dejarla atrás con las fichas.
+       */
+      cargandoConsignaciones || errorConsignaciones ? null : contarPorCajon(portafolioRows),
+    [portafolioRows, cargandoConsignaciones, errorConsignaciones],
+  );
 
   /*
    * L1: los tiles se pintaban FUERA del `EstadoDeDatos` de la tabla. Con el
@@ -287,12 +292,6 @@ function PortafolioContent() {
    * tiles afirmaban «0 totales · 0 arrendados»; mientras cargaba, un «0» que
    * después saltaba al número real. Un cero es un dato; «no sé» no es cero.
    */
-  const kpi = (valor: number) => (
-    <KpiValor cargando={cargandoConsignaciones} fallo={errorConsignaciones}>
-      {valor}
-    </KpiValor>
-  );
-
   // Paginación — el pie canónico del panel (`useTablePagination` +
   // `TablePagination`). Antes era un prev/next hecho a mano de 12 por página:
   // sin conteo de filas y sin selector de tamaño, y sólo aparecía a partir del
@@ -516,45 +515,6 @@ function PortafolioContent() {
         </div>
       )}
 
-      {/* Stats Row — KPIs parejos con tints semánticos por token.
-          Escalón intermedio a propósito: saltar de 2 a 5 columnas en `sm` deja
-          cada card en ~134px en un portátil de 1024 (icono de 40px + padding no
-          dejan aire para "Total propiedades"). Las 5 columnas entran recién en
-          `xl`, donde cada card pasa de ~230px. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-        <StatTile
-          icon={<Buildings className="w-5 h-5" weight="duotone" />}
-          value={kpi(stats.total)}
-          label={t('inmobiliaria.portafolio.summary.totalProperties')}
-          tone="neutral"
-        />
-        <StatTile
-          icon={<CheckCircle className="w-5 h-5" weight="duotone" />}
-          value={kpi(stats.available)}
-          label={t('inmobiliaria.portafolio.summary.available')}
-          tone="ok"
-        />
-        <StatTile
-          icon={<HouseSimple className="w-5 h-5" weight="duotone" />}
-          value={kpi(stats.rented)}
-          label={t('inmobiliaria.portafolio.summary.rented')}
-          tone="info"
-        />
-        <StatTile
-          icon={<Timer className="w-5 h-5" weight="duotone" />}
-          value={kpi(stats.inProcess)}
-          label={t('inmobiliaria.portafolio.stats.inProcess')}
-          tone="warn"
-        />
-        <StatTile
-          icon={<Wrench className="w-5 h-5" weight="duotone" />}
-          value={kpi(stats.maintenance)}
-          label={t('inmobiliaria.portafolio.stats.maintenance')}
-          tone="bad"
-          className="hidden sm:flex"
-        />
-      </div>
-
       {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -603,6 +563,8 @@ function PortafolioContent() {
           consignaciones={allConsignaciones}
           propietarios={allPropietarios}
           agentes={allAgentes}
+          conteo={conteoPorCajon}
+          total={conteoPorCajon === null ? null : portafolioRows.length}
         />
 
         {/* Content */}
@@ -794,41 +756,6 @@ function PortafolioContent() {
 }
 
 // KPI tile — número, label e ícono parejos; tint semántico por token.
-const TILE_TONES = {
-  neutral: 'bg-surface-muted text-fg-muted',
-  ok: 'bg-success-soft text-success',
-  info: 'bg-primary-soft text-primary',
-  warn: 'bg-warning-soft text-warning',
-  bad: 'bg-danger-soft text-danger',
-} as const;
-
-function StatTile({
-  icon,
-  value,
-  label,
-  tone,
-  className,
-}: {
-  icon: React.ReactNode;
-  /** El número ya envuelto en `KpiValor`: cargando, falló o el valor. */
-  value: React.ReactNode;
-  label: string;
-  tone: keyof typeof TILE_TONES;
-  className?: string;
-}) {
-  return (
-    <div className={cn('flex items-center gap-3 p-4 rounded-lg border border-border bg-card', className)}>
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
-        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
-      </div>
-    </div>
-  );
-}
-
 export default function PortafolioPage() {
   return (
     <PageGuard module="portafolio">

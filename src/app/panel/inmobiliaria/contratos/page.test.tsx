@@ -611,6 +611,39 @@ describe('ContratosPage — los filtros', () => {
   })
 })
 
+/*
+ * 🔴 19-09-2026 · Las cuatro cifras viven DENTRO de la tarjeta de la tabla.
+ *
+ * Estaban sueltas encima, sobre el fondo de la página, y es literalmente lo
+ * que Nico señaló con el dedo en Pagos el 18: «esto tiene que hacer parte de
+ * la tabla». Una cifra que habla de la lista y flota fuera de la lista obliga
+ * a mirar dos bloques y adivinar que hablan de lo mismo; y cuando el filtro
+ * achica la tabla, quedan arriba unos números que ya no coinciden con nada de
+ * lo que se ve.
+ */
+describe('ContratosPage — las cifras son el encabezado de la tabla, no un bloque aparte', () => {
+  it('🔴 los cuatro contadores están DENTRO de la tarjeta de la tabla', async () => {
+    withContracts([contract({ id: 'c1', status: 'active' })])
+    await renderPage()
+    const tarjeta = container.querySelector('[data-testid="filtros-de-contratos"]')!.closest('section')
+    expect(tarjeta).not.toBeNull()
+    const dentro = tarjeta!.querySelectorAll('[data-testid="contratos-kpi"]')
+    expect(dentro).toHaveLength(4)
+    // Y ninguno quedó suelto por fuera.
+    expect(container.querySelectorAll('[data-testid="contratos-kpi"]')).toHaveLength(4)
+  })
+
+  it('van ANTES de los filtros: primero de qué habla la tabla, después cómo se achica', async () => {
+    withContracts([contract({ id: 'c1', status: 'active' })])
+    await renderPage()
+    const resumen = container.querySelector('[data-testid="resumen-de-contratos"]')!
+    const filtros = container.querySelector('[data-testid="filtros-de-contratos"]')!
+    expect(
+      resumen.compareDocumentPosition(filtros) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
 describe('ContratosPage — la consulta caída no se disfraza de cero ni de vacío (C1 · C2)', () => {
   const kpis = () => Array.from(container.querySelectorAll('[data-testid="contratos-kpi"]'))
 

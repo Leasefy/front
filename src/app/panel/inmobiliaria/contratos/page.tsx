@@ -78,7 +78,15 @@ function fmtDate(iso: string | null | undefined, locale: string): string {
 
 // ── Stat card ────────────────────────────────────────────────────────────────
 
-function StatCard({
+/**
+ * Una cifra del encabezado de la tabla.
+ *
+ * 🔴 19-09-2026 · Antes era una tarjeta con borde y fondo propios, flotando
+ * fuera de la tabla. Ya no: vive DENTRO de la tarjeta de la tabla, así que no
+ * necesita su propio marco —tendría dos bordes, uno adentro del otro— y se
+ * separa de sus vecinas con una línea, como las pestañas de la deuda del mes.
+ */
+function CifraDeLaTabla({
   label,
   value,
   dot,
@@ -91,7 +99,7 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4" data-testid="contratos-kpi">
+    <div className="px-5 py-4" data-testid="contratos-kpi">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
@@ -346,39 +354,6 @@ function ContratosContent() {
         </AlertaAccionable>
       ) : null}
 
-      {/* Stats */}
-      {/* Cuatro en fila desde tablet: a 900 px, con el menú escondido, sobra
-          ancho y las tarjetas en 2×2 salían enormes para un solo número. */}
-      {/* Un cero que en realidad es «no lo pudimos traer» afirma algo falso
-          («no tienes contratos activos») y encima tranquiliza. Cuando la
-          consulta falló va una raya, y se dice por qué. */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          label={tx('Total', 'Total')}
-          value={isLoading || error ? '—' : stats.total}
-          sub={error ? sinDato : undefined}
-          dot="bg-fg-subtle"
-        />
-        <StatCard
-          label={tx('Activos', 'Active')}
-          value={isLoading || error ? '—' : stats.active}
-          sub={error ? sinDato : undefined}
-          dot="bg-success"
-        />
-        <StatCard
-          label={tx('Pendientes de firma', 'Pending signature')}
-          value={isLoading || error ? '—' : stats.pendingLandlord + stats.pendingTenant}
-          sub={error ? sinDato : undefined}
-          dot="bg-warning"
-        />
-        <StatCard
-          label={tx('Borradores', 'Drafts')}
-          value={isLoading || error ? '—' : stats.draft}
-          sub={error ? sinDato : undefined}
-          dot="bg-fg-subtle"
-        />
-      </div>
-
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-border">
@@ -394,6 +369,52 @@ function ContratosContent() {
             </div>
           </div>
 
+        </div>
+
+        {/*
+          🔴 19-09-2026 · Las cuatro cifras viven DENTRO de la tarjeta.
+          
+          Estaban sueltas encima, sobre el fondo de la página, y es
+          literalmente lo que Nico señaló con el dedo en Pagos el 18: «esto
+          tiene que hacer parte de la tabla». Una cifra que habla de la lista
+          y flota fuera de la lista obliga a mirar dos bloques y adivinar que
+          se refieren a lo mismo — y cuando el filtro achica la tabla, quedan
+          arriba unos números que ya no coinciden con nada de lo que se ve, sin
+          nada que diga de qué hablan. Acá dentro se lee como lo que es: el
+          encabezado de esta tabla.
+
+          Un cero que en realidad es «no lo pudimos traer» afirma algo falso
+          («no tienes contratos activos») y encima tranquiliza. Cuando la
+          consulta falló va una raya, y se dice por qué.
+        */}
+        <div
+          className="grid grid-cols-2 divide-x divide-border border-b border-border md:grid-cols-4"
+          data-testid="resumen-de-contratos"
+        >
+          <CifraDeLaTabla
+            label={tx('Total', 'Total')}
+            value={isLoading || error ? '—' : stats.total}
+            sub={error ? sinDato : undefined}
+            dot="bg-fg-subtle"
+          />
+          <CifraDeLaTabla
+            label={tx('Activos', 'Active')}
+            value={isLoading || error ? '—' : stats.active}
+            sub={error ? sinDato : undefined}
+            dot="bg-success"
+          />
+          <CifraDeLaTabla
+            label={tx('Pendientes de firma', 'Pending signature')}
+            value={isLoading || error ? '—' : stats.pendingLandlord + stats.pendingTenant}
+            sub={error ? sinDato : undefined}
+            dot="bg-warning"
+          />
+          <CifraDeLaTabla
+            label={tx('Borradores', 'Drafts')}
+            value={isLoading || error ? '—' : stats.draft}
+            sub={error ? sinDato : undefined}
+            dot="bg-fg-subtle"
+          />
         </div>
 
         {/*

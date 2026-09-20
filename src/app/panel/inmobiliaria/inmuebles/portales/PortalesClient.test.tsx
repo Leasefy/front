@@ -64,6 +64,7 @@ vi.mock('@/lib/api/crm.service', async (importOriginal) => ({
 vi.mock('@/lib/api/refresco-de-datos', () => ({
   invalidar: vi.fn(),
   alCambiar: () => () => {},
+  descartarEnVuelo: vi.fn(),
 }))
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignaciones: () => h.consignaciones(),

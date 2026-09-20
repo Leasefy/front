@@ -53,6 +53,7 @@ vi.mock('@/lib/api/crm.service', async (importOriginal) => ({
 vi.mock('@/lib/api/refresco-de-datos', () => ({
   invalidar: vi.fn(),
   alCambiar: () => () => {},
+  descartarEnVuelo: vi.fn(),
 }))
 vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),

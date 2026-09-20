@@ -20,7 +20,7 @@
  * correcta con cero elementos. Va con <EmptyState>.
  */
 
-import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
+import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 
 export type TipoDeFallo =
@@ -38,6 +38,14 @@ export type TipoDeFallo =
    * tiene el permiso, le falta un paso que puede dar ella misma.
    */
   | 'sinSegundoFactor'
+  /**
+   * T-0099: el mismo 403, pero mientras la sesión YA sabe que está esperando
+   * el paso a aal2 (`mfaRequired` / `estaMfaPendiente()`) — el TOTP está
+   * activo, sólo falta terminar de entrar el código de ESTA sesión. Distinto
+   * de `sinSegundoFactor`: ahí no hay nada que "activar", así que no se
+   * manda a Configuración → Seguridad, que sería falso.
+   */
+  | 'segundoFactorPendiente'
   /** El pedido se cortó por tiempo (o se abortó) antes de que hubiera respuesta. */
   | 'tardo'
 
@@ -210,6 +218,23 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     // hace él mismo en dos minutos. Un cartel sin salida repetido en las 25
     // secciones del panel.
     if (error instanceof ApiError && error.code === 'SEGUNDO_FACTOR_REQUERIDO') {
+      // T-0099: si la sesión YA sabe que está esperando el paso a aal2
+      // (mirrored en apiClient vía `setMfaPendingFlag` — este archivo no
+      // puede leer el contexto de React), este 403 es una petición que salió
+      // justo antes del redirect a /auth/mfa-verify, no "nunca lo activó".
+      // El TOTP está activo; mandarla a Configuración → Seguridad acá sería
+      // falso, y la persona ya está por llegar a la pantalla que hace
+      // exactamente lo que le pediríamos.
+      if (estaMfaPendiente()) {
+        return {
+          tipo: 'segundoFactorPendiente',
+          titulo: 'Verificando tu segundo factor',
+          descripcion: 'Ya casi. Termina de ingresar el código de tu app de autenticación para continuar.',
+          sePuedeReintentar: false,
+          status,
+          mensajeOriginal,
+        }
+      }
       return {
         tipo: 'sinSegundoFactor',
         titulo: 'Activa tu segundo factor para seguir',

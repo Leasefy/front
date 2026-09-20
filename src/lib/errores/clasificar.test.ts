@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
-import { ApiError, setAccessToken } from '@/lib/api/client'
+import { ApiError, setAccessToken, setMfaPendingFlag } from '@/lib/api/client'
 import { clasificarFallo, esNoExiste } from './clasificar'
 
 describe('clasificarFallo', () => {
@@ -314,5 +314,39 @@ describe('🔴 el 403 del segundo factor no es «no tienes acceso»', () => {
 
   it('un 403 sin ese código sigue siendo el de siempre', () => {
     expect(clasificarFallo(new ApiError(403, 'Forbidden')).tipo).toBe('sinPermiso')
+  })
+})
+
+/**
+ * T-0099: mientras la sesión YA sabe que está esperando el paso a aal2
+ * (`mfaRequired`, mirrored via `setMfaPendingFlag` — `clasificar.ts` no
+ * puede leer contexto de React), un 403 SEGUNDO_FACTOR_REQUERIDO que se
+ * cuele (una petición que salió justo antes del redirect a
+ * /auth/mfa-verify) NO es "nunca lo activaste": el TOTP está activo, sólo
+ * falta terminar de pasar el código de ESTA sesión. Mandarla a
+ * Configuración → Seguridad ahí sería falso — la persona ya está en la
+ * pantalla que hace exactamente eso.
+ */
+describe('🔴 T-0099: un 403 del segundo factor durante la ventana pendiente no es "nunca lo activaste"', () => {
+  afterEach(() => {
+    setMfaPendingFlag(false)
+  })
+
+  it('con mfaRequired pendiente, clasifica como segundoFactorPendiente — no manda a Configuración', () => {
+    setMfaPendingFlag(true)
+    const fallo = clasificarFallo(
+      new ApiError(403, 'Tu rol exige segundo factor.', 'SEGUNDO_FACTOR_REQUERIDO'),
+    )
+    expect(fallo.tipo).toBe('segundoFactorPendiente')
+    expect(fallo.descripcion).not.toMatch(/Configuraci[oó]n/i)
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('sin mfaRequired pendiente, el mismo 403 sigue siendo el "actívalo en Configuración" de siempre', () => {
+    setMfaPendingFlag(false)
+    const fallo = clasificarFallo(
+      new ApiError(403, 'Tu rol exige segundo factor.', 'SEGUNDO_FACTOR_REQUERIDO'),
+    )
+    expect(fallo.tipo).toBe('sinSegundoFactor')
   })
 })

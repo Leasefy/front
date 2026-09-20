@@ -21,6 +21,7 @@ import {
   WarningOctagon,
   ArrowLeft,
   Timer,
+  ShieldCheck,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // Falta el segundo factor: un candado, como los otros «está cerrado» — pero
   // este tiene llave y la tiene la persona que está mirando.
   sinSegundoFactor: Lock,
+  // T-0099: ya está pasando, no hace falta ninguna llave nueva — el mismo
+  // escudo que usa /auth/mfa-verify, no el candado del «hay que activarlo».
+  segundoFactorPendiente: ShieldCheck,
 }
 
 export interface FalloDeCargaProps {

@@ -241,3 +241,88 @@ export function FaltaLaMigracion({
     </div>
   );
 }
+
+// ── UNA tarjeta: los filtros van PEGADOS a su tabla ────────────────────────
+
+/**
+ * 🔴 20-09 · Nico, sobre Facturación y con la captura al lado: «porque esto no
+ * está pegado a la tabla de cada uno». Lo dijo de una pantalla, pero el
+ * defecto estaba en diez: en toda la contabilidad el rango de fechas, el
+ * selector de cuenta y las casillas vivían en una tarjeta con borde propio,
+ * separada por 20 px de la tarjeta de la tabla que filtran.
+ *
+ * Dos tarjetas dicen «dos cosas». Un filtro NO es otra cosa: es el encabezado
+ * de su tabla, y leerlo aparte obliga a recordar qué rango se pidió mientras
+ * se miran los números. Peor con scroll: el filtro se va de pantalla y la
+ * tabla queda sin decir de qué fechas habla.
+ *
+ * Por eso el chasis de la casa es UNA tarjeta: filtros con `border-b`, luego
+ * el cuerpo, y el paginador adentro. El borde de adentro los separa sin
+ * volverlos dos objetos.
+ *
+ * ⚠️ `overflow-x-clip`, nunca `overflow-hidden`: recorta igual, pero no crea
+ * un contenedor de scroll, y por lo tanto no mata ningún `sticky` de adentro.
+ * Eso costó seis arreglos en un mismo día.
+ */
+export function TarjetaDeInforme({
+  filtros,
+  filtrosClassName = 'flex flex-wrap items-end gap-x-6 gap-y-3',
+  children,
+  className,
+  testId,
+}: {
+  /** Lo que filtra la tabla. Se dibuja arriba, dentro de la misma tarjeta. */
+  filtros?: ReactNode;
+  /** Cómo se acomodan los filtros: fila envuelta por defecto, o una grilla. */
+  filtrosClassName?: string;
+  children: ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <section
+      data-testid={testId}
+      className={cn('overflow-x-clip rounded-lg border border-border bg-surface', className)}
+    >
+      {filtros ? (
+        <div className={cn('border-b border-border p-4', filtrosClassName)}>{filtros}</div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Una franja dentro de la tarjeta: el veredicto de un informe, un resumen, un
+ * aviso. Va entre los filtros y la tabla, con su propio borde inferior, para
+ * que no se lea como una tarjeta suelta más.
+ */
+export function FranjaDeInforme({
+  children,
+  tono = 'neutro',
+  className,
+  testId,
+  papel,
+}: {
+  children: ReactNode;
+  tono?: 'neutro' | 'bien' | 'mal';
+  className?: string;
+  testId?: string;
+  papel?: 'status' | 'alert';
+}) {
+  return (
+    <div
+      role={papel}
+      data-testid={testId}
+      className={cn(
+        'flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 text-sm',
+        tono === 'bien' && 'bg-success-soft',
+        tono === 'mal' && 'bg-danger-soft',
+        tono === 'neutro' && 'bg-surface-muted',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}

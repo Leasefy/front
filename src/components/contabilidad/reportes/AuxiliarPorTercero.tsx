@@ -49,7 +49,7 @@ import {
 import { rangoDelMesAnterior } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
-import { Bloqueos, Nota } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
 
 /** Los tipos de tercero que el libro usa, tal como se asientan. */
 const TIPOS = [
@@ -103,8 +103,13 @@ export function AuxiliarPorTercero() {
     : false;
 
   return (
-    <div className="space-y-5" data-testid="auxiliar-por-tercero">
-      <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
+    /* 🔴 20-09 · UNA tarjeta. Los filtros dejan de ser una tarjeta aparte de
+       la tabla que filtran, y los avisos y el paginador dejan de flotar. */
+    <TarjetaDeInforme
+      testId="auxiliar-por-tercero"
+      filtrosClassName="grid gap-3 sm:grid-cols-4"
+      filtros={
+        <>
         <div className="sm:col-span-2">
           <RangoDeFechas
             desde={rango.desde}
@@ -146,36 +151,39 @@ export function AuxiliarPorTercero() {
           />
           Sólo los que tienen saldo
         </label>
-      </section>
-
+        </>
+      }
+    >
       {cargando && !auxiliar ? (
         <div className="flex flex-col items-center gap-3 py-16">
           <Spinner size="lg" />
           <p className="text-sm text-fg-muted">Buscando los terceros…</p>
         </div>
       ) : error && !auxiliar ? (
-        <FalloDeCarga error={error} queEs="el auxiliar por tercero" onReintentar={cargar} />
+        <div className="p-4">
+          <FalloDeCarga error={error} queEs="el auxiliar por tercero" onReintentar={cargar} />
+        </div>
       ) : auxiliar ? (
         <>
           {/* Que este informe no cuadre contra el libro invalida los saldos. */}
-          <Bloqueos
-            bloqueos={
-              auxiliar.cuadraConElLibro
-                ? []
-                : [
-                    'La suma de los terceros más los movimientos sin tercero NO coincide con el libro: este informe está dejando algo afuera, así que sus saldos no se pueden usar para cobrar ni para girar.',
-                  ]
-            }
-            titulo="El auxiliar no cuadra con el libro"
-            testId="auxiliar-no-cuadra"
-          />
+          {auxiliar.cuadraConElLibro ? null : (
+            <div className="border-b border-border p-4">
+              <Bloqueos
+                bloqueos={[
+                  'La suma de los terceros más los movimientos sin tercero NO coincide con el libro: este informe está dejando algo afuera, así que sus saldos no se pueden usar para cobrar ni para girar.',
+                ]}
+                titulo="El auxiliar no cuadra con el libro"
+                testId="auxiliar-no-cuadra"
+              />
+            </div>
+          )}
 
           {/* 🔴 SIEMPRE, aunque sea cero. */}
           <div
             className={
               auxiliar.sinTercero.movimientos > 0
-                ? 'space-y-1 rounded-lg border border-danger/40 bg-danger-soft p-3 text-sm text-fg'
-                : 'space-y-1 rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted'
+                ? 'space-y-1 border-b border-border bg-danger-soft p-4 text-sm text-fg'
+                : 'space-y-1 border-b border-border bg-surface-muted p-4 text-sm text-fg-muted'
             }
             role={auxiliar.sinTercero.movimientos > 0 ? 'alert' : 'status'}
             data-testid="movimientos-sin-tercero"
@@ -204,7 +212,7 @@ export function AuxiliarPorTercero() {
             )}
           </div>
 
-          <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <div>
             {auxiliar.terceros.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
                 Ningún tercero con movimiento en este rango{conSaldo ? ' y con saldo' : ''}.
@@ -268,17 +276,19 @@ export function AuxiliarPorTercero() {
                 </Table>
               </div>
             )}
-          </section>
+          </div>
 
-          <Nota testId="que-dice-el-saldo">
-            <p>
-              El saldo va en la convención del libro: <strong>positivo</strong> = el tercero le debe
-              a la inmobiliaria; <strong>negativo</strong> = la inmobiliaria le debe a él (el caso
-              normal de un propietario con canon recaudado y sin girar).
-            </p>
-          </Nota>
+          <div className="border-t border-border p-4">
+            <Nota testId="que-dice-el-saldo">
+              <p>
+                El saldo va en la convención del libro: <strong>positivo</strong> = el tercero le
+                debe a la inmobiliaria; <strong>negativo</strong> = la inmobiliaria le debe a él (el
+                caso normal de un propietario con canon recaudado y sin girar).
+              </p>
+            </Nota>
+          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
             <p className="text-caption text-fg-muted" data-testid="pagina-de-terceros">
               {auxiliar.terceros.length.toLocaleString('es-CO')} de{' '}
               {auxiliar.total.toLocaleString('es-CO')}
@@ -310,6 +320,6 @@ export function AuxiliarPorTercero() {
           </div>
         </>
       ) : null}
-    </div>
+    </TarjetaDeInforme>
   );
 }

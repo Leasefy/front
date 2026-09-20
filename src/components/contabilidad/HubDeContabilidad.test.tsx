@@ -288,7 +288,74 @@ describe('HubDeContabilidad — la contabilidad completa del 18-09', () => {
     expect($('[data-testid="ir-al-balance-general"]')).not.toBeNull();
     expect($('[data-testid="ir-al-mayor"]')).not.toBeNull();
     expect($('[data-testid="ir-a-terceros"]')).not.toBeNull();
-    expect($('[data-testid="ir-a-la-exogena"]')).not.toBeNull();
+  });
+
+  /**
+   * 🔴 20-09 · EL DEFECTO QUE SÓLO SE VIO ABRIENDO LA PORTADA.
+   *
+   * La página tenía DOS navegaciones: los renglones de «Para el contador» y la
+   * grilla de tarjetas de abajo. Y se pisaban a medias: «Deterioro de cartera»,
+   * «Certificados de retención» y «Exógena» estaban en las dos, con el mismo
+   * nombre y el mismo destino, mientras «Presupuesto» estaba sólo en la lista y
+   * no tenía tarjeta. Dos listas con solape parcial son peores que una lista
+   * larga: nadie sabe cuál manda, y quien no encuentra algo en una no sabe si
+   * mirar la otra.
+   *
+   * La separación es por NATURALEZA del destino, no por gusto:
+   *   · «Para el contador» = INFORMES (una pestaña dentro de una pantalla),
+   *   · la grilla = PANTALLAS.
+   * Esta prueba es lo que impide que vuelvan a mezclarse, y de paso obliga a
+   * que una pantalla nueva de contabilidad entre a la grilla.
+   */
+  it('ningún destino aparece dos veces en la portada', async () => {
+    await montar();
+    // ⚠️ Dos trampas acá, las dos pagadas.
+    //
+    // 1) Escrito como `document.querySelectorAll('main a…')` pasa SIEMPRE: el
+    //    test monta el componente suelto, no la página, así que no hay ningún
+    //    `<main>` y el guardián mide cero enlaces. Va contra `host`.
+    // 2) Comparar TODOS los enlaces de la portada es demasiado ancho y marca
+    //    un falso: «Ver el libro», el «ver más» de la lista de últimos
+    //    asientos, apunta a `/asientos`, igual que su tarjeta. Eso no es
+    //    navegación duplicada, es el remate de un resumen.
+    //
+    // Lo que se prohíbe es que un mismo destino esté en las DOS listas de
+    // navegación: los informes y la grilla de pantallas.
+    const hrefs = (sel: string) =>
+      [...host.querySelectorAll<HTMLAnchorElement>(`${sel} a`)].map(
+        (a) => a.getAttribute('href') ?? '',
+      );
+    const informes = hrefs('[data-testid="informes-del-contador"]');
+    const pantallas = new Set(hrefs('nav[aria-label="Secciones de contabilidad"]'));
+
+    expect(informes.length).toBeGreaterThan(0);
+    expect(pantallas.size).toBeGreaterThan(0);
+    expect(informes.filter((h) => pantallas.has(h))).toEqual([]);
+  });
+
+  it('las once pantallas de contabilidad tienen su tarjeta en la grilla', async () => {
+    await montar();
+    const enGrilla = new Set(
+      [...host.querySelectorAll('nav[aria-label="Secciones de contabilidad"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
+    );
+    for (const ruta of [
+      'puc',
+      'asientos',
+      'reportes',
+      'mapeo',
+      'deterioro',
+      'certificados',
+      'estados-financieros',
+      'gastos',
+      'egresos',
+      'exogena',
+      'presupuesto',
+      'copropiedades',
+    ]) {
+      expect(enGrilla).toContain(`/panel/inmobiliaria/contabilidad/${ruta}`);
+    }
   });
 
   it('con todo en orden no aparece ninguna de las cuatro alertas', async () => {

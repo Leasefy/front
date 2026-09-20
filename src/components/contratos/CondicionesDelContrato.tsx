@@ -25,6 +25,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { clasificarFallo } from '@/lib/errores/clasificar';
+import {
+  copropiedadesApi,
+  nitLegible,
+  type Copropiedad,
+} from '@/lib/api/copropiedades.service';
 import {
   cicloDeVidaApi,
   type CondicionesDelContrato as Condiciones,
@@ -416,6 +422,17 @@ function Administracion({
       {a.delMandatoCop != null && a.delMandatoCop > 0 && (
         <p className="text-xs text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
       )}
+
+      {/* 🔴 20-09 · A QUÉ copropiedad. Este bloque decía «la administración de
+          la copropiedad» y nunca decía cuál, y sin ese dato la cuota se
+          asienta en el libro SIN TERCERO: es lo que tenía a la cuenta 2815 con
+          1.241 líneas sin dueño y la exógena trabada por ellas. */}
+      <ACualCopropiedad
+        consignacionId={a.consignacionId}
+        copropiedad={a.copropiedad}
+        sePuede={a.sePuedeDeclararLaCopropiedad}
+        editable={editable}
+      />
       {a.porRespaldo && (
         <p className="text-xs text-plan-status-yellow" data-testid="administracion-por-respaldo">
           Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
@@ -470,5 +487,111 @@ function Administracion({
         />
       )}
     </fieldset>
+  );
+}
+
+
+/**
+ * A qué copropiedad pertenece el inmueble de este mandato.
+ *
+ * No es un adorno del bloque de administración: es lo que le permite al libro
+ * decir de quién es la cuota. Sin él, el movimiento a la 28150510 queda sin
+ * tercero, «Reportes → Terceros» lo cuenta entre los que no se sabe de quién
+ * son, y la exógena se traba — a propósito, porque reportarle esa plata a un
+ * NIT equivocado es una sanción de la DIAN.
+ */
+function ACualCopropiedad({
+  consignacionId,
+  copropiedad,
+  sePuede,
+  editable,
+}: {
+  consignacionId: string | null;
+  copropiedad: { id: string; nombre: string; nit: string; digitoVerificacion: number | null } | null;
+  sePuede: boolean;
+  editable: boolean;
+}) {
+  const [opciones, setOpciones] = useState<Copropiedad[] | null>(null);
+  const [elegida, setElegida] = useState(copropiedad?.id ?? '');
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    setElegida(copropiedad?.id ?? '');
+  }, [copropiedad?.id]);
+
+  useEffect(() => {
+    if (!sePuede || !editable) return;
+    let vivo = true;
+    /* `try/catch` alrededor del `await` y no un `.catch()` colgado: si la
+       llamada falla ANTES de devolver la promesa, un `.catch()` no la ve y el
+       componente se cae con la ficha entera adentro. Que no se pueda listar
+       las copropiedades no puede tumbar las condiciones del contrato. */
+    void (async () => {
+      try {
+        const r = await copropiedadesApi.listar();
+        if (vivo) setOpciones(r?.copropiedades ?? []);
+      } catch {
+        if (vivo) setOpciones([]);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [sePuede, editable]);
+
+  if (!sePuede) {
+    return (
+      <p className="text-xs text-muted-foreground" data-testid="copropiedad-sin-migracion">
+        Todavía no se puede decir a qué copropiedad pertenece este inmueble: falta una migración de
+        base de datos que aplica Víctor. Mientras tanto la cuota se asienta sin tercero, como hoy.
+      </p>
+    );
+  }
+
+  async function guardar(id: string) {
+    if (!consignacionId) return;
+    setGuardando(true);
+    try {
+      await copropiedadesApi.asignarAMandato(consignacionId, id === '' ? null : id);
+      setElegida(id);
+      toast.success(
+        id === ''
+          ? 'El inmueble quedó sin copropiedad. Su cuota de administración se va a asentar sin tercero.'
+          : 'Listo: de ahora en adelante la cuota de administración de este inmueble se asienta a nombre de esa copropiedad.',
+      );
+    } catch (e) {
+      toast.error(clasificarFallo(e).descripcion);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1" data-testid="a-cual-copropiedad">
+      <label className="block text-xs" htmlFor="copropiedad-del-mandato">
+        ¿A qué copropiedad pertenece el inmueble?
+      </label>
+      <select
+        id="copropiedad-del-mandato"
+        className="h-9 w-full max-w-sm rounded-md border border-border bg-surface px-2 text-xs text-fg"
+        value={elegida}
+        disabled={!editable || guardando || !consignacionId}
+        onChange={(e) => void guardar(e.target.value)}
+        data-testid="elegir-copropiedad"
+      >
+        <option value="">A ninguna (casa independiente)</option>
+        {(opciones ?? (copropiedad ? [copropiedad as Copropiedad] : [])).map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.nombre} — NIT {nitLegible(c)}
+          </option>
+        ))}
+      </select>
+      {elegida === '' ? (
+        <p className="text-xs text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
+          Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es
+          lo que traba la exógena. Las copropiedades se registran en Contabilidad → Copropiedades.
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -28,6 +28,27 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+/* Con valor por defecto: el resto del archivo no habla de copropiedades y no
+   tiene por qué configurarlo. */
+const listarCopropiedades = vi.fn(async () => ({
+  faltaLaMigracion: false,
+  migracion: 'm',
+  copropiedades: [] as unknown[],
+}));
+const asignarAMandato = vi.fn();
+vi.mock('@/lib/api/copropiedades.service', async () => {
+  const real = await vi.importActual<typeof import('@/lib/api/copropiedades.service')>(
+    '@/lib/api/copropiedades.service',
+  );
+  return {
+    ...real,
+    copropiedadesApi: {
+      listar: () => listarCopropiedades(),
+      asignarAMandato: (...a: unknown[]) => asignarAMandato(...a),
+      crear: vi.fn(),
+    },
+  };
+});
 
 import { cicloDeVidaApi, type CondicionesDelContrato as Condiciones } from '@/lib/api/ciclo-de-vida.service';
 import { CondicionesDelContrato } from './CondicionesDelContrato';
@@ -63,6 +84,9 @@ function condiciones(overrides: Partial<Condiciones> = {}): Condiciones {
       porRespaldo: false,
       valorCop: null,
       delMandatoCop: 250_000,
+      consignacionId: 'cons-1',
+      copropiedad: null,
+      sePuedeDeclararLaCopropiedad: true,
     },
     ...overrides,
   };
@@ -181,6 +205,9 @@ describe('<CondicionesDelContrato> (17-09)', () => {
           porRespaldo: false,
           valorCop: 300_000,
           delMandatoCop: 250_000,
+          consignacionId: 'cons-1',
+          copropiedad: null,
+          sePuedeDeclararLaCopropiedad: true,
         },
       }),
     );
@@ -230,6 +257,9 @@ describe('<CondicionesDelContrato> (17-09)', () => {
           porRespaldo: false,
           valorCop: null,
           delMandatoCop: null,
+          consignacionId: 'cons-1',
+          copropiedad: null,
+          sePuedeDeclararLaCopropiedad: true,
         },
       }),
     );
@@ -298,6 +328,9 @@ describe('<CondicionesDelContrato> (17-09)', () => {
           porRespaldo: true,
           valorCop: 250_000,
           delMandatoCop: 250_000,
+          consignacionId: 'cons-1',
+          copropiedad: null,
+          sePuedeDeclararLaCopropiedad: true,
         },
       }),
     );
@@ -309,5 +342,61 @@ describe('<CondicionesDelContrato> (17-09)', () => {
     // «Guardar» la deje por escrito con un clic.
     expect(($('modalidad-LA_PAGA_LA_INMOBILIARIA') as HTMLInputElement).checked).toBe(true);
     expect(($('modalidad-HOY') as HTMLInputElement).checked).toBe(false);
+  });
+});
+
+/**
+ * 🔴 20-09 · A QUÉ COPROPIEDAD.
+ *
+ * Este bloque de la ficha hablaba de «la administración de la copropiedad» y
+ * nunca decía cuál. Sin ese dato la cuota se asienta en el libro SIN TERCERO:
+ * es lo que tenía a la cuenta 2815 con 1.241 líneas sin dueño y la exógena
+ * trabada por ellas.
+ */
+describe('a qué copropiedad pertenece el inmueble', () => {
+  beforeEach(() => {
+    listarCopropiedades.mockClear();
+    asignarAMandato.mockReset();
+    listarCopropiedades.mockResolvedValue({
+      faltaLaMigracion: false,
+      migracion: 'm',
+      copropiedades: [
+        { id: 'co-1', nombre: 'Torre Verde', nit: '900123456', digitoVerificacion: 7, direccion: null, activa: true, inmuebles: 3 },
+      ],
+    });
+    asignarAMandato.mockResolvedValue({ consignacionId: 'cons-1', copropiedadId: 'co-1' });
+  });
+
+  it('🔴 sin copropiedad declarada avisa que esa plata entra sin dueño', async () => {
+    api.condiciones.mockResolvedValue(condiciones());
+    await montar();
+    expect(document.querySelector('[data-testid="copropiedad-sin-declarar"]')).not.toBeNull();
+    expect(document.body.textContent).toContain('traba la exógena');
+  });
+
+  it('elegir una la guarda contra el MANDATO, no contra el contrato', async () => {
+    api.condiciones.mockResolvedValue(condiciones());
+    await montar();
+    const select = document.querySelector<HTMLSelectElement>('[data-testid="elegir-copropiedad"]')!;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype,
+        'value',
+      )!.set!;
+      setter.call(select, 'co-1');
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(asignarAMandato).toHaveBeenCalledWith('cons-1', 'co-1');
+  });
+
+  it('sin la migración lo dice y no ofrece elegir', async () => {
+    const base = condiciones();
+    api.condiciones.mockResolvedValue({
+      ...base,
+      administracion: { ...base.administracion, sePuedeDeclararLaCopropiedad: false },
+    });
+    await montar();
+    expect(document.querySelector('[data-testid="elegir-copropiedad"]')).toBeNull();
+    expect(document.querySelector('[data-testid="copropiedad-sin-migracion"]')).not.toBeNull();
   });
 });

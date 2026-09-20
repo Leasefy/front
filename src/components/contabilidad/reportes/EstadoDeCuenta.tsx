@@ -49,6 +49,7 @@ import { diaLegible, rangoInvertido } from '@/lib/contabilidad/fechas';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
+import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
 
 const TIPOS = ['PROPIETARIO', 'ARRENDATARIO', 'PROVEEDOR', 'OTRO'] as const;
@@ -175,8 +176,13 @@ export function EstadoDeCuenta() {
   const vacio = listo && estado !== null && estado.renglones.length === 0;
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 lg:grid-cols-[200px_minmax(280px,1fr)_minmax(280px,420px)]">
+    /* 🔴 20-09 · UNA tarjeta: elegir el tercero, el saldo final y los
+       movimientos son el mismo objeto. Antes eran tres tarjetas apiladas. */
+    <TarjetaDeInforme
+      testId="estado-de-cuenta-de-un-tercero"
+      filtrosClassName="grid gap-4 lg:grid-cols-[200px_minmax(280px,1fr)_minmax(280px,420px)]"
+      filtros={
+        <>
         <div className="space-y-1.5">
           <Label id="tercero-tipo">Tipo de tercero</Label>
           <Select value={tipo} onValueChange={(v) => setTipo(v as Tipo)}>
@@ -287,10 +293,11 @@ export function EstadoDeCuenta() {
         </div>
 
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
-      </div>
-
+        </>
+      }
+    >
       {listo && estado ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-muted px-4 py-3">
           <div>
             <p className="text-sm text-fg-muted">Saldo final</p>
             <p className="text-2xl">
@@ -303,7 +310,6 @@ export function EstadoDeCuenta() {
         </div>
       ) : null}
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <EstadoDeDatos
           cargando={cargando && estado === null}
           error={error}
@@ -437,7 +443,6 @@ export function EstadoDeCuenta() {
             </div>
           ) : null}
         </EstadoDeDatos>
-      </section>
-    </div>
+    </TarjetaDeInforme>
   );
 }

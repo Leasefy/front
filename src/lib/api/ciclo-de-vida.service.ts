@@ -311,6 +311,22 @@ export interface CondicionesDelContrato {
     porRespaldo: boolean;
     valorCop: number | null;
     delMandatoCop: number | null;
+    /** El mandato del inmueble: sin él no hay a qué colgarle la copropiedad. */
+    consignacionId: string | null;
+    /**
+     * 🔴 A QUÉ COPROPIEDAD pertenece el inmueble (20-09-2026). Este bloque
+     * hablaba de «la administración de la copropiedad» sin decir nunca cuál, y
+     * sin ese dato la cuota se asienta SIN TERCERO en el libro — lo que tenía
+     * a la cuenta 2815 con 1.241 líneas sin dueño y la exógena trabada.
+     */
+    copropiedad: {
+      id: string;
+      nombre: string;
+      nit: string;
+      digitoVerificacion: number | null;
+    } | null;
+    /** `false` = falta la migración `20260920090000`; no se puede declarar. */
+    sePuedeDeclararLaCopropiedad: boolean;
   };
 }
 

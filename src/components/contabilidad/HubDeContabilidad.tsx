@@ -73,6 +73,7 @@ import {
   ArrowsClockwise,
   Bank,
   BookOpenText,
+  Buildings,
   ChartBar,
   ChartPieSlice,
   DownloadSimple,
@@ -82,6 +83,7 @@ import {
   Plugs,
   Receipt,
   Scales,
+  Target,
   TreeStructure,
   Warning,
   WarningCircle,
@@ -620,9 +622,27 @@ function ParaElContador() {
           son un acento (DESIGN §1): el azul se reserva para la acción de la
           tarjeta —bajar el libro— y los informes se leen en el color del
           texto. La otra, que un contador no busca «un informe»: busca EL
-          libro, o LOS estados, o la cartera. Agrupados, son cuatro decisiones
-          de tres opciones en vez de una de once. */}
-      <div className="mt-auto grid gap-x-6 gap-y-3 border-t border-border pt-3 sm:grid-cols-2">
+          libro, o LOS estados.
+
+          🔴 20-09, segunda pasada (con la portada ABIERTA en el navegador):
+          agrupar no alcanzaba, porque la portada tenía DOS navegaciones que se
+          pisaban. «Deterioro de cartera», «Certificados de retención» y
+          «Exógena» estaban acá Y como tarjeta abajo, con el mismo nombre y el
+          mismo destino; «Presupuesto» estaba sólo acá y no tenía tarjeta. Dos
+          listas con solape parcial es peor que una lista larga: no hay forma
+          de saber cuál manda, y quien no encuentra algo en una no sabe si
+          buscarlo en la otra.
+
+          La regla que las separa, y que el guardián de abajo sostiene:
+          **acá van INFORMES —pestañas de una pantalla—, y en la grilla van
+          PANTALLAS.** Por eso cada grupo de acá es exactamente una pantalla
+          con sus pestañas: «El libro» son las cinco de `/reportes`, «Lo que se
+          firma» son las dos de `/estados-financieros`. Nada de acá vuelve a
+          aparecer abajo. */}
+      <div
+        data-testid="informes-del-contador"
+        className="mt-auto grid gap-x-6 gap-y-4 border-t border-border pt-4 sm:grid-cols-2"
+      >
         {INFORMES_DEL_CONTADOR.map((grupo) => (
           <div key={grupo.titulo} className="min-w-0 space-y-1">
             <p className="text-caption uppercase tracking-wide text-fg-subtle">
@@ -649,9 +669,12 @@ function ParaElContador() {
 }
 
 /**
- * Los informes que el contador pide por nombre, agrupados por la pregunta que
- * contesta cada grupo. El orden es el del trabajo: primero el libro, después
- * lo que se firma con él, después lo que se le debe a alguien.
+ * Los informes que el contador pide por nombre, agrupados por la PANTALLA que
+ * los sirve: cada grupo es una pantalla y cada renglón una de sus pestañas.
+ *
+ * 🔴 Invariante: ningún `href` de acá puede ser el de un `DESTINOS`. Un mismo
+ * destino en las dos listas de la portada es lo que hacía ilegible la página;
+ * la prueba «ningún destino aparece dos veces en la portada» lo sostiene.
  */
 const INFORMES_DEL_CONTADOR: ReadonlyArray<{
   titulo: string;
@@ -668,6 +691,11 @@ const INFORMES_DEL_CONTADOR: ReadonlyArray<{
         nombre: 'Auxiliar por tercero',
         testid: 'ir-a-terceros',
       },
+      {
+        href: `${BASE}/reportes?informe=tercero`,
+        nombre: 'Estado de cuenta de un tercero',
+        testid: 'ir-al-estado-de-cuenta',
+      },
     ],
   },
   {
@@ -682,33 +710,6 @@ const INFORMES_DEL_CONTADOR: ReadonlyArray<{
         href: `${BASE}/estados-financieros?informe=balance`,
         nombre: 'Balance general',
         testid: 'ir-al-balance-general',
-      },
-    ],
-  },
-  {
-    titulo: 'Cartera y terceros',
-    informes: [
-      { href: `${BASE}/reportes?informe=tercero`, nombre: 'Estado de cuenta' },
-      {
-        href: `${BASE}/deterioro`,
-        nombre: 'Deterioro de cartera',
-        testid: 'ir-al-deterioro',
-      },
-      {
-        href: `${BASE}/certificados`,
-        nombre: 'Certificados de retención',
-        testid: 'ir-a-certificados',
-      },
-    ],
-  },
-  {
-    titulo: 'Obligaciones y control',
-    informes: [
-      { href: `${BASE}/exogena`, nombre: 'Exógena', testid: 'ir-a-la-exogena' },
-      {
-        href: `${BASE}/presupuesto`,
-        nombre: 'Presupuesto',
-        testid: 'ir-al-presupuesto',
       },
     ],
   },
@@ -790,6 +791,24 @@ const DESTINOS: Destino[] = [
     icono: FileCsv,
     titulo: 'Exógena',
     texto: 'Los seis formatos de la DIAN, armados contra el libro.',
+  },
+  // 🔴 20-09: la copropiedad como TERCERO del libro. Nació de ver que la
+  // cuenta 2815 no tenía un solo movimiento a nombre de su dueño, y que la
+  // cuota de administración no tenía a quién apuntar.
+  {
+    href: `${BASE}/copropiedades`,
+    icono: Buildings,
+    titulo: 'Copropiedades',
+    texto: 'Los conjuntos y edificios, con su NIT: el dueño de la administración.',
+  },
+  // 🔴 20-09: «Presupuesto» era la única pantalla de contabilidad sin tarjeta.
+  // Vivía sólo como renglón de «Para el contador», que es donde van los
+  // informes: quien buscaba la pantalla en el mapa de abajo no la encontraba.
+  {
+    href: `${BASE}/presupuesto`,
+    icono: Target,
+    titulo: 'Presupuesto',
+    texto: 'Lo que se planeó para el mes, contra lo que pasó y contra el año pasado.',
   },
 ];
 
@@ -967,7 +986,11 @@ export function HubDeContabilidad() {
         </section>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* 🔴 20-09 (navegador abierto, 1440): sin `items-start` las dos tarjetas
+          se estiran a la misma altura y «Últimos asientos» —que tiene cinco
+          renglones— quedaba con ~250 px de vacío abajo, leyéndose como «acá
+          falta algo». Cada tarjeta mide lo que mide su contenido. */}
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <UltimosAsientos asientos={datos.ultimos} cargando={cargando} fallo={falloDe('libro')} />
         <ParaElContador />
       </div>

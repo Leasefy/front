@@ -120,6 +120,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import {
   facturacionPorMesService,
   fechaLegible,
@@ -227,6 +228,14 @@ interface TablaProps {
    * la pantalla, no la tabla — pero dónde vive es asunto de la tabla.
    */
   accionesMasivas?: ReactNode
+  /**
+   * 🔴 Sin borde ni esquinas propias: la tabla es una PARTE de la tarjeta de
+   * la pantalla, no otra caja. Nico, 20-09, viendo el mes y la resolución
+   * flotando arriba: «¿por qué esto no está pegado a la tabla de cada uno,
+   * inquilino y propietario?». Dos bordes anidados a 1 px se leen como dos
+   * objetos, y el mes con el que se filtra la tabla no es otro objeto.
+   */
+  sinMarco?: boolean
 }
 
 /**
@@ -268,6 +277,7 @@ function TablaDeFacturas({
   onGenerarUna,
   motivoParaNoEmitir,
   accionesMasivas,
+  sinMarco = false,
 }: TablaProps) {
   /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
@@ -327,7 +337,10 @@ function TablaDeFacturas({
       /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta tarjeta
          se vuelve el contenedor de desplazamiento más cercano y el pie
          pegajoso de adentro deja de medirse contra la ventana. */
-      className="rounded-lg border border-border bg-surface overflow-x-clip"
+      className={cn(
+        'overflow-x-clip bg-surface',
+        !sinMarco && 'rounded-lg border border-border',
+      )}
       data-testid={`facturacion-${testid}`}
     >
       <div className="border-b border-border p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1199,7 +1212,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </p>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      {/* 🔴 UNA sola tarjeta: el mes, la resolución, las pestañas, la tabla y
+          el pie de acciones masivas. Nico, 20-09, viendo los tres bloques
+          sueltos uno encima del otro: «¿por qué esto no está pegado a la tabla
+          de cada uno, inquilino y propietario?». Es el mismo chasis que ya
+          había pedido para Pagos el 18 —«esto tiene que hacer parte de la
+          tabla»—: el control con el que se filtra una tabla no es otro objeto
+          que la tabla. */}
+      <section className="overflow-x-clip rounded-lg border border-border bg-surface">
+      <div className="border-b border-border p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1.5">
             <label
@@ -1350,12 +1371,13 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         }
       >
         {datos && (
-          <div className="space-y-4">
+          <>
             {/* 🔴 UNA tabla a la vez. Nico, 19-09: «debe haber algo para que
                 sólo se pueda ver la tabla de inquilino y otra la de
                 propietarios, como un switch tab». El conteo va en la pestaña
                 —el número y la forma de ver ese número, el mismo control— y
                 las dos suman las facturas del mes. */}
+            <div className="border-b border-border px-4 py-3">
             <SegmentedControl<DestinatarioDeFactura>
               aria-label="A quién se le factura"
               value={aQuien}
@@ -1387,6 +1409,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                 },
               ]}
             />
+            </div>
 
             <TablaDeFacturas
               titulo={aQuien === 'INQUILINO' ? 'Inquilinos' : 'Propietarios'}
@@ -1404,14 +1427,16 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               onGenerarUna={(clave) => void generar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
               accionesMasivas={pieDeAccionesMasivas}
+              sinMarco
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,
                 la diferencia entre «735 contratos» y «730 facturas» no tiene
-                explicación en ninguna parte. */}
+                explicación en ninguna parte. Va DENTRO de la tarjeta, como su
+                último renglón: es una nota al pie de esta tabla, no otro tema. */}
             {datos.omitidos.length > 0 && (
               <details
-                className="rounded-lg border border-border bg-surface p-4"
+                className="border-t border-border p-4"
                 data-testid="facturacion-omitidos"
               >
                 <summary className="cursor-pointer text-body-sm text-fg flex items-center gap-2">
@@ -1445,10 +1470,10 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                 </ul>
               </details>
             )}
-
-          </div>
+          </>
         )}
       </EstadoDeDatos>
+      </section>
     </div>
   )
 }

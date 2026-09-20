@@ -354,6 +354,33 @@ describe('NuevaFactura', () => {
     expect(tabla.className).toContain('overflow-x-clip');
   });
 
+  it('🔴 el mes, las pestañas y la tabla son UNA tarjeta, no tres cajas', async () => {
+    /*
+     * Nico, 20-09, viendo los tres bloques sueltos uno encima del otro:
+     * «¿por qué esto no está pegado a la tabla de cada uno, inquilino y
+     * propietario?». Es el mismo chasis que ya había pedido para Pagos el 18:
+     * el control con el que se filtra una tabla no es otro objeto que la tabla.
+     */
+    await montar();
+    const tarjeta = q('[data-testid="facturacion-inquilinos"]')!.closest('section')!
+      .parentElement as HTMLElement;
+    // La tarjeta que contiene la tabla contiene también el selector de mes,
+    // las pestañas y el pie de acciones masivas.
+    for (const parte of [
+      'facturacion-selector-mes',
+      'facturacion-hasta',
+      'facturacion-inquilinos',
+      'facturacion-acciones',
+    ]) {
+      expect(tarjeta.querySelector(`[data-testid="${parte}"]`), parte).not.toBeNull();
+    }
+    // Y la tabla ya no dibuja su propio marco: dos bordes anidados a 1 px se
+    // leen como dos objetos.
+    const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+    expect(tabla.className).not.toContain('rounded-lg');
+    expect(tabla.className).not.toContain('border-border');
+  });
+
   it('🔴 emitir es por tabla, y la otra pestaña avisa de lo suyo', async () => {
     /*
      * Emitir pasó a ser por tabla —es lo que hace posible que el botón viva

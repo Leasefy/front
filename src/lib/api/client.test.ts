@@ -8,6 +8,8 @@ import {
   setTokenRefresher,
   getAccessToken,
   clearInFlightGets,
+  setMfaPendingFlag,
+  estaMfaPendiente,
 } from './client'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
@@ -506,6 +508,23 @@ describe('apiClient.get — explicit-token GETs share the in-flight request', ()
     const [a, b] = await Promise.all([pendingA, pendingB])
     expect(a).toEqual({ id: 'user-A' })
     expect(b).toEqual({ id: 'user-B' })
+  })
+})
+
+describe('T-0099: mfa-pending flag mirror (non-React consumers, e.g. clasificar.ts)', () => {
+  afterEach(() => {
+    setMfaPendingFlag(false)
+  })
+
+  it('defaults to false — no session has ever reported a pending second factor', () => {
+    expect(estaMfaPendiente()).toBe(false)
+  })
+
+  it('reflects the last value AuthProvider pushed via setMfaPendingFlag', () => {
+    setMfaPendingFlag(true)
+    expect(estaMfaPendiente()).toBe(true)
+    setMfaPendingFlag(false)
+    expect(estaMfaPendiente()).toBe(false)
   })
 })
 

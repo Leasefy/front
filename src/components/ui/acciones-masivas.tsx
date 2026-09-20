@@ -88,6 +88,18 @@ export interface BarraDeAccionesMasivasProps {
   nota?: ReactNode
   /** Qué hacer para prender la barra, cuando no hay nada marcado. */
   cuandoNoHayNada?: ReactNode
+  /**
+   * `pie` la mete DENTRO de la tabla, como su último renglón: sin marco ni
+   * esquinas propias, con una línea arriba y la sombra hacia arriba.
+   *
+   * 🔴 Nico, 19-09, viendo la barra suelta debajo de la tarjeta: «mira que
+   * dejaste separado lo de acciones masivas con donde se seleccionan, y sabes
+   * que cuando hay acciones masivas deben quedar también en la tabla». Una
+   * barra con su propio borde debajo de otra caja con borde se lee como dos
+   * objetos, y el que actúa sobre las casillas tiene que ser el mismo objeto
+   * que las casillas.
+   */
+  variant?: 'suelta' | 'pie'
   testid: string
   className?: string
 }
@@ -103,6 +115,7 @@ export function BarraDeAccionesMasivas({
   children,
   nota,
   cuandoNoHayNada,
+  variant = 'suelta',
   testid,
   className,
 }: BarraDeAccionesMasivasProps) {
@@ -117,8 +130,11 @@ export function BarraDeAccionesMasivas({
         // Pegada al borde de abajo mientras se recorren las filas. El `z-30`
         // la deja por encima de las columnas ancladas de la tabla, que van en
         // z-20, y por debajo de los modales.
-        'sticky bottom-0 z-30 flex flex-col gap-3 rounded-lg border border-border',
-        'bg-surface px-4 py-3 shadow-lg sm:flex-row sm:items-center sm:justify-between',
+        'sticky bottom-0 z-30 flex flex-col gap-3 bg-surface px-4 py-3',
+        'sm:flex-row sm:items-center sm:justify-between',
+        variant === 'pie'
+          ? 'border-t border-border shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]'
+          : 'rounded-lg border border-border shadow-lg',
         className,
       )}
     >

@@ -232,20 +232,48 @@ afterEach(() => {
 const q = (s: string) => host.querySelector(s);
 const qa = (s: string) => Array.from(host.querySelectorAll(s));
 
+/**
+ * Cambiar de pestaña. Desde el 19-09 se ve UNA tabla a la vez (Nico: «debe
+ * haber algo para que sólo se pueda ver la tabla de inquilino y otra la de
+ * propietarios, como un switch tab»), y eso es lo que hace posible que la
+ * acción masiva viva DENTRO de la tabla en vez de suelta debajo.
+ */
+async function verA(quien: 'Inquilinos' | 'Propietarios') {
+  const boton = qa('button').find((b) => (b.textContent ?? '').startsWith(quien));
+  if (!boton) throw new Error(`No hay pestaña «${quien}»`);
+  await act(async () => {
+    boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
 describe('NuevaFactura', () => {
-  it('pide el mes corriente al abrir y pinta las DOS listas', async () => {
+  it('🔴 abre en inquilinos y muestra UNA tabla; la otra está a un clic', async () => {
+    /*
+     * 🔴 19-09 · Antes las dos tablas se pintaban una encima de la otra, y por
+     * eso la acción masiva no cabía dentro de ninguna: una sola selección
+     * repartida en dos tablas obliga a sacar el botón afuera.
+     */
     await montar();
     expect(porGenerarMock).toHaveBeenCalledTimes(1);
     expect(q('[data-testid="facturacion-inquilinos"]')).not.toBeNull();
-    expect(q('[data-testid="facturacion-propietarios"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-propietarios"]')).toBeNull();
     expect(host.textContent).toContain('Nubia Amparo David');
+
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-propietarios"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-inquilinos"]')).toBeNull();
     expect(host.textContent).toContain('Jorge Restrepo');
   });
 
   it('🔴 todo lo que está por emitir arranca seleccionado: no se marcan 800 casillas a mano', async () => {
     await montar();
     const boton = q('[data-testid="facturacion-generar"]')!;
-    expect(boton.textContent).toContain('Generar 2 facturas');
+    // Es la tanda de ESTA tabla: la de propietarios se emite en su pestaña.
+    expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
+      'Generar 1 factura de propietarios',
+    );
   });
 
   /*
@@ -260,7 +288,7 @@ describe('NuevaFactura', () => {
       await montar();
       const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
       expect(resumen.textContent).toContain('Preseleccionamos');
-      expect(resumen.textContent).toContain('2 facturas');
+      expect(resumen.textContent).toContain('1 factura de inquilinos');
       expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).not.toBeNull();
       expect(q('[data-testid="facturacion-acciones-quitar"]')).not.toBeNull();
     });
@@ -273,7 +301,8 @@ describe('NuevaFactura', () => {
       });
       const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
       expect(resumen.textContent).not.toContain('Preseleccionamos');
-      expect(resumen.textContent).toContain('Marcaste 1 factura');
+      // Se destildó la única de inquilinos: queda en cero y lo dice.
+      expect(resumen.textContent).toContain('No hay ninguna factura marcada');
       expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).toBeNull();
     });
 
@@ -299,22 +328,45 @@ describe('NuevaFactura', () => {
    * debajo —Inquilinos y Propietarios— se marcaba en la de abajo y el botón
    * que emite estaba fuera de la pantalla. Ahora es el pie de las dos.
    */
-  it('🔴 el botón de emitir vive en el PIE de las tablas, no arriba', async () => {
+  it('🔴 el pie de acciones masivas vive DENTRO de la tabla, no suelto debajo', async () => {
+    /*
+     * 🔴 19-09 · Nico, viendo la barra flotando bajo la tarjeta: «mira que
+     * dejaste separado lo de acciones masivas con donde se seleccionan, y
+     * sabes que cuando hay acciones masivas deben quedar también en la
+     * tabla». Una barra con su propio borde debajo de otra caja con borde son
+     * dos objetos; el que actúa sobre las casillas tiene que ser el mismo
+     * objeto que las casillas.
+     */
     await montar();
     const barra = q('[data-testid="facturacion-acciones"]')!;
+    const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+    expect(tabla.contains(barra)).toBe(true);
     expect(barra.querySelector('[data-testid="facturacion-generar"]')).not.toBeNull();
-    // Pegada al borde de abajo mientras se recorren las filas.
+    // Pegada al borde de abajo mientras se recorren las filas…
     expect(barra.className).toContain('sticky');
     expect(barra.className).toContain('bottom-0');
-    // Y va DESPUÉS de las dos tablas, que es lo que la deja cubrirlas a las dos.
-    const tablas = [
-      q('[data-testid="facturacion-inquilinos"]')!,
-      q('[data-testid="facturacion-propietarios"]')!,
-    ];
-    expect(tablas.every(Boolean)).toBe(true);
-    for (const tabla of tablas) {
-      expect(tabla.compareDocumentPosition(barra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    }
+    // …y sin marco propio: es el último renglón de la tabla, no otra caja.
+    expect(barra.className).not.toContain('rounded-lg');
+    expect(barra.className).toContain('border-t');
+    // 🔴 Y la tarjeta NO puede recortar con `overflow-hidden`: eso la vuelve
+    // el contenedor de desplazamiento más cercano y mata lo pegajoso.
+    expect(tabla.className).not.toContain('overflow-hidden');
+    expect(tabla.className).toContain('overflow-x-clip');
+  });
+
+  it('🔴 emitir es por tabla, y la otra pestaña avisa de lo suyo', async () => {
+    /*
+     * Emitir pasó a ser por tabla —es lo que hace posible que el botón viva
+     * dentro de ella—, así que el mes NO queda facturado con una sola tanda.
+     * Sin este renglón alguien emite los de inquilinos y cree que terminó.
+     */
+    await montar();
+    const aviso = q('[data-testid="facturacion-marcadas-en-la-otra"]')!;
+    expect(aviso.textContent).toContain('propietarios');
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-marcadas-en-la-otra"]')!.textContent).toContain(
+      'inquilinos',
+    );
   });
 
   it('lo ya emitido se ve con su número y sin casilla, en vez de esconderse', async () => {
@@ -327,9 +379,17 @@ describe('NuevaFactura', () => {
     );
     await montar();
     expect(host.textContent).toContain('FE-41');
-    // La suya queda deshabilitada; sigue habiendo una del propietario.
-    const boton = q('[data-testid="facturacion-generar"]')!;
-    expect(boton.textContent).toContain('Generar 1 factura');
+    // La única de inquilinos ya está emitida: no queda ninguna por emitir acá.
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    // 🔴 Y se dice POR QUÉ la tanda es más chica que la tabla.
+    expect(q('[data-testid="facturacion-fuera-de-la-tanda"]')!.textContent).toContain(
+      'ya está emitida',
+    );
+    // La del propietario sigue viva, en su pestaña.
+    await verA('Propietarios');
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
+      'Generar 1 factura de propietarios',
+    );
   });
 
   it('destildar una fila baja la cuenta del botón', async () => {
@@ -338,9 +398,10 @@ describe('NuevaFactura', () => {
     await act(async () => {
       casilla.click();
     });
-    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
-      'Generar 1 factura',
-    );
+    // Sin nada marcado el botón queda A LA VISTA y apagado, sin decir «0».
+    const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Generar facturas');
+    expect(boton.disabled).toBe(true);
   });
 
   it('generar manda el mes y las claves elegidas, y vuelve a pedir el listado', async () => {
@@ -358,9 +419,9 @@ describe('NuevaFactura', () => {
     expect(generarMock).toHaveBeenCalledTimes(1);
     const [mes, claves] = generarMock.mock.calls[0] as [string, string[]];
     expect(mes).toBe('2026-09');
-    expect(claves.sort()).toEqual(
-      ['ct-1|2026-09|INQUILINO', 'ct-1|2026-09|PROPIETARIO'].sort(),
-    );
+    // 🔴 Sólo las de ESTA tabla: la del propietario se emite en su pestaña.
+    // Es lo que hace posible que el botón viva dentro de la tabla.
+    expect(claves).toEqual(['ct-1|2026-09|INQUILINO']);
     // Se recarga para que las recién emitidas aparezcan como emitidas.
     expect(porGenerarMock).toHaveBeenCalledTimes(2);
     expect(toastOk).toHaveBeenCalled();
@@ -897,9 +958,9 @@ describe('NuevaFactura', () => {
       porGenerarMock.mockResolvedValue(conDiciembre());
       await montar();
       // Diciembre existe en la respuesta y NO suma al botón: siguen siendo las
-      // dos de septiembre.
+      // de septiembre de esta tabla.
       const boton = q('[data-testid="facturacion-generar"]')!;
-      expect(boton.textContent).toContain('Generar 2 facturas');
+      expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
     });
 
     it('🔴 y el mes dice POR QUÉ todavía no se emite, con las palabras del back', async () => {
@@ -1098,14 +1159,16 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
   it('el buscador deja la fila que se busca, sin desmarcar nada', async () => {
     porGenerarMock.mockResolvedValue(DOS());
     await montar();
-    expect(qa('[data-testid^="factura-ct-"]')).toHaveLength(3);
+    // Dos filas: las de inquilinos. La del propietario vive en su pestaña.
+    expect(qa('[data-testid^="factura-ct-"]')).toHaveLength(2);
     await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
     expect(q('[data-testid="factura-ct-2|2026-09|INQUILINO"]')).not.toBeNull();
     expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).toBeNull();
     // 🔴 Buscar ESCONDE, nunca desmarca: perder 700 facturas por escribir en
-    // un campo sería mucho peor que no tener buscador.
+    // un campo sería mucho peor que no tener buscador. Las dos de inquilinos
+    // siguen marcadas aunque sólo se vea una.
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain(
-      'Generar 3 facturas',
+      'Generar 2 facturas de inquilinos',
     );
   });
 
@@ -1140,12 +1203,12 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     // orden. Es media explicación de «selecciono sólo una y no da».
     porGenerarMock.mockResolvedValue(DOS());
     await montar();
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('3 facturas');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
 
     /*
      * 🔴 EL CASO QUE DISCRIMINA: una desmarcada a mano — el estado real de
      * Nico, 726 de 730 —. Con la regla vieja («si están TODAS, quita») esto
-     * SUBÍA a 3; con la nueva («si hay ALGUNA, quita») baja a 1, que es lo que
+     * SUBÍA a 2; con la nueva («si hay ALGUNA, quita») baja a 0, que es lo que
      * cualquiera espera de una casilla a medias. Sin este paso, el test pasaba
      * con las dos reglas y no probaba nada.
      */
@@ -1153,13 +1216,13 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
       '[data-testid="factura-ct-1|2026-09|INQUILINO"] [role="checkbox"], ' +
         '[data-testid="factura-ct-1|2026-09|INQUILINO"] input[type="checkbox"]',
     );
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
-    await clic('[data-testid="facturacion-inquilinos-todas"]');
-    // Se fueron las dos de inquilinos; queda la del propietario.
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
+    await clic('[data-testid="facturacion-inquilinos-todas"]');
+    // Se fueron las dos de inquilinos. La del propietario vive en su pestaña.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Generar facturas');
     // Y volver a apretarla las marca de nuevo.
     await clic('[data-testid="facturacion-inquilinos-todas"]');
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('3 facturas');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
   });
 
   it('con búsqueda puesta, marcar toca SÓLO lo que se ve', async () => {
@@ -1168,7 +1231,8 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     await clic('[data-testid="facturacion-inquilinos-todas"]'); // limpia las dos
     await escribir('[data-testid="facturacion-inquilinos-buscar"]', 'papas');
     await clic('[data-testid="facturacion-inquilinos-todas"]'); // marca la encontrada
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
+    // Marcó SÓLO la que se ve: la otra de inquilinos sigue sin marcar.
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
   });
 });
 

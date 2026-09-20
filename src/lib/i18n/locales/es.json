@@ -9121,7 +9121,7 @@
       "label": "Finanzas",
       "title": "Facturación",
       "subtitle": "Facturas de venta y compra, facturación electrónica DIAN y notas crédito/débito — en un solo lugar.",
-      "tab_nueva": "Nueva factura",
+      "tab_nueva": "Por facturar",
       "tab_resolucion": "Resolución",
       "new": "Nueva factura",
       "newSoon": "La emisión de facturas se habilita con el motor DIAN (M2).",

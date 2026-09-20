@@ -81,7 +81,7 @@
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Info, MagnifyingGlass, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
 import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
 import {
@@ -126,9 +126,11 @@ import {
   mesActual,
   mesLegible,
   mesesParaElegir,
+  type DestinatarioDeFactura,
   type FacturaDelMes,
   type FacturasPorGenerar,
 } from '@/lib/api/facturacion-por-mes.service'
+import { SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
@@ -218,6 +220,13 @@ interface TablaProps {
   onGenerarUna: (clave: string) => void
   /** Por qué no se puede emitir hoy (sin resolución de la DIAN). `null` = se puede. */
   motivoParaNoEmitir: string | null
+  /**
+   * 🔴 El pie de acciones masivas va DENTRO de la tabla, no debajo de ella
+   * (Nico, 19-09: «cuando hay acciones masivas deben quedar también en la
+   * tabla»). Se recibe armado porque quien sabe qué se hace con lo marcado es
+   * la pantalla, no la tabla — pero dónde vive es asunto de la tabla.
+   */
+  accionesMasivas?: ReactNode
 }
 
 /**
@@ -258,6 +267,7 @@ function TablaDeFacturas({
   testid,
   onGenerarUna,
   motivoParaNoEmitir,
+  accionesMasivas,
 }: TablaProps) {
   /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
@@ -314,7 +324,10 @@ function TablaDeFacturas({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface overflow-hidden"
+      /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta tarjeta
+         se vuelve el contenedor de desplazamiento más cercano y el pie
+         pegajoso de adentro deja de medirse contra la ventana. */
+      className="rounded-lg border border-border bg-surface overflow-x-clip"
       data-testid={`facturacion-${testid}`}
     >
       <div className="border-b border-border p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -674,6 +687,8 @@ function TablaDeFacturas({
           />
         </div>
       )}
+
+      {accionesMasivas}
     </section>
   )
 }
@@ -709,6 +724,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * suya y llamarla «preseleccionamos» sería mentir.
    */
   const [seleccionSugerida, setSeleccionSugerida] = useState(true)
+  /** Qué tabla se está mirando. Sólo una a la vez. */
+  const [aQuien, setAQuien] = useState<DestinatarioDeFactura>('INQUILINO')
   const [generando, setGenerando] = useState(false)
 
   const meses = useMemo(() => mesesParaElegir(), [])
@@ -798,21 +815,73 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     }
   }, [datos, mes])
 
-  /** La salida de la sugerencia, en un clic. */
+  /**
+   * 🔴 Las filas de la tabla que se está mirando. Nico, 19-09: «debe haber
+   * algo para que sólo se pueda ver la tabla de inquilino y otra la de
+   * propietarios, como un switch tab, para ver sólo una tabla».
+   *
+   * No es sólo comodidad: **mientras las dos tablas estaban una encima de la
+   * otra, la acción masiva no podía vivir dentro de ninguna** —una sola
+   * selección repartida en dos tablas obligaba a sacar el botón afuera, que es
+   * de donde venimos—. Con una tabla a la vez, la selección de la vista, su
+   * plata y su botón son de ESA tabla, y el pie vuelve adentro.
+   */
+  const filasDeLaVista = aQuien === 'INQUILINO' ? delMes.inquilinos : delMes.propietarios
+
+  /** Las de la vista que HOY se pueden emitir: son las que llevan casilla. */
+  const emitiblesDeLaVista = useMemo(
+    () =>
+      filasDeLaVista.filter(
+        (f) => (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
+      ),
+    [filasDeLaVista],
+  )
+
+  /** La salida de la sugerencia, en un clic. Sólo suelta lo de ESTA tabla. */
   const quitarSeleccion = () => {
     setSeleccionSugerida(false)
-    setSeleccion(new Set())
+    setSeleccion((previa) => {
+      const siguiente = new Set(previa)
+      for (const f of filasDeLaVista) siguiente.delete(f.clave)
+      return siguiente
+    })
   }
 
-  const elegidas = useMemo(() => [...seleccion], [seleccion])
-  const totalElegido = useMemo(() => {
-    if (!datos) return 0
-    return [...datos.inquilinos, ...datos.propietarios]
-      .filter(
-        (f) => seleccion.has(f.clave) && (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
-      )
-      .reduce((s, f) => s + f.totalCop, 0)
-  }, [datos, seleccion])
+  const elegidas = useMemo(
+    () => emitiblesDeLaVista.filter((f) => seleccion.has(f.clave)).map((f) => f.clave),
+    [emitiblesDeLaVista, seleccion],
+  )
+  const totalElegido = useMemo(
+    () =>
+      emitiblesDeLaVista
+        .filter((f) => seleccion.has(f.clave))
+        .reduce((s, f) => s + f.totalCop, 0),
+    [emitiblesDeLaVista, seleccion],
+  )
+
+  /**
+   * 🔴 Cuántas filas del mes NO entran en la selección, y por qué. Sin este
+   * renglón, «730 facturas en el mes» arriba y «Preseleccionamos 729» abajo se
+   * leen como un error de la pantalla. Casi siempre es una que ya se emitió.
+   */
+  const yaEmitidas = filasDeLaVista.filter((f) => f.estado === 'EMITIDA').length
+  const noEmitibles = filasDeLaVista.length - emitiblesDeLaVista.length - yaEmitidas
+
+  /**
+   * 🔴 Lo marcado en la OTRA pestaña. Emitir pasó a ser por tabla —es lo que
+   * hace posible que el botón viva dentro de ella— y sin este renglón alguien
+   * podría emitir los 729 de inquilinos y creer que el mes quedó facturado,
+   * con 725 comisiones de propietario todavía marcadas y sin emitir.
+   */
+  const marcadasEnLaOtra = useMemo(() => {
+    const otras = aQuien === 'INQUILINO' ? delMes.propietarios : delMes.inquilinos
+    return otras.filter(
+      (f) =>
+        seleccion.has(f.clave) &&
+        (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') &&
+        f.emitible,
+    ).length
+  }, [aQuien, delMes, seleccion])
 
   /*
    * F3 (auditoría 13-09): la corrida va en tandas de 200 con progreso real y
@@ -911,15 +980,176 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * Se AVISA, no se apaga: emitir las 50 que caben es trabajo legítimo, y
    * bloquear el botón obligaría a deseleccionar 158 filas a mano para hacerlo.
    */
+  /**
+   * 🔴 Los números de la resolución son UNA sola bolsa para las dos pestañas.
+   * Emitir pasó a ser por tabla, pero el rango no se parte en dos: si hay 49
+   * números y entre inquilinos y propietarios hay 1.454 marcadas, 1.405 van a
+   * fallar sin importar en qué orden se emitan. Por eso el aviso cuenta las
+   * DOS pestañas, aunque el botón emita una.
+   */
+  const marcadasEnTotal = elegidas.length + marcadasEnLaOtra
   const numerosQueFaltan: number | null =
-    datos !== null && datos.resolucion.puedeNumerar && elegidas.length > datos.resolucion.disponibles
-      ? elegidas.length - datos.resolucion.disponibles
+    datos !== null &&
+    datos.resolucion.puedeNumerar &&
+    marcadasEnTotal > datos.resolucion.disponibles
+      ? marcadasEnTotal - datos.resolucion.disponibles
       : null
 
   const vacio =
     datos !== null &&
     delMes.inquilinos.length === 0 &&
     delMes.propietarios.length === 0
+
+  /*
+   * 🔴 EL PIE de la tabla que se está mirando: lo marcado y lo que se puede
+   * hacer con ello, pegado al borde de abajo mientras se recorren las filas y
+   * DENTRO de la tarjeta de la tabla.
+   *
+   * Nico, 19-09: «mira que dejaste separado lo de acciones masivas con donde
+   * se seleccionan, y sabes que cuando hay acciones masivas deben quedar
+   * también en la tabla». Estaba suelto debajo porque las dos tablas
+   * compartían una selección; con el switch tab hay una sola a la vez, así que
+   * el pie vuelve adentro y todo lo que cuenta —las marcadas, la plata, el
+   * botón— es de ESA tabla.
+   */
+  const pieDeAccionesMasivas = (
+  <BarraDeAccionesMasivas
+    variant="pie"
+    testid="facturacion-acciones"
+    marcadas={elegidas.length}
+    queSon={['factura', 'facturas']}
+    monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}
+    sugerida={seleccionSugerida}
+    deDonde={`${aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'} de ${mesLegible(mes)} que se pueden emitir hoy`}
+    onQuitar={quitarSeleccion}
+    ocupado={generando}
+    cuandoNoHayNada={`No hay ninguna factura marcada ${
+      aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
+    }. Marca las que quieras, o usa «Generar esta» en una fila.`}
+    nota={
+      <>
+        {/* 🔴 Por qué la preselección es más chica que la tabla. Sin este
+            renglón, «730 facturas en el mes» arriba y «Preseleccionamos 729»
+            abajo se leen como un error de la pantalla. */}
+        {(yaEmitidas > 0 || noEmitibles > 0) && (
+          <p className="text-caption text-fg-muted" data-testid="facturacion-fuera-de-la-tanda">
+            {[
+              yaEmitidas > 0
+                ? `${yaEmitidas.toLocaleString('es-CO')} ${yaEmitidas === 1 ? 'ya está emitida' : 'ya están emitidas'}`
+                : null,
+              noEmitibles > 0
+                ? `${noEmitibles.toLocaleString('es-CO')} todavía no se ${noEmitibles === 1 ? 'puede' : 'pueden'} emitir`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' y ')}{' '}
+            de las {filasDeLaVista.length.toLocaleString('es-CO')} del mes.
+          </p>
+        )}
+        {/* El mes no queda facturado con una sola tanda: lo dice acá. */}
+        {marcadasEnLaOtra > 0 && (
+          <p className="text-caption text-fg-muted" data-testid="facturacion-marcadas-en-la-otra">
+            Y {marcadasEnLaOtra.toLocaleString('es-CO')}{' '}
+            {marcadasEnLaOtra === 1 ? 'marcada' : 'marcadas'} en la pestaña de{' '}
+            <button
+              type="button"
+              onClick={() => setAQuien(aQuien === 'INQUILINO' ? 'PROPIETARIO' : 'INQUILINO')}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              data-testid="facturacion-ir-a-la-otra"
+            >
+              {aQuien === 'INQUILINO' ? 'propietarios' : 'inquilinos'}
+            </button>
+            , que se emiten aparte.
+          </p>
+        )}
+        {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
+            puesta. El mismo motivo vivía sólo en un banner arriba de
+            todo: Nico apretó, no pasó nada, y lo leyó como «no da el
+            poder generar». Un control que no se mueve y no dice por
+            qué se lee como roto. */}
+        {!generando &&
+          motivoParaNoEmitir === null &&
+          numerosQueFaltan !== null &&
+          datos !== null && (
+            <p
+              className="max-w-xl text-caption text-warning"
+              data-testid="facturacion-rango-corto"
+            >
+              La resolución sólo tiene{' '}
+              {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
+              {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y
+              tienes {marcadasEnTotal.toLocaleString('es-CO')}{' '}
+              {marcadasEnTotal === 1 ? 'marcada' : 'marcadas'}
+              {marcadasEnLaOtra > 0 ? ' entre las dos pestañas' : ''}: se
+              numeran las primeras y las{' '}
+              {numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar
+              por rango agotado.{' '}
+              {onIrAResolucion && (
+                <button
+                  type="button"
+                  onClick={onIrAResolucion}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  data-testid="facturacion-ir-a-resolucion-rango"
+                >
+                  Cargar otra resolución
+                </button>
+              )}
+            </p>
+          )}
+        {!generando && motivoParaNoEmitir !== null && (
+          <p
+            className="max-w-xl text-caption text-warning"
+            data-testid="facturacion-motivo-apagado"
+          >
+            {motivoParaNoEmitir}{' '}
+            {onIrAResolucion && (
+              <button
+                type="button"
+                onClick={onIrAResolucion}
+                className="font-medium underline underline-offset-4"
+                data-testid="facturacion-ir-a-resolucion"
+              >
+                Cargar la resolución
+              </button>
+            )}
+          </p>
+        )}
+      </>
+    }
+  >
+    <Button
+      hideArrow
+      disabled={
+        elegidas.length === 0 ||
+        generando ||
+        cargando ||
+        // 🔴 Sin resolución vigente el back devuelve 400: apagar el
+        // botón dice lo mismo sin hacer perder la selección.
+        (datos !== null && !datos.resolucion.puedeNumerar)
+      }
+      onClick={() => void generar()}
+      data-testid="facturacion-generar"
+    >
+      {generando ? (
+        <Spinner className="h-4 w-4" />
+      ) : (
+        <Receipt className="h-4 w-4" weight="bold" />
+      )}
+      {generando
+        ? progreso
+          ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
+          : 'Generando…'
+        : // Sin nada marcado, «Generar 0 facturas» es un rótulo que
+          // nadie escribiría: el botón dice qué hace y el pie de al
+          // lado dice por qué está apagado.
+          elegidas.length === 0
+          ? 'Generar facturas'
+          : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'} ${
+              aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
+            }`}
+    </Button>
+  </BarraDeAccionesMasivas>
+  )
 
   return (
     <div className="space-y-4">
@@ -1121,29 +1351,59 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       >
         {datos && (
           <div className="space-y-4">
-            <TablaDeFacturas
-              titulo="Inquilinos"
-              descripcion="El canon del período y los conceptos que se le facturan al inquilino."
-              filas={delMes.inquilinos}
-              seleccion={seleccion}
-              onAlternarUna={alternarUna}
-              onAlternarTodas={alternarTodas}
-              ocupado={generando}
-              testid="inquilinos"
-              onGenerarUna={(clave) => void generar([clave])}
-              motivoParaNoEmitir={motivoParaNoEmitir}
+            {/* 🔴 UNA tabla a la vez. Nico, 19-09: «debe haber algo para que
+                sólo se pueda ver la tabla de inquilino y otra la de
+                propietarios, como un switch tab». El conteo va en la pestaña
+                —el número y la forma de ver ese número, el mismo control— y
+                las dos suman las facturas del mes. */}
+            <SegmentedControl<DestinatarioDeFactura>
+              aria-label="A quién se le factura"
+              value={aQuien}
+              onChange={setAQuien}
+              options={[
+                {
+                  value: 'INQUILINO',
+                  ariaLabel: 'Inquilinos',
+                  label: (
+                    <span className="flex items-center gap-2 whitespace-nowrap">
+                      Inquilinos
+                      <span className="tabular-nums text-fg-muted">
+                        {delMes.inquilinos.length.toLocaleString('es-CO')}
+                      </span>
+                    </span>
+                  ),
+                },
+                {
+                  value: 'PROPIETARIO',
+                  ariaLabel: 'Propietarios',
+                  label: (
+                    <span className="flex items-center gap-2 whitespace-nowrap">
+                      Propietarios
+                      <span className="tabular-nums text-fg-muted">
+                        {delMes.propietarios.length.toLocaleString('es-CO')}
+                      </span>
+                    </span>
+                  ),
+                },
+              ]}
             />
+
             <TablaDeFacturas
-              titulo="Propietarios"
-              descripcion="La comisión de administración del mes. Lo que el propietario paga y no se factura va a deducción del egreso."
-              filas={delMes.propietarios}
+              titulo={aQuien === 'INQUILINO' ? 'Inquilinos' : 'Propietarios'}
+              descripcion={
+                aQuien === 'INQUILINO'
+                  ? 'El canon del período y los conceptos que se le facturan al inquilino.'
+                  : 'La comisión de administración del mes. Lo que el propietario paga y no se factura va a deducción del egreso.'
+              }
+              filas={filasDeLaVista}
               seleccion={seleccion}
               onAlternarUna={alternarUna}
               onAlternarTodas={alternarTodas}
               ocupado={generando}
-              testid="propietarios"
+              testid={aQuien === 'INQUILINO' ? 'inquilinos' : 'propietarios'}
               onGenerarUna={(clave) => void generar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
+              accionesMasivas={pieDeAccionesMasivas}
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,
@@ -1186,104 +1446,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               </details>
             )}
 
-            {/* 🔴 EL PIE: lo marcado y lo que se puede hacer con ello, pegado
-                al borde de abajo mientras se recorren las dos tablas. Es la
-                misma pieza de todas las tablas con acciones masivas
-                (`BarraDeAccionesMasivas`). */}
-            <BarraDeAccionesMasivas
-              testid="facturacion-acciones"
-              marcadas={elegidas.length}
-              queSon={['factura', 'facturas']}
-              monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}
-              sugerida={seleccionSugerida}
-              deDonde={`de ${mesLegible(mes)}: son las que se pueden emitir hoy`}
-              onQuitar={quitarSeleccion}
-              ocupado={generando}
-              cuandoNoHayNada="No hay ninguna factura marcada. Marca las que quieras, o usa «Generar esta» en una fila."
-              nota={
-                <>
-                  {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
-                      puesta. El mismo motivo vivía sólo en un banner arriba de
-                      todo: Nico apretó, no pasó nada, y lo leyó como «no da el
-                      poder generar». Un control que no se mueve y no dice por
-                      qué se lee como roto. */}
-                  {!generando &&
-                    motivoParaNoEmitir === null &&
-                    numerosQueFaltan !== null &&
-                    datos !== null && (
-                      <p
-                        className="max-w-xl text-caption text-warning"
-                        data-testid="facturacion-rango-corto"
-                      >
-                        La resolución sólo tiene{' '}
-                        {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
-                        {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y
-                        elegiste {elegidas.length.toLocaleString('es-CO')}: se numeran
-                        las primeras y las {numerosQueFaltan.toLocaleString('es-CO')}{' '}
-                        restantes van a fallar por rango agotado.{' '}
-                        {onIrAResolucion && (
-                          <button
-                            type="button"
-                            onClick={onIrAResolucion}
-                            className="font-medium text-primary underline-offset-4 hover:underline"
-                            data-testid="facturacion-ir-a-resolucion-rango"
-                          >
-                            Cargar otra resolución
-                          </button>
-                        )}
-                      </p>
-                    )}
-                  {!generando && motivoParaNoEmitir !== null && (
-                    <p
-                      className="max-w-xl text-caption text-warning"
-                      data-testid="facturacion-motivo-apagado"
-                    >
-                      {motivoParaNoEmitir}{' '}
-                      {onIrAResolucion && (
-                        <button
-                          type="button"
-                          onClick={onIrAResolucion}
-                          className="font-medium underline underline-offset-4"
-                          data-testid="facturacion-ir-a-resolucion"
-                        >
-                          Cargar la resolución
-                        </button>
-                      )}
-                    </p>
-                  )}
-                </>
-              }
-            >
-              <Button
-                hideArrow
-                disabled={
-                  elegidas.length === 0 ||
-                  generando ||
-                  cargando ||
-                  // 🔴 Sin resolución vigente el back devuelve 400: apagar el
-                  // botón dice lo mismo sin hacer perder la selección.
-                  (datos !== null && !datos.resolucion.puedeNumerar)
-                }
-                onClick={() => void generar()}
-                data-testid="facturacion-generar"
-              >
-                {generando ? (
-                  <Spinner className="h-4 w-4" />
-                ) : (
-                  <Receipt className="h-4 w-4" weight="bold" />
-                )}
-                {generando
-                  ? progreso
-                    ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
-                    : 'Generando…'
-                  : // Sin nada marcado, «Generar 0 facturas» es un rótulo que
-                    // nadie escribiría: el botón dice qué hace y el pie de al
-                    // lado dice por qué está apagado.
-                    elegidas.length === 0
-                    ? 'Generar facturas'
-                    : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
-              </Button>
-            </BarraDeAccionesMasivas>
           </div>
         )}
       </EstadoDeDatos>

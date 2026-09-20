@@ -1266,11 +1266,16 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             >
               Ver hasta
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Input
                 id="facturacion-hasta"
                 type="month"
-                className="w-40 tabular-nums"
+                /* 🔴 `w-40` (160 px) cortaba el año: el campo nativo de mes
+                   pinta «September 2026» más el icono del calendario, y se
+                   leía «September 202(» — visto en la captura de Nico del
+                   20-09 y también en móvil. El ancho se mide por el contenido
+                   más largo, no por lo que quepa cómodo en la maqueta. */
+                className="w-full min-w-[11.5rem] tabular-nums sm:w-48"
                 min={mes}
                 value={hasta}
                 onChange={(e) => setHasta(e.target.value || mes)}

@@ -789,6 +789,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMfaRequired(false)
   }, [])
 
+  // T-0099: `clasificar.ts` no puede leer contexto de React — mirror de
+  // `mfaRequired` hacia `apiClient` (mismo patrón que `_accessToken`) para
+  // que un 403 SEGUNDO_FACTOR_REQUERIDO que llegue en la ventana de la
+  // carrera se pueda distinguir de alguien que nunca activó el factor.
+  useEffect(() => {
+    setMfaPendingFlag(mfaRequired)
+  }, [mfaRequired])
+
   // Load the persisted active-context choice whenever the authenticated user
   // changes (userId-scoped read → a foreign entry reads as unset), and keep it
   // in sync with same-tab writes ('active-context-updated') AND cross-tab writes
@@ -1154,6 +1162,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setIsLoading(false)
             }
           })
+        } else if (event === 'MFA_CHALLENGE_VERIFIED' && session) {
+          /**
+           * T-0099: `supabase.auth.mfa.verify()` (llamado desde
+           * /auth/mfa-verify) sube la sesión a aal2 y avisa con este evento —
+           * que hasta acá NO tenía handler. `session` acá es la respuesta de
+           * `/factors/:id/verify` (ver GoTrueClient#_verify en
+           * @supabase/auth-js): trae un `access_token` NUEVO, ya en aal2.
+           *
+           * Sin este branch, `apiClient` seguía sirviendo el token VIEJO
+           * (aal1) — `setAccessToken` nunca se llamaba acá — hasta el
+           * próximo refresh natural o una recarga completa. El primer fetch
+           * protegido después de "verificar" podía seguir dando 403 con un
+           * token que a los ojos de React YA se veía liberado (la página
+           * llama a `setMfaVerified()` apenas `mfa.verify()` resuelve).
+           *
+           * No es una sesión nueva — no bumpear la generación (mismo
+           * razonamiento que TOKEN_REFRESHED). `setAccessToken` corre
+           * SINCRÓNICO, antes de cualquier `await`, así que para cuando el
+           * `mfa.verify()` que llamó la página resuelve, el token ya está
+           * puesto — `_notifyAllSubscribers` espera a este callback (ver
+           * GoTrueClient#_notifyAllSubscribers) antes de devolver el
+           * control. El chequeo de MFA sigue diferido: mismo lock de auth-js
+           * que todo lo demás acá.
+           */
+          const miGeneracion = sessionGenerationRef.current
+          huboSesionRef.current = true
+          setAccessToken(session.access_token)
+          alSoltarElLock(() => checkMfaLevel(miGeneracion))
         }
       }
     )

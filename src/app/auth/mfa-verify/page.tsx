@@ -12,14 +12,23 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 
 export default function MfaVerifyPage() {
   const router = useRouter();
-  const { user, setMfaVerified, signOut, mfaRequired } = useAuth();
+  const { user, setMfaVerified, signOut, mfaRequired, mfaEnrollRequired } = useAuth();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
 
-  // If MFA is not required, redirect to dashboard
+  // If MFA is not required, redirect to dashboard. T-0099: if enrollment
+  // turns out to be what's actually pending (defensive — these two states
+  // are meant to be mutually exclusive, see contract.md T-0099 §3), send to
+  // /auth/mfa-enroll instead of stranding on a verify screen with nothing to
+  // verify.
   useEffect(() => {
-    if (user && !mfaRequired) {
+    if (!user) return;
+    if (mfaEnrollRequired) {
+      router.replace('/auth/mfa-enroll');
+      return;
+    }
+    if (!mfaRequired) {
       const dashboardPath = user.role === 'agency'
         ? '/panel/inmobiliaria'
         : user.role === 'landlord'
@@ -27,7 +36,7 @@ export default function MfaVerifyPage() {
           : '/inquilino';
       router.replace(dashboardPath);
     }
-  }, [user, mfaRequired, router]);
+  }, [user, mfaRequired, mfaEnrollRequired, router]);
 
   // Get the TOTP factor on mount
   useEffect(() => {

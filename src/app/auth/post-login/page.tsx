@@ -32,6 +32,7 @@ function PostLoginResolver() {
     needsOnboarding,
     perfilElegido,
     mfaRequired,
+    mfaEnrollRequired,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
@@ -53,6 +54,11 @@ function PostLoginResolver() {
   React.useEffect(() => {
     if (authLoading) return;
     // MFA gate first (security): never bypass a pending second factor.
+    // T-0099: enroll-pending takes priority — same order as ProtectedRoute.
+    if (mfaEnrollRequired) {
+      router.replace('/auth/mfa-enroll');
+      return;
+    }
     if (mfaRequired) {
       router.replace('/auth/mfa-verify');
       return;
@@ -101,6 +107,7 @@ function PostLoginResolver() {
     needsOnboarding,
     perfilElegido,
     mfaRequired,
+    mfaEnrollRequired,
     returnUrl,
     agencyRole,
     agencyMembershipChecked,

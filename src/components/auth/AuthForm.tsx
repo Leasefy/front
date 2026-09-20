@@ -285,7 +285,7 @@ function ReenvioDeConfirmacion({
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -420,6 +420,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     if (authLoading) return;
     // MFA gate first (security): never bypass a pending second factor, regardless
     // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
+    // T-0099: enroll-pending (no factor to step up to) takes priority over
+    // verify-pending, same order as ProtectedRoute.
+    if (mfaEnrollRequired) {
+      window.location.href = '/auth/mfa-enroll';
+      return;
+    }
     if (mfaRequired) {
       window.location.href = '/auth/mfa-verify';
       return;
@@ -457,7 +463,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's

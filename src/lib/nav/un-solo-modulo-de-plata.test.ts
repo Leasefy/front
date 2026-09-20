@@ -205,7 +205,18 @@ describe('un solo módulo de plata — no queda ningún enlace vivo a /cobros', 
       if (existsSync(join(RAIZ, r))) recorrer(join(RAIZ, r))
     }
     expect(encontrados).toEqual([])
-  })
+    /*
+     * 🔴 19-09-2026 · El reloj dice lo que este test HACE.
+     *
+     * Tumbó la suite completa con `Test timed out in 5000ms` y pasaba solo.
+     * No es lento por accidente: lee todos los `.ts/.tsx/.mjs/.json` de `src`
+     * y `tests` —miles de archivos— para poder afirmar que NADIE enlaza a la
+     * ruta vieja, que es justo lo que le da valor. Con la máquina libre tarda
+     * ~620 ms; con la suite entera encima, 6.572. El default de 5 s es de un
+     * test de unidad, y esto es un barrido de disco: se declara su costo real
+     * en vez de fingir que es barato. Hay 16 guardianes así en el repo.
+     */
+  }, 30_000)
 
   it('la carpeta de rutas `cobros` ya no existe bajo el panel', () => {
     expect(existsSync(join(APP, 'cobros'))).toBe(false)

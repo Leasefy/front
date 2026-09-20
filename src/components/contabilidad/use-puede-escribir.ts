@@ -72,7 +72,7 @@ export function usePuedeEscribir(): PuedeEscribir {
   if (!permisos) {
     return {
       puede: false,
-      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recargá la pantalla.',
+      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recarga la pantalla.',
       usuarioId,
     };
   }
@@ -131,7 +131,7 @@ export function usePuedeReabrir(): PuedeEscribir {
   if (!permisos) {
     return {
       puede: false,
-      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recargá la pantalla.',
+      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recarga la pantalla.',
       usuarioId,
     };
   }

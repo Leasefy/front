@@ -87,7 +87,7 @@ describe('fraseDelTope', () => {
   });
 
   it('heredado nombra el año y dice cómo seguir heredándolo', () => {
-    expect(fraseDelTope(config(), pesos)).toContain('Dejá el campo vacío');
+    expect(fraseDelTope(config(), pesos)).toContain('Deja el campo vacío');
   });
 
   it('🔴 sin tope dice que no se agrupa nada, no «$0»', () => {

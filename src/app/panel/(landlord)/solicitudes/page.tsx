@@ -60,7 +60,7 @@ export default function SolicitudesPage() {
         {solicitudes.length === 0 ? (
           <Card className="p-6 mt-8">
             <p className="text-sm text-fg-muted">
-              Todavía no abriste ninguna solicitud. Usá “Nueva solicitud” para pedirle algo a tu
+              Todavía no abriste ninguna solicitud. Usa “Nueva solicitud” para pedirle algo a tu
               inmobiliaria; vas a poder seguir su estado acá.
             </p>
           </Card>

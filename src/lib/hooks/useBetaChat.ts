@@ -1873,7 +1873,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ? 'Esa acción ya se resolvió.'
               : status === 403
                 ? 'Tu cuenta no puede ejecutar esta acción.'
-                : 'No se pudo confirmar. Probá de nuevo en un momento.';
+                : 'No se pudo confirmar. Prueba de nuevo en un momento.';
         parcharAccion(messageId, {
           estado: status === 410 ? 'vencida' : 'pendiente',
           error: motivo,

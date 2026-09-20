@@ -222,7 +222,7 @@ export function describirAlerta(
         severidad: 'danger',
         titulo: `El libro no cuadra: hay ${formatoDeMonto(Math.abs(alerta.diferenciaCop))} de diferencia entre débitos y créditos`,
         detalle:
-          'Es un defecto del libro, no de un informe. Mirá el balance de prueba para ver en qué cuenta se abre y avisale a quien lo administra.',
+          'Es un defecto del libro, no de un informe. Mira el balance de prueba para ver en qué cuenta se abre y avísale a quien lo administra.',
         accion: { tipo: 'ir', label: 'Ver el balance', href: `${BASE}/reportes?informe=balance` },
       };
     case 'SIN_ASIENTO': {

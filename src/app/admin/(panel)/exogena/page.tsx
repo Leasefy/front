@@ -99,7 +99,7 @@ export default function ExogenaAdminPage() {
   const problema = !anioValido
     ? 'El año gravable va en cuatro dígitos, entre 2000 y 2100.'
     : topeParseado === 'INVALIDO'
-      ? 'El tope va en pesos enteros y mayor que cero. Dejalo vacío si la resolución del año no fija ninguno: sin tope NO se agrupa nada, que es lo correcto.'
+      ? 'El tope va en pesos enteros y mayor que cero. Déjalo vacío si la resolución del año no fija ninguno: sin tope NO se agrupa nada, que es lo correcto.'
       : null
 
   async function onGuardar() {
@@ -232,7 +232,7 @@ export default function ExogenaAdminPage() {
       ) : anios.length === 0 ? (
         <EmptyBlock
           title="Ningún año cargado"
-          hint="Cargá el año gravable abajo y después sembrá el preset. Publicar es un paso aparte."
+          hint="Carga el año gravable abajo y después siembra el preset. Publicar es un paso aparte."
         />
       ) : (
         <div className="space-y-px" data-testid="anios">

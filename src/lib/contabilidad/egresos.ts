@@ -99,7 +99,7 @@ export function permisosDelLote(
   const anular: Permiso =
     estado === 'PAGADO'
       ? no(
-          `Este lote ${lote.pagadoAt ? `se pagó el ${diaLegible(lote.pagadoAt)}` : 'ya se pagó'}: la plata salió del banco. Anulá cada egreso, que reversa su asiento.`,
+          `Este lote ${lote.pagadoAt ? `se pagó el ${diaLegible(lote.pagadoAt)}` : 'ya se pagó'}: la plata salió del banco. Anula cada egreso, que reversa su asiento.`,
         )
       : estado === 'ANULADO'
         ? no('Este lote ya está anulado.')

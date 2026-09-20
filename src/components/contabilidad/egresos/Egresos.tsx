@@ -247,7 +247,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       enlace.click();
       enlace.remove();
       URL.revokeObjectURL(url);
-      toast.success('Archivo descargado. Subilo al banco y después marcá el lote como pagado.');
+      toast.success('Archivo descargado. Súbelo al banco y después marca el lote como pagado.');
       await cargar();
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudo generar el archivo.'));
@@ -385,7 +385,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               <div className="space-y-0.5">
                 <h3 className="text-sm font-semibold text-fg">Armar un lote</h3>
                 <p className="text-caption text-fg-muted">
-                  Marcá los pendientes que van juntos al banco. El lote queda en borrador y lo tiene
+                  Marca los pendientes que van juntos al banco. El lote queda en borrador y lo tiene
                   que aprobar otra persona antes de que salga el archivo.
                 </p>
               </div>
@@ -415,8 +415,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                   motivo={
                     escritura.motivo ??
                     (marcados.length === 0
-                      ? 'Marcá al menos un egreso pendiente.'
-                      : 'Escribí el concepto del lote: es lo que se lee en el banco y en el libro.')
+                      ? 'Marca al menos un egreso pendiente.'
+                      : 'Escribe el concepto del lote: es lo que se lee en el banco y en el libro.')
                   }
                   ocupado={armando}
                   textoOcupado="Armando…"

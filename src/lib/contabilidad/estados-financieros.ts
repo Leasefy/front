@@ -251,7 +251,7 @@ export function descripcionDelDescuadre(
     `pasivo + patrimonio + resultado del ejercicio suman ${formatoDeMonto(otroLado)} — ` +
     `${formatoDeMonto(Math.abs(balance.diferenciaCop))} de diferencia. ` +
     'Es un defecto del libro, no de este informe: mientras no cuadre, nada de lo que está ' +
-    'abajo se puede firmar. Mirá el balance de prueba para ver en qué cuenta se abre.'
+    'abajo se puede firmar. Mira el balance de prueba para ver en qué cuenta se abre.'
   );
 }
 

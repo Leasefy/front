@@ -185,7 +185,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
               />
               {fechaCerrada ? (
                 <p className="text-xs text-danger" role="alert">
-                  La contabilidad está cerrada hasta el {cerradaHasta}. Usá una fecha posterior.
+                  La contabilidad está cerrada hasta el {cerradaHasta}. Usa una fecha posterior.
                 </p>
               ) : null}
             </div>

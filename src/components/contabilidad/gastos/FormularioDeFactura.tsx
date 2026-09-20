@@ -723,7 +723,7 @@ export function FormularioDeFactura({
                     Alguna retención salió de un perfil tributario que nadie confirmó
                   </p>
                   <p className="text-fg-muted">
-                    Verificá con el contador antes de causar: una retención mal practicada es plata
+                    Verifica con el contador antes de causar: una retención mal practicada es plata
                     que la inmobiliaria le termina debiendo a la DIAN.
                   </p>
                 </div>
@@ -759,7 +759,7 @@ export function FormularioDeFactura({
                   <Monto valor={descuadreDelBack.ivaCop} className="text-sm" />.
                 </p>
                 <p className="text-fg-muted">
-                  No se registró nada. Revisá la base o el IVA de cada renglón; si el proveedor
+                  No se registró nada. Revisa la base o el IVA de cada renglón; si el proveedor
                   calculó el IVA distinto, el que manda es el del papel.
                 </p>
               </div>

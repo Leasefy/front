@@ -1944,7 +1944,7 @@
       "deleteBloqueado": {
         "titulo": "No se puede eliminar: tiene {{count}} inmueble(s) consignado(s)",
         "tituloCopropietario": "No se puede eliminar: es copropietario en {{count}} inmueble(s)",
-        "detalleCopropietario": "Primero quitalo del reparto de esos mandatos desde la ficha del inmueble; después sí se puede borrar la ficha.",
+        "detalleCopropietario": "Primero quítalo del reparto de esos mandatos desde la ficha del inmueble; después sí se puede borrar la ficha.",
         "detalle": "Primero retira o reasigna esos mandatos desde el portafolio; después sí se puede borrar la ficha.",
         "accion": "Ir al portafolio"
       },
@@ -4240,7 +4240,7 @@
         "verPdf": "Ver PDF",
         "descargar": "Descargar",
         "vacioTitulo": "Todavía no generaste ningún documento",
-        "vacioDesc": "Generá el contrato, el acta o la carta desde el contrato o el inmueble.",
+        "vacioDesc": "Genera el contrato, el acta o la carta desde el contrato o el inmueble.",
         "colPlantilla": "Plantilla",
         "colCategoria": "Categoría",
         "colVersion": "Versión",
@@ -10135,13 +10135,13 @@
     },
     "sinSenal": {
       "titulo": "Trabajar sin señal",
-      "explicacion": "Guardá este inmueble en el teléfono para poder abrirlo y llenar el inventario donde no hay señal.",
+      "explicacion": "Guarda este inmueble en el teléfono para poder abrirlo y llenar el inventario donde no hay señal.",
       "guardado": "Guardado el {{cuando}}",
       "sinCopia": "Este inmueble no está guardado en el teléfono.",
       "preparar": "Preparar para trabajar sin señal",
       "actualizar": "Actualizar lo guardado",
-      "listo": "Listo. Podés abrir este inmueble sin señal.",
-      "noSePudo": "No se pudo guardar todo. Probá de nuevo con mejor señal.",
+      "listo": "Listo. Puedes abrir este inmueble sin señal.",
+      "noSePudo": "No se pudo guardar todo. Prueba de nuevo con mejor señal.",
       "listaTitulo": "Guardados para trabajar sin internet",
       "quitar": "Quitar de los disponibles sin señal",
       "seAbreDesde": "Se abre desde:",
@@ -11510,7 +11510,7 @@
     "queEs": "Con el recibo de caja dejas constancia de que entró la plata. La factura es otro documento.",
     "desglose": {
       "titulo": "Qué está debiendo",
-      "ayuda": "Mirá de qué está compuesta la deuda antes de recibir la plata: si aceptas un abono parcial creyendo que quedó al día, el saldo sigue corriendo.",
+      "ayuda": "Mira de qué está compuesta la deuda antes de recibir la plata: si aceptas un abono parcial creyendo que quedó al día, el saldo sigue corriendo.",
       "concepto": "Concepto",
       "resta": "resta",
       "subtotal": "Suma de conceptos",

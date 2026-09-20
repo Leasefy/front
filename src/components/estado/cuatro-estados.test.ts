@@ -170,7 +170,7 @@ describe('ErrorState viejo', () => {
     expect(
       nuevas,
       'ErrorState muestra el mensaje crudo del backend y ofrece reintentar ' +
-        'sobre un 404. Usá <FalloDeCarga>, que clasifica el fallo.',
+        'sobre un 404. Usa <FalloDeCarga>, que clasifica el fallo.',
     ).toEqual([])
   })
 })

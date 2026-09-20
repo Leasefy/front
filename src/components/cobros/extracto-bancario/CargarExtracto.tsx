@@ -218,7 +218,7 @@ export function CargarExtracto({ onCargado }: Props) {
               La plata de {laCuentaEntraPorArchivo.cuenta} entra por el archivo del convenio «
               {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago DOS
               veces en la cola, y conciliar los dos le emitiría al inquilino dos recibos por un
-              pago que hizo una vez. Importá el archivo en Tesorería → Recaudo del banco.
+              pago que hizo una vez. Importa el archivo en Tesorería → Recaudo del banco.
             </Banner>
           ) : (
             <p className="text-xs text-fg-muted">

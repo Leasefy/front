@@ -488,7 +488,7 @@ function ReportesPropietariosContent() {
         <EmptyState
           icon={FileText}
           title="Todavía no hay reportes de gestión"
-          description="Elige un deudor arriba y generá el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
+          description="Elige un deudor arriba y genera el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
           primaryCta={{ label: 'Ver mis propietarios', href: PROPIETARIOS_HREF }}
         />
       ) : (

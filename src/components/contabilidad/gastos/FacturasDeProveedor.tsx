@@ -242,7 +242,7 @@ export function FacturasDeProveedor({
         anular: {
           puede: false,
           motivo:
-            'Esta factura ya se pagó: la plata salió del banco. Anulá primero el egreso, que reversa el pago.',
+            'Esta factura ya se pagó: la plata salió del banco. Anula primero el egreso, que reversa el pago.',
         },
       };
     }

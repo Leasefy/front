@@ -229,7 +229,7 @@ export function RubrosDelPyg() {
           title={`Faltan ${faltan.length} de ${mapeo.rubros.filter((r) => r.sugerido).length}: sin cuenta, el real del libro sale en «—»`}
         >
           <p data-testid="rubros-que-hacer">
-            Elegí una o varias cuentas del PUC en cada rubro. Se puede mapear a una cuenta mayor
+            Elige una o varias cuentas del PUC en cada rubro. Se puede mapear a una cuenta mayor
             (por ejemplo, todo el 51): el real suma esa cuenta y todas sus hijas, que es lo que un
             contador espera cuando dice «gastos = todo el 51».
           </p>

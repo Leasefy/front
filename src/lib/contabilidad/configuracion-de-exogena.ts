@@ -63,7 +63,7 @@ export function fraseDelTope(
       : `Rige el tuyo: ${formatear(vigente.valorCop!)}. Leasefy no publicó ningún tope para ese año.`;
   }
   if (vigente.origen === 'PLATAFORMA') {
-    return `Rige el que Leasefy publicó para ${anio!.anio}: ${formatear(vigente.valorCop!)}. Dejá el campo vacío para seguir heredándolo.`;
+    return `Rige el que Leasefy publicó para ${anio!.anio}: ${formatear(vigente.valorCop!)}. Deja el campo vacío para seguir heredándolo.`;
   }
   return 'No hay ningún tope: NO se agrupa nada en cuantías menores. Es lo correcto mientras la resolución del año no fije uno — agrupar con un tope inventado esconde terceros que había que declarar.';
 }
@@ -133,7 +133,7 @@ export function topeDelBorrador(tope: string): number | null | 'INVALIDO' {
 /** `null` = se puede guardar. */
 export function problemaDeLaConfiguracion(borrador: BorradorDeConfiguracion): string | null {
   if (topeDelBorrador(borrador.tope) === 'INVALIDO') {
-    return 'El tope va en pesos enteros y mayor que cero. Dejalo vacío para heredar el que Leasefy publicó para el año.';
+    return 'El tope va en pesos enteros y mayor que cero. Déjalo vacío para heredar el que Leasefy publicó para el año.';
   }
   return null;
 }

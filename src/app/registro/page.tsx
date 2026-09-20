@@ -239,7 +239,7 @@ function RegistroContent() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setFormError('Este email ya tiene una cuenta. Usá "Ya tengo cuenta" para ingresar.');
+        setFormError('Este email ya tiene una cuenta. Usa "Ya tengo cuenta" para ingresar.');
       } else {
         setFormError('Error al crear la cuenta. Intenta de nuevo.');
       }

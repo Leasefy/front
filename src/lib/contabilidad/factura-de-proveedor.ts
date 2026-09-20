@@ -154,8 +154,8 @@ export function problemasDeLaFactura(borrador: BorradorDeFactura): string[] {
     if (sinBase > 0) {
       problemas.push(
         sinBase === 1
-          ? 'Hay una línea sin base: escribí su valor o quitala.'
-          : `Hay ${sinBase} líneas sin base: escribí su valor o quitalas.`,
+          ? 'Hay una línea sin base: escribe su valor o quítala.'
+          : `Hay ${sinBase} líneas sin base: escribe su valor o quítalas.`,
       );
     }
     const sinDescripcion = borrador.lineas.filter((l) => !l.descripcion.trim()).length;
@@ -212,7 +212,7 @@ export function avisoDeTotalQueNoCuadra(
     `La factura dice ${formatoDeMonto(borrador.totalCop)} y las líneas suman ` +
     `${formatoDeMonto(calculado)}: ${formatoDeMonto(Math.abs(diferencia))} de diferencia. ` +
     'Así el back la va a rechazar sin registrar nada (TOTALES_NO_CUADRAN). ' +
-    'Revisá la base o el IVA de cada línea; si el proveedor calculó el IVA distinto, el que manda es el del papel.'
+    'Revisa la base o el IVA de cada línea; si el proveedor calculó el IVA distinto, el que manda es el del papel.'
   );
 }
 

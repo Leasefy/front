@@ -200,7 +200,7 @@ describe('<Egresos>', () => {
     await pintar();
     const boton = q('crear-lote') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
-    expect(q('crear-lote-motivo')!.textContent).toContain('Marcá al menos un egreso');
+    expect(q('crear-lote-motivo')!.textContent).toContain('Marca al menos un egreso');
   });
 
   it('avisa de los pendientes a los que el banco les falta un dato', async () => {

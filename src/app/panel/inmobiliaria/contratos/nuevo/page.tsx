@@ -670,7 +670,7 @@ function NuevoContratoContent() {
               active={form.mode === 'upload'}
               onClick={() => updateForm('mode', 'upload')}
               title="Subir PDF propio"
-              desc="Usá un contrato que tu inmobiliaria ya tenga preparado."
+              desc="Usa un contrato que tu inmobiliaria ya tenga preparado."
               icon={UploadSimple}
             />
             <ModeOption

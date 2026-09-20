@@ -91,7 +91,7 @@ describe('el panel confirma con el sistema de diseño, no con el navegador', () 
     }
     expect(
       infractores,
-      'Estos archivos preguntan con un diálogo del navegador. Usá AlertDialog ' +
+      'Estos archivos preguntan con un diálogo del navegador. Usa AlertDialog ' +
         'de components/ui/alert-dialog.tsx: el del navegador ignora el tema, ' +
         'no se puede probar y algunos navegadores lo suprimen, con lo que la ' +
         'acción destructiva pasa sin confirmación.',

@@ -496,7 +496,7 @@ describe('pantallas de uso diario — colores por token', () => {
     if (rel in COLOR_CRUDO_JUSTIFICADO) return
     expect(
       encontrados,
-      `Colores crudos: ${[...new Set(encontrados)].join(', ')}. Usá los tokens de ` +
+      `Colores crudos: ${[...new Set(encontrados)].join(', ')}. Usa los tokens de ` +
         'Cadence (bg-surface / text-fg / text-fg-muted / border-border / bg-primary-soft ' +
         '/ bg-success-soft / bg-warning-soft / bg-danger-soft / bg-info-soft). Si el caso ' +
         'es legítimo, agrega el archivo a COLOR_CRUDO_JUSTIFICADO **con su motivo**.',
@@ -521,7 +521,7 @@ describe('pantallas de uso diario — controles por primitiva', () => {
     if (rel in CONTROL_A_MANO_JUSTIFICADO) return
     expect(
       encontrados,
-      `Controles a mano: ${[...new Set(encontrados)].join(', ')}. Usá Button / ` +
+      `Controles a mano: ${[...new Set(encontrados)].join(', ')}. Usa Button / ` +
         'IconButton / Input / Select / Textarea de @/components/ui. Si el caso es ' +
         'legítimo (fila clickeable, disparador de popover con estado, input de archivo ' +
         'escondido), agrega el archivo a CONTROL_A_MANO_JUSTIFICADO **con su motivo**.',

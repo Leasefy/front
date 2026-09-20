@@ -114,7 +114,7 @@ export function avisosDelMapeoDeRubros(mapeo: MapeoDeRubros): string[] {
     avisos.push(
       `${mixtos.length === 1 ? 'Un rubro está' : `${mixtos.length} rubros están`} mapeado${mixtos.length === 1 ? '' : 's'} ` +
         `a cuentas de clases distintas (${mixtos.map((r) => r.nombre).join(', ')}): ` +
-        'su real suma ingresos y gastos, así que el número no significa nada. Dejá en cada rubro cuentas de una sola clase.',
+        'su real suma ingresos y gastos, así que el número no significa nada. Deja en cada rubro cuentas de una sola clase.',
     );
   }
 
@@ -131,7 +131,7 @@ export function avisosDelMapeoDeRubros(mapeo: MapeoDeRubros): string[] {
     avisos.push(
       `${sinPreset.length === 1 ? 'Un rubro no tiene' : `${sinPreset.length} rubros no tienen`} su cuenta propuesta en tu plan: ` +
         sinPreset.map((r) => `${r.nombre} (${r.codigosPropuestos.join(', ')})`).join('; ') +
-        '. Creala en el plan de cuentas con ese código, o elegí otra a mano.',
+        '. Créala en el plan de cuentas con ese código, o elige otra a mano.',
     );
   }
 

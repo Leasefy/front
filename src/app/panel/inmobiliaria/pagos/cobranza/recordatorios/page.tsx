@@ -515,7 +515,7 @@ function PagosRecordatorios() {
 
           {hayCambios && (
             <Aviso tono="info">
-              Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guardá los
+              Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guarda los
               cambios para verlos reflejados acá.
             </Aviso>
           )}

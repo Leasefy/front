@@ -198,7 +198,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPollError('Verificando…');
     const r = await checkStatus();
     if (r === 'pending') {
-      setPollError('Todavía no vemos la confirmación. Esperá unos segundos y reintenta.');
+      setPollError('Todavía no vemos la confirmación. Espera unos segundos y reintenta.');
     } else {
       applyStatus(r);
     }

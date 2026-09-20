@@ -135,7 +135,7 @@ export function EventosDeGasto({
         <Nota testId="eventos-de-gasto-vacio">
           <p>
             El back dice que la base ya tiene los eventos de gasto pero no devolvió ninguno. No hay
-            nada que mapear todavía: recargá la pantalla o avisale a quien administra el sistema.
+            nada que mapear todavía: recarga la pantalla o avísale a quien administra el sistema.
           </p>
         </Nota>
       ) : (
@@ -246,7 +246,7 @@ export function EventosDeGasto({
                         ) : (
                           <span
                             className="font-mono text-xs text-fg-subtle"
-                            title="Créala en el plan de cuentas con ese código, o elegí otra"
+                            title="Créala en el plan de cuentas con ese código, o elige otra"
                           >
                             {e.codigoPropuesto} no está en el PUC
                           </span>

@@ -43,7 +43,7 @@ const ROOT = 'inmobiliaria.ai.mantenimiento'
 
 export const MOTIVO_SOLO_LECTURA =
   'Desde acá el ticket sólo se mira: el agente todavía no expone una ruta para asignar, ' +
-  'pedir información, escalar ni cerrar. Para operar de verdad usá la pestaña Mantenimiento.'
+  'pedir información, escalar ni cerrar. Para operar de verdad usa la pestaña Mantenimiento.'
 
 /**
  * Los cinco `on*` de `TicketDetail` son obligatorios y los botones están

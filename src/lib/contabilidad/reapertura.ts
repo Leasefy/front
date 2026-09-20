@@ -81,11 +81,11 @@ export function problemaDeReapertura(entrada: {
     return 'La contabilidad no tiene ninguna fecha cerrada: no hay nada que reabrir.';
   }
   if (entrada.motivo.trim().length < LARGO_MINIMO_DEL_MOTIVO) {
-    return 'Escribí el motivo: queda en la bitácora y es lo que hace que un cierre se pueda deshacer sin perder el rastro.';
+    return 'Escribe el motivo: queda en la bitácora y es lo que hace que un cierre se pueda deshacer sin perder el rastro.';
   }
   if (entrada.hasta !== '') {
     const pedida = diaDe(entrada.hasta);
-    if (!pedida) return 'Elegí un día, o dejá la fecha vacía para reabrir todo.';
+    if (!pedida) return 'Elige un día, o deja la fecha vacía para reabrir todo.';
     /*
      * La frontera nueva es `pedida - 1 día`, así que sólo se mueve hacia atrás
      * cuando `pedida` es igual o anterior a la frontera vigente. Una fecha

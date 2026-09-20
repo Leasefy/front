@@ -784,7 +784,7 @@ export function StepConfirmImport({
     } catch (e) {
       if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
         setError(
-          "El lote todavía se está procesando — esperá a que termine antes de descartarlo.",
+          "El lote todavía se está procesando — espera a que termine antes de descartarlo.",
         );
       } else {
         setError(

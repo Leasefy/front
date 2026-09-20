@@ -165,7 +165,7 @@ describe('avisosDelMapeoDeRubros', () => {
       }),
     ]);
     const aviso = avisosDelMapeoDeRubros(m).find((a) => a.includes('51959505'))!;
-    expect(aviso).toContain('Creala en el plan de cuentas');
+    expect(aviso).toContain('Créala en el plan de cuentas');
   });
 
   it('un rubro inventado y vacío no genera ningún aviso', () => {

@@ -155,7 +155,7 @@ describe('<ConfiguracionDeExogena>', () => {
     expect(heredado.textContent).toContain('Resolución 000162');
     // El campo propio arranca VACÍO, no en cero: vacío significa heredar.
     expect((q('tope-propio') as HTMLInputElement).value).toBe('');
-    expect(q('frase-del-tope')!.textContent).toContain('Dejá el campo vacío');
+    expect(q('frase-del-tope')!.textContent).toContain('Deja el campo vacío');
   });
 
   it('🔴 sin tope publicado dice que no se agrupa nada — nunca «$0»', async () => {

@@ -193,6 +193,70 @@ describe('Por revisar — la tabla', () => {
     expect(cola.rejectMatch).toHaveBeenCalledWith('q-1', 'No es el pago de ese contrato.')
   })
 
+  /*
+   * 🔴 19-09 · La confirmación en lote NO tenía una sola prueba: la franja
+   * gris de arriba de la tabla —con su tilde a medias, su «Limpiar» y su
+   * doble clic de confirmación— se construyó entera sin una línea que la
+   * fijara. Estas pruebas nacen con la barra nueva.
+   */
+  describe('🔴 la acción masiva', () => {
+    const ALTO = () => item({ id: 'q-alto', movementId: 'mov-alto', confidenceScore: 0.95 })
+    const BAJO = () => item({ id: 'q-bajo', movementId: 'mov-bajo', confidenceScore: 0.4 })
+
+    it('la barra se ve aunque no haya nada marcado, y dice cuántos se pueden', async () => {
+      cola.items = [ALTO(), BAJO()]
+      cola.total = 2
+      await montar()
+      const resumen = $('[data-testid="conciliacion-acciones-resumen"]')
+      expect(resumen.textContent).toContain('Ningún cruce marcado')
+      // Sólo el de 95% cuenta: el de 40% no se confirma en lote.
+      expect(resumen.textContent).toContain('1 de alta confianza')
+      // 🔴 El botón que confirma queda A LA VISTA y apagado, no escondido.
+      expect(($('[data-testid="conciliacion-confirmar-lote"]') as HTMLButtonElement).disabled).toBe(
+        true,
+      )
+    })
+
+    it('«Marcar los de alta confianza» marca sólo a ésos, y pide confirmación antes de mandar', async () => {
+      cola.items = [ALTO(), BAJO()]
+      cola.total = 2
+      await montar()
+      await clic($('[data-testid="conciliacion-marcar-elegibles"]'))
+      expect($('[data-testid="conciliacion-acciones-resumen"]').textContent).toContain('Marcaste 1 cruce')
+
+      await clic($('[data-testid="conciliacion-confirmar-lote"]'))
+      // Todavía NO se mandó nada: confirmar en lote no se deshace en lote.
+      expect(bulk.bulkConfirmByIds).not.toHaveBeenCalled()
+      expect($('[data-testid="conciliacion-confirmar-de-verdad"]').textContent).toContain(
+        'No se deshace en lote',
+      )
+
+      await clic(botonConTexto('Sí, confirmar'))
+      expect(bulk.bulkConfirmByIds).toHaveBeenCalledWith(['q-alto'])
+    })
+
+    it('«Quitar la selección» vacía lo marcado y esconde su propio botón', async () => {
+      cola.items = [ALTO()]
+      cola.total = 1
+      await montar()
+      await clic($('[data-testid="conciliacion-marcar-elegibles"]'))
+      expect(document.querySelector('[data-testid="conciliacion-acciones-quitar"]')).not.toBeNull()
+
+      await clic($('[data-testid="conciliacion-acciones-quitar"]'))
+      expect($('[data-testid="conciliacion-acciones-resumen"]').textContent).toContain(
+        'Ningún cruce marcado',
+      )
+      expect(document.querySelector('[data-testid="conciliacion-acciones-quitar"]')).toBeNull()
+    })
+
+    it('sin ningún cruce de alta confianza no hay barra: no hay lote posible', async () => {
+      cola.items = [BAJO()]
+      cola.total = 1
+      await montar()
+      expect(document.querySelector('[data-testid="conciliacion-acciones"]')).toBeNull()
+    })
+  })
+
   it('un fallo del servicio no se pinta como «no hay nada»', async () => {
     cola.error = '500'
     await montar()

@@ -52,6 +52,14 @@ const IMPERATIVOS_EN_AR = [
   'confirmá', 'sembrá', 'recargá', 'declará', 'cambiá', 'avisá', 'contá',
   'esperá', 'firmá', 'generá', 'llamá', 'pagá', 'pasá', 'prestá', 'terminá',
   'tomá', 'trabajá', 'validá', 'andá', 'estás seguro de que querés',
+  'armá', 'arreglá', 'ajustá', 'aplicá', 'apagá', 'calculá', 'chequeá', 'conectá',
+  'consultá', 'controlá', 'cortá', 'descartá', 'enviá', 'escaneá', 'exportá',
+  'grabá', 'intentá', 'modificá', 'mostrá', 'nombrá', 'notificá', 'ordená',
+  'organizá', 'pegá', 'preguntá', 'presioná', 'reintentá', 'renová', 'reportá',
+  'separá', 'señalá', 'solucioná', 'anotá', 'apuntá', 'bajá', 'completá',
+  'comprobá', 'contactá', 'desactivá', 'duplicá', 'entregá', 'liquidá',
+  'numerá', 'programá', 'rechazá', 'registrá', 'renombrá', 'reservá',
+  'restablecé', 'revertí', 'sincronizá', 'trasladá', 'verificá',
 ]
 
 /** Presentes en -és y los dos irregulares que más se escapan. */

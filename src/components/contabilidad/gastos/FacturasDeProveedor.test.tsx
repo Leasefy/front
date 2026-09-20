@@ -389,7 +389,7 @@ describe('<FacturasDeProveedor>', () => {
 
     await pintar();
 
-    expect(q('facturas-de-proveedor')!.textContent).toContain('Registrá la primera');
+    expect(q('facturas-de-proveedor')!.textContent).toContain('Registra la primera');
   });
 
   it('un proveedor escrito a mano se marca como tal', async () => {

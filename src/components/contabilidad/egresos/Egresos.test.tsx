@@ -203,6 +203,49 @@ describe('<Egresos>', () => {
     expect(q('crear-lote-motivo')!.textContent).toContain('Marca al menos un egreso');
   });
 
+  /*
+   * 🔴 19-09 · «Armar un lote» era una tarjeta ENCIMA de la tabla, con su
+   * propio conteo y su propio campo: se marcaba en la fila 30 y el botón que
+   * arma el lote quedaba fuera de la pantalla. Ahora es la barra de acciones
+   * masivas de la casa, al pie, y el concepto vive dentro de ella.
+   */
+  describe('🔴 la barra de acciones masivas', () => {
+    it('se ve sin nada marcado y dice qué hay que hacer', async () => {
+      await pintar();
+      const resumen = q('armar-lote-resumen')!;
+      expect(resumen.textContent).toContain('Marca los egresos pendientes');
+      // El botón queda A LA VISTA y apagado, con el motivo.
+      expect((q('crear-lote') as HTMLButtonElement).disabled).toBe(true);
+      // Sin nada marcado no hay nada que quitar.
+      expect(q('armar-lote-quitar')).toBeNull();
+    });
+
+    it('marcar un egreso lo dice en palabras y con su plata, y ofrece la salida', async () => {
+      await pintar();
+      await act(async () => {
+        (q('marcar-e1') as HTMLElement).click();
+      });
+      const resumen = q('armar-lote-resumen')!;
+      expect(resumen.textContent).toContain('Marcaste 1 egreso');
+      expect(q('armar-lote-quitar')).not.toBeNull();
+
+      await act(async () => {
+        (q('armar-lote-quitar') as HTMLElement).click();
+      });
+      expect(q('armar-lote-resumen')!.textContent).toContain('Marca los egresos pendientes');
+    });
+
+    it('🔴 el concepto del lote vive DENTRO de la barra: es parte de la acción', async () => {
+      await pintar();
+      const barra = q('armar-lote')!;
+      expect(barra.querySelector('[data-testid="concepto-del-lote"]')).not.toBeNull();
+      expect(barra.querySelector('[data-testid="crear-lote"]')).not.toBeNull();
+      // Pegada al borde de abajo mientras se recorren los egresos.
+      expect(barra.className).toContain('sticky');
+      expect(barra.className).toContain('bottom-0');
+    });
+  });
+
   it('avisa de los pendientes a los que el banco les falta un dato', async () => {
     gastos.egresos.listar.mockResolvedValue({
       disponible: true,

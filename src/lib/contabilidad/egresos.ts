@@ -143,7 +143,7 @@ export function permisosDelLote(
     estado === 'ARCHIVO_GENERADO'
       ? SI
       : estado === 'APROBADO'
-        ? no('Primero bajá el archivo para el banco: marcar pagado sin subirlo asienta una salida que no ocurrió.')
+        ? no('Primero baja el archivo para el banco: marcar pagado sin subirlo asienta una salida que no ocurrió.')
         : no(`Este lote ${EN_ESTADO[estado]}.`);
 
   return { aprobar: puedeAprobar, archivo: puedeArchivo, pagado: puedePagado, anular };

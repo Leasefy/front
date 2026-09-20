@@ -43,8 +43,14 @@
  *   selección», porque sin selección no tiene nada que quitar.
  * · **Un acento por barra** (DESIGN §1): el botón que ejecuta. Todo lo demás
  *   —quitar, cancelar— va en `ghost` o `secondary`.
- * · **El número va en palabras, no sólo en el botón**: «208 facturas
- *   marcadas» se entiende sin tener que leer el rótulo del botón.
+ * · **El número va en palabras, no sólo en el botón**: «Marcaste 208
+ *   facturas» se entiende sin tener que leer el rótulo del botón.
+ * · **Ni un participio ni un «ninguna» en el texto de la barra.** El primer
+ *   intento decía «1 factura marcada», y la primera tabla que no fuera de
+ *   facturas escupió «1 cruce marcada». Un componente compartido no puede
+ *   fijar el género del sustantivo de otro, y pedirle el género al que lo usa
+ *   es empujarle una trampa: «Marcaste 1 cruce» y «Todavía no has marcado
+ *   nada» no concuerdan con nada, así que no se pueden equivocar.
  */
 
 import type { ReactNode } from 'react'
@@ -56,8 +62,12 @@ export interface BarraDeAccionesMasivasProps {
   marcadas: number
   /** Cómo se llama una fila: `['factura', 'facturas']`, en minúscula. */
   queSon: readonly [string, string]
-  /** Lo que suman las marcadas, YA formateado como plata. */
-  monto?: string | null
+  /**
+   * Lo que suman las marcadas, ya formateado: un string, o la pieza de plata
+   * que use esa pantalla (`<Monto>` en contabilidad). La barra no formatea
+   * nada — no tiene por qué saber en qué moneda cuenta cada módulo.
+   */
+  monto?: ReactNode
   /**
    * La selección la puso el sistema y la persona todavía no la ha tocado.
    * Cambia «marcaste» por «preseleccionamos» y explica de dónde salió.
@@ -116,7 +126,7 @@ export function BarraDeAccionesMasivas({
         <p className="text-body-sm text-fg" data-testid={`${testid}-resumen`}>
           {marcadas === 0 ? (
             <span className="text-fg-muted">
-              {cuandoNoHayNada ?? `No hay ninguna ${singular} marcada.`}
+              {cuandoNoHayNada ?? 'Todavía no has marcado nada.'}
             </span>
           ) : sugerida ? (
             <>
@@ -126,8 +136,8 @@ export function BarraDeAccionesMasivas({
             </>
           ) : (
             <>
-              <span className="font-medium tabular-nums">{cuantas}</span> {nombre}{' '}
-              {marcadas === 1 ? 'marcada' : 'marcadas'}
+              <span className="font-medium">Marcaste</span>{' '}
+              <span className="tabular-nums">{cuantas}</span> {nombre}
               {monto ? <span className="tabular-nums"> · {monto}</span> : null}
             </>
           )}

@@ -242,13 +242,19 @@ export function ElegirAQuienPagarle({
         >
           Tildar lo que alcanza
         </Button>
+        {/* 🔴 «Quitar la selección», con las mismas palabras que el resto del
+            panel (`BarraDeAccionesMasivas`). Esta pantalla NO usa esa barra a
+            propósito: vive dentro del diálogo «Armar el lote», que ya tiene su
+            propio pie con el botón que arma. Meterle una barra pegada al borde
+            de abajo dejaría dos pies compitiendo por el mismo borde. Lo que sí
+            se comparte es el idioma. */}
         <Button
           variant="ghost"
           hideArrow
           onClick={() => setElegidos(new Set())}
           disabled={elegidos.size === 0}
         >
-          Quitar todos
+          Quitar la selección
         </Button>
       </div>
       <p className="text-xs text-fg-muted" data-testid="sin-giro-parcial">

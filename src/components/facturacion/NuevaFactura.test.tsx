@@ -273,7 +273,7 @@ describe('NuevaFactura', () => {
       });
       const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
       expect(resumen.textContent).not.toContain('Preseleccionamos');
-      expect(resumen.textContent).toContain('1 factura marcada');
+      expect(resumen.textContent).toContain('Marcaste 1 factura');
       expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).toBeNull();
     });
 

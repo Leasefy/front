@@ -420,7 +420,7 @@ export function FacturasDeProveedor({
       <section className="overflow-hidden rounded-lg border border-border bg-surface">
         {pagina.facturas.length === 0 ? (
           <p className="p-8 text-center text-sm text-fg-muted">
-            No hay facturas con este filtro. Registrá la primera con el botón de arriba.
+            No hay facturas con este filtro. Registra la primera con el botón de arriba.
           </p>
         ) : (
           <div className="overflow-x-auto">

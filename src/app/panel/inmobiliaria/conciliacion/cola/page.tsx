@@ -268,7 +268,12 @@ function ConciliacionCola() {
         </p>
       </header>
 
-      <section className="rounded-lg border border-border bg-surface overflow-hidden">
+      <section
+        /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
+           tarjeta se vuelve el contenedor de desplazamiento más cercano y el
+           pie pegajoso de adentro deja de medirse contra la ventana. */
+        className="rounded-lg border border-border bg-surface overflow-x-clip"
+      >
         {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
         <div
           className="flex flex-wrap items-center gap-2 border-b border-border p-4"
@@ -463,82 +468,84 @@ function ConciliacionCola() {
               />
             </div>
           )}
+        {/* 🔴 19-09 · La acción masiva, en la MISMA pieza que el resto del panel
+            (`BarraDeAccionesMasivas`) y DENTRO de la tabla, como su último
+            renglón. Antes era una franja gris ENCIMA de la tabla que además
+            desaparecía cuando no había nada marcado: marcando en la fila 30,
+            el botón que confirma quedaba fuera de la pantalla.
+            Nico: «este tipo de tablas que tienen acciones masivas deben de verse
+            muy bien y que sí estén juntas […] revisa también el resto de tablas
+            para que tengan consistencia».
+
+            El tilde de «seleccionar todos» se volvió un BOTÓN: el estado —cuántos
+            hay marcados— ya lo dice la barra, así que el control sólo tenía que
+            saber hacer una cosa, y «marcar los 12 de alta confianza» se lee sin
+            tener que interpretar un tilde a medias. */}
+        {!isLoading && !error && eligibleIds.length > 0 && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="conciliacion-acciones"
+            marcadas={selectedEligible.length}
+            queSon={['cruce', 'cruces']}
+            onQuitar={clearSelection}
+            ocupado={busy}
+            cuandoNoHayNada={`Ningún cruce marcado. Hay ${eligibleIds.length} de alta confianza que se pueden confirmar en lote.`}
+            nota={
+              armed ? (
+                <p className="text-caption text-warning" data-testid="conciliacion-confirmar-de-verdad">
+                  Se van a dar por buenos {selectedEligible.length}{' '}
+                  {selectedEligible.length === 1 ? 'cruce' : 'cruces'} de una vez. No se
+                  deshace en lote: cada uno se rechaza después de a uno.
+                </p>
+              ) : null
+            }
+          >
+            {!armed && !allEligibleSelected && (
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
+                onClick={toggleAll}
+                disabled={busy}
+                data-testid="conciliacion-marcar-elegibles"
+              >
+                Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} alta
+                confianza (≥{Math.round(BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR * 100)}%)
+              </Button>
+            )}
+            {armed ? (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
+                  onClick={() => setArmed(false)}
+                  disabled={busy}
+                >
+                  Cancelar
+                </Button>
+                <Button size="sm" hideArrow isLoading={busy} onClick={() => void runBulkConfirm()}>
+                  <ShieldCheck className="size-4" aria-hidden="true" />
+                  Sí, confirmar
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                hideArrow
+                disabled={selectedEligible.length === 0 || busy}
+                onClick={() => setArmed(true)}
+                data-testid="conciliacion-confirmar-lote"
+              >
+                <CheckCircle className="size-4" aria-hidden="true" />
+                Confirmar {selectedEligible.length > 0 ? selectedEligible.length : 'lo marcado'}
+              </Button>
+            )}
+          </BarraDeAccionesMasivas>
+        )}
         </EstadoDeDatos>
       </section>
 
-      {/* 🔴 19-09 · La acción masiva, en la MISMA pieza que el resto del panel
-          (`BarraDeAccionesMasivas`). Antes era una franja gris ENCIMA de la
-          tabla que además desaparecía cuando no había nada marcado: marcando
-          en la fila 30, el botón que confirma quedaba fuera de la pantalla.
-          Nico: «este tipo de tablas que tienen acciones masivas deben de verse
-          muy bien y que sí estén juntas […] revisa también el resto de tablas
-          para que tengan consistencia».
-
-          El tilde de «seleccionar todos» se volvió un BOTÓN: el estado —cuántos
-          hay marcados— ya lo dice la barra, así que el control sólo tenía que
-          saber hacer una cosa, y «marcar los 12 de alta confianza» se lee sin
-          tener que interpretar un tilde a medias. */}
-      {!isLoading && !error && eligibleIds.length > 0 && (
-        <BarraDeAccionesMasivas
-          testid="conciliacion-acciones"
-          marcadas={selectedEligible.length}
-          queSon={['cruce', 'cruces']}
-          onQuitar={clearSelection}
-          ocupado={busy}
-          cuandoNoHayNada={`Ningún cruce marcado. Hay ${eligibleIds.length} de alta confianza que se pueden confirmar en lote.`}
-          nota={
-            armed ? (
-              <p className="text-caption text-warning" data-testid="conciliacion-confirmar-de-verdad">
-                Se van a dar por buenos {selectedEligible.length}{' '}
-                {selectedEligible.length === 1 ? 'cruce' : 'cruces'} de una vez. No se
-                deshace en lote: cada uno se rechaza después de a uno.
-              </p>
-            ) : null
-          }
-        >
-          {!armed && !allEligibleSelected && (
-            <Button
-              variant="ghost"
-              size="sm"
-              hideArrow
-              onClick={toggleAll}
-              disabled={busy}
-              data-testid="conciliacion-marcar-elegibles"
-            >
-              Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} alta
-              confianza (≥{Math.round(BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR * 100)}%)
-            </Button>
-          )}
-          {armed ? (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                hideArrow
-                onClick={() => setArmed(false)}
-                disabled={busy}
-              >
-                Cancelar
-              </Button>
-              <Button size="sm" hideArrow isLoading={busy} onClick={() => void runBulkConfirm()}>
-                <ShieldCheck className="size-4" aria-hidden="true" />
-                Sí, confirmar
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              hideArrow
-              disabled={selectedEligible.length === 0 || busy}
-              onClick={() => setArmed(true)}
-              data-testid="conciliacion-confirmar-lote"
-            >
-              <CheckCircle className="size-4" aria-hidden="true" />
-              Confirmar {selectedEligible.length > 0 ? selectedEligible.length : 'lo marcado'}
-            </Button>
-          )}
-        </BarraDeAccionesMasivas>
-      )}
 
       {/* Rechazar pide motivo (obligatorio en el backend, queda en auditoría). */}
       <Dialog

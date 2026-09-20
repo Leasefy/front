@@ -378,7 +378,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             explicacion="Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados. No es el giro al propietario: ese baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones."
           />
 
-          <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <section
+            /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
+               tarjeta se vuelve el contenedor de desplazamiento más cercano y
+               el pie pegajoso de adentro deja de medirse contra la ventana. */
+            className="overflow-x-clip rounded-lg border border-border bg-surface"
+          >
             {egresos.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
                 Todavía no hay egresos. Se crean desde una factura de proveedor causada, o sueltos
@@ -516,71 +521,72 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 </Table>
               </div>
             )}
+            {/* 🔴 19-09 · «Armar un lote» era una tarjeta ENCIMA de la tabla: se
+                marcaba en la fila 30 y el botón que arma el lote quedaba fuera
+                de la pantalla, con el conteo de lo marcado arriba también. Ahora
+                es la barra de acciones masivas de la casa, pegada al borde de
+                abajo mientras se recorren los egresos, y el concepto del lote va
+                DENTRO de ella: es parte de la acción, no un campo aparte. Nico:
+                «deben de verse muy bien y que sí estén juntas […] revisa también
+                el resto de tablas para que tengan consistencia». */}
+            {armables.length > 0 ? (
+              <BarraDeAccionesMasivas
+                variant="pie"
+                testid="armar-lote"
+                marcadas={marcados.length}
+                queSon={['egreso', 'egresos']}
+                monto={marcados.length > 0 ? <Monto valor={totalDelLote(marcados)} /> : null}
+                onQuitar={() => setElegidos(new Set())}
+                ocupado={armando}
+                cuandoNoHayNada="Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona."
+                nota={
+                  pendientesSinDatos.length > 0 ? (
+                    <p className="max-w-xl text-caption text-warning" data-testid="pendientes-sin-datos">
+                      {pendientesSinDatos.length === 1
+                        ? 'Un egreso pendiente no tiene todo lo que el banco necesita'
+                        : `${pendientesSinDatos.length} egresos pendientes no tienen todo lo que el banco necesita`}
+                      : {faltaParaGirar(pendientesSinDatos[0]).join(', ')}
+                      {pendientesSinDatos.length > 1 ? ' (y otros)' : ''}. Se pueden meter igual, pero
+                      el archivo saldría corto y el lote no cuadraría con la plata que salió.
+                    </p>
+                  ) : null
+                }
+              >
+                <div className="min-w-0">
+                  <Label htmlFor="concepto-del-lote" className="sr-only">
+                    Concepto del lote
+                  </Label>
+                  <Input
+                    id="concepto-del-lote"
+                    value={conceptoDelLote}
+                    onChange={(e) => setConceptoDelLote(e.target.value)}
+                    placeholder="Concepto del lote: proveedores 2.ª quincena"
+                    className="w-full sm:w-72"
+                    data-testid="concepto-del-lote"
+                  />
+                </div>
+                <AccionConMotivo
+                  puede={escritura.puede && marcados.length > 0 && conceptoDelLote.trim().length > 0}
+                  motivo={
+                    escritura.motivo ??
+                    (marcados.length === 0
+                      ? 'Marca al menos un egreso pendiente.'
+                      : 'Escribe el concepto del lote: es lo que se lee en el banco y en el libro.')
+                  }
+                  ocupado={armando}
+                  textoOcupado="Armando…"
+                  onClick={() => void armarLote()}
+                  variant="default"
+                  testId="crear-lote"
+                  enLinea
+                >
+                  <Stack className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                  Armar el lote
+                </AccionConMotivo>
+              </BarraDeAccionesMasivas>
+            ) : null}
           </section>
 
-          {/* 🔴 19-09 · «Armar un lote» era una tarjeta ENCIMA de la tabla: se
-              marcaba en la fila 30 y el botón que arma el lote quedaba fuera
-              de la pantalla, con el conteo de lo marcado arriba también. Ahora
-              es la barra de acciones masivas de la casa, pegada al borde de
-              abajo mientras se recorren los egresos, y el concepto del lote va
-              DENTRO de ella: es parte de la acción, no un campo aparte. Nico:
-              «deben de verse muy bien y que sí estén juntas […] revisa también
-              el resto de tablas para que tengan consistencia». */}
-          {armables.length > 0 ? (
-            <BarraDeAccionesMasivas
-              testid="armar-lote"
-              marcadas={marcados.length}
-              queSon={['egreso', 'egresos']}
-              monto={marcados.length > 0 ? <Monto valor={totalDelLote(marcados)} /> : null}
-              onQuitar={() => setElegidos(new Set())}
-              ocupado={armando}
-              cuandoNoHayNada="Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona."
-              nota={
-                pendientesSinDatos.length > 0 ? (
-                  <p className="max-w-xl text-caption text-warning" data-testid="pendientes-sin-datos">
-                    {pendientesSinDatos.length === 1
-                      ? 'Un egreso pendiente no tiene todo lo que el banco necesita'
-                      : `${pendientesSinDatos.length} egresos pendientes no tienen todo lo que el banco necesita`}
-                    : {faltaParaGirar(pendientesSinDatos[0]).join(', ')}
-                    {pendientesSinDatos.length > 1 ? ' (y otros)' : ''}. Se pueden meter igual, pero
-                    el archivo saldría corto y el lote no cuadraría con la plata que salió.
-                  </p>
-                ) : null
-              }
-            >
-              <div className="min-w-0">
-                <Label htmlFor="concepto-del-lote" className="sr-only">
-                  Concepto del lote
-                </Label>
-                <Input
-                  id="concepto-del-lote"
-                  value={conceptoDelLote}
-                  onChange={(e) => setConceptoDelLote(e.target.value)}
-                  placeholder="Concepto del lote: proveedores 2.ª quincena"
-                  className="w-full sm:w-72"
-                  data-testid="concepto-del-lote"
-                />
-              </div>
-              <AccionConMotivo
-                puede={escritura.puede && marcados.length > 0 && conceptoDelLote.trim().length > 0}
-                motivo={
-                  escritura.motivo ??
-                  (marcados.length === 0
-                    ? 'Marca al menos un egreso pendiente.'
-                    : 'Escribe el concepto del lote: es lo que se lee en el banco y en el libro.')
-                }
-                ocupado={armando}
-                textoOcupado="Armando…"
-                onClick={() => void armarLote()}
-                variant="default"
-                testId="crear-lote"
-                enLinea
-              >
-                <Stack className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                Armar el lote
-              </AccionConMotivo>
-            </BarraDeAccionesMasivas>
-          ) : null}
         </TabsContent>
 
         {/* ══ Lotes ═════════════════════════════════════════════════════ */}

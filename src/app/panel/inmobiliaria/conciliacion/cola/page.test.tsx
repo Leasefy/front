@@ -249,6 +249,27 @@ describe('Por revisar — la tabla', () => {
       expect(document.querySelector('[data-testid="conciliacion-acciones-quitar"]')).toBeNull()
     })
 
+    it('🔴 el pie vive DENTRO de la tabla, no suelto debajo', async () => {
+      /*
+       * Nico, 19-09: «cuando hay acciones masivas deben quedar también en la
+       * tabla». Una caja con borde debajo de otra caja con borde son dos
+       * objetos; el que actúa sobre las casillas tiene que ser el mismo
+       * objeto que las casillas.
+       */
+      cola.items = [ALTO()]
+      cola.total = 1
+      await montar()
+      const barra = $('[data-testid="conciliacion-acciones"]')
+      const tarjeta = document.querySelector('section')!
+      expect(tarjeta.contains(barra)).toBe(true)
+      expect(barra.className).not.toContain('rounded-lg')
+      expect(barra.className).toContain('border-t')
+      // 🔴 Y la tarjeta no puede recortar con `overflow-hidden`: mataría lo
+      // pegajoso del pie.
+      expect(tarjeta.className).not.toContain('overflow-hidden')
+      expect(tarjeta.className).toContain('overflow-x-clip')
+    })
+
     it('sin ningún cruce de alta confianza no hay barra: no hay lote posible', async () => {
       cola.items = [BAJO()]
       cola.total = 1

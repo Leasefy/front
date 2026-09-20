@@ -411,7 +411,12 @@ function CandidatosContent() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div
+        /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
+           tarjeta se vuelve el contenedor de desplazamiento más cercano y el
+           pie pegajoso de adentro deja de medirse contra la ventana. */
+        className="rounded-lg border border-border bg-card overflow-x-clip"
+      >
         {candidates.length === 0 ? (
           <EmptyState
             icon={User}
@@ -551,55 +556,56 @@ function CandidatosContent() {
             )}
           </div>
         )}
+        {/* 🔴 19-09 · La barra de comparación, en la MISMA pieza que el resto
+            del panel (`BarraDeAccionesMasivas`). Tenía la intuición correcta
+            —abajo, porque la decisión se toma después de recorrer la lista— con
+            dos defectos:
+
+            · era `fixed inset-x-0`, o sea que cruzaba la pantalla ENTERA, por
+              debajo de la barra lateral, y su contenido se centraba contra la
+              ventana en vez de contra la columna de contenido;
+            · sólo existía con algo marcado, así que quien no tildara nunca
+              sabría que se puede comparar. Ahora está siempre y lo dice. */}
+        {totalCandidatos > 0 && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="barra-comparar"
+            marcadas={paraComparar.size}
+            queSon={['candidato', 'candidatos']}
+            onQuitar={() => setParaComparar(new Set())}
+            cuandoNoHayNada={`Marca ${MINIMO_A_COMPARAR} o más candidatos para verlos lado a lado.`}
+            nota={
+              paraComparar.size > 0 && paraComparar.size < MINIMO_A_COMPARAR ? (
+                <p className="text-caption text-fg-muted">
+                  Falta al menos {MINIMO_A_COMPARAR - paraComparar.size} más: comparar de a uno
+                  no compara nada.
+                </p>
+              ) : paraComparar.size >= MAXIMO_A_COMPARAR ? (
+                <p className="text-caption text-fg-muted">
+                  Es el máximo: {MAXIMO_A_COMPARAR} caben lado a lado sin tener que desplazarse.
+                </p>
+              ) : null
+            }
+          >
+              <Button
+                size="sm"
+                hideArrow
+                disabled={paraComparar.size < MINIMO_A_COMPARAR}
+                onClick={() =>
+                  router.push(
+                    `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
+                  )
+                }
+                className="gap-1.5"
+                data-testid="ir-a-comparar"
+              >
+                <Scales className="h-4 w-4" />
+                Comparar
+              </Button>
+          </BarraDeAccionesMasivas>
+        )}
       </div>
 
-      {/* 🔴 19-09 · La barra de comparación, en la MISMA pieza que el resto
-          del panel (`BarraDeAccionesMasivas`). Tenía la intuición correcta
-          —abajo, porque la decisión se toma después de recorrer la lista— con
-          dos defectos:
-
-          · era `fixed inset-x-0`, o sea que cruzaba la pantalla ENTERA, por
-            debajo de la barra lateral, y su contenido se centraba contra la
-            ventana en vez de contra la columna de contenido;
-          · sólo existía con algo marcado, así que quien no tildara nunca
-            sabría que se puede comparar. Ahora está siempre y lo dice. */}
-      {totalCandidatos > 0 && (
-        <BarraDeAccionesMasivas
-          testid="barra-comparar"
-          marcadas={paraComparar.size}
-          queSon={['candidato', 'candidatos']}
-          onQuitar={() => setParaComparar(new Set())}
-          cuandoNoHayNada={`Marca ${MINIMO_A_COMPARAR} o más candidatos para verlos lado a lado.`}
-          nota={
-            paraComparar.size > 0 && paraComparar.size < MINIMO_A_COMPARAR ? (
-              <p className="text-caption text-fg-muted">
-                Falta al menos {MINIMO_A_COMPARAR - paraComparar.size} más: comparar de a uno
-                no compara nada.
-              </p>
-            ) : paraComparar.size >= MAXIMO_A_COMPARAR ? (
-              <p className="text-caption text-fg-muted">
-                Es el máximo: {MAXIMO_A_COMPARAR} caben lado a lado sin tener que desplazarse.
-              </p>
-            ) : null
-          }
-        >
-            <Button
-              size="sm"
-              hideArrow
-              disabled={paraComparar.size < MINIMO_A_COMPARAR}
-              onClick={() =>
-                router.push(
-                  `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
-                )
-              }
-              className="gap-1.5"
-              data-testid="ir-a-comparar"
-            >
-              <Scales className="h-4 w-4" />
-              Comparar
-            </Button>
-        </BarraDeAccionesMasivas>
-      )}
 
       {/* El cajón con el análisis, las cuatro acciones y el paso 10 */}
       {cajon}

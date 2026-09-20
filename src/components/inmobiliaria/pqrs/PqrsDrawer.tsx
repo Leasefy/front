@@ -61,13 +61,32 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
   const { agentes } = useAgentes({ skip: !open })
   const [guardando, setGuardando] = useState(false)
 
-  const opcionesAgente = useMemo(
-    () =>
-      agentes
-        .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
-        .map((a) => ({ value: a.userId, label: a.name })),
-    [agentes],
-  )
+  /*
+   * 🔴 19-09-2026 · Quien YA responde entra siempre en la lista, aunque no
+   * esté entre los agentes activos.
+   *
+   * Visto en una captura de Nico: arriba el cajón decía «RESPONSABLE · victor
+   * ortiz» y tres renglones más abajo, en el control del MISMO campo, decía
+   * «Sin agentes activos». El `Combobox` recibía un `value` que no existía
+   * entre sus opciones, no encontraba cómo rotularlo y caía al placeholder.
+   * Dos afirmaciones contrarias sobre el mismo dato, en la misma pantalla, a
+   * treinta píxeles de distancia — y la que gana es la que parece un control,
+   * o sea la falsa.
+   *
+   * Pasa siempre que quien responde dejó de estar activo en la inmobiliaria:
+   * la PQRS no se reasigna sola, así que el caso es normal, no un borde raro.
+   */
+  const opcionesAgente = useMemo(() => {
+    const activos = agentes
+      .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
+      .map((a) => ({ value: a.userId, label: a.name }))
+    const actual = pqrs?.asignadoAUserId
+    if (!actual || activos.some((o) => o.value === actual)) return activos
+    return [
+      { value: actual, label: pqrs?.asignadoANombre ?? 'Responsable actual' },
+      ...activos,
+    ]
+  }, [agentes, pqrs?.asignadoAUserId, pqrs?.asignadoANombre])
 
   const siguientes = pqrs ? estadosSiguientes(pqrs.estado) : []
   const sla = pqrs ? textoSla(pqrs.slaVenceAt, pqrs.estado) : null

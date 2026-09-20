@@ -248,6 +248,75 @@ describe('NuevaFactura', () => {
     expect(boton.textContent).toContain('Generar 2 facturas');
   });
 
+  /*
+   * 🔴 19-09 · Nico: «veo arriba la acción masiva y ya vienen seleccionadas
+   * sin que el usuario seleccione algo, es raro eso, quizás ya eso es una
+   * sugerencia y debe verse de otra forma». La preselección se queda —«el
+   * pedido es facturar el mes, no ir marcando 800 casillas»— pero tiene que
+   * DECIR que es nuestra, y tener salida.
+   */
+  describe('🔴 la preselección se lee como sugerencia', () => {
+    it('lo dice con todas las letras, y ofrece la salida', async () => {
+      await montar();
+      const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
+      expect(resumen.textContent).toContain('Preseleccionamos');
+      expect(resumen.textContent).toContain('2 facturas');
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).not.toBeNull();
+      expect(q('[data-testid="facturacion-acciones-quitar"]')).not.toBeNull();
+    });
+
+    it('en cuanto la persona toca una casilla, la selección es SUYA', async () => {
+      await montar();
+      const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
+      await act(async () => {
+        casilla.click();
+      });
+      const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
+      expect(resumen.textContent).not.toContain('Preseleccionamos');
+      expect(resumen.textContent).toContain('1 factura marcada');
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).toBeNull();
+    });
+
+    it('«Quitar la selección» deja el botón apagado y dice qué hacer', async () => {
+      await montar();
+      await act(async () => {
+        (q('[data-testid="facturacion-acciones-quitar"]') as HTMLButtonElement).click();
+      });
+      const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+      // 🔴 Sigue A LA VISTA: esconderlo se lee como «falta la función».
+      expect(boton).not.toBeNull();
+      expect(boton.disabled).toBe(true);
+      expect(q('[data-testid="facturacion-acciones-resumen"]')!.textContent).toContain(
+        'No hay ninguna factura marcada',
+      );
+      // Y sin nada marcado no hay nada que quitar.
+      expect(q('[data-testid="facturacion-acciones-quitar"]')).toBeNull();
+    });
+  });
+
+  /*
+   * 🔴 El botón vivía arriba de todo, lejos de las casillas: con dos tablas
+   * debajo —Inquilinos y Propietarios— se marcaba en la de abajo y el botón
+   * que emite estaba fuera de la pantalla. Ahora es el pie de las dos.
+   */
+  it('🔴 el botón de emitir vive en el PIE de las tablas, no arriba', async () => {
+    await montar();
+    const barra = q('[data-testid="facturacion-acciones"]')!;
+    expect(barra.querySelector('[data-testid="facturacion-generar"]')).not.toBeNull();
+    // Pegada al borde de abajo mientras se recorren las filas.
+    expect(barra.className).toContain('sticky');
+    expect(barra.className).toContain('bottom-0');
+    // Y va DESPUÉS de las dos tablas, que es lo que la deja cubrirlas a las dos.
+    const tablas = [
+      q('[data-testid="facturacion-inquilinos"]')!,
+      q('[data-testid="facturacion-propietarios"]')!,
+    ];
+    expect(tablas.every(Boolean)).toBe(true);
+    for (const tabla of tablas) {
+      expect(tabla.compareDocumentPosition(barra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
   it('lo ya emitido se ve con su número y sin casilla, en vez de esconderse', async () => {
     porGenerarMock.mockResolvedValue(
       respuesta({

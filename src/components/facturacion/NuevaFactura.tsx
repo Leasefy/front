@@ -92,6 +92,7 @@ import {
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
 
 import { Button } from '@/components/ui/button'
+import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -699,6 +700,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
+  /**
+   * 🔴 ¿La selección la pusimos nosotros o la puso la persona?
+   *
+   * Arranca en `true` porque al cargar el mes marcamos solas las facturas
+   * emitibles. En cuanto toca una casilla pasa a `false` y ya no se vuelve a
+   * prender hasta que se recargue el mes: a partir de ese clic la selección es
+   * suya y llamarla «preseleccionamos» sería mentir.
+   */
+  const [seleccionSugerida, setSeleccionSugerida] = useState(true)
   const [generando, setGenerando] = useState(false)
 
   const meses = useMemo(() => mesesParaElegir(), [])
@@ -719,6 +729,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
        * elegido: el pedido es facturar el mes, no ir marcando 800 casillas.
        * Los meses de más adelante se miran, no se marcan.
        */
+      setSeleccionSugerida(true)
       setSeleccion(
         new Set(
           [...r.inquilinos, ...r.propietarios]
@@ -742,6 +753,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   }, [cargar, mes, hasta])
 
   const alternarUna = (clave: string) => {
+    setSeleccionSugerida(false)
     setSeleccion((previa) => {
       const siguiente = new Set(previa)
       if (siguiente.has(clave)) siguiente.delete(clave)
@@ -762,6 +774,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * marcar toca sólo lo que se ve, que es lo que hace posible «sólo estas».
    */
   const alternarTodas = (claves: string[]) => {
+    setSeleccionSugerida(false)
     setSeleccion((previa) => {
       const siguiente = new Set(previa)
       if (claves.some((c) => siguiente.has(c))) {
@@ -784,6 +797,12 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       propietarios: datos.propietarios.filter((f) => f.mes === mes),
     }
   }, [datos, mes])
+
+  /** La salida de la sugerencia, en un clic. */
+  const quitarSeleccion = () => {
+    setSeleccionSugerida(false)
+    setSeleccion(new Set())
+  }
 
   const elegidas = useMemo(() => [...seleccion], [seleccion])
   const totalElegido = useMemo(() => {
@@ -1019,6 +1038,11 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           </div>
         </div>
 
+        {/* 🔴 Acá arriba quedan los FILTROS y lo que hay que saber antes de
+            emitir. El botón que emite se fue al pie: hay DOS tablas debajo
+            —Inquilinos y Propietarios— que comparten una sola selección, y
+            desde arriba quedaba fuera de la pantalla justo cuando se estaba
+            marcando (Nico, 19-09). */}
         <div className="flex flex-col items-start gap-1.5 lg:items-end">
           {datos && (
             <p className="text-caption text-fg-muted tabular-nums">
@@ -1027,7 +1051,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               {datos.totales.meses === 1
                 ? mesLegible(mes)
                 : `${datos.totales.meses} meses hasta ${mesLegible(datos.hasta)}`}
-              {elegidas.length > 0 && ` · ${formatCurrency(totalElegido)} seleccionados`}
             </p>
           )}
           {datos?.resolucion.puedeNumerar && (
@@ -1039,86 +1062,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               {datos.resolucion.siguiente} · {datos.resolucion.disponibles}{' '}
               números disponibles hasta el{' '}
               {fechaLegible(datos.resolucion.vigenteHasta)}
-            </p>
-          )}
-          <Button
-            hideArrow
-            disabled={
-              elegidas.length === 0 ||
-              generando ||
-              cargando ||
-              // 🔴 Sin resolución vigente el back devuelve 400: apagar el botón
-              // dice lo mismo sin hacer perder la selección.
-              (datos !== null && !datos.resolucion.puedeNumerar)
-            }
-            onClick={() => void generar()}
-            data-testid="facturacion-generar"
-          >
-            {generando ? (
-              <Spinner className="h-4 w-4" />
-            ) : (
-              <Receipt className="h-4 w-4" weight="bold" />
-            )}
-            {generando
-              ? progreso
-                ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
-                : 'Generando…'
-              : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
-          </Button>
-          {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
-              puesta. El mismo motivo vivía sólo en un banner arriba de todo:
-              Nico apretó, no pasó nada, y lo leyó como «no da el poder
-              generar». Un control que no se mueve y no dice por qué se lee
-              como roto. */}
-          {!generando && motivoParaNoEmitir === null && numerosQueFaltan !== null && datos !== null && (
-            <p
-              className="max-w-sm text-caption text-warning lg:text-right"
-              data-testid="facturacion-rango-corto"
-            >
-              La resolución sólo tiene {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
-              {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y elegiste{' '}
-              {elegidas.length.toLocaleString('es-CO')}: se numeran las primeras y las{' '}
-              {numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar por rango
-              agotado.{' '}
-              {onIrAResolucion && (
-                <button
-                  type="button"
-                  onClick={onIrAResolucion}
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                  data-testid="facturacion-ir-a-resolucion-rango"
-                >
-                  Cargar otra resolución
-                </button>
-              )}
-            </p>
-          )}
-          {!generando && motivoParaNoEmitir !== null && (
-            <p
-              className="max-w-sm text-caption text-warning lg:text-right"
-              data-testid="facturacion-motivo-apagado"
-            >
-              {motivoParaNoEmitir}{' '}
-              {onIrAResolucion && (
-                <button
-                  type="button"
-                  onClick={onIrAResolucion}
-                  className="font-medium underline underline-offset-4"
-                  data-testid="facturacion-ir-a-resolucion"
-                >
-                  Cargar la resolución
-                </button>
-              )}
-            </p>
-          )}
-          {/* El otro motivo de que esté apagado, y el único que la persona
-              puede arreglar en esta misma pantalla. */}
-          {!generando && motivoParaNoEmitir === null && elegidas.length === 0 && datos && (
-            <p
-              className="text-caption text-fg-muted lg:text-right"
-              data-testid="facturacion-sin-seleccion"
-            >
-              No hay ninguna factura marcada. Marca las que quieras, o usa
-              «Generar esta» en una fila.
             </p>
           )}
         </div>
@@ -1242,6 +1185,105 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
                 </ul>
               </details>
             )}
+
+            {/* 🔴 EL PIE: lo marcado y lo que se puede hacer con ello, pegado
+                al borde de abajo mientras se recorren las dos tablas. Es la
+                misma pieza de todas las tablas con acciones masivas
+                (`BarraDeAccionesMasivas`). */}
+            <BarraDeAccionesMasivas
+              testid="facturacion-acciones"
+              marcadas={elegidas.length}
+              queSon={['factura', 'facturas']}
+              monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}
+              sugerida={seleccionSugerida}
+              deDonde={`de ${mesLegible(mes)}: son las que se pueden emitir hoy`}
+              onQuitar={quitarSeleccion}
+              ocupado={generando}
+              cuandoNoHayNada="No hay ninguna factura marcada. Marca las que quieras, o usa «Generar esta» en una fila."
+              nota={
+                <>
+                  {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
+                      puesta. El mismo motivo vivía sólo en un banner arriba de
+                      todo: Nico apretó, no pasó nada, y lo leyó como «no da el
+                      poder generar». Un control que no se mueve y no dice por
+                      qué se lee como roto. */}
+                  {!generando &&
+                    motivoParaNoEmitir === null &&
+                    numerosQueFaltan !== null &&
+                    datos !== null && (
+                      <p
+                        className="max-w-xl text-caption text-warning"
+                        data-testid="facturacion-rango-corto"
+                      >
+                        La resolución sólo tiene{' '}
+                        {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
+                        {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y
+                        elegiste {elegidas.length.toLocaleString('es-CO')}: se numeran
+                        las primeras y las {numerosQueFaltan.toLocaleString('es-CO')}{' '}
+                        restantes van a fallar por rango agotado.{' '}
+                        {onIrAResolucion && (
+                          <button
+                            type="button"
+                            onClick={onIrAResolucion}
+                            className="font-medium text-primary underline-offset-4 hover:underline"
+                            data-testid="facturacion-ir-a-resolucion-rango"
+                          >
+                            Cargar otra resolución
+                          </button>
+                        )}
+                      </p>
+                    )}
+                  {!generando && motivoParaNoEmitir !== null && (
+                    <p
+                      className="max-w-xl text-caption text-warning"
+                      data-testid="facturacion-motivo-apagado"
+                    >
+                      {motivoParaNoEmitir}{' '}
+                      {onIrAResolucion && (
+                        <button
+                          type="button"
+                          onClick={onIrAResolucion}
+                          className="font-medium underline underline-offset-4"
+                          data-testid="facturacion-ir-a-resolucion"
+                        >
+                          Cargar la resolución
+                        </button>
+                      )}
+                    </p>
+                  )}
+                </>
+              }
+            >
+              <Button
+                hideArrow
+                disabled={
+                  elegidas.length === 0 ||
+                  generando ||
+                  cargando ||
+                  // 🔴 Sin resolución vigente el back devuelve 400: apagar el
+                  // botón dice lo mismo sin hacer perder la selección.
+                  (datos !== null && !datos.resolucion.puedeNumerar)
+                }
+                onClick={() => void generar()}
+                data-testid="facturacion-generar"
+              >
+                {generando ? (
+                  <Spinner className="h-4 w-4" />
+                ) : (
+                  <Receipt className="h-4 w-4" weight="bold" />
+                )}
+                {generando
+                  ? progreso
+                    ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
+                    : 'Generando…'
+                  : // Sin nada marcado, «Generar 0 facturas» es un rótulo que
+                    // nadie escribiría: el botón dice qué hace y el pie de al
+                    // lado dice por qué está apagado.
+                    elegidas.length === 0
+                    ? 'Generar facturas'
+                    : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
+              </Button>
+            </BarraDeAccionesMasivas>
           </div>
         )}
       </EstadoDeDatos>

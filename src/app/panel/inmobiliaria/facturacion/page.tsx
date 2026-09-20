@@ -164,8 +164,16 @@ function FacturacionContent() {
           if (esTab(v)) setActive(v);
         }}
       >
+        {/* 🔴 `overflow-x-clip`, NO `overflow-hidden`.
+            `overflow: hidden` convierte a esta tarjeta en el contenedor de
+            desplazamiento más cercano, y eso MATA cualquier `position: sticky`
+            de adentro: la barra de acciones masivas del pie de «Nueva factura»
+            quedaba dibujada a 2.889 px, fuera de la pantalla, en vez de pegada
+            al borde de abajo. `overflow-x: clip` recorta igual contra las
+            esquinas redondeadas pero no crea contenedor de desplazamiento, así
+            que lo pegajoso vuelve a medirse contra la ventana. */}
         <section
-          className="rounded-lg border border-border bg-surface overflow-hidden"
+          className="rounded-lg border border-border bg-surface overflow-x-clip"
           data-testid="facturacion-tarjeta"
         >
           <div className="border-b border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

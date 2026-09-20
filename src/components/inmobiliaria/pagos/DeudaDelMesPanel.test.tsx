@@ -305,6 +305,43 @@ describe('filtrarCuotas', () => {
     expect(n('POR_VENCER') + n('VENCIDA_EN_PLAZO') + n('CARTERA')).toBe(n('TODAS'))
     expect(n('TODAS') + n('SIN_DEUDA')).toBe(FILAS.length)
   })
+
+  /*
+   * 🔴 19-09 · Las tres cifras de arriba también son filtros (Nico: «yo
+   * debería de poder dar clic a cada una de ellas si es que quiero ampliar
+   * información de cada una»), y cada una tiene que abrir EXACTAMENTE las
+   * filas que la componen. Si no, el clic enseña un número distinto del que
+   * se tocó, que es peor que no poder tocarlo.
+   */
+  it('🔴 MES es el mes ENTERO: no descarta ni lo ya saldado', () => {
+    expect(filtrarCuotas(FILAS, '', 'MES').map((f) => f.cuotaId)).toEqual([
+      'q1',
+      'q2',
+      'q3',
+      'q4',
+    ])
+  })
+
+  it('🔴 PAGADO es «entró plata», e incluye el ABONO PARCIAL', () => {
+    /*
+     * Ésta es la razón de que `PAGADO` no sea `SIN_DEUDA`: la cifra «Pagado»
+     * del resumen suma los abonos de cuotas que TODAVÍA deben, así que
+     * mandar el clic al cajón de las saldadas mostraría menos filas de las
+     * que hacen ese número. Con $400.000 abonados sobre la cuota en cartera,
+     * esa fila pertenece a «Pagado» y sigue perteneciendo a «Cartera».
+     */
+    const conAbono = FILAS.map((f) =>
+      f.cuotaId === 'q1' ? { ...f, pagadoCop: 400_000, pendienteCop: 1_600_000 } : f,
+    )
+    expect(filtrarCuotas(conAbono, '', 'PAGADO').map((f) => f.cuotaId)).toEqual(['q1', 'q4'])
+    expect(filtrarCuotas(conAbono, '', 'SIN_DEUDA').map((f) => f.cuotaId)).toEqual(['q4'])
+    expect(filtrarCuotas(conAbono, '', 'CARTERA').map((f) => f.cuotaId)).toEqual(['q1'])
+  })
+
+  it('MES y PAGADO también respetan la búsqueda', () => {
+    expect(filtrarCuotas(FILAS, 'luis', 'MES').map((f) => f.cuotaId)).toEqual(['q4'])
+    expect(filtrarCuotas(FILAS, 'nicolas', 'PAGADO')).toHaveLength(0)
+  })
 })
 
 describe('el mes', () => {
@@ -470,6 +507,64 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     // Vuelve a «todo lo que falta»: los tres momentos, sin la saldada.
     expect(todos('[data-testid="cuota-fila"]')).toHaveLength(3)
     expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('true')
+  })
+
+  /*
+   * 🔴 Nico, 19-09, señalando las tres cifras del resumen: «yo debería de
+   * poder dar clic a cada una de ellas si es que quiero ampliar información
+   * de cada una». Era el MISMO defecto que él ya había señalado un renglón
+   * más abajo el 18 —un número de sólo lectura y el filtro en otro control—,
+   * sólo que arriba.
+   */
+  describe('🔴 las tres cifras del resumen abren sus filas', () => {
+    it('«Se debe» deja la tabla en el mes entero, con la ya saldada adentro', () => {
+      montar()
+      // De arranque se ve «todo lo que falta»: 3 de 4.
+      expect(todos('[data-testid="cuota-fila"]')).toHaveLength(3)
+
+      clic($('[data-testid="abrir-mes-se-debe"]'))
+      expect(todos('[data-testid="cuota-fila"]')).toHaveLength(4)
+      expect($('[data-testid="abrir-mes-se-debe"]').getAttribute('aria-pressed')).toBe('true')
+      expect($('[data-testid="alcance-de-la-tabla"]').textContent).toContain('4 de 4 cuotas')
+      // Y la línea de abajo explica qué se está mirando.
+      expect($('[data-testid="que-es-este-cajon"]').textContent).toContain('pagadas y sin pagar')
+    })
+
+    it('«Pagado» deja las filas en las que entró plata', () => {
+      montar()
+      clic($('[data-testid="abrir-mes-pagado"]'))
+      expect(todos('[data-testid="cuota-fila"]')).toHaveLength(1)
+      expect($('[data-testid="abrir-mes-pagado"]').getAttribute('aria-pressed')).toBe('true')
+      // Ninguna pestaña de cajón queda encendida: «Pagado» no es un cajón.
+      for (const cajon of ['cajon-todas', 'cajon-cartera', 'cajon-pagadas']) {
+        expect($(`[data-testid="${cajon}"]`).getAttribute('aria-selected')).toBe('false')
+      }
+    })
+
+    it('🔴 «Falta por pagar» y la pestaña «Todo lo que falta» son el mismo filtro', () => {
+      /*
+       * Son literalmente el mismo número ($6.000.000 en las dos). Si se
+       * encendieran por separado, la pantalla estaría diciendo que son dos
+       * cosas distintas.
+       */
+      montar()
+      clic($('[data-testid="abrir-mes-se-debe"]'))
+      expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('false')
+
+      clic($('[data-testid="abrir-mes-falta"]'))
+      expect($('[data-testid="cajon-todas"]').getAttribute('aria-selected')).toBe('true')
+      expect($('[data-testid="abrir-mes-falta"]').getAttribute('aria-pressed')).toBe('true')
+      expect(pesos('[data-testid="mes-falta"]')).toBe(pesos('[data-testid="mes-falta-pestana"]'))
+      expect(todos('[data-testid="cuota-fila"]')).toHaveLength(3)
+    })
+
+    it('las cifras NO se mueven al tocarlas: siguen siendo las del mes', () => {
+      montar()
+      clic($('[data-testid="abrir-mes-pagado"]'))
+      expect(pesos('[data-testid="mes-se-debe"]')).toBe(7_500_000)
+      expect(pesos('[data-testid="mes-pagado"]')).toBe(1_500_000)
+      expect(pesos('[data-testid="mes-falta"]')).toBe(6_000_000)
+    })
   })
 
   it('🔴 el alcance describe la TABLA también sin filtros puestos', () => {

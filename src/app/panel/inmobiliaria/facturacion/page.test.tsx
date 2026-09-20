@@ -117,6 +117,22 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(host.textContent ?? '').not.toContain(`${K}m2BannerTitle`);
   });
 
+  /*
+   * 🔴 19-09 · La tarjeta tenía `overflow-hidden` para recortar contra sus
+   * esquinas redondeadas, y eso la convertía en el contenedor de
+   * desplazamiento más cercano: cualquier `position: sticky` de adentro
+   * dejaba de medirse contra la ventana. La barra de acciones masivas del pie
+   * de «Nueva factura» —el botón que emite 208 facturas— quedaba dibujada a
+   * 2.889 px con una ventana de 806: fuera de la pantalla, que es justo el
+   * defecto que esa barra vino a arreglar. Se ve en el navegador y en ninguna
+   * prueba, así que se fija acá.
+   */
+  it('🔴 la tarjeta recorta con `overflow-x-clip`: `hidden` mata lo pegajoso de adentro', () => {
+    const tarjeta = q('[data-testid="facturacion-tarjeta"]')!;
+    expect(tarjeta.className).toContain('overflow-x-clip');
+    expect(tarjeta.className).not.toContain('overflow-hidden');
+  });
+
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
     /*
      * 🔴 En «Compras», que desde el 17-09 es la ÚNICA que sigue dibujando la

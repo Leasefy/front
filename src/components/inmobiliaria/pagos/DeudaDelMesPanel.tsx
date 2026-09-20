@@ -169,7 +169,7 @@ function normalizar(s: string): string {
  * no tenían forma de mirarse solos aunque cada uno tuviera su propia cifra en
  * pantalla.
  */
-export type CajonElegido = 'TODAS' | CajonDeLaCuota
+export type CajonElegido = 'MES' | 'TODAS' | 'PAGADO' | CajonDeLaCuota
 
 /**
  * Qué significa cada pestaña, en una línea.
@@ -183,6 +183,8 @@ export type CajonElegido = 'TODAS' | CajonDeLaCuota
  * Las palabras son las de «Cartera por concepto», sin cambiar una coma.
  */
 const QUE_ES_ESTE_CAJON: Record<CajonElegido, string> = {
+  MES: 'Todas las cuotas pactadas para este mes, pagadas y sin pagar: es lo que suma «se debe».',
+  PAGADO: 'Cuotas de este mes en las que ya entró plata, aunque sea un abono parcial.',
   TODAS: 'Todo lo que falta por pagar de este mes, en los tres momentos por los que pasa una deuda.',
   POR_VENCER: 'Todavía no vence. Es deuda, no cartera.',
   VENCIDA_EN_PLAZO: 'Venció, pero el plazo del contrato sigue corriendo.',
@@ -215,7 +217,21 @@ export function filtrarCuotas(
      * dos cosas distintas en la misma pestaña. Una cuota saldada no es «lo
      * que falta», y va en su propia pestaña.
      */
-    if (cajon === 'TODAS') {
+    /*
+     * 🔴 19-09, segundo pedido de Nico sobre esta pantalla: «yo debería poder
+     * dar clic a cada una de ellas si es que quiero ampliar información».
+     * Las tres cifras de arriba también son filtros, así que acá hay dos
+     * selecciones que NO son cajones del back:
+     *   · `MES` — el mes entero, pagadas incluidas: lo que suma «se debe».
+     *   · `PAGADO` — las filas en las que entró plata, aunque sea un abono
+     *     parcial de una cuota que todavía debe. Por eso no es `SIN_DEUDA`:
+     *     ése es el subconjunto de las que quedaron saldadas del todo.
+     */
+    if (cajon === 'MES') {
+      // El mes entero: no se descarta ninguna fila por su cajón.
+    } else if (cajon === 'PAGADO') {
+      if ((f.pagadoCop ?? 0) <= 0) return false
+    } else if (cajon === 'TODAS') {
       if (f.cajon === 'SIN_DEUDA') return false
     } else if (f.cajon !== cajon) return false
     if (q === '') return true
@@ -224,13 +240,24 @@ export function filtrarCuotas(
   })
 }
 
-/** Una cifra del resumen del mes: rótulo chico, número grande, en un renglón. */
+/**
+ * Una cifra del resumen del mes: rótulo chico, número grande, en un renglón.
+ *
+ * 🔴 Es un BOTÓN, y deja la tabla en las filas que la componen. Nico, 19-09:
+ * «yo debería de poder dar clic a cada una de ellas si es que quiero ampliar
+ * información de cada una». Tenía razón y era el mismo defecto que ya había
+ * señalado un renglón más abajo: los cajones también eran fichas de sólo
+ * lectura con el filtro en otro control. Un número en pantalla que no se puede
+ * abrir obliga a creerle; poder abrirlo es poder verificarlo.
+ */
 function CifraDelMes({
   label,
   valor,
   testId,
   tono,
   fuerte,
+  activa,
+  onClick,
   extra,
 }: {
   label: string
@@ -239,23 +266,35 @@ function CifraDelMes({
   tono?: 'success' | 'danger'
   /** La cifra principal del mes se lee más grande que sus dos vecinas. */
   fuerte?: boolean
+  activa: boolean
+  onClick: () => void
   extra?: ReactNode
 }) {
   return (
-    <div className="min-w-0">
-      <p className="text-caption uppercase tracking-wide text-fg-subtle">{label}</p>
-      <p
+    <button
+      type="button"
+      aria-pressed={activa}
+      onClick={onClick}
+      data-testid={`abrir-${testId}`}
+      className={cn(
+        'min-w-0 rounded-md px-2 py-1 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        activa ? 'bg-surface ring-1 ring-border' : 'hover:bg-surface',
+      )}
+    >
+      <span className="block text-caption uppercase tracking-wide text-fg-subtle">{label}</span>
+      <span
         className={cn(
-          'font-mono font-semibold tabular-nums',
+          'block font-mono font-semibold tabular-nums',
           fuerte ? 'text-xl' : 'text-base',
           tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
         )}
         data-testid={testId}
       >
         {valor}
-      </p>
+      </span>
       {extra}
-    </div>
+    </button>
   )
 }
 
@@ -464,7 +503,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
         >
           {/* 2 · El mes en un renglón: lo pactado, lo que entró y lo que falta. */}
           <div
-            className="flex flex-wrap items-start gap-x-10 gap-y-3 border-b border-border bg-surface-muted/40 px-4 py-3"
+            className="flex flex-wrap items-start gap-x-6 gap-y-2 border-b border-border bg-surface-muted/40 px-2 py-2"
             data-testid="resumen-del-mes"
           >
             <CifraDelMes
@@ -472,13 +511,15 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               label={`Se debe en ${titulo}`}
               valor={formatCurrency(t?.totalCop ?? 0)}
               fuerte
+              activa={cajon === 'MES'}
+              onClick={() => setCajon('MES')}
               extra={
-                <p className="text-caption text-fg-muted">
+                <span className="block text-caption text-fg-muted">
                   {numberFormatter.format(t?.cuotas ?? 0)}{' '}
                   {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} ·{' '}
                   {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
                   {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}
-                </p>
+                </span>
               }
             />
             <CifraDelMes
@@ -486,16 +527,27 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               label="Pagado"
               valor={formatCurrency(t?.pagadoCop ?? 0)}
               tono="success"
-              extra={<p className="text-caption text-fg-muted">Lo que ya entró de estas cuotas.</p>}
+              activa={cajon === 'PAGADO'}
+              onClick={() => setCajon('PAGADO')}
+              extra={
+                <span className="block text-caption text-fg-muted">
+                  Lo que ya entró de estas cuotas.
+                </span>
+              }
             />
+            {/* «Falta por pagar» y la pestaña «Todo lo que falta» son el MISMO
+                número, así que son el mismo filtro: al tocar cualquiera de los
+                dos se encienden los dos, y de paso se ve que son lo mismo. */}
             <CifraDelMes
               testId="mes-falta"
               label="Falta por pagar"
               valor={formatCurrency(t?.pendienteCop ?? 0)}
+              activa={cajon === 'TODAS'}
+              onClick={() => setCajon('TODAS')}
               extra={
                 interesDelMes > 0 ? (
-                  <p
-                    className="font-mono text-caption tabular-nums text-fg-muted"
+                  <span
+                    className="block font-mono text-caption tabular-nums text-fg-muted"
                     data-testid="mes-falta-con-intereses"
                   >
                     {traducir(CLAVE_DE_MORA.conIntereses, {
@@ -503,9 +555,11 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                         t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
                       ),
                     })}
-                  </p>
+                  </span>
                 ) : (
-                  <p className="text-caption text-fg-muted">Se reparte en las pestañas de abajo.</p>
+                  <span className="block text-caption text-fg-muted">
+                    Se reparte en las pestañas de abajo.
+                  </span>
                 )
               }
             />

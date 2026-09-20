@@ -1214,7 +1214,7 @@ describe('AuthProvider — T-0099 WU-4: contract §3 release row (gate opens onc
       // Mirrors what a real protected hook does on mount — one GET with the
       // CURRENT token (apiClient/getAccessToken, both from the mocked
       // '@/lib/api/client', wired to auth-context's own setAccessToken calls).
-      void apiClient.get('/inmobiliaria/config', getAccessToken())
+      void apiClient.get('/inmobiliaria/config', getAccessToken() ?? undefined)
     }, [gateOpen])
     return null
   }

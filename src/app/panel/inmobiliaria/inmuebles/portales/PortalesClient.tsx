@@ -787,7 +787,12 @@ function TarjetaDePortal({
             etiqueta={`Qué pide ${p.nombre}`}
             titulo={`Qué pide ${p.nombre} para conectarse de verdad`}
             descripcion="Hoy esta pantalla es una libreta: Leasefy todavía no publica solo en ningún portal de afuera. Esto es lo que haría falta el día que lo haga."
-            className="ml-auto"
+            /* 🔴 SIN `ml-auto`, y visto en el navegador: con él, el botón se
+               iba al borde derecho de la tarjeta y en «Metrocuadrado» —cuyo
+               nombre es el más largo— no cabía en la fila, así que caía solo a
+               un segundo renglón alineado a la derecha. Seis tarjetas iguales
+               con una distinta se lee como un error, y lo era. Los dos botones
+               son del mismo grupo: van juntos y envuelven juntos. */
           >
             <div className="space-y-3" data-testid="que-pide-este-portal">
               <ul className="space-y-1.5 text-sm text-fg-muted">

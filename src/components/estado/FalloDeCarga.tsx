@@ -44,6 +44,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // Falta el segundo factor: un candado, como los otros «está cerrado» — pero
   // este tiene llave y la tiene la persona que está mirando.
   sinSegundoFactor: Lock,
+  // Una base atrasada es un despliegue a medias, no una falla: el mismo reloj
+  // de «esperá a que pase algo», no la octógono de alarma.
+  baseAtrasada: Timer,
 }
 
 export interface FalloDeCargaProps {

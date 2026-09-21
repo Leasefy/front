@@ -40,6 +40,12 @@ export type TipoDeFallo =
   | 'sinSegundoFactor'
   /** El pedido se cortó por tiempo (o se abortó) antes de que hubiera respuesta. */
   | 'tardo'
+  /**
+   * 503 marcado `FALTA_UNA_MIGRACION`: esta base está atrás del código. No es
+   * un fallo del servidor ni algo que la persona pueda resolver — es un
+   * despliegue a medias.
+   */
+  | 'baseAtrasada'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -258,6 +264,28 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   const status = statusDe(error)
   const mensajeOriginal = textoDe(error)
   const eso = ctx.queEs ?? 'esto'
+
+  /*
+   * 🔴 La base atrasada va PRIMERO, antes de cualquier status (21-09-2026).
+   *
+   * Llega como 503 y sin esta rama caería en «servidor» — «fue un problema
+   * nuestro, prueba de nuevo en un momento»—, que es exactamente lo que no
+   * hay que decir: reintentar no aplica una migración, y el cartel genérico
+   * hizo que veinte pantallas rotas por LA MISMA columna se vieran como
+   * veinte problemas distintos.
+   */
+  if (cuerpoDelNo(error).code === 'FALTA_UNA_MIGRACION') {
+    return {
+      tipo: 'baseAtrasada',
+      titulo: `No podemos mostrar ${eso} ahora mismo`,
+      descripcion:
+        'Es algo nuestro y ya sabemos qué es: quedó una actualización del sistema a medio terminar. No se arregla reintentando; se resuelve del lado nuestro.',
+      // Reintentar no cambia nada hasta que alguien aplique la migración.
+      sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
 
   if (status === 404) {
     return {

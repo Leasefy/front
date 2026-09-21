@@ -185,18 +185,21 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
             </div>
           </div>
 
-          {/* Edit Button */}
-          <Button
-            variant="outline"
-            hideArrow
-            onClick={onEdit}
-            disabled
-            className="shrink-0 gap-2"
-            title={t('inmobiliaria.agente.comingSoon')}
-          >
-            <PencilSimple className="w-4 h-4" />
-            {t('inmobiliaria.agente.edit')}
-          </Button>
+          {/* Editar el perfil. Hasta el 21-09-2026 este botón estaba
+              DESHABILITADO con el título «Disponible próximamente» sobre una
+              ruta que el back ya tenía. Sin `onEdit` no se pinta: un botón que
+              no lleva a ninguna parte es peor que no tener botón. */}
+          {onEdit && (
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={onEdit}
+              className="shrink-0 gap-2"
+            >
+              <PencilSimple className="w-4 h-4" />
+              {t('inmobiliaria.agente.edit')}
+            </Button>
+          )}
         </div>
 
         {/* Info Pills */}

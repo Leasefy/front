@@ -973,7 +973,6 @@
       "secGeneral": "General",
       "solicitudes": "Requests",
       "contabilidad": "General accounting",
-      "proximamente": "Coming soon",
       "aprendizaje": "Assistant learning",
       "hintPipeline": "pipeline",
       "hintCatalogo": "catalog",
@@ -2109,11 +2108,6 @@
         "properties": "Assigned Properties",
         "pipeline": "Active Pipeline",
         "commissions": "Commissions",
-        "editComingSoon": "Edit profile coming soon",
-        "editComingSoonDesc": "You will be able to modify the agent's data",
-        "assignComingSoon": "Assign property coming soon",
-        "assignComingSoonDesc": "You will be able to assign new properties to this agent",
-        "comingSoon": "Coming soon",
         "commissionsDesc": "Detailed payment and commission history for the agent"
       }
     },
@@ -2748,8 +2742,6 @@
         "statusApproved": "Approved",
         "quoteApproved": "Quote approved",
         "noteAdded": "Note added",
-        "featureInDevelopment": "Feature in development",
-        "featureInDevelopmentDesc": "Soon you will be able to request quotes directly",
         "calculationComplete": "Calculation complete",
         "newRent": "New rent: {{amount}}",
         "renewalTerminated": "Renewal terminated"
@@ -2920,7 +2912,6 @@
       "status": "Status",
       "sortBy": "Sort by",
       "clearFilters": "Clear filters",
-      "comingSoon": "Coming soon",
       "edit": "Edit",
       "since": "Since",
       "commissionDistribution": "Commission distribution",
@@ -3127,9 +3118,7 @@
           "autoSave": "Changes will be saved automatically",
           "terminateConsignment": "Terminate consignment",
           "requiresConfirmation": "This action requires additional confirmation",
-          "renewSoon": "Renew consignment coming soon",
           "renewDesc": "You will be able to extend the consignment contract",
-          "reassignSoon": "Reassign agent coming soon",
           "reassignDesc": "You will be able to change the assigned agent",
           "updateError": "Changes could not be saved",
           "statusChangeError": "The status could not be changed",
@@ -3441,7 +3430,6 @@
         "moreActions": "More actions",
         "viewOnPortal": "View on Portal",
         "viewOnPortalUnavailable": "This property has no linked listing",
-        "comingSoon": "Coming soon",
         "changeStatus": "Change status",
         "renewConsignment": "Renew consignment",
         "terminateConsignment": "Terminate consignment",
@@ -3708,7 +3696,8 @@
         "consignmentContractReplace": "Replace",
         "consignmentContractUploadError": "The contract could not be attached",
         "consignmentContractUploaded": "Contract attached",
-        "consignmentContractUploading": "Uploading the contract…"
+        "consignmentContractUploading": "Uploading the contract…",
+        "sinContratoTodavia": "This property does not have a lease contract yet"
       },
       "wizard": {
         "steps": {
@@ -4276,7 +4265,6 @@
         "documentDuplicated": "Document duplicated",
         "copyCreated": "Copy of \"{{name}}\" created",
         "documentDeleted": "Document deleted",
-        "comingSoon": "This feature will be available soon",
         "inventory": "Inventory",
         "incrementLetter": "Increment Letter",
         "actaCreated": "Record created",
@@ -4479,7 +4467,6 @@
       "inventoryTitle": "Inventory by Space",
       "inventoryDesc": "Record items and their condition in each space",
       "defectPlaceholder": "Describe defect or note...",
-      "addPhotoSoon": "Add photo (coming soon)",
       "deleteItem": "Remove item",
       "addItem": "Add item",
       "noSpacesSelected": "No spaces selected",
@@ -4539,7 +4526,6 @@
       "condFair": "Fair",
       "condPoor": "Poor",
       "title": "Property Inventory",
-      "comingSoon": "Coming soon",
       "deliveryDateLabel": "Delivery date",
       "searchItem": "Search item...",
       "thItem": "Item",
@@ -5407,7 +5393,6 @@
       },
       "cotizador": {
         "placeholder": {
-          "title": "Coming Soon",
           "subtitle": "The Quoter module will be available in the next update.",
           "phase": "Phase 30",
           "backLink": "Back to AI Agents"
@@ -5814,8 +5799,7 @@
             "porQueStub": "Demo result — this insurer isn't connected in live mode yet.",
             "porQuePending": "We're still querying this insurer.",
             "condicionesVisibleHint": "Conditions listed above",
-            "avanzarAction": "Proceed",
-            "proximamente": "Coming soon"
+            "avanzarAction": "Proceed"
           }
         },
         "pdf": {
@@ -8275,7 +8259,6 @@
                 "desc": "You decide only where your judgment is needed."
               }
             },
-            "importarProximamente": "Coming soon",
             "importarNota": "First portfolio? Write to your Leasefy contact to load it."
           }
         }
@@ -8534,7 +8517,6 @@
             "solicitud": "Application",
             "asesor": "Agent"
           },
-          "confirmacion": "Coming soon: this will create the study and send the request to the candidate.",
           "cta": "Create study and send request"
         },
         "equipo": {
@@ -8764,7 +8746,6 @@
             "sms": "SMS",
             "llamada": "Call"
           },
-          "confirmacion": "Coming soon: these rules will be saved and the agent will apply them to new studies.",
           "aviso": "Configuration preview. Not yet connected to the agent: changes are not applied.",
           "guardar": "Save rules"
         }
@@ -8943,8 +8924,7 @@
           },
           "estado": {
             "conectar": "Connect",
-            "desconectado": "Not connected",
-            "proximamente": "Coming soon"
+            "desconectado": "Not connected"
           },
           "trazabilidad": {
             "title": "Traceability",
@@ -9060,7 +9040,6 @@
       "heading": "Your agency, on autopilot",
       "subtitle": "ERP · CRM · Autopilot, all in one. The system runs operations; you make the decisions.",
       "insightsTitle": "Insights & Alerts",
-      "insightsDesc": "Coming soon: what's happening today and what to do — expiring contracts, overdue receivables and pending payouts, turned into actions.",
       "insightsExample1": "18 contracts expiring · 6 unmanaged",
       "insightsExample2": "42 tenants overdue · 11 priority",
       "insightsExample3": "$84M to disburse · 62% covered",

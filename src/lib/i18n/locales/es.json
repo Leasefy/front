@@ -973,7 +973,6 @@
       "secGeneral": "General",
       "solicitudes": "Solicitudes",
       "contabilidad": "Contabilidad general",
-      "proximamente": "Próximamente",
       "aprendizaje": "Aprendizaje del asistente",
       "hintPipeline": "pipeline",
       "hintCatalogo": "catálogo",
@@ -2149,11 +2148,6 @@
         "properties": "Propiedades Asignadas",
         "pipeline": "Pipeline Activo",
         "commissions": "Comisiones",
-        "editComingSoon": "Editar perfil próximamente",
-        "editComingSoonDesc": "Podrás modificar los datos del agente",
-        "assignComingSoon": "Asignar propiedad próximamente",
-        "assignComingSoonDesc": "Podrás asignar nuevas propiedades a este agente",
-        "comingSoon": "Próximamente",
         "commissionsDesc": "Historial detallado de pagos y comisiones del agente"
       }
     },
@@ -2788,8 +2782,6 @@
         "statusApproved": "Aprobada",
         "quoteApproved": "Cotización aprobada",
         "noteAdded": "Nota agregada",
-        "featureInDevelopment": "Función en desarrollo",
-        "featureInDevelopmentDesc": "Próximamente podrás solicitar cotizaciones directamente",
         "calculationComplete": "Cálculo completado",
         "newRent": "Nuevo arriendo: {{amount}}",
         "renewalTerminated": "Renovación terminada"
@@ -2960,7 +2952,6 @@
       "status": "Estado",
       "sortBy": "Ordenar por",
       "clearFilters": "Limpiar filtros",
-      "comingSoon": "Disponible próximamente",
       "edit": "Editar",
       "since": "Desde",
       "commissionDistribution": "Distribución de comisión",
@@ -3167,9 +3158,7 @@
           "autoSave": "Los cambios se guardarán automáticamente",
           "terminateConsignment": "Terminar consignación",
           "requiresConfirmation": "Esta acción requiere confirmación adicional",
-          "renewSoon": "Renovar consignación próximamente",
           "renewDesc": "Podrás extender el contrato de consignación",
-          "reassignSoon": "Reasignar agente próximamente",
           "reassignDesc": "Podrás cambiar el agente asignado",
           "updateError": "No se pudieron guardar los cambios",
           "statusChangeError": "No se pudo cambiar el estado",
@@ -3481,7 +3470,6 @@
         "moreActions": "Más acciones",
         "viewOnPortal": "Ver en Portal",
         "viewOnPortalUnavailable": "Este inmueble no tiene una propiedad vinculada",
-        "comingSoon": "Próximamente",
         "changeStatus": "Cambiar estado",
         "renewConsignment": "Renovar consignación",
         "terminateConsignment": "Terminar consignación",
@@ -3748,7 +3736,8 @@
         "handoverReportOpen": "Abrir el acta para imprimir",
         "gallery": "Galería ({{count}} fotos)",
         "photoAlt": "Foto {{number}}",
-        "viewMorePhotos": "Ver {{count}} fotos más"
+        "viewMorePhotos": "Ver {{count}} fotos más",
+        "sinContratoTodavia": "Este inmueble todavía no tiene un contrato de arrendamiento"
       },
       "wizard": {
         "steps": {
@@ -4316,7 +4305,6 @@
         "documentDuplicated": "Documento duplicado",
         "copyCreated": "Copia de \"{{name}}\" creada",
         "documentDeleted": "Documento eliminado",
-        "comingSoon": "Esta funcionalidad estará disponible próximamente",
         "inventory": "Inventario",
         "incrementLetter": "Carta de Incremento",
         "actaCreated": "Acta creada",
@@ -4519,7 +4507,6 @@
       "inventoryTitle": "Inventario por Espacio",
       "inventoryDesc": "Registra los elementos y su estado en cada espacio",
       "defectPlaceholder": "Describir defecto o nota...",
-      "addPhotoSoon": "Agregar foto (próximamente)",
       "deleteItem": "Quitar ítem",
       "addItem": "Agregar ítem",
       "noSpacesSelected": "No hay espacios seleccionados",
@@ -4579,7 +4566,6 @@
       "condFair": "Regular",
       "condPoor": "Malo",
       "title": "Inventario del Inmueble",
-      "comingSoon": "Próximamente",
       "deliveryDateLabel": "Fecha de entrega",
       "searchItem": "Buscar ítem...",
       "thItem": "Ítem",
@@ -5447,7 +5433,6 @@
       },
       "cotizador": {
         "placeholder": {
-          "title": "Próximamente",
           "subtitle": "El módulo de Cotización estará disponible en la siguiente actualización.",
           "phase": "Phase 30",
           "backLink": "Volver a Agentes AI"
@@ -5854,8 +5839,7 @@
             "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
             "porQuePending": "Todavía estamos consultando a esta aseguradora.",
             "condicionesVisibleHint": "Condiciones listadas arriba",
-            "avanzarAction": "Avanzar",
-            "proximamente": "Próximamente"
+            "avanzarAction": "Avanzar"
           }
         },
         "pdf": {
@@ -8315,7 +8299,6 @@
                 "desc": "Tú decides únicamente donde tu criterio hace falta."
               }
             },
-            "importarProximamente": "Próximamente",
             "importarNota": "¿Primera cartera? Escríbele a tu contacto Leasefy para cargarla."
           }
         }
@@ -8574,7 +8557,6 @@
             "solicitud": "Solicitud",
             "asesor": "Asesor"
           },
-          "confirmacion": "Próximamente: esto creará el estudio y enviará la solicitud al candidato.",
           "cta": "Crear estudio y enviar solicitud"
         },
         "equipo": {
@@ -8804,7 +8786,6 @@
             "sms": "SMS",
             "llamada": "Llamada"
           },
-          "confirmacion": "Próximamente: estas reglas se guardarán y el agente las aplicará a los nuevos estudios.",
           "aviso": "Vista previa de configuración. Aún no se conecta con el agente: los cambios no se aplican.",
           "guardar": "Guardar reglas"
         }
@@ -8983,8 +8964,7 @@
           },
           "estado": {
             "conectar": "Conectar",
-            "desconectado": "Sin conectar",
-            "proximamente": "Próximamente"
+            "desconectado": "Sin conectar"
           },
           "trazabilidad": {
             "title": "Trazabilidad",
@@ -9100,7 +9080,6 @@
       "heading": "Tu inmobiliaria, en piloto",
       "subtitle": "ERP · CRM · Autopilot, todo en uno. El sistema opera; tú tomas las decisiones.",
       "insightsTitle": "Insights & Alertas",
-      "insightsDesc": "Pronto: qué pasa hoy y qué hacer — contratos por vencer, cartera en mora y egresos por dispersar, convertidos en acciones.",
       "insightsExample1": "18 contratos por vencer · 6 sin gestión",
       "insightsExample2": "42 inquilinos en mora · 11 prioritarios",
       "insightsExample3": "$84M por dispersar · cubres 62%",

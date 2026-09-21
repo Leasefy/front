@@ -139,7 +139,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
               <h3 className="font-medium text-fg-subtle">{name}</h3>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-muted text-fg-subtle">
                 <Lock weight="bold" className="h-3 w-3" />
-                {locale === 'es' ? 'Proximamente' : 'Coming soon'}
+                {locale === 'es' ? 'Próximamente' : 'Coming soon'}
               </span>
             </div>
             <p className="mt-1 text-sm text-fg-subtle line-clamp-2">

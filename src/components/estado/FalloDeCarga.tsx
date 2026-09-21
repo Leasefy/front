@@ -229,10 +229,19 @@ export function FalloDeCarga({
         </div>
       )}
 
-      {/* El mensaje del backend sirve para diagnosticar, no para leer: queda en
-          el DOM pero no en pantalla. */}
+      {/*
+        El mensaje del backend sirve para diagnosticar, no para leer: queda en
+        el DOM pero no en pantalla.
+
+        🔴 20-09 · `aria-hidden`. Estaba sólo con `sr-only`, que es justamente
+        la clase que lo esconde de la VISTA y se lo deja al lector de pantalla:
+        adentro de un `role="alert"`, quien navega con lector oía «Contract not
+        found», en inglés y en jerga, después del mensaje en cristiano. La
+        intención del comentario era la contraria. Con `aria-hidden` sigue en
+        el DOM para soporte y para las pruebas, y fuera del árbol accesible.
+      */}
       {fallo.mensajeOriginal && (
-        <span className="sr-only" data-testid="fallo-detalle-tecnico">
+        <span className="sr-only" aria-hidden="true" data-testid="fallo-detalle-tecnico">
           {fallo.mensajeOriginal}
         </span>
       )}

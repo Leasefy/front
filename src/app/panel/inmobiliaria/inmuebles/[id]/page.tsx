@@ -428,15 +428,17 @@ function ConsignacionDetailContent() {
             Propiedad»): el menú dice Inmuebles y el producto no llama
             «propiedad» a nada. */}
         <h1 className="text-h2 text-fg">Inmueble</h1>
-        <FalloDeCarga
-          error={errorConsignacion}
-          queEs="el inmueble"
-          onReintentar={reintentarConsignacion}
-          volverA={{
-            label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
-            href: '/panel/inmobiliaria/inmuebles',
-          }}
-        />
+        <div className="max-w-2xl">
+          <FalloDeCarga
+            error={errorConsignacion}
+            queEs="el inmueble"
+            onReintentar={reintentarConsignacion}
+            volverA={{
+              label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
+              href: '/panel/inmobiliaria/inmuebles',
+            }}
+          />
+        </div>
       </div>
     );
   }

@@ -322,14 +322,19 @@ function ContratoDetalleContent() {
       <div className="space-y-6 p-6 lg:p-8" data-testid="contrato-fallo">
         <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
         <h1 className="text-h2 text-fg">Contrato</h1>
-        <ContratoSinSenal contratoId={id}>
-          <FalloDeCarga
-            error={errorCrudo ?? error}
-            queEs="este contrato"
-            onReintentar={refetch}
-            volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
-          />
-        </ContratoSinSenal>
+        {/* La tarjeta no ocupa el ancho de la pantalla: tres renglones
+            centrados en una caja de 1.900 px se leen como una pantalla rota.
+            El encabezado sí va a ancho completo, como en todas. */}
+        <div className="max-w-2xl">
+          <ContratoSinSenal contratoId={id}>
+            <FalloDeCarga
+              error={errorCrudo ?? error}
+              queEs="este contrato"
+              onReintentar={refetch}
+              volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
+            />
+          </ContratoSinSenal>
+        </div>
       </div>
     );
   }

@@ -364,8 +364,12 @@ export function GenerarDocumentoDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Generar documento</DialogTitle>
+          {/* La frase nombra los DOS orígenes desde que el selector lista también
+              las plantillas de la inmobiliaria: decir sólo «las legales del
+              sistema» dejaba a la propia pareciendo que no cuenta. */}
           <DialogDescription>
-            El texto sale de las plantillas legales del sistema y los datos, del contrato.
+            El texto sale de una plantilla —legal del sistema o tuya— y los datos, del
+            contrato.
           </DialogDescription>
         </DialogHeader>
 

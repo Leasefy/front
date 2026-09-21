@@ -338,7 +338,34 @@ async function request<T>(
 
   if (res.status === 403) {
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(403, errorBody.message || 'No tienes permiso para realizar esta acción')
+    /*
+     * 🔴 ACÁ SE PERDÍA EL CÓDIGO DEL 403 (encontrado el 21-09-2026).
+     *
+     * Esta rama construía el error SIN `code` y SIN cuerpo, y como está antes
+     * de la rama general de abajo —la que sí los reenvía— nunca llegaba a
+     * ella. El resultado: de todos los status, justo el 403 —el único donde el
+     * código decide QUÉ decirle a la persona— era el que lo tiraba.
+     *
+     * Lo que costó: el back manda `SEGUNDO_FACTOR_REQUERIDO` desde el 18-09,
+     * y `clasificar.ts` sabe reconocerlo desde entonces (y se reforzó el
+     * 20-09 para leerlo en cualquier envoltorio). Nunca podía: el código no
+     * salía de acá. Así que a un ADMINISTRADOR al que sólo le falta activar su
+     * segundo factor —algo que hace él mismo en dos minutos— el panel le decía
+     * «Tu rol no incluye esta sección. Pídele a un administrador que te lo
+     * habilite», en las 25 secciones a la vez. Nico lo preguntó el 21-09
+     * mirando el Pipeline: «¿por qué no me das acceso a todo?».
+     *
+     * Se reenvían igual que en la rama general: `code` para decidir el
+     * mensaje, y el cuerpo entero para lo que `message` no alcanza a decir
+     * (`module`, `action`, `role` del 403 de permisos).
+     */
+    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    throw new ApiError(
+      403,
+      errorBody.message || 'No tienes permiso para realizar esta acción',
+      code,
+      errorBody as Record<string, unknown>,
+    )
   }
 
   if (res.status === 402) {
@@ -355,7 +382,15 @@ async function request<T>(
     ) {
       window.location.href = '/panel/inmobiliaria/upgrade'
     }
-    throw new ApiError(402, errorBody.message || 'Se requiere un plan activo para continuar')
+    // El mismo reenvío que el 403 y que la rama general: esta rama también
+    // devolvía el error pelado por estar antes de aquélla.
+    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    throw new ApiError(
+      402,
+      errorBody.message || 'Se requiere un plan activo para continuar',
+      code402,
+      errorBody as Record<string, unknown>,
+    )
   }
 
   if (!res.ok) {

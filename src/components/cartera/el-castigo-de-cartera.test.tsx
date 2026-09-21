@@ -262,6 +262,34 @@ describe('la pantalla de cartera castigada', () => {
     );
   });
 
+  it('🔴 sin la migración las cifras dicen «—», no «$0»', async () => {
+    api.listar.mockResolvedValue({
+      disponible: false,
+      motivo: 'Falta aplicar la migración 20260921100000_castigo_de_cartera.',
+      castigos: [],
+      castigadoCop: 0,
+      recuperadoCop: 0,
+      sinRecuperarCop: 0,
+      propuestoCop: 0,
+    });
+    await montar();
+    // Un $0 afirma «no hay cartera castigada»; acá no se sabe.
+    for (const id of [
+      'total-castigado',
+      'total-recuperado',
+      'total-sin-recuperar',
+      'total-propuesto',
+    ]) {
+      expect($(`[data-testid="${id}"]`).textContent).toBe('—');
+    }
+    expect(document.body.textContent).toContain('Todavía no se puede saber.');
+  });
+
+  it('con la migración sí son números', async () => {
+    await montar();
+    expect($('[data-testid="total-castigado"]').textContent).toContain('1.500.000');
+  });
+
   it('sin la migración lo dice y no ofrece proponer', async () => {
     api.listar.mockResolvedValue({
       disponible: false,

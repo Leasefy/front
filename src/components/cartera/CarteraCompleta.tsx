@@ -191,6 +191,17 @@ export function CarteraCompleta() {
    * hace que el número de arriba cuadre con sus partes.
    */
   const castigada = report?.castigada ?? null
+  /*
+   * Los tramos por edad que NO PUEDEN llenarse con esta configuración: los que
+   * arrancan en o después del umbral de siniestro, porque esa cartera sale de
+   * los tramos y se va a su propio cajón.
+   */
+  const tramosQueNoSeLlenan = useMemo<Edad[]>(() => {
+    const umbral = siniestros?.diasParaSiniestro
+    if (umbral === undefined) return []
+    const DESDE: Record<Edad, number> = { '0-30': 1, '31-60': 31, '61-90': 61, '90+': 91 }
+    return EDADES.filter((e) => DESDE[e] >= umbral)
+  }, [siniestros])
   const casosEnSiniestro = useMemo<CarteraItem[]>(() => siniestros?.items ?? [], [siniestros])
   /** 🔴 TODA la deuda: los tres cajones y los casos en siniestro. */
   const todas = useMemo(() => [...items, ...casosEnSiniestro], [items, casosEnSiniestro])
@@ -523,6 +534,22 @@ export function CarteraCompleta() {
         {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
         <div>
           <p className="mb-2 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
+          {/*
+            🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
+            «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
+            de 259 días de mora al lado. No es un error de la cuenta: con el
+            siniestro a los 30 días, TODA la cartera de más de 30 días sale de
+            los tramos y se va a «En siniestro», así que esos tres tramos no
+            pueden llenarse nunca. Tres ceros permanentes sin explicación se
+            leen como «no hay mora vieja», que es lo contrario de la verdad.
+          */}
+          {tramosQueNoSeLlenan.length > 0 ? (
+            <p className="mb-2 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
+              Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
+              no llega a {tramosQueNoSeLlenan.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
+              esa mora está en «En siniestro».
+            </p>
+          ) : null}
           <div
             className={cn('grid grid-cols-2 gap-3', siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}
             role="group"

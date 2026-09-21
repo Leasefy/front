@@ -118,23 +118,35 @@ function Cifra({
   tono,
   explicacion,
   testid,
+  seSabe,
 }: {
   rotulo: string
   valor: number
   tono?: string
   explicacion: string
   testid: string
+  /** `false` = la base todavía no puede responder. Ver abajo. */
+  seSabe: boolean
 }) {
   return (
     <Card className="p-4">
       <p className="text-xs text-fg-muted">{rotulo}</p>
       <p
-        className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${tono ?? 'text-fg'}`}
+        className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${
+          seSabe ? (tono ?? 'text-fg') : 'text-fg-subtle'
+        }`}
         data-testid={testid}
       >
-        {formatCurrency(valor)}
+        {/*
+          🔴 Sin la migración esto NO es cero, es «no sé»: la tabla donde se
+          guardan los castigos todavía no existe. Un $0 se lee como «no hay
+          cartera castigada», que es una afirmación que nadie puede hacer.
+        */}
+        {seSabe ? formatCurrency(valor) : '—'}
       </p>
-      <p className="mt-1 text-xs text-fg-muted">{explicacion}</p>
+      <p className="mt-1 text-xs text-fg-muted">
+        {seSabe ? explicacion : 'Todavía no se puede saber.'}
+      </p>
     </Card>
   )
 }
@@ -245,6 +257,7 @@ export function CastigoDeCartera() {
                 tono="text-danger"
                 explicacion="El capital que se dio por perdido."
                 testid="total-castigado"
+                seSabe={lista.disponible}
               />
               <Cifra
                 rotulo="Recuperada"
@@ -252,12 +265,14 @@ export function CastigoDeCartera() {
                 tono="text-success"
                 explicacion="De lo castigado, lo que después sí entró."
                 testid="total-recuperado"
+                seSabe={lista.disponible}
               />
               <Cifra
                 rotulo="Sin recuperar"
                 valor={lista.sinRecuperarCop}
                 explicacion="Lo que sigue sin entrar."
                 testid="total-sin-recuperar"
+                seSabe={lista.disponible}
               />
               <Cifra
                 rotulo="Esperando firmas"
@@ -265,6 +280,7 @@ export function CastigoDeCartera() {
                 tono="text-warning"
                 explicacion="Propuesto, todavía sin castigar."
                 testid="total-propuesto"
+                seSabe={lista.disponible}
               />
             </div>
 

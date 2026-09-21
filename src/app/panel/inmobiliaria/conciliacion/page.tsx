@@ -74,7 +74,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
-import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service'
+import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
 import type { ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
@@ -228,31 +228,13 @@ function ConciliacionSala() {
    * (`/inmobiliaria/conciliacion-bancaria`). El que sabe si hay un extracto
    * cargado es el segundo, porque es el que lo recibe. Acá se lee de ahí.
    */
-  const [delBack, setDelBack] = useState<ResumenDeConciliacion | null>(null)
-  /** Mientras no se sepa, no se afirma nada: «no sé» no es «no hay». */
-  const [leyendoElBack, setLeyendoElBack] = useState(true)
-  useEffect(() => {
-    let vivo = true
-    conciliacionBancariaApi
-      .resumen()
-      .then((r) => {
-        if (vivo) setDelBack(r)
-      })
-      .catch(() => {
-        // Que falle no puede volver a afirmar que no hay nada: queda en `null`
-        // y la pantalla no dice ni que sí ni que no.
-        if (vivo) setDelBack(null)
-      })
-      .finally(() => {
-        if (vivo) setLeyendoElBack(false)
-      })
-    return () => {
-      vivo = false
-    }
-  }, [])
-
-  /** Nadie cargó nunca un extracto. Lo dice el back o no se dice. */
-  const sinExtracto = delBack !== null && delBack.ultimoExtracto === null
+  /*
+   * 🔴 21-09: esto era un `useEffect` propio de esta pantalla. La MISMA
+   * pregunta —«¿hay extracto?»— se la hace ahora también «Por revisar», que
+   * hasta hoy le pedía a la gente subir el extracto que ya había subido. Un
+   * defecto en dos pantallas es del primitivo: vive en el hook.
+   */
+  const { delBack, leyendo: leyendoElBack, sinExtracto } = useExtractoDelBack()
   /**
    * El agente no tiene movimientos suyos que cruzar. Es lo que apaga
    * «Conciliar ahora» —esa corrida la hace el agente sobre SU copia— y es

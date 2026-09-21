@@ -671,6 +671,54 @@ describe('CarteraCompleta', () => {
   })
 
   /**
+   * 🔴 LOS TRAMOS QUE NO PUEDEN LLENARSE (21-09-2026).
+   *
+   * Abriendo esta pantalla con la agencia migrada: «31 a 60», «61 a 90» y
+   * «Más de 90 días» en $0, con 788 casos de 259 días de mora al lado. No es
+   * un error de la cuenta — con el siniestro a los 30 días, toda la cartera de
+   * más de 30 sale de los tramos— pero tres ceros permanentes sin explicación
+   * se leen como «no hay mora vieja», que es lo contrario de la verdad.
+   */
+  describe('los tramos que la configuración deja vacíos', () => {
+    it('con el siniestro a los 30 días, dice cuáles no se pueden llenar', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] },
+        }),
+      )
+      montar()
+      const aviso = $('[data-testid="tramos-que-no-se-llenan"]').textContent ?? ''
+      expect(aviso).toContain('30 días')
+      expect(aviso).toContain('31 a 60 días')
+      expect(aviso).toContain('61 a 90 días')
+      expect(aviso).toContain('Más de 90 días')
+      expect(aviso).not.toContain('0 a 30 días')
+    })
+
+    it('con el siniestro a los 90 días, sólo el último queda fuera', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 90, items: [] },
+        }),
+      )
+      montar()
+      const aviso = $('[data-testid="tramos-que-no-se-llenan"]').textContent ?? ''
+      expect(aviso).toContain('Más de 90 días')
+      expect(aviso).not.toContain('61 a 90 días')
+    })
+
+    it('con el siniestro muy lejos, los cuatro tramos sirven y no hay aviso', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 3650, items: [] },
+        }),
+      )
+      montar()
+      expect(host.querySelector('[data-testid="tramos-que-no-se-llenan"]')).toBeNull()
+    })
+  })
+
+  /**
    * 🔴 LA CARTERA CASTIGADA (21-09-2026). Nico, 17-09: «sale del informe de
    * cartera activa y queda en un listado de castigada». Por eso la cifra
    * ENLAZA a su pantalla en vez de filtrar acá: filtrar la volvería a poner

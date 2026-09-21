@@ -53,6 +53,7 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { Chip } from '@leasefy/cadence'
@@ -139,6 +140,8 @@ function isBulkEligible(item: ConciliacionQueueItem): boolean {
 // ── Página ───────────────────────────────────────────────────────────────────
 
 function ConciliacionCola() {
+  // Quién sabe si hay extracto es el BACK, no el agente. Ver el hook.
+  const { hayExtracto } = useExtractoDelBack()
   const { t } = useI18n()
 
   const [caseFilter, setCaseFilter] = useState<CaseTypeFilter>('todos')
@@ -327,9 +330,24 @@ function ConciliacionCola() {
                       queSon="casos"
                       icono={CheckCircle}
                       titulo="Nada por revisar"
-                      descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.colaEmptyHint')}
+                      /*
+                       * 🔴 21-09-2026, abriendo esta pestaña: decía «Nada por
+                       * revisar. Sube un extracto del banco…» con un extracto
+                       * cargado y tres movimientos esperando. Es la MISMA
+                       * frase falsa que el Resumen decía el 20-09, en otra
+                       * pantalla: quien sabe si hay extracto es el back, no el
+                       * agente. Con extracto cargado, la cola vacía es una
+                       * buena noticia y se dice como tal.
+                       */
+                      descripcion={
+                        hayExtracto
+                          ? 'El agente cruzó lo que llegó del banco y no dejó nada dudoso. Los movimientos sin cruzar están en Movimientos.'
+                          : t('inmobiliaria.ai.workspace.pages.conciliacion.colaEmptyHint')
+                      }
                       crear={{
-                        label: t('inmobiliaria.ai.workspace.pages.conciliacion.accionTitle'),
+                        label: hayExtracto
+                          ? 'Ver los movimientos'
+                          : t('inmobiliaria.ai.workspace.pages.conciliacion.accionTitle'),
                         href: '/panel/inmobiliaria/conciliacion/movimientos',
                       }}
                       onLimpiarFiltros={() => {

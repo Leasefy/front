@@ -384,12 +384,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // G-02 (18-09-2026): qué se le manda a cada lead y a quién le calza
           // un inmueble que se libera. Cuelga del pipeline porque la entrada es
           // un LEAD, no un inquilino con preferencias guardadas.
-          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/calce'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/que-ofrecer'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
           // E-03 y D-02: las visitas con lo que les falta (asesor y aviso al
           // inquilino). Va acá y no en Agenda porque lo que se hace en esta
           // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
           // siendo el calendario.
-          { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/preparar-visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
         ],
       },
       // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda

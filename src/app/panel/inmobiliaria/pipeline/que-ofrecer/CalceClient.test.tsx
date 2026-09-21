@@ -81,6 +81,22 @@ async function pintar() {
   })
 }
 const $ = (sel: string) => contenedor.querySelector(sel)
+
+/**
+ * Las dos direcciones son la misma pregunta mirada desde los dos lados, y
+ * desde el 21-09 se elige una a la vez: antes eran dos tarjetas apiladas, las
+ * dos vacías hasta que alguien eligiera algo, y la pantalla se veía sin
+ * terminar.
+ */
+async function irAlLadoDelInmueble() {
+  const boton = [...contenedor.querySelectorAll('button')].find((b) =>
+    b.textContent?.includes('Se liberó un inmueble'),
+  )
+  if (!boton) throw new Error('no está el control de «Se liberó un inmueble»')
+  await act(async () => {
+    boton.click()
+  })
+}
 /**
  * Elige en el selector. Antes escribía en un `<input>`; desde el 18-09 el lead y
  * el inmueble se ESCOGEN, y un `<select>` necesita su propio setter —el del
@@ -178,10 +194,15 @@ describe('CalceClient', () => {
     await pintar()
     await escribir('[data-testid="input-lead"]', 'p-1')
     const opcion = $('[data-testid="opcion-inm-1"]')?.textContent ?? ''
-    expect(opcion).toContain('87 %')
+    // El puntaje sigue ahí, ahora como barra con su número al lado.
+    expect(opcion).toContain('87%')
     expect(opcion).toContain('una de las zonas que pidió')
     // Y dice de dónde salió el presupuesto.
     expect(contenedor.textContent).toContain('lo dijo él')
+    /* 🔴 21-09: el porqué ya no hay que volver a escribirlo. El botón arma el
+       mensaje con `el-mensaje-para-el-interesado.ts` —que tiene sus propias
+       pruebas, incluida la de que el PUNTAJE nunca sale en ese texto. */
+    expect($('[data-testid="copiar-inm-1"]')).not.toBeNull()
   })
 
   it('🔴 distingue el presupuesto DEDUCIDO del dicho', async () => {
@@ -209,6 +230,7 @@ describe('CalceClient', () => {
       }),
     )
     await pintar()
+    await irAlLadoDelInmueble()
     await escribir('[data-testid="input-inmueble"]', 'inm-9')
     expect($('[data-testid="no-ofrecible"]')?.textContent).toContain(
       'sin fecha de salida',

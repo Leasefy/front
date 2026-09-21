@@ -3,6 +3,8 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { ProveedorDeAcceso } from '@/components/auth/acceso-de-la-pantalla';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -98,5 +100,26 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
     );
   }
 
-  return <>{children}</>;
+  /*
+   * 🔴 La segunda fuente del permiso (21-09-2026).
+   *
+   * Todo lo de arriba decide con `my-permissions`, que es lo que el FRONT cree.
+   * Cada llamada, en cambio, la decide el BACK con otros datos. Cuando el front
+   * deja entrar y el back cierra la puerta, la pantalla se pintaba entera —con
+   * su buscador, sus filtros y su botón de crear— y sólo el hueco del centro
+   * decía que no. Desde acá, el `EstadoDeDatos` de la fuente PRINCIPAL avisa y
+   * la pantalla entera se cambia por el cartel: sin controles vivos que no
+   * pueden funcionar.
+   */
+  return (
+    <ProveedorDeAcceso
+      cuandoNiega={({ error, queEs }) => (
+        <div className="p-4 md:p-6">
+          <FalloDeCarga error={error} queEs={queEs} />
+        </div>
+      )}
+    >
+      {children}
+    </ProveedorDeAcceso>
+  );
 }

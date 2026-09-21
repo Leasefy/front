@@ -213,6 +213,7 @@ export function OrigenesClient() {
             </p>
           ) : (
             <EstadoDeDatos
+              principal
               cargando={informe.cargando}
               error={informe.errorCrudo}
               vacio={vacio}

@@ -57,6 +57,14 @@ export interface FalloDeCarga {
 export interface Contexto {
   /** «la propiedad», «el contrato», «la postulación»… con artículo. */
   queEs?: string
+  /**
+   * ¿El FRONT cree que esta persona sí tiene acceso? Lo sabe por
+   * `my-permissions`, que es otra fuente distinta de la que decide cada
+   * llamada. Cuando las dos no coinciden —el panel te deja entrar y el
+   * servidor te cierra la puerta— el cartel tiene que decir que el problema
+   * es nuestro, no mandarte a pedir un permiso que ya tienes.
+   */
+  creoQueTengoAcceso?: boolean
 }
 
 /**
@@ -144,15 +152,89 @@ function statusDe(error: unknown): number | null {
  * objeto plano, o el cuerpo del back pegado al error— porque el discriminante
  * es el código, no la clase de JavaScript que lo envuelve.
  */
+/**
+ * Lo que el back mandó en el cuerpo del «no»: su código y, si lo trae, qué
+ * módulo y qué acción negó.
+ *
+ * Se mira en los tres sitios donde puede aparecer —el `ApiError`, el objeto
+ * plano, y el `body` de un error re-envuelto— por la misma razón que lo hacía
+ * `esSegundoFactor`: un error que cruzó un servicio que lo re-empaqueta deja
+ * de ser `ApiError` aunque traiga el mismo código, y el 20-09 eso dejó MUERTO
+ * en media aplicación el aviso del segundo factor.
+ */
+export interface CuerpoDelNo {
+  code?: string
+  module?: string
+  action?: string
+  role?: string
+}
+
+export function cuerpoDelNo(error: unknown): CuerpoDelNo {
+  const leer = (o: unknown): CuerpoDelNo => {
+    if (!o || typeof o !== 'object') return {}
+    const e = o as Record<string, unknown>
+    const texto = (v: unknown) => (typeof v === 'string' ? v : undefined)
+    return {
+      code: texto(e.code),
+      module: texto(e.module),
+      action: texto(e.action),
+      role: texto(e.role),
+    }
+  }
+  /*
+   * Los dos sitios se MEZCLAN, no se elige uno. `ApiError` sube el `code` a una
+   * propiedad suya y deja el resto del cuerpo en `body`, así que quedarse con
+   * el primero que tuviera código perdía el `module` — y sin módulo el cartel
+   * no puede nombrar la sección, que es justo lo que se agregó hoy.
+   */
+  const directo = leer(error)
+  const otros =
+    error && typeof error === 'object'
+      ? [
+          // `body` es como viene un error re-envuelto por un servicio…
+          leer((error as { body?: unknown }).body),
+          // …y `detalle` es como lo guarda `ApiError`, que sube `code` a una
+          // propiedad suya y deja el resto del cuerpo acá. Los dos nombres
+          // existen de verdad en este repo; leer sólo uno pierde el módulo.
+          leer((error as { detalle?: unknown }).detalle),
+        ]
+      : []
+  const primero = (campo: keyof CuerpoDelNo) =>
+    directo[campo] ?? otros.map((o) => o[campo]).find((v) => v !== undefined)
+  return {
+    code: primero('code'),
+    module: primero('module'),
+    action: primero('action'),
+    role: primero('role'),
+  }
+}
+
 export function esSegundoFactor(error: unknown): boolean {
   const CODIGO = 'SEGUNDO_FACTOR_REQUERIDO'
   if (error instanceof ApiError && error.code === CODIGO) return true
-  if (typeof error === 'object' && error !== null) {
-    const e = error as { code?: unknown; body?: { code?: unknown } }
-    if (e.code === CODIGO) return true
-    if (e.body && (e.body as { code?: unknown }).code === CODIGO) return true
-  }
-  return false
+  return cuerpoDelNo(error).code === CODIGO
+}
+
+/**
+ * Cómo se llama en pantalla el módulo que el back nombró. Sin esto el cartel
+ * diría «pipeline» —una llave interna— o, peor, no diría cuál.
+ */
+const NOMBRE_DEL_MODULO: Record<string, string> = {
+  pipeline: 'Pipeline',
+  inmuebles: 'Inmuebles',
+  propietarios: 'Propietarios',
+  contratos: 'Contratos',
+  cobros: 'Cobros',
+  dispersiones: 'Dispersiones',
+  conciliacion: 'Conciliación',
+  contabilidad: 'Contabilidad',
+  portafolio: 'Portafolio',
+  documentos: 'Documentos',
+  postulaciones: 'Postulaciones',
+  mantenimiento: 'Mantenimientos',
+  agentes: 'Equipo',
+  analytics: 'Reportes',
+  operaciones: 'Operación',
 }
 
 /**
@@ -250,6 +332,73 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         mensajeOriginal,
       }
     }
+    /*
+     * 🔴 Los otros tres «no» del panel (21-09-2026). Hasta hoy los tres caían
+     * en el cartel genérico de abajo, que le echa la culpa a tu ROL. Nico lo
+     * preguntó mirando el Pipeline: «¿por qué no me das acceso a todo?» — y la
+     * respuesta no era su rol.
+     */
+    const cuerpo = cuerpoDelNo(error)
+
+    if (cuerpo.code === 'SIN_MEMBRESIA_ACTIVA') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Tu cuenta no está activa en ninguna inmobiliaria',
+        descripcion:
+          'No es un permiso que falte: es la membresía. Si te acaban de invitar, acepta la invitación desde el correo; si trabajabas acá, pídele a un administrador que te reactive.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    if (cuerpo.code === 'INMOBILIARIA_NO_ES_TUYA') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Esa inmobiliaria no es tuya',
+        descripcion:
+          'Estás pidiendo datos de una inmobiliaria en la que no eres miembro. Vuelve a entrar y elige la tuya en el selector de arriba.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    if (cuerpo.code === 'SIN_PERMISO_DE_MODULO') {
+      const seccion = cuerpo.module
+        ? (NOMBRE_DEL_MODULO[cuerpo.module] ?? cuerpo.module)
+        : null
+      /*
+       * El desacuerdo. El panel te dejó entrar porque `my-permissions` dijo
+       * que sí, y la llamada la negó el servidor. Echarle la culpa al rol acá
+       * es mandar a alguien —muchas veces al administrador mismo— a pedirle
+       * un permiso que ya tiene, y a no encontrarlo nunca.
+       */
+      if (ctx.creoQueTengoAcceso) {
+        return {
+          tipo: 'sinPermiso',
+          titulo: seccion
+            ? `No pudimos abrir ${seccion}, y no es por tus permisos`
+            : 'No pudimos abrir esto, y no es por tus permisos',
+          descripcion:
+            'Tu cuenta figura con acceso a esta sección y aun así el servidor la negó. Es un problema nuestro, no tuyo: escríbenos con la referencia de abajo y lo miramos.',
+          sePuedeReintentar: false,
+          status,
+          mensajeOriginal,
+        }
+      }
+      return {
+        tipo: 'sinPermiso',
+        titulo: seccion ? `No tienes acceso a ${seccion}` : 'No tienes acceso a esto',
+        descripcion: seccion
+          ? `Tu rol en la inmobiliaria no incluye ${seccion}. Pídele a un administrador que te lo habilite.`
+          : 'Tu rol en la inmobiliaria no incluye esta sección. Pídele a un administrador que te lo habilite.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
     return {
       tipo: 'sinPermiso',
       titulo: 'No tienes acceso a esto',

@@ -25,6 +25,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { clasificarFallo, type Contexto, type TipoDeFallo } from '@/lib/errores/clasificar'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { cn } from '@/lib/utils'
 
 const ICONO: Record<TipoDeFallo, Icon> = {
@@ -92,7 +93,17 @@ export function FalloDeCarga({
   enmarcado = true,
   className,
 }: FalloDeCargaProps) {
-  const fallo = clasificarFallo(error, { queEs })
+  /*
+   * Lo que el FRONT cree de tus permisos, para que el cartel pueda notar el
+   * desacuerdo con lo que respondió el servidor. `…Safe` porque este cartel
+   * también se usa fuera del panel de la inmobiliaria, donde no hay proveedor
+   * de permisos y no hay nada que comparar.
+   */
+  const permisos = usePermissionsContextSafe()
+  const fallo = clasificarFallo(error, {
+    queEs,
+    creoQueTengoAcceso: permisos?.isAdmin === true,
+  })
   const Icono = ICONO[fallo.tipo]
   // Para volver a donde estaba después de entrar de nuevo.
   const rutaActual =

@@ -379,6 +379,7 @@ function PipelineContent() {
 
         {/* Pipeline Board — con los cuatro estados */}
         <EstadoDeDatos
+          principal
           cargando={cargandoPorPrimeraVez}
           error={errorCrudo}
           conservarContenido={yaSeMostro}

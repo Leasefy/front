@@ -123,12 +123,32 @@ export function VisitasClient() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/*
+        🔴 Se llamaba «Visitas», y Nico preguntó lo obvio el 21-09: «¿para qué
+        existe esta sección si existe la de Agenda?». La Agenda YA muestra las
+        visitas —tiene su ficha, su fila y los botones de confirmar, rechazar y
+        cancelar—, así que dos entradas del menú llamadas casi igual prometían
+        lo mismo dos veces.
+
+        No son lo mismo, y la diferencia es la que ahora dice el nombre:
+
+          · **Agenda** es el calendario: CUÁNDO pasa cada cosa —visitas, firmas,
+            vencimientos, inspecciones— y ahí se confirma o se cancela.
+          · **Preparar visitas** es la lista de trabajo: QUÉ LE FALTA a cada
+            visita para poder hacerse. Una sin asesor no es un dato de agenda,
+            es alguien que mañana se para en una puerta y no llega nadie; y al
+            inmueble ocupado hay que avisarle al inquilino con horas de
+            anticipación o la visita no se puede hacer.
+
+        Meter esta lista dentro de la Agenda sería empeorar las dos: un
+        calendario no es el sitio donde se persigue lo que falta.
+      */}
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Visitas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Preparar visitas</h1>
         <p className="text-muted-foreground text-sm">
-          Las próximas visitas y lo que les falta. Ninguna se confirma sin
-          asesor, y al inmueble ocupado se le avisa al inquilino {horas} horas
-          antes.
+          Lo que le falta a cada visita para poder hacerse. Ninguna se confirma sin asesor, y
+          al inmueble ocupado se le avisa al inquilino {horas} horas antes. El calendario
+          completo está en Agenda.
         </p>
       </header>
 
@@ -146,6 +166,7 @@ export function VisitasClient() {
             </p>
           ) : (
             <EstadoDeDatos
+              principal
               cargando={porAtender.cargando}
               error={porAtender.errorCrudo}
               vacio={ordenadas.length === 0}

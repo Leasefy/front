@@ -18,9 +18,11 @@
  * fallo posterior no debe borrarlo. Pasa `conservarContenido` para eso.
  */
 
-import { useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Spinner } from '@/components/ui'
 import { FalloDeCarga } from './FalloDeCarga'
+import { clasificarFallo } from '@/lib/errores/clasificar'
+import { useAccesoDeLaPantalla } from '@/components/auth/acceso-de-la-pantalla'
 
 export interface EstadoDeDatosProps {
   cargando: boolean
@@ -43,6 +45,20 @@ export interface EstadoDeDatosProps {
   volverA?: { label: string; href: string }
   /** Si ya se mostró contenido, un fallo de refresco no lo borra. */
   conservarContenido?: boolean
+  /**
+   * 🔴 ¿Éste es el dato PRINCIPAL de la pantalla — el que, si no se puede
+   * leer, deja sin sentido a todo lo demás?
+   *
+   * Marcarlo cambia una sola cosa, y es la que Nico pidió el 21-09: si el
+   * servidor NIEGA este dato, no se apaga sólo este hueco, se apaga la
+   * pantalla entera. Sin eso quedaba un «No tienes acceso a esto» en el centro
+   * y, alrededor, el buscador, los filtros y un «+ Nuevo lead» vivos.
+   *
+   * Va sólo en UNO por pantalla. Una sección secundaria que se niega —los
+   * daños del portal del propietario, por ejemplo— degrada sola y no tiene por
+   * qué tumbar lo que sí funciona.
+   */
+  principal?: boolean
   children: ReactNode
 }
 
@@ -56,6 +72,7 @@ export function EstadoDeDatos({
   onReintentar,
   volverA,
   conservarContenido = false,
+  principal = false,
   children,
 }: EstadoDeDatosProps) {
   /**
@@ -63,6 +80,25 @@ export function EstadoDeDatos({
    * `useState` a propósito: no tiene que provocar un render, sólo recordar.
    */
   const yaHuboContenido = useRef(false)
+
+  /*
+   * Si este es el dato principal y el servidor lo NEGÓ, se avisa hacia arriba:
+   * `PageGuard` cambia la pantalla entera por el cartel. Los dos tipos que
+   * cuentan como «negado» son los dos que no se arreglan reintentando —no
+   * tienes el permiso, o te falta el segundo factor—; un 500 o una red caída
+   * NO apagan la pantalla, porque ahí los controles sí pueden volver a servir
+   * en cuanto el servidor conteste.
+   */
+  const acceso = useAccesoDeLaPantalla()
+  const denegar = acceso?.denegar
+  const yaDenegado = Boolean(acceso?.denegado)
+  useEffect(() => {
+    if (!principal || !error || !denegar || yaDenegado) return
+    const fallo = clasificarFallo(error, { queEs })
+    if (fallo.tipo === 'sinPermiso' || fallo.tipo === 'sinSegundoFactor') {
+      denegar({ error, queEs })
+    }
+  }, [principal, error, denegar, yaDenegado, queEs])
 
   if (cargando) {
     return (

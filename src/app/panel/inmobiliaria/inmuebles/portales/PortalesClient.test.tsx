@@ -225,6 +225,53 @@ describe('Publicación en portales', () => {
     expect(dice('CIENCUADRAS')).not.toMatch(/ID de Cliente/i)
   })
 
+  it('🔴 P7e — «qué pide este portal» está en la tarjeta y detrás de un botón, no dentro del diálogo', async () => {
+    /* 21-09-2026. Dos cosas se arreglan acá y las dos son de Nico:
+         · la explicación vivía DENTRO del diálogo de la cuenta y encima
+           plegada, o sea a dos clics de donde se decide si conectar el portal;
+         · «hay muchas pantallas que colocamos información ahí dispuesta y eso
+           llena las pantallas de carga cognitiva innecesaria» — de ahí que el
+           contenido no esté montado hasta que alguien lo pida.
+       Un `<details>` no servía para reemplazarlo: abierto crece dentro de la
+       pantalla. Y no se podía dejar en el diálogo porque un modal encima de un
+       modal no funciona. */
+    await montar()
+
+    // El botón está en la tarjeta del portal…
+    const tarjeta = porTestId('portal-FINCARAIZ')!
+    const boton = tarjeta.querySelector('[data-testid="para-entender-mas"]')
+    expect(boton).not.toBeNull()
+    expect(boton!.textContent).toMatch(/Qué pide Fincaraíz/)
+
+    // …y lo que explica NO está puesto sobre la pantalla: nada de la lista
+    // está en el documento mientras nadie la pida.
+    expect(porTestId('que-pide-este-portal')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/ejecutivo comercial/)
+
+    // Y ya no vive dentro del diálogo de la cuenta.
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    const form = porTestId('form-de-cuenta')!
+    expect(form.textContent).not.toMatch(/ejecutivo comercial/)
+    expect(form.querySelector('details')).toBeNull()
+    // El cuidado del portal SÍ se queda: no es explicación, es una advertencia
+    // sobre el dato que se está escribiendo en ese instante.
+    expect(form.textContent).toMatch(/dado de alta como asesor/)
+  })
+
+  it('nuestro propio catálogo no ofrece «qué pide»: la respuesta sería «nada»', async () => {
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [
+        { portal: 'SITIO_PROPIO', nombre: 'Sitio propio', tieneApi: true, cuenta: null },
+      ],
+    })
+    await montar()
+    expect(
+      porTestId('portal-SITIO_PROPIO')!.querySelector('[data-testid="para-entender-mas"]'),
+    ).toBeNull()
+  })
+
   it('los nombres propios no se aplastan a minúsculas', async () => {
     // Un `toLowerCase()` los rompía: «mercado libre», «proppit», «ciencuadras».
     h.api.cuentas.mockResolvedValue({

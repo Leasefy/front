@@ -202,6 +202,18 @@ describe('/panel/inmobiliaria/conciliacion — cuando el resumen no llega', () =
   })
 })
 
+describe('«¿Cómo funciona?» — ayuda, no dato (21-09)', () => {
+  it('los tres pasos no están puestos sobre la pantalla: se piden', async () => {
+    /* Estaba plegado al pie en un `<details>`, y desplegarlo empujaba hacia
+       abajo las sugerencias que la persona vino a revisar. Ahora se abre encima
+       y la pantalla queda intacta al cerrarlo. */
+    await montar()
+    expect(document.querySelector('[data-testid="conciliacion-como-funciona"]')).toBeNull()
+    const boton = [...document.querySelectorAll('[data-testid="para-entender-mas"]')]
+    expect(boton.length).toBe(1)
+  })
+})
+
 describe('/panel/inmobiliaria/conciliacion — el sondeo de la corrida (K3)', () => {
   async function pedirCorrida() {
     await clic($('[data-testid="conciliacion-run-cta"]'))

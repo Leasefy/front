@@ -55,8 +55,11 @@ export interface ComoSeConecta {
   /** Una línea que evita el error más común de ese portal. */
   cuidado?: string
   /**
-   * Qué haría falta el día que se conecte de verdad. Se muestra plegado: hoy
-   * no se pide nada de esto, pero saberlo cambia a quién se llama.
+   * Qué haría falta el día que se conecte de verdad. Se muestra en la tarjeta
+   * del portal, detrás del botón «Qué pide …» que abre un modal (21-09: antes
+   * estaba plegado dentro del diálogo de la cuenta, o sea a dos clics de donde
+   * se decide). Hoy no se pide nada de esto, pero saberlo cambia a quién se
+   * llama.
    */
   paraConectarloDeVerdad: readonly string[]
   /** Dónde lo dice el portal (o quien lo integra). */

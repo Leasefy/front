@@ -46,6 +46,7 @@ import { ArrowRight, Copy, MagicWand, Users, House } from '@phosphor-icons/react
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
@@ -450,11 +451,17 @@ export function CalceClient() {
         </Card>
       )}
 
-      {/* 🔴 Los requisitos NO se configuran, y la pantalla lo dice — pero abajo:
-          se consulta una vez, no cada vez que se abre la pantalla. */}
-      <details className="border-border-faint rounded-lg border px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium">Cómo se decide</summary>
-        <div className="mt-3 space-y-3">
+      {/* 🔴 Cómo se decide un calce: se consulta una vez, no cada vez que se
+          abre la pantalla. Era un `<details>` al pie —y abierto empujaba las
+          opciones hacia abajo, que es justo lo que la persona vino a mirar—;
+          desde el 21-09 se abre encima con `ParaEntenderMas` y la devuelve
+          intacta al cerrarla. */}
+      <ParaEntenderMas
+        etiqueta="Cómo se decide"
+        titulo="Cómo se decide un calce"
+        descripcion="Dos cosas distintas: lo que un inmueble tiene que cumplir para aparecer, y cuánto pesa cada coincidencia en el orden."
+      >
+        <div className="space-y-3">
           <div>
             <p className="text-sm font-medium">Requisitos (no se configuran)</p>
             <ul className="text-fg-muted list-disc pl-5 text-sm">
@@ -486,7 +493,7 @@ export function CalceClient() {
             </Link>
           </p>
         </div>
-      </details>
+      </ParaEntenderMas>
     </div>
   )
 }

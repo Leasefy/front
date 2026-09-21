@@ -6,9 +6,12 @@
  * «Falta el presupuesto» suena a trabajo por hacer; «no hay inmuebles» suena a
  * que el portafolio está vacío, que es falso.
  */
+import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+
+void React // jsx-preserve
 
 const { api } = vi.hoisted(() => ({
   api: {
@@ -26,6 +29,21 @@ const { api } = vi.hoisted(() => ({
  * reglas que este archivo asegura no cambiaron: siguen siendo sobre el
  * RESULTADO del calce, no sobre cómo se escoge.
  */
+/*
+ * 21-09: «Cómo se decide» pasó de un `<details>` al pie a un modal
+ * (`ParaEntenderMas`). Se moquea el diálogo, no el botón: lo que hay que poder
+ * seguir probando es que la explicación EXISTE y dice lo mismo, no que esté
+ * puesta sobre la pantalla.
+ */
+vi.mock('@/components/ui/dialog', () => ({
+  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
+    open ? <div data-testid="modal">{children}</div> : null,
+  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+}))
+
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   usePipelineItems: () => ({
     pipelineItems: [
@@ -133,16 +151,43 @@ afterEach(async () => {
 })
 
 describe('CalceClient', () => {
+  /*
+   * 🔴 Estos dos exigían que la explicación estuviera PUESTA en la pantalla, y
+   * así fue construida: un `<details>` al pie. Nico, 21-09: «hay muchas
+   * pantallas que colocamos información ahí dispuesta y eso llena las pantallas
+   * de carga cognitiva innecesaria». La intención de los dos tests se conserva
+   * entera —que la pantalla diga qué NO se configura, y que avise cuando los
+   * pesos son los de por defecto—; lo que cambió es que se pide con un clic.
+   */
+  async function abrirComoSeDecide() {
+    const boton = [...contenedor.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+      b.textContent?.includes('Cómo se decide'),
+    )
+    expect(boton, 'no hay botón «Cómo se decide»').toBeTruthy()
+    await act(async () => {
+      boton!.click()
+    })
+  }
+
   it('🔴 dice qué NO se configura: los requisitos son una puerta, no un peso', async () => {
     await pintar()
+    await abrirComoSeDecide()
     expect(contenedor.textContent).toContain('Requisitos (no se configuran)')
     expect(contenedor.textContent).toContain('tope asegurable')
   })
 
   it('los pesos se muestran, y avisa cuando son los de por defecto', async () => {
     await pintar()
+    await abrirComoSeDecide()
     expect(contenedor.textContent).toContain('los de por defecto')
     expect(contenedor.textContent).toContain('zona: 40')
+  })
+
+  it('🔴 y NO están puestos sobre la pantalla hasta que alguien los pida', async () => {
+    await pintar()
+    expect(contenedor.querySelector('[data-testid="modal"]')).toBeNull()
+    expect(contenedor.textContent).not.toContain('Requisitos (no se configuran)')
+    expect(contenedor.textContent).toContain('Cómo se decide')
   })
 
   it('🔴 un requisito que falta NO se pinta como «sin resultados»', async () => {

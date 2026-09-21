@@ -55,7 +55,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
-import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
+import { ArrowsClockwise, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import {
@@ -71,6 +71,7 @@ import {
 } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
@@ -488,21 +489,19 @@ function ConciliacionSala() {
         </section>
       )}
 
-      {/* 6. ¿Cómo funciona? — ayuda, no dato: plegada y al final. */}
-      <details
-        className="group rounded-lg border border-border bg-surface"
-        data-testid="conciliacion-como-funciona"
+      {/* 6. ¿Cómo funciona? — ayuda, no dato. Estaba plegada al final de la
+          pantalla; desde el 21-09 se abre ENCIMA: un `<details>` abierto crece
+          dentro de la pantalla y empuja las sugerencias que la persona vino a
+          revisar. El `data-testid` se conserva en el contenido para que las
+          pruebas sigan buscando lo mismo. */}
+      <ParaEntenderMas
+        etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+        ancho="ancho"
       >
-        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 [&::-webkit-details-marker]:hidden">
-          <CaretRight
-            className="h-4 w-4 shrink-0 text-fg-muted transition-transform group-open:rotate-90"
-            aria-hidden="true"
-          />
-          <span className="text-body-sm font-medium text-fg">
-            {t(`${PAGES_NS}.comoFunciona.title`)}
-          </span>
-        </summary>
-        <ol className="grid grid-cols-1 gap-4 border-t border-border p-4 sm:grid-cols-3">
+        <ol
+          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+          data-testid="conciliacion-como-funciona"
+        >
           {COMO_FUNCIONA_STEPS.map((step, i) => {
             const StepIcon = step.icon
             return (
@@ -521,7 +520,7 @@ function ConciliacionSala() {
             )
           })}
         </ol>
-      </details>
+      </ParaEntenderMas>
 
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

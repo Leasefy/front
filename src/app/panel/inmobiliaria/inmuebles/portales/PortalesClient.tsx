@@ -69,6 +69,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
@@ -289,32 +290,20 @@ function DialogoDeCuenta({
           )}
         </div>
 
-        {/* 🔴 Lo que haría falta el día que se conecte de verdad, plegado.
-            Hoy no se pide nada de esto —esta pantalla es una libreta, Leasefy
-            todavía no publica en ningún portal de afuera— pero saberlo cambia
-            a quién se llama: en Ciencuadras la contraseña la genera la propia
-            inmobiliaria en 30 segundos; en Metrocuadrado hay que pedirle
-            cuatro datos al asesor; en Mercado Libre hay que pagar un paquete
-            o el aviso no se crea. Callarlo es dejar que lo descubran a mitad
-            de camino. */}
-        <details className="rounded-lg border border-border" data-testid="que-pide-este-portal">
-          <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-fg">
-            Qué pide {portal.nombre} para conectarse de verdad
-          </summary>
-          <div className="space-y-2 border-t border-border px-3 py-2.5">
-            <ul className="space-y-1.5 text-sm text-fg-muted">
-              {conexion.paraConectarloDeVerdad.map((linea) => (
-                <li key={linea}>· {linea}</li>
-              ))}
-            </ul>
-            <p className="text-xs text-fg-subtle">
-              Hoy Leasefy no publica solo en este portal: lo que guardas acá es
-              a nombre de quién está la cuenta, para saber con qué usuario
-              cargar el archivo. Verificado el 19-09-2026 — {conexion.fuente}
-            </p>
-          </div>
-        </details>
+        {/* 🔴 21-09: acá vivía «Qué pide {portal} para conectarse de verdad»,
+            en un `<details>` DENTRO de este formulario. Se mudó a la tarjeta
+            del portal (`TarjetaDePortal` → `ParaEntenderMas`) por dos razones:
 
+              · la explicación estaba a DOS clics —abrir el diálogo de la
+                cuenta y después desplegarla— cuando sirve justo antes de
+                decidir si conectar ese portal, o sea en la tarjeta;
+              · y un modal encima de un modal no funciona, así que acá dentro
+                no se podía aplicar la regla nueva (la explicación va detrás de
+                un botón que abre un modal, no plegada dentro de la pantalla).
+
+            Lo que sí quedó acá es `conexion.cuidado`, arriba, junto al campo
+            que lo necesita: eso no es explicación, es una advertencia sobre el
+            dato que la persona está escribiendo en este instante. */}
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-notas">Notas</Label>
           <Textarea
@@ -668,6 +657,7 @@ function TarjetaDePortal({
   onAnotar: () => void
 }) {
   const { iniciales, logo } = marcaDelPortal(p.portal, p.nombre)
+  const conexion = comoSeConecta(p.portal)
   const esNuestro = p.portal === EL_CATALOGO_DE_LEASEFY
   const alDia = p.cuenta?.activa === true
   const enPausa = Boolean(p.cuenta) && !alDia
@@ -735,12 +725,12 @@ function TarjetaDePortal({
             <span className="font-medium text-fg">
               {/* Sin `toLowerCase()`: son nombres propios y los rompía
                   («mercado libre», «proppit», «ciencuadras»). */}
-              {comoSeConecta(p.portal).rotuloDelIdentificador}
+              {conexion.rotuloDelIdentificador}
             </span>
-            {comoSeConecta(p.portal).cuidado ? (
+            {conexion.cuidado ? (
               <>
                 {'. '}
-                {comoSeConecta(p.portal).cuidado}
+                {conexion.cuidado}
               </>
             ) : (
               ' — la cuenta que tu inmobiliaria ya paga.'
@@ -783,6 +773,33 @@ function TarjetaDePortal({
           >
             {p.cuenta ? 'Editar' : 'Configurar'}
           </Button>
+        ) : null}
+
+        {/* Qué haría falta el día que Leasefy publique solo en ESTE portal.
+            No se muestra para nuestro propio catálogo: ahí la respuesta es
+            «nada», y un botón que abre un modal para decir «nada» es ruido.
+            En los otros cinco cambia mucho —en Ciencuadras la contraseña la
+            genera la inmobiliaria en 30 segundos; en Metrocuadrado hay que
+            pedirle cuatro datos al asesor; en Mercado Libre hay que pagar un
+            paquete o el aviso no se crea—, y saberlo cambia a quién se llama. */}
+        {!esNuestro ? (
+          <ParaEntenderMas
+            etiqueta={`Qué pide ${p.nombre}`}
+            titulo={`Qué pide ${p.nombre} para conectarse de verdad`}
+            descripcion="Hoy esta pantalla es una libreta: Leasefy todavía no publica solo en ningún portal de afuera. Esto es lo que haría falta el día que lo haga."
+            className="ml-auto"
+          >
+            <div className="space-y-3" data-testid="que-pide-este-portal">
+              <ul className="space-y-1.5 text-sm text-fg-muted">
+                {conexion.paraConectarloDeVerdad.map((linea) => (
+                  <li key={linea}>· {linea}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-fg-subtle">
+                Verificado el 19-09-2026 — {conexion.fuente}
+              </p>
+            </div>
+          </ParaEntenderMas>
         ) : null}
       </div>
     </div>

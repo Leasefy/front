@@ -27,6 +27,7 @@ const CLAVES_PLANAS = [
   'esperandoAlInquilino',
   'sigue',
   'verPaso',
+  'verElRecorrido',
   'sinPantalla',
   'cambioDeManos',
   'actorInquilino',

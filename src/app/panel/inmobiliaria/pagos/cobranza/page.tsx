@@ -5,7 +5,6 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  CaretRight,
   ChatCircleText,
   ClipboardText,
   CreditCard,
@@ -15,6 +14,7 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
@@ -47,6 +47,35 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
   { icon: CreditCard, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
   { icon: UsersThree, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
 ]
+
+/**
+ * Los cuatro pasos, en un solo lugar: se pintan sueltos cuando la pantalla no
+ * tiene cartera que mostrar, y dentro del modal de «Cómo funciona» cuando sí.
+ */
+function PasosDeComoFunciona() {
+  const { t } = useI18n()
+  return (
+    <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {COMO_FUNCIONA_STEPS.map((step, i) => {
+        const StepIcon = step.icon
+        return (
+          <li key={step.titleKey} className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
+                <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
+              </span>
+              <span className="text-xs font-medium text-fg-muted font-mono tabular-nums">
+                {i + 1}
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-fg leading-tight">{t(step.titleKey)}</p>
+            <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
 
 export default function CobranzaOverviewPage() {
   const { t } = useI18n()
@@ -366,41 +395,38 @@ export default function CobranzaOverviewPage() {
       {/* ═══ ¿Cómo funciona? ═══════════════════════════════════════════════
           Contenido de aprendizaje, no de operación. Estaba clavado en mitad
           del tablero, ocupando el mismo peso que las decisiones del día, todos
-          los días — también al año de usar el producto. Ahora se abre solo si
-          alguien lo pide, y arranca ABIERTO cuando no hay cartera todavía, que
-          es cuando de verdad sirve. */}
-      <details
-        className="group rounded-lg border border-border bg-card"
-        open={enMora === 0}
-        data-testid="cobranza-como-funciona"
-      >
-        <summary className="flex items-center gap-2 cursor-pointer list-none px-5 py-4 text-sm font-semibold text-fg">
-          <CaretRight
-            className="w-4 h-4 text-fg-muted transition-transform group-open:rotate-90"
-            aria-hidden="true"
-          />
-          {t(`${PAGES_NS}.comoFunciona.title`)}
-        </summary>
-        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-5 pb-5">
-          {COMO_FUNCIONA_STEPS.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li key={step.titleKey} className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-                    <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs font-medium text-fg-muted font-mono tabular-nums">
-                    {i + 1}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold text-fg leading-tight">{t(step.titleKey)}</p>
-                <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
-              </li>
-            )
-          })}
-        </ol>
-      </details>
+          los días — también al año de usar el producto.
+
+          🔴 Segunda vuelta (21-09). Estaba plegado en un `<details>` que
+          arrancaba ABIERTO cuando no había cartera. La mitad de esa decisión
+          era correcta y se conserva; la otra mitad no:
+
+            · con cartera en mora, desplegarlo empujaba el tablero hacia abajo,
+              así que ahora se abre ENCIMA y devuelve la pantalla intacta;
+            · sin cartera todavía no hay nada que empujar, y los cuatro pasos
+              son lo único que la pantalla tiene para ofrecer: ahí se quedan
+              puestos, sin pedirle un clic a nadie.
+
+          Los mismos cuatro pasos en los dos casos (`PasosDeComoFunciona`). */}
+      {enMora === 0 ? (
+        <section
+          className="rounded-lg border border-border bg-card px-5 py-4"
+          data-testid="cobranza-como-funciona"
+        >
+          <h2 className="mb-4 text-sm font-semibold text-fg">
+            {t(`${PAGES_NS}.comoFunciona.title`)}
+          </h2>
+          <PasosDeComoFunciona />
+        </section>
+      ) : (
+        <div>
+          <ParaEntenderMas etiqueta={t(`${PAGES_NS}.comoFunciona.title`)} ancho="ancho">
+            <div data-testid="cobranza-como-funciona">
+              <PasosDeComoFunciona />
+            </div>
+          </ParaEntenderMas>
+        </div>
+      )}
 
     </main>
   )

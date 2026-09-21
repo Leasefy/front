@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * El propietario vendió: registrar la cesión.
+ * Cambiar de propietario: registrar el punto de quiebre del contrato.
  *
  * ── Por qué existe (auditoría del 2026-09-13, N4) ──────────────────────────
  *
@@ -121,11 +121,21 @@ export function CesionDelInmueble({
     <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
       <DialogContent className="sm:max-w-lg" data-testid="cesion-del-inmueble">
         <DialogHeader>
-          <DialogTitle>El propietario vendió el inmueble</DialogTitle>
+          {/*
+            🔴 20-09 · «Cambiar de propietario», no «El propietario vendió el
+            inmueble» (Juan Camilo, 16-09). El botón de la ficha ya decía lo
+            correcto y el diálogo que abre seguía diciendo lo viejo: se clickea
+            «Cambiar de propietario» y arriba aparece «vendió».
+            No es sólo el nombre: el cambio de dueño también pasa por herencia,
+            donación o por corregir a quién se le venía girando, y un título que
+            habla de una venta hace dudar de si sirve para eso.
+          */}
+          <DialogTitle>Cambiar de propietario</DialogTitle>
           <DialogDescription>
-            El contrato sigue con el mismo inquilino, el mismo canon y el mismo
-            plazo. Desde la fecha que elijas, las liquidaciones y el estado de
-            cuenta le corresponden al nuevo dueño; lo anterior no se reescribe.
+            Por una venta, una herencia o una corrección. El contrato sigue con
+            el mismo inquilino, el mismo canon y el mismo plazo. Desde la fecha
+            que elijas, las liquidaciones y el estado de cuenta le corresponden
+            al nuevo dueño; lo anterior no se reescribe.
           </DialogDescription>
         </DialogHeader>
 

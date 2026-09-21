@@ -34,7 +34,7 @@ export default function DeterioroPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas · contabilidad</SectionLabel>
+          <SectionLabel>Finanzas</SectionLabel>
           <h1 className="text-h2 text-fg">Deterioro de cartera</h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             Cuánta de la cartera se reconoce como incobrable, por edades. El sistema sugiere los

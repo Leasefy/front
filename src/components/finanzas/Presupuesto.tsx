@@ -224,12 +224,25 @@ function Comparacion({
                   <TableCell>
                     <div className="space-y-0.5">
                       <p className="font-medium text-fg">{fila.nombre}</p>
+                      {/* 🔴 20-09 · Acá se pintaba el motivo ENTERO —cuatro
+                          renglones— en cada fila que no se puede medir. Con
+                          once rubros así, el mismo párrafo salía ocho veces
+                          palabra por palabra y ocupaba el 70 % de la altura de
+                          la tabla; y el aviso de arriba YA lo dice una vez,
+                          con la lista de los once. Repetir una explicación no
+                          la hace más clara: enseña a saltársela, y el día que
+                          una fila diga algo distinto tampoco se va a leer.
+
+                          Queda la marca, que es lo que la fila tiene que
+                          decir, y el motivo completo en el `title` y en el
+                          detalle del rubro, donde se va a leer de verdad. */}
                       {fila.motivoSinReal ? (
                         <p
-                          className="max-w-md text-xs leading-relaxed text-fg-muted"
+                          className="text-caption text-fg-subtle"
+                          title={fila.motivoSinReal}
                           data-testid={`sin-real-${fila.rubro}`}
                         >
-                          {fila.motivoSinReal}
+                          Sin cuentas del PUC: no se puede medir
                         </p>
                       ) : null}
                     </div>
@@ -282,7 +295,7 @@ function Comparacion({
               <Monto id="total-real" valor={comparacion.totales.realCop} />
               <TableCell colSpan={3} className="text-right text-xs text-fg-muted">
                 {comparacion.totales.rubrosSinReal > 0
-                  ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} rubro(s) que todavía no se pueden medir.`
+                  ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} ${comparacion.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${comparacion.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
                   : 'Todos los rubros se pudieron medir.'}
               </TableCell>
               <TableCell />

@@ -34,6 +34,9 @@ import { FloppyDisk } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -101,6 +104,24 @@ export function ConceptosDeExogena({
   );
   const aviso = useMemo(() => (conceptos ? avisoDelPreset(conceptos) : null), [conceptos]);
   const hayCambios = Object.keys(cambios).length > 0;
+
+  /* Buscar por código, nombre o concepto: son 49 cuentas y el contador va a
+     una en particular, no las recorre de arriba abajo. */
+  const [busqueda, setBusqueda] = useState('');
+  const visibles = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    if (texto === '') return conceptos?.conceptos ?? [];
+    return (conceptos?.conceptos ?? []).filter(
+      (c) =>
+        c.codigo.toLowerCase().includes(texto) ||
+        (c.nombre ?? '').toLowerCase().includes(texto) ||
+        (c.concepto ?? '').toLowerCase().includes(texto) ||
+        String(c.formato).toLowerCase().includes(texto),
+    );
+  }, [busqueda, conceptos]);
+
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(visibles, { resetKey: `${anio}|${busqueda}` });
 
   const guardar = async () => {
     if (!conceptos) return;
@@ -206,7 +227,36 @@ export function ConceptosDeExogena({
         </Nota>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      {/* 🔴 20-09 · Esta tabla tenía 49 filas sin buscador y sin paginador, en
+          una página de 8.186 px. El contador tiene que recorrerla código por
+          código para revisar qué concepto le puso Leasefy a cada cuenta, y sin
+          forma de buscar «2408» hay que bajar con la rueda hasta encontrarlo.
+          Paginar una tabla que hay que llenar ENTERA sería peligroso si no
+          fuera porque el aviso de arriba ya lista, ordenadas por plata, las
+          que siguen sin concepto: ése es el que dice cuándo falta algo, no el
+          scroll. */}
+      <div className="overflow-x-clip rounded-lg border border-border bg-surface">
+        <div className="flex flex-wrap items-end gap-3 border-b border-border p-4">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Label htmlFor="buscar-concepto">Buscar</Label>
+            <Input
+              id="buscar-concepto"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Código de la cuenta, nombre o concepto"
+              className="w-full sm:max-w-sm"
+              data-testid="buscar-concepto"
+            />
+          </div>
+          <p className="pb-2 text-caption text-fg-muted" data-testid="cuantos-conceptos">
+            {/* «1 cuentas» no: el plural se decide con el número, igual que en
+                el back. Y buscando se dice «de cuántas», para que no parezca
+                que desaparecieron. */}
+            {busqueda.trim() === ''
+              ? `${conceptos.conceptos.length} ${conceptos.conceptos.length === 1 ? 'cuenta' : 'cuentas'}`
+              : `${visibles.length} de ${conceptos.conceptos.length} ${conceptos.conceptos.length === 1 ? 'cuenta' : 'cuentas'}`}
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -218,14 +268,16 @@ export function ConceptosDeExogena({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {conceptos.conceptos.length === 0 ? (
+              {pageItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-8 text-center text-sm text-fg-muted">
-                    Todavía no hay conceptos asignados para {anio}.
+                    {conceptos.conceptos.length === 0
+                      ? `Todavía no hay conceptos asignados para ${anio}.`
+                      : 'Ninguna cuenta con ese código, nombre ni concepto.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                conceptos.conceptos.map((c) => {
+                pageItems.map((c) => {
                   const cambio = cambios[c.cuentaId];
                   return (
                     <TableRow key={`${c.cuentaId}-${c.formato}`} data-testid={`concepto-${c.codigo}`}>
@@ -288,9 +340,23 @@ export function ConceptosDeExogena({
             </TableBody>
           </Table>
         </div>
-      </div>
 
-      <AccionConMotivo
+        {shouldPaginate ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        ) : null}
+
+        {/* El guardar va en el PIE de la tabla que edita, no flotando debajo. */}
+        <div className="border-t border-border px-4 py-3">
+          <AccionConMotivo
         puede={escritura.puede && conceptos.disponible && hayCambios}
         motivo={
           escritura.motivo ??
@@ -306,8 +372,10 @@ export function ConceptosDeExogena({
         enLinea
       >
         <FloppyDisk className="mr-1.5 h-4 w-4" aria-hidden="true" />
-        Guardar los conceptos de {anio}
-      </AccionConMotivo>
+          Guardar los conceptos de {anio}
+          </AccionConMotivo>
+        </div>
+      </div>
     </section>
   );
 }

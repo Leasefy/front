@@ -33,7 +33,7 @@ export default function CertificadosPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Finanzas · contabilidad</SectionLabel>
+          <SectionLabel>Finanzas</SectionLabel>
           <h1 className="text-h2 text-fg">Certificados de retención</h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             Lo que los inquilinos le retuvieron a cada propietario en el año, para que pueda

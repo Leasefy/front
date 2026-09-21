@@ -33,7 +33,7 @@ export default function PresupuestoPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Contabilidad
           </Link>
-          <SectionLabel>Contabilidad</SectionLabel>
+          <SectionLabel>Finanzas</SectionLabel>
           <h1 className="text-h2 text-fg">Presupuesto</h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             Lo que se planeó para el mes, contra lo que pasó y contra el mismo mes del año pasado.

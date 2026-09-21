@@ -180,7 +180,14 @@ describe('🔴 lo que no se pudo medir se pinta con guion', () => {
 
   it('y dice POR QUÉ no se puede medir, en la misma fila', async () => {
     await pintar();
-    expect(testId('sin-real-nomina')?.textContent).toContain('asientos que cargue el contador');
+    /* 🔴 20-09 · La fila dice la MARCA, no el motivo entero. Con once rubros
+       sin medir, el mismo párrafo de cuatro renglones salía ocho veces y
+       ocupaba el 70 % de la tabla, mientras el aviso de arriba ya lo decía
+       una vez con la lista completa. El motivo entero queda en el `title`. */
+    expect(testId('sin-real-nomina')?.textContent).toContain('Sin cuentas del PUC');
+    expect(testId('sin-real-nomina')?.getAttribute('title')).toContain(
+      'asientos que cargue el contador',
+    );
     // El que sí se mide no tiene ese texto.
     expect(testId('sin-real-comisiones')).toBeNull();
   });
@@ -191,7 +198,7 @@ describe('los totales y el aviso', () => {
     await pintar();
     expect(testId('total-presupuesto')?.textContent).toContain('140.000.000');
     expect(testId('total-real')?.textContent).toContain('112.000.000');
-    expect(container.textContent).toContain('NO incluye 1 rubro(s)');
+    expect(container.textContent).toContain('NO incluye 1 rubro que todavía no se puede medir');
   });
 
   it('el aviso del back se muestra arriba', async () => {

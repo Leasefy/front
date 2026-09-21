@@ -1765,9 +1765,20 @@ export interface InmobiliariaDashboardKPIs {
   tasaDeRecaudo?: TasaDeRecaudo;
   totalCommissions: number;
 
-  // Trends (signed % change vs previous month)
-  collectionTrend: number;
-  commissionsTrend: number;
+  /**
+   * 🔴 La variación contra el mes anterior, en % con signo, o `null` cuando NO
+   * HAY CON QUÉ COMPARAR (el mes anterior fue cero).
+   *
+   * `null` y `0` son cosas distintas y la pantalla tiene que distinguirlas: el
+   * back devolvía `100` cuando el mes anterior era cero, y el panel decía
+   * «$8.200.000 · +100% vs mes anterior» en una inmobiliaria que el mes pasado
+   * no recaudó nada. Pasar de nada a algo no tiene porcentaje.
+   *
+   * Una respuesta vieja en caché puede traer todavía un número: por eso el
+   * tipo admite `number` y la pantalla conserva su heurística de respaldo.
+   */
+  collectionTrend: number | null;
+  commissionsTrend: number | null;
 
   // Pipeline
   activeLeads: number;

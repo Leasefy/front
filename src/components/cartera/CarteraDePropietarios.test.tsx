@@ -33,7 +33,10 @@ vi.mock('@/lib/hooks/use-cartera', () => ({
 }))
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
-    t: (k: string) => k,
+    // Devuelve la clave, pero CON sus valores pegados: si no, una prueba que
+    // mire el número de una frase traducida pasa siempre, mire lo que mire.
+    t: (k: string, vars?: Record<string, unknown>) =>
+      vars ? `${k}(${Object.values(vars).join(',')})` : k,
     locale: 'es',
     formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}`,
     formatDate: (d: string) => d,
@@ -162,6 +165,23 @@ function escribir(input: HTMLInputElement, valor: string) {
   })
 }
 
+/**
+ * Un informe por edades como el que manda el back: los CUATRO tramos, en
+ * orden, aunque estén en cero.
+ */
+function edades(
+  reparto: Partial<Record<'0-30' | '31-60' | '61-90' | '90+', [number, number]>>,
+  diasDelMasViejo = 0,
+) {
+  return {
+    tramos: (['0-30', '31-60', '61-90', '90+'] as const).map((tramo) => {
+      const [debeCop, renglones] = reparto[tramo] ?? [0, 0]
+      return { tramo, nombre: tramo, debeCop, renglones }
+    }),
+    diasDelMasViejo,
+  }
+}
+
 beforeEach(() => {
   carteraMock.mockReset()
   // Por defecto nadie le debe a la inmobiliaria: la sección no aparece.
@@ -170,6 +190,7 @@ beforeEach(() => {
     motivo: null,
     totalCop: 0,
     propietarios: [],
+    porEdades: edades({}),
   })
 })
 
@@ -336,7 +357,8 @@ describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
     expect(host.querySelector('[data-testid="propietarios-que-deben"]')).toBeNull()
   })
 
-  it('🔴 lista a quién se le cobra, cuánto, desde cuándo y con qué cuenta de cobro', async () => {
+  /** Luis debe $300.000 de hace 200 días; Ana $80.000 de hace 12. */
+  function conDeudores() {
     deudasMock.mockResolvedValue({
       disponible: true,
       motivo: null,
@@ -349,6 +371,7 @@ describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
           desde: '2026-10',
           sinCuentaDeCobroCop: 0,
           ultimaCuentaDeCobro: { id: 'cc-1', numero: 7, emitidaAt: '2026-10-02T15:00:00.000Z' },
+          porEdades: edades({ '90+': [300_000, 1] }, 200),
         },
         {
           propietarioId: 'p8',
@@ -357,9 +380,15 @@ describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
           desde: '2026-11',
           sinCuentaDeCobroCop: 80_000,
           ultimaCuentaDeCobro: null,
+          porEdades: edades({ '0-30': [80_000, 2] }, 12),
         },
       ],
+      porEdades: edades({ '0-30': [80_000, 2], '90+': [300_000, 1] }, 200),
     })
+  }
+
+  it('🔴 lista a quién se le cobra, cuánto y con qué cuenta de cobro', async () => {
+    conDeudores()
     conDatos(datosDe())
     montar()
     await act(async () => {
@@ -372,5 +401,85 @@ describe('CarteraDePropietarios — los que le deben a la inmobiliaria', () => {
     expect(filas[0]!.querySelector('a[href$="/cuenta-de-cobro/cc-1"]')).not.toBeNull()
     expect(filas[1]!.textContent).toContain('inmobiliaria.deducciones.cartera.sinCuenta')
     expect($('[data-testid="total-que-deben"]').textContent).toContain(formatCurrency(380_000))
+  })
+
+  /**
+   * 🔴 EL INFORME POR EDADES (Nico, 17-09: la deuda del propietario «tiene su
+   * cartera propia — informe por edades…»). Antes la tabla decía cuánto debía
+   * cada uno y desde qué mes, pero no en qué tramo estaba la plata: sin tramos
+   * no hay a quién llamar primero.
+   */
+  describe('la cartera de propietarios por edades', () => {
+    it('muestra los cuatro tramos de toda la cartera, incluso los que están en cero', async () => {
+      conDeudores()
+      conDatos(datosDe())
+      montar()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect($('[data-testid="edades-de-la-cartera-de-propietarios"]')).not.toBeNull()
+      expect($('[data-testid="tramo-propietarios-0-30"]').textContent).toContain(
+        formatCurrency(80_000),
+      )
+      expect($('[data-testid="tramo-propietarios-90+"]').textContent).toContain(
+        formatCurrency(300_000),
+      )
+      // Los vacíos NO desaparecen: una columna que falta se lee como «no sé».
+      expect($('[data-testid="tramo-propietarios-31-60"]').textContent).toContain(
+        formatCurrency(0),
+      )
+      expect($('[data-testid="tramo-propietarios-61-90"]')).not.toBeNull()
+    })
+
+    it('🔴 los cuatro tramos del pie SUMAN el total que se debe', async () => {
+      conDeudores()
+      conDatos(datosDe())
+      montar()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      const pie = $('[data-testid="total-que-deben"]')
+      const porTramo = (['0-30', '31-60', '61-90', '90+'] as const).map(
+        (e) => pie.querySelector(`[data-testid="total-tramo-${e}"]`)!.textContent ?? '',
+      )
+      expect(porTramo).toEqual([
+        formatCurrency(80_000),
+        formatCurrency(0),
+        formatCurrency(0),
+        formatCurrency(300_000),
+      ])
+      expect(pie.textContent).toContain(formatCurrency(380_000))
+    })
+
+    it('cada fila reparte SU deuda en los tramos y dice lo viejo que es lo más viejo', async () => {
+      conDeudores()
+      conDatos(datosDe())
+      montar()
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      const filas = todos('[data-testid="propietario-que-debe"]')
+      const celdas = (fila: Element) =>
+        Array.from(fila.querySelectorAll('[data-testid^="fila-tramo-"]')).map(
+          (c) => c.textContent ?? '',
+        )
+      expect(celdas(filas[0]!)).toEqual([
+        formatCurrency(0),
+        formatCurrency(0),
+        formatCurrency(0),
+        formatCurrency(300_000),
+      ])
+      expect(celdas(filas[1]!)).toEqual([
+        formatCurrency(80_000),
+        formatCurrency(0),
+        formatCurrency(0),
+        formatCurrency(0),
+      ])
+      expect(filas[0]!.textContent).toContain('200')
+      expect(filas[1]!.textContent).toContain('12')
+    })
   })
 })

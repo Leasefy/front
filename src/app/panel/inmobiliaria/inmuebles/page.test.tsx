@@ -63,7 +63,14 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   SegmentedControl: () => null,
 }))
-vi.mock('@/components/ui/pagination', () => ({ TablePagination: () => null }))
+/* El doble DEJA UNA MARCA: con `() => null` la prueba de «con la lista caída
+   tampoco pagina» pasaba sin probar nada, porque el paginador no se veía
+   nunca. */
+vi.mock('@/components/ui/pagination', () => ({
+  TablePagination: ({ total }: { total: number }) => (
+    <div data-testid="paginador">Mostrando de {total}</div>
+  ),
+}))
 vi.mock('@/components/inmobiliaria/ConsignacionTable', () => ({ ConsignacionTable: () => null }))
 vi.mock('@/components/inmobiliaria/ConsignacionCard', () => ({ ConsignacionCard: () => null }))
 vi.mock('@/components/inmobiliaria/InmuebleSinMandatoCard', () => ({ InmuebleSinMandatoCard: () => null }))
@@ -191,6 +198,33 @@ describe('Portafolio — los conteos que la franja recibe', () => {
     })
     montar()
     expect(container.textContent).toContain('propertyCountSinContar')
+  })
+
+  it('🔴 con la lista caída tampoco pagina: no hay páginas 2 y 3 de nada', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: new ApiError(503, 'falta una migración', 'FALTA_UNA_MIGRACION'),
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: Array.from({ length: 25 }, (_, i) => ({ id: `p-${i}` })),
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.querySelector('[data-testid="paginador"]')).toBeNull()
+  })
+
+  it('y con las dos fuentes arriba sí pagina (el control positivo)', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: Array.from({ length: 25 }, (_, i) => consignacion(`c-${i}`)),
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.querySelector('[data-testid="paginador"]')).not.toBeNull()
   })
 
   /* El control positivo del de arriba: sin esto, un encabezado que nunca

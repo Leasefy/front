@@ -688,8 +688,15 @@ function PortafolioContent() {
           </EstadoDeDatos>
         </div>
 
-        {/* Pie de tabla — el paginador del design system. */}
-        {shouldPaginate && (
+        {/* Pie de tabla — el paginador del design system.
+
+            🔴 `sePudoContar` también manda acá (21-09, visto en el navegador):
+            con la lista caída, el pie seguía diciendo «Mostrando 1–10 de 25» y
+            ofreciendo las páginas 2 y 3 encima del cartel de que no se pudo
+            cargar. Es el mismo defecto que el contador del encabezado —un
+            número de UNA de las dos fuentes presentado como el total— y estaba
+            a dos renglones de distancia, fuera del `EstadoDeDatos`. */}
+        {shouldPaginate && sePudoContar && (
           <TablePagination
             className="border-t border-border px-4 py-3"
             total={totalPaginado}

@@ -32,6 +32,17 @@ export default function MfaVerifyPage() {
    * otra, que es lo que evita que parpadee el formulario equivocado.
    */
   const [tieneFactor, setTieneFactor] = useState<boolean | null>(null);
+  /**
+   * 🔴 La salida a mano, que funciona pase lo que pase.
+   *
+   * `listFactors()` puede quedarse sin resolver ni rechazar —el propio
+   * contexto de auth toma el candado del SDK, que es el mismo problema que
+   * `MfaSetupSection` ya documentó con `enroll`—, y ahí `tieneFactor` se
+   * quedaría en `null` para siempre y volvería a salir el campo del código.
+   * Este botón no depende de que nadie conteste.
+   */
+  const [quiereInscribir, setQuiereInscribir] = useState(false);
+  const inscribiendo = tieneFactor === false || quiereInscribir;
 
   // If MFA is not required, redirect to dashboard
   useEffect(() => {
@@ -136,12 +147,12 @@ export default function MfaVerifyPage() {
           {/* Title */}
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-semibold text-fg tracking-tight">
-              {tieneFactor === false
+              {inscribiendo
                 ? 'Activa tu segundo factor'
                 : 'Verificación de seguridad'}
             </h1>
             <p className="text-sm text-fg-muted">
-              {tieneFactor === false
+              {inscribiendo
                 ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
                 : 'Ingresa el código de 6 dígitos de tu app de autenticación'}
             </p>
@@ -152,7 +163,7 @@ export default function MfaVerifyPage() {
             inscribirlo, acá mismo, porque Configuración → Seguridad está del
             otro lado del muro que esta pantalla levanta.
           */}
-          {tieneFactor === false ? (
+          {inscribiendo ? (
             <div data-testid="inscribir-el-segundo-factor">
               <MfaSetupSection />
             </div>
@@ -183,6 +194,20 @@ export default function MfaVerifyPage() {
               {isLoading ? 'Verificando...' : 'Verificar'}
             </Button>
           </div>
+          )}
+
+          {/* 🔴 La puerta de emergencia: sin app no hay código, y hay que
+              poder decirlo aunque el SDK no conteste. */}
+          {!inscribiendo && (
+            <div className="text-center">
+              <button
+                onClick={() => setQuiereInscribir(true)}
+                className="text-sm text-primary underline-offset-4 hover:underline"
+                data-testid="no-tengo-la-app"
+              >
+                No tengo la app de autenticación — activarla ahora
+              </button>
+            </div>
           )}
 
           {/* Sign out link */}

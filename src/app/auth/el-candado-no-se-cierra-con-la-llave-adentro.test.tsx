@@ -94,6 +94,19 @@ describe('/auth/mfa-verify', () => {
     expect(document.querySelector('[data-testid="mfa-setup"]')).not.toBeNull();
   });
 
+  it('🔴 si `listFactors` NUNCA contesta, la puerta de emergencia sigue ahí', async () => {
+    // El SDK de Supabase se queda sin resolver ni rechazar cuando el contexto
+    // de auth tiene el candado tomado: es el mismo problema que `enroll` ya
+    // había tenido. Sin este botón, esa promesa colgada = el muro otra vez.
+    supa.listFactors.mockReturnValue(new Promise(() => {}));
+    await montar();
+
+    const salida = document.querySelector<HTMLElement>('[data-testid="no-tengo-la-app"]');
+    expect(salida).not.toBeNull();
+    await act(async () => salida!.click());
+    expect(document.querySelector('[data-testid="mfa-setup"]')).not.toBeNull();
+  });
+
   it('si ni siquiera se pudo preguntar, ofrece inscribirlo: es la salida que sirve', async () => {
     supa.listFactors.mockRejectedValue(new Error('sin red'));
     await montar();

@@ -330,7 +330,9 @@ function ReportesContent() {
             minute: '2-digit',
           })
         : t('inmobiliaria.reportes.stats.never'),
-      lastGeneratedReport: lastGenerated?.title || 'N/A',
+      // Una raya, no «N/A»: es el símbolo con el que el resto del producto
+      // dice «acá no hay dato todavía», y no hay que traducirlo de la cabeza.
+      lastGeneratedReport: lastGenerated?.title || '—',
     };
   }, [reports, favorites]);
 

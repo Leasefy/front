@@ -74,6 +74,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
+import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service'
+import type { ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
   ConciliacionResumen,
@@ -209,8 +211,56 @@ function ConciliacionSala() {
 
   const movimientos = summary?.totals.movimientos ?? null
   const conciliados = summary?.totals.conciliados ?? null
-  // Sin movimientos cargados no hay nada que cruzar: el extracto va primero.
+
+  /*
+   * 🔴 20-09 · El extracto lo sabe el BACK, no el agente.
+   *
+   * Esta pestaña —la primera, la que se abre al entrar al módulo— decía
+   * «Todavía no cargaste ningún extracto, así que no hay movimientos que
+   * cruzar» mirando los totales del AGENTE. Con la pestaña «Movimientos»
+   * abierta al lado, el back decía: último extracto del 2 de septiembre,
+   * `movimientos-bancolombia-2026-09.csv`, TRES movimientos pendientes de
+   * conciliar. Dos pestañas del mismo módulo, el mismo momento, dos verdades
+   * opuestas — y la que se ve primero es la que afirma que no hay nada que
+   * hacer.
+   *
+   * Son dos motores: el del agente (`NEXT_PUBLIC_AGENT_URL`) y el del back
+   * (`/inmobiliaria/conciliacion-bancaria`). El que sabe si hay un extracto
+   * cargado es el segundo, porque es el que lo recibe. Acá se lee de ahí.
+   */
+  const [delBack, setDelBack] = useState<ResumenDeConciliacion | null>(null)
+  /** Mientras no se sepa, no se afirma nada: «no sé» no es «no hay». */
+  const [leyendoElBack, setLeyendoElBack] = useState(true)
+  useEffect(() => {
+    let vivo = true
+    conciliacionBancariaApi
+      .resumen()
+      .then((r) => {
+        if (vivo) setDelBack(r)
+      })
+      .catch(() => {
+        // Que falle no puede volver a afirmar que no hay nada: queda en `null`
+        // y la pantalla no dice ni que sí ni que no.
+        if (vivo) setDelBack(null)
+      })
+      .finally(() => {
+        if (vivo) setLeyendoElBack(false)
+      })
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  /** Nadie cargó nunca un extracto. Lo dice el back o no se dice. */
+  const sinExtracto = delBack !== null && delBack.ultimoExtracto === null
+  /**
+   * El agente no tiene movimientos suyos que cruzar. Es lo que apaga
+   * «Conciliar ahora» —esa corrida la hace el agente sobre SU copia— y es
+   * distinto de «no hay extracto», que es lo que la frase decía mal.
+   */
   const sinMovimientos = movimientos === 0
+  /** Hay extracto y quedan líneas esperando: eso NO es «nada que cruzar». */
+  const pendientesEnElBack = delBack?.pendientes ?? 0
 
   // K1/K2: «no sé» tiene dos formas, y ninguna es «no hay nada».
   const leyendoResumen = summaryLoading && !summary
@@ -294,8 +344,20 @@ function ConciliacionSala() {
 
   const feed = overview?.feed ?? []
 
+  /*
+   * 🔴 El botón se apaga por el BACK, no por el agente. Con el agente en cero
+   * pero tres movimientos esperando en el back, «Conciliar ahora» quedaba
+   * muerto diciendo «sube el extracto primero» sobre un extracto ya subido.
+   */
   const porQueNoSePuedeConciliar = sinMovimientos
-    ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
+    ? sinExtracto || leyendoElBack
+      ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
+      : /*
+         * 🔴 Hay extracto en el back y el agente no tiene nada: eso no es «sube
+         * el extracto», es que el agente todavía no lo leyó. Decir lo primero
+         * manda a cargar de nuevo un archivo ya cargado.
+         */
+        `El agente todavía no tiene estos movimientos. Los ${pendientesEnElBack} que esperan se concilian en Movimientos.`
     : leyendoResumen
       ? 'Todavía estoy leyendo el resumen: en un momento sabes qué hay para conciliar.'
       : resumenCaido
@@ -329,9 +391,11 @@ function ConciliacionSala() {
               {/* El aviso de «todavía no cargaste nada» ocupa esta línea cuando
                   aplica, en vez de flotar suelto debajo de la tarjeta. */}
               <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
-                {sinMovimientos
+                {sinExtracto
                   ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
-                  : t(`${PAGES_NS}.accionDesc`)}
+                  : pendientesEnElBack > 0
+                    ? `Hay ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento del banco esperando' : 'movimientos del banco esperando'} en Movimientos.`
+                    : t(`${PAGES_NS}.accionDesc`)}
               </p>
             </div>
           </div>

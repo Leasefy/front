@@ -3083,7 +3083,8 @@
       "stats": {
         "inProcess": "In process",
         "maintenance": "Maintenance",
-        "propertyCount": "{{count}} properties"
+        "propertyCount": "{{count}} properties",
+        "propertyCountSinContar": "Not counted"
       },
       "views": {
         "table": "Table",

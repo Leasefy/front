@@ -16,8 +16,10 @@ import type { Consignacion } from '@/lib/types/inmobiliaria'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { consignacionesMock, filtrosSpy } = vi.hoisted(() => ({
+const { consignacionesMock, sinMandatoMock, filtrosSpy } = vi.hoisted(() => ({
   consignacionesMock: vi.fn(),
+  /** La SEGUNDA fuente del portafolio: los inmuebles que aún no tienen mandato. */
+  sinMandatoMock: vi.fn(),
   /** Con qué conteo se llama a la franja de filtros. */
   filtrosSpy: vi.fn(),
 }))
@@ -50,7 +52,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 }))
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignaciones: () => consignacionesMock(),
-  useInmueblesSinConsignacion: () => ({ inmuebles: [], errorCrudo: null, refetch: vi.fn() }),
+  useInmueblesSinConsignacion: () => sinMandatoMock(),
   usePropietarios: () => ({ propietarios: [] }),
   useAgentes: () => ({ agentes: [] }),
 }))
@@ -112,12 +114,14 @@ describe('Portafolio — los conteos que la franja recibe', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     filtrosSpy.mockClear()
+    sinMandatoMock.mockReturnValue({ inmuebles: [], errorCrudo: null, refetch: vi.fn() })
   })
 
   afterEach(() => {
     act(() => root.unmount())
     container.remove()
     consignacionesMock.mockReset()
+    sinMandatoMock.mockReset()
   })
 
   /*
@@ -164,6 +168,61 @@ describe('Portafolio — los conteos que la franja recibe', () => {
     expect(ultimo().conteo).toBeNull()
     // Y la tabla, en el mismo hueco, dice lo mismo: no se pudo cargar.
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+  })
+
+  /*
+   * 🔴 21-09, visto en el navegador: con `/inmobiliaria/consignaciones` en 500
+   * (P2022 — falta la migración de copropiedades) el encabezado decía «25
+   * inmuebles» al lado de un «No pudimos cargar esto». Los 25 eran reales: los
+   * sin mandato, que cargan por OTRA ruta. Una parte con cara de total miente
+   * igual que un número inventado, y encima es más creíble.
+   */
+  it('🔴 con la lista caída, el encabezado no afirma cuántos inmuebles hay', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: [{ id: 'p-1' }, { id: 'p-2' }],
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('propertyCountSinContar')
+  })
+
+  /* El control positivo del de arriba: sin esto, un encabezado que nunca
+     dijera el número también pasaría la prueba. */
+  it('con las dos fuentes arriba sí dice cuántos hay', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('portafolio.stats.propertyCount')
+    expect(container.textContent).not.toContain('propertyCountSinContar')
+  })
+
+  it('🔴 si falla la SEGUNDA fuente tampoco se dice el total, aunque la lista cargue', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: [],
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(ultimo().conteo).toBeNull()
+    expect(ultimo().total).toBeNull()
+    expect(container.textContent).toContain('propertyCountSinContar')
   })
 
   it('🔴 el arrendado lo dice el CONTRATO, no la disponibilidad del mandato', () => {

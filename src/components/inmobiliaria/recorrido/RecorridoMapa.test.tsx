@@ -69,11 +69,30 @@ describe('RecorridoMapa', () => {
     expect(corte.compareDocumentPosition(items[6]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('marca de quién es cada paso', () => {
+  it('se sabe de quién es cada paso — pero dicho UNA vez por tramo', () => {
+    /* 🔴 21-09: esto exigía la etiqueta del actor DENTRO de cada paso, y así
+       salía «INQUILINO» seis veces seguidas en seis tarjetas pegadas. Nico:
+       «qué cosa tan fea, organiza mejor la información». La intención —que se
+       sepa de quién es cada paso— se mantiene; lo que cambió es que ahora lo
+       dice el título del tramo, que es donde se dice una sola vez. */
     const el = montar(<RecorridoMapa />)
-    const items = [...el.querySelectorAll('li')]
-    expect(items[0].textContent).toContain('Inquilino')
-    expect(items[10].textContent).toContain('Tú')
+    const titulos = [...el.querySelectorAll('h3')].map((h) => h.textContent ?? '')
+    expect(titulos.join(' · ')).toContain('inquilino')
+    expect(titulos.length).toBe(2)
+
+    /* Y no se repite paso por paso. Se busca la etiqueta —«Inquilino» con
+       mayúscula, como la pinta el rótulo— y no la palabra suelta: el paso 3
+       dice «lo asume el inquilino» en su descripción, y eso es prosa, no un
+       rótulo repetido. */
+    const conRotulo = [...el.querySelectorAll('li')].filter((li) =>
+      /\bInquilino\b/.test(li.textContent ?? ''),
+    )
+    expect(conRotulo).toEqual([])
+  })
+
+  it('🔴 el cambio de manos sigue dibujado: es lo más importante del mapa', () => {
+    const el = montar(<RecorridoMapa />)
+    expect(el.querySelector('[data-corte]')).not.toBeNull()
   })
 
   it('sin paso actual NO da ningún paso por hecho', () => {

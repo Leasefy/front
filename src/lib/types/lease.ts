@@ -68,6 +68,17 @@ export interface Lease {
     proposedAdminFee: number | null;
     newEndDate: string | null;
     tenantAcceptedAt: string | null;
+    /**
+     * El aviso de que NO se renueva, venga de quien venga. `null` = nadie
+     * avisó, que es el caso normal: sin aviso el contrato se prorroga solo
+     * (Ley 820). `por` es INQUILINO · PROPIETARIO · INMOBILIARIA, y decide
+     * quién puede retirarlo.
+     */
+    avisoNoRenovar?: {
+      at: string;
+      por: string | null;
+      motivo: string | null;
+    } | null;
   } | null;
 
   // Metadata

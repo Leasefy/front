@@ -22,6 +22,7 @@ import { useI18n } from '@/lib/i18n';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
 
 const MONTH_NAMES_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -377,8 +378,15 @@ export default function LeaseDetailPage() {
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt */}
-            {lease.renovacion ? (
+            {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt.
+
+                🔴 Con un aviso de no renovación ya dado, TODO este bloque se
+                cambia por el aviso: ofrecer «Aceptar renovación» al lado de
+                «avisaste que no vas a renovar» son dos pantallas distintas
+                peleando en el mismo lugar. */}
+            {lease.renovacion?.avisoNoRenovar ? (
+              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
+            ) : lease.renovacion ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -472,6 +480,15 @@ export default function LeaseDetailPage() {
                   </Button>
                 </div>
               </motion.div>
+            ) : null}
+
+            {/* La otra mitad de la decisión. Va debajo y en voz baja —una línea,
+                sin tarjeta— porque no es lo que la mayoría viene a hacer; pero
+                tiene que estar SIEMPRE que haya contrato vivo, no sólo cuando
+                está por vencer: avisar con cinco meses es justo lo que la ley
+                premia, y esconderlo hasta el último mes empuja a avisar tarde. */}
+            {isActive && !lease.renovacion?.avisoNoRenovar ? (
+              <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : null}
 
             {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}

@@ -138,6 +138,24 @@ function statusDe(error: unknown): number | null {
 }
 
 /**
+ * ¿El fallo es «te falta el segundo factor»?
+ *
+ * Se mira el `code` en cualquier forma que llegue —instancia de `ApiError`,
+ * objeto plano, o el cuerpo del back pegado al error— porque el discriminante
+ * es el código, no la clase de JavaScript que lo envuelve.
+ */
+export function esSegundoFactor(error: unknown): boolean {
+  const CODIGO = 'SEGUNDO_FACTOR_REQUERIDO'
+  if (error instanceof ApiError && error.code === CODIGO) return true
+  if (typeof error === 'object' && error !== null) {
+    const e = error as { code?: unknown; body?: { code?: unknown } }
+    if (e.code === CODIGO) return true
+    if (e.body && (e.body as { code?: unknown }).code === CODIGO) return true
+  }
+  return false
+}
+
+/**
  * ¿El pedido se cortó por tiempo antes de tener respuesta?
  *
  * `AbortSignal.timeout()` rechaza con un `TimeoutError`; un `AbortController`
@@ -209,7 +227,17 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     // permiso lo tiene, lo que le falta es activar el TOTP, que es algo que
     // hace él mismo en dos minutos. Un cartel sin salida repetido en las 25
     // secciones del panel.
-    if (error instanceof ApiError && error.code === 'SEGUNDO_FACTOR_REQUERIDO') {
+    /* 🔴 20-09 · Este arreglo del 18-09 estaba MUERTO en la mitad de las
+       pantallas. Exigía `instanceof ApiError`, y un error que cruzó un
+       servicio que lo re-envuelve —o que llegó como objeto plano— deja de
+       serlo aunque traiga el mismo `code`. Medido con «Deterioro de cartera»
+       abierta: arriba salía «No tienes acceso a esto · Pídele a un
+       administrador que te lo habilite» y ABAJO, en letra chica, el motivo de
+       verdad. El administrador leía primero que le pidiera permiso a alguien
+       que es él mismo.
+
+       Se reconoce por el `code`, venga en lo que venga. */
+    if (esSegundoFactor(error)) {
       return {
         tipo: 'sinSegundoFactor',
         titulo: 'Activa tu segundo factor para seguir',

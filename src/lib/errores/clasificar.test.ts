@@ -316,3 +316,37 @@ describe('🔴 el 403 del segundo factor no es «no tienes acceso»', () => {
     expect(clasificarFallo(new ApiError(403, 'Forbidden')).tipo).toBe('sinPermiso')
   })
 })
+
+/**
+ * 🔴 20-09 · EL ARREGLO DEL 18-09 ESTABA MUERTO EN LA MITAD DE LAS PANTALLAS.
+ *
+ * Exigía `instanceof ApiError`. Un error que cruzó un servicio que lo
+ * re-envuelve, o que llegó como objeto plano, deja de serlo aunque traiga el
+ * mismo `code`. Medido con «Deterioro de cartera» abierta: arriba salía «No
+ * tienes acceso a esto · Pídele a un administrador que te lo habilite» y
+ * ABAJO, en letra chica, el motivo de verdad. El administrador leía primero
+ * que le pidiera permiso a alguien que es él mismo.
+ *
+ * Importa hoy más que nunca: la migración que prende el segundo factor
+ * obligatorio se aplicó el 20-09, y ADMIN y CONTADOR lo exigen SIEMPRE.
+ */
+describe('el 403 por segundo factor se reconoce venga como venga', () => {
+  const CODIGO = 'SEGUNDO_FACTOR_REQUERIDO'
+
+  it('🔴 como objeto plano con `code` (el caso que se escapaba)', () => {
+    const r = clasificarFallo({ status: 403, code: CODIGO, message: 'x' })
+    expect(r.tipo).toBe('sinSegundoFactor')
+    expect(r.descripcion).not.toContain('Pídele a un administrador')
+  })
+
+  it('🔴 con el cuerpo del back pegado al error', () => {
+    const r = clasificarFallo({ status: 403, body: { code: CODIGO } })
+    expect(r.tipo).toBe('sinSegundoFactor')
+  })
+
+  it('un 403 de verdad por permisos sigue diciendo lo de siempre', () => {
+    const r = clasificarFallo({ status: 403, message: 'sin permiso' })
+    expect(r.tipo).toBe('sinPermiso')
+    expect(r.descripcion).toContain('Pídele a un administrador')
+  })
+})

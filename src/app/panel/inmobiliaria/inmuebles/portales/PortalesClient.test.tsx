@@ -241,7 +241,10 @@ describe('Publicación en portales', () => {
     const tarjeta = porTestId('portal-FINCARAIZ')!
     const boton = tarjeta.querySelector('[data-testid="para-entender-mas"]')
     expect(boton).not.toBeNull()
-    expect(boton!.textContent).toMatch(/Qué pide Fincaraíz/)
+    // La etiqueta NO repite el nombre del portal: la tarjeta ya lo dice, y
+    // repetido hacía que la más larga envolviera a un segundo renglón.
+    expect(boton!.textContent).toMatch(/Qué pide este portal/)
+    expect(boton!.textContent).not.toMatch(/Fincaraíz/)
 
     // …y lo que explica NO está puesto sobre la pantalla: nada de la lista
     // está en el documento mientras nadie la pida.

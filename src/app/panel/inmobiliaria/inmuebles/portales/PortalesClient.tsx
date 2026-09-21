@@ -784,7 +784,14 @@ function TarjetaDePortal({
             paquete o el aviso no se crea—, y saberlo cambia a quién se llama. */}
         {!esNuestro ? (
           <ParaEntenderMas
-            etiqueta={`Qué pide ${p.nombre}`}
+            /* «Qué pide este portal» y no «Qué pide Metrocuadrado»: la tarjeta
+               ya dice de qué portal es, y el nombre repetido hacía que la
+               etiqueta más larga no cupiera y envolviera a un segundo renglón
+               —una tarjeta distinta de las otras cinco—. El nombre completo
+               sigue en el título del modal, donde no hay tarjeta que lo diga.
+               Es la misma lección del mapa del recorrido: la etiqueta repetida
+               no agrega, y de paso estorba. */
+            etiqueta="Qué pide este portal"
             titulo={`Qué pide ${p.nombre} para conectarse de verdad`}
             descripcion="Hoy esta pantalla es una libreta: Leasefy todavía no publica solo en ningún portal de afuera. Esto es lo que haría falta el día que lo haga."
             /* 🔴 SIN `ml-auto`, y visto en el navegador: con él, el botón se

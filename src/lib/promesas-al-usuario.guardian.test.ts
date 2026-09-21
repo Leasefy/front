@@ -18,7 +18,7 @@
  * seis —editar el perfil del asesor (`PATCH .../members/:id/profile`), darle un
  * inmueble (`PUT .../consignaciones/:id/assign-agent`), el botón «Renovar» del
  * propietario, la descarga del acta, la cámara del inventario y el «ver
- * contrato» de la consignación— y se borraron **21 claves muertas** del
+ * contrato» de la consignación— y se borraron **22 claves muertas** del
  * diccionario, promesas que ya no las leía nadie y que seguían ahí para que la
  * próxima búsqueda las contara como pendientes.
  *
@@ -372,7 +372,7 @@ describe('🔴 las promesas de «Próximamente»', () => {
     const sobrantes = Object.keys(EN_EL_DICCIONARIO).filter((k) => !claves.includes(k));
     expect(
       sobrantes,
-      'Esta clave ya no está en el diccionario. El 21-09 se borraron 21 así: ' +
+      'Esta clave ya no está en el diccionario. El 21-09 se borraron 22 así: ' +
         'promesas que no las leía nadie y que la siguiente búsqueda contaba como ' +
         'pendientes.',
     ).toEqual([]);

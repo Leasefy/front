@@ -357,12 +357,18 @@ function CandidatosContent() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton href="/panel/inmobiliaria/inmuebles" label="Inmuebles" />
+        <h1 className="text-h2 text-fg">Candidatos</h1>
         <FalloDeCarga
           error={error}
-          queEs="esa propiedad"
+          queEs="ese inmueble"
           onReintentar={fetchData}
-          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
+          volverA={{ label: 'Inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
         />
       </div>
     );

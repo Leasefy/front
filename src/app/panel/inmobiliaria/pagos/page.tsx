@@ -102,16 +102,28 @@ import { useI18n } from '@/lib/i18n'
 const MAX_ACTIVIDAD = 5
 
 /** Tiempo relativo en español, autosuficiente (no depende de keys i18n). */
+/**
+ * La edad de un movimiento del feed.
+ *
+ * 🔴 20-09 · Redondeaba en los cuatro tramos (`Math.round`), y por el de los
+ * días una decisión de 19 días y 22 horas se leía «hace 20 d» al lado del
+ * resumen del Piloto, que decía «lleva 19 días esperando». El mismo hecho con
+ * dos edades en la misma pantalla.
+ *
+ * La regla del producto es hacia ABAJO, como en `formatRelativeTime`: lo que
+ * lleva 19 días y 22 horas lleva 19 días. Redondear hacia arriba envejece el
+ * caso antes de que pase, y en cobranza los días cuentan.
+ */
 function tiempoRelativo(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
-  const s = Math.max(0, Math.round((Date.now() - then) / 1000))
+  const s = Math.max(0, Math.floor((Date.now() - then) / 1000))
   if (s < 60) return `hace ${s} s`
-  const m = Math.round(s / 60)
+  const m = Math.floor(s / 60)
   if (m < 60) return `hace ${m} min`
-  const h = Math.round(m / 60)
+  const h = Math.floor(m / 60)
   if (h < 24) return `hace ${h} h`
-  return `hace ${Math.round(h / 24)} d`
+  return `hace ${Math.floor(h / 24)} d`
 }
 
 function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'] }) {

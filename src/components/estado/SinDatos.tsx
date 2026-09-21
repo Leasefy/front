@@ -75,9 +75,25 @@ export function SinDatos({
     ? `Ningún resultado`
     : (titulo ?? `Todavía no tienes ${queSon}`)
 
+  /*
+   * 🔴 20-09 · Sin artículo con género, a propósito.
+   *
+   * Decía «Ningún ${singular} coincide» y «Cuando agregues el primero». Las dos
+   * frases fijan el masculino, y este componente lo usan decenas de pantallas
+   * cuyo sustantivo es femenino: en Mantenimientos se leía «Cuando agregues el
+   * primero» hablando de SOLICITUDES, y el otro caso habría dicho «Ningún
+   * solicitud coincide».
+   *
+   * La salida no es pasarle el género (un componente compartido que tiene que
+   * acertarle al género de otro se equivoca tarde o temprano, y son cien call
+   * sites): es ESCRIBIR SIN ARTÍCULO. «No hay X que coincidan» y «Lo que
+   * agregues aparece acá» funcionan con cualquier sustantivo, masculino o
+   * femenino, y de paso se cae el singularizador `replace(/e?s$/, '')`, que
+   * convertía «análisis» en «análisi».
+   */
   const descripcionFinal = hayFiltros
-    ? `Ningún ${queSon.replace(/e?s$/, '')} coincide con lo que buscaste. Prueba con otra búsqueda o quita los filtros.`
-    : (descripcion ?? `Cuando agregues el primero, aparece acá.`)
+    ? `No hay ${queSon} que coincidan con lo que buscaste. Prueba con otra búsqueda o quita los filtros.`
+    : (descripcion ?? `Lo que agregues aparece acá.`)
 
   return (
     <div

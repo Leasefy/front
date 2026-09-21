@@ -189,7 +189,9 @@ afterEach(async () => {
 const TABS = ['ocupacion', 'cobros', 'agentes', 'ejecutivo']
 const TITULOS = [
   'Extractos Propietarios', 'Cartera por Edades', 'Comisiones por Agente',
-  'Ocupacion del Portafolio', 'Vencimientos de Contratos', 'Rendimiento de Agentes',
+  // 20-09: el catálogo se escribió sin tildes («Ocupacion», «Analisis de mora
+  // segmentado por antiguedad», «proximos 90 dias») y se lee así en pantalla.
+  'Ocupación del Portafolio', 'Vencimientos de Contratos', 'Rendimiento de Agentes',
   'Flujo de Caja', 'Rentabilidad por inmueble',
 ]
 

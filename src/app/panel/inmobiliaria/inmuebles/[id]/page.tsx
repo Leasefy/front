@@ -2,6 +2,7 @@
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -411,19 +412,31 @@ function ConsignacionDetailContent() {
    * de red es lo esperado y ese cartel lo explica mejor.
    */
   if (!consignacion && errorConsignacion && !sinSenal) {
+    /*
+     * 🔴 20-09 · Mismo arreglo que la ficha del contrato (ver su comentario):
+     * el camino de vuelta va ARRIBA, donde vive en todas las pantallas del
+     * panel, y no sólo adentro de la tarjeta. Sin encabezado, un fallo a
+     * pantalla completa no dice en qué parte del panel estás.
+     */
     return (
-      <div className="p-4 md:p-6" data-testid="ficha-fallo">
-        <div className="max-w-lg mx-auto py-16">
-          <FalloDeCarga
-            error={errorConsignacion}
-            queEs="el inmueble"
-            onReintentar={reintentarConsignacion}
-            volverA={{
-              label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
-              href: '/panel/inmobiliaria/inmuebles',
-            }}
-          />
-        </div>
+      <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-fallo">
+        <BackButton
+          href="/panel/inmobiliaria/inmuebles"
+          label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+        />
+        {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
+            Propiedad»): el menú dice Inmuebles y el producto no llama
+            «propiedad» a nada. */}
+        <h1 className="text-h2 text-fg">Inmueble</h1>
+        <FalloDeCarga
+          error={errorConsignacion}
+          queEs="el inmueble"
+          onReintentar={reintentarConsignacion}
+          volverA={{
+            label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
+            href: '/panel/inmobiliaria/inmuebles',
+          }}
+        />
       </div>
     );
   }

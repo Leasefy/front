@@ -103,7 +103,6 @@ export { ReporteViewer } from './ReporteViewer';
 
 // Report Visualization Components (Phase 8 - Plan 02)
 export { OcupacionChart } from './OcupacionChart';
-export { VencimientosTable } from './VencimientosTable';
 export { FlujoCajaChart } from './FlujoCajaChart';
 
 // Report Export Components (Phase 8 - Plan 03)
@@ -148,7 +147,6 @@ export { ConfigFacturacion } from './ConfigFacturacion';
 
 // Documentos - Templates & Manager (Phase 10 - Plan 04)
 export { DocumentoTemplates } from './DocumentoTemplates';
-export { DocumentoManager } from './DocumentoManager';
 
 // Documentos - Actas de Entrega (Phase 10 - Plan 05)
 export { ActaEntregaForm } from './ActaEntregaForm';

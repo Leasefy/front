@@ -172,7 +172,6 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/ActaEntregaViewer.tsx',
   'components/inmobiliaria/ActaEntregaForm.tsx',
   'components/inmobiliaria/ComisionDesglose.tsx',
-  'components/inmobiliaria/VencimientosTable.tsx',
   'components/inmobiliaria/DispersionCard.tsx',
   'components/inmobiliaria/CobroTable.tsx',
   'components/inmobiliaria/ReciboPorCliente.tsx',
@@ -379,7 +378,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Miniatura de foto clickeable entera.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     'Paso del stepper: la celda entera es el control.',
-  'components/inmobiliaria/VencimientosTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/CobroTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/PropietarioTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/AgenteTable.tsx': 'Disparador de orden en `<TableHead>`.',

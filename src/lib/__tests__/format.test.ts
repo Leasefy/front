@@ -285,21 +285,39 @@ describe('formatRelativeTime', () => {
     });
   });
 
-  // ---- days range (1-6 days) ----
+  /*
+   * ---- days range (1-6 days) ----
+   *
+   * 🔴 20-09 · Estas tres pruebas EXIGÍAN la falta de ortografía: pedían
+   * «hace 1 dia» y «hace 3 dias», sin tilde, en las cinco pantallas que usan
+   * esta función. Lo encontré comparando dos edades de la misma decisión en el
+   * Piloto. Reescritas para pedir lo correcto — «día» y «días» llevan tilde.
+   */
   describe('days range', () => {
-    it('returns singular "dia" / "day"', () => {
-      expect(formatRelativeTime(pastDate(1 * DAY))).toBe('hace 1 dia');
+    it('returns singular "día" / "day"', () => {
+      expect(formatRelativeTime(pastDate(1 * DAY))).toBe('hace 1 día');
       expect(formatRelativeTime(pastDate(1 * DAY), 'en')).toBe('1 day ago');
     });
 
-    it('returns plural "dias" / "days"', () => {
-      expect(formatRelativeTime(pastDate(3 * DAY))).toBe('hace 3 dias');
+    it('returns plural "días" / "days"', () => {
+      expect(formatRelativeTime(pastDate(3 * DAY))).toBe('hace 3 días');
       expect(formatRelativeTime(pastDate(3 * DAY), 'en')).toBe('3 days ago');
     });
 
     it('handles upper boundary (6 days)', () => {
-      expect(formatRelativeTime(pastDate(6 * DAY))).toBe('hace 6 dias');
+      expect(formatRelativeTime(pastDate(6 * DAY))).toBe('hace 6 días');
       expect(formatRelativeTime(pastDate(6 * DAY), 'en')).toBe('6 days ago');
+    });
+
+    it('🔴 la edad va hacia ABAJO: 6 días y 22 horas son 6 días, no 7', () => {
+      /*
+       * La otra mitad del hallazgo del Piloto: una decisión de 19 días y 22
+       * horas se leía «lleva 19 días esperando» en el resumen y «hace 20d» en
+       * la tarjeta de al lado. Redondear hacia arriba envejece el caso antes de
+       * que pase; en cobranza los días cuentan.
+       */
+      expect(formatRelativeTime(pastDate(6 * DAY + 22 * HOUR))).toBe('hace 6 días');
+      expect(formatRelativeTime(pastDate(23 * HOUR + 59 * MINUTE))).toBe('hace 23 horas');
     });
   });
 

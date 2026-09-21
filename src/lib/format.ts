@@ -83,7 +83,18 @@ export function formatDateTime(dateString: string, locale?: 'es' | 'en'): string
 }
 
 /**
- * Formats a relative time (e.g., "hace 2 dias" / "2 days ago")
+ * Formats a relative time (e.g., "hace 2 días" / "2 days ago").
+ *
+ * 🔴 20-09 · Decía «dias» y «dia», sin acento, en las cinco pantallas que la
+ * usan. Lo encontré comparando dos edades de la MISMA decisión en el Piloto:
+ * el resumen del Gerente decía «lleva 19 días esperando» y la tarjeta de al
+ * lado «hace 20d» — y de paso se vio que acá faltaba la tilde.
+ *
+ * Y la regla de la edad: **siempre hacia abajo** (`Math.floor`). Una decisión
+ * que lleva 19 días y 22 horas lleva 19 días, no 20: redondear hacia arriba
+ * hace que la pantalla envejezca un caso antes de que pase. Es lo que hacía
+ * `pagos/page.tsx` con `Math.round(h / 24)`, y por eso los dos números no
+ * cuadraban.
  */
 export function formatRelativeTime(dateString: string, locale?: 'es' | 'en'): string {
   const date = new Date(dateString);
@@ -109,7 +120,7 @@ export function formatRelativeTime(dateString: string, locale?: 'es' | 'en'): st
   }
   if (diffDays < 7) {
     return isEs
-      ? `hace ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`
+      ? `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`
       : `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
   }
   if (diffDays < 30) {

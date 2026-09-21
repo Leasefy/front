@@ -27,6 +27,14 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+
+/*
+ * ⏱️ 60 s: este guardián lee el repo entero y compite con las demás pruebas de
+ * la suite. Ver `el-producto-tutea.test.ts` para el caso en que 30 s no
+ * alcanzaron — medir un guardián aislado no lo mide dentro de la suite.
+ */
+const TIEMPO_DE_RECORRER_EL_REPO = 60_000
+
 const RAIZ = join(process.cwd(), 'src');
 const CANONICO = join('lib', 'tasa-de-recaudo.ts');
 const FUERA = [

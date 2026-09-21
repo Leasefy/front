@@ -75,7 +75,7 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   pagos: 'Pagos a propietarios procesados.',
   pipeline: '5 propiedades en portafolio. 1 vacante con 3 candidatos.',
   mantenimiento: '3 solicitudes activas. 1 urgente (fuga Apt 502).',
-  documentos: '5 contratos vigentes. 1 vence en 18 dias.',
+  documentos: '5 contratos vigentes. 1 vence en 18 días.',
   comunicacion: '2 notificaciones programadas. 1 recordatorio enviado.',
   reportes: 'Rentabilidad neta 85.4%. +2.1% vs mes anterior.',
 };

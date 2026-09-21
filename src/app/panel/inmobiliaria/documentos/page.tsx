@@ -321,6 +321,13 @@ function DocumentosContent() {
                 {t('inmobiliaria.documentos.filters.templates')}
                 <span className="ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full bg-surface-muted px-1.5 text-caption tabular-nums text-fg-muted">{plantillas.length}</span>
               </TabsTrigger>
+              {/* 🔴 20-09 · «Actas de entrega», no «Actas». La pestaña decía
+                  «Actas 0» al lado de una lista que mostraba dos actas: son dos
+                  cosas distintas con el mismo nombre —el ACTA firmada con su
+                  inventario (`ActaEntrega`) y el PDF de acta generado desde una
+                  plantilla legal, que vive en Documentos—. Un cero que
+                  contradice lo que se ve al lado se lee como un error de
+                  cuentas, y no lo era. */}
               <TabsTrigger value="actas" className="gap-2 whitespace-nowrap">
                 {t('inmobiliaria.documentos.filters.actas')}
                 {/* Con las actas caídas (un 403 para quien no tiene

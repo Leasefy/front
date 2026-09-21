@@ -23,6 +23,14 @@ import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
+
+/*
+ * ⏱️ 60 s: este guardián lee el repo entero y compite con las demás pruebas de
+ * la suite. Ver `el-producto-tutea.test.ts` para el caso en que 30 s no
+ * alcanzaron — medir un guardián aislado no lo mide dentro de la suite.
+ */
+const TIEMPO_DE_RECORRER_EL_REPO = 60_000
+
 const RAIZ = process.cwd()
 const CARPETAS = ['src/app', 'src/components']
 
@@ -142,7 +150,7 @@ describe('un error no se pinta como un vacío', () => {
       'Esta pantalla pinta un vacío sin mirar si la petición falló. ' +
         'Toma `error` del hook y envolvé el contenido en <EstadoDeDatos>.',
     ).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('las que ya estaban se van arreglando, no se quedan de adorno', () => {
     // Si arreglas una, sácala de la lista. Este test te avisa.
@@ -154,7 +162,7 @@ describe('un error no se pinta como un vacío', () => {
       yaArregladas,
       'Estas ya miran el error: sacalas de VACIO_SIN_MIRAR_EL_ERROR.',
     ).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })
 
 describe('ErrorState viejo', () => {
@@ -172,7 +180,7 @@ describe('ErrorState viejo', () => {
       'ErrorState muestra el mensaje crudo del backend y ofrece reintentar ' +
         'sobre un 404. Usa <FalloDeCarga>, que clasifica el fallo.',
     ).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })
 
 describe('las primitivas mantienen lo que las hace correctas', () => {
@@ -195,11 +203,11 @@ describe('las primitivas mantienen lo que las hace correctas', () => {
     // Si el vacío se evalúa antes que la carga, la pantalla afirma «no hay
     // nada» durante el medio segundo en que todavía no sabe.
     expect(vacio).toBeGreaterThan(fallo)
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('FalloDeCarga sólo ofrece reintentar cuando reintentar puede cambiar algo', () => {
     expect(falloDeCarga).toContain('fallo.sePuedeReintentar')
     // Y sobre una sesión vencida ofrece volver a entrar, que sí arregla.
     expect(falloDeCarga).toContain("fallo.tipo === 'sinSesion'")
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })

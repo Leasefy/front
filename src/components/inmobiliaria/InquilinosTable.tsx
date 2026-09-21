@@ -67,6 +67,7 @@ import { useI18n } from '@/lib/i18n';
 import {
   arriendosVigentes,
   type ArriendoDeInquilino,
+  type ConteosDeInquilinos,
   type EstadoDeArriendo,
   type FiltroDeEstado,
   type Inquilino,
@@ -162,6 +163,33 @@ export interface BarraDeInquilinosProps {
   onBuscar: (valor: string) => void;
   estado: FiltroDeEstado;
   onEstado: (estado: FiltroDeEstado) => void;
+  /**
+   * Cuántas personas hay detrás de cada pestaña. `null` = sin número (todavía
+   * no llegaron, o el conteo falló): un número equivocado es peor que ninguno.
+   */
+  conteos?: ConteosDeInquilinos | null;
+}
+
+const NUMERO = new Intl.NumberFormat('es-CO');
+
+/**
+ * Una pestaña con su número al lado.
+ *
+ * 🔴 20-09 · Sin número, para saber si hay inquilinos terminados había que
+ * clickear —lo que dispara otra consulta— y si no había ninguno la pantalla
+ * quedaba vacía sin decir que esa pestaña nunca tuvo a nadie. El cero se dice
+ * igual que cualquier otro número: es la respuesta a por qué está vacío.
+ */
+function ConNumero({ etiqueta, cuantos }: { etiqueta: string; cuantos?: number }) {
+  if (cuantos === undefined) return <>{etiqueta}</>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {etiqueta}
+      <span className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+        {NUMERO.format(cuantos)}
+      </span>
+    </span>
+  );
 }
 
 /**
@@ -172,7 +200,13 @@ export interface BarraDeInquilinosProps {
  * —si desaparece con el último resultado, la persona se queda encerrada en
  * una búsqueda que ya no puede borrar—. La página la pone arriba del vacío.
  */
-export function BarraDeInquilinos({ buscar, onBuscar, estado, onEstado }: BarraDeInquilinosProps) {
+export function BarraDeInquilinos({
+  buscar,
+  onBuscar,
+  estado,
+  onEstado,
+  conteos = null,
+}: BarraDeInquilinosProps) {
   const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -190,9 +224,39 @@ export function BarraDeInquilinos({ buscar, onBuscar, estado, onEstado }: BarraD
         onChange={onEstado}
         aria-label={t('inquilinos.filtroEstado')}
         options={[
-          { value: 'activos', label: t('inquilinos.filtros.activos') },
-          { value: 'terminados', label: t('inquilinos.filtros.terminados') },
-          { value: 'todos', label: t('inquilinos.filtros.todos') },
+          {
+            value: 'activos',
+            label: (
+              <ConNumero
+                etiqueta={t('inquilinos.filtros.activos')}
+                cuantos={conteos?.activos}
+              />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.activos')}: ${conteos.activos}`
+              : t('inquilinos.filtros.activos'),
+          },
+          {
+            value: 'terminados',
+            label: (
+              <ConNumero
+                etiqueta={t('inquilinos.filtros.terminados')}
+                cuantos={conteos?.terminados}
+              />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.terminados')}: ${conteos.terminados}`
+              : t('inquilinos.filtros.terminados'),
+          },
+          {
+            value: 'todos',
+            label: (
+              <ConNumero etiqueta={t('inquilinos.filtros.todos')} cuantos={conteos?.todos} />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.todos')}: ${conteos.todos}`
+              : t('inquilinos.filtros.todos'),
+          },
         ]}
       />
     </div>

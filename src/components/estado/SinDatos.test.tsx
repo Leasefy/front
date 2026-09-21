@@ -90,8 +90,31 @@ describe('<SinDatos>', () => {
     expect(container.textContent).toContain('Todavía no tienes propietarios')
   })
 
-  it('el mensaje con filtros nombra lo que se buscaba en singular', () => {
+  it('el mensaje con filtros nombra lo que se buscaba', () => {
     pintar({ hayFiltros: true, queSon: 'contratos' })
-    expect(container.textContent).toContain('Ningún contrato coincide')
+    expect(container.textContent).toContain('No hay contratos que coincidan')
+  })
+
+  it('🔴 y no fija el masculino: lo usan pantallas con sustantivo femenino', () => {
+    /*
+     * 20-09 · Antes decía «Ningún ${singular} coincide» y «Cuando agregues el
+     * primero». En Mantenimientos —cuyo sustantivo es «solicitudes»— se leía
+     * «Cuando agregues el primero», y el otro caso habría dicho «Ningún
+     * solicitud coincide». La frase se reescribió sin artículo en vez de
+     * pasarle el género: así no hay nada que acertar.
+     */
+    pintar({ hayFiltros: true, queSon: 'solicitudes' })
+    expect(container.textContent).toContain('No hay solicitudes que coincidan')
+    expect(container.textContent).not.toContain('Ningún solicitud')
+
+    pintar({ queSon: 'solicitudes' })
+    expect(container.textContent).toContain('Lo que agregues aparece acá')
+    expect(container.textContent).not.toContain('el primero')
+  })
+
+  it('tampoco singulariza a mano: «análisis» no se vuelve «análisi»', () => {
+    pintar({ hayFiltros: true, queSon: 'análisis' })
+    expect(container.textContent).toContain('No hay análisis que coincidan')
+    expect(container.textContent).not.toContain('análisi ')
   })
 })

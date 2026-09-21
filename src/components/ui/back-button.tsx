@@ -36,8 +36,6 @@ export function BackButton({
   className,
   variant = 'default'
 }: BackButtonProps) {
-  const router = useRouter()
-
   const classes = cn(backButtonVariants({ variant }), className)
 
   const content = (
@@ -50,6 +48,19 @@ export function BackButton({
     </>
   )
 
+  /*
+   * 🔴 20-09 · `useRouter()` se llamaba SIEMPRE, incluso con `href`, que es el
+   * caso que no lo necesita: con `href` esto es un `<Link>` y nada más.
+   *
+   * No es teórico. Al poner el camino de vuelta en la pantalla de fallo del
+   * lote de dispersión, el componente reventó entero —«The above error
+   * occurred in the <BackButton> component»— porque esa pantalla corre sin
+   * router a mano. Un botón de «volver» que tumba la página cuando no hay
+   * router es lo contrario de un camino de salida.
+   *
+   * Son dos componentes y no un `if` con el hook adentro porque las reglas de
+   * los hooks no admiten llamarlo condicionalmente.
+   */
   if (href) {
     return (
       <Link href={href} className={classes}>
@@ -58,9 +69,21 @@ export function BackButton({
     )
   }
 
+  return <BotonDeHistorial classes={classes}>{content}</BotonDeHistorial>
+}
+
+/** La variante que vuelve por el historial; es la única que necesita router. */
+function BotonDeHistorial({
+  classes,
+  children,
+}: {
+  classes: string
+  children: React.ReactNode
+}) {
+  const router = useRouter()
   return (
     <button type="button" onClick={() => router.back()} className={classes}>
-      {content}
+      {children}
     </button>
   )
 }

@@ -330,21 +330,35 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // COMU-03: ask the agent's contact-ledger whether WhatsApp routing is
-  // permitted for this thread (tenant only). The frontend never dispatches —
-  // it only reflects the gate. Today canContact resolves `allowed:false`
-  // (endpoint not live → 'unavailable'), so the affordance stays disabled.
+  /*
+   * COMU-03: le pregunta al libro de contactos del agente si se puede ofrecer
+   * WhatsApp en este hilo (sólo al inquilino). El front NUNCA manda nada: sólo
+   * refleja la puerta, y el agente es el único que cuenta el contacto contra el
+   * tope de la Ley 2300.
+   *
+   * 🔴 Sin `leaseId` NO se pregunta. El back lo exige (`@IsUUID()`) y responde
+   * 400 sin él — un código que el servicio no perdona, así que la promesa se
+   * rechazaba sin que nadie la atrapara. Un hilo sin arriendo no tiene contra
+   * qué medir el tope, así que la respuesta correcta es «no», no una pregunta.
+   */
   const selectedConvId = selectedConversation?.id;
   const selectedConvLeaseId = selectedConversation?.leaseId;
   useEffect(() => {
-    if (!isTenant || !selectedConvId) {
+    if (!isTenant || !selectedConvId || !selectedConvLeaseId) {
       setWhatsappRoutingAllowed(false);
       return;
     }
     let active = true;
-    agentContactApi.canContact('whatsapp', selectedConvLeaseId).then((res) => {
-      if (active) setWhatsappRoutingAllowed(res.allowed);
-    });
+    agentContactApi
+      .canContact('whatsapp', selectedConvLeaseId)
+      .then((res) => {
+        if (active) setWhatsappRoutingAllowed(res.allowed);
+      })
+      // Ante la duda, no se contacta. Un fallo acá no puede dejar la promesa
+      // sin atrapar ni el botón habilitado.
+      .catch(() => {
+        if (active) setWhatsappRoutingAllowed(false);
+      });
     return () => {
       active = false;
     };

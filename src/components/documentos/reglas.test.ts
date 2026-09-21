@@ -16,7 +16,9 @@ import {
   puedeGenerar,
   puedePreparar,
   queFaltaElegir,
-  esCampoDeCiudad, etiquetaDelContratoParaElCombo, rotuloDelContratoPreparado, } from './reglas';
+  esCampoDeCiudad, etiquetaDelContratoParaElCombo, rotuloDelContratoPreparado,
+  ORDEN_DE_TIPOS,
+} from './reglas';
 
 const DOC: DocumentoGenerado = {
   id: 'd-1',
@@ -348,3 +350,92 @@ describe('esCampoDeCiudad', () => {
     }
   })
 })
+
+// ─── Paz y salvo y certificado de estar al día (21-09-2026) ──────────────────
+
+describe('los dos certificados los decide el libro, no el formulario', () => {
+  const PLANTILLA = { requiere: 'contrato' as const, codigo: 'PAZ_Y_SALVO' as const };
+
+  it('con impedimentos el botón no se puede apretar, aunque no falte ningún campo', () => {
+    expect(
+      puedeGenerar({
+        plantilla: PLANTILLA,
+        contractId: 'c-1',
+        campos: [],
+        valores: {},
+        incremento: null,
+        certificado: {
+          puedeEmitirse: false,
+          impedimentos: [{ code: 'QUEDA_SALDO', mensaje: 'Quedan $1.200.000.' }],
+          fechaDeCorte: '2026-09-21',
+          hayActa: true,
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it('sin veredicto tampoco: afirmar sin saber es cómo se promete un paz y salvo por teléfono', () => {
+    expect(
+      puedeGenerar({
+        plantilla: PLANTILLA,
+        contractId: 'c-1',
+        campos: [],
+        valores: {},
+        incremento: null,
+      }),
+    ).toBe(false);
+  });
+
+  it('con el veredicto en verde sí', () => {
+    expect(
+      puedeGenerar({
+        plantilla: PLANTILLA,
+        contractId: 'c-1',
+        campos: [],
+        valores: {},
+        incremento: null,
+        certificado: {
+          puedeEmitirse: true,
+          impedimentos: [],
+          fechaDeCorte: '2026-09-21',
+          hayActa: false,
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it('el certificado de estar al día pasa por la misma puerta', () => {
+    expect(
+      puedeGenerar({
+        plantilla: { requiere: 'contrato', codigo: 'CERTIFICADO_ESTAR_AL_DIA' },
+        contractId: 'c-1',
+        campos: [],
+        valores: {},
+        incremento: null,
+        certificado: {
+          puedeEmitirse: false,
+          impedimentos: [{ code: 'QUEDA_SALDO', mensaje: 'Hay mora.' }],
+          fechaDeCorte: '2026-09-21',
+          hayActa: false,
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it('las otras seis plantillas NO piden veredicto: un acta no lo tiene', () => {
+    expect(
+      puedeGenerar({
+        plantilla: { requiere: 'contrato-o-inmueble', codigo: 'INVENTARIO' },
+        contractId: 'c-1',
+        campos: [],
+        valores: {},
+        incremento: null,
+      }),
+    ).toBe(true);
+  });
+
+  it('los dos códigos están en el orden de la pantalla, o no se pueden mostrar', () => {
+    expect(ORDEN_DE_TIPOS).toContain('PAZ_Y_SALVO');
+    expect(ORDEN_DE_TIPOS).toContain('CERTIFICADO_ESTAR_AL_DIA');
+  });
+});

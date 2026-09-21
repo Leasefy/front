@@ -41,7 +41,9 @@ export type CodigoDeDocumentoLegal =
   | 'ACTA_ENTREGA'
   | 'ACTA_DEVOLUCION'
   | 'INVENTARIO'
-  | 'CARTA_INCREMENTO';
+  | 'CARTA_INCREMENTO'
+  | 'PAZ_Y_SALVO'
+  | 'CERTIFICADO_ESTAR_AL_DIA';
 
 export interface FirmaDeDocumento {
   signerName: string;
@@ -135,6 +137,26 @@ export interface RevisionDelIncremento {
   fuente: string;
 }
 
+/**
+ * El veredicto del libro para el paz y salvo y el certificado de estar al día.
+ *
+ * 🔴 Viaja en `preparar` y no sólo en el error de `generar` a propósito: la
+ * pantalla tiene que poder decir «no se puede, y por esto» ANTES de que
+ * alguien llene los campos. Descubrirlo con un 400 al final es hacerle perder
+ * el tiempo a quien tiene un cliente esperando el papel.
+ *
+ * Las cifras NO están acá y no se pintan: las pone el back en el documento.
+ * Un paz y salvo cuyo «$0» lo mostró el front es un número que el front no
+ * puede defender.
+ */
+export interface RevisionDelCertificado {
+  puedeEmitirse: boolean;
+  impedimentos: { code: string; mensaje: string }[];
+  /** `YYYY-MM-DD`: a qué día corresponde la lectura. */
+  fechaDeCorte: string;
+  hayActa: boolean;
+}
+
 export interface PreparacionDeDocumento {
   codigo: CodigoDeDocumentoLegal;
   nombre: string;
@@ -157,6 +179,8 @@ export interface PreparacionDeDocumento {
   itemsDeInventario: number;
   campos: CampoDeDocumento[];
   incremento: RevisionDelIncremento | null;
+  /** Sólo en las dos plantillas de certificado; `null` en las otras seis. */
+  certificado?: RevisionDelCertificado | null;
 }
 
 export interface GenerarDocumentoBody {

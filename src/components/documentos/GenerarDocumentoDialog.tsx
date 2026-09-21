@@ -247,6 +247,7 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
       campos: preparacion.campos,
       valores,
       incremento: preparacion.incremento,
+      certificado: preparacion.certificado,
     });
 
   const generar = useCallback(async () => {
@@ -406,6 +407,40 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
                 >
                   {aviso.bloquea && <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />}
                   <span>{aviso.texto}</span>
+                </p>
+              )}
+
+              {/*
+                🔴 El veredicto del paz y salvo va ARRIBA de los campos, no
+                abajo del botón: quien está atendiendo a alguien que espera el
+                papel tiene que ver de una vez todo lo que falta, y no
+                descubrirlo de a un motivo por intento. Las cifras no se pintan
+                acá — las pone el back en el documento.
+              */}
+              {preparacion.certificado && !preparacion.certificado.puedeEmitirse && (
+                <div
+                  data-testid="doc-impedimentos-certificado"
+                  className="space-y-1.5 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
+                >
+                  {preparacion.certificado.impedimentos.map((i) => (
+                    <p key={i.code} className="flex items-start gap-2">
+                      <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
+                      <span>{i.mensaje}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {preparacion.certificado?.puedeEmitirse && (
+                <p
+                  data-testid="doc-certificado-procede"
+                  className="rounded-lg bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                >
+                  El estado de cuenta de este contrato está en cero. Las cifras del documento
+                  las toma el sistema del estado de cuenta: no se escriben a mano.
+                  {plantilla?.codigo === 'PAZ_Y_SALVO' &&
+                    !preparacion.certificado.hayActa &&
+                    ' No hay acta de devolución registrada, así que el documento lo dice y aclara que no certifica el estado en que se entregó el inmueble.'}
                 </p>
               )}
 

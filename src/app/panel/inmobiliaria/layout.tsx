@@ -315,7 +315,25 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
               agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
               Las secciones no se esconden al entrar en el agente: la card
               sigue marcada y sus pestañas cuelgan de ella. */}
-          <main id="main-content" tabIndex={-1}>
+          {/* 🔴 20-09 · EL TOPE DE ANCHO, medido en 3840.
+              Nico pidió que el panel funcionara en 1024, 1140, 1440, 1920,
+              2560 y 3840. En los chicos el defecto es desbordar; en los
+              grandes es el contrario, y medido en la tabla de Contratos a
+              3840 px: el `main` llegaba a 3.600 px y la tabla a 3.534, con la
+              columna «Vigencia» en 949 px y «Inquilino» en 830. Una fila
+              obliga a barrer tres metros y medio de pantalla, y ningún dato
+              queda cerca del siguiente.
+
+              El tope va en 1.920 y no en 1.280: esto es un ERP con tablas de
+              siete columnas, y recortarlo como si fuera un blog desperdiciaría
+              el monitor de quien lo tiene. Hasta 1920 no cambia NADA —el
+              `main` allá mide 1.680, por debajo del tope— y de ahí para
+              arriba el contenido deja de crecer y se centra. */}
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-[1920px]"
+          >
             <SeccionesDelModulo />
             <CabeceraDelAgente />
             {children}

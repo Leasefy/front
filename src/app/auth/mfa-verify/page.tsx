@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
+import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 
 export default function MfaVerifyPage() {
   const router = useRouter();
@@ -16,6 +17,21 @@ export default function MfaVerifyPage() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
+  /**
+   * 🔴 21-09-2026 · EL CANDADO CON LA LLAVE ADENTRO.
+   *
+   * Esta pantalla pedía «el código de 6 dígitos de tu app de autenticación» a
+   * TODO el que llegara acá — incluido quien **no tiene ninguna app ni ningún
+   * factor inscrito**, que es el caso de cualquier administrador o contador el
+   * día que se despliega el segundo factor obligatorio. Sin app no hay código,
+   * el botón «Verificar» queda muerto para siempre y la única salida es
+   * «Cerrar sesión». Y no se puede ir a activarlo a Configuración → Seguridad,
+   * porque `ProtectedRoute` devuelve acá mientras el segundo factor haga falta.
+   *
+   * `null` mientras se pregunta: hasta saberlo no se afirma ni una cosa ni la
+   * otra, que es lo que evita que parpadee el formulario equivocado.
+   */
+  const [tieneFactor, setTieneFactor] = useState<boolean | null>(null);
 
   // If MFA is not required, redirect to dashboard
   useEffect(() => {
@@ -40,8 +56,11 @@ export default function MfaVerifyPage() {
         if (verified) {
           setFactorId(verified.id);
         }
+        setTieneFactor(Boolean(verified));
       } catch {
-        // Ignore
+        // Si ni siquiera se pudo preguntar, se ofrece inscribirlo: es la
+        // única de las dos salidas que sirve cuando no se sabe.
+        setTieneFactor(false);
       }
     };
     loadFactor();
@@ -117,14 +136,27 @@ export default function MfaVerifyPage() {
           {/* Title */}
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-semibold text-fg tracking-tight">
-              Verificacion de seguridad
+              {tieneFactor === false
+                ? 'Activa tu segundo factor'
+                : 'Verificación de seguridad'}
             </h1>
             <p className="text-sm text-fg-muted">
-              Ingresa el código de 6 dígitos de tu app de autenticación
+              {tieneFactor === false
+                ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
+                : 'Ingresa el código de 6 dígitos de tu app de autenticación'}
             </p>
           </div>
 
-          {/* Code input */}
+          {/*
+            🔴 Sin factor inscrito NO se pide un código: no existe. Se ofrece
+            inscribirlo, acá mismo, porque Configuración → Seguridad está del
+            otro lado del muro que esta pantalla levanta.
+          */}
+          {tieneFactor === false ? (
+            <div data-testid="inscribir-el-segundo-factor">
+              <MfaSetupSection />
+            </div>
+          ) : (
           <div className="space-y-4">
             <Input
               type="text"
@@ -151,6 +183,7 @@ export default function MfaVerifyPage() {
               {isLoading ? 'Verificando...' : 'Verificar'}
             </Button>
           </div>
+          )}
 
           {/* Sign out link */}
           <div className="text-center">

@@ -117,7 +117,7 @@ describe('guardián de la tasa de recaudo', () => {
           .map((v) => `${rel}:${v}`),
       );
     expect(hallazgos).toEqual([]);
-  });
+  }, TIEMPO_DE_RECORRER_EL_REPO);
 
   describe('la trampa sigue armada contra lo que había antes del 2026-09-16', () => {
     it.each([

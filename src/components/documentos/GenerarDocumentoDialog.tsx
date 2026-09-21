@@ -12,6 +12,19 @@
  * Nada acá inventa contenido legal: el texto, sus variables y el tope del
  * artículo 20 viven en el backend, y esta pantalla sólo evita mandar a la
  * persona a un error que ya se puede ver.
+ *
+ * ── Los dos orígenes del texto, en UNA sola puerta (21-09-2026) ────────────
+ *
+ * El mismo selector lista las ocho plantillas legales del sistema y las que
+ * escribió la inmobiliaria. Son dos llamadas distintas al back —`codigo` para
+ * las legales, `templateId` para las propias— y el diálogo decide cuál usar,
+ * pero para quien genera un documento es una sola pregunta: «¿qué documento
+ * quieres?». Dos botones de «generar documento» en la misma pantalla serían dos
+ * caminos que se van separando.
+ *
+ * La diferencia visible: una plantilla propia no tiene campos que escribir a
+ * mano —su catálogo de variables lo llena el sistema entero— así que se salta
+ * el paso de «preparar» y sólo pide sobre qué contrato o inmueble se genera.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -38,6 +51,7 @@ import {
   documentosLegalesApi,
   type CodigoDeDocumentoLegal,
   type DocumentoGenerado,
+  type PlantillaDeLaAgencia,
   type PlantillaLegalDelSistema,
   type PreparacionDeDocumento,
 } from '@/lib/api/documentos.service';
@@ -72,14 +86,31 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** Se llama con el documento creado, para que la tabla lo muestre. */
   onGenerado: (documento: DocumentoGenerado) => void;
+  /**
+   * Las plantillas que escribió la inmobiliaria (`codigo === null`). Se pasan
+   * desde la pantalla, que ya las tiene: pedirlas otra vez acá sería una
+   * segunda lectura de la misma lista.
+   */
+  plantillasPropias?: PlantillaDeLaAgencia[];
 }
 
-export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props) {
+/** Prefijo del valor de una plantilla propia en el selector, para que su id no
+ *  se pueda confundir con el `codigo` de una legal. */
+const PREFIJO_PROPIA = 'propia:';
+
+export function GenerarDocumentoDialog({
+  open,
+  onOpenChange,
+  onGenerado,
+  plantillasPropias = [],
+}: Props) {
   const { contracts, isLoading: cargandoContratos } = useContracts();
   const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones();
 
   const [plantillas, setPlantillas] = useState<PlantillaLegalDelSistema[]>([]);
   const [codigo, setCodigo] = useState<CodigoDeDocumentoLegal | ''>('');
+  /** Id de la plantilla propia elegida. Excluyente con `codigo`. */
+  const [propiaId, setPropiaId] = useState('');
   const [contractId, setContractId] = useState('');
   const [consignacionId, setConsignacionId] = useState('');
   const [preparacion, setPreparacion] = useState<PreparacionDeDocumento | null>(null);
@@ -100,6 +131,11 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
   const plantilla = useMemo(
     () => plantillas.find((p) => p.codigo === codigo) ?? null,
     [plantillas, codigo],
+  );
+
+  const propia = useMemo(
+    () => plantillasPropias.find((p) => p.id === propiaId) ?? null,
+    [plantillasPropias, propiaId],
   );
 
   // Los tipos que el sistema sabe armar. Se piden al abrir: la lista es del
@@ -125,6 +161,7 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
   useEffect(() => {
     if (open) return;
     setCodigo('');
+    setPropiaId('');
     setContractId('');
     setConsignacionId('');
     setPreparacion(null);
@@ -197,11 +234,18 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
   }, [codigo, contractId, consignacionId, listo, vigenciaPedida]);
 
   const opcionesDeTipo = useMemo<ComboboxOption[]>(
-    () =>
-      [...plantillas]
+    () => [
+      ...[...plantillas]
         .sort((a, b) => ORDEN_DE_TIPOS.indexOf(a.codigo) - ORDEN_DE_TIPOS.indexOf(b.codigo))
         .map((p) => ({ value: p.codigo, label: p.nombre })),
-    [plantillas],
+      /* Las de la inmobiliaria, al final y rotuladas: el Combobox busca por
+         `label`, así que «tuya» sirve para encontrarlas todas de una vez. */
+      ...plantillasPropias.map((p) => ({
+        value: `${PREFIJO_PROPIA}${p.id}`,
+        label: `${p.name} · plantilla tuya`,
+      })),
+    ],
+    [plantillas, plantillasPropias],
   );
 
   const opcionesDeContrato = useMemo<ComboboxOption[]>(
@@ -238,8 +282,14 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
 
   const faltantes = preparacion ? camposFaltantes(preparacion.campos, valores) : [];
 
+  /* Una propia se puede generar en cuanto hay sobre qué; si no usa variables,
+     desde el momento en que se elige. */
+  const sePuedeLaPropia =
+    !!propia && (propia.variables.length === 0 || !!contractId || !!consignacionId);
+
   const sePuede =
-    !!preparacion &&
+    sePuedeLaPropia ||
+    (!!preparacion &&
     puedeGenerar({
       plantilla,
       contractId: contractId || undefined,
@@ -248,9 +298,34 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
       valores,
       incremento: preparacion.incremento,
       certificado: preparacion.certificado,
-    });
+    }));
 
   const generar = useCallback(async () => {
+    /*
+     * Una plantilla propia va por otra ruta del back (`templateId` en vez de
+     * `codigo`) y no tiene `preparacion`: no hay campos que escribir a mano.
+     */
+    if (propia) {
+      setGenerando(true);
+      setError(null);
+      try {
+        const documento = await documentosLegalesApi.generarDePlantillaPropia({
+          templateId: propia.id,
+          contractId: contractId || undefined,
+          consignacionId: consignacionId || undefined,
+          name: propia.name,
+        });
+        toast.success('Documento generado', { description: documento.name });
+        onGenerado(documento);
+        onOpenChange(false);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'No pudimos generar el documento.');
+      } finally {
+        setGenerando(false);
+      }
+      return;
+    }
+
     if (!codigo || !preparacion) return;
     setGenerando(true);
     setError(null);
@@ -273,7 +348,16 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
     } finally {
       setGenerando(false);
     }
-  }, [codigo, contractId, consignacionId, valores, preparacion, onGenerado, onOpenChange]);
+  }, [
+    codigo,
+    propia,
+    contractId,
+    consignacionId,
+    valores,
+    preparacion,
+    onGenerado,
+    onOpenChange,
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -295,15 +379,102 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
             <Combobox
               data-testid="doc-tipo"
               options={opcionesDeTipo}
-              value={codigo || undefined}
-              onChange={(v) => setCodigo((v ?? '') as CodigoDeDocumentoLegal | '')}
+              value={codigo || (propiaId ? `${PREFIJO_PROPIA}${propiaId}` : undefined)}
+              onChange={(v) => {
+                const elegido = v ?? '';
+                if (elegido.startsWith(PREFIJO_PROPIA)) {
+                  setPropiaId(elegido.slice(PREFIJO_PROPIA.length));
+                  setCodigo('');
+                  // Una propia no tiene campos que preparar: lo que quedara de
+                  // una legal elegida antes se iría a la llamada equivocada.
+                  setPreparacion(null);
+                  setValores({});
+                } else {
+                  setCodigo(elegido as CodigoDeDocumentoLegal | '');
+                  setPropiaId('');
+                }
+              }}
               placeholder={opcionesDeTipo.length ? 'Elige qué generar' : 'Cargando…'}
               searchPlaceholder="Contrato, acta, inventario, carta"
               disabled={opcionesDeTipo.length === 0}
               contentClassName="z-[400]"
             />
             {plantilla && <p className="text-caption text-fg-muted">{plantilla.descripcion}</p>}
+            {propia && (
+              <p className="text-caption text-fg-muted" data-testid="doc-propia-desc">
+                Plantilla escrita por tu inmobiliaria.{' '}
+                {propia.variables.length === 0
+                  ? 'No usa datos del contrato: sale igual siempre.'
+                  : propia.variables.length === 1
+                    ? 'Usa 1 dato del contrato, y lo llena el sistema.'
+                    : `Usa ${propia.variables.length} datos del contrato, y los llena el sistema.`}
+              </p>
+            )}
           </div>
+
+          {/* 2 — Sobre qué. Una plantilla propia acepta contrato O inmueble: sus
+              variables salen del mismo resolvedor que las legales, que sabe
+              llenar lo que haya. */}
+          {propia && propia.variables.length > 0 && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-contrato-propia">
+                  Contrato <span className="font-normal text-fg-muted">(o un inmueble)</span>
+                </Label>
+                <Combobox
+                  data-testid="doc-contrato"
+                  options={opcionesDeContrato}
+                  value={contractId || undefined}
+                  onChange={(v) => {
+                    setContractId(v ?? '');
+                    if (v) setConsignacionId('');
+                  }}
+                  placeholder={
+                    cargandoContratos
+                      ? 'Cargando contratos…'
+                      : opcionesDeContrato.length
+                        ? 'Buscar por número, dirección o inquilino'
+                        : 'No hay contratos'
+                  }
+                  searchPlaceholder="Número, dirección o inquilino"
+                  disabled={opcionesDeContrato.length === 0}
+                  contentClassName="z-[400]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-inmueble-propia">Inmueble</Label>
+                <Combobox
+                  data-testid="doc-inmueble"
+                  options={opcionesDeInmueble}
+                  value={consignacionId || undefined}
+                  onChange={(v) => {
+                    setConsignacionId(v ?? '');
+                    if (v) setContractId('');
+                  }}
+                  placeholder={
+                    cargandoInmuebles
+                      ? 'Cargando inmuebles…'
+                      : opcionesDeInmueble.length
+                        ? 'Buscar por título o dirección'
+                        : 'No hay inmuebles'
+                  }
+                  searchPlaceholder="Título o dirección"
+                  disabled={opcionesDeInmueble.length === 0}
+                  contentClassName="z-[400]"
+                />
+              </div>
+              {!contractId && !consignacionId && (
+                <p
+                  className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                  data-testid="doc-propia-falta-sobre-que"
+                >
+                  Elige el contrato o el inmueble de donde salen los datos: esta plantilla
+                  usa {propia.variables.length === 1 ? 'uno' : propia.variables.length} y sin
+                  eso saldrían en blanco.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 2 — Sobre qué */}
           {plantilla && (

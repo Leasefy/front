@@ -21,6 +21,7 @@ const { api, toastMock } = vi.hoisted(() => ({
     pdf: vi.fn(),
     documentos: vi.fn(),
     plantillas: vi.fn(),
+    generarDePlantillaPropia: vi.fn(),
   },
   toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
@@ -503,5 +504,133 @@ describe('GenerarDocumentoDialog', () => {
     const faltantes = q<HTMLElement>('[data-testid="doc-faltantes"]')!
     expect(faltantes.textContent).toContain('Llaves entregadas')
     expect(faltantes.closest('[data-testid="doc-campos"]')).toBeNull()
+  })
+})
+
+/**
+ * Las plantillas PROPIAS de la inmobiliaria, en el MISMO selector.
+ *
+ * Son otra llamada al back (`templateId` en vez de `codigo`) y no tienen campos
+ * que escribir a mano, pero para quien genera un documento es una sola pregunta.
+ * Dos botones de «generar documento» en la misma pantalla serían dos caminos que
+ * se van separando.
+ */
+describe('GenerarDocumentoDialog — plantillas propias', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  const PROPIA = {
+    id: 'p-propia',
+    name: 'Carta de bienvenida',
+    category: 'CARTA' as const,
+    version: '1.0',
+    variables: ['arrendatarioNombre'],
+    codigo: null,
+    isActive: true,
+    updatedAt: '2026-09-01T00:00:00Z',
+    content: '<p>Hola {{arrendatarioNombre}}</p>',
+  }
+
+  const SIN_VARIABLES = { ...PROPIA, id: 'p-simple', name: 'Aviso general', variables: [] }
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    api.plantillasLegales.mockResolvedValue(PLANTILLAS)
+    api.preparar.mockResolvedValue(PREPARACION_CARTA)
+    api.generarDePlantillaPropia.mockReset().mockResolvedValue({ id: 'doc-1', name: 'Carta de bienvenida' })
+    api.generar.mockReset()
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+    vi.clearAllMocks()
+  })
+
+  async function abrir(propias = [PROPIA], onGenerado = vi.fn()) {
+    await act(async () => {
+      root.render(
+        <GenerarDocumentoDialog
+          open
+          onOpenChange={vi.fn()}
+          onGenerado={onGenerado}
+          plantillasPropias={propias}
+        />,
+      )
+    })
+    return onGenerado
+  }
+
+  it('aparecen en el mismo selector, rotuladas como tuyas', async () => {
+    await abrir()
+    const tipo = q<HTMLSelectElement>('[data-testid="doc-tipo"]')!
+    expect([...tipo.options].map((o) => o.value)).toContain('propia:p-propia')
+    // `o.label` lee el ATRIBUTO label, que el doble no pone: el rótulo es el texto.
+    expect([...tipo.options].map((o) => o.textContent).join(' | ')).toContain('plantilla tuya')
+  })
+
+  it('una propia NO llama a «preparar»: no tiene campos que escribir', async () => {
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-propia'))
+    expect(api.preparar).not.toHaveBeenCalled()
+  })
+
+  it('pide sobre qué contrato, y sin eso no deja generar', async () => {
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-propia'))
+
+    expect(q('[data-testid="doc-propia-falta-sobre-que"]')).not.toBeNull()
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+  })
+
+  it('con el contrato elegido genera por templateId', async () => {
+    const onGenerado = await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-propia'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+
+    const generar = q<HTMLButtonElement>('[data-testid="doc-generar"]')!
+    expect(generar.disabled).toBe(false)
+    await act(async () => generar.click())
+
+    expect(api.generarDePlantillaPropia).toHaveBeenCalledWith({
+      templateId: 'p-propia',
+      contractId: 'c-1',
+      consignacionId: undefined,
+      name: 'Carta de bienvenida',
+    })
+    // Y NO por el camino de las legales.
+    expect(api.generar).not.toHaveBeenCalled()
+    expect(onGenerado).toHaveBeenCalledWith({ id: 'doc-1', name: 'Carta de bienvenida' })
+  })
+
+  it('una propia SIN variables se genera sin elegir nada', async () => {
+    await abrir([SIN_VARIABLES])
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-simple'))
+    expect(q('[data-testid="doc-contrato"]')).toBeNull()
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(false)
+  })
+
+  it('el 400 del back se muestra tal cual', async () => {
+    api.generarDePlantillaPropia.mockRejectedValue(
+      new Error('«Carta de bienvenida» usa datos del contrato ({{arrendatarioNombre}}): elige un contrato o un inmueble.'),
+    )
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-propia'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+
+    expect(q('[data-testid="doc-error"]')!.textContent).toContain('usa datos del contrato')
+  })
+
+  it('cambiar de una propia a una legal no deja la anterior elegida', async () => {
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'propia:p-propia'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    // Ya no está el bloque de la propia…
+    expect(q('[data-testid="doc-propia-desc"]')).toBeNull()
+    // …y la legal manda: sin contrato no prepara.
+    expect(api.generarDePlantillaPropia).not.toHaveBeenCalled()
   })
 })

@@ -90,6 +90,32 @@ export interface PlantillaDeLaAgencia {
   content: string;
 }
 
+/** Un grupo del catálogo de variables, para no listar 36 en fila. */
+export type GrupoDeVariable = 'inmobiliaria' | 'partes' | 'inmueble' | 'contrato';
+
+/**
+ * Una variable que una plantilla PROPIA de la inmobiliaria puede usar.
+ *
+ * 🔴 El catálogo lo sirve el back (`GET /templates/variables`) y no se escribe
+ * acá a propósito: es la lista de lo que el sistema sabe llenar de verdad, y
+ * duplicada en los dos repos se separa a la primera variable nueva. Una
+ * variable ofrecida que el resolvedor no produce imprimiría «—» para siempre en
+ * un documento que alguien firma.
+ */
+export interface VariableDePlantilla {
+  nombre: string;
+  etiqueta: string;
+  grupo: GrupoDeVariable;
+}
+
+/** El cuerpo de crear o editar una plantilla propia. */
+export interface PlantillaPropiaBody {
+  name: string;
+  category: CategoriaDeDocumento;
+  content: string;
+  version?: string;
+}
+
 export type TipoDeCampo =
   | 'texto'
   /**
@@ -218,6 +244,65 @@ export const documentosLegalesApi = {
         `${BASE}/templates`,
       ),
     );
+  },
+
+  /** Las variables que puede usar una plantilla propia de la inmobiliaria. */
+  async variablesDePlantilla(): Promise<VariableDePlantilla[]> {
+    return lista(
+      await apiClient.get<{ data: VariableDePlantilla[] } | VariableDePlantilla[]>(
+        `${BASE}/templates/variables`,
+      ),
+    );
+  },
+
+  /**
+   * Crear una plantilla propia. El back RECHAZA una `{{variable}}` que no sabe
+   * llenar (400 `VARIABLE_DESCONOCIDA`) — el editor lo avisa antes, pero la
+   * autoridad es el back.
+   */
+  async crearPlantilla(body: PlantillaPropiaBody): Promise<PlantillaDeLaAgencia> {
+    return apiClient.post<PlantillaDeLaAgencia>(`${BASE}/templates`, body);
+  },
+
+  /** Editar una plantilla propia. Las del sistema responden 400. */
+  async editarPlantilla(
+    id: string,
+    body: Partial<PlantillaPropiaBody>,
+  ): Promise<PlantillaDeLaAgencia> {
+    return apiClient.put<PlantillaDeLaAgencia>(`${BASE}/templates/${id}`, body);
+  },
+
+  /**
+   * Copiar una plantilla —del sistema o propia— en una nueva de la agencia.
+   * Es la salida de que las del sistema no se editen: la copia sí.
+   */
+  async duplicarPlantilla(id: string, name?: string): Promise<PlantillaDeLaAgencia> {
+    return apiClient.post<PlantillaDeLaAgencia>(`${BASE}/templates/${id}/duplicar`, {
+      ...(name ? { name } : {}),
+    });
+  },
+
+  /** Archivar una plantilla propia (el back la marca inactiva, no la borra). */
+  async borrarPlantilla(id: string): Promise<void> {
+    await apiClient.delete<void>(`${BASE}/templates/${id}`);
+  },
+
+  /**
+   * Generar un documento a partir de una plantilla PROPIA.
+   *
+   * Es otra llamada que `generar()`: aquella manda `codigo` —una de las ocho
+   * legales del sistema, con sus campos escritos a mano— y ésta manda
+   * `templateId`. El back reemplaza las variables con los datos del contrato o
+   * del mandato; si la plantilla usa variables y no se elige ninguno de los
+   * dos, responde 400 `FALTA_SOBRE_QUE_GENERARLO`.
+   */
+  async generarDePlantillaPropia(body: {
+    templateId: string;
+    contractId?: string;
+    consignacionId?: string;
+    name?: string;
+  }): Promise<DocumentoGenerado> {
+    return apiClient.post<DocumentoGenerado>(`${BASE}/generate`, body);
   },
 
   /** Qué documentos sabe armar el sistema y qué pide cada uno. */

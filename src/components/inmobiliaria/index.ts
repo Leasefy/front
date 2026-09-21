@@ -146,7 +146,6 @@ export { ConfigIntegraciones } from './ConfigIntegraciones';
 export { ConfigFacturacion } from './ConfigFacturacion';
 
 // Documentos - Templates & Manager (Phase 10 - Plan 04)
-export { DocumentoTemplates } from './DocumentoTemplates';
 
 // Documentos - Actas de Entrega (Phase 10 - Plan 05)
 export { ActaEntregaForm } from './ActaEntregaForm';

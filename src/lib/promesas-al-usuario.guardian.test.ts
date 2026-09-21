@@ -22,6 +22,23 @@
  * diccionario, promesas que ya no las leía nadie y que seguían ahí para que la
  * próxima búsqueda las contara como pendientes.
  *
+ * ── 21-09, más tarde: la que estaba «más cerca de ser mentira» ─────────────
+ *
+ * `inmobiliaria.documento.comingSoon` («crear una plantilla de documento») salió
+ * de esta lista, y no por un cable: al abrir el editor apareció que el botón
+ * apagado tapaba una TRAMPA. `generateDocument` copiaba el contenido de una
+ * plantilla propia tal cual, así que un `{{arrendatarioNombre}}` salía impreso
+ * con las llaves en un documento firmado. Nadie lo había visto porque no había
+ * forma de crear una plantilla. Ahora el editor existe, el back rechaza al
+ * GUARDAR una variable que no sabe llenar, y las del sistema se duplican en vez
+ * de editarse. La lección, que vale para el resto de esta lista: **un botón
+ * apagado puede estar tapando algo peor que un hueco**, así que la promesa se
+ * mira antes de decidir si el trabajo es grande o chico.
+ *
+ * Y con el componente muerto que la pintaba (`DocumentoTemplates.tsx`, que no
+ * renderizaba nadie) se fueron 92 claves del diccionario: el bloque
+ * `inmobiliaria.documento` entero, que sólo él usaba.
+ *
  * ── Qué hace este guardián ─────────────────────────────────────────────────
  *
  * Recorre `src/` (sin los comentarios, para no contar la historia como
@@ -236,17 +253,6 @@ const EN_EL_DICCIONARIO: Record<string, Promesa> = {
     estado: 'FALTA',
     de: 'back',
     nota: 'Descargar y compartir el reporte del estudio. Misma falta que `ReporteTab`.',
-  },
-  'inmobiliaria.documento.comingSoon': {
-    estado: 'FALTA',
-    de: 'front',
-    nota:
-      '🔴 La más cerca de ser mentira de las que quedan: crear una plantilla de ' +
-      'documento. **El back ya tiene las tres rutas** —`POST`, `PUT` y `DELETE` ' +
-      '/inmobiliaria/documentos/templates— y el front ya lee la lista ' +
-      '(`documentosApi.plantillas`). Lo que falta es el EDITOR, y no es un cable: ' +
-      'una plantilla es HTML legal con `{{variables}}`, y una variable mal escrita ' +
-      'sale impresa en un contrato firmado (por eso existe `plantillas.spec.ts`).',
   },
   'inmobiliaria.finance.export.comingSoon': {
     estado: 'FALTA',

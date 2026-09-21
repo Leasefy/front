@@ -32,6 +32,16 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
 import { SearchInput } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -71,6 +81,7 @@ import {
   type PlantillaDeLaAgencia,
 } from '@/lib/api/documentos.service';
 import { GenerarDocumentoDialog } from '@/components/documentos/GenerarDocumentoDialog';
+import { EditorDePlantilla } from '@/components/documentos/EditorDePlantilla';
 import { useDocumentosLegales } from '@/components/documentos/useDocumentosLegales';
 import {
   CATEGORIA_LABEL,
@@ -182,10 +193,20 @@ function DocumentosContent() {
   const { canAccess } = usePermissions();
   const puedeCrearDocumentos = canAccess('documentos', 'create');
   const puedeCrearActas = canAccess('portafolio', 'create');
+  /* Editar y borrar plantillas son permisos PROPIOS en el back
+     (`documentos:edit`, `documentos:delete`): un AGENTE puede tener `create` y
+     no `delete`, y un botón visible sin permiso es un 403 disfrazado. */
+  const puedeEditarPlantillas = canAccess('documentos', 'edit');
+  const puedeBorrarPlantillas = canAccess('documentos', 'delete');
 
   const [filtros, setFiltros] = useState<FiltrosDeDocumentos>(FILTROS_VACIOS);
   const [generarAbierto, setGenerarAbierto] = useState(false);
   const [plantillaAbierta, setPlantillaAbierta] = useState<PlantillaDeLaAgencia | null>(null);
+  /* El editor: `abierto` aparte de la plantilla porque una NUEVA es `null`, y
+     `null` no puede significar a la vez «cerrado» y «una nueva». */
+  const [editorAbierto, setEditorAbierto] = useState(false);
+  const [plantillaEnEdicion, setPlantillaEnEdicion] = useState<PlantillaDeLaAgencia | null>(null);
+  const [borrando, setBorrando] = useState<PlantillaDeLaAgencia | null>(null);
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
   const [cerrandoSinFirma, setCerrandoSinFirma] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
@@ -199,6 +220,12 @@ function DocumentosContent() {
    */
   const plantillaVisible = useUltimoPresente(plantillaAbierta);
   const actaVisible = useUltimoPresente(actaAbierta);
+
+  /* Las que escribió la inmobiliaria: `codigo === null`. Las del sistema se
+     generan por su código y no se editan (el back responde 400), así que la
+     distinción gobierna tanto los botones de la fila como lo que se ofrece al
+     generar. */
+  const propias = useMemo(() => plantillas.filter((p) => p.codigo === null), [plantillas]);
 
   const visibles = useMemo(() => filtrarDocumentos(documentos, filtros), [documentos, filtros]);
 
@@ -254,6 +281,42 @@ function DocumentosContent() {
     [t],
   );
 
+  const duplicarPlantilla = useCallback(
+    async (plantilla: PlantillaDeLaAgencia) => {
+      try {
+        const copia = await documentosLegalesApi.duplicarPlantilla(plantilla.id);
+        await recargar();
+        toast.success(`Se creó «${copia.name}»`, {
+          description: 'La copia es tuya: ya se puede editar.',
+        });
+        // Se abre derecho en el editor: duplicar sin editar no sirve para nada,
+        // y el nombre «(copia)» hay que cambiarlo igual.
+        setPlantillaEnEdicion(copia);
+        setEditorAbierto(true);
+      } catch (e: unknown) {
+        toast.error('No se pudo duplicar la plantilla', {
+          description: e instanceof Error ? e.message : undefined,
+        });
+      }
+    },
+    [recargar],
+  );
+
+  const borrarPlantilla = useCallback(async () => {
+    if (!borrando) return;
+    try {
+      await documentosLegalesApi.borrarPlantilla(borrando.id);
+      await recargar();
+      toast.success(`«${borrando.name}» se archivó`);
+    } catch (e: unknown) {
+      toast.error('No se pudo archivar la plantilla', {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    } finally {
+      setBorrando(null);
+    }
+  }, [borrando, recargar]);
+
   const guardarActa = async (data: ActaEntrega) => {
     try {
       await actasApi.create(data);
@@ -296,15 +359,33 @@ function DocumentosContent() {
         {/* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
             responde 403 al preparar. El botón no se dibuja si no se puede. */}
         <PermissionGate module="documentos" action="create" fallback={null}>
-          <Button
-            onClick={() => setGenerarAbierto(true)}
-            hideArrow
-            className="shrink-0"
-            data-testid="documentos-generar"
-          >
-            <Plus className="w-4 h-4" weight="bold" />
-            {t(k('generar'))}
-          </Button>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {/* Escribir una plantilla es una acción de SU pestaña: en la de
+                documentos sería un botón que no tiene nada que ver con lo que
+                se está mirando. */}
+            {pestana === 'plantillas' && (
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={() => {
+                  setPlantillaEnEdicion(null);
+                  setEditorAbierto(true);
+                }}
+                data-testid="plantilla-nueva"
+              >
+                <Plus className="w-4 h-4" weight="bold" />
+                Nueva plantilla
+              </Button>
+            )}
+            <Button
+              onClick={() => setGenerarAbierto(true)}
+              hideArrow
+              data-testid="documentos-generar"
+            >
+              <Plus className="w-4 h-4" weight="bold" />
+              {t(k('generar'))}
+            </Button>
+          </div>
         </PermissionGate>
       </header>
 
@@ -531,15 +612,63 @@ function DocumentosContent() {
                         {p.variables.length}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          hideArrow
-                          onClick={() => setPlantillaAbierta(p)}
-                          data-testid="plantilla-ver"
-                        >
-                          {t(k('verPlantilla'))}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            hideArrow
+                            onClick={() => setPlantillaAbierta(p)}
+                            data-testid="plantilla-ver"
+                          >
+                            {t(k('verPlantilla'))}
+                          </Button>
+                          {/* 🔴 Las del SISTEMA no se editan: el documento se
+                              genera del texto que vive en el código, así que
+                              guardar un cambio acá cambiaría sólo la vista
+                              previa. El back responde 400. Se DUPLICAN, y la
+                              copia ya es de la inmobiliaria. */}
+                          {p.codigo === null && puedeEditarPlantillas && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              hideArrow
+                              onClick={() => {
+                                setPlantillaEnEdicion(p);
+                                setEditorAbierto(true);
+                              }}
+                              data-testid="plantilla-editar"
+                            >
+                              Editar
+                            </Button>
+                          )}
+                          {puedeCrearDocumentos && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              hideArrow
+                              onClick={() => void duplicarPlantilla(p)}
+                              title={
+                                p.codigo !== null
+                                  ? 'Las plantillas del sistema se actualizan con la ley. Duplícala y la copia es tuya.'
+                                  : undefined
+                              }
+                              data-testid="plantilla-duplicar"
+                            >
+                              Duplicar
+                            </Button>
+                          )}
+                          {p.codigo === null && puedeBorrarPlantillas && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              hideArrow
+                              onClick={() => setBorrando(p)}
+                              data-testid="plantilla-borrar"
+                            >
+                              Archivar
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -668,7 +797,38 @@ function DocumentosContent() {
         open={generarAbierto}
         onOpenChange={setGenerarAbierto}
         onGenerado={agregar}
+        plantillasPropias={propias}
       />
+
+      <EditorDePlantilla
+        abierto={editorAbierto}
+        plantilla={plantillaEnEdicion}
+        onCerrar={() => setEditorAbierto(false)}
+        onGuardado={() => void recargar()}
+      />
+
+      {/* Archivar: se pregunta. El back la marca inactiva —no se pierde el
+          texto— pero los documentos ya generados con ella no cambian, y eso es
+          lo que hay que decir para que la decisión se tome informada. */}
+      <AlertDialog open={borrando !== null} onOpenChange={(o) => !o && setBorrando(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {borrando ? `¿Archivar «${borrando.name}»?` : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deja de ofrecerse al generar documentos. Los documentos que ya se hicieron
+              con ella no cambian.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void borrarPlantilla()} data-testid="plantilla-borrar-confirmar">
+              Archivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Vista previa de la plantilla: el mismo HTML que se imprime, con sus
           variables sin reemplazar. Va en un iframe aislado para que el estilo

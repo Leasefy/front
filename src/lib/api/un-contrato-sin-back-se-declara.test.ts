@@ -77,8 +77,8 @@ const LO_QUE_HABLA_DE_NO_TENER_BACK: Record<
   { estado: 'FALTA' | 'YA_ESTA'; nota: string }
 > = {
   'lib/api/autopago.service.ts': {
-    estado: 'FALTA',
-    nota: 'Domiciliación del canon (cobro recurrente tokenizado con Wompi). El back no tiene ninguna de las rutas de `/autopago`. Es el hueco más rentable de los cuatro de la matriz de competencia.',
+    estado: 'YA_ESTA',
+    nota: 'Domiciliación del canon. Construida el 21-09-2026: `/portal/autopago` (estado, activar, pausar, cancelar, cobrar-ahora y tokenizacion), con el barrido diario APAGADO por defecto.',
   },
   'lib/api/messages.service.ts': {
     estado: 'FALTA',
@@ -153,7 +153,9 @@ describe('🔴 los contratos de front sin back', () => {
     }
   });
 
-  it('🔴 el paz y salvo y la puerta de la Ley 2300 YA tienen back', () => {
+  it('🔴 el paz y salvo, el autopago y la puerta de la Ley 2300 YA tienen back', () => {
+    expect(LO_QUE_HABLA_DE_NO_TENER_BACK['lib/api/autopago.service.ts'].estado)
+      .toBe('YA_ESTA');
     expect(LO_QUE_HABLA_DE_NO_TENER_BACK['lib/api/lease-documents.service.ts'].estado)
       .toBe('YA_ESTA');
     expect(LO_QUE_HABLA_DE_NO_TENER_BACK['lib/api/agent-contact.service.ts'].estado)
@@ -166,6 +168,7 @@ describe('🔴 los contratos de front sin back', () => {
       .map(([r]) => r);
     // El número no es decorativo: es la respuesta a «¿qué aparenta el front que
     // no existe?». Que cambie tiene que ser una decisión, no un descuido.
-    expect(faltan).toHaveLength(4);
+    // 21-09-2026: eran cuatro; el autopago se construyó y quedaron tres.
+    expect(faltan).toHaveLength(3);
   });
 });

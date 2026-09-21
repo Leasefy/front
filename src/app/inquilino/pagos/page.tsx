@@ -613,9 +613,14 @@ function PagosPageContent() {
               </div>
             </div>
 
-            {/* Autopago (domiciliación tokenizada) — PAGO-04. Backend-gated: muestra un
-                "Próximamente" honesto hasta que existan tokenización Wompi + scheduler. */}
-            <AutopagoSection leaseId={primaryLease?.id ?? null} />
+            {/* 🔴 Autopago (PAGO-04). Hasta el 21-09-2026 esto mostraba
+                «Próximamente» sobre un endpoint que no existía. Ya existe
+                (`/portal/autopago`), y se llavea por CONTRATO —no por
+                arriendo—: la deuda nace con el contrato y vive en sus cuotas. */}
+            <AutopagoSection
+              contractId={primaryLease?.contractId ?? null}
+              canonCop={primaryLease?.monthlyRent ?? null}
+            />
           </motion.div>
         </div>
       </div>

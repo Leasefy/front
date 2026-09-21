@@ -89,6 +89,7 @@ import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
   MagnifyingGlass,
+  Scales,
   ShieldWarning,
   Users,
   Warning,
@@ -182,6 +183,14 @@ export function CarteraCompleta() {
 
   const items = useMemo<CarteraItem[]>(() => report?.items ?? [], [report])
   const siniestros = report?.siniestros ?? null
+  /*
+   * 🔴 La cartera CASTIGADA (21-09-2026). NO es un segmento más de esta tabla:
+   * sus filas no están en `items` —salen del informe activo a propósito— y por
+   * eso la cifra ENLAZA a su pantalla en vez de filtrar acá. Se pinta siempre
+   * que el back la mande, aunque venga en cero: que exista la figura es lo que
+   * hace que el número de arriba cuadre con sus partes.
+   */
+  const castigada = report?.castigada ?? null
   const casosEnSiniestro = useMemo<CarteraItem[]>(() => siniestros?.items ?? [], [siniestros])
   /** 🔴 TODA la deuda: los tres cajones y los casos en siniestro. */
   const todas = useMemo(() => [...items, ...casosEnSiniestro], [items, casosEnSiniestro])
@@ -328,7 +337,11 @@ export function CarteraCompleta() {
           className={cn(
             'grid grid-cols-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface',
             'lg:divide-x lg:divide-y-0',
-            siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4',
+            castigada && siniestros
+              ? 'lg:grid-cols-6'
+              : castigada || siniestros
+                ? 'lg:grid-cols-5'
+                : 'lg:grid-cols-4',
           )}
           data-testid="resumen-de-cartera"
         >
@@ -445,6 +458,33 @@ export function CarteraCompleta() {
                 </p>
               ) : null}
             </button>
+          ) : null}
+
+          {castigada ? (
+            /*
+             * Enlace y no botón: lo castigado vive en otra pantalla porque el
+             * pedido es que SALGA de la cartera activa. Filtrar acá la
+             * volvería a poner en la lista de a quién llamar.
+             */
+            <Link
+              href="/panel/inmobiliaria/pagos/cartera/castigada"
+              className="block p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              data-testid="resumen-castigada"
+            >
+              <p className="flex items-center gap-1.5 text-xs text-fg-muted">
+                <Scales className="h-3.5 w-3.5" aria-hidden="true" />
+                Castigada
+              </p>
+              <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
+                {formatCurrency(castigada.totalCop)}
+              </p>
+              <p className="mt-0.5 text-xs text-fg-muted">
+                {castigada.cantidad === 0
+                  ? 'Ninguna'
+                  : `${castigada.cantidad} ${castigada.cantidad === 1 ? 'cuota' : 'cuotas'}`}
+                {' · '}ya no se persigue
+              </p>
+            </Link>
           ) : null}
         </div>
 

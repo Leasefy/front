@@ -1284,6 +1284,10 @@ export interface CarteraItem {
   diasDePlazo: number;
   /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
   esVencida: boolean;
+  /** La inmobiliaria decidió dejar de perseguir esta deuda (21-09-2026). */
+  castigada?: boolean;
+  /** `YYYY-MM-DD` del día en que quedó castigada. `null` si no lo está. */
+  castigadaDesde?: string | null;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
@@ -1317,9 +1321,18 @@ export interface CarteraSummary {
   vencidaEnPlazoCop: number;
   /** 🔴 LA CARTERA: pasó el plazo. Siniestros incluidos. */
   carteraCop: number;
-  /** Cartera − siniestros: lo que sigue siendo cobranza. Suman los tramos. */
+  /**
+   * `cartera − siniestros − castigada`: lo que sigue siendo cobranza. Es lo
+   * único que suman los tramos por edad.
+   */
   carteraVivaCop: number;
   enSiniestroCop: number;
+  /**
+   * 🔴 Lo que la inmobiliaria decidió dejar de perseguir (21-09-2026). No se
+   * resta de la deuda —el inquilino sigue debiendo— pero sale de la cartera
+   * activa y de los tramos. `carteraViva + siniestro + castigada = cartera`.
+   */
+  castigadaCop?: number;
   /** Los tramos por edad, sobre la mora REAL y sobre la cartera viva. */
   bucket0to30: number;
   bucket31to60: number;
@@ -1330,10 +1343,13 @@ export interface CarteraSummary {
   cuotasVencidasEnPlazo: number;
   cuotasEnCartera: number;
   cuotasEnSiniestro: number;
+  cuotasCastigadas?: number;
   /** 🔴 El interés de mora que falta, sumado. Va aparte del capital. */
   interesCop?: number;
   /** De ese interés, el de los casos en siniestro. */
   interesEnSiniestroCop?: number;
+  /** De ese interés, el de la cartera castigada. */
+  interesCastigadoCop?: number;
   /** `carteraCop + interesCop`. */
   carteraConInteresCop?: number;
   /** `deudaTotalCop + interesCop`. */
@@ -1361,6 +1377,12 @@ export interface CarteraReport {
   summary: CarteraSummary;
   byMonth?: CarteraMonthItem[];
   siniestros: CarteraSiniestros;
+  /**
+   * El listado de cartera CASTIGADA, aparte de la activa (Nico, 17-09: «sale
+   * del informe de cartera activa y queda en un listado de castigada»).
+   * Opcional: un back sin la migración del castigo no lo manda.
+   */
+  castigada?: CarteraCastigada;
   sinCamino: CarteraSinCamino;
   /** Contratos vigentes sin tabla de amortización: su deuda NO está acá. */
   contratosSinCuotas: number;
@@ -1379,6 +1401,15 @@ export interface CarteraSiniestro extends CarteraItem {
    */
   siniestroDesde: string;
   diasEnSiniestro: number;
+}
+
+/** Lo que la inmobiliaria ya no persigue, con su día de castigo. */
+export interface CarteraCastigada {
+  cantidad: number;
+  totalCop: number;
+  /** El interés de mora de esas cuotas. Tampoco se persigue. */
+  interesCop: number;
+  items: CarteraItem[];
 }
 
 export interface CarteraSiniestros {

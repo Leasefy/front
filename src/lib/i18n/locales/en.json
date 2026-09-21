@@ -11783,7 +11783,8 @@
       "porConcepto": "By item",
       "porPagar": "Owed to owners",
       "cobrosEmitidos": "Issued charges",
-      "juridico": "Legal collection"
+      "juridico": "Legal collection",
+      "castigada": "Written off"
     },
     "interes": {
       "columnaIntereses": "Interest",

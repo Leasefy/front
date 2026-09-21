@@ -11823,7 +11823,8 @@
       "porConcepto": "Por concepto",
       "porPagar": "Por pagar a propietarios",
       "cobrosEmitidos": "Cobros emitidos",
-      "juridico": "Cobro jurídico"
+      "juridico": "Cobro jurídico",
+      "castigada": "Castigada"
     },
     "interes": {
       "columnaIntereses": "Intereses",

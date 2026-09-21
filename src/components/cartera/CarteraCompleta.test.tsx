@@ -669,4 +669,65 @@ describe('CarteraCompleta', () => {
       '/panel/inmobiliaria/pagos/cartera/cobros?cobro=cob-9',
     )
   })
+
+  /**
+   * 🔴 LA CARTERA CASTIGADA (21-09-2026). Nico, 17-09: «sale del informe de
+   * cartera activa y queda en un listado de castigada». Por eso la cifra
+   * ENLAZA a su pantalla en vez de filtrar acá: filtrar la volvería a poner
+   * en la lista de a quién llamar.
+   */
+  describe('la cartera castigada', () => {
+    const CON_CASTIGADA = () =>
+      reporte({
+        summary: {
+          ...reporte().summary,
+          carteraVivaCop: 4_250_000,
+          castigadaCop: 1_000_000,
+          cuotasCastigadas: 1,
+        },
+        castigada: {
+          cantidad: 1,
+          totalCop: 1_000_000,
+          interesCop: 120_000,
+          items: [deuda({ cuotaId: 'cg-1', pendingAmount: 1_000_000 })],
+        },
+      })
+
+    it('sale como una cifra más, y enlaza a su pantalla', () => {
+      conReporte(CON_CASTIGADA())
+      montar()
+      const tarjeta = $('[data-testid="resumen-castigada"]')
+      expect(tarjeta.textContent).toContain('1.000.000')
+      expect(tarjeta.textContent).toContain('ya no se persigue')
+      expect(tarjeta.getAttribute('href')).toBe(
+        '/panel/inmobiliaria/pagos/cartera/castigada',
+      )
+    })
+
+    it('🔴 cartera viva + siniestro + castigada = cartera', () => {
+      const r = CON_CASTIGADA()
+      expect(
+        r.summary.carteraVivaCop +
+          r.summary.enSiniestroCop +
+          (r.summary.castigadaCop ?? 0),
+      ).toBe(r.summary.carteraCop)
+    })
+
+    it('un back sin la migración no la manda, y la franja sale como siempre', () => {
+      conReporte(reporte())
+      montar()
+      expect(host.querySelector('[data-testid="resumen-castigada"]')).toBeNull()
+      expect($('[data-testid="resumen-en-siniestro"]')).toBeTruthy()
+    })
+
+    it('en cero también se ve: es lo que hace que el total cuadre con sus partes', () => {
+      conReporte(
+        reporte({
+          castigada: { cantidad: 0, totalCop: 0, interesCop: 0, items: [] },
+        }),
+      )
+      montar()
+      expect($('[data-testid="resumen-castigada"]').textContent).toContain('Ninguna')
+    })
+  })
 })

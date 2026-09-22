@@ -334,7 +334,7 @@ function FlowConnector() {
 
 function EquipoPagos() {
   return (
-    <main className="p-6 lg:p-8 space-y-8">
+    <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="min-w-0">
         <h1 className="text-h2 text-fg">Equipo IA</h1>
@@ -478,7 +478,7 @@ function EquipoPagos() {
           operación.
         </p>
       </section>
-    </main>
+    </div>
   )
 }
 

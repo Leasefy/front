@@ -47,7 +47,7 @@ export default function CarrierSlaPage() {
    */
   if (error && !sla) {
     return (
-      <main className="space-y-6 p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
         {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
             tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
             parte del panel estás (Nico: «ni se entiende y no tiene navegación
@@ -63,7 +63,7 @@ export default function CarrierSlaPage() {
             href: '/panel/inmobiliaria/postulaciones/asegurabilidad',
           }}
         />
-      </main>
+      </div>
     )
   }
   if (
@@ -80,7 +80,7 @@ export default function CarrierSlaPage() {
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
@@ -138,6 +138,6 @@ export default function CarrierSlaPage() {
         breachWindows={sla?.breachWindows ?? null}
         isLoading={isLoading}
       />
-    </main>
+    </div>
   )
 }

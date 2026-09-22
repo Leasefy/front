@@ -371,17 +371,17 @@ function DisputasContent() {
   // ── Primer load ────────────────────────────────────────────────────────────
   if (isLoading && disputes.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" variant="default" />
         </div>
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error de carga. Cuando falla, ABAJO no puede decirse «no hay
@@ -511,7 +511,7 @@ function DisputasContent() {
         onClose={() => setAbrirOpen(false)}
         onSubmit={handleOpenDispute}
       />
-    </main>
+    </div>
   )
 }
 

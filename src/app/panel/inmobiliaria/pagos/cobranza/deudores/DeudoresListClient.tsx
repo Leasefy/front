@@ -207,7 +207,7 @@ export default function DeudoresListClient() {
     !error
   ) {
     return (
-      <main className="p-6 lg:p-8 space-y-4">
+      <div className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={Users}
           title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
@@ -218,7 +218,7 @@ export default function DeudoresListClient() {
             degrada a "Próximamente — requiere despliegue" sin romper. Tras un
             import exitoso refrescamos la lista para salir del empty state. */}
         <CobranzaImportCard onImported={() => void refetch()} />
-      </main>
+      </div>
     )
   }
 
@@ -257,7 +257,7 @@ export default function DeudoresListClient() {
   const contador = `${total}${hasMore ? '+' : ''} ${total === 1 ? 'caso' : 'casos'}`
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-1">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.deudores.title')}
@@ -537,6 +537,6 @@ export default function DeudoresListClient() {
           </div>
         )}
       </Card>
-    </main>
+    </div>
   )
 }

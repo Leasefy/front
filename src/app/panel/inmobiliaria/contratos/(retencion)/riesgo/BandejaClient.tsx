@@ -134,7 +134,7 @@ export default function BandejaClient() {
     router.push(`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(caseId)}`)
 
   return (
-    <main className="p-6 lg:p-8 space-y-5">
+    <div className="p-6 lg:p-8 space-y-5">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-fg">Bandeja de riesgos</h1>
         <p className="text-sm text-fg-muted">
@@ -272,6 +272,6 @@ export default function BandejaClient() {
           No pude cargar la bandeja: {error}
         </div>
       ) : null}
-    </main>
+    </div>
   )
 }

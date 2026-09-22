@@ -151,17 +151,17 @@ function PromesasContent() {
   // ── Primer load ────────────────────────────────────────────────────────────
   if (isLoading && promesas.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
         </div>
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error de carga */}
@@ -325,7 +325,7 @@ function PromesasContent() {
           }}
         />
       )}
-    </main>
+    </div>
   )
 }
 

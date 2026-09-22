@@ -54,7 +54,7 @@ function EstudioOverview() {
   if (isLoading && !data) return <EstudioOverviewSkeleton />
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header — resumen ejecutivo */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
@@ -229,7 +229,7 @@ function EstudioOverview() {
           onReintentar={refetch}
         />
       )}
-    </main>
+    </div>
   )
 }
 

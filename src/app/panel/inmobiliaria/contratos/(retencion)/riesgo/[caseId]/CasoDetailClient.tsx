@@ -35,20 +35,20 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
   if (isLoading && !data) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="h-6 w-48 rounded bg-surface-muted animate-pulse mb-4" />
         <div className="h-40 rounded-lg bg-surface-muted animate-pulse" />
-      </main>
+      </div>
     )
   }
 
   if (error && !data) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
           No pude cargar el caso: {error}
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -56,7 +56,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   const c = data.profile.header
 
   return (
-    <main className="p-6 lg:p-8 space-y-5">
+    <div className="p-6 lg:p-8 space-y-5">
       <VolverALaLista
         href="/panel/inmobiliaria/contratos/riesgo"
         label="Volver a la bandeja de riesgos"
@@ -118,7 +118,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
           <CasoSidebar bundle={data} />
         </div>
       </div>
-    </main>
+    </div>
   )
 }
 

@@ -45,49 +45,19 @@ function conMain(d: string, out: string[] = []): string[] {
 }
 
 /** Los que ya tenían su propio `<main>` el 22-09-2026. */
-const DECLARADOS: readonly string[] = [
-  'src/app/panel/(landlord)/layout.tsx',
-  'src/app/panel/inmobiliaria/avaluos/nuevo/page.tsx',
-  'src/app/panel/inmobiliaria/contratos/(retencion)/aprobar/RevisionesClient.tsx',
-  'src/app/panel/inmobiliaria/contratos/(retencion)/retencion/page.tsx',
-  'src/app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx',
-  'src/app/panel/inmobiliaria/contratos/(retencion)/riesgo/BandejaClient.tsx',
-  'src/app/panel/inmobiliaria/mantenimientos/tickets/[ticketId]/page.tsx',
-  'src/app/panel/inmobiliaria/mantenimientos/tickets/resumen/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/acuerdos/generales/[acuerdoId]/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/acuerdos/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/analitica/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/configuracion/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/deudores/DeudoresListClient.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/disputas/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/equipo/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/escalaciones/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/inbox/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/llamadas/[callId]/CallDetailClient.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/pagos/[paymentId]/PaymentDetailClient.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/pendientes/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/plantillas/[id]/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/plantillas/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/promesas/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/reporte/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/reportes-propietarios/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/cobranza/resultados/page.tsx',
-  'src/app/panel/inmobiliaria/pagos/equipo/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/[carrier]/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/[carrier]/sla/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/configuracion/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/costos/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/equipo/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/insights/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/estudio/equipo/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/estudio/nuevo/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/estudio/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/estudio/reglas/page.tsx',
-  'src/app/panel/inmobiliaria/postulaciones/estudio/solicitud/page.tsx',
-];
+/**
+ * 🔴 22-09 · La lista quedó VACÍA salvo el layout del propietario.
+ *
+ * Eran 41. Las 40 de `inmobiliaria/` —19 de Cobranza, 13 de Postulaciones y
+ * Estudio, 4 de Retención, y las demás— pasaron a `<div>`: el `<main>` lo pone
+ * el layout y era el de afuera el que recibía el foco.
+ *
+ * El de `(landlord)/layout.tsx` se queda y NO es un defecto: el panel del
+ * propietario no cuelga del layout de inmobiliaria —no hay
+ * `src/app/panel/layout.tsx`—, así que ese es su único landmark. Está acá para
+ * que el barrido no lo cuente como nuevo.
+ */
+const DECLARADOS: readonly string[] = ['src/app/panel/(landlord)/layout.tsx'];
 
 describe('🔴 el panel tiene un solo landmark principal', () => {
   it('ninguna página NUEVA abre su propio <main>', () => {

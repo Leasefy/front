@@ -47,7 +47,7 @@ export default function RetencionDashboardPage() {
   const urgentes = data?.urgent ?? []
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-fg">Retención · Laura</h1>
         <p className="text-sm text-fg-muted">
@@ -135,6 +135,6 @@ export default function RetencionDashboardPage() {
         </div>
       </section>
       </EstadoDeDatos>
-    </main>
+    </div>
   )
 }

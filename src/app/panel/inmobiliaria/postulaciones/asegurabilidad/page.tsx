@@ -130,7 +130,7 @@ export default function CotizadorOverviewPage() {
   const sinCotizaciones = !isLoading && !error && mergedQuotes.length === 0
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa: etiqueta de sección + título + qué es. Antes el
           vacío salía SIN encabezado: la persona caía en un recuadro suelto sin
           saber en qué pantalla estaba. Ahora las dos ramas comparten el mismo. */}
@@ -243,6 +243,6 @@ export default function CotizadorOverviewPage() {
           </section>
         </>
       )}
-    </main>
+    </div>
   )
 }

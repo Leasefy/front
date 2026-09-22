@@ -196,7 +196,7 @@ export default function CobranzaOverviewPage() {
 
   if (!data && !isLoading && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-4">
+      <div className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={FolderOpen}
           title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
@@ -207,7 +207,7 @@ export default function CobranzaOverviewPage() {
             degrada a "Próximamente — requiere despliegue" sin romper. Tras un
             import exitoso refrescamos el overview para salir del empty state. */}
         <CobranzaImportCard onImported={() => void refetch()} />
-      </main>
+      </div>
     )
   }
 
@@ -217,7 +217,7 @@ export default function CobranzaOverviewPage() {
   // con reintento, y sin ningún número.
   if (error && !data) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
           <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
@@ -229,7 +229,7 @@ export default function CobranzaOverviewPage() {
           queEs="el panorama de tu cartera"
           onReintentar={() => refetch()}
         />
-      </main>
+      </div>
     )
   }
 
@@ -244,7 +244,7 @@ export default function CobranzaOverviewPage() {
       : ''
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* ARIA live region — announces new stage transitions to screen readers */}
       <div
         role="status"
@@ -428,6 +428,6 @@ export default function CobranzaOverviewPage() {
         </div>
       )}
 
-    </main>
+    </div>
   )
 }

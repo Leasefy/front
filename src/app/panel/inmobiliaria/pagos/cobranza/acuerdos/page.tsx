@@ -819,7 +819,7 @@ function AcuerdosContent() {
   }, [recargarPromesas, recargarPlanes])
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
           <h1 className="text-h2 text-fg">
@@ -902,7 +902,7 @@ function AcuerdosContent() {
               sección de Configuración se desarmó en `fcc3ec92`. */}
         </DialogContent>
       </Dialog>
-    </main>
+    </div>
   )
 }
 

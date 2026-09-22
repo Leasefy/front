@@ -231,7 +231,7 @@ function EquipoAsegurabilidad() {
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="min-w-0">
         <h1 className="text-h2 text-fg">
@@ -295,7 +295,7 @@ function EquipoAsegurabilidad() {
           'Los resultados aparecerán aquí a medida que el equipo procese casos. Por ahora se muestran en blanco (—).',
         )}
       </p>
-    </main>
+    </div>
   )
 }
 

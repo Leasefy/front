@@ -443,7 +443,7 @@ function ReportesPropietariosContent() {
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
@@ -635,7 +635,7 @@ function ReportesPropietariosContent() {
         </section>
       </div>
       )}
-    </main>
+    </div>
   )
 }
 

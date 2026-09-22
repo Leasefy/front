@@ -721,20 +721,20 @@ function TarjetaDePortal({
               se identifica ESTE portal, que es lo primero que cambia entre uno y
               otro.
             */}
-            Para publicar aquí necesitamos tu{' '}
+            {/* 🔴 UNA línea, no un párrafo (21-09, segunda vuelta). Lo que
+                distingue a este portal de los otros cinco es el DATO que pide
+                —eso se quedó—; la advertencia sobre ese dato es larga y se
+                necesita en dos momentos distintos: al configurar (está junto al
+                campo, en el diálogo) y antes de decidir (está en «Qué pide este
+                portal»). En la tarjeta hacía tres renglones de prosa por
+                tarjeta, seis veces. */}
+            Necesita tu{' '}
             <span className="font-medium text-fg">
               {/* Sin `toLowerCase()`: son nombres propios y los rompía
                   («mercado libre», «proppit», «ciencuadras»). */}
               {conexion.rotuloDelIdentificador}
             </span>
-            {conexion.cuidado ? (
-              <>
-                {'. '}
-                {conexion.cuidado}
-              </>
-            ) : (
-              ' — la cuenta que tu inmobiliaria ya paga.'
-            )}
+            .
           </>
         ) : p.cuenta.modoEfectivo === 'API' ? (
           'Los avisos se publican y se bajan automático.'
@@ -802,6 +802,14 @@ function TarjetaDePortal({
                son del mismo grupo: van juntos y envuelven juntos. */
           >
             <div className="space-y-3" data-testid="que-pide-este-portal">
+              {/* La advertencia del portal va PRIMERO: es lo que evita el error
+                  más común de ése, y quien abre esto todavía no fue a pedir
+                  nada. (También está junto al campo, al configurar.) */}
+              {conexion.cuidado ? (
+                <p className="text-sm text-warning" data-testid="cuidado-en-el-modal">
+                  {conexion.cuidado}
+                </p>
+              ) : null}
               <ul className="space-y-1.5 text-sm text-fg-muted">
                 {conexion.paraConectarloDeVerdad.map((linea) => (
                   <li key={linea}>· {linea}</li>
@@ -845,16 +853,21 @@ const PASOS: { que: string; como: string }[] = [
   },
 ]
 
+/**
+ * 🔴 21-09, segunda vuelta: esto era una SECCIÓN de la pantalla —los cuatro
+ * pasos y un párrafo de cinco líneas— puesta encima de las seis tarjetas, que
+ * es lo que la persona vino a hacer. Nico, mirándola: «este también tiene
+ * información por ahí tirada que se puede abrir de otra manera».
+ *
+ * Se lee una vez en la vida del producto y después estorba todos los días, así
+ * que se abre desde un botón. Lo único que se quedó en la pantalla es la frase
+ * que NO es explicación sino una advertencia sobre lo que la herramienta hace y
+ * no hace: que los avisos los sube una persona.
+ */
 function ComoFunciona() {
   return (
-    <section
-      className="rounded-lg border border-border bg-surface p-5"
-      data-testid="como-funciona"
-    >
-      <h2 className="mb-4 text-sm font-medium text-fg">
-        Cómo se publica un inmueble
-      </h2>
-      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div data-testid="como-funciona">
+      <ol className="grid gap-4 sm:grid-cols-2">
         {PASOS.map((p, i) => (
           <li key={p.que} className="flex gap-3">
             <span
@@ -872,7 +885,7 @@ function ComoFunciona() {
       </ol>
       <p
         className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-fg-muted"
-        data-testid="aviso-sin-api"
+        data-testid="aviso-sin-api-detalle"
       >
         Los pasos 3 y 4 los hace una persona porque{' '}
         <span className="font-medium text-fg">
@@ -884,7 +897,7 @@ function ComoFunciona() {
         exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
         Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
       </p>
-    </section>
+    </div>
   )
 }
 
@@ -979,15 +992,34 @@ export function PortalesClient() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
-        <p className="text-sm text-fg-muted">
-          Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
-          cuenta, y mira en un solo lugar cuáles están publicados y dónde.
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
+          <p className="text-sm text-fg-muted">
+            Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
+            cuenta, y mira en un solo lugar cuáles están publicados y dónde.
+          </p>
+          {/* 🔴 Esto NO se fue al modal a propósito: no es «cómo se usa», es qué
+              hace y qué no hace la herramienta. Escondido, alguien esperaría que
+              el aviso saliera solo. Una línea en vez de cinco. */}
+          <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
+            Hoy el aviso lo subes tú al portal:{' '}
+            <span className="font-medium text-fg">
+              todavía no publicamos solos en ninguno
+            </span>
+            .
+          </p>
+        </div>
+        <ParaEntenderMas
+          etiqueta="Cómo se publica un inmueble"
+          titulo="Cómo se publica un inmueble"
+          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
+          ancho="ancho"
+          className="shrink-0"
+        >
+          <ComoFunciona />
+        </ParaEntenderMas>
       </header>
-
-      <ComoFunciona />
 
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>

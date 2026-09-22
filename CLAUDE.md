@@ -97,6 +97,14 @@ El CI (`.github/workflows/ci.yml`) solo corre: `install --frozen-lockfile` → `
 **Antes de abrir PR corré a mano:** `pnpm lint`, `pnpm api:check` (si tocaste el contrato del
 agent), `pnpm build`. Detalle en la skill `engineering-standards`.
 
+**Después de `pnpm build`:** `node scripts/variables-libres-del-build.mjs` (lee
+`.next/static/chunks`; sale 1 si encuentra algo, 2 si no hay build). Busca identificadores que
+un chunk usa sin declarar y que no son globales del navegador: la huella del
+`ReferenceError: propietarios is not defined` del 22-09 (commit `64a4a4aa`), que el
+minificador de SWC produjo al inlinear un cierre — el fuente estaba bien, `next dev`, `tsc` y
+las pruebas no lo veían. Un nombre de librería legítimo se agrega a `PERMITIDOS_DE_LIBRERIAS`
+con su motivo; un chunk que no se puede parsear también hace fallar (no se da por limpio).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

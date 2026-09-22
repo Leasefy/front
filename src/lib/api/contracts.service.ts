@@ -551,8 +551,33 @@ export const contractsApi = {
       );
     },
 
-    /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
-    async activar(lote?: string, invitar = true): Promise<ResumenActivacion> {
+    /**
+     * La fecha de corte de la migración: desde qué día la inmobiliaria cobra
+     * con Leasefy (QA 22-09). Lo que venció antes lo gestionó el sistema
+     * anterior y no es deuda. Sin ella el back no activa contratos (409
+     * `FALTA_FECHA_DE_CORTE`).
+     */
+    async fechaDeCorte(): Promise<FechaDeCorteDeLaMigracion> {
+      return apiClient.get<FechaDeCorteDeLaMigracion>(
+        '/contracts/migrar/fecha-de-corte',
+      );
+    },
+
+    /** Fija la fecha de corte (`AAAA-MM-DD`). Sin valor por defecto. */
+    async fijarFechaDeCorte(fecha: string): Promise<FechaDeCorteDeLaMigracion> {
+      return apiClient.put<FechaDeCorteDeLaMigracion>(
+        '/contracts/migrar/fecha-de-corte',
+        { fecha },
+      );
+    },
+
+    /**
+     * 3. Convierte en contratos las filas LISTO. Sólo esas.
+     *
+     * 🔴 `invitar` es `false` por defecto (QA 22-09): la invitación al portal
+     * es una decisión, no un efecto de apretar «Activar».
+     */
+    async activar(lote?: string, invitar = false): Promise<ResumenActivacion> {
       return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
         lote,
         invitar,
@@ -1489,6 +1514,16 @@ export interface ResultadoDeVerificacion {
    * se aplicó: los números son ciertos, pero se pierden al recargar.
    */
   guardado: boolean
+}
+
+/** `GET/PUT /contracts/migrar/fecha-de-corte`. */
+export interface FechaDeCorteDeLaMigracion {
+  /** `AAAA-MM-DD`, o `null` si la inmobiliaria todavía no la dijo. */
+  fecha: string | null;
+  /** `false` cuando ya hay contratos migrados con cuotas armadas sobre ella. */
+  editable: boolean;
+  /** Por qué no se puede cambiar. */
+  motivo: string | null;
 }
 
 /** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */

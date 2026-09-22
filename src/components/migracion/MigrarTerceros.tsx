@@ -577,13 +577,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
    * no a la hora de migrar, de enviar todos los correos de invitación de los
    * inquilinos en ese momento; que lo pueda hacer en otro momento».
    *
-   * Arranca en `true` porque es lo que la pantalla hacía hasta hoy y lo que
-   * espera quien migra para empezar a operar. Lo que cambia es que ahora se
-   * puede decir que no —son correos a personas de verdad y una invitación no
-   * se des-envía— sin perder a nadie: las cuentas quedan pendientes y se
-   * mandan desde Inquilinos cuando quiera.
+   * 🔴 Arranca en `false` (QA 22-09). Son correos a personas de verdad y una
+   * invitación no se des-envía: tiene que ser una decisión, no lo que pasa
+   * por no desmarcar una casilla. Las cuentas quedan pendientes y se mandan
+   * desde Inquilinos cuando quiera — nadie se pierde.
    */
-  const [invitarAlCrear, setInvitarAlCrear] = useState(true);
+  const [invitarAlCrear, setInvitarAlCrear] = useState(false);
 
   const aplicar = useCallback(async () => {
     if (!loteAbierto) return;

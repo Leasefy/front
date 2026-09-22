@@ -115,6 +115,7 @@ import {
   type ProgresoDeReconciliacion,
 } from "./reconciliarLoteCompleto";
 import { ProgresoDeLote } from "./ProgresoDeLote";
+import { FechaDeCorteDeLaMigracion } from "./FechaDeCorteDeLaMigracion";
 import { TablePagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
@@ -247,7 +248,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    */
   const [filaDeEncabezado, setFilaDeEncabezado] = useState(0);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
-  const [invitar, setInvitar] = useState(true);
+  /*
+   * 🔴 DESMARCADA por defecto (QA 22-09). El comentario de Nico del 09-09 ya
+   * lo decía: «la decisión de mandar 600 correos no puede ser un efecto
+   * secundario de apretar Crear». La casilla venía marcada igual.
+   */
+  const [invitar, setInvitar] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lote, setLote] = useState<string | null>(null);
@@ -1812,6 +1818,14 @@ function ListaDeTrabajo({
    * —la revisión es del lote, no de la página— pero recargar sí, y está bien.
    */
   const [confirmado, setConfirmado] = useState(false);
+  /*
+   * La fecha de corte GUARDADA (no el borrador del campo). Sin ella no se
+   * activa: la tabla de cuotas no sabría qué deuda es del sistema anterior
+   * (QA 22-09). `undefined` = todavía no se leyó.
+   */
+  const [fechaDeCorte, setFechaDeCorte] = useState<string | null | undefined>(
+    undefined,
+  );
 
   /**
    * Los propietarios de la agencia, UNA vez para toda la pantalla.
@@ -2427,6 +2441,7 @@ function ListaDeTrabajo({
 
             {confirmado ? (
               <>
+                <FechaDeCorteDeLaMigracion onCambio={setFechaDeCorte} />
                 <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
                   <Checkbox
                     id="invitar-inquilinos"
@@ -2485,11 +2500,20 @@ function ListaDeTrabajo({
                   </p>
                 ) : null}
 
+                {!fechaDeCorte ? (
+                  <p
+                    className="text-caption text-muted-foreground"
+                    data-testid="falta-fecha-de-corte"
+                  >
+                    Guarda la fecha de corte para poder activar.
+                  </p>
+                ) : null}
                 <Button
                   onClick={onActivar}
-                  disabled={cargando || reconciliando}
+                  disabled={cargando || reconciliando || !fechaDeCorte}
                   isLoading={cargando}
                   hideArrow
+                  data-testid="activar-contratos"
                 >
                   {progresoDeActivacion
                     ? `Activando… ${progresoDeActivacion.hechas} de ${progresoDeActivacion.hechas + progresoDeActivacion.restantes}`

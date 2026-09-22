@@ -235,38 +235,48 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
         <p>{AVISO_DEL_PREVALIDADOR}</p>
       </div>
 
-      <section className="flex flex-wrap items-end justify-between gap-4 rounded-lg border border-border bg-surface p-4">
-        <label className="flex items-center gap-2 text-sm text-fg-muted">
-          <span>Año gravable</span>
-          <select
-            aria-label="Año gravable"
-            className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={anio}
-            onChange={(e) => setAnio(Number(e.target.value))}
-            data-testid="selector-de-anio"
-          >
-            {anios.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="text-caption text-fg-muted" data-testid="totales-del-anio">
-          {totales.filas.toLocaleString('es-CO')} filas en los seis formatos ·{' '}
-          <Monto valor={totales.totalCop} className="text-caption" />
-        </p>
-      </section>
-
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): el año gravable estaba en su propia
+          tarjeta y las pestañas flotaban debajo, sueltas. Las dos responden lo
+          mismo —«qué estoy mirando»—, así que van en la misma fila: pestañas a
+          la izquierda, año y total a la derecha. El total del año se queda acá
+          porque es el resumen, y el resumen va con el alcance que lo produce. */}
       <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeLaExogena)}>
-        <TabsList variant="underline" className="justify-start">
-          <TabsTrigger value="formatos" data-testid="parte-formatos">
-            Los formatos
-          </TabsTrigger>
-          <TabsTrigger value="configuracion" data-testid="parte-configuracion">
-            Configuración
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
+          <TabsList variant="segmented" className="justify-start">
+            <TabsTrigger value="formatos" data-testid="parte-formatos" className="whitespace-nowrap">
+              Los formatos
+            </TabsTrigger>
+            <TabsTrigger
+              value="configuracion"
+              data-testid="parte-configuracion"
+              className="whitespace-nowrap"
+            >
+              Configuración
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
+              <span>Año gravable</span>
+              <select
+                aria-label="Año gravable"
+                className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                value={anio}
+                onChange={(e) => setAnio(Number(e.target.value))}
+                data-testid="selector-de-anio"
+              >
+                {anios.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="text-caption text-fg-muted" data-testid="totales-del-anio">
+              {totales.filas.toLocaleString('es-CO')} filas en los seis formatos ·{' '}
+              <Monto valor={totales.totalCop} className="text-caption" />
+            </p>
+          </div>
+        </div>
 
         <TabsContent value="formatos" className="space-y-6 pt-5">
       {!resumen.disponible ? (

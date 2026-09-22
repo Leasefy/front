@@ -398,3 +398,36 @@ describe('<EstadosFinancieros> — balance', () => {
     expect(reintentar).toBeDefined();
   });
 });
+
+/**
+ * 🔴 EL MOLDE (Nico, 21-09): «de verdad eso del mes, switch tab, y la tabla
+ * deberían ser una sola cosa… y así hay muchas tablas que tienen mes afuera,
+ * switch tab afuera y deberían estar junto a la tabla, revisa todas por favor,
+ * a eso me refería también con vómito, todo súper separado».
+ *
+ * Acá eran dos bloques flotando —una tarjeta con el mes, la sede y las casillas
+ * de comparación, y debajo las pestañas sueltas— y las casillas estaban en el
+ * peor lugar posible: agregan COLUMNAS al árbol de cuentas, que vive 600 px más
+ * abajo. Estos dos guardianes no dejan que se vuelvan a separar.
+ */
+describe('EstadosFinancieros · una sola cosa', () => {
+  it('🔴 las pestañas, el mes y la sede viven en el MISMO renglón', async () => {
+    await pintar('pyg');
+    const pestana = q('pestana-pyg')!;
+    const tarjeta = pestana.closest('div.rounded-lg')!;
+    expect(tarjeta).not.toBeNull();
+    // El mes y la sede están dentro de esa misma tarjeta, no en otra.
+    expect(tarjeta.querySelector('[data-testid="selector-de-sede"]')).not.toBeNull();
+    expect(tarjeta.textContent).toContain('Sede');
+  });
+
+  it('🔴 las casillas que agregan columnas viven DENTRO de la tabla que cambian', async () => {
+    await pintar('pyg');
+    const arbol = q('arbol-del-pyg')!;
+    expect(arbol.querySelector('[data-testid="ver-acumulado"]')).not.toBeNull();
+    expect(arbol.querySelector('[data-testid="ver-presupuesto"]')).not.toBeNull();
+    expect(arbol.querySelector('[data-testid="ver-anio-anterior"]')).not.toBeNull();
+    // Y dicen qué son: no son un filtro de la pantalla, son columnas.
+    expect(arbol.textContent).toContain('Columnas que se agregan');
+  });
+});

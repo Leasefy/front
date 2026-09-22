@@ -73,7 +73,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { TituloDeBloque } from '@/components/finanzas/piezas';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { ApiError } from '@/lib/api/client';
 import {
@@ -361,29 +360,39 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
   return (
     <div className="space-y-6" data-testid="egresos">
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): «switch tab afuera… deberían estar
+          junto a la tabla, revisa todas por favor, a eso me refería también con
+          vómito, todo súper separado».
+          Eran tres bloques por pestaña: las pestañas flotando en el aire, un
+          bloque de título con su explicación, y la tarjeta de la tabla. Ahora
+          es UNA tarjeta: las pestañas y la explicación de la pestaña activa
+          son su cabecera, y el contenido va pegado debajo. */}
       <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDeEgresos)}>
-        <TabsList variant="underline" className="justify-start">
-          <TabsTrigger value="egresos" data-testid="parte-egresos">
-            Egresos ({egresos.length})
-          </TabsTrigger>
-          <TabsTrigger value="lotes" data-testid="parte-lotes">
-            Lotes ({lotes.length})
-          </TabsTrigger>
-        </TabsList>
+        <section
+          /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
+             tarjeta se vuelve el contenedor de desplazamiento más cercano y
+             el pie pegajoso de adentro deja de medirse contra la ventana. */
+          className="overflow-x-clip rounded-lg border border-border bg-surface"
+        >
+          <div className="space-y-2 border-b border-border p-4">
+            <TabsList variant="segmented" className="justify-start">
+              <TabsTrigger value="egresos" data-testid="parte-egresos" className="whitespace-nowrap">
+                Egresos ({egresos.length})
+              </TabsTrigger>
+              <TabsTrigger value="lotes" data-testid="parte-lotes" className="whitespace-nowrap">
+                Lotes ({lotes.length})
+              </TabsTrigger>
+            </TabsList>
+            <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
+              {parte === 'egresos'
+                ? 'Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados. No es el giro al propietario: ese baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
+                : 'Un lote se arma, lo aprueba otra persona, sale el archivo para el banco, se marca pagado y ahí se numeran los comprobantes. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+            </p>
+          </div>
 
         {/* ══ Egresos ═══════════════════════════════════════════════════ */}
-        <TabsContent value="egresos" className="space-y-5 pt-5">
-          <TituloDeBloque
-            titulo="Egresos"
-            explicacion="Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados. No es el giro al propietario: ese baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones."
-          />
-
-          <section
-            /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
-               tarjeta se vuelve el contenedor de desplazamiento más cercano y
-               el pie pegajoso de adentro deja de medirse contra la ventana. */
-            className="overflow-x-clip rounded-lg border border-border bg-surface"
-          >
+        <TabsContent value="egresos" className="mt-0">
+          <div>
             {egresos.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
                 Todavía no hay egresos. Se crean desde una factura de proveedor causada, o sueltos
@@ -585,19 +594,13 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 </AccionConMotivo>
               </BarraDeAccionesMasivas>
             ) : null}
-          </section>
-
+          </div>
         </TabsContent>
 
         {/* ══ Lotes ═════════════════════════════════════════════════════ */}
-        <TabsContent value="lotes" className="space-y-5 pt-5">
-          <TituloDeBloque
-            titulo="Lotes de egreso"
-            explicacion="Un lote se arma, lo aprueba otra persona, sale el archivo para el banco, se marca pagado y ahí se numeran los comprobantes. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió."
-          />
-
+        <TabsContent value="lotes" className="mt-0 p-4">
           {lotes.length === 0 ? (
-            <p className="rounded-lg border border-border bg-surface p-8 text-center text-sm text-fg-muted">
+            <p className="p-8 text-center text-sm text-fg-muted">
               Todavía no hay lotes. Arma el primero desde la pestaña de egresos.
             </p>
           ) : (
@@ -737,6 +740,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             </ul>
           )}
         </TabsContent>
+        </section>
       </Tabs>
 
       {/* ══ Diálogos ══════════════════════════════════════════════════ */}

@@ -498,3 +498,24 @@ describe('sin permiso de escritura', () => {
     expect((q('anular-lote-l1') as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+/**
+ * 🔴 EL MOLDE (Nico, 21-09): «switch tab afuera… deberían estar junto a la
+ * tabla, revisa todas por favor, a eso me refería también con vómito, todo
+ * súper separado». Eran tres bloques por pestaña: las pestañas flotando, un
+ * bloque de título con su explicación, y la tarjeta de la tabla.
+ */
+describe('Egresos · una sola cosa', () => {
+  it('🔴 las pestañas son la cabecera de la tarjeta, no un bloque suelto', async () => {
+    await pintar('egresos');
+    const pestana = q('parte-egresos')!;
+    const tarjeta = pestana.closest('section.rounded-lg');
+    expect(tarjeta).not.toBeNull();
+    // La tabla vive en la MISMA tarjeta que las pestañas.
+    expect(tarjeta!.querySelector('table')).not.toBeNull();
+    // Y la explicación de la pestaña activa está en esa cabecera, no aparte.
+    expect(pestana.closest('div')!.parentElement!.textContent).toContain(
+      'No es el giro al propietario',
+    );
+  });
+});

@@ -50,7 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
   Table,
@@ -123,35 +123,57 @@ export function PresupuestoPanel() {
 
   return (
     <div className="space-y-6" data-testid="presupuesto">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <SelectorDeMes mes={mes} onCambiar={setMes} />
-        {puedeCargar ? (
-          <Button onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            Cargar un rubro
-          </Button>
-        ) : null}
-      </div>
-
       {cargado && cargado.disponible === false ? (
         <SinLaMigracion motivo={cargado.motivo} queSeEspera="cargar el presupuesto" />
       ) : null}
 
-      <EstadoDeDatos
-        cargando={cargando && !comparacion}
-        error={fallo}
-        vacio={!cargando && !comparacion}
-        onReintentar={cargar}
-        queEs="el presupuesto del mes"
-      >
-        {comparacion ? (
-          <Comparacion
-            comparacion={comparacion}
-            cargado={cargado?.filas ?? []}
-            onBorrar={setBorrando}
-          />
-        ) : null}
-      </EstadoDeDatos>
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): «así hay muchas tablas que tienen mes
+          afuera, switch tab afuera y deberían estar junto a la tabla».
+          El mes y «Cargar un rubro» flotaban arriba sin borde ni título, la
+          tabla tenía el suyo, y entre los dos había un bloque de título más un
+          bloque de avisos. Ahora es UNA tarjeta: el mes y el CTA en la cabecera
+          —junto al nombre de la tabla que gobiernan— y la tabla debajo. */}
+      <section className="overflow-x-clip rounded-lg border border-border bg-surface">
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-fg">
+              {comparacion
+                ? `Presupuesto vs. real vs. ${comparacion.mesDelAnioAnterior}`
+                : 'Presupuesto vs. real'}
+            </h2>
+            <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
+              Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año
+              pasado. Un rubro cuyo real no se puede calcular sale con guion y
+              dice por qué: un cero ahí se leería como «no gastaste nada».
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+            <SelectorDeMes mes={mes} onCambiar={setMes} />
+            {puedeCargar ? (
+              <Button onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Cargar un rubro
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        <EstadoDeDatos
+          cargando={cargando && !comparacion}
+          error={fallo}
+          vacio={!cargando && !comparacion}
+          onReintentar={cargar}
+          queEs="el presupuesto del mes"
+        >
+          {comparacion ? (
+            <Comparacion
+              comparacion={comparacion}
+              cargado={cargado?.filas ?? []}
+              onBorrar={setBorrando}
+            />
+          ) : null}
+        </EstadoDeDatos>
+      </section>
 
       <DialogoDeCarga
         abierto={abriendo}
@@ -195,15 +217,16 @@ function Comparacion({
   );
 
   return (
-    <div className="space-y-4">
-      <TituloDeBloque
-        titulo={`Presupuesto vs. real vs. ${comparacion.mesDelAnioAnterior}`}
-        explicacion="Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año pasado. Un rubro cuyo real no se puede calcular sale con guion y dice por qué: un cero ahí se leería como «no gastaste nada»."
-      />
+    <div>
+      {/* El título ya lo dice la cabecera de la tarjeta: repetirlo acá era la
+          misma frase dicha dos veces. */}
+      {comparacion.avisos.length > 0 ? (
+        <div className="border-b border-border p-4">
+          <Avisos avisos={comparacion.avisos} testId="presupuesto-avisos" />
+        </div>
+      ) : null}
 
-      <Avisos avisos={comparacion.avisos} testId="presupuesto-avisos" />
-
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

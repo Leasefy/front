@@ -67,10 +67,10 @@ export function Cifra({ id, etiqueta, valor, definicion, sinMedir, tono, pie }: 
       >
         {medido ? formatCurrency(valor as number) : SIN_MEDIR}
       </p>
-      <p className="text-xs leading-relaxed text-fg-muted">
+      <p className="text-caption leading-relaxed text-fg-muted">
         {medido ? definicion : (sinMedir ?? definicion)}
       </p>
-      {pie ? <div className="text-xs leading-relaxed text-fg-muted">{pie}</div> : null}
+      {pie ? <div className="text-caption leading-relaxed text-fg-muted">{pie}</div> : null}
     </section>
   );
 }
@@ -106,8 +106,8 @@ export function CifraDeTexto({ id, etiqueta, texto, definicion, tono, pie }: Cif
       >
         {texto}
       </p>
-      <p className="text-xs leading-relaxed text-fg-muted">{definicion}</p>
-      {pie ? <div className="text-xs leading-relaxed text-fg-muted">{pie}</div> : null}
+      <p className="text-caption leading-relaxed text-fg-muted">{definicion}</p>
+      {pie ? <div className="text-caption leading-relaxed text-fg-muted">{pie}</div> : null}
     </section>
   );
 }
@@ -213,7 +213,7 @@ export function TituloDeBloque({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-        <p className="max-w-2xl text-xs leading-relaxed text-fg-muted">{explicacion}</p>
+        <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">{explicacion}</p>
       </div>
       {accion ? <div className="shrink-0">{accion}</div> : null}
     </div>

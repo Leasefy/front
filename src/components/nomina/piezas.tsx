@@ -167,7 +167,7 @@ export function FaltanLasCifrasDelAnio({
             inventa: cárgalos con el documento a la vista.
           </p>
           {referencia ? (
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Para referencia, en {referencia.anio} fueron{' '}
               {referencia.salarioMinimoCop != null
                 ? formatCurrency(referencia.salarioMinimoCop)
@@ -261,7 +261,7 @@ export function ParaValidar({
 }) {
   return (
     <span
-      className="inline-flex items-start gap-1.5 text-xs leading-relaxed text-warning"
+      className="inline-flex items-start gap-1.5 text-caption leading-relaxed text-warning"
       data-testid={testId}
       title={motivo}
     >
@@ -313,7 +313,7 @@ export function Cifra({
       >
         {medido ? formatCurrency(valor as number) : SIN_MEDIR}
       </p>
-      <p className="text-xs leading-relaxed text-fg-muted">
+      <p className="text-caption leading-relaxed text-fg-muted">
         {medido ? definicion : (sinMedir ?? definicion)}
       </p>
     </section>
@@ -334,7 +334,7 @@ export function TituloDeBloque({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-        <p className="max-w-2xl text-xs leading-relaxed text-fg-muted">
+        <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
           {explicacion}
         </p>
       </div>
@@ -379,7 +379,7 @@ export function EstadoDelPeriodo({ estado }: { estado: string }) {
 export function LeyendaDeEstados() {
   return (
     <dl
-      className="grid gap-2 rounded-lg border border-border bg-surface p-4 text-xs text-fg-muted sm:grid-cols-2"
+      className="grid gap-2 rounded-lg border border-border bg-surface p-4 text-caption text-fg-muted sm:grid-cols-2"
       data-testid="leyenda-de-estados"
     >
       {Object.entries(QUE_SIGNIFICA).map(([estado, texto]) => (

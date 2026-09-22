@@ -185,78 +185,48 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
 
   return (
     <div className="space-y-6" data-testid="estados-financieros">
-      {/* ── Mes, sede y comparaciones ─────────────────────────────────── */}
-      <section className="flex flex-wrap items-end justify-between gap-4 rounded-lg border border-border bg-surface p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <SelectorDeMes mes={mes} onCambiar={setMes} />
-          <label className="flex items-center gap-2 text-sm text-fg-muted">
-            <span>Sede</span>
-            <select
-              aria-label="Sede"
-              className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-              value={sedeId}
-              onChange={(e) => setSedeId(e.target.value)}
-              data-testid="selector-de-sede"
-            >
-              <option value="">Consolidado (todas)</option>
-              {sedes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre} ({s.codigo})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {informe === 'pyg' ? (
-          <fieldset className="flex flex-wrap items-center gap-4">
-            <legend className="sr-only">Qué comparar</legend>
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Checkbox
-                checked={conAcumulado}
-                onCheckedChange={(v) => setConAcumulado(v === true)}
-                data-testid="ver-acumulado"
-              />
-              Acumulado del año
-            </label>
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Checkbox
-                checked={comparar.includes('presupuesto')}
-                onCheckedChange={() => alternarComparacion('presupuesto')}
-                data-testid="ver-presupuesto"
-              />
-              Presupuesto
-            </label>
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Checkbox
-                checked={comparar.includes('anioAnterior')}
-                onCheckedChange={() => alternarComparacion('anioAnterior')}
-                data-testid="ver-anio-anterior"
-              />
-              Año anterior
-            </label>
-          </fieldset>
-        ) : (
-          <label className="flex items-center gap-2 text-sm text-fg-muted">
-            <Checkbox
-              checked={comparativo}
-              onCheckedChange={(v) => setComparativo(v === true)}
-              data-testid="ver-comparativo"
-            />
-            Comparar con el año anterior
-          </label>
-        )}
-      </section>
-
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): «eso del mes, switch tab y la tabla
+          deberían ser una sola cosa… y así hay muchas tablas que tienen mes
+          afuera, switch tab afuera».
+          Acá eran DOS bloques flotando: una tarjeta con el mes, la sede y las
+          casillas de comparación, y debajo las pestañas sueltas en el aire. Y
+          las casillas estaban en el peor lugar posible: agregan COLUMNAS al
+          árbol de cuentas, que vive 600 px más abajo, y se leían como un filtro
+          general de la pantalla.
+          Ahora: qué informe + de qué mes + de qué sede son una sola fila —las
+          tres preguntas son «qué estoy mirando»— y las casillas bajaron a la
+          cabecera de la tabla cuyas columnas cambian. */}
       <Tabs value={informe} onValueChange={(v) => setInforme(v as Informe)}>
-        <TabsList variant="underline" className="justify-start">
-          <TabsTrigger value="pyg" data-testid="pestana-pyg">
-            Estado de resultados (P&G)
-          </TabsTrigger>
-          <TabsTrigger value="balance" data-testid="pestana-balance">
-            Balance general
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 lg:flex-row lg:items-center lg:justify-between">
+          <TabsList variant="segmented" className="justify-start">
+            <TabsTrigger value="pyg" data-testid="pestana-pyg" className="whitespace-nowrap">
+              Estado de resultados (P&G)
+            </TabsTrigger>
+            <TabsTrigger value="balance" data-testid="pestana-balance" className="whitespace-nowrap">
+              Balance general
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex flex-wrap items-center gap-4">
+            <SelectorDeMes mes={mes} onCambiar={setMes} />
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
+              <span>Sede</span>
+              <select
+                aria-label="Sede"
+                className="h-11 rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                value={sedeId}
+                onChange={(e) => setSedeId(e.target.value)}
+                data-testid="selector-de-sede"
+              >
+                <option value="">Consolidado (todas)</option>
+                {sedes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre} ({s.codigo})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
 
         {/* ══ P&G ═══════════════════════════════════════════════════════ */}
         <TabsContent value="pyg" className="space-y-5 pt-5">
@@ -316,6 +286,46 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 className="overflow-hidden rounded-lg border border-border bg-surface"
                 data-testid="arbol-del-pyg"
               >
+                {/* 🔴 Las casillas viven ACÁ y no en la barra de arriba: cada
+                    una agrega una COLUMNA a esta tabla. Arriba se leían como un
+                    filtro de la pantalla entera y lo que cambiaban quedaba
+                    fuera de la vista. */}
+                <fieldset className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <legend className="sr-only">Qué columnas agregar al árbol</legend>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+                      Columnas que se agregan
+                    </span>
+                    <label className="flex items-center gap-2 text-sm text-fg-muted">
+                      <Checkbox
+                        checked={conAcumulado}
+                        onCheckedChange={(v) => setConAcumulado(v === true)}
+                        data-testid="ver-acumulado"
+                      />
+                      Acumulado del año
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-fg-muted">
+                      <Checkbox
+                        checked={comparar.includes('presupuesto')}
+                        onCheckedChange={() => alternarComparacion('presupuesto')}
+                        data-testid="ver-presupuesto"
+                      />
+                      Presupuesto
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-fg-muted">
+                      <Checkbox
+                        checked={comparar.includes('anioAnterior')}
+                        onCheckedChange={() => alternarComparacion('anioAnterior')}
+                        data-testid="ver-anio-anterior"
+                      />
+                      Año anterior
+                    </label>
+                  </div>
+                  <p className="text-caption text-fg-muted" data-testid="cuantas-columnas">
+                    {columnas.length}{' '}
+                    {columnas.length === 1 ? 'columna' : 'columnas'} de cifras
+                  </p>
+                </fieldset>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -525,6 +535,20 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 <Monto valor={totalDelOtroLado(balance)} className="text-caption" />
                 {balance.cuadra ? ' · cuadra.' : ' · NO cuadra.'}
               </p>
+
+              {/* 🔴 La casilla del comparativo vive con las tres listas que
+                  cambia, no en una barra de filtros arriba: lo que hace es
+                  agregarle a cada cuenta la cifra del año anterior. */}
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+                <label className="flex items-center gap-2 text-sm text-fg-muted">
+                  <Checkbox
+                    checked={comparativo}
+                    onCheckedChange={(v) => setComparativo(v === true)}
+                    data-testid="ver-comparativo"
+                  />
+                  Mostrar al lado la cifra del año anterior
+                </label>
+              </div>
 
               <div className="grid gap-4 lg:grid-cols-3">
                 {ladosDelBalance(balance).map((lado) => (

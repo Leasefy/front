@@ -136,9 +136,17 @@ export function TableroFinancieroPanel() {
 
   return (
     <div className="space-y-6" data-testid="tablero-financiero">
-      {/* ── Mes y sede ────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SelectorDeMes mes={mes} onCambiar={setMes} />
+      {/* 🔴 El alcance DICE qué gobierna (Nico, 21-09: «todo súper separado»).
+          Eran dos controles flotando en el aire, sin borde y sin decir sobre
+          qué mandan: en una pantalla de cuatro bloques de cifras, un mes suelto
+          arriba se lee como si fuera del primer bloque. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+            Todo el tablero, de
+          </span>
+          <SelectorDeMes mes={mes} onCambiar={setMes} />
+        </div>
         <label className="flex items-center gap-2 text-sm text-fg-muted">
           <span>Sede</span>
           <select
@@ -178,7 +186,7 @@ export function TableroFinancieroPanel() {
             <BloqueDePropietarios tablero={tablero} />
             <BloqueDeMargen tablero={tablero} />
 
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Datos al {tablero.hoy} (hora de Bogotá).{' '}
               {tablero.sedeId === null
                 ? 'Consolidado de todas las sedes.'

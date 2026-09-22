@@ -240,27 +240,7 @@ function TesoreriaContent() {
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
             Acá se lee el neto de cada propietario, no se crean documentos. */}
-        <div className="shrink-0">
-          <label className="block text-xs font-medium text-fg-muted mb-1.5" id="liquidaciones-mes">
-            Mes
-          </label>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="gap-2 min-w-[200px]" aria-labelledby="liquidaciones-mes">
-              <CalendarBlank className="w-4 h-4 text-fg-muted shrink-0" aria-hidden="true" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {meses.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </header>
-
-      <PestanasDeLiquidaciones />
 
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />
@@ -270,15 +250,34 @@ function TesoreriaContent() {
           data-testid="liquidaciones-hueco"
         >
           <EstadoDeDatos
-            cargando={cargando}
+            /* `&& !vista`: un cambio de mes refresca por debajo sin borrar lo
+               que se está mirando. Sin esto, al cambiar de mes desaparecían las
+               pestañas y el propio selector de mes — el control que acabás de
+               tocar se va de la pantalla. */
+            cargando={cargando && !vista}
             error={error}
             vacio={vacio}
             queEs="las liquidaciones del mes"
             onReintentar={cargar}
             esqueleto={
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="liquidaciones-cargando">
-                <EsqueletoIndicadores cantidad={1} className="sm:grid-cols-1 lg:grid-cols-1" />
-                <EsqueletoTabla columnas={COLUMNS.length} className="lg:col-span-2" />
+              /* 🔴 El esqueleto tiene que dibujar la disposición que va a
+                 llegar. Éste seguía en el grid de 1/3 + 2/3 después de que la
+                 pantalla pasó a una columna (Nico, 21-09: «esto cambió la
+                 disposición y el skeleton sigue siendo el viejo»): la página
+                 saltaba al cargar, que es justo lo que un esqueleto viene a
+                 evitar. */
+              <div className="space-y-6" data-testid="liquidaciones-cargando">
+                <EsqueletoIndicadores cantidad={4} />
+                {/* La fila de pestañas y mes también se dibuja: si el esqueleto
+                    no la tiene, la tarjeta crece de golpe cuando llegan los
+                    datos y la página salta. */}
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+                    <div className="h-9 w-64 animate-pulse rounded-md bg-surface-muted" />
+                    <div className="h-9 w-48 animate-pulse rounded-md bg-surface-muted" />
+                  </div>
+                  <EsqueletoTabla columnas={COLUMNS.length} className="border-0" />
+                </div>
               </div>
             }
             cuandoVacio={
@@ -385,16 +384,32 @@ function TesoreriaContent() {
                 </div>
               </section>
 
-              {/* Egresos table */}
+              {/* 🔴 UNA SOLA COSA (Nico, 21-09): «de verdad eso del mes, switch
+                  tab, y la tabla deberían ser una sola cosa, una sola tabla, y
+                  por fuera esto [el resumen del mes]». Eran tres bloques
+                  sueltos —las pestañas flotando bajo el título, el mes en la
+                  esquina del encabezado y la tabla en su tarjeta—, y ninguno
+                  decía que gobernaba a los otros dos.
+                  Ahora la primera fila de la tarjeta de la tabla son las
+                  pestañas y el mes: lo que cambia la lista vive pegado a la
+                  lista. El resumen del mes se queda afuera, que es lo que él
+                  pidió: es un resumen, no un filtro. */}
               <section className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex items-center gap-3 p-5 border-b border-border">
-                  <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
-                    <Wallet className="w-[18px] h-[18px] text-fg-muted" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-fg">{t(k('egresosTitle'))}</h2>
-                    <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
-                  </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+                  <PestanasDeLiquidaciones />
+                  <Select value={month} onValueChange={setMonth}>
+                    <SelectTrigger className="min-w-[200px] gap-2" aria-label="Mes de la liquidación">
+                      <CalendarBlank className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meses.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
                     a su lado: suelto arriba no diría qué está filtrando. */}

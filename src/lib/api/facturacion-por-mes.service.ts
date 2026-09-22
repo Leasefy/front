@@ -601,6 +601,34 @@ export function mesActual(hoy: Date = new Date()): string {
  * meses: los contratos van de 2019 a hoy y ofrecer siete años de opciones no
  * ayuda a nadie.
  */
+/**
+ * Los meses que se pueden poner como TOPE de «Ver hasta»: del mes elegido en
+ * adelante, hasta diciembre del año siguiente.
+ *
+ * 🔴 Reemplaza a un `<input type="month">` (Nico, 21-09: «no estás usando los
+ * componentes de cadence, eso de hasta diciembre no se entiende como un
+ * filtro»). El campo nativo pinta el nombre del mes EN EL IDIOMA DEL NAVEGADOR
+ * —decía «September 2026» en una pantalla entera en español— y abría el
+ * calendario del sistema, que no se parece a nada del producto. Y al lado tenía
+ * un botón «Hasta diciembre» que se leía como una acción y no como lo que era:
+ * un atajo de ese mismo filtro.
+ *
+ * Con una lista, el atajo deja de ser un botón aparte: diciembre es una opción
+ * más.
+ */
+export function topesParaElegir(desde: string): string[] {
+  const [a, m] = desde.split('-').map(Number);
+  if (!a || !m) return [desde];
+  const topes: string[] = [];
+  // Hasta diciembre del año SIGUIENTE: cubre «quiero ver lo que viene» sin
+  // ofrecer un horizonte infinito que el back tendría que recorrer.
+  const fin = new Date(a + 1, 11, 1);
+  for (let d = new Date(a, m - 1, 1); d <= fin; d.setMonth(d.getMonth() + 1)) {
+    topes.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  return topes;
+}
+
 export function mesesParaElegir(cuantos = 13, hoy: Date = new Date()): string[] {
   const meses: string[] = []
   for (let i = 0; i < cuantos; i += 1) {

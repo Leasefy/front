@@ -17,6 +17,52 @@ import type { FacturaDelMes, FacturasPorGenerar } from '@/lib/api/facturacion-po
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+/*
+ * El Select de Radix no abre en happy-dom: un doble con el mismo contrato, que
+ * conserva el `data-testid` del trigger para que las pruebas de estructura
+ * («el selector vive dentro de la tarjeta de la tabla») sigan valiendo.
+ *
+ * Hizo falta el 21-09, cuando «Ver hasta» dejó de ser un `<input type="month">`
+ * —que pintaba «September 2026» en una pantalla en español— y pasó a ser un
+ * Select del design system.
+ */
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react');
+  const Ctx = R.createContext<(v: string) => void>(() => undefined);
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string;
+      onValueChange: (v: string) => void;
+      children?: React.ReactNode;
+    }) =>
+      R.createElement(
+        Ctx.Provider,
+        { value: onValueChange },
+        R.createElement('div', { 'data-select': value }, children),
+      ),
+    SelectTrigger: ({
+      children,
+      ...resto
+    }: { children?: React.ReactNode } & Record<string, unknown>) =>
+      R.createElement('div', resto, children),
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) =>
+      R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx);
+      return R.createElement(
+        'button',
+        { type: 'button', 'data-opcion': value, onClick: () => elegir(value) },
+        children,
+      );
+    },
+  };
+});
+
 const porGenerarMock = vi.fn();
 const generarMock = vi.fn();
 const toastOk = vi.fn();
@@ -966,13 +1012,32 @@ describe('NuevaFactura', () => {
       expect(q('[data-testid="prefacturas-del-rango"]')).toBeNull();
     });
 
-    it('«Hasta diciembre» estira la consulta hasta el 31 de diciembre', async () => {
+    /*
+     * 🔴 ACTUALIZADA EL 21-09: «Hasta diciembre» era un BOTÓN al lado de un
+     * `<input type="month">`. Nico: «no estás usando los componentes de
+     * cadence, eso de hasta diciembre no se entiende como un filtro». Un botón
+     * se lee como una acción; diciembre siempre fue una opción del mismo
+     * filtro, y ahora es eso.
+     *
+     * Lo que la prueba cuida NO cambió: que se pueda estirar el rango hasta
+     * diciembre y que `desde` siga siendo el mes elegido — un rango al revés lo
+     * rechaza el back con un 400.
+     */
+    it('el tope se puede estirar hasta diciembre, y el mes de inicio no se mueve', async () => {
       await montar();
+      /* Acotado al select de «Ver hasta»: el de «Mes de facturación» también
+         tiene diciembres (los meses pasados), y buscar en toda la pantalla
+         tocaba el control equivocado — la prueba pasaba por la razón errada. */
+      const elDeVerHasta = q('[data-testid="facturacion-hasta"]')!.closest('[data-select]')!;
+      const diciembre = Array.from(
+        elDeVerHasta.querySelectorAll('[data-opcion]'),
+      ).find((b) => /^\d{4}-12$/.test(b.getAttribute('data-opcion') ?? ''));
+      expect(diciembre, 'diciembre tiene que estar entre los topes').not.toBeUndefined();
+
       await act(async () => {
-        (
-          q('[data-testid="facturacion-hasta-fin-de-anio"]') as HTMLButtonElement
-        ).click();
+        (diciembre as HTMLButtonElement).click();
       });
+
       const ultima = porGenerarMock.mock.calls.at(-1)?.[0] as {
         desde: string;
         hasta: string;

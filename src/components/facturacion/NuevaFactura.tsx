@@ -127,12 +127,14 @@ import {
   mesActual,
   mesLegible,
   mesesParaElegir,
+  topesParaElegir,
   type DestinatarioDeFactura,
   type FacturaDelMes,
   type FacturasPorGenerar,
 } from '@/lib/api/facturacion-por-mes.service'
 import { SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
+import { AvisoQueSePuedeCerrar } from '@/components/ui/aviso-que-se-puede-cerrar'
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
 function conceptosLegibles(factura: FacturaDelMes): string {
@@ -742,6 +744,9 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [generando, setGenerando] = useState(false)
 
   const meses = useMemo(() => mesesParaElegir(), [])
+  /* Los topes se recalculan con el mes elegido: un tope anterior al mes sería
+     un rango al revés, y el back lo rechaza. */
+  const topes = useMemo(() => topesParaElegir(mes), [mes])
 
   const cargar = useCallback(async (elMes: string, elTope: string) => {
     setCargando(true)
@@ -1197,10 +1202,11 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </div>
       )}
 
-      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar. */}
-      <div className="rounded-lg bg-surface-muted border border-border p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="fill" />
-        <p className="text-caption text-fg-muted">
+      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar —
+          pero se puede cerrar: es una explicación de cómo funciona, y eso se
+          lee una vez (Nico, 21-09). */}
+      <AvisoQueSePuedeCerrar clave="facturacion-como-se-factura" data-testid="facturacion-como-funciona">
+        <p>
           Cada factura sale de la cuota del contrato: el mismo canon, el mismo
           prorrateo y los mismos impuestos que el cliente ve en su estado de
           cuenta. Una cuota que se generó sin escenario tributario confirmado se
@@ -1210,7 +1216,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           CUFE ni validación): eso necesita el proveedor tecnológico de la
           inmobiliaria.
         </p>
-      </div>
+      </AvisoQueSePuedeCerrar>
 
       {/* 🔴 UNA sola tarjeta: el mes, la resolución, las pestañas, la tabla y
           el pie de acciones masivas. Nico, 20-09, viendo los tres bloques
@@ -1259,6 +1265,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               mirar qué facturas tengo por generar hasta el 31 de diciembre…
               Lo que NO se puede es enviarlas [antes de tiempo].» Por eso
               estira la consulta y no toca ni las casillas ni el botón. */}
+          {/* 🔴 Un SELECT del design system, no el campo nativo de mes (Nico,
+              21-09: «no estás usando los componentes de cadence, eso de hasta
+              diciembre no se entiende como un filtro»).
+              El `<input type="month">` pintaba el nombre EN EL IDIOMA DEL
+              NAVEGADOR —«September 2026» en una pantalla entera en español— y
+              abría el calendario del sistema, que no se parece a nada del
+              producto. Y «Hasta diciembre» era un botón al lado, que se lee
+              como una acción; ahora diciembre es una opción más de la misma
+              lista, que es lo que siempre fue. */}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-hasta"
@@ -1266,31 +1281,22 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             >
               Ver hasta
             </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
+            <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
+              <SelectTrigger
                 id="facturacion-hasta"
-                type="month"
-                /* 🔴 `w-40` (160 px) cortaba el año: el campo nativo de mes
-                   pinta «September 2026» más el icono del calendario, y se
-                   leía «September 202(» — visto en la captura de Nico del
-                   20-09 y también en móvil. El ancho se mide por el contenido
-                   más largo, no por lo que quepa cómodo en la maqueta. */
-                className="w-full min-w-[11.5rem] tabular-nums sm:w-48"
-                min={mes}
-                value={hasta}
-                onChange={(e) => setHasta(e.target.value || mes)}
+                className="w-56"
                 data-testid="facturacion-hasta"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => setHasta(finDeAnio().slice(0, 7))}
-                data-testid="facturacion-hasta-fin-de-anio"
               >
-                Hasta diciembre
-              </Button>
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {topes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {mesLegible(t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

@@ -198,7 +198,17 @@ export function elTotalDelPropietario({
   p: PropietarioDeLaPrevia;
   ajustada: VistaPreviaDeDispersiones | null;
   seleccion: SeleccionDeLaLiquidacion;
-}): { canonCop: number; comisionCop: number; netoCop: number; exacto: boolean } {
+}): {
+  canonCop: number;
+  comisionCop: number;
+  /** Lo que se gira: con deducciones, `aGirarCop` (entero o $0), nunca negativo. */
+  netoCop: number;
+  /** Lo descontado este mes; 0 sin deducciones. */
+  deduccionesCop: number;
+  /** Lo que queda en contra y pasa a la siguiente liquidación. */
+  enContraCop: number;
+  exacto: boolean;
+} {
   const delBack = ajustada?.propietarios.find(
     (x) => x.propietarioId === p.propietarioId,
   );
@@ -206,11 +216,27 @@ export function elTotalDelPropietario({
     seleccionCompleta(seleccion) ||
     renglonesDentro(p.items, seleccion.inmueblesFuera).length === p.items.length;
 
+  /*
+   * 🔴 QA 22-09: la tarjeta decía «$-712.000» a una propietaria cuyas
+   * deducciones superaban su neto — el `netToPropietario` crudo, que con
+   * deducciones puede ser negativo—, mientras el total de abajo decía «A girar
+   * $0». Con el bloque de deducciones, lo que se gira es `aGirarCop` y lo que
+   * sobra pasa al mes siguiente: eso es lo que dice la tarjeta.
+   */
+  const conSusDeducciones = (x: PropietarioDeLaPrevia) =>
+    x.conDeducciones
+      ? {
+          netoCop: x.conDeducciones.aGirarCop,
+          deduccionesCop: x.conDeducciones.deduccionesCop,
+          enContraCop: x.conDeducciones.saldoEnContraCop,
+        }
+      : { netoCop: x.netToPropietario, deduccionesCop: 0, enContraCop: 0 };
+
   if (delBack) {
     return {
       canonCop: delBack.totalCollected,
       comisionCop: delBack.totalCommission,
-      netoCop: delBack.netToPropietario,
+      ...conSusDeducciones(delBack),
       exacto: true,
     };
   }
@@ -218,7 +244,7 @@ export function elTotalDelPropietario({
     return {
       canonCop: p.totalCollected,
       comisionCop: p.totalCommission,
-      netoCop: p.netToPropietario,
+      ...conSusDeducciones(p),
       exacto: true,
     };
   }
@@ -227,6 +253,8 @@ export function elTotalDelPropietario({
     canonCop: renglones.reduce((s, i) => s + i.rentCollected, 0),
     comisionCop: renglones.reduce((s, i) => s + i.commissionAmount, 0),
     netoCop: renglones.reduce((s, i) => s + i.netAmount, 0),
+    deduccionesCop: 0,
+    enContraCop: 0,
     exacto: false,
   };
 }

@@ -817,6 +817,14 @@ function FilaDelPropietario({
             {ROTULO_DEL_CANON[base]} {formatCurrency(numeros.canonCop)} · comisión{' '}
             {formatCurrency(numeros.comisionCop)}
           </p>
+          {numeros.deduccionesCop > 0 && (
+            <p className="font-mono text-sm text-fg-muted tabular-nums" data-testid="deducciones-del-propietario">
+              deducciones −{formatCurrency(numeros.deduccionesCop)}
+              {numeros.enContraCop > 0 && (
+                <span className="text-warning"> · {formatCurrency(numeros.enContraCop)} en contra, pasan al mes siguiente</span>
+              )}
+            </p>
+          )}
         </div>
       </div>
 

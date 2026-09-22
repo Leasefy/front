@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import {
   elTotalDeLaCorrida,
+  elTotalDelPropietario,
   entraEnLaCorrida,
   inmueblesDelPropietario,
   loQueViajaAlBack,
@@ -186,5 +187,36 @@ describe('los montos sin la cuenta del back son provisionales', () => {
 
     expect(total.exacto).toBe(false);
     expect(total.aGirarCop).toBe(900_000);
+  });
+});
+
+const NADA = { propietariosFuera: new Set<string>(), inmueblesFuera: new Set<string>() };
+
+describe('la tarjeta del propietario con deducciones', () => {
+  /*
+   * 🔴 QA 22-09: deducción de 2.000.000 sobre un neto de 1.288.000. La tarjeta
+   * decía «$-712.000» (el netToPropietario crudo) mientras el total de abajo
+   * decía «A girar $0». Se gira $0 y 712.000 pasan al mes siguiente.
+   */
+  it('lo que se gira es aGirarCop, no un neto negativo; y dice lo descontado y lo que pasa', () => {
+    const p: Propietario = {
+      ...propietario([renglon('inm-1', 'Casa 1', 1_288_000)]),
+      netToPropietario: -712_000,
+      conDeducciones: {
+        netoDelMesCop: 1_288_000,
+        deducciones: [],
+        deduccionesCop: 2_000_000,
+        saldoAnteriorCop: 0,
+        netoCop: -712_000,
+        aGirarCop: 0,
+        saldoEnContraCop: 712_000,
+        compensadoCop: 1_288_000,
+        renglones: [],
+      },
+    };
+    const n = elTotalDelPropietario({ p, ajustada: null, seleccion: NADA });
+    expect(n.netoCop).toBe(0);
+    expect(n.deduccionesCop).toBe(2_000_000);
+    expect(n.enContraCop).toBe(712_000);
   });
 });

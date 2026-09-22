@@ -130,7 +130,7 @@ export function GarantiaDeServiciosDelContrato({
     <section className="space-y-4 rounded-lg border border-border bg-card p-5" data-testid="garantia-de-servicios">
       <div>
         <h3 className="text-base font-semibold">Garantía de servicios públicos</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Plata del inquilino para las facturas de servicios que lleguen después de la entrega. Se exige{' '}
           {datos.momento === 'INICIO'
             ? 'antes de activar el contrato'
@@ -151,7 +151,7 @@ export function GarantiaDeServiciosDelContrato({
 
       {datos.pendiente && (
         <p
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-caption font-medium text-destructive"
           data-testid="garantia-pendiente"
         >
           {datos.pendiente}
@@ -159,7 +159,7 @@ export function GarantiaDeServiciosDelContrato({
       )}
 
       {datos.avisoDelTope && (
-        <p className="text-xs text-plan-status-yellow" data-testid="garantia-aviso-del-tope">
+        <p className="text-caption text-plan-status-yellow" data-testid="garantia-aviso-del-tope">
           {datos.avisoDelTope}
         </p>
       )}
@@ -242,7 +242,7 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         Estado: <strong data-testid="garantia-estado">{NOMBRE_DEL_ESTADO[c.estado]}</strong> · momento{' '}
         {g.momento === 'INICIO' ? 'al inicio' : 'a la entrega'}
       </p>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-caption sm:grid-cols-3">
         {filas.map(([k, v]) => (
           <div key={k}>
             <dt className="text-muted-foreground">{k}</dt>
@@ -257,20 +257,20 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         </div>
       </dl>
       {c.faltaPorRecaudarCop > 0 && (
-        <p className="text-xs text-plan-status-yellow">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
+        <p className="text-caption text-plan-status-yellow">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
       )}
       {c.diferenciaPorCobrarCop > 0 && (
-        <p className="text-xs text-destructive" data-testid="garantia-diferencia">
+        <p className="text-caption text-destructive" data-testid="garantia-diferencia">
           Las facturas pagadas pasaron la garantía: falta cobrarle {PESOS.format(c.diferenciaPorCobrarCop)} al inquilino.
         </p>
       )}
       {g.facturas && g.facturas.length > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Calculada con {g.facturas.length} factura{g.facturas.length === 1 ? '' : 's'} digitada
           {g.facturas.length === 1 ? '' : 's'}.
         </p>
       )}
-      {g.nota && <p className="text-xs text-muted-foreground">Nota: {g.nota}</p>}
+      {g.nota && <p className="text-caption text-muted-foreground">Nota: {g.nota}</p>}
       <Button size="sm" variant="ghost" onClick={() => onSoporte()}>
         Ver soporte ({g.soporteNombre})
       </Button>
@@ -345,7 +345,7 @@ function RegistrarGarantia({
         <div className="space-y-2">
           {facturas.map((f, i) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
-              <label className="text-xs">
+              <label className="text-caption">
                 Servicio
                 <Input
                   value={f.servicio}
@@ -355,7 +355,7 @@ function RegistrarGarantia({
                   data-testid={`factura-servicio-${i}`}
                 />
               </label>
-              <label className="text-xs">
+              <label className="text-caption">
                 Mes
                 <Input
                   type="month"
@@ -365,7 +365,7 @@ function RegistrarGarantia({
                   data-testid={`factura-periodo-${i}`}
                 />
               </label>
-              <label className="text-xs">
+              <label className="text-caption">
                 Valor
                 <Input
                   inputMode="numeric"
@@ -390,19 +390,19 @@ function RegistrarGarantia({
           >
             Agregar factura
           </Button>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Se suman las facturas del mismo mes y se promedian los{' '}
             <strong>últimos {mesesDelPromedio} meses</strong>. Digita más si quieres, que sólo entran esos.
           </p>
         </div>
       ) : (
-        <label className="block text-xs">
+        <label className="block text-caption">
           Promedio mensual de los servicios
           <Input inputMode="numeric" value={promedio} onChange={(e) => setPromedio(e.target.value)} className="mt-1 w-40" data-testid="garantia-promedio" />
         </label>
       )}
 
-      <p className="text-xs">
+      <p className="text-caption">
         Valor de la garantía: <strong data-testid="garantia-valor-calculado">{valor ? PESOS.format(valor) : '—'}</strong>
         {sugerido != null && (
           <span className="text-muted-foreground" data-testid="garantia-sugerido">
@@ -421,12 +421,12 @@ function RegistrarGarantia({
         )}
       </p>
       {pasaElTope && (
-        <p className="text-xs text-destructive" data-testid="garantia-sobre-el-tope">
+        <p className="text-caption text-destructive" data-testid="garantia-sobre-el-tope">
           Pasa el tope: no se puede registrar por ese valor.
         </p>
       )}
 
-      <label className="block text-xs">
+      <label className="block text-caption">
         Soporte (facturas o certificado)
         <Input
           type="file"
@@ -436,7 +436,7 @@ function RegistrarGarantia({
           data-testid="garantia-soporte"
         />
       </label>
-      <label className="block text-xs">
+      <label className="block text-caption">
         Nota (opcional)
         <Textarea value={nota} onChange={(e) => setNota(e.target.value)} rows={2} className="mt-1" />
       </label>
@@ -506,7 +506,7 @@ function NuevoMovimiento({
     <div className="space-y-2 border-t border-border pt-3 text-sm" data-testid="nuevo-movimiento-de-garantia">
       <p className="font-medium">Registrar un movimiento</p>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs">
+        <label className="text-caption">
           Tipo
           <select
             value={tipo}
@@ -521,34 +521,34 @@ function NuevoMovimiento({
             ))}
           </select>
         </label>
-        <label className="text-xs">
+        <label className="text-caption">
           Valor
           <Input inputMode="numeric" value={valor} onChange={(e) => setValor(e.target.value)} className="mt-1 w-32" data-testid="movimiento-valor" />
         </label>
-        <label className="text-xs">
+        <label className="text-caption">
           Fecha
           <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1" />
         </label>
-        <label className="text-xs">
+        <label className="text-caption">
           Medio
           <Input value={medio} onChange={(e) => setMedio(e.target.value)} placeholder="transferencia" className="mt-1 w-32" />
         </label>
       </div>
       {tope != null && (
-        <p className="text-xs text-muted-foreground" data-testid="movimiento-tope">
+        <p className="text-caption text-muted-foreground" data-testid="movimiento-tope">
           Máximo {PESOS.format(tope)}.
         </p>
       )}
       {tipo === 'COBRO_DE_DIFERENCIA' && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Se carga como concepto a la próxima cuota sin pagar del inquilino.
         </p>
       )}
-      <label className="block text-xs">
+      <label className="block text-caption">
         Descripción
         <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="mt-1" data-testid="movimiento-descripcion" />
       </label>
-      <label className="block text-xs">
+      <label className="block text-caption">
         {pideSoporte ? 'Factura pagada (obligatoria)' : 'Soporte (opcional)'}
         <Input type="file" accept="application/pdf,image/*" onChange={(e) => setSoporte(e.target.files?.[0] ?? null)} className="mt-1" />
       </label>
@@ -597,7 +597,7 @@ function Movimientos({
   return (
     <div className="border-t border-border pt-3" data-testid="movimientos-de-garantia">
       <p className="mb-2 text-sm font-medium">Movimientos</p>
-      <ul className="space-y-2 text-xs">
+      <ul className="space-y-2 text-caption">
         {datos.movimientos.map((m) => (
           <li key={m.id} className={m.anulado ? 'text-muted-foreground line-through' : ''} data-testid={`movimiento-${m.id}`}>
             <span className="font-medium">{m.fecha}</span> · {NOMBRE_DEL_TIPO[m.tipo]} · {PESOS.format(m.valorCop)} ·{' '}

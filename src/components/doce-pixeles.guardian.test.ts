@@ -71,13 +71,15 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 }
 
 /**
- * Medido el 22-09-2026, después de bajar 165 en los módulos ya revisados.
+ * Medido el 22-09-2026, después de bajar 470 en los módulos ya revisados
+ * (contabilidad, finanzas, nómina, migración, dispersión, cobros, mensajes y
+ * contratos).
  *
  * Para bajarlo hay que MIRAR la pantalla: `text-xs` en un rótulo en mayúsculas
  * se queda; en un `<p>`, en una celda o en un `role="alert"` pasa a
- * `text-caption`. No sirve un reemplazo a ciegas sobre los 3.090 restantes.
+ * `text-caption`. No sirve un reemplazo a ciegas sobre los 2783 restantes.
  */
-const CUANTOS_HABIA = 3090;
+const CUANTOS_HABIA = 2785;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

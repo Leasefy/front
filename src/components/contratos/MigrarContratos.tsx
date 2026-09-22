@@ -1181,12 +1181,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               </div>
             );
           })}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Si vuelves a subir el mismo archivo, las filas se duplican.
           </p>
           {errorTarjeta ? (
             <p
-              className="text-xs text-destructive"
+              className="text-caption text-destructive"
               data-testid="error-descartar-lote-tarjeta"
             >
               {errorTarjeta}
@@ -1272,7 +1272,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                   ? "Suelta el archivo acá"
                   : "Arrastra el archivo de contratos o haz clic para elegirlo"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Excel o CSV exportado de tu sistema actual
               </p>
             </div>
@@ -1294,14 +1294,14 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               <h2 className="text-sm font-medium text-foreground">
                 Así entendimos tus columnas
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {filas.length} contratos en el archivo. Revisa el mapeo antes de
                 seguir, y corrige a mano lo que haga falta: «arrendador» es el
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
               </p>
               {filaDeEncabezado > 0 ? (
-                <p className="text-xs text-fg-muted" data-testid="fila-de-encabezado">
+                <p className="text-caption text-fg-muted" data-testid="fila-de-encabezado">
                   Los encabezados los leímos de la fila {filaDeEncabezado + 1}:
                   arriba había títulos, no datos.
                 </p>
@@ -1313,7 +1313,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               size="sm"
               hideArrow
               onClick={restablecerMapeo}
-              className="shrink-0 text-xs"
+              className="shrink-0 text-caption"
             >
               Restablecer
             </Button>
@@ -1411,7 +1411,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       <div className="flex flex-wrap items-center gap-2">
                         <span>
                           {m.isManual
@@ -1479,7 +1479,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 Qué trae el archivo, de sus {lectura.total}{" "}
                 {lectura.total === 1 ? "fila" : "filas"}
               </h3>
-              <p className="mt-0.5 text-xs text-fg-muted">
+              <p className="mt-0.5 text-caption text-fg-muted">
                 Esto es lo que se pudo LEER. A qué inmueble y a qué ficha queda
                 asociada cada fila lo decide el servidor contra tu portafolio, y
                 lo dice fila por fila en el paso siguiente.
@@ -1493,7 +1493,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                     <span className="text-fg-muted"> de {lectura.total} · </span>
                     <span className="text-fg">{r.que}</span>
                     {r.porque ? (
-                      <span className="block text-xs text-fg-muted">
+                      <span className="block text-caption text-fg-muted">
                         {r.porque}
                       </span>
                     ) : null}
@@ -1518,7 +1518,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                     ? "primera fila"
                     : `primeras ${vistaPrevia[0].valores.length} filas`}
                 </h3>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Todavía no se crea nada. Si algo acá está en la fila
                   equivocada, corrige el mapeo de arriba.
                 </p>
@@ -1948,7 +1948,7 @@ function ListaDeTrabajo({
             <p className="text-sm font-medium text-foreground">
               Asociando cada contrato con su propietario…
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-caption text-muted-foreground">
               Tomamos el propietario que trae cada fila del archivo y le
               consignamos su inmueble. Sin consignación no hay cobros, así que
               esto es lo que hace que la cartera exista.
@@ -1961,7 +1961,7 @@ function ListaDeTrabajo({
                 }}
               />
             </div>
-            <p className="mt-1.5 font-mono text-xs tabular-nums text-fg-subtle">
+            <p className="mt-1.5 font-mono text-caption tabular-nums text-fg-subtle">
               {asociando.hechas} de {asociando.total}
               {asociando.fallidas > 0
                 ? ` · ${asociando.fallidas} quedaron para revisar`
@@ -2231,7 +2231,7 @@ function ListaDeTrabajo({
               variant="link"
               size="sm"
               hideArrow
-              className="text-xs"
+              className="text-caption"
               onClick={() => setVerLaListaIgual(true)}
               data-testid="ver-lista-igual"
             >
@@ -2296,14 +2296,14 @@ function ListaDeTrabajo({
                 disabled={seleccionandoTodo}
                 isLoading={seleccionandoTodo}
                 onClick={() => void seleccionarTodoElLote()}
-                className="text-xs"
+                className="text-caption"
               >
                 Seleccionar las {total} del lote
               </Button>
             ) : null}
           </div>
           {/* El total viene del back: contar lo recibido diría «hay 25». */}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {total} {total === 1 ? "fila" : "filas"} en el archivo
           </p>
         </div>
@@ -2311,7 +2311,7 @@ function ListaDeTrabajo({
 
       {notaSeleccion ? (
         <p
-          className="text-xs text-muted-foreground"
+          className="text-caption text-muted-foreground"
           data-testid="nota-seleccion"
         >
           {notaSeleccion}
@@ -2319,7 +2319,7 @@ function ListaDeTrabajo({
       ) : null}
 
       {falloPropietarios ? (
-        <p className="text-xs text-warning" data-testid="fallo-propietarios">
+        <p className="text-caption text-warning" data-testid="fallo-propietarios">
           No pudimos traer la lista de propietarios, así que los selectores
           quedaron apagados. Recarga la página — lo que ya está consignado no se
           perdió.
@@ -2418,7 +2418,7 @@ function ListaDeTrabajo({
               <span className="text-sm text-foreground">
                 Revisé estos contratos: cada uno está con su propietario y su
                 porcentaje.
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-caption text-muted-foreground">
                   Activar crea los contratos y las consignaciones de verdad.
                   Después se corrige desde cada contrato, no desde acá.
                 </span>
@@ -2436,7 +2436,7 @@ function ListaDeTrabajo({
                   />
                   <span className="text-sm text-foreground/80">
                     Invitar a los inquilinos al portal
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block text-caption text-muted-foreground">
                       Se manda por tandas, no todo de golpe.
                     </span>
                   </span>
@@ -2453,7 +2453,7 @@ function ListaDeTrabajo({
                  */}
                 {!invitar ? (
                   <p
-                    className="text-xs text-muted-foreground"
+                    className="text-caption text-muted-foreground"
                     data-testid="aviso-sin-invitar"
                   >
                     No se crea ninguna cuenta: el correo del inquilino queda
@@ -2471,7 +2471,7 @@ function ListaDeTrabajo({
                  */}
                 {resumen.activables > resumen.listos ? (
                   <p
-                    className="text-xs text-muted-foreground"
+                    className="text-caption text-muted-foreground"
                     data-testid="aviso-incompletos"
                   >
                     {resumen.activables - resumen.listos} de estos contratos
@@ -2602,7 +2602,7 @@ function AsociacionDelLoteResumen({
       <h3 className="text-sm font-medium text-fg">
         A qué quedó pegada cada fila
       </h3>
-      <p className="mt-0.5 text-xs text-fg-muted">
+      <p className="mt-0.5 text-caption text-fg-muted">
         {conInmueble} de {total} quedaron con inmueble. El camino importa: por
         código es exacto; por dirección es un parecido.
       </p>
@@ -2614,7 +2614,7 @@ function AsociacionDelLoteResumen({
             <span className="text-fg-muted"> de {total} · </span>
             <span className="text-fg">{r.que}</span>
             {r.cuantas > 0 ? (
-              <span className="block text-xs text-fg-muted">{r.porque}</span>
+              <span className="block text-caption text-fg-muted">{r.porque}</span>
             ) : null}
           </li>
         ))}
@@ -2647,7 +2647,7 @@ function AsociacionDelLoteResumen({
             <span className="text-fg">
               vienen terminados del sistema anterior
             </span>
-            <span className="block text-xs text-fg-muted">
+            <span className="block text-caption text-fg-muted">
               Entran como historial: no ocupan el inmueble, no generan cobros y
               sirven para colgarles los comprobantes contables viejos.
             </span>
@@ -2669,7 +2669,7 @@ function Dato({
 }) {
   return (
     <div className="rounded-lg border border-border p-3">
-      <p className="text-xs text-muted-foreground">{etiqueta}</p>
+      <p className="text-caption text-muted-foreground">{etiqueta}</p>
       <p
         className={`text-xl font-semibold tabular-nums ${
           tono === "ok" && valor > 0

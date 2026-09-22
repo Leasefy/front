@@ -149,7 +149,7 @@ export function CesionDelInmueble({
               onChange={(e) => setDesde(e.target.value)}
               data-testid="cesion-desde"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Tiene que ser posterior al último período ya cobrado.
             </p>
           </div>
@@ -157,7 +157,7 @@ export function CesionDelInmueble({
           <div className="space-y-1.5">
             <Label>Nuevo propietario</Label>
             {propietarioActual && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Hoy figura {propietarioActual}.
               </p>
             )}
@@ -168,7 +168,7 @@ export function CesionDelInmueble({
               disabled={guardando}
               testId="cesion-propietario"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Si el comprador todavía no tiene ficha, créala en Propietarios
               antes de registrar la cesión.
             </p>

@@ -377,7 +377,7 @@ function FilaPersona({
             <span className="truncate text-sm font-medium text-fg">{nombre}</span>
             <InsigniaDePerfil perfil={perfilDe(persona.role)} conIcono={false} />
           </span>
-          <span className="block truncate text-xs text-fg-muted">{persona.email}</span>
+          <span className="block truncate text-caption text-fg-muted">{persona.email}</span>
         </span>
         <IconoDeAccion abriendo={abriendo} />
       </button>

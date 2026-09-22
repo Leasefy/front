@@ -718,14 +718,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             >
                               {conversation.name}
                             </p>
-                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            <span className="text-caption text-muted-foreground flex-shrink-0 ml-2">
                               {conversation.lastMessageTime}
                             </span>
                           </div>
                           <div className="mb-1 flex min-w-0 items-center gap-1.5">
                             <InsigniaDePerfil perfil={conversation.perfil} conIcono={false} />
                             {conversation.property && (
-                              <span className="truncate text-xs text-muted-foreground">
+                              <span className="truncate text-caption text-muted-foreground">
                                 {conversation.property}
                               </span>
                             )}
@@ -743,7 +743,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         </div>
 
                         {conversation.unreadCount > 0 && (
-                          <span className="min-w-5 h-5 px-1 bg-primary text-primary-foreground tabular-nums text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="min-w-5 h-5 px-1 bg-primary text-primary-foreground tabular-nums text-caption font-semibold rounded-full flex items-center justify-center flex-shrink-0">
                             {conversation.unreadCount}
                           </span>
                         )}
@@ -812,7 +812,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         <div className="flex min-w-0 items-center gap-1.5">
                           <InsigniaDePerfil perfil={selectedConversation.perfil} />
                           {selectedConversation.property && (
-                            <span className="truncate text-xs text-muted-foreground">
+                            <span className="truncate text-caption text-muted-foreground">
                               {selectedConversation.property}
                             </span>
                           )}
@@ -916,7 +916,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 ? `Sobre tu arriendo — ${selectedConversation.property}`
                                 : `About your rental — ${selectedConversation.property}`}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-caption text-muted-foreground mt-0.5">
                               {locale === 'es'
                                 ? 'Estamos conectando cada chat a su arriendo; el hilo por arriendo llega próximamente.'
                                 : "We're tying each chat to its rental; per-rental threads are coming soon."}
@@ -968,7 +968,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               <div
                                 data-testid="hilo-sin-actualizar"
                                 role="status"
-                                className="flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-xs text-fg-muted"
+                                className="flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-caption text-fg-muted"
                               >
                                 <Warning className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                                 <span className="flex-1">
@@ -1009,7 +1009,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                     {!message.isMine &&
                                       messages[index - 1]?.senderName !== message.senderName && (
                                         <div className="mb-1.5 flex items-center gap-1.5">
-                                          <span className="text-xs font-semibold text-foreground">
+                                          <span className="text-caption font-semibold text-foreground">
                                             {message.senderName}
                                           </span>
                                           <InsigniaDePerfil perfil={message.perfil} conIcono={false} />
@@ -1024,7 +1024,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                           : 'text-muted-foreground',
                                       )}
                                     >
-                                      <span className="text-xs">{formatMessageTime(message.createdAt)}</span>
+                                      <span className="text-caption">{formatMessageTime(message.createdAt)}</span>
                                       {message.isMine && (message.readAt ? (
                                         <Checks className="w-3.5 h-3.5 text-primary" />
                                       ) : (
@@ -1132,7 +1132,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           <div
                             data-testid="mensaje-no-enviado"
                             role="alert"
-                            className="mt-2 flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+                            className="mt-2 flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
                           >
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span className="flex-1">
@@ -1161,7 +1161,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         {huecosVisibles.length > 0 && (
                           <p
                             data-testid="plantilla-con-huecos"
-                            className="mt-2 flex items-start gap-1.5 text-xs text-warning"
+                            className="mt-2 flex items-start gap-1.5 text-caption text-warning"
                           >
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span>
@@ -1188,7 +1188,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           clock is v7-06. landlord/agency see nothing new.
                         */}
                         {isTenant && (
-                          <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                          <p className="mt-2 flex items-start gap-1.5 text-caption text-muted-foreground">
                             <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
                             <span>
                               {locale === 'es'
@@ -1244,7 +1244,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                     <House className="w-4 h-4 text-muted-foreground" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                    <p className="text-caption text-muted-foreground mb-0.5">
                                       {locale === 'es' ? 'Propiedad' : 'Property'}
                                     </p>
                                     <p className="text-sm font-medium text-foreground">
@@ -1260,7 +1260,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                     <Envelope className="w-4 h-4 text-muted-foreground" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                    <p className="text-caption text-muted-foreground mb-0.5">
                                       {locale === 'es' ? 'Correo' : 'Email'}
                                     </p>
                                     <p className="text-sm font-medium text-foreground">

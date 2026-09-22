@@ -221,7 +221,7 @@ export function CargarExtracto({ onCargado }: Props) {
               pago que hizo una vez. Importa el archivo en Tesorería → Recaudo del banco.
             </Banner>
           ) : (
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Decir la cuenta es lo que le permite al sistema impedir que el mismo pago entre por
               el extracto Y por el archivo de recaudo del banco.
             </p>
@@ -272,7 +272,7 @@ export function CargarExtracto({ onCargado }: Props) {
                     </option>
                   ))}
                 </select>
-                <span className="block text-xs text-fg-muted">{c.ayuda}</span>
+                <span className="block text-caption text-fg-muted">{c.ayuda}</span>
               </label>
             ))}
           </div>
@@ -306,7 +306,7 @@ export function CargarExtracto({ onCargado }: Props) {
                 </Table>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {armadas.filas.length} {armadas.filas.length === 1 ? 'línea lista' : 'líneas listas'}
                   {armadas.descartadas.length > 0 && (
                     <>

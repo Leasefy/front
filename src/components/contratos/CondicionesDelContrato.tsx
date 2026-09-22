@@ -155,7 +155,7 @@ function GastosDeCobranza({
   return (
     <fieldset className="space-y-1 text-sm" disabled={!editable || !g.disponible} data-testid="gastos-de-cobranza">
       <legend className="font-medium">¿Pacta gastos de cobranza?</legend>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Si no los pacta, la regla de gastos de cobranza no se le cobra (el interés de mora sí). Tu inmobiliaria, por
         defecto, {deLaAgencia}.
       </p>
@@ -185,7 +185,7 @@ function GastosDeCobranza({
         ))}
       </RadioGroup>
       {g.resuelto === false && (
-        <p className="text-xs text-plan-status-yellow" data-testid="gastos-no-pactados">
+        <p className="text-caption text-plan-status-yellow" data-testid="gastos-no-pactados">
           Este contrato no causa gastos de cobranza.
         </p>
       )}
@@ -226,7 +226,7 @@ function SeguroOpcional({
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="seguro-opcional">
       <p className="font-medium">Seguro opcional del inquilino</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Lo paga el inquilino, aparte del canon, sólo si lo acepta de forma expresa. No es la póliza del contrato.
       </p>
       {s.aceptado ? (
@@ -236,11 +236,11 @@ function SeguroOpcional({
             {s.aceptado.pct !== null ? ` (${s.aceptado.pct} % del canon)` : ''}.
           </p>
           {s.aceptado.pct !== null && (
-            <p className="text-xs text-muted-foreground" data-testid="seguro-sigue-al-canon">
+            <p className="text-caption text-muted-foreground" data-testid="seguro-sigue-al-canon">
               Es un porcentaje del canon: cuando el canon suba en el aniversario, la prima sube con él.
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Aceptado por {s.aceptado.aceptadoPor} el {s.aceptado.aceptadoEl}.
           </p>
           {editable && s.disponible && (
@@ -251,7 +251,7 @@ function SeguroOpcional({
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs">
+          <p className="text-caption">
             {s.oferta
               ? `Plan ofrecido: ${s.oferta.nombre}, ${PESOS.format(s.oferta.primaCop)} al mes${
                   pctDelPlan !== null ? ` (${pctDelPlan} % del canon de hoy)` : ''
@@ -259,7 +259,7 @@ function SeguroOpcional({
               : 'El contrato no ofrece un plan de seguro.'}
           </p>
           {s.oferta && pctDelPlan === null && s.porcentajeDisponible && (
-            <p className="text-xs text-muted-foreground" data-testid="seguro-sin-porcentaje">
+            <p className="text-caption text-muted-foreground" data-testid="seguro-sin-porcentaje">
               Tu inmobiliaria no le puso un porcentaje del canon a este plan: se cobraría la prima fija. El porcentaje
               se configura en Configuración → Ciclo de vida del contrato.
             </p>
@@ -276,21 +276,21 @@ function SeguroOpcional({
               </label>
               {casilla && (
                 <div className="flex flex-wrap items-end gap-2">
-                  <label className="text-xs">
+                  <label className="text-caption">
                     Quién aceptó
                     <Input value={quien} onChange={(e) => setQuien(e.target.value)} className="mt-1 w-56" data-testid="seguro-quien" />
                   </label>
-                  <label className="text-xs">
+                  <label className="text-caption">
                     Fecha
                     <Input type="date" value={cuando} onChange={(e) => setCuando(e.target.value)} className="mt-1" />
                   </label>
                   {pctDelPlan === null ? (
-                    <label className="text-xs">
+                    <label className="text-caption">
                       Prima mensual
                       <Input inputMode="numeric" value={prima} onChange={(e) => setPrima(e.target.value)} className="mt-1 w-32" />
                     </label>
                   ) : (
-                    <p className="text-xs" data-testid="seguro-prima-por-porcentaje">
+                    <p className="text-caption" data-testid="seguro-prima-por-porcentaje">
                       Prima: <strong>{PESOS.format(s.oferta?.primaCop ?? 0)}</strong> al mes ({pctDelPlan} % del
                       canon). La calcula el sistema y sigue al canon.
                     </p>
@@ -359,7 +359,7 @@ function Poliza({
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="poliza-del-contrato">
       <p className="font-medium">Póliza o afianzadora del contrato</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Su prima la paga la inmobiliaria dentro de su porcentaje de administración: no se le cobra al inquilino.
       </p>
       {/* 🔴 21-09 · Nico: «este form está horrible». Lo estaba, y por tres
@@ -473,7 +473,7 @@ function Administracion({
     <fieldset className="space-y-2 border-t border-border pt-4 text-sm" disabled={!habil} data-testid="administracion-de-la-copropiedad">
       <legend className="font-medium">Administración de la copropiedad</legend>
       {a.delMandatoCop != null && a.delMandatoCop > 0 && (
-        <p className="text-xs text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
+        <p className="text-caption text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
       )}
 
       {/* 🔴 20-09 · A QUÉ copropiedad. Este bloque decía «la administración de
@@ -487,7 +487,7 @@ function Administracion({
         editable={editable}
       />
       {a.porRespaldo && (
-        <p className="text-xs text-plan-status-yellow" data-testid="administracion-por-respaldo">
+        <p className="text-caption text-plan-status-yellow" data-testid="administracion-por-respaldo">
           Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
           <strong>«la paga la inmobiliaria»</strong>: el inquilino no la paga aparte del canon y se le descuenta al
           propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
@@ -515,7 +515,7 @@ function Administracion({
         ))}
       </RadioGroup>
       {pagaLaInmobiliaria && (
-        <label className="block text-xs">
+        <label className="block text-caption">
           Valor mensual de la administración
           <Input inputMode="numeric" value={valor} onChange={(e) => setValor(e.target.value)} className="mt-1 w-40" data-testid="valor-administracion" />
         </label>
@@ -598,7 +598,7 @@ function ACualCopropiedad({
 
   if (!sePuede) {
     return (
-      <p className="text-xs text-muted-foreground" data-testid="copropiedad-sin-migracion">
+      <p className="text-caption text-muted-foreground" data-testid="copropiedad-sin-migracion">
         Todavía no se puede decir a qué copropiedad pertenece este inmueble: esta función todavía no está
         disponible y nuestro equipo la está habilitando. Mientras tanto la cuota se asienta sin
         tercero, como hoy.
@@ -626,12 +626,12 @@ function ACualCopropiedad({
 
   return (
     <div className="space-y-1" data-testid="a-cual-copropiedad">
-      <label className="block text-xs" htmlFor="copropiedad-del-mandato">
+      <label className="block text-caption" htmlFor="copropiedad-del-mandato">
         ¿A qué copropiedad pertenece el inmueble?
       </label>
       <select
         id="copropiedad-del-mandato"
-        className="h-9 w-full max-w-sm rounded-md border border-border bg-surface px-2 text-xs text-fg"
+        className="h-9 w-full max-w-sm rounded-md border border-border bg-surface px-2 text-caption text-fg"
         value={elegida}
         disabled={!editable || guardando || !consignacionId}
         onChange={(e) => void guardar(e.target.value)}
@@ -645,7 +645,7 @@ function ACualCopropiedad({
         ))}
       </select>
       {elegida === '' ? (
-        <p className="text-xs text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
+        <p className="text-caption text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
           Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es
           lo que traba la exógena. Las copropiedades se registran en Contabilidad → Copropiedades.
         </p>

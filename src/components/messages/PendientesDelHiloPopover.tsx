@@ -183,7 +183,7 @@ export function PendientesDelHiloPopover({
             <p className="text-sm font-semibold text-fg">
               {es ? 'Pendientes' : 'Pending items'}
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">
+            <p className="mt-0.5 text-caption text-fg-muted">
               {es
                 ? 'Se arma el mensaje y queda en el campo para que lo revises.'
                 : 'The message is drafted into the field for you to review.'}
@@ -238,11 +238,11 @@ export function PendientesDelHiloPopover({
               {/* Los totales van primero y sin cortar: la lista de abajo se
                   recorta, y sin la suma se lee que debe menos. */}
               {sinPlata ? (
-                <p className="text-xs text-fg-muted" data-testid="pendientes-sin-plata">
+                <p className="text-caption text-fg-muted" data-testid="pendientes-sin-plata">
                   {es ? 'No debe nada ni se le debe nada.' : 'They owe nothing and we owe them nothing.'}
                 </p>
               ) : (
-                <div className="space-y-0.5 text-xs text-fg-muted" data-testid="pendientes-totales">
+                <div className="space-y-0.5 text-caption text-fg-muted" data-testid="pendientes-totales">
                   {estado.datos.totales.debeCop > 0 && (
                     <p>
                       {es
@@ -334,7 +334,7 @@ export function PendientesDelHiloPopover({
 function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-xs font-medium text-fg-muted">{titulo}</p>
+      <p className="mb-1 text-caption font-medium text-fg-muted">{titulo}</p>
       <ul className="space-y-0.5">{children}</ul>
     </div>
   );
@@ -369,7 +369,7 @@ function Fila({
           <span className="block truncate text-sm font-medium text-fg">{titulo}</span>
           <span
             className={cn(
-              'mt-0.5 block truncate text-xs',
+              'mt-0.5 block truncate text-caption',
               acentuado ? 'text-warning' : 'text-fg-muted',
             )}
           >

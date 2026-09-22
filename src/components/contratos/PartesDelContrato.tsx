@@ -216,7 +216,7 @@ function FilaDeInquilino({
         {/* 🔴 Lo que faltaba: el documento. Es lo que identifica a la persona
             —el correo sólo le crea la cuenta—, así que va debajo del nombre
             igual que en la fila del propietario. */}
-        <p className="text-xs text-muted-foreground" data-testid="documento-del-inquilino">
+        <p className="text-caption text-muted-foreground" data-testid="documento-del-inquilino">
           {inquilino.documento || 'Sin documento'}
         </p>
       </div>
@@ -387,7 +387,7 @@ function Campo({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs text-muted-foreground" htmlFor={testId}>
+      <label className="text-caption text-muted-foreground" htmlFor={testId}>
         {etiqueta}
       </label>
       <Input id={testId} data-testid={testId} value={valor} onChange={(e) => onChange(e.target.value)} />
@@ -452,7 +452,7 @@ function Propietarios({
         /* Nunca se esconde: con participaciones torcidas el back NO reparte el
            canon, y una lista sin el aviso se lee como si estuviera bien. */
         <p
-          className="flex items-start gap-1.5 text-xs text-warning"
+          className="flex items-start gap-1.5 text-caption text-warning"
           data-testid="participaciones-no-suman"
         >
           <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
@@ -489,7 +489,7 @@ function Propietarios({
               >
                 {p.name}
               </Link>
-              <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
+              <span className="block text-caption text-muted-foreground">{p.documentNumber}</span>
             </div>
             {varios ? (
               /* El % y la plata de cada uno, y el chip en el mayoritario — el
@@ -502,7 +502,7 @@ function Propietarios({
                   </span>
                   {p.canonCop !== null ? (
                     <span
-                      className="block text-xs tabular-nums text-muted-foreground"
+                      className="block text-caption tabular-nums text-muted-foreground"
                       data-testid="canon-del-propietario"
                     >
                       {formatCurrency(p.canonCop)} del canon
@@ -632,14 +632,14 @@ function SinPropietarios({ contract }: { contract: Contract }) {
           >
             {p.name}
           </Link>
-          <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
+          <span className="block text-caption text-muted-foreground">{p.documentNumber}</span>
         </div>
       </div>
     )
   }
   if (contract.contractOrigin === 'MIGRATED') {
     return (
-      <p className="text-xs text-muted-foreground" data-testid="propietario-sin-consignacion">
+      <p className="text-caption text-muted-foreground" data-testid="propietario-sin-consignacion">
         {contract.propertyId
           ? 'El inmueble no está consignado: registra al propietario en Inmuebles.'
           : 'Se vincula con el inmueble.'}

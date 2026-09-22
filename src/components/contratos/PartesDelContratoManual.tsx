@@ -157,7 +157,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
       </div>
 
       <div className="space-y-1.5">
-        <label className="flex items-center gap-2 text-xs font-medium text-fg">
+        <label className="flex items-center gap-2 text-caption font-medium text-fg">
           <House className="h-4 w-4 text-fg-muted" aria-hidden="true" />
           Inmueble consignado
         </label>
@@ -177,13 +177,13 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             data-testid="inmueble-combobox"
           />
         )}
-        {errorInmuebles && <p className="text-xs text-danger">{errorInmuebles}</p>}
-        {errores.propertyId && <p className="text-xs text-danger">{errores.propertyId}</p>}
+        {errorInmuebles && <p className="text-caption text-danger">{errorInmuebles}</p>}
+        {errores.propertyId && <p className="text-caption text-danger">{errores.propertyId}</p>}
       </div>
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-fg">
+          <label className="flex items-center gap-2 text-caption font-medium text-fg">
             <User className="h-4 w-4 text-fg-muted" aria-hidden="true" />
             Inquilino
           </label>
@@ -212,11 +212,11 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
               data-testid="inquilino-combobox"
             />
             {!cargandoInquilinos && inquilinos.length === 0 && (
-              <p className="text-xs text-fg-muted" data-testid="sin-inquilinos">
+              <p className="text-caption text-fg-muted" data-testid="sin-inquilinos">
                 Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
               </p>
             )}
-            {errores.tenantId && <p className="text-xs text-danger">{errores.tenantId}</p>}
+            {errores.tenantId && <p className="text-caption text-danger">{errores.tenantId}</p>}
           </div>
         ) : (
           <div className="space-y-3" data-testid="inquilino-nuevo">
@@ -257,7 +257,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                 />
               </Campo>
             </div>
-            <p className="flex items-start gap-2 rounded-md bg-surface-muted p-3 text-xs text-fg-muted">
+            <p className="flex items-start gap-2 rounded-md bg-surface-muted p-3 text-caption text-fg-muted">
               <UserPlus className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               Si el documento ya es de un inquilino de la inmobiliaria se usa su cuenta. Si no, le llega
               al correo una invitación para crear la suya y firmar el contrato.
@@ -282,12 +282,12 @@ function Campo({
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-xs font-medium text-fg">{label}</label>
+      <label className="block text-caption font-medium text-fg">{label}</label>
       {children}
       {error ? (
-        <p className="text-xs text-danger">{error}</p>
+        <p className="text-caption text-danger">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-fg-muted">{hint}</p>
+        <p className="text-caption text-fg-muted">{hint}</p>
       ) : null}
     </div>
   )

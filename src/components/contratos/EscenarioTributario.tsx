@@ -129,10 +129,10 @@ function Contenido({
                   {porcentaje(i.porcentaje)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {SOBRE[i.base]} · {A_CARGO[i.aCargoDe]}
               </p>
-              <p className="text-xs text-muted-foreground">{i.explicacion}</p>
+              <p className="text-caption text-muted-foreground">{i.explicacion}</p>
             </li>
           ))}
         </ul>
@@ -161,7 +161,7 @@ function Contenido({
               ['Retención sobre la comisión', escenario.ejes.retencionSobreLaComision],
             ] as const
           ).map(([titulo, eje]) => (
-            <li key={titulo} className="text-xs text-muted-foreground">
+            <li key={titulo} className="text-caption text-muted-foreground">
               <span className="font-medium text-foreground">{titulo}:</span>{' '}
               {eje.valor === null ? 'falta el dato' : eje.valor ? 'sí' : 'no'}
               {eje.origen === 'DEDUCIDO' ? ' (deducido)' : ''} — {eje.porque}
@@ -233,13 +233,13 @@ function Contenido({
           el nombre no la explica. Callarlo haría que la tarjeta pareciera
           completa cuando no lo es. */}
       {escenario.fueraDelCatalogo.map((f) => (
-        <p key={f} className="text-xs text-muted-foreground">
+        <p key={f} className="text-caption text-muted-foreground">
           {f}
         </p>
       ))}
 
       {escenario.nombreEnNuby && (
-        <p className="text-xs text-muted-foreground" data-testid="escenario-nuby">
+        <p className="text-caption text-muted-foreground" data-testid="escenario-nuby">
           En el sistema anterior:{' '}
           <span className="font-mono">{escenario.nombreEnNuby}</span>
         </p>

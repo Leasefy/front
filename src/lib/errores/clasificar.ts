@@ -241,6 +241,15 @@ const NOMBRE_DEL_MODULO: Record<string, string> = {
   agentes: 'Equipo',
   analytics: 'Reportes',
   operaciones: 'Operación',
+  // QA 22-09 (P2): el cartel decía «No tienes acceso a configuracion», la llave
+  // interna. Son los módulos que el back nombra y faltaban acá.
+  configuracion: 'Configuración',
+  reportes: 'Reportes',
+  clientes: 'Clientes',
+  dashboard: 'Inicio',
+  subscription: 'Suscripción',
+  avaluos: 'Avalúos',
+  nomina: 'Nómina',
 }
 
 /**

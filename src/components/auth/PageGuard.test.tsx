@@ -5,7 +5,8 @@
  *
  * Strategy: mock usePermissions (PermissionsContext re-export) + the
  * next/navigation router; assert children mount vs the blocking spinner
- * and that denial triggers router.replace('/panel/inmobiliaria').
+ * and that denial paints the «No tienes acceso» card instead of redirecting
+ * (QA 22-09: the silent redirect left people on the panel home with no reason).
  */
 
 import * as React from 'react'
@@ -79,9 +80,23 @@ function innerMounted(): boolean {
   return container.querySelector('[data-testid="inner"]') !== null
 }
 
+/** La pantalla negada ahora se DICE (QA 22-09), no se redirige en silencio. */
+function negada(): boolean {
+  return container.querySelector('[data-testid="pantalla-negada"]') !== null
+}
+
 const ADMIN_CONTADOR = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]
 
 describe('PageGuard roles gate', () => {
+  it('🔴 negada por módulo: dice cuál sección, con salida al inicio, y NO redirige', () => {
+    permissionsMock.agencyRole = AGENCY_ROLES.AGENTE
+    render({ module: 'contabilidad' })
+    expect(innerMounted()).toBe(false)
+    expect(container.textContent).toContain('No tienes acceso a Contabilidad')
+    expect(container.querySelector('a[href="/panel/inmobiliaria"]')).not.toBeNull()
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
   it('allows a user whose agencyRole is in roles (CONTADOR)', () => {
     permissionsMock.agencyRole = AGENCY_ROLES.CONTADOR
     render({ roles: ADMIN_CONTADOR })
@@ -99,14 +114,16 @@ describe('PageGuard roles gate', () => {
     permissionsMock.agencyRole = AGENCY_ROLES.AGENTE
     render({ roles: ADMIN_CONTADOR })
     expect(innerMounted()).toBe(false)
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(negada()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 
   it('denies a user with no agencyRole at all', () => {
     permissionsMock.agencyRole = null
     render({ roles: ADMIN_CONTADOR })
     expect(innerMounted()).toBe(false)
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(negada()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 
   it('isAdmin bypasses the roles gate (service-role / super-admin)', () => {
@@ -149,7 +166,8 @@ describe('PageGuard pre-existing behaviors (regression)', () => {
   it('module-only gate still denies when canAccess is false', () => {
     render({ module: 'dispersiones' })
     expect(innerMounted()).toBe(false)
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(negada()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 
   it('module-only gate still allows when canAccess is true', () => {
@@ -211,6 +229,7 @@ describe('PageGuard sin señal', () => {
     permissionsMock.canAccess = () => false
     render({ module: 'portafolio' })
     expect(innerMounted()).toBe(false)
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(negada()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 })

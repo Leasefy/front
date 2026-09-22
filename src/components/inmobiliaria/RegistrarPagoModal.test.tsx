@@ -73,6 +73,12 @@ vi.mock('@/lib/api/recibos-de-caja.service', () => ({
   },
 }));
 
+/** Los tipos que la inmobiliaria apagó (`GET /inmobiliaria/finanzas/medios`). */
+let apagados: string[] = [];
+vi.mock('@/lib/api/finanzas.service', () => ({
+  finanzasApi: { medios: () => Promise.resolve({ medios: [], apagados, esElPreset: false }) },
+}));
+
 vi.mock('@/lib/api/inquilinos.service', () => ({
   inquilinosApi: { listar: () => Promise.resolve([]) },
 }));
@@ -671,10 +677,11 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'transferencia' });
   });
 
-  it('con medios configurados ofrece sólo los activos y manda el NOMBRE del medio', async () => {
+  it('🔴 con medios configurados ofrece los activos y manda el TIPO; el nombre va a las notas (QA 22-09)', async () => {
+    // Antes viajaba el NOMBRE: «Efectivo en la oficina» → EFECTIVO_EN_LA_OFICINA,
+    // que ninguna lista de apagados reconoce, y el efectivo entraba.
     mediosConfigurados = [
       { id: 'm1', nombre: 'Transferencia a Bancolombia', tipo: 'TRANSFERENCIA', activo: true },
-      { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
       { id: 'm3', nombre: 'Cuenta vieja', tipo: 'TRANSFERENCIA', activo: false },
     ];
     const onSubmit = await abrir();
@@ -682,18 +689,48 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
     expect(porTexto('Cuenta vieja')).toHaveLength(0);
     act(() => porTexto('Transferencia a Bancolombia')[0].click());
     await enviar();
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'Transferencia a Bancolombia' });
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      medio: 'TRANSFERENCIA',
+      notas: 'Medio: Transferencia a Bancolombia',
+    });
   });
 
-  it('un nombre más largo que el DTO viaja recortado a 40 caracteres', async () => {
+  it('🔴 un medio cuyo TIPO la inmobiliaria apagó no se ofrece, se llame como se llame', async () => {
+    apagados = ['EFECTIVO', 'CHEQUE'];
+    mediosConfigurados = [
+      { id: 'm1', nombre: 'Transferencia a Bancolombia', tipo: 'TRANSFERENCIA', activo: true },
+      { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
+    ];
+    await abrir();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(porTexto('Efectivo en la oficina')).toHaveLength(0);
+    expect(porTexto('Transferencia a Bancolombia')).toHaveLength(1);
+    apagados = [];
+  });
+
+  it('en la lista fija, lo apagado tampoco se ofrece', async () => {
+    apagados = ['EFECTIVO', 'CHEQUE'];
+    await abrir();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(porTexto('recibos.form.medios.efectivo')).toHaveLength(0);
+    expect(porTexto('recibos.form.medios.cheque')).toHaveLength(0);
+    expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(1);
+    apagados = [];
+  });
+
+  it('un nombre largo va a las notas recortado a 40, y el medio sigue siendo el tipo', async () => {
     const largo = 'Transferencia a la cuenta de ahorros número dos de Bancolombia';
     mediosConfigurados = [{ id: 'm1', nombre: largo, tipo: 'TRANSFERENCIA', activo: true }];
     const onSubmit = await abrir();
     act(() => porTexto(largo)[0].click());
     await enviar();
-    const medio = (onSubmit.mock.calls[0][0] as { medio: string }).medio;
-    expect(medio).toBe(largo.slice(0, 40));
-    expect(medio.length).toBe(40);
+    const enviado = onSubmit.mock.calls[0][0] as { medio: string; notas: string };
+    expect(enviado.medio).toBe('TRANSFERENCIA');
+    expect(enviado.notas).toBe(`Medio: ${largo.slice(0, 40)}`);
   });
 });
 

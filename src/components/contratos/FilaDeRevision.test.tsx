@@ -551,3 +551,27 @@ describe('<FilaDeRevision> — el reparto entre los dueños', () => {
     expect(document.querySelector('[data-testid="reparto-de-duenos"]')).toBeNull()
   })
 })
+
+describe('<FilaDeRevision> — 🔴 el dueño de un contrato histórico (QA 22-09)', () => {
+  it('avisa ANTES de activar que el archivo nombra a otro dueño y que el contrato queda a su nombre', () => {
+    montar({
+      estado: 'LISTO',
+      faltantes: [],
+      propietario: { id: 'po-1', nombre: 'Johanna Barco Castro', documento: '43265914' },
+      propietarioDelHistorico: {
+        documento: '901272830',
+        nombre: 'CONSTRUCTORA ALEJANDRIA',
+      },
+    })
+
+    const aviso = container.querySelector('[data-testid="propietario-del-historico"]')
+    expect(aviso?.textContent).toContain('CONSTRUCTORA ALEJANDRIA')
+    expect(aviso?.textContent).toContain('901272830')
+    expect(aviso?.textContent).toContain('Johanna Barco Castro')
+  })
+
+  it('sin diferencia no dice nada', () => {
+    montar({ propietarioDelHistorico: null })
+    expect(container.querySelector('[data-testid="propietario-del-historico"]')).toBeNull()
+  })
+})

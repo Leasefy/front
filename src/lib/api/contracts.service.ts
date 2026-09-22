@@ -1182,6 +1182,12 @@ export interface FilaDeMigracion {
    */
   propietario?: { id: string; nombre: string; documento: string } | null;
   /**
+   * 🔴 QA 22-09: la fila es un contrato TERMINADO y el archivo nombra a otro
+   * dueño que el del inmueble de hoy. El contrato queda a nombre de éste.
+   * Ausente = un back anterior; `null` = no hay diferencia.
+   */
+  propietarioDelHistorico?: { documento: string; nombre: string } | null;
+  /**
    * El % que se le cobra al propietario, **el de la consignación** — que es
    * el que efectivamente va a facturar, no el que traía el archivo.
    */

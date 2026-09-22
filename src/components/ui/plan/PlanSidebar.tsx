@@ -673,7 +673,11 @@ function SidebarContent({
               >
                 <X className="w-3 h-3" />
               </button>
-              <SidebarInviteCard onInvite={onInvite} />
+              {/* 🔴 `meta=""` a propósito (QA 22-09): sin él, cadence pinta su
+                  valor por defecto «3 invitaciones libres» —un número que nadie
+                  contó— y seguía diciendo 3 con 5 y con 6 miembros. Un total
+                  sólo se dice cuando se pudo contar. */}
+              <SidebarInviteCard onInvite={onInvite} meta="" />
             </div>
           )}
           {showUpgrade && (

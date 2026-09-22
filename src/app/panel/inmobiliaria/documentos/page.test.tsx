@@ -201,9 +201,11 @@ vi.mock('@/components/ui/sheet', () => {
         children,
       )
     },
-    SheetContent: passthrough('div'),
+    SheetContent: ({ children, ...resto }: { children?: React.ReactNode; 'data-testid'?: string }) =>
+      React.createElement('div', { 'data-testid': resto['data-testid'] }, children),
     SheetHeader: passthrough('div'),
     SheetTitle: passthrough('h2'),
+    SheetDescription: passthrough('p'),
   }
 })
 
@@ -676,5 +678,59 @@ describe('Documentos — escribir plantillas propias', () => {
     expect(container.querySelector('[data-testid="plantilla-borrar"]')).toBeNull()
     // Ver, sí: `documentos:view` es lo que abre la pantalla.
     expect(container.querySelector('[data-testid="plantilla-ver"]')).not.toBeNull()
+  })
+})
+
+/*
+ * 🔴 EL MOLDE (regla 5): la fila abre cajón. En Plantillas la fila hace lo mismo
+ * que «Ver plantilla»; en Documentos abre un cajón con sus datos y sus dos
+ * acciones. Los botones de la fila siguen actuando sin abrir el cajón.
+ */
+describe('Documentos — la fila abre su cajón', () => {
+  const DOC = {
+    id: 'd-1',
+    name: 'Paz y salvo — Calle 36D',
+    status: 'GENERADO',
+    createdAt: '2026-09-20T15:00:00Z',
+    updatedAt: '2026-09-20T15:00:00Z',
+    signatures: [],
+    template: { id: 't-1', name: 'Paz y salvo', category: 'CERTIFICADO', codigo: null },
+    consignacion: null,
+    contract: null,
+  }
+  const PLANTILLA = {
+    id: 'p-propia',
+    name: 'Carta de bienvenida',
+    category: 'CARTA' as const,
+    version: '1.0',
+    variables: ['arrendatarioNombre'],
+    codigo: null,
+    isActive: true,
+    updatedAt: '2026-09-01T00:00:00Z',
+    content: '<p>Hola</p>',
+  }
+
+  it('clic en la fila de un documento abre su cajón', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, documentos: [DOC] })
+    await renderPage()
+    const fila = container.querySelector<HTMLElement>('[data-testid="documento-fila"]')!
+    await act(async () => {
+      fila.click()
+    })
+    const cajon = document.body.querySelector('[data-testid="cajon-documento"]')
+    expect(cajon?.textContent).toContain('Paz y salvo — Calle 36D')
+    expect(document.body.querySelector('[data-testid="cajon-documento-ver"]')).not.toBeNull()
+  })
+
+  it('en Plantillas, la fila hace lo mismo que «Ver plantilla»', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PLANTILLA] })
+    await renderPage()
+    abrirPestana('plantillas')
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="plantilla-fila"]')!.click()
+    })
+    expect(document.body.querySelector('iframe[title="Carta de bienvenida"]')).not.toBeNull()
   })
 })

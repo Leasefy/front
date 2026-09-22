@@ -65,7 +65,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
 import {
   CerrarActaSinFirma,
@@ -202,6 +202,8 @@ function DocumentosContent() {
   const [filtros, setFiltros] = useState<FiltrosDeDocumentos>(FILTROS_VACIOS);
   const [generarAbierto, setGenerarAbierto] = useState(false);
   const [plantillaAbierta, setPlantillaAbierta] = useState<PlantillaDeLaAgencia | null>(null);
+  /** El molde (regla 5): la fila del documento abre su cajón. */
+  const [documentoAbierto, setDocumentoAbierto] = useState<DocumentoGenerado | null>(null);
   /* El editor: `abierto` aparte de la plantilla porque una NUEVA es `null`, y
      `null` no puede significar a la vez «cerrado» y «una nueva». */
   const [editorAbierto, setEditorAbierto] = useState(false);
@@ -524,7 +526,21 @@ function DocumentosContent() {
                   </TableRow>
                 ) : (
                   paginaDocumentos.pageItems.map((doc) => (
-                    <TableRow key={doc.id} data-testid="documento-fila">
+                    <TableRow
+                      key={doc.id}
+                      data-testid="documento-fila"
+                      onClick={() => setDocumentoAbierto(doc)}
+                      className="cursor-pointer"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Ver ${doc.name}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setDocumentoAbierto(doc);
+                        }
+                      }}
+                    >
                       <TableCell className="max-w-[280px]">
                         <p className="truncate font-medium text-fg">{doc.name}</p>
                         {doc.template?.name && (
@@ -557,7 +573,12 @@ function DocumentosContent() {
                           {ESTADO_LABEL[doc.status]}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      {/* Las acciones de la fila actúan; el clic no sube a la fila. */}
+                      <TableCell
+                        className="whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -598,7 +619,22 @@ function DocumentosContent() {
                   </TableRow>
                 ) : (
                   paginaPlantillas.pageItems.map((p) => (
-                    <TableRow key={p.id} data-testid="plantilla-fila">
+                    <TableRow
+                      key={p.id}
+                      data-testid="plantilla-fila"
+                      // La fila hace lo mismo que «Ver plantilla» (el molde, regla 5).
+                      onClick={() => setPlantillaAbierta(p)}
+                      className="cursor-pointer"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Ver la plantilla ${p.name}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setPlantillaAbierta(p);
+                        }
+                      }}
+                    >
                       <TableCell className="max-w-[320px]">
                         <p className="truncate font-medium text-fg">{p.name}</p>
                       </TableCell>
@@ -611,7 +647,11 @@ function DocumentosContent() {
                       <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                         {p.variables.length}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell
+                        className="whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -829,6 +869,56 @@ function DocumentosContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* El cajón del documento generado: sus datos y sus dos acciones. No le
+          pide nada al back hasta que se toca «Ver PDF» o «Descargar». */}
+      <Cajon
+        abierto={documentoAbierto !== null}
+        onOpenChange={(o) => !o && setDocumentoAbierto(null)}
+        data-testid="cajon-documento"
+      >
+        {documentoAbierto && (
+          <>
+            <CajonCabecera
+              titulo={documentoAbierto.name}
+              descripcion={documentoAbierto.template?.name ?? undefined}
+            />
+            <CajonCuerpo>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
+                <dt className="text-fg-muted">Tipo</dt>
+                <dd className="text-fg">
+                  {documentoAbierto.template ? CATEGORIA_LABEL[documentoAbierto.template.category] : '—'}
+                </dd>
+                <dt className="text-fg-muted">Inmueble</dt>
+                <dd className="text-fg">{etiquetaDelInmueble(documentoAbierto) ?? '—'}</dd>
+                <dt className="text-fg-muted">Partes</dt>
+                <dd className="text-fg">{etiquetaDePartes(documentoAbierto) ?? '—'}</dd>
+                <dt className="text-fg-muted">Generado</dt>
+                <dd className="font-mono tabular-nums text-fg">{fechaCorta(documentoAbierto.createdAt, locale)}</dd>
+                <dt className="text-fg-muted">Estado</dt>
+                <dd>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                      ESTADO_BADGE[documentoAbierto.status],
+                    )}
+                  >
+                    {ESTADO_LABEL[documentoAbierto.status]}
+                  </span>
+                </dd>
+              </dl>
+            </CajonCuerpo>
+            <CajonPie>
+              <Button variant="outline" hideArrow onClick={() => void descargarPdf(documentoAbierto)}>
+                {t(k('descargar'))}
+              </Button>
+              <Button hideArrow onClick={() => void verPdf(documentoAbierto)} data-testid="cajon-documento-ver">
+                {t(k('verPdf'))}
+              </Button>
+            </CajonPie>
+          </>
+        )}
+      </Cajon>
 
       {/* Vista previa de la plantilla: el mismo HTML que se imprime, con sus
           variables sin reemplazar. Va en un iframe aislado para que el estilo

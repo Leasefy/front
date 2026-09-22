@@ -26,8 +26,16 @@
  * ── Qué hace, y qué NO ─────────────────────────────────────────────────────
  *
  * Recorre los 95 servicios de `src/lib/api`, saca los métodos de cada cliente
- * HTTP y comprueba que algo del producto los llame. Los que hoy no tiene
- * llamador quedan DECLARADOS abajo, con su motivo cuando se sabe.
+ * HTTP y comprueba que algo del producto los use. Los que hoy no tiene llamador
+ * quedan DECLARADOS abajo, con su motivo cuando se sabe.
+ *
+ * 🔴 22-09 · Eran «110» y son **81**. Los otros 25 eran falsos: la aguja
+ * buscaba `.metodo(` —sólo la llamada con paréntesis— y se le escapaba el
+ * método pasado POR REFERENCIA, que es como los usa medio `messagesApi`
+ * (`getMessages: messagesApi.getConversationMessages`). El widget de mensajes
+ * está montado en tres pantallas y yo había reportado esos métodos como
+ * «trabajo de producto». Un barrido que no entiende cómo se usa el código
+ * inventa trabajo.
  *
  * 🔴 La lista declarada NO dice «esto está bien». Dice «esto ya estaba, y se
  * ve». Lo que el guardián impide es que **crezca**: un método nuevo sin puerta
@@ -114,11 +122,27 @@ function metodosSinLlamador(): string[] {
       const objeto = m[1];
       if (!ES_CLIENTE.test(objeto)) continue;
       for (const metodo of metodosDe(texto, objeto)) {
-        const aguja = `.${metodo}(`;
-        if (producto.some((t) => t.includes(aguja))) continue;
+        /**
+         * 🔴 22-09 · UNA REFERENCIA TAMBIÉN ES UN LLAMADOR.
+         *
+         * Acá decía `` `.${metodo}(` `` —sólo la llamada con paréntesis— y por
+         * eso daba por huérfano medio `messagesApi`, que SÍ se usa: los hooks
+         * del chat pasan los métodos por referencia a un adaptador,
+         *
+         *     getMessages: messagesApi.getConversationMessages,
+         *
+         * sin paréntesis. El widget de mensajes está montado en tres
+         * pantallas, así que eran seis falsos huérfanos y yo los había
+         * reportado como «trabajo de producto».
+         *
+         * Ahora la aguja es el nombre seguido de algo que NO continúa el
+         * identificador: cubre la llamada, la referencia y el desestructurado.
+         */
+        const usado = new RegExp(`\\.${metodo}(?![\\w$])`);
+        if (producto.some((t) => usado.test(t))) continue;
         // Un servicio que llama a otro tampoco es una puerta que falta.
         const desdeOtroServicio = otrosServicios.some(
-          ([p, t]) => p !== ruta && t.includes(aguja),
+          ([p, t]) => p !== ruta && usado.test(t),
         );
         if (desdeOtroServicio) continue;
         huerfanos.push(`${objeto}.${metodo}`);
@@ -148,22 +172,15 @@ const DECLARADOS: readonly string[] = [
   'analyticsApi.getTrends',
   'aiAnalysisApi.getDocumentResult',
   'aiAnalysisApi.triggerDocumentAnalysis',
-  'bitacoraApi.acciones',
   'captacionApi.anularFirma',
   'captacionApi.consultarListas',
-  'captacionApi.datos',
   'captacionApi.guardarDatos',
   'captacionApi.previsualizarVenta',
   'captacionApi.revisarBaja',
-  'captacionApi.sePuedePublicar',
   'captacionApi.urlDelDocumento',
-  'carteraApi.inquilinos',
-  'carteraApi.propietarios',
-  'clausulasPropiasApi.eliminar',
   'cobrosApi.generateOne',
   'cobrosApi.registerPayment',
   'conciliacionBancariaApi.conciliarSeguros',
-  'contractsApi.inquilinos',
   'facturacionElectronicaService.crearProveedor',
   'facturacionElectronicaService.notasDebito',
   'finanzasApi.asignarASede',
@@ -173,30 +190,18 @@ const DECLARADOS: readonly string[] = [
   'landlordApi.getDashboard',
   'landlordApplicationsApi.deleteNote',
   'landlordApplicationsApi.getDocumentDownloadUrl',
-  'landlordApplicationsApi.saveNote',
   'landlordApplicationsApi.triggerReevaluation',
   'leadsApi.buscarContactos',
-  'leadsApi.contacto',
-  'leadsApi.continuar',
   'leadsApi.reasignaciones',
   'leadsApi.reasignar',
   'leadsApi.reasignarVencidos',
   'leadsApi.respondido',
-  'mantenimientoApi.changeStatus',
   'mantenimientoApi.reabrirPorGarantia',
   'matchingApi.guardarPesos',
-  'mediosDePagoApi.catalogo',
   'messagesApi.archiveConversation',
-  'messagesApi.getApplicationMessages',
-  'messagesApi.getConversationMessages',
   'messagesApi.getMessagesByLease',
-  'messagesApi.markApplicationAsRead',
-  'messagesApi.markConversationAsRead',
   'messagesApi.muteConversation',
   'messagesApi.reportConversation',
-  'messagesApi.sendApplicationMessage',
-  'messagesApi.sendAttachment',
-  'messagesApi.sendConversationMessage',
   'messagesApi.sendMessageByLease',
   'nominaApi.actualizarNovedad',
   'nominaApi.actualizarPersona',
@@ -209,8 +214,6 @@ const DECLARADOS: readonly string[] = [
   'nominaApi.crearNovedad',
   'nominaApi.definitiva',
   'nominaApi.generarElectronica',
-  'nominaApi.novedades',
-  'nominaApi.persona',
   'nominaApi.reactivarPersona',
   'nominaApi.retirarPersona',
   'ownerFinanzasApi.getInformePdf',
@@ -222,12 +225,10 @@ const DECLARADOS: readonly string[] = [
   'permissionsApi.getMyPermissions',
   'permissionsApi.updateMemberPermissions',
   'pipelineApi.getStats',
-  'plantillasDeMensajeApi.eliminar',
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
   'propertiesApi.removeAgent',
   'proveedoresDeMantenimientoApi.calificar',
-  'pseCheckoutApi.checkout',
   'pseCheckoutApi.getRequestStatus',
   'pseCheckoutApi.verifyRequest',
   'recibosDeCajaApi.anticipos',
@@ -235,8 +236,6 @@ const DECLARADOS: readonly string[] = [
   'renovacionAutomaticaApi.borrarAviso',
   'renovacionAutomaticaApi.registrarAviso',
   'renovacionesApi.getUpcoming',
-  'reportesApi.export',
-  'sessionApi.claim',
   'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
   'subscriptionsApi.getPlan',

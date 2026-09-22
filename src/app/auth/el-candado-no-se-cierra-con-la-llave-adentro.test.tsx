@@ -80,8 +80,11 @@ describe('/auth/mfa-verify', () => {
     });
     await montar();
 
-    expect(document.querySelector('input')).not.toBeNull();
-    expect(document.body.textContent).toContain('código de 6 dígitos');
+    // 🔴 Se afirma la ESTRUCTURA y no la frase: desde el 22-09 el código se
+    // escribe en seis casillas, una por dígito, y la redacción del subtítulo
+    // cambió. Contar las casillas dice lo mismo —«acá se pide el código»— y no
+    // se rompe cada vez que se ajusta una palabra.
+    expect(document.querySelectorAll('[data-testid^="casilla-"]')).toHaveLength(6);
     expect(document.querySelector('[data-testid="mfa-setup"]')).toBeNull();
   });
 

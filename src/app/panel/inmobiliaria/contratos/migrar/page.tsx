@@ -18,7 +18,7 @@ import {
   FilasFrenadas,
   VeredictoDeMigracion,
 } from '@/components/migracion/VeredictoDeMigracion'
-import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda'
+import { useDeudaDeMigracion } from '@/lib/hooks/use-migracion-con-deuda'
 
 export default function MigrarContratosPage() {
   /*
@@ -38,7 +38,7 @@ export default function MigrarContratosPage() {
    * quedó pendiente de los 91 contratos que ya subió. Sin botón por línea:
    * ya está en la pantalla donde se resuelve.
    */
-  const deuda = useMigracionConDeuda()
+  const { deuda, recargar } = useDeudaDeMigracion()
 
   return (
     <PageGuard module="contratos">
@@ -73,7 +73,7 @@ export default function MigrarContratosPage() {
           </>
         ) : null}
 
-        <MigrarContratos />
+        <MigrarContratos onLoteCambio={() => void recargar()} />
       </div>
     </PageGuard>
   )

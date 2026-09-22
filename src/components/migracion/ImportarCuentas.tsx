@@ -72,6 +72,48 @@ import { mensajeDeContabilidad } from "./contabilidad-errores";
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
 
+/**
+ * Por qué cada asiento automático no quedó asignado solo, dicho con verdad
+ * (QA 22-09): «tu plan no tiene 130505» era falso cuando la cuenta estaba
+ * como MAYOR, y un código que coincide con otro nombre no se asigna solo.
+ */
+export function fraseDeLoQueNoSeAsigno(
+  sinCuenta: ReadonlyArray<{
+    codigo: string;
+    motivo?: "NO_EXISTE" | "NO_IMPUTABLE" | "INACTIVA" | "OTRO_NOMBRE";
+    nombreEnTuPlan?: string;
+  }>,
+): string {
+  const de = (m: string) =>
+    sinCuenta.filter((c) => (c.motivo ?? "NO_EXISTE") === m);
+  const partes: string[] = [];
+  const noExisten = de("NO_EXISTE");
+  if (noExisten.length > 0) {
+    partes.push(`Tu plan no tiene ${noExisten.map((c) => c.codigo).join(", ")}.`);
+  }
+  const mayores = de("NO_IMPUTABLE");
+  if (mayores.length > 0) {
+    partes.push(
+      `${mayores.map((c) => c.codigo).join(", ")} ${mayores.length === 1 ? "está" : "están"} en tu plan como cuenta mayor: los movimientos van en una subcuenta.`,
+    );
+  }
+  const inactivas = de("INACTIVA");
+  if (inactivas.length > 0) {
+    partes.push(
+      `${inactivas.map((c) => c.codigo).join(", ")} ${inactivas.length === 1 ? "está inhabilitada" : "están inhabilitadas"} en tu plan.`,
+    );
+  }
+  const otroNombre = de("OTRO_NOMBRE");
+  if (otroNombre.length > 0) {
+    partes.push(
+      `En tu plan ${otroNombre
+        .map((c) => `${c.codigo} se llama «${c.nombreEnTuPlan ?? ""}»`)
+        .join(", ")}: no la asignamos sola porque el mismo código puede significar otra cosa.`,
+    );
+  }
+  return partes.join(" ");
+}
+
 export function ImportarCuentas({
   onImportado,
   onCerrar,
@@ -248,9 +290,7 @@ export function ImportarCuentas({
           <p className="mt-1 text-sm text-fg-muted" data-testid="puc-importacion-mapeo">
             {resultado.mapeo.sinCuenta.length === 0
               ? "Los asientos automáticos ya tienen su cuenta en tu plan."
-              : `Tu plan no tiene ${resultado.mapeo.sinCuenta
-                  .map((c) => c.codigo)
-                  .join(", ")}: asigna esas cuentas en «Cuentas de los asientos automáticos», más abajo.`}
+              : `${fraseDeLoQueNoSeAsigno(resultado.mapeo.sinCuenta)} Asígnalas en «Cuentas de los asientos automáticos», más abajo.`}
           </p>
         ) : null}
         {resultado.invalidas > 0 ? (

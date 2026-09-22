@@ -57,6 +57,11 @@ vi.mock('@/lib/api/contracts.service', () => ({
       descartar: vi.fn(),
       descartarLote: vi.fn(),
       activar: vi.fn(),
+      // La fecha de corte ya guardada: sin ella «Activar» no se enciende.
+      fechaDeCorte: vi
+        .fn()
+        .mockResolvedValue({ fecha: '2026-09-01', editable: true, motivo: null }),
+      fijarFechaDeCorte: vi.fn(),
       reconciliar: vi.fn().mockResolvedValue({
         revisadas: 0,
         ultimaFila: null,
@@ -106,9 +111,9 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function render() {
+function render(props: { onLoteCambio?: () => void } = {}) {
   act(() => {
-    root.render(<MigrarContratos />)
+    root.render(<MigrarContratos {...props} />)
   })
 }
 
@@ -1129,7 +1134,7 @@ describe('<MigrarContratos> — descartar un lote sin abrirlo primero (T-0039)',
  * producto entero del cambio, y `invitados` sólo cuenta lo que SÍ se mandó.
  */
 describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo dice (T-0036 Surface A)', () => {
-  it('con el checkbox destildado, avisa: no se crea cuenta, se guarda el correo, se invita después desde el contrato', async () => {
+  it('🔴 QA 22-09: la casilla viene DESMARCADA y el aviso dice qué pasa: no se crea cuenta, se guarda el correo, se invita después', async () => {
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
@@ -1137,9 +1142,7 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
 
     const label = labelConTexto('Invitar a los inquilinos al portal')
     const checkbox = checkboxDentroDe(label)
-    await act(async () => {
-      checkbox?.click()
-    })
+    expect(checkbox?.getAttribute('aria-checked')).toBe('false')
 
     const aviso = container.querySelector('[data-testid="aviso-sin-invitar"]')
     const texto = aviso?.textContent ?? ''
@@ -1151,12 +1154,18 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     expect(texto.toLowerCase()).not.toMatch(/cobro|factura/)
   })
 
-  it('con el checkbox tildado (default), NO muestra el aviso de "no se crea cuenta"', async () => {
+  it('marcada a mano, el aviso de «no se crea cuenta» se va', async () => {
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
-    expect(container.textContent).not.toMatch(/no se crea (ninguna )?cuenta/i)
+    const checkbox = checkboxDentroDe(labelConTexto('Invitar a los inquilinos al portal'))
+    await act(async () => {
+      checkbox?.click()
+    })
+
+    expect(container.querySelector('[data-testid="aviso-sin-invitar"]')).toBeNull()
   })
 
   it('el resumen de activación suma una línea de "pendientes de invitar" cuando porInvitar > 0', async () => {
@@ -1468,6 +1477,41 @@ describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el 
     await act(async () => {})
 
     expect(container.querySelector('[data-testid="crear-inmuebles-faltantes"]')).toBeNull()
+  })
+})
+
+describe('<MigrarContratos> — 🔴 después de cargar los inmuebles, primero se cruza (QA 22-09)', () => {
+  it('«Volver a cruzar» va ANTES que «Crear los N que faltan», y al terminar el cruce la cuenta se vuelve a pedir', async () => {
+    const onLoteCambio = vi.fn()
+    render({ onLoteCambio })
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes)
+      .mockResolvedValueOnce({ candidatas: 164, activadas: 0, ambiguas: 0, sinDireccion: 0 })
+      .mockResolvedValue({ candidatas: 2, activadas: 0, ambiguas: 0, sinDireccion: 0 })
+    await avanzarAListaDeTrabajo(0, { pendientes: 164 })
+    await act(async () => {})
+
+    const cruce = container.querySelector('[data-testid="volver-a-cruzar"]')
+    const crear = container.querySelector('[data-testid="crear-inmuebles-faltantes-abrir"]')
+    expect(cruce).not.toBeNull()
+    expect(crear?.textContent).toContain('164')
+    // En el orden del documento: el cruce primero.
+    expect(
+      cruce!.compareDocumentPosition(crear!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    await act(async () => {
+      ;(cruce as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {})
+
+    // Y el veredicto de la página, que vive afuera, se entera.
+    expect(onLoteCambio).toHaveBeenCalled()
+    // Antes seguía diciendo 164 hasta recargar la página.
+    expect(
+      container.querySelector('[data-testid="crear-inmuebles-faltantes-abrir"]')?.textContent,
+    ).toContain('2')
   })
 })
 
@@ -2044,5 +2088,48 @@ describe('<MigrarContratos> — a qué quedó pegada cada fila', () => {
       container.querySelector('[data-testid="asociacion-del-lote"]')?.textContent ?? ''
     expect(texto).toContain('30 de 30 quedaron con inmueble')
     expect(texto).not.toContain('vienen terminados del sistema anterior')
+  })
+})
+
+describe('<MigrarContratos> — 🔴 la fecha de corte antes de activar (QA 22-09)', () => {
+  it('sin fecha guardada, «Activar» no se enciende y dice por qué; al guardarla, sí', async () => {
+    vi.mocked(contractsApi.migracion.fechaDeCorte).mockResolvedValueOnce({
+      fecha: null,
+      editable: true,
+      motivo: null,
+    })
+    vi.mocked(contractsApi.migracion.fijarFechaDeCorte).mockResolvedValueOnce({
+      fecha: '2026-09-01',
+      editable: true,
+      motivo: null,
+    })
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
+
+    const activar = () =>
+      container.querySelector('[data-testid="activar-contratos"]') as HTMLButtonElement | null
+    expect(activar()?.disabled).toBe(true)
+    expect(container.querySelector('[data-testid="falta-fecha-de-corte"]')).not.toBeNull()
+    // Sin valor por defecto: el campo arranca vacío.
+    const input = container.querySelector(
+      '[data-testid="fecha-de-corte-input"]',
+    ) as HTMLInputElement
+    expect(input.value).toBe('')
+
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      set?.call(input, '2026-09-01')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      ;(container.querySelector('[data-testid="fecha-de-corte-guardar"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(contractsApi.migracion.fijarFechaDeCorte).toHaveBeenCalledWith('2026-09-01')
+    expect(container.textContent).toContain('1 de septiembre de 2026')
+    expect(activar()?.disabled).toBe(false)
   })
 })

@@ -10,8 +10,9 @@
  *
  *  1. la casilla existe en inquilinos y NO en propietarios (un propietario no
  *     recibe invitación por esta vía; ofrecerla prometería algo que no pasa);
- *  2. viene puesta — es lo que la pantalla hacía hasta hoy;
- *  3. destildarla llega al back como `invitar: false`;
+ *  2. 🔴 viene DESMARCADA (QA 22-09): la invitación es una decisión, no lo
+ *     que pasa por no desmarcar una casilla;
+ *  3. sin tocarla llega al back `invitar: false`; marcarla, `invitar: true`;
  *  4. el resultado dice POR QUÉ quedaron pendientes, que no es lo mismo
  *     «lo pediste» que «el correo falló».
  */
@@ -121,31 +122,34 @@ describe('MigrarTerceros — mandar las invitaciones ahora, o después', () => {
     api.resumen.mockResolvedValue(lote('INQUILINO'));
   });
 
-  it('la casilla existe y viene puesta: el default no cambió', async () => {
-    await pintar();
-
-    const c = casilla();
-    expect(c).not.toBeNull();
-    expect(c!.getAttribute('data-state')).toBe('checked');
-  });
-
-  it('con la casilla puesta, el back recibe `invitar: true`', async () => {
-    await pintar();
-    await clicEnBoton('Crear 3');
-
-    expect(api.aplicar).toHaveBeenCalledWith('carga-prueba', { invitar: true });
-  });
-
-  it('🔴 destildada, el back recibe `invitar: false` — nadie recibe correo', async () => {
-    await pintar();
+  async function marcar() {
     await act(async () => {
       casilla()!.click();
     });
     await act(async () => {});
+  }
 
+  it('🔴 QA 22-09: la casilla existe y viene DESMARCADA', async () => {
+    await pintar();
+
+    const c = casilla();
+    expect(c).not.toBeNull();
+    expect(c!.getAttribute('data-state')).toBe('unchecked');
+  });
+
+  it('🔴 sin tocarla, el back recibe `invitar: false` — nadie recibe correo', async () => {
+    await pintar();
     await clicEnBoton('Crear 3');
 
     expect(api.aplicar).toHaveBeenCalledWith('carga-prueba', { invitar: false });
+  });
+
+  it('marcada, el back recibe `invitar: true`', async () => {
+    await pintar();
+    await marcar();
+    await clicEnBoton('Crear 3');
+
+    expect(api.aplicar).toHaveBeenCalledWith('carga-prueba', { invitar: true });
   });
 
   it('el texto de la casilla dice qué va a pasar en cada estado', async () => {
@@ -153,25 +157,18 @@ describe('MigrarTerceros — mandar las invitaciones ahora, o después', () => {
     const caja = () =>
       container.querySelector('[data-testid="invitar-al-crear"]')!.textContent ?? '';
 
-    expect(caja()).toContain('le llega el enlace para poner su contraseña');
-
-    await act(async () => {
-      casilla()!.click();
-    });
-    await act(async () => {});
-
     // Lo importante no es que no se mande: es que las cuentas SÍ se crean y
     // que hay a dónde ir después. Sin eso, «no» se lee como «no migres».
     expect(caja()).toContain('Las cuentas se crean igual');
     expect(caja()).toContain('Inquilinos');
+
+    await marcar();
+
+    expect(caja()).toContain('le llega el enlace para poner su contraseña');
   });
 
   it('🔴 el informe distingue «lo pediste» de «el correo falló»', async () => {
     await pintar();
-    await act(async () => {
-      casilla()!.click();
-    });
-    await act(async () => {});
     await clicEnBoton('Crear 3');
 
     const aviso = container.querySelector('[data-testid="sin-invitar"]')!;
@@ -183,8 +180,9 @@ describe('MigrarTerceros — mandar las invitaciones ahora, o después', () => {
     );
   });
 
-  it('con la casilla puesta y algo que no salió, el informe habla del fallo', async () => {
+  it('con la casilla marcada y algo que no salió, el informe habla del fallo', async () => {
     await pintar();
+    await marcar();
     await clicEnBoton('Crear 3');
 
     const aviso = container.querySelector('[data-testid="sin-invitar"]')!;

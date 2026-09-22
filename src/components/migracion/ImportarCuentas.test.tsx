@@ -38,7 +38,7 @@ vi.mock('@/lib/api/contabilidad.service', async () => {
 });
 
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
-import { ImportarCuentas } from './ImportarCuentas';
+import { ImportarCuentas, fraseDeLoQueNoSeAsigno } from './ImportarCuentas';
 
 const REVISION: RevisionDeImportacionPuc = {
   nuevas: 2,
@@ -218,5 +218,33 @@ describe('importar', () => {
     expect(alerta?.textContent).toMatch(/no se duplican/);
     expect(q('puc-importar')).not.toBeNull();
     expect(onImportado).not.toHaveBeenCalled();
+  });
+});
+
+describe('fraseDeLoQueNoSeAsigno — el motivo verdadero (QA 22-09)', () => {
+  it('🔴 una cuenta MAYOR no se describe como que «no está en tu plan»', () => {
+    const frase = fraseDeLoQueNoSeAsigno([
+      { codigo: '130505', motivo: 'NO_IMPUTABLE' },
+      { codigo: '415510', motivo: 'NO_EXISTE' },
+    ]);
+    expect(frase).toContain('Tu plan no tiene 415510.');
+    expect(frase).toContain('130505 está en tu plan como cuenta mayor');
+    expect(frase).not.toContain('no tiene 130505');
+  });
+
+  it('un código con otro nombre en el plan dice cómo se llama allá', () => {
+    expect(
+      fraseDeLoQueNoSeAsigno([
+        {
+          codigo: '28150505',
+          motivo: 'OTRO_NOMBRE',
+          nombreEnTuPlan: 'COBRO SERVICIOS PUBLICOS AL PROPIETARIO',
+        },
+      ]),
+    ).toContain('28150505 se llama «COBRO SERVICIOS PUBLICOS AL PROPIETARIO»');
+  });
+
+  it('sin motivo (back anterior) se lee como antes', () => {
+    expect(fraseDeLoQueNoSeAsigno([{ codigo: '110505' }])).toBe('Tu plan no tiene 110505.');
   });
 });

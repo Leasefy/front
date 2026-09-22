@@ -77,6 +77,7 @@ import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos'
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
 
@@ -255,7 +256,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
                 <div className="h-8 w-px bg-border" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {consignacion.commissionPercent}%
+                    {textoDeLaComision(consignacion)}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
                 </div>

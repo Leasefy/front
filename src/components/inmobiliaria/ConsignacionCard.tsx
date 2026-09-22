@@ -23,6 +23,7 @@ import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 
 interface ConsignacionCardProps {
   consignacion: Consignacion;
@@ -235,9 +236,7 @@ export function ConsignacionCard({
             <Percent className="w-3 h-3" />
             {/* contract-addendum-2.md §A.3 — a SALE mandate's commissionPercent
                 is always 0; the agreed figure is saleCommissionPercent. */}
-            {consignacion.listingType === 'sale'
-              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
-              : `${consignacion.commissionPercent}%`}
+            {textoDeLaComision(consignacion)}
           </span>
         </div>
 

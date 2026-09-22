@@ -251,6 +251,25 @@ export function FilaDeRevision({
       </div>
 
       {/*
+        🔴 QA 22-09: un contrato terminado de cuando el inmueble era de OTRO.
+        Antes la tarjeta mostraba al dueño de hoy sin avisar y el contrato
+        histórico quedaba a su nombre.
+      */}
+      {fila.propietarioDelHistorico ? (
+        <p
+          className="text-caption text-warning"
+          data-testid="propietario-del-historico"
+        >
+          Este contrato terminado es de cuando el inmueble era de{" "}
+          {fila.propietarioDelHistorico.nombre} (
+          <span className="font-mono">{fila.propietarioDelHistorico.documento}</span>
+          ), según el archivo. El inmueble hoy es de{" "}
+          {fila.propietario?.nombre ?? "otro propietario"}: el contrato queda a
+          nombre de quien dice el archivo.
+        </p>
+      ) : null}
+
+      {/*
         Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el
         mandato, dueño por dueño, ANTES de activar. Lo arma el back de la
         plata de «Valor Canon» (o en partes iguales si el archivo no la trae);

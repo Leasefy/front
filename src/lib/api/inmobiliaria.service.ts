@@ -1442,6 +1442,13 @@ export const dispersionesApi = {
      * alguien no lo excluía de nada.
      */
     propietarioIds?: string[],
+    /**
+     * De los inmuebles de esos propietarios, a cuáles. Sin la lista, todos.
+     *
+     * 🔴 Lo que queda afuera se POSTERGA, no se perdona: su cuota sigue sin
+     * marcar y el mes siguiente aparece como cuota que llegó tarde.
+     */
+    propertyIds?: string[],
   ): Promise<{
     month: string;
     totalPropietarios: number;
@@ -1458,6 +1465,7 @@ export const dispersionesApi = {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
       ...(propietarioIds ? { propietarioIds } : {}),
+      ...(propertyIds ? { propertyIds } : {}),
     });
   },
 
@@ -1503,6 +1511,35 @@ export const dispersionesApi = {
   async preview(month: string): Promise<VistaPreviaDeDispersiones> {
     return apiClient.get<VistaPreviaDeDispersiones>(
       `${BASE}/dispersiones/preview?month=${month}`,
+    );
+  },
+
+  /**
+   * Lo que se giraría con ESTA selección — a quiénes y a qué inmuebles—,
+   * calculado por el back y sin escribir nada.
+   *
+   * 🔴 Por qué no se suma en el navegador: el canon y la comisión sí serían la
+   * suma de los renglones, pero el NETO no. Las deducciones del propietario se
+   * aplican sobre la base que queda, así que destildar un inmueble cambia el
+   * descuento, y esa regla vive en el back. Sumar acá daría una pantalla que
+   * promete un número y un botón que guarda otro.
+   *
+   * Es POST porque la selección no cabe en una URL: la agencia migrada tiene
+   * 518 propietarios y 747 inmuebles.
+   */
+  async previewDeLaSeleccion(
+    month: string,
+    seleccion: { propietarioIds?: string[]; propertyIds?: string[] },
+  ): Promise<VistaPreviaDeDispersiones> {
+    return apiClient.post<VistaPreviaDeDispersiones>(
+      `${BASE}/dispersiones/preview`,
+      {
+        month,
+        ...(seleccion.propietarioIds
+          ? { propietarioIds: seleccion.propietarioIds }
+          : {}),
+        ...(seleccion.propertyIds ? { propertyIds: seleccion.propertyIds } : {}),
+      },
     );
   },
 

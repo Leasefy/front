@@ -93,7 +93,13 @@ export { CaptacionesYArriendos } from './CaptacionesYArriendos';
 export { ComisionDesglose, ComisionDesgloseCompact } from './ComisionDesglose';
 export { ExtractoPropietario } from './ExtractoPropietario';
 export { DispersionResumen, DispersionResumenCompact } from './DispersionResumen';
-export { DispersionWizard } from './DispersionWizard';
+/*
+ * `DispersionWizard` se fue el 21-09: eran seis pasos (Mes · Cuotas ·
+ * Comisiones · Netos · A quién · Confirmar) para UNA decisión. Ahora es una sola
+ * pantalla, `dispersion/GenerarDispersion`, que además deja elegir a qué
+ * inmuebles de cada propietario se le gira. Sus pruebas se mudaron, no se
+ * borraron: ver `dispersion/GenerarDispersion.test.tsx`.
+ */
 
 // Reportes (Reports - Phase 8) Components
 export { ReporteCard, ReporteCardCompact } from './ReporteCard';

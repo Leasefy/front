@@ -6,14 +6,16 @@ import { motion } from 'framer-motion';
 import { CaretLeft, PaperPlaneTilt } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { DispersionWizard } from '@/components/inmobiliaria';
-import type { Dispersion } from '@/lib/types/inmobiliaria';
+import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarDispersion';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 
 /**
- * GenerarDispersionesPage - Wrapper page for DispersionWizard
- * Route: /panel/inmobiliaria/pagos/dispersiones/generar
+ * La pantalla de generar la dispersión del mes.
+ * Ruta: /panel/inmobiliaria/pagos/dispersiones/generar
+ *
+ * Adentro ya no hay un asistente de seis pasos: es UNA pantalla que pregunta a
+ * quién se le gira y confirma ahí mismo (ver `GenerarDispersion`).
  */
 function GenerarDispersionesContent() {
   const { t } = useI18n();
@@ -31,12 +33,8 @@ function GenerarDispersionesContent() {
    * así que generar las de julio y caer en agosto vacío se lee como que no
    * pasó nada.
    */
-  const handleComplete = (_dispersiones: Dispersion[], month?: string) => {
-    router.push(
-      month
-        ? `/panel/inmobiliaria/pagos/dispersiones?mes=${month}`
-        : '/panel/inmobiliaria/pagos/dispersiones',
-    );
+  const handleComplete = (month: string) => {
+    router.push(`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`);
   };
 
   const handleCancel = () => {
@@ -81,12 +79,9 @@ function GenerarDispersionesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="container max-w-4xl mx-auto px-4 py-8"
+        className="container max-w-6xl mx-auto px-4 py-8"
       >
-        <DispersionWizard
-          onComplete={handleComplete}
-          onCancel={handleCancel}
-        />
+        <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
       </motion.div>
     </div>
   );

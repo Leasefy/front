@@ -695,6 +695,16 @@ export interface DispersionItem {
   cobroId: string | null;
   /** La cuota del propietario que se gira. Es la identidad de la línea. */
   cuotaId: string | null;
+  /**
+   * 🔴 El inmueble del renglón, y la LLAVE con la que se destilda.
+   *
+   * El asistente deja elegir a qué inmuebles de un propietario se le gira
+   * (pedido del CEO, 21-09) y esa selección viaja al back como `propertyIds`.
+   * El título no sirve de llave: dos inmuebles del mismo edificio se llaman
+   * casi igual. `null` = un renglón que no se puede nombrar (una liquidación
+   * vieja, los intereses ya guardados) y entra siempre.
+   */
+  propertyId?: string | null;
   propertyTitle: string;
   /**
    * El canon liquidado, SIN la administración: ésa es de la copropiedad. 🔴 Con

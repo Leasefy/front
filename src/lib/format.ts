@@ -4,6 +4,8 @@
  * These utilities are for non-component contexts (PDF generation, data processing, etc.)
  */
 
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+
 type SupportedLocale = 'es-CO' | 'en-US';
 
 function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
@@ -56,9 +58,18 @@ export function formatArea(area: number | null | undefined): string {
 /**
  * Formats a date string for display
  * @example formatDate('2026-01-18T14:30:00Z') → "18 ene 2026"
+ *
+ * 🔴 QA 22-09: «Mis contratos» del inquilino decía «Inicio 30 de jun de 2025»
+ * de un contrato que empieza el 1 de julio. El back manda las columnas `date`
+ * como `2025-07-01T00:00:00.000Z` y `new Date(...)` en Bogotá (UTC-5) lo corre
+ * a las 19:00 del día anterior. Se arregla ACÁ, en el origen, porque la usan 13
+ * archivos (contrato, auditoría, lotes, extractos): una fecha-calendario
+ * (`YYYY-MM-DD` o medianoche UTC exacta) se lee como DÍA con
+ * `fechaDeVigencia`, la misma regla del `formatDate` de i18n. Un ISO con otra
+ * hora sigue siendo un instante y se convierte como siempre.
  */
 export function formatDate(dateString: string, locale?: 'es' | 'en'): string {
-  const date = new Date(dateString);
+  const date = fechaDeVigencia(dateString) ?? new Date(dateString);
   return date.toLocaleDateString(getLocaleString(locale), {
     day: 'numeric',
     month: 'short',

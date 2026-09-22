@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import {
   formatCurrency,
   formatNumber,
@@ -122,6 +122,33 @@ describe('formatArea', () => {
 // formatDate
 // ---------------------------------------------------------------------------
 describe('formatDate', () => {
+  /*
+   * 🔴 QA 22-09: una fecha-calendario se corría un día en Bogotá. Se fija la
+   * zona a UTC-5 para que la prueba vea lo que ve el inquilino (con TZ=UTC el
+   * defecto no se reproduce).
+   */
+  describe('fechas-calendario no se corren un día en Bogotá', () => {
+    const tzOriginal = process.env.TZ;
+    beforeAll(() => {
+      process.env.TZ = 'America/Bogota';
+    });
+    afterAll(() => {
+      process.env.TZ = tzOriginal;
+    });
+
+    it('medianoche UTC de una columna `date` es ESE día, no el anterior', () => {
+      expect(formatDate('2025-07-01T00:00:00.000Z')).toMatch(/^1 de jul/);
+    });
+
+    it('un `YYYY-MM-DD` pelado también', () => {
+      expect(formatDate('2026-06-01')).toMatch(/^1 de jun/);
+    });
+
+    it('un instante con hora se sigue convirtiendo (las 02:00 UTC son el día anterior en Bogotá)', () => {
+      expect(formatDate('2026-06-01T02:00:00Z')).toMatch(/^31 de may/);
+    });
+  });
+
   // Using a fixed ISO date. toLocaleDateString output depends on Node ICU data,
   // so month names are validated with toContain rather than exact match.
   const isoDate = '2026-01-18T14:30:00Z';

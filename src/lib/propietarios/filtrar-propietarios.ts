@@ -155,15 +155,22 @@ export function conteosDePropietarios(
   propietarios: readonly Propietario[],
   filtros: FiltrosDePropietarios,
 ): ConteosDePropietarios {
-  const cuantos = (cambio: Partial<FiltrosDePropietarios>) =>
-    soloFiltrar(propietarios, { ...filtros, ...cambio }).length;
-
+  /*
+   * 🔴 22-09 · Sin un `const cuantos = (cambio) => …` que se llame cuatro veces.
+   *
+   * Así estaba, y el minificador de Next (SWC) lo INLINEA en el `useMemo` de la
+   * página: renombra `propietarios` y `filtros` en la primera copia y deja las
+   * otras tres con los nombres originales, que ya no existen. En `next dev` no
+   * pasa nada; en el build de producción la lista de Propietarios se caía con
+   * `ReferenceError: propietarios is not defined`. Cuatro llamadas escritas a
+   * mano no le dan nada que inlinear.
+   */
   return {
-    todos: cuantos({ tipo: 'all' }),
-    persona: cuantos({ tipo: 'person' }),
-    empresa: cuantos({ tipo: 'company' }),
+    todos: soloFiltrar(propietarios, { ...filtros, tipo: 'all' }).length,
+    persona: soloFiltrar(propietarios, { ...filtros, tipo: 'person' }).length,
+    empresa: soloFiltrar(propietarios, { ...filtros, tipo: 'company' }).length,
     // El chip del saldo no depende de sí mismo: cuenta los que TIENEN saldo
     // dentro del tipo y la búsqueda puestos, esté prendido o apagado.
-    conSaldo: cuantos({ soloConSaldo: true }),
+    conSaldo: soloFiltrar(propietarios, { ...filtros, soloConSaldo: true }).length,
   };
 }

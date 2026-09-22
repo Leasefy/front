@@ -170,11 +170,12 @@ describe('ArriendoDelContrato — un contrato AL DÍA, de arriba abajo', () => {
     expect(texto('estado-detalle')).toBe('Nada vencido')
   })
 
-  it('4 · el estado de cuenta es la puerta principal, y vuelve a este contrato', () => {
+  it('4 · el estado de cuenta es la puerta principal, abre SÓLO este contrato y vuelve a él', () => {
+    // 🔴 QA 22-09: abría el consolidado de todos los contratos del inquilino.
     const puerta = $('ver-estado-de-cuenta') as HTMLAnchorElement
     expect(puerta.textContent).toContain('Ver estado de cuenta')
     expect(puerta.getAttribute('href')).toBe(
-      `/panel/inmobiliaria/estado-de-cuenta/inquilino/71234567?volver=${encodeURIComponent('/panel/inmobiliaria/contratos/c-1686')}`,
+      `/panel/inmobiliaria/estado-de-cuenta/inquilino/71234567?volver=${encodeURIComponent('/panel/inmobiliaria/contratos/c-1686')}&contrato=1686`,
     )
   })
 

@@ -9,6 +9,7 @@
  * no se comparte, y compartirlo es medio pedido del CEO.
  */
 
+import * as React from 'react';
 import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -26,6 +27,9 @@ function Contenido() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const volver = rutaDeRegreso(searchParams.get('volver'), LISTA);
+  // Desde la ficha de un contrato llega `?contrato=<número>`: abre sólo ese.
+  const contrato = searchParams.get('contrato') ?? '';
+  const filtrosIniciales = React.useMemo(() => ({ contrato }), [contrato]);
 
   return (
     <PantallaDelEstadoDeCuenta
@@ -40,6 +44,7 @@ function Contenido() {
       /* El anticipo del contrato (lo que se descuenta mes a mes) sólo se
          lee desde el panel. */
       conAnticipoDelContrato
+      filtrosIniciales={filtrosIniciales}
       acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}

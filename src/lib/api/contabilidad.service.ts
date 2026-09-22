@@ -1152,7 +1152,16 @@ export const EVENTO_DESCONOCIDO = 'EVENTO_DESCONOCIDO';
 export interface ResultadoDeSemillaDeMapeo {
   asignados: EventoContable[];
   yaEstaban: EventoContable[];
-  sinCuenta: { evento: EventoContable; codigo: string }[];
+  /**
+   * Los eventos OBLIGATORIOS que no se asignaron solos, con el motivo (QA
+   * 22-09). `motivo` ausente = un back anterior: se lee como «no existe».
+   */
+  sinCuenta: {
+    evento: EventoContable;
+    codigo: string;
+    motivo?: 'NO_EXISTE' | 'NO_IMPUTABLE' | 'INACTIVA' | 'OTRO_NOMBRE';
+    nombreEnTuPlan?: string;
+  }[];
   mapeo: MapeoContable;
 }
 

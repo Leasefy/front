@@ -42,6 +42,12 @@ export interface DispersionDelBack {
   propietarioName: string;
   propietarioBankName: string | null;
   propietarioBankAccount: string | null;
+  /**
+   * Tipo y titular de la cuenta. HOY el back no los manda en la dispersión
+   * (sólo los pone en el PDF del extracto); si algún día los manda, se usan.
+   */
+  propietarioBankAccountType?: string | null;
+  propietarioBankAccountHolder?: string | null;
   month: string;
   /**
    * Con qué base salió el canon. La manda `GET /inmobiliaria/dispersiones` (y
@@ -121,17 +127,32 @@ export function cuentaDelPropietario(
   d: Pick<
     DispersionDelBack,
     'propietarioBankName' | 'propietarioBankAccount' | 'propietarioName'
-  >,
+  > &
+    Partial<Pick<DispersionDelBack, 'propietarioBankAccountType' | 'propietarioBankAccountHolder'>>,
 ): PropietarioBankAccount | null {
   if (!d.propietarioBankAccount) return null;
   return {
     bank: (d.propietarioBankName ?? '') as PropietarioBankAccount['bank'],
-    // El back no guarda el tipo de cuenta en la dispersión: se deja en blanco
-    // en vez de suponer «ahorros», que sería inventar el destino de un giro.
-    accountType: '' as PropietarioBankAccount['accountType'],
+    // Sin el tipo del back se deja en blanco en vez de suponer uno: sería
+    // inventar el destino de un giro.
+    accountType: tipoDeCuenta(d.propietarioBankAccountType) as PropietarioBankAccount['accountType'],
     accountNumber: d.propietarioBankAccount,
-    accountHolder: d.propietarioName,
+    /*
+     * 🔴 QA 22-09: el cajón decía «Titular: Luisa Fernanda Echeverri» —la
+     * propietaria— de una cuenta cuyo titular es otra persona («la cuenta es de
+     * la esposa»). El titular no se deduce del propietario: si el back no lo
+     * manda, queda vacío y el cajón dice «—».
+     */
+    accountHolder: d.propietarioBankAccountHolder?.trim() || '',
   };
+}
+
+/** «Ahorros»/«savings» → savings; «Corriente»/«checking» → checking; lo demás, vacío. */
+function tipoDeCuenta(crudo: string | null | undefined): '' | 'savings' | 'checking' {
+  const t = (crudo ?? '').trim().toLowerCase();
+  if (t === 'savings' || t.startsWith('ahorro')) return 'savings';
+  if (t === 'checking' || t.startsWith('corriente')) return 'checking';
+  return '';
 }
 
 export function adaptarDispersion(d: DispersionDelBack): Dispersion {

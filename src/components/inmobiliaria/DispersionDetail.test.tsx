@@ -275,3 +275,30 @@ describe('<DispersionDetail> — deducciones del propietario', () => {
     expect(q('bloque-de-deducciones')).toBeNull();
   });
 });
+
+describe('DispersionDetail — la cuenta bancaria no se inventa', () => {
+  it('🔴 sin tipo ni titular del back dice «—», no «Corriente» ni el nombre del propietario (QA 22-09)', () => {
+    propietariosMock.mockReturnValue({ propietarios: [BASE_PROPIETARIO] });
+    act(() => {
+      root.render(
+        React.createElement(DispersionDetail, {
+          isOpen: true,
+          onClose: () => {},
+          dispersion: {
+            ...BASE_DISPERSION,
+            propietarioBankAccount: {
+              bank: 'bancolombia',
+              accountType: '' as never,
+              accountNumber: '0011223344',
+              accountHolder: '',
+            },
+          },
+        } as React.ComponentProps<typeof DispersionDetail>),
+      );
+    });
+    const texto = document.body.textContent ?? '';
+    expect(texto).not.toContain('Corriente');
+    expect(texto).not.toContain('detailView.checking');
+    expect(texto).toContain('—');
+  });
+});

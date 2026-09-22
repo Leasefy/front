@@ -69,7 +69,18 @@ describe('adaptarDispersion', () => {
       const cuenta = cuentaDelPropietario(DEL_BACK)
 
       expect(cuenta?.accountNumber).toBe('123456789')
-      expect(cuenta?.accountHolder).toBe('Jorge Restrepo')
+    })
+
+    it('🔴 no supone que el titular es el propietario (QA 22-09: «la cuenta es de la esposa»)', () => {
+      expect(cuentaDelPropietario(DEL_BACK)?.accountHolder).toBe('')
+      expect(
+        cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountHolder: 'Hernán Botero Ochoa' })?.accountHolder,
+      ).toBe('Hernán Botero Ochoa')
+    })
+
+    it('el tipo, si el back lo manda, se entiende en español o en inglés', () => {
+      expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'Ahorros' })?.accountType).toBe('savings')
+      expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'CORRIENTE' })?.accountType).toBe('checking')
     })
 
     it('sin cuenta registrada devuelve null, no un objeto vacío', () => {

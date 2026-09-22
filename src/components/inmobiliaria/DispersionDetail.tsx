@@ -564,7 +564,13 @@ export function DispersionDetail({
               <div>
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
                 <p className="text-sm font-medium text-foreground capitalize">
-                  {dispersion.propietarioBankAccount.accountType === 'savings' ? t('inmobiliaria.dispersiones.detailView.savings') : t('inmobiliaria.dispersiones.detailView.checking')}
+                  {/* 🔴 QA 22-09: todo lo que no fuera «savings» se pintaba
+                      «Corriente» —también el tipo que no conocemos—. Sin dato, «—». */}
+                  {dispersion.propietarioBankAccount.accountType === 'savings'
+                    ? t('inmobiliaria.dispersiones.detailView.savings')
+                    : dispersion.propietarioBankAccount.accountType === 'checking'
+                      ? t('inmobiliaria.dispersiones.detailView.checking')
+                      : '—'}
                 </p>
               </div>
               <div>
@@ -579,7 +585,7 @@ export function DispersionDetail({
               <div>
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
                 <p className="text-sm font-medium text-foreground truncate">
-                  {dispersion.propietarioBankAccount.accountHolder}
+                  {dispersion.propietarioBankAccount.accountHolder || '—'}
                 </p>
               </div>
             </div>

@@ -264,6 +264,29 @@ export function GenerarDispersion({
     });
   }, []);
 
+  /**
+   * 🔴 Todos los inmuebles de UN propietario, de una.
+   *
+   * El que más tiene en la agencia de QA tiene 28. Sin esto, dejar fuera 27 de
+   * sus 28 son 27 clics, y volver atrás otros 27. Ojo: NO toca al propietario
+   * —dejar sus 28 inmuebles fuera no es lo mismo que destildarlo a él, aunque
+   * el giro quede en cero— porque la casilla del propietario es la que decide
+   * si aparece en la corrida, y volver a marcarlo tiene que devolverlo entero.
+   */
+  const alternarTodosLosInmuebles = useCallback(
+    (p: PropietarioDeLaPrevia, dejarFuera: boolean) => {
+      setSeleccion((prev) => {
+        const inmuebles = new Set(prev.inmueblesFuera);
+        for (const i of inmueblesDelPropietario(p)) {
+          if (dejarFuera) inmuebles.add(i.propertyId);
+          else inmuebles.delete(i.propertyId);
+        }
+        return { ...prev, inmueblesFuera: inmuebles };
+      });
+    },
+    [],
+  );
+
   const marcarTodos = useCallback(() => setSeleccion(NADA_FUERA), []);
   const desmarcarTodos = useCallback(
     () =>
@@ -515,6 +538,9 @@ export function GenerarDispersion({
                     onAlternarDetalle={() => alternarDetalle(p.propietarioId)}
                     onAlternar={() => alternarPropietario(p)}
                     onAlternarInmueble={alternarInmueble}
+                    onAlternarTodosLosInmuebles={(dejarFuera) =>
+                      alternarTodosLosInmuebles(p, dejarFuera)
+                    }
                   />
                 ))}
               </ul>
@@ -664,6 +690,7 @@ function FilaDelPropietario({
   onAlternar,
   onAlternarDetalle,
   onAlternarInmueble,
+  onAlternarTodosLosInmuebles,
 }: {
   p: PropietarioDeLaPrevia;
   seleccion: SeleccionDeLaLiquidacion;
@@ -673,6 +700,8 @@ function FilaDelPropietario({
   onAlternar: () => void;
   onAlternarDetalle: () => void;
   onAlternarInmueble: (propertyId: string) => void;
+  /** `true` = dejarlos todos fuera; `false` = volver a marcarlos todos. */
+  onAlternarTodosLosInmuebles: (dejarFuera: boolean) => void;
 }) {
   const inmuebles = inmueblesDelPropietario(p);
   const varios = inmuebles.length > 1;
@@ -726,12 +755,28 @@ function FilaDelPropietario({
             </span>
           </div>
 
+          {/* 🔴 Nico, 22-09: «a nivel de interacción podría mejorar el ver los
+              inmuebles que tiene cada propietario».
+              Era un texto gris de 14 px con un caret de 14 px al lado: no se
+              leía como algo en lo que se pueda hacer clic, el blanco para
+              apuntarle era de un renglón de alto, y con 28 inmuebles (Capital
+              e Ideas los tiene) abrirlo dejaba una lista larga sin nada que
+              permitiera marcarlos o desmarcarlos en bloque.
+              Ahora es un control con forma de control —borde, fondo, 32 px de
+              alto— que dice qué va a pasar, y lo que abre es una tabla con sus
+              encabezados y sus columnas alineadas con las de arriba. */}
           {varios ? (
             <button
               type="button"
               onClick={onAlternarDetalle}
               aria-expanded={abierto}
-              className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-primary"
+              aria-controls={`inmuebles-de-${p.propietarioId}`}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition',
+                abierto
+                  ? 'border-primary/40 bg-primary-soft text-primary'
+                  : 'border-border bg-surface text-fg-muted hover:border-primary/40 hover:text-primary',
+              )}
               data-testid="abrir-inmuebles"
             >
               {abierto ? (
@@ -739,7 +784,8 @@ function FilaDelPropietario({
               ) : (
                 <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              {inmuebles.length} inmuebles
+              <span className="font-mono tabular-nums">{inmuebles.length}</span>
+              {abierto ? 'inmuebles — ocultar' : 'inmuebles — ver cuáles'}
               {conInmueblesFuera > 0 && (
                 <span className="text-warning">
                   {' '}
@@ -775,55 +821,111 @@ function FilaDelPropietario({
       </div>
 
       {/* Los inmuebles del propietario, con su plata y su casilla. Van acá, en
-          la misma pantalla: eran el paso 2 y el paso 4 del asistente. */}
+          la misma pantalla: eran el paso 2 y el paso 4 del asistente.
+
+          🔴 22-09 · Deja de ser una lista suelta y pasa a ser una TABLA con
+          encabezados, alineada a las mismas columnas de la fila de arriba:
+          «comisión» debajo de «comisión» y el neto debajo del neto. Antes cada
+          renglón llevaba la palabra «comisión» escrita —28 veces en el
+          propietario que tiene 28 inmuebles— y ninguna cifra caía debajo de su
+          equivalente del propietario, así que no se podía comparar la parte
+          con el total.
+          Y trae su propio «dejarlos todos fuera / volver a marcarlos»: sin eso,
+          apagar 27 de 28 inmuebles son 27 clics. */}
       {varios && abierto && (
-        <ul className="ml-8 mt-4 space-y-3 border-l border-border-faint pl-4">
-          {inmuebles.map((inm) => {
-            const renglones = p.items.filter((i) => i.propertyId === inm.propertyId);
-            const canon = renglones.reduce((s, i) => s + i.rentCollected, 0);
-            const comision = renglones.reduce((s, i) => s + i.commissionAmount, 0);
-            const neto = renglones.reduce((s, i) => s + i.netAmount, 0);
-            const marcadoInm = !seleccion.inmueblesFuera.has(inm.propertyId);
-            return (
-              <li
-                key={inm.propertyId}
-                className="flex items-center gap-4 text-sm"
-                data-testid="fila-inmueble"
-                data-inmueble={inm.propertyId}
-              >
-                <Checkbox
-                  checked={marcadoInm}
-                  disabled={!marcado}
-                  onCheckedChange={() => onAlternarInmueble(inm.propertyId)}
-                  aria-label={`Girar ${inm.titulo}`}
-                />
-                <span
+        <div
+          id={`inmuebles-de-${p.propietarioId}`}
+          className="ml-9 mt-4 overflow-hidden rounded-lg border border-border-faint"
+          data-testid="inmuebles-del-propietario"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-border-faint bg-surface-muted/60 px-3 py-2">
+            <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+              A cuáles de sus {inmuebles.length} inmuebles se le gira
+            </p>
+            <button
+              type="button"
+              disabled={!marcado}
+              onClick={() => onAlternarTodosLosInmuebles(conInmueblesFuera === 0)}
+              className="text-sm text-primary hover:underline disabled:cursor-not-allowed disabled:text-fg-subtle disabled:no-underline"
+              data-testid="alternar-todos-los-inmuebles"
+            >
+              {conInmueblesFuera === 0 ? 'Dejarlos todos fuera' : 'Volver a marcarlos todos'}
+            </button>
+          </div>
+
+          {/* Con muchos inmuebles la lista no puede empujar la pantalla entera:
+              scrollea dentro de su propia caja. */}
+          <ul
+            className={cn(
+              'divide-y divide-border-faint',
+              inmuebles.length > 8 && 'max-h-80 overflow-y-auto',
+            )}
+            data-lenis-prevent
+          >
+            <li className="flex items-center gap-3 border-b border-border-faint px-3 py-1.5">
+              <span className="w-4" aria-hidden="true" />
+              <span className="min-w-0 flex-1 text-caption uppercase tracking-wide text-fg-muted">
+                Inmueble
+              </span>
+              <span className="w-32 text-right text-caption uppercase tracking-wide text-fg-muted">
+                Comisión
+              </span>
+              <span className="w-32 text-right text-caption uppercase tracking-wide text-fg-muted">
+                Se le gira
+              </span>
+            </li>
+            {inmuebles.map((inm) => {
+              const renglones = p.items.filter((i) => i.propertyId === inm.propertyId);
+              const canon = renglones.reduce((s, i) => s + i.rentCollected, 0);
+              const comision = renglones.reduce((s, i) => s + i.commissionAmount, 0);
+              const neto = renglones.reduce((s, i) => s + i.netAmount, 0);
+              const marcadoInm = !seleccion.inmueblesFuera.has(inm.propertyId);
+              return (
+                <li
+                  key={inm.propertyId}
                   className={cn(
-                    'min-w-0 flex-1 truncate',
-                    marcadoInm && marcado ? 'text-fg' : 'text-fg-muted',
+                    'flex items-center gap-3 px-3 py-2.5 text-sm',
+                    !(marcadoInm && marcado) && 'bg-surface-muted/40',
                   )}
+                  data-testid="fila-inmueble"
+                  data-inmueble={inm.propertyId}
                 >
-                  {inm.titulo}
-                </span>
-                <span className="font-mono tabular-nums text-fg-muted">
-                  comisión {formatCurrency(comision)}
-                </span>
-                <span
-                  className={cn(
-                    'w-28 text-right font-mono tabular-nums',
-                    marcadoInm && marcado ? 'font-medium text-fg' : 'text-fg-muted line-through',
-                  )}
-                  data-testid="neto-del-inmueble"
-                >
-                  {formatCurrency(neto)}
-                </span>
-                <span className="sr-only">
-                  {ROTULO_DEL_CANON[base]} {formatCurrency(canon)}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                  <Checkbox
+                    checked={marcadoInm}
+                    disabled={!marcado}
+                    onCheckedChange={() => onAlternarInmueble(inm.propertyId)}
+                    aria-label={`Girar ${inm.titulo}`}
+                  />
+                  <span
+                    className={cn(
+                      'min-w-0 flex-1 truncate',
+                      marcadoInm && marcado ? 'text-fg' : 'text-fg-muted',
+                    )}
+                  >
+                    {inm.titulo}
+                  </span>
+                  <span className="w-32 text-right font-mono tabular-nums text-fg-muted">
+                    {formatCurrency(comision)}
+                  </span>
+                  <span
+                    className={cn(
+                      'w-32 text-right font-mono tabular-nums',
+                      marcadoInm && marcado
+                        ? 'font-medium text-fg'
+                        : 'text-fg-muted line-through',
+                    )}
+                    data-testid="neto-del-inmueble"
+                  >
+                    {formatCurrency(neto)}
+                  </span>
+                  <span className="sr-only">
+                    {ROTULO_DEL_CANON[base]} {formatCurrency(canon)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </li>
   );

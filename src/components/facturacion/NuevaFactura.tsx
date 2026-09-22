@@ -90,6 +90,7 @@ import {
   type ResultadoDeLaCorrida,
 } from './facturasPorTandas'
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
+import { CajonDeLaFactura } from './CajonDeLaFactura'
 
 import { Button } from '@/components/ui/button'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
@@ -224,6 +225,13 @@ interface TablaProps {
   /** Por qué no se puede emitir hoy (sin resolución de la DIAN). `null` = se puede. */
   motivoParaNoEmitir: string | null
   /**
+   * 🔴 La fila abre el cajón con TODO (Nico, 22-09: «al dar clic se debería
+   * abrir detalle de ese en un drawer y ahí quizás ver y accionar más cosas»).
+   * La tabla tiene once columnas y recorta el tercero, el inmueble y el
+   * concepto con «…»; el cajón no recorta nada.
+   */
+  onAbrirDetalle: (factura: FacturaDelMes) => void
+  /**
    * 🔴 El pie de acciones masivas va DENTRO de la tabla, no debajo de ella
    * (Nico, 19-09: «cuando hay acciones masivas deben quedar también en la
    * tabla»). Se recibe armado porque quien sabe qué se hace con lo marcado es
@@ -278,6 +286,7 @@ function TablaDeFacturas({
   testid,
   onGenerarUna,
   motivoParaNoEmitir,
+  onAbrirDetalle,
   accionesMasivas,
   sinMarco = false,
 }: TablaProps) {
@@ -495,12 +504,29 @@ function TablaDeFacturas({
                 const emitida = factura.estado === 'EMITIDA'
                 const bloqueada = !emitida && !factura.emitible
                 return (
+                  /* 🔴 La fila tiene DOS blancos: la casilla marca (y el botón
+                     del final emite), y todo el resto abre el cajón. Los dos
+                     controles frenan la propagación, o marcar una casilla
+                     abriría el cajón encima. */
                   <TableRow
                     key={factura.clave}
                     data-testid={`factura-${factura.clave}`}
-                    className={emitida || bloqueada ? 'opacity-70' : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ver el detalle de la factura de ${factura.terceroNombre}`}
+                    onClick={() => onAbrirDetalle(factura)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onAbrirDetalle(factura)
+                      }
+                    }}
+                    className={cn(
+                      'cursor-pointer transition hover:bg-surface-muted/60',
+                      (emitida || bloqueada) && 'opacity-70',
+                    )}
                   >
-                    <TableCell className="w-10">
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={
                           !emitida && factura.emitible && seleccion.has(factura.clave)
@@ -635,7 +661,10 @@ function TablaDeFacturas({
                           </p>
                         )}
                     </TableCell>
-                    <TableCell className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface">
+                    <TableCell
+                      className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {emitida ? (
                         <span className="text-caption text-fg-muted">
                           {/* El número que vale ante la DIAN es el autorizado
@@ -912,6 +941,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [deteniendo, setDeteniendo] = useState(false)
   const detenerRef = useRef(false)
   const [corridaHecha, setCorridaHecha] = useState<ResultadoDeLaCorrida | null>(null)
+  /** La fila abierta en el cajón. Es la MISMA que pinta la tabla. */
+  const [detalle, setDetalle] = useState<FacturaDelMes | null>(null)
 
   useEffect(() => {
     // El informe es de UN mes: con otro mes elegido se leería como de éste.
@@ -1334,7 +1365,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           saber si seguía. */}
       {generando && progreso && (
         <div
-          className="rounded-lg border border-border bg-surface p-4"
+          className="rounded-lg border border-border bg-surface px-5 py-4"
           data-testid="facturacion-en-curso"
         >
           <BarraDeTrabajo
@@ -1437,8 +1468,20 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               testid={aQuien === 'INQUILINO' ? 'inquilinos' : 'propietarios'}
               onGenerarUna={(clave) => void generar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
+              onAbrirDetalle={setDetalle}
               accionesMasivas={pieDeAccionesMasivas}
               sinMarco
+            />
+
+            {/* 🔴 El cajón lee la MISMA fila que la tabla: no le pide nada al
+                back, así que no puede decir algo distinto de lo que se acaba
+                de ver ni dejar a nadie esperando. */}
+            <CajonDeLaFactura
+              factura={detalle}
+              onCerrar={() => setDetalle(null)}
+              onGenerarUna={(clave) => void generar([clave])}
+              motivoParaNoEmitir={motivoParaNoEmitir}
+              ocupado={generando}
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,

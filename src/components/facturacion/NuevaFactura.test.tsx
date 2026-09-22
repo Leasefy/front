@@ -1379,3 +1379,38 @@ describe('🔴 un botón apagado tiene que decir por qué, y al lado', () => {
     expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+/**
+ * 🔴 Nico, 22-09: «y al dar clic se debería abrir detalle de ese en un drawer y
+ * ahí quizás ver y accionar más cosas». La tabla tiene once columnas y recorta
+ * el tercero, el inmueble y el concepto con «…»; lo recortado vivía sólo en un
+ * `title`, que en un teléfono no existe.
+ */
+describe('NuevaFactura · la fila abre el cajón', () => {
+  it('🔴 al hacer clic en la fila se abre el detalle, sin recortar el inmueble', async () => {
+    await montar();
+    const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement;
+    expect(fila.getAttribute('role')).toBe('button');
+    // Cerrado antes de tocar nada.
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+
+    await act(async () => {
+      fila.click();
+    });
+
+    // El cajón vive en un PORTAL: se busca en el documento, no en el host.
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon).not.toBeNull();
+    expect(cajon.textContent).toContain('Cra 76 #45-12 apto 302');
+  });
+
+  it('🔴 marcar la casilla NO abre el cajón: son dos blancos distintos', async () => {
+    await montar();
+    const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement;
+    const casilla = fila.querySelector('button[role="checkbox"]') as HTMLElement;
+    await act(async () => {
+      casilla.click();
+    });
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+  });
+});

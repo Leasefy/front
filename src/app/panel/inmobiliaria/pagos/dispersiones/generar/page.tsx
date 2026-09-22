@@ -49,7 +49,13 @@ function GenerarDispersionesContent() {
         animate={{ opacity: 1, y: 0 }}
         className="border-b border-border bg-background"
       >
-        <div className="container max-w-4xl mx-auto px-4 py-4">
+        {/* 🔴 Nico, 22-09: «¿por qué no utilizas todo el ancho? ¡para eso lo
+            tienes!». Esta pantalla tenía DOS topes distintos —el encabezado en
+            `max-w-4xl` (896 px) y el contenido en `max-w-6xl` (1152 px)—, así
+            que en un monitor de 1.900 px sobraba media pantalla Y el botón de
+            volver ni siquiera quedaba alineado con las tarjetas de abajo. El
+            panel ya tiene su tope (1.920 px) en su layout: acá no va ninguno. */}
+        <div className="px-6 py-4 lg:px-8">
           <div className="flex items-center gap-4">
             <Button asChild variant="ghost" size="sm" hideArrow>
               <Link href="/panel/inmobiliaria/pagos/dispersiones">
@@ -79,7 +85,7 @@ function GenerarDispersionesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="container max-w-6xl mx-auto px-4 py-8"
+        className="px-6 py-6 lg:px-8"
       >
         <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
       </motion.div>

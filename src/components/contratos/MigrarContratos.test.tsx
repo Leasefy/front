@@ -1480,6 +1480,38 @@ describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el 
   })
 })
 
+describe('<MigrarContratos> — 🔴 después de cargar los inmuebles, primero se cruza (QA 22-09)', () => {
+  it('«Volver a cruzar» va ANTES que «Crear los N que faltan», y al terminar el cruce la cuenta se vuelve a pedir', async () => {
+    render()
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes)
+      .mockResolvedValueOnce({ candidatas: 164, activadas: 0, ambiguas: 0, sinDireccion: 0 })
+      .mockResolvedValue({ candidatas: 2, activadas: 0, ambiguas: 0, sinDireccion: 0 })
+    await avanzarAListaDeTrabajo(0, { pendientes: 164 })
+    await act(async () => {})
+
+    const cruce = container.querySelector('[data-testid="volver-a-cruzar"]')
+    const crear = container.querySelector('[data-testid="crear-inmuebles-faltantes-abrir"]')
+    expect(cruce).not.toBeNull()
+    expect(crear?.textContent).toContain('164')
+    // En el orden del documento: el cruce primero.
+    expect(
+      cruce!.compareDocumentPosition(crear!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    await act(async () => {
+      ;(cruce as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {})
+
+    // Antes seguía diciendo 164 hasta recargar la página.
+    expect(
+      container.querySelector('[data-testid="crear-inmuebles-faltantes-abrir"]')?.textContent,
+    ).toContain('2')
+  })
+})
+
 describe('<MigrarContratos> — activados sin propietario (2026-09-02)', () => {
   /**
    * El hueco que deja «Crear los N inmuebles que faltan» sobre un archivo sin

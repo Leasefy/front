@@ -24,6 +24,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -409,19 +410,12 @@ function Formulario({
           explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene APAGADA: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
         />
         <div className="flex items-center gap-3">
-          <input
-            id="exoneracion1141"
-            type="checkbox"
-            className="h-4 w-4"
-            checked={valores.exoneracion1141 === 'si'}
-            onChange={(e) =>
+          <Checkbox id="exoneracion1141" checked={valores.exoneracion1141 === 'si'} onCheckedChange={(marcada: boolean) =>
               setValores((v) => ({
                 ...v,
-                exoneracion1141: e.target.checked ? 'si' : 'no',
+                exoneracion1141: marcada ? 'si' : 'no',
               }))
-            }
-            data-testid="campo-exoneracion1141"
-          />
+            } data-testid="campo-exoneracion1141" />
           <Label htmlFor="exoneracion1141">
             Mi contador confirmó que esta inmobiliaria está exonerada
           </Label>

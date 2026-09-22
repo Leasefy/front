@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowsClockwise, Info, WarningCircle } from '@phosphor-icons/react';
 
 import { AunNoDisponible } from './AunNoDisponible';
@@ -243,21 +244,14 @@ export function ProrrogaDelContrato({
         </p>
       ) : (
       <label className="flex items-start gap-2.5 text-sm" data-testid="no-se-prorroga">
-        <input
-          type="checkbox"
-          className="mt-1 h-4 w-4"
-          checked={plan.noSeProrroga}
-          disabled={!editable}
-          onChange={(e) =>
+        <Checkbox className="mt-1" checked={plan.noSeProrroga} disabled={!editable} onCheckedChange={(marcada: boolean) =>
             void hacer(
-              () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, e.target.checked),
-              e.target.checked
+              () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, marcada),
+              marcada
                 ? 'Este contrato ya no se prorroga: al vencer queda en alerta y no se generan cuotas nuevas.'
                 : 'Este contrato vuelve a prorrogarse como diga la regla.',
             )
-          }
-          data-testid="no-se-prorroga-casilla"
-        />
+          } data-testid="no-se-prorroga-casilla" />
         <span>
           <strong>Este contrato NO se prorroga al vencer.</strong> Queda en alerta y nadie genera cuotas nuevas: lo que
           siga se decide a mano (renovarlo o terminarlo con la fecha de entrega).

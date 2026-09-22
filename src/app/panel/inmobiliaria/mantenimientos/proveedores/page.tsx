@@ -263,10 +263,16 @@ function FormularioDeProveedor({
 
         <form onSubmit={enviar} className="space-y-4 p-6">
           <Campo label="Nombre" requerido>
+            {/* 🔴 21-09 · Con `placeholder`. Nico: «¿por qué estos inputs no
+                tienen placeholder?». Un campo en blanco al lado de un rótulo de
+                una palabra deja a la persona adivinando el FORMATO: si el
+                nombre es el de la empresa o el del plomero que contesta. El
+                ejemplo lo resuelve sin gastar una línea de ayuda. */}
             <Input
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
               maxLength={200}
+              placeholder="Plomería Andina S.A.S. o Jorge Martínez"
               required
             />
           </Campo>
@@ -280,6 +286,7 @@ function FormularioDeProveedor({
               value={form.documento}
               onChange={(e) => setForm({ ...form, documento: e.target.value })}
               maxLength={20}
+              placeholder="900123456-7 o 71234567"
               required
             />
           </Campo>
@@ -291,6 +298,7 @@ function FormularioDeProveedor({
                 value={form.telefono ?? ''}
                 onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                 maxLength={20}
+                placeholder="3001234567"
               />
             </Campo>
             <Campo label="Correo">
@@ -299,6 +307,7 @@ function FormularioDeProveedor({
                 value={form.correo ?? ''}
                 onChange={(e) => setForm({ ...form, correo: e.target.value })}
                 maxLength={200}
+                placeholder="contacto@proveedor.com"
               />
             </Campo>
           </div>

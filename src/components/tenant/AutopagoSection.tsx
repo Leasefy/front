@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowsClockwise,
   CalendarDots,
@@ -417,13 +418,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
 
             {/* 🔴 El texto que se autoriza lo manda el SERVIDOR y se muestra literal. */}
             <label className="flex items-start gap-3 text-sm text-fg dark:text-white">
-              <input
-                id="autopago-acepta"
-                type="checkbox"
-                checked={acepta}
-                onChange={(e) => setAcepta(e.target.checked)}
-                className="mt-1"
-              />
+              <Checkbox id="autopago-acepta" checked={acepta} onCheckedChange={(marcada: boolean) => setAcepta(marcada)} className="mt-1" />
               <span data-testid="autopago-autorizacion">{tokenizacion.textoDeAutorizacion}</span>
             </label>
 

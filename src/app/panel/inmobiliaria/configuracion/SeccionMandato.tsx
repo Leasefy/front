@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { HandCoins, Percent, Plus, Receipt, Trash, WarningCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -254,7 +255,7 @@ function CobrosAlArrendar({
                 onChange={(e) => cambiar(f.clave, { valor: Number(e.target.value.replace(',', '.')) || 0 })}
               />
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={f.opcional} onChange={(e) => cambiar(f.clave, { opcional: e.target.checked })} />
+                <Checkbox checked={f.opcional} onCheckedChange={(marcada: boolean) => cambiar(f.clave, { opcional: marcada })} />
                 Opcional
               </label>
               <Button

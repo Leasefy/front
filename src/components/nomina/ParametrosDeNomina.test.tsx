@@ -249,10 +249,12 @@ describe('los factores que hay que confirmar', () => {
   it('🔴 la exoneración del art. 114-1 arranca APAGADA', async () => {
     h.parametros.mockResolvedValue(sinCargar());
     await montar();
-    const casilla = contenedor.querySelector<HTMLInputElement>(
-      '[data-testid="campo-exoneracion1141"]',
-    );
-    expect(casilla?.checked).toBe(false);
+    /* 🔴 `data-state` y no `.checked`: desde el 21-09 el control es el
+       `Checkbox` del sistema de diseño —un `<button>`, 20 px— y no un
+       `<input type="checkbox">` de 13. Lo que se protege no cambió: arranca
+       apagada. */
+    const casilla = contenedor.querySelector('[data-testid="campo-exoneracion1141"]');
+    expect(casilla?.getAttribute('data-state')).toBe('unchecked');
   });
 
   it('los porcentajes se muestran en % además de en bps', async () => {

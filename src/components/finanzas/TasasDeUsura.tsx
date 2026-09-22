@@ -27,6 +27,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash, WarningOctagon } from '@phosphor-icons/react';
 
 import {
@@ -415,13 +416,7 @@ function EditorDeTasa({
             />
           </div>
           <label className="flex items-start gap-2 text-sm text-fg">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={general}
-              onChange={(e) => setGeneral(e.target.checked)}
-              data-testid="guardar-en-la-general"
-            />
+            <Checkbox className="mt-1" checked={general} onCheckedChange={(marcada: boolean) => setGeneral(marcada)} data-testid="guardar-en-la-general" />
             <span>
               Guardarla en la serie general de Colombia
               <span className="block text-xs text-fg-muted">

@@ -568,10 +568,17 @@ export const contractsApi = {
      * (`ultimaFila`) y `terminado`. `reconciliarLoteCompleto` da la vuelta
      * entera. Desde el 2026-09-11 `activar` ya NO lo corre adentro.
      */
-    async reconciliar(lote: string, desdeFila = 0): Promise<ResultadoReconciliacion> {
+    async reconciliar(
+      lote: string,
+      /**
+       * La última fila mirada. AUSENTE en la primera vuelta: las filas se
+       * numeran desde 0 y un `0` acá se saltaba la primera (QA 22-09).
+       */
+      desdeFila?: number,
+    ): Promise<ResultadoReconciliacion> {
       return apiClient.post<ResultadoReconciliacion>('/contracts/migrar/reconciliar', {
         lote,
-        desdeFila,
+        ...(desdeFila !== undefined ? { desdeFila } : {}),
       });
     },
 

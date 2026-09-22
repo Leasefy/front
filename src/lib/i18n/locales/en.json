@@ -11937,6 +11937,16 @@
     "ciudadYFecha": "{{ciudad}}, {{fecha}}",
     "sinEmisor": "Agency without contact details on file",
     "restaPorPagar": "Remaining balance",
+    "delPropietario": {
+      "restaPorPagar": "To be paid out",
+      "cancelado": "Paid out",
+      "vencido": "Late",
+      "enMoraDias": "Payout late · {{dias}} days",
+      "vencidoEnPlazo": "To be paid out, within grace period",
+      "cuotasVencidas": "{{n}} late payouts",
+      "unaCuotaVencida": "1 late payout",
+      "pagadasDe": "Paid out {{pagadas}} of {{total}} installments"
+    },
     "cancelado": "Paid",
     "pendiente": "Pending",
     "totalesDelContrato": "Totals for contract {{numero}}",

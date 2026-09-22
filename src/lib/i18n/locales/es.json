@@ -11971,6 +11971,16 @@
     "ciudadYFecha": "{{ciudad}}, {{fecha}}",
     "sinEmisor": "Inmobiliaria sin datos de contacto cargados",
     "restaPorPagar": "Resta por pagar",
+    "delPropietario": {
+      "restaPorPagar": "Por girar",
+      "cancelado": "Girado",
+      "vencido": "Atrasado",
+      "enMoraDias": "Giro atrasado · {{dias}} días",
+      "vencidoEnPlazo": "Por girar, en plazo",
+      "cuotasVencidas": "{{n}} giros atrasados",
+      "unaCuotaVencida": "1 giro atrasado",
+      "pagadasDe": "Giradas {{pagadas}} de {{total}} cuotas"
+    },
     "cancelado": "Cancelado",
     "pendiente": "Pendiente",
     "totalesDelContrato": "Totales del contrato {{numero}}",

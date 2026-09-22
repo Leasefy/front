@@ -70,7 +70,7 @@ import {
   resumirElCliente,
   type AmortizacionDelContrato,
 } from './resumen';
-import { texto } from './textos';
+import { claveDelLado, texto } from './textos';
 import { numeroDelContratoDelEstado } from './numero';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
 
@@ -245,6 +245,7 @@ function tituloDelContratoEnElPapel(
 function frase(clave: string, params?: Record<string, string | number>): string {
   return paraElPapel(texto(clave, params));
 }
+const fraseGeneral = frase;
 
 /**
  * El concepto de la fila, sin decir dos veces lo mismo.
@@ -515,6 +516,10 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
 // ══ Portada ═════════════════════════════════════════════════════════════════
 
 function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
+  // Del lado PROPIETARIO la portada no dice «Resta por pagar · En mora» (QA 22-09).
+  const esPropietario = doc.cliente.tipo === 'PROPIETARIO';
+  const frase = (clave: string, params?: Record<string, string | number>) =>
+    fraseGeneral(claveDelLado(clave, doc.cliente.tipo), params);
   const resumen = resumirElCliente(doc, hoy);
   const interesesDelDoc = interesesDelEstado(doc);
   const heroe = formatCurrency(resumen.restaPorPagar);
@@ -623,7 +628,9 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
             style={[
               estilos.chip,
               resumen.enMora
-                ? { color: COLOR.rojo, backgroundColor: COLOR.rojoSuave }
+                ? esPropietario
+                  ? { color: COLOR.ambar, backgroundColor: COLOR.ambarSuave }
+                  : { color: COLOR.rojo, backgroundColor: COLOR.rojoSuave }
                 : resumen.enPlazo
                   ? { color: COLOR.ambar, backgroundColor: COLOR.ambarSuave }
                   : { color: COLOR.verde, backgroundColor: COLOR.verdeSuave },

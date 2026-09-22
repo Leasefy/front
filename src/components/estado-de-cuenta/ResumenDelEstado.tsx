@@ -29,7 +29,7 @@ import {
   type AmortizacionDelContrato,
   type ResumenDelCliente,
 } from './resumen';
-import { useTextoDelEstado } from './textos';
+import { claveDelLado, useTextoDelEstado } from './textos';
 import { interesesDelEstado } from './intereses';
 
 export function ResumenDelEstado({
@@ -41,7 +41,11 @@ export function ResumenDelEstado({
   hoy: string;
   className?: string;
 }) {
-  const t = useTextoDelEstado();
+  const texto = useTextoDelEstado();
+  // Los rótulos dependen del lado: al propietario no se le dice «en mora».
+  const rol = doc.cliente.tipo;
+  const esPropietario = rol === 'PROPIETARIO';
+  const t: typeof texto = (clave, params) => texto(claveDelLado(clave, rol), params);
   const r = React.useMemo(() => resumirElCliente(doc, hoy), [doc, hoy]);
   const intereses = interesesDelEstado(doc);
 
@@ -90,7 +94,7 @@ export function ResumenDelEstado({
                 {t('estadoDeCuenta.vencido')}{' '}
                 <span
                   data-testid="vencido-del-cliente"
-                  className="font-mono tabular-nums text-danger"
+                  className={cn('font-mono tabular-nums', esPropietario ? 'text-warning' : 'text-danger')}
                 >
                   {formatCurrency(r.vencidoCop)}
                 </span>
@@ -151,7 +155,10 @@ export function ResumenDelEstado({
               className={cn(
                 'inline-block rounded-full px-3 py-1 text-body-sm font-medium',
                 r.enMora
-                  ? 'bg-danger-soft text-danger'
+                  ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
+                    esPropietario
+                    ? 'bg-warning-soft text-warning'
+                    : 'bg-danger-soft text-danger'
                   : r.enPlazo
                     ? 'bg-warning-soft text-warning'
                     : 'bg-success-soft text-success',
@@ -196,12 +203,16 @@ export function BarraDeAmortizacion({
   amortizacion,
   className,
   testid,
+  rol,
 }: {
   amortizacion: AmortizacionDelContrato;
   className?: string;
   testid?: string;
+  /** Del lado PROPIETARIO la barra dice «Giradas», no «Pagadas». */
+  rol?: 'INQUILINO' | 'PROPIETARIO';
 }) {
-  const t = useTextoDelEstado();
+  const texto = useTextoDelEstado();
+  const t: typeof texto = (clave, params) => texto(claveDelLado(clave, rol), params);
   const a = amortizacion;
   if (a.total === 0) return null;
 
@@ -300,6 +311,7 @@ export function AmortizacionDelContrato({
   return (
     <BarraDeAmortizacion
       amortizacion={a}
+      rol={contrato.rol}
       className={className}
       testid={`amortizacion-${contrato.numero}`}
     />

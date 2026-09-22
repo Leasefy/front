@@ -181,6 +181,34 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(host.textContent).toContain('1 del sistema anterior');
   });
 
+  it('🔴 del lado PROPIETARIO no dice «Resta por pagar» ni «En mora» (QA 22-09)', () => {
+    const c = contrato({
+      rol: 'PROPIETARIO',
+      secciones: {
+        arriendos: [
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-01-01', cajon: 'CARTERA', diasDeMora: 250 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={estadoDeCuenta({
+          cliente: { nombre: 'Iván Mejía', documento: '71000000', tipo: 'PROPIETARIO' },
+          contratos: [c],
+        })}
+        hoy={HOY}
+      />,
+    );
+    const resumen = host.querySelector('[data-testid="estado-resumen"]')?.textContent ?? '';
+    expect(resumen).toContain('Por girar');
+    expect(resumen).toContain('Giro atrasado · 250 días');
+    expect(resumen).not.toContain('Resta por pagar');
+    expect(resumen).not.toContain('En mora');
+    const estado = host.querySelector('[data-testid="estado-del-cliente"]');
+    expect(estado?.className).not.toContain('text-danger');
+  });
+
   it('la nota de los filtros sale cuando hay filtros puestos', () => {
     montar(
       <EstadoDeCuentaDocumento doc={estadoDeCuenta()} hoy={HOY} nota="Ojo: filtrado" />,

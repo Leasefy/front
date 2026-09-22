@@ -78,11 +78,14 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
     // today, but one casing rule for the whole task is what stops the next
     // "which endpoint am I on?" ambiguity — that is what produced F-1.
     dto.listingType = isSale ? 'SALE' : 'RENT';
-    if (isSale) {
-      if (p.salePrice != null) dto.salePrice = p.salePrice;
-    } else if (p.monthlyRent != null) {
-      dto.monthlyRent = p.monthlyRent;
-    }
+    /*
+     * 🔴 Los DOS precios viajan cuando el archivo trae los dos (QA 22-09):
+     * «Arriendo» con precio de venta perdía la venta. El back guarda el de la
+     * operación y deja el otro escrito en el inmueble; frenar la fila por eso
+     * no (Nico, 2026-09-07: «se guarda como viene»).
+     */
+    if (p.monthlyRent != null) dto.monthlyRent = p.monthlyRent;
+    if (p.salePrice != null) dto.salePrice = p.salePrice;
   } else {
     // No listingType hint at all — still forward whichever price the row
     // carries, never both, never a coerced 0.

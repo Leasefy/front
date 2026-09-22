@@ -9371,7 +9371,6 @@
       "colNeto": "Net",
       "colCuenta": "Destination account",
       "colEstado": "Status",
-      "colComprobante": "Receipt",
       "emptyTitle": "Nothing to settle this month yet",
       "emptyDesc": "An owner shows up here when their leases have installments for the month to pay out, whether or not the tenant has paid. Payment processing is done in Disbursements.",
       "emptyDescRecaudado": "An owner shows up here once the tenant has paid the month's installment in full. Payment processing is done in Disbursements.",

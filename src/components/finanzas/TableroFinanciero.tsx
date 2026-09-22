@@ -64,10 +64,21 @@ const QUE_ES_LA_ETAPA =
   'Temprana: recién pasó el plazo · Administrativa: la persigue la cobranza · ' +
   'Prejurídica: última instancia antes del abogado · Jurídica: ya está en manos del abogado.';
 
-/** «1-30 días», «90+ días» — el rango del tramo, escrito. */
-export function rangoDelTramo(tramo: Pick<TramoDeCartera, 'desdeDias' | 'hastaDias'>): string {
-  if (tramo.hastaDias === null) return `${tramo.desdeDias}+ días de mora`;
-  return `${tramo.desdeDias}-${tramo.hastaDias} días de mora`;
+/**
+ * Qué dice la tarjeta de un tramo debajo del monto.
+ *
+ * 🔴 Antes armaba el rango con `desdeDias`/`hastaDias`, que EL BACK NO MANDA:
+ * en pantalla salía «undefined-undefined días de mora» en las cuatro tarjetas
+ * de «Cartera por edades». El rango ya viene escrito en `tramo.nombre` («0-30
+ * días»), que es el rótulo de la tarjeta, así que repetirlo abajo tampoco
+ * aportaba nada: lo que falta decir es cuántas cuotas son y desde dónde se
+ * cuentan los días, que no es obvio.
+ */
+export function definicionDelTramo(
+  tramo: Pick<TramoDeCartera, 'cuotas'>,
+): string {
+  const cuotas = `${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`;
+  return `${cuotas} en mora. Los días se cuentan DESPUÉS del plazo del contrato.`;
 }
 
 /**
@@ -272,11 +283,11 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
         />
         {cartera.tramos.map((tramo) => (
           <Cifra
-            key={tramo.nombre}
-            id={`tramo-${tramo.desdeDias}`}
+            key={tramo.tramo}
+            id={`tramo-${tramo.tramo}`}
             etiqueta={tramo.nombre}
             valor={tramo.carteraCop}
-            definicion={`${rangoDelTramo(tramo)}. ${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}.`}
+            definicion={definicionDelTramo(tramo)}
           />
         ))}
       </div>

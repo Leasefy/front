@@ -9411,7 +9411,6 @@
       "colNeto": "Neto",
       "colCuenta": "Cuenta destino",
       "colEstado": "Estado",
-      "colComprobante": "Comprobante",
       "emptyTitle": "Este mes todavía no hay nada que liquidar",
       "emptyDesc": "Aparece un propietario acá cuando sus contratos tienen cuotas del mes por girar, haya pagado o no el inquilino. El giro se ejecuta en Dispersiones.",
       "emptyDescRecaudado": "Aparece un propietario acá cuando el inquilino ya pagó completa la cuota del mes. El giro se ejecuta en Dispersiones.",

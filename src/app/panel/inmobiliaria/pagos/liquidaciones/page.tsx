@@ -38,7 +38,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, CalendarBlank } from '@phosphor-icons/react';
+import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -52,6 +52,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -65,8 +74,17 @@ import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import { baseDeLaLiquidacion } from '@/lib/propietarios/base-del-canon';
 
+/**
+ * Las columnas de la tabla de egresos.
+ *
+ * 🔴 `colComprobante` salió de acá el 21-09: era una columna entera para un
+ * botón «Ver dispersiones», y la tabla ya no cabía a lo ancho («Esta tabla no
+ * cabe entera: se corre a los lados»). La acción se fue al kebab de la fila,
+ * que es donde Nico pidió que vivan las acciones — y de paso el nombre del
+ * propietario recuperó el ancho que se partía en tres renglones.
+ */
 const COLUMNS = [
-  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colDeducciones', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
+  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colDeducciones', 'colNeto', 'colCuenta', 'colEstado',
 ];
 
 /** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
@@ -141,6 +159,26 @@ function TesoreriaContent() {
   const propietarios: Propietario[] = vista?.propietarios ?? [];
   // Con qué regla liquidó el back: decide el rótulo del canon, nada más.
   const base = baseDeLaLiquidacion(vista);
+
+  /*
+   * 🔴 BUSCADOR Y PAGINACIÓN (21-09). Nico: «eso con scroll infinito es
+   * horrible». Eran los 50 propietarios del mes —518 en la agencia migrada— en
+   * una sola tabla sin cortar y sin manera de encontrar a uno.
+   *
+   * El resumen de arriba sigue hablando del MES COMPLETO, no de lo filtrado: es
+   * la cuenta que tiene que cuadrar con lo que se va a girar.
+   */
+  const [busqueda, setBusqueda] = useState('');
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return propietarios;
+    return propietarios.filter(
+      (x) =>
+        x.propietarioName.toLowerCase().includes(q) ||
+        (x.propietarioBankAccount ?? '').toLowerCase().includes(q),
+    );
+  }, [propietarios, busqueda]);
+  const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
   const suma = (campo: keyof Propietario) =>
     propietarios.reduce((s, p) => s + (p[campo] as number), 0);
 
@@ -252,14 +290,23 @@ function TesoreriaContent() {
               />
             }
           >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 🔴 UNA COLUMNA (21-09). Era un grid de 1/3 + 2/3: el resumen se
+                quedaba con un tercio del ancho y la tabla de DIEZ columnas con
+                los dos tercios, así que no cabía y corría a los lados. Nico:
+                «esta página también tiene unas cosas por un lado otras por
+                otro… eso con scroll infinito es horrible». El resumen del mes
+                va arriba, ancho, y la tabla se queda con la pantalla entera. */}
+            <div className="space-y-6">
               {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
-              <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
+              <section className="rounded-lg border border-border bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
                   <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
                 </div>
-                <div className="space-y-2.5">
+                {/* En una fila cuando hay ancho: son los pasos de UNA cuenta
+                    (canon − comisión + a favor − a cargo = neto), y en columna
+                    ocupaban media pantalla de alto. */}
+                <div className="space-y-2.5 lg:grid lg:grid-cols-4 lg:gap-x-8 lg:gap-y-2 lg:space-y-0">
                   {resumen.map((row, i) => (
                     <div key={row.labelKey}>
                       <div className="flex items-center justify-between text-sm">
@@ -282,7 +329,7 @@ function TesoreriaContent() {
                       )}
                     </div>
                   ))}
-                  <div className="border-t border-border pt-2.5 flex items-center justify-between">
+                  <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-4">
                     <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
                       <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
                       {t(k('fNeto'))}
@@ -339,7 +386,7 @@ function TesoreriaContent() {
               </section>
 
               {/* Egresos table */}
-              <section className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
+              <section className="rounded-lg border border-border bg-card overflow-hidden">
                 <div className="flex items-center gap-3 p-5 border-b border-border">
                   <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
                     <Wallet className="w-[18px] h-[18px] text-fg-muted" />
@@ -349,19 +396,51 @@ function TesoreriaContent() {
                     <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
                   </div>
                 </div>
+                {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
+                    a su lado: suelto arriba no diría qué está filtrando. */}
+                <div className="flex flex-col gap-2 border-b border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative w-full sm:max-w-sm">
+                    <MagnifyingGlass
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      className="pl-9"
+                      placeholder="Propietario o cuenta"
+                      aria-label="Buscar un propietario en las liquidaciones del mes"
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      data-testid="buscar-liquidacion"
+                    />
+                  </div>
+                  <p className="text-xs text-fg-muted" data-testid="alcance-de-liquidaciones">
+                    {visibles.length} de {propietarios.length}{' '}
+                    {propietarios.length === 1 ? 'propietario' : 'propietarios'} de{' '}
+                    {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
+                  </p>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {COLUMNS.map((c) => (
-                          <TableHead key={c} className="whitespace-nowrap">
+                          <TableHead
+                            key={c}
+                            className={cn(
+                              'whitespace-nowrap',
+                              // El nombre no se parte en tres renglones.
+                              c === 'colPropietario' && 'min-w-[13rem]',
+                            )}
+                          >
                             {t(k(c))}
                           </TableHead>
                         ))}
+                        {/* La del kebab. Sin rótulo: el icono ya lo dice. */}
+                        <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {propietarios.map((p) => (
+                      {paginado.pageItems.map((p) => (
                         <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
@@ -416,16 +495,56 @@ function TesoreriaContent() {
                               {t(k(p.yaExiste ? 'estadoGenerada' : 'estadoPendiente'))}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Button asChild variant="ghost" hideArrow className="h-8 px-2 text-xs">
-                              <Link href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}>{t(k('verDispersiones'))}</Link>
-                            </Button>
+                          {/* 🔴 Las acciones, en el kebab de la derecha (Nico,
+                              21-09). Era un botón de texto ocupando una columna
+                              entera en una tabla que ya no cabía. */}
+                          <TableCell className="w-10">
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8"
+                                  aria-label={`Acciones de la liquidación de ${p.propietarioName}`}
+                                  data-testid="liquidacion-kebab"
+                                >
+                                  <DotsThreeVertical
+                                    className="h-4 w-4"
+                                    weight="bold"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className="w-52">
+                                <DropdownListItem asChild>
+                                  <Link
+                                    href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}
+                                    data-testid="liquidacion-ver-dispersiones"
+                                  >
+                                    {t(k('verDispersiones'))}
+                                  </Link>
+                                </DropdownListItem>
+                              </DropdownListContent>
+                            </DropdownList>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+                {paginado.shouldPaginate && (
+                  <div className="border-t border-border px-5 py-3">
+                    <TablePagination
+                      total={paginado.total}
+                      page={paginado.page}
+                      pageSize={paginado.pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={paginado.setPage}
+                      onPageSizeChange={paginado.setPageSize}
+                    />
+                  </div>
+                )}
               </section>
             </div>
           </EstadoDeDatos>

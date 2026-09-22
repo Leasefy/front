@@ -404,3 +404,83 @@ describe('Deducciones del mes', () => {
     expect(q('tesoreria-quedan-debiendo')).toBeNull();
   });
 });
+
+/*
+ * 🔴 BUSCADOR Y PAGINACIÓN (21-09). Nico: «eso con scroll infinito es
+ * horrible». Eran los propietarios del mes en una sola tabla sin cortar —50 en
+ * la agencia de QA, 518 en la migrada— y sin manera de encontrar a uno.
+ *
+ * Lo que estas pruebas cuidan, además de que corte y busque: que el RESUMEN de
+ * arriba siga hablando del mes completo. Si el resumen siguiera al filtro, el
+ * total dejaría de cuadrar con lo que se va a girar, y esa cuenta es la que se
+ * defiende delante del propietario.
+ */
+describe('buscar y paginar en vez de un scroll infinito', () => {
+  /** N propietarios con un neto distinto cada uno. */
+  function conMuchos(cuantos: number) {
+    return vistaPrevia({
+      propietarios: Array.from({ length: cuantos }, (_, i) => ({
+        propietarioId: `p-${i}`,
+        propietarioName: `Propietario ${String(i).padStart(2, '0')}`,
+        propietarioBankName: 'Bancolombia',
+        propietarioBankAccount: `cuenta-${i}`,
+        yaExiste: false,
+        totalCollected: 1_000_000,
+        totalCommission: 100_000,
+        totalConceptosAFavor: 0,
+        totalConceptosACargo: 0,
+        totalDeTerceros: 0,
+        netToPropietario: 900_000,
+        items: [],
+      })),
+    });
+  }
+
+  async function escribir(texto: string) {
+    const input = q('buscar-liquidacion') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    await act(async () => {
+      setter.call(input, texto);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await asentar();
+  }
+
+  it('con doce propietarios se ven diez, y el pie de la tabla aparece', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+
+    expect(filas()).toHaveLength(10);
+    expect(q('alcance-de-liquidaciones')?.textContent).toContain('12 de 12');
+  });
+
+  it('el buscador encuentra por nombre', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+    await escribir('Propietario 07');
+
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]!.textContent).toContain('Propietario 07');
+  });
+
+  /*
+   * 🔴 La cuenta de arriba NO sigue al filtro. Con «Propietario 07» buscado, el
+   * neto del mes sigue siendo el de los doce: es lo que se va a girar, y un
+   * resumen que cambia con la búsqueda deja de ser conciliable.
+   */
+  it('el resumen del mes no cambia con la búsqueda, y se dice', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+    const netoAntes = q('tesoreria-neto-total')?.textContent;
+
+    await escribir('Propietario 07');
+
+    expect(q('tesoreria-neto-total')?.textContent).toBe(netoAntes);
+    expect(q('alcance-de-liquidaciones')?.textContent).toContain(
+      'las del mes completo',
+    );
+  });
+});

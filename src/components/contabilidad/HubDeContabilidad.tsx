@@ -1046,8 +1046,12 @@ export function HubDeContabilidad() {
       {/* 🔴 20-09 (navegador abierto, 1440): sin `items-start` las dos tarjetas
           se estiran a la misma altura y «Últimos asientos» —que tiene cinco
           renglones— quedaba con ~250 px de vacío abajo, leyéndose como «acá
-          falta algo». Cada tarjeta mide lo que mide su contenido. */}
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+          falta algo». Cada tarjeta mide lo que mide su contenido.
+          🔴 22-09 (QA a 390 px): sin `grid-cols-1` la columna implícita es
+          `auto` y NO se encoge: la glosa más larga de «Últimos asientos»
+          estiraba la página a 1.606 px (el `truncate` no truncaba nada).
+          `grid-cols-1` es `minmax(0, 1fr)`. */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <UltimosAsientos asientos={datos.ultimos} cargando={cargando} fallo={falloDe('libro')} />
         <ParaElContador />
       </div>

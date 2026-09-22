@@ -43,11 +43,19 @@ vi.mock('@/lib/hooks/useContracts', () => ({
     isLoading: false,
   }),
 }))
-vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  useConsignaciones: () => ({
-    consignaciones: [{ id: 'g-1', propertyTitle: 'Casa Envigado', propertyAddress: 'Cra 43' }],
+/* El estado de la lectura de inmuebles se controla desde cada test: lo que se
+   prueba abajo es justamente qué dice el selector cuando esa lectura FALLA. */
+const inmueblesDelHook = vi.hoisted(() => ({
+  valor: {
+    consignaciones: [
+      { id: 'g-1', propertyTitle: 'Casa Envigado', propertyAddress: 'Cra 43' },
+    ] as unknown[],
     isLoading: false,
-  }),
+    errorCrudo: null as unknown,
+  },
+}))
+vi.mock('@/lib/hooks/useInmobiliaria', () => ({
+  useConsignaciones: () => inmueblesDelHook.valor,
 }))
 
 // El Combobox de cadence se reemplaza por un <select>: lo que importa acá son
@@ -64,11 +72,16 @@ vi.mock('@/components/ui/combobox', () => ({
     value?: string
     onChange: (v: string | undefined) => void
     disabled?: boolean
+    placeholder?: string
   }) =>
     React.createElement(
       'select',
       {
         'data-testid': (rest as Record<string, string>)['data-testid'],
+        // 🔴 El doble PINTA el placeholder: es lo que la persona lee cuando no
+        // hay nada elegido, y sin exponerlo cualquier assert sobre él pasaría
+        // en falso (el doble no lo renderizaba en ninguna parte).
+        'data-placeholder': (rest as Record<string, string>).placeholder ?? '',
         value: value ?? '',
         disabled,
         onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value || undefined),
@@ -205,6 +218,35 @@ describe('GenerarDocumentoDialog', () => {
     })
     return onGenerado
   }
+
+  it('🔴 con la lectura de inmuebles CAÍDA, el selector no dice «No hay inmuebles»', async () => {
+    /* Visto en la pantalla el 21-09, con la base de desarrollo atrasada una
+       columna: el selector decía «No hay inmuebles» y había 2.965. Un fallo
+       que se ve idéntico a «no hay nada» no lo reporta nadie. */
+    inmueblesDelHook.valor = {
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: Object.assign(new Error('503'), { status: 503 }),
+    }
+    try {
+      await abrir()
+      await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'INVENTARIO'))
+      const inmueble = q<HTMLSelectElement>('[data-testid="doc-inmueble"]')!
+      // Assert POSITIVO: dice lo que pasó. Un `not.toContain` acá podría pasar
+      // por cualquier motivo, incluso por no pintar nada.
+      expect(inmueble.getAttribute('data-placeholder')).toBe('No pudimos traer los inmuebles')
+      // Y queda APAGADO: abierto sobre una lista vacía volvería a parecer «no hay».
+      expect(inmueble.disabled).toBe(true)
+    } finally {
+      inmueblesDelHook.valor = {
+        consignaciones: [
+          { id: 'g-1', propertyTitle: 'Casa Envigado', propertyAddress: 'Cra 43' },
+        ],
+        isLoading: false,
+        errorCrudo: null,
+      }
+    }
+  })
 
   it('lista los tipos que sabe armar el backend, no una lista clavada en el front', async () => {
     await abrir()

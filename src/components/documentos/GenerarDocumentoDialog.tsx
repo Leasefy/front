@@ -48,6 +48,10 @@ import { cn } from '@/lib/utils';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import {
+  elSelectorSirve,
+  loQueDiceUnSelector,
+} from '@/lib/errores/lo-que-dice-un-selector';
+import {
   documentosLegalesApi,
   type CodigoDeDocumentoLegal,
   type DocumentoGenerado,
@@ -104,8 +108,19 @@ export function GenerarDocumentoDialog({
   onGenerado,
   plantillasPropias = [],
 }: Props) {
-  const { contracts, isLoading: cargandoContratos } = useContracts();
-  const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones();
+  /* 🔴 Los errores se LEEN, no se ignoran (21-09). Sin esto, con la lectura de
+     inmuebles caída el selector decía «No hay inmuebles» habiendo 2.965: un
+     fallo disfrazado de vacío, que nadie reporta porque parece un dato. */
+  const {
+    contracts,
+    isLoading: cargandoContratos,
+    errorCrudo: errorDeContratos,
+  } = useContracts();
+  const {
+    consignaciones,
+    isLoading: cargandoInmuebles,
+    errorCrudo: errorDeInmuebles,
+  } = useConsignaciones();
 
   const [plantillas, setPlantillas] = useState<PlantillaLegalDelSistema[]>([]);
   const [codigo, setCodigo] = useState<CodigoDeDocumentoLegal | ''>('');
@@ -433,15 +448,22 @@ export function GenerarDocumentoDialog({
                     setContractId(v ?? '');
                     if (v) setConsignacionId('');
                   }}
-                  placeholder={
-                    cargandoContratos
-                      ? 'Cargando contratos…'
-                      : opcionesDeContrato.length
-                        ? 'Buscar por número, dirección o inquilino'
-                        : 'No hay contratos'
-                  }
+                  placeholder={loQueDiceUnSelector({
+                    cargando: cargandoContratos,
+                    error: errorDeContratos,
+                    cuantos: opcionesDeContrato.length,
+                    queSon: 'los contratos',
+                    pista: 'Buscar por número, dirección o inquilino',
+                    cuandoNoHay: 'No hay contratos',
+                  })}
                   searchPlaceholder="Número, dirección o inquilino"
-                  disabled={opcionesDeContrato.length === 0}
+                  disabled={
+                    !elSelectorSirve({
+                      cargando: cargandoContratos,
+                      error: errorDeContratos,
+                      cuantos: opcionesDeContrato.length,
+                    })
+                  }
                   contentClassName="z-[400]"
                 />
               </div>
@@ -455,15 +477,22 @@ export function GenerarDocumentoDialog({
                     setConsignacionId(v ?? '');
                     if (v) setContractId('');
                   }}
-                  placeholder={
-                    cargandoInmuebles
-                      ? 'Cargando inmuebles…'
-                      : opcionesDeInmueble.length
-                        ? 'Buscar por título o dirección'
-                        : 'No hay inmuebles'
-                  }
+                  placeholder={loQueDiceUnSelector({
+                    cargando: cargandoInmuebles,
+                    error: errorDeInmuebles,
+                    cuantos: opcionesDeInmueble.length,
+                    queSon: 'los inmuebles',
+                    pista: 'Buscar por título o dirección',
+                    cuandoNoHay: 'No hay inmuebles',
+                  })}
                   searchPlaceholder="Título o dirección"
-                  disabled={opcionesDeInmueble.length === 0}
+                  disabled={
+                    !elSelectorSirve({
+                      cargando: cargandoInmuebles,
+                      error: errorDeInmuebles,
+                      cuantos: opcionesDeInmueble.length,
+                    })
+                  }
                   contentClassName="z-[400]"
                 />
               </div>
@@ -496,15 +525,22 @@ export function GenerarDocumentoDialog({
                     setContractId(v ?? '');
                     if (v) setConsignacionId('');
                   }}
-                  placeholder={
-                    cargandoContratos
-                      ? 'Cargando contratos…'
-                      : opcionesDeContrato.length
-                        ? 'Buscar por número, dirección o inquilino'
-                        : 'No hay contratos'
-                  }
+                  placeholder={loQueDiceUnSelector({
+                    cargando: cargandoContratos,
+                    error: errorDeContratos,
+                    cuantos: opcionesDeContrato.length,
+                    queSon: 'los contratos',
+                    pista: 'Buscar por número, dirección o inquilino',
+                    cuandoNoHay: 'No hay contratos',
+                  })}
                   searchPlaceholder="Número, dirección o inquilino"
-                  disabled={opcionesDeContrato.length === 0}
+                  disabled={
+                    !elSelectorSirve({
+                      cargando: cargandoContratos,
+                      error: errorDeContratos,
+                      cuantos: opcionesDeContrato.length,
+                    })
+                  }
                   contentClassName="z-[400]"
                 />
               </div>
@@ -520,15 +556,22 @@ export function GenerarDocumentoDialog({
                       setConsignacionId(v ?? '');
                       if (v) setContractId('');
                     }}
-                    placeholder={
-                      cargandoInmuebles
-                        ? 'Cargando inmuebles…'
-                        : opcionesDeInmueble.length
-                          ? 'Buscar por título o dirección'
-                          : 'No hay inmuebles'
-                    }
+                    placeholder={loQueDiceUnSelector({
+                      cargando: cargandoInmuebles,
+                      error: errorDeInmuebles,
+                      cuantos: opcionesDeInmueble.length,
+                      queSon: 'los inmuebles',
+                      pista: 'Buscar por título o dirección',
+                      cuandoNoHay: 'No hay inmuebles',
+                    })}
                     searchPlaceholder="Título o dirección"
-                    disabled={opcionesDeInmueble.length === 0}
+                    disabled={
+                      !elSelectorSirve({
+                        cargando: cargandoInmuebles,
+                        error: errorDeInmuebles,
+                        cuantos: opcionesDeInmueble.length,
+                      })
+                    }
                     contentClassName="z-[400]"
                   />
                 </div>

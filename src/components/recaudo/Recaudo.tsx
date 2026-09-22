@@ -304,11 +304,18 @@ export function Recaudo() {
               />
             </div>
 
-            {/* 🔴 Los cobros EMITIDOS, aparte y rotulados como lo que son: el
-                documento con el que finanzas reclama parte de la deuda. Cero
-                cobros no es cero deuda, y por eso se dice con palabras en vez
-                de dejar un «Facturado $0» al lado de la deuda del mes. */}
-            <p className="text-xs text-fg-muted" data-testid="facturado">
+            {/* 🔴 Los cobros EMITIDOS, rotulados como lo que son: el documento
+                con el que finanzas reclama parte de la deuda. Cero cobros no es
+                cero deuda, y por eso se dice con palabras en vez de dejar un
+                «Facturado $0» al lado de la deuda del mes.
+
+                Va PEGADO a las cinco cifras, no flotando entre ellas y el
+                gráfico: suelto en medio de la página era uno más de los bloques
+                que Nico no podía asociar a nada (21-09). */}
+            <p
+              className="-mt-2 border-l-2 border-border pl-3 text-xs text-fg-muted"
+              data-testid="facturado"
+            >
               {resumen.cobrosEmitidos === 0 ? (
                 <>
                   Nadie emitió un cobro de {nombreDelMes(month)}. No hace falta: el inquilino
@@ -348,7 +355,27 @@ export function Recaudo() {
             {/* Los mismos doce meses, en la tabla de la casa. La fila del mes
                 en foco va marcada y cualquier fila cambia el mes: es el
                 selector de arriba, pero con los números a la vista. */}
-            <section className="overflow-hidden rounded-lg border border-border bg-surface">
+            <section
+              className="overflow-hidden rounded-lg border border-border bg-surface"
+              aria-labelledby="serie-mensual-titulo"
+            >
+              {/* 🔴 CADA BLOQUE DICE QUÉ ES (Nico, 21-09: «pasa lo mismo con
+                  esta de recaudo… es un vómito literal», «todo en esta pantalla
+                  está como suelto, nada realmente se sabe que es de qué»).
+                  «No nombramos las tablas» vale cuando la tarjeta que las
+                  contiene ya lo dice —en «Deuda del mes» lo dicen el mes, las
+                  pestañas y el buscador—; acá la tabla ERA la tarjeta entera y
+                  no había nada que la nombrara. El gráfico de arriba ya llevaba
+                  su nombre, y era el único de los cuatro bloques. */}
+              <div className="space-y-1 border-b border-border px-6 py-4">
+                <h2 id="serie-mensual-titulo" className="text-sm font-semibold text-fg">
+                  Mes por mes, en números
+                </h2>
+                <p className="text-xs text-fg-muted">
+                  Lo mismo que el gráfico de arriba, con las cifras exactas. La fila del mes
+                  elegido va resaltada.
+                </p>
+              </div>
               <Table data-testid="serie-mensual">
                 <TableHeader>
                   <TableRow>
@@ -416,7 +443,19 @@ export function Recaudo() {
 
             {/* Los recibos del mes, agrupados por medio de pago (así los manda
                 el back). El pie suma: es la misma cifra que «Llegó». */}
-            <section className="overflow-hidden rounded-lg border border-border bg-surface">
+            <section
+              className="overflow-hidden rounded-lg border border-border bg-surface"
+              aria-labelledby="por-medio-titulo"
+            >
+              <div className="space-y-1 border-b border-border px-6 py-4">
+                <h2 id="por-medio-titulo" className="text-sm font-semibold text-fg">
+                  Cómo entró la plata de {nombreDelMes(month)}
+                </h2>
+                <p className="text-xs text-fg-muted">
+                  Los recibos de caja del mes, por medio de pago. El total es la misma cifra
+                  que «Llegó» arriba.
+                </p>
+              </div>
               <Table data-testid="por-medio">
                 <TableHeader>
                   <TableRow>

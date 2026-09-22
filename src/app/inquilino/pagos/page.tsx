@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
 // del producto — o que no se ve, si el proveedor montado es el del DS.
 import { toast } from '@/components/ui/toast';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,9 @@ import { PayRentModal } from '@/components/tenant/PayRentModal';
 import { MediosDePagoDeLaInmobiliaria } from '@/components/tenant/MediosDePagoDeLaInmobiliaria';
 import { AutopagoSection } from '@/components/tenant/AutopagoSection';
 import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
+import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { diasHastaElDiaDePago, resumenDePagos, type ResumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
 import type {
   BackendTenantPaymentRequest,
   TenantPaymentRequestStatus,
@@ -97,6 +100,29 @@ function PagosPageContent() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  /*
+   * 🔴 Las tarjetas de arriba salen del ESTADO DE CUENTA, no de las solicitudes
+   * de pago (QA 22-09 P0: «Pendiente $0» a quien debía $50 M vencidos). Es la
+   * misma fuente de «Mi estado de cuenta», así que las dos pantallas dicen lo
+   * mismo. Si no llega, se dice —no se pinta un cero—.
+   */
+  const [resumen, setResumen] = useState<ResumenDePagos | null>(null);
+  const [errorResumen, setErrorResumen] = useState<unknown>(null);
+  const [cargandoResumen, setCargandoResumen] = useState(true);
+  const cargarResumen = () => {
+    setCargandoResumen(true);
+    setErrorResumen(null);
+    estadoDeCuentaApi
+      .mio()
+      .then((doc) => setResumen(resumenDePagos(doc, hoyLocal())))
+      .catch((e: unknown) => setErrorResumen(e))
+      .finally(() => setCargandoResumen(false));
+  };
+  const hayArriendo = Boolean(primaryLease);
+  useEffect(() => {
+    if (hayArriendo) cargarResumen();
+  }, [hayArriendo]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Enriquecer requests con title de la propiedad (request.lease solo trae address+city)
   const leaseMap = new Map(activeLeases.map(l => [l.id, l]));
   const allRequests: RequestRow[] = rawRequests
@@ -111,22 +137,8 @@ function PagosPageContent() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = allRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente".
-  // El indicador "Total pagado / Este año" es year-to-date: se limita al año en curso.
-  const currentYear = new Date().getFullYear();
-  const totalPaid = allRequests
-    .filter(r => r.status === 'APPROVED' && r.periodYear === currentYear)
-    .reduce((sum, r) => sum + r.amount, 0);
-
-  const pendingAmount = allRequests
-    .filter(r => r.status === 'PENDING_VALIDATION')
-    .reduce((sum, r) => sum + r.amount, 0);
-
-  // Próximo pago: si el período actual no tiene nada (NONE) o fue rechazado,
-  // mostramos como "próximo" el monthlyRent del lease para el período actual.
   const showNextPaymentCta =
     paymentInfo?.currentPeriodStatus === 'NONE' || paymentInfo?.currentPeriodStatus === 'REJECTED';
-  const nextAmount = showNextPaymentCta ? paymentInfo!.monthlyRent : 0;
 
   const formatShortDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
@@ -140,24 +152,15 @@ function PagosPageContent() {
     return `${names[month - 1]} ${year}`;
   };
 
-  // Día de pago del mes calculado contra el día de pago del lease
-  const getDaysUntilPayment = () => {
-    if (!primaryLease || !showNextPaymentCta) return null;
-    const today = new Date();
-    let due = new Date(today.getFullYear(), today.getMonth(), primaryLease.paymentDay);
-    if (due < today) due = new Date(today.getFullYear(), today.getMonth() + 1, primaryLease.paymentDay);
-    return Math.max(0, Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  // Día de pago del arriendo: los migrados no lo traen, y entonces no se afirma
+  // un vencimiento ni una barra (de ahí salían «NaN días» y «NaN%»).
+  const diaDePago = paymentInfo?.paymentDay ?? primaryLease?.paymentDay;
+  const daysUntil = showNextPaymentCta ? diasHastaElDiaDePago(diaDePago, new Date()) : null;
+  const getPaymentProgress = (): number | null => {
+    if (daysUntil === null || typeof diaDePago !== 'number') return null;
+    const daysElapsed = Math.min(new Date().getDate(), diaDePago);
+    return Math.round((daysElapsed / diaDePago) * 100);
   };
-
-  const getPaymentProgress = () => {
-    if (!primaryLease || !showNextPaymentCta) return 0;
-    const today = new Date();
-    const totalDays = primaryLease.paymentDay;
-    const daysElapsed = Math.min(today.getDate(), totalDays);
-    return Math.round((daysElapsed / totalDays) * 100);
-  };
-
-  const daysUntil = getDaysUntilPayment();
 
   const handlePayNow = () => setShowPaymentModal(true);
   const handleCloseModal = () => setShowPaymentModal(false);
@@ -373,50 +376,75 @@ function PagosPageContent() {
           </p>
         </motion.header>
 
-        {/* Stats Grid */}
+        {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta» */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+          className="mb-8"
         >
-          {/* Next Payment */}
-          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CreditCard className="w-5 h-5 text-primary" />
+          {errorResumen ? (
+            <FalloDeCarga error={errorResumen} queEs="lo que debes" onReintentar={cargarResumen} />
+          ) : cargandoResumen || !resumen ? (
+            <div className="flex h-40 items-center justify-center rounded-xl bg-surface-muted">
+              <Spinner size="md" />
             </div>
-            <p className="text-sm text-primary mb-1">{t('dashboard.nextPayment')}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {formatCurrencyI18n(nextAmount)}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">
-              {daysUntil !== null ? t('dashboard.dueIn', { days: daysUntil }) : t('payments.noPayments')}
-            </p>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Próxima cuota */}
+              <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Próxima cuota' : 'Next installment'}</p>
+                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
+                  {resumen.proxima ? formatCurrencyI18n(resumen.proxima.valor) : '—'}
+                </p>
+                <p className="text-sm text-fg-muted mt-2">
+                  {resumen.proxima
+                    ? resumen.proxima.diasQueFaltan === 0
+                      ? t('dashboard.dueToday')
+                      : `${locale === 'es' ? 'Vence el' : 'Due'} ${fechaLegible(resumen.proxima.fecha)}`
+                    : locale === 'es'
+                      ? 'No quedan cuotas por vencer'
+                      : 'No upcoming installments'}
+                </p>
+              </div>
 
-          {/* Total Paid */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CurrencyDollar className="w-5 h-5 text-success" />
-            </div>
-            <p className="text-sm text-fg-muted mb-1">{t('payments.summary.totalPaid')}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {formatCurrencyI18n(totalPaid)}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">{t('payments.summary.thisYear')}</p>
-          </div>
+              {/* Vencido */}
+              <div className={cn('rounded-xl p-6', resumen.vencidoCop > 0 ? 'bg-danger-soft border border-danger/30' : 'bg-surface-muted')}>
+                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+                  <WarningCircle className={cn('w-5 h-5', resumen.vencidoCop > 0 ? 'text-danger' : 'text-success')} />
+                </div>
+                <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Vencido' : 'Overdue'}</p>
+                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
+                  {formatCurrencyI18n(resumen.vencidoCop)}
+                </p>
+                <p className="text-sm text-fg-muted mt-2">
+                  {resumen.cuotasVencidas === 0
+                    ? (locale === 'es' ? 'Estás al día' : 'You are up to date')
+                    : locale === 'es'
+                      ? `${resumen.cuotasVencidas} ${resumen.cuotasVencidas === 1 ? 'cuota vencida' : 'cuotas vencidas'}`
+                      : `${resumen.cuotasVencidas} overdue`}
+                </p>
+              </div>
 
-          {/* Pending */}
-          <div className="rounded-xl bg-surface-muted p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <Calendar className="w-5 h-5 text-fg-muted" />
+              {/* Resta por pagar */}
+              <div className="rounded-xl bg-surface-muted p-6">
+                <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+                  <Calendar className="w-5 h-5 text-fg-muted" />
+                </div>
+                <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Resta por pagar' : 'Remaining'}</p>
+                <p className="text-3xl font-bold font-mono text-fg tracking-tight">
+                  {formatCurrencyI18n(resumen.restaPorPagar)}
+                </p>
+                <Link href="/inquilino/estado-de-cuenta" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                  {locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}
+                  <CaretRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
-            <p className="text-sm text-fg-muted mb-1">{t('common.pending')}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {formatCurrencyI18n(pendingAmount)}
-            </p>
-            <p className="text-sm text-fg-muted mt-2">{t('payments.summary.nextDue')}</p>
-          </div>
+          )}
         </motion.div>
 
         {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}
@@ -646,8 +674,9 @@ interface PeriodStatusCardProps {
   amount: number;
   propertyTitle: string;
   periodLabel: string;
-  paymentDay: number;
-  progress: number;
+  paymentDay: number | null | undefined;
+  /** `null` sin día de pago: no se pinta la barra (antes salía «NaN%»). */
+  progress: number | null;
   daysUntil: number | null;
   onPay: () => void;
   locale: 'es' | 'en';
@@ -729,7 +758,10 @@ function PeriodStatusCard({
         <span className="text-sm text-primary font-medium">
           {status === 'REJECTED'
             ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
-            : t('dashboard.nextPayment')}
+            : /* Es el canon que cobra «Pagar ahora», no la próxima cuota del
+                 estado de cuenta: llamarlo igual daba dos «Próximo pago» con
+                 montos distintos en la misma pantalla. */
+              (locale === 'es' ? `Canon de ${periodLabel}` : `Rent for ${periodLabel}`)}
         </span>
       </div>
 
@@ -746,24 +778,28 @@ function PeriodStatusCard({
         {propertyTitle}
       </p>
 
-      <div className="mb-4">
-        <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-fg-muted">
-            {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
-          </span>
-          <span className="text-fg font-medium">{progress}%</span>
-        </div>
-        <Progress value={progress} size="sm" />
-      </div>
+      {progress !== null && typeof paymentDay === 'number' && (
+        <>
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-fg-muted">
+                {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
+              </span>
+              <span className="text-fg font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} size="sm" />
+          </div>
 
-      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-primary/30">
-        <span className="text-fg-muted">
-          {locale === 'es' ? 'Día de pago' : 'Payment day'}
-        </span>
-        <span className="text-fg font-medium">
-          {locale === 'es' ? `Día ${paymentDay}` : `Day ${paymentDay}`}
-        </span>
-      </div>
+          <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-primary/30">
+            <span className="text-fg-muted">
+              {locale === 'es' ? 'Día de pago' : 'Payment day'}
+            </span>
+            <span className="text-fg font-medium">
+              {locale === 'es' ? `Día ${paymentDay}` : `Day ${paymentDay}`}
+            </span>
+          </div>
+        </>
+      )}
 
       {daysUntil !== null && (
         <div className="flex items-center justify-between text-sm mb-6">

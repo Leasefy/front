@@ -138,6 +138,21 @@ describe('el certificado de ingresos', () => {
     expect(api.certificadoDeIngresos).toHaveBeenCalledWith(2025);
   });
 
+  it('🔴 un año que no ha empezado no se ofrece ni se abre (QA 22-09: abría 2027)', async () => {
+    const siguiente = new Date().getFullYear() + 1;
+    const este = new Date().getFullYear();
+    api.disponibles.mockResolvedValue({
+      fichas: [{ propietarioId: 'p-1', agencyId: 'ag-1', agencia: 'Portofino' }],
+      anios: [siguiente, este],
+      motivo: null,
+    });
+    await montar();
+    const tira = document.querySelector('[data-testid="anios"]')?.textContent ?? '';
+    expect(tira).not.toContain(String(siguiente));
+    expect(api.certificadoDeIngresos).toHaveBeenCalledWith(este);
+    expect(api.certificadoDeIngresos).not.toHaveBeenCalledWith(siguiente);
+  });
+
   it('muestra el ingreso bruto, la comisión y lo retenido', async () => {
     await montar();
     expect(texto()).toContain('Ingreso bruto por arrendamiento');

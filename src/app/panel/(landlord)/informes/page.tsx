@@ -38,6 +38,18 @@ import {
 } from '@/lib/api/informes-del-propietario.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
+/**
+ * 🔴 QA 22-09: el back ofrecía «2027 · 2026» y la pantalla abría 2027 —un
+ * certificado TRIBUTARIO con cánones que no se han causado—. Un año que no ha
+ * empezado no tiene nada que certificar: no se ofrece, y se abre el más nuevo
+ * que sí. (Que 2026 sume octubre–diciembre es del back, que no corta en el mes
+ * en curso; queda anotado para él.)
+ */
+function aniosCertificables(anios: readonly number[], hoy: Date = new Date()): number[] {
+  const esteAnio = hoy.getFullYear();
+  return anios.filter((a) => a <= esteAnio);
+}
+
 export default function MisInformesPage() {
   const [disponibles, setDisponibles] = useState<InformesDisponibles | null>(null);
   const [certificado, setCertificado] = useState<CertificadoDeIngresos | null>(null);
@@ -53,10 +65,11 @@ export default function MisInformesPage() {
         informesDelPropietarioApi.disponibles(),
         informesDelPropietarioApi.reparaciones(),
       ]);
-      setDisponibles(d);
+      const anios = aniosCertificables(d.anios);
+      setDisponibles({ ...d, anios });
       setReparaciones(r.reparaciones);
       setMotivoDeReparaciones(r.motivo);
-      const elegido = d.anios[0] ?? null;
+      const elegido = anios.length > 0 ? Math.max(...anios) : null;
       setAnio(elegido);
       if (elegido !== null) {
         setCertificado(

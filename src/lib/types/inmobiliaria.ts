@@ -327,6 +327,12 @@ export interface Consignacion {
    * on a sale row.
    */
   commissionPercent: number;
+  /**
+   * 🔴 QA 22-09: el archivo de inmuebles NO traía la comisión. Con `true`,
+   * `commissionPercent` vale 0 y NO es un dato: la pantalla dice «no venía en
+   * el archivo» (`textoDeLaComision`). Ausente en un back anterior = `false`.
+   */
+  comisionDesconocida?: boolean;
   contractDate: string;
   contractEndDate?: string;
   minimumTerm?: number; // Minimum lease term in months

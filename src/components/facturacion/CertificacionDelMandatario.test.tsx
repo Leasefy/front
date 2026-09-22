@@ -21,13 +21,23 @@ void React;
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { certificaciones, generarCertificacion, tercerosSinCorreo } = vi.hoisted(
-  () => ({
+const { certificaciones, generarCertificacion, tercerosSinCorreo, buscarPropietarios } =
+  vi.hoisted(() => ({
     certificaciones: vi.fn(),
     generarCertificacion: vi.fn(),
     tercerosSinCorreo: vi.fn(),
-  }),
-);
+    buscarPropietarios: vi.fn(),
+  }));
+
+/**
+ * 🔴 El cajón busca propietarios por NOMBRE contra la misma ruta que la lista
+ * de propietarios. Antes el formulario pedía escribir el id: la prueba mandaba
+ * «p-1» a mano y pasaba, porque la pantalla aceptaba cualquier texto — también
+ * el que ninguna persona podría adivinar.
+ */
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  propietariosApi: { getAll: buscarPropietarios },
+}));
 
 vi.mock('@/lib/api/facturacion-electronica.service', async () => {
   const real =
@@ -68,6 +78,7 @@ async function pintar(nodo: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  buscarPropietarios.mockResolvedValue([]);
   host = document.createElement('div');
 });
 
@@ -76,7 +87,32 @@ afterEach(() => {
   host.remove();
 });
 
-const q = (s: string) => host.querySelector(s);
+/**
+ * 🔴 En `document` y no en `host`: desde el 21-09 «Generar una certificación»
+ * vive en el cajón de la casa, que Radix monta en un portal colgado de
+ * `document.body`. Buscando sólo en `host` los campos «no existen».
+ */
+const q = (s: string) => document.querySelector(s);
+
+/** Escribe en un input controlado por React. */
+async function escribir(testid: string, valor: string) {
+  const input = q(`[data-testid="${testid}"]`) as HTMLInputElement;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!;
+  await act(async () => {
+    setter.call(input, valor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+/** El buscador espera 350 ms a que la persona deje de escribir. */
+async function dejarQueBusque() {
+  await act(async () => {
+    await new Promise((listo) => setTimeout(listo, 400));
+  });
+}
 
 const GENERADA = {
   id: 'c-1',
@@ -116,7 +152,12 @@ const GENERADA = {
 };
 
 describe('CertificacionDelMandatario', () => {
-  it('genera la certificación por propietario y período', async () => {
+  /**
+   * 🔴 Nico, 21-09: «no se sabe bien qué hacer y qué se puede hacer dentro de
+   * mandato y correos». La razón de fondo era ésta: el primer campo pedía el
+   * **id** del propietario. Este guardián no deja que vuelva.
+   */
+  it('🔴 el formulario NO está puesto en la pantalla, y no pide ningún id', async () => {
     certificaciones.mockResolvedValue({
       disponible: true,
       migracion: null,
@@ -125,15 +166,54 @@ describe('CertificacionDelMandatario', () => {
     });
     await pintar(<CertificacionDelMandatario />);
 
-    const input = q('[data-testid="cert-propietario"]') as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      'value',
-    )!.set!;
+    expect(q('[data-testid="cert-propietario"]')).toBeNull();
+    expect(q('[data-testid="cert-abrir"]')).not.toBeNull();
+
     await act(async () => {
-      setter.call(input, 'p-1');
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      (q('[data-testid="cert-abrir"]') as HTMLButtonElement).click();
     });
+    const campo = q('[data-testid="cert-propietario"]') as HTMLInputElement;
+    expect(campo).not.toBeNull();
+    // Ni el rótulo ni el placeholder mencionan un id: se busca por nombre.
+    expect(campo.placeholder.toLowerCase()).not.toContain('id');
+    expect(campo.placeholder.toLowerCase()).toContain('nombre');
+    // Y sin propietario elegido no se puede generar nada.
+    expect((q('[data-testid="cert-generar"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('busca al propietario por nombre, y el id sale de a quién elegiste', async () => {
+    certificaciones.mockResolvedValue({
+      disponible: true,
+      migracion: null,
+      certificaciones: [],
+      explicacion: null,
+    });
+    buscarPropietarios.mockResolvedValue([
+      {
+        id: 'p-1',
+        name: 'Ana Propietaria',
+        documentNumber: '71234567',
+        propertyCount: 3,
+      },
+    ]);
+    await pintar(<CertificacionDelMandatario />);
+    await act(async () => {
+      (q('[data-testid="cert-abrir"]') as HTMLButtonElement).click();
+    });
+
+    await escribir('cert-propietario', 'Ana');
+    await dejarQueBusque();
+    expect(buscarPropietarios).toHaveBeenCalledWith({ search: 'Ana', limit: 8 });
+    // El resultado muestra el nombre y el documento, no el id.
+    const fila = q('[data-testid="cert-resultado-p-1"]')!;
+    expect(fila.textContent).toContain('Ana Propietaria');
+    expect(fila.textContent).toContain('71234567');
+    expect(fila.textContent).not.toContain('p-1');
+
+    await act(async () => {
+      (fila as HTMLButtonElement).click();
+    });
+    expect(q('[data-testid="cert-elegido"]')!.textContent).toContain('Ana Propietaria');
 
     generarCertificacion.mockResolvedValue(GENERADA);
     await act(async () => {
@@ -149,6 +229,22 @@ describe('CertificacionDelMandatario', () => {
     expect(resultado.textContent).toContain('12 facturas');
     expect(resultado.textContent).toContain('$420.000');
     expect(q('[data-testid="cert-exportar"]')).not.toBeNull();
+  });
+
+  it('🔴 con una letra no molesta al back: el buscador tiene mínimo', async () => {
+    certificaciones.mockResolvedValue({
+      disponible: true,
+      migracion: null,
+      certificaciones: [],
+      explicacion: null,
+    });
+    await pintar(<CertificacionDelMandatario />);
+    await act(async () => {
+      (q('[data-testid="cert-abrir"]') as HTMLButtonElement).click();
+    });
+    await escribir('cert-propietario', 'A');
+    await dejarQueBusque();
+    expect(buscarPropietarios).not.toHaveBeenCalled();
   });
 
   it('el CSV lleva una fila por factura y no rompe con los punto y coma', () => {
@@ -178,6 +274,38 @@ describe('CertificacionDelMandatario', () => {
 });
 
 describe('TercerosSinCorreo', () => {
+  /**
+   * 🔴 Nico, 21-09, de esta pestaña: «un listado infinito por allá abajo». Con
+   * los 1.733 propietarios que trajo la migración era literal: la tabla pintaba
+   * TODAS las filas, debajo de otra tabla. Este guardián no deja que vuelva.
+   */
+  it('🔴 la lista no es infinita: pagina de 10 y dice cuántas de cuántas', async () => {
+    tercerosSinCorreo.mockResolvedValue({
+      total: 40,
+      conCorreo: 15,
+      sinCorreo: 25,
+      sinCorreoConWhatsapp: 20,
+      sinNingunCanal: 5,
+      exigido: true,
+      configurable: true,
+      terceros: Array.from({ length: 25 }, (_, i) => ({
+        id: `t-${i}`,
+        clase: 'PROPIETARIO' as const,
+        nombre: `Propietario ${i}`,
+        documento: `${1000 + i}`,
+        telefono: null,
+        contratos: 1,
+        tieneWhatsapp: false,
+      })),
+    });
+    await pintar(<TercerosSinCorreo />);
+
+    expect(host.querySelectorAll('tbody tr')).toHaveLength(10);
+    expect(q('[data-testid="alcance-de-terceros"]')!.textContent).toContain(
+      '25 de 25',
+    );
+  });
+
   it('🔴 distingue a quien le llega por WhatsApp de quien NO recibe nada', async () => {
     tercerosSinCorreo.mockResolvedValue({
       total: 10,

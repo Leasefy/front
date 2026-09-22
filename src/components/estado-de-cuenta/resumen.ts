@@ -181,6 +181,26 @@ export interface AmortizacionDelContrato {
   porcentaje: number;
   /** 0–100. Lo que trae el sistema anterior, para el segundo tramo de la barra. */
   porcentajeAnterior: number;
+  /**
+   * 🔴 21-09-2026 · CUÁNTAS CUOTAS ESTÁN CUBIERTAS, venga de donde venga.
+   *
+   * Nico, con el estado de cuenta de una inquilina delante: «que haya pagado en
+   * el sistema anterior quiere decir que PAGÓ, y tú dices que 0 de 13, no tiene
+   * sentido si esta persona pagó 3 que se trajeron del sistema anterior».
+   *
+   * Tenía razón, y el defecto era del CONTADOR, no de la plata: `pagadas` sólo
+   * cuenta lo cancelado en Leasefy, así que el encabezado decía «Pagadas 0 de
+   * 13 · 3 del sistema anterior» y «$ 0 de $ 132.000.000» sobre un contrato al
+   * que ya le habían pagado $ 29.700.000. Para quien lo lee —y este documento
+   * se le manda al cliente— eso dice que no ha pagado nada.
+   *
+   * Se agregan estos dos en vez de cambiar `pagadas` y `pagadoCop`: la BARRA y
+   * su leyenda siguen necesitando la distinción (verde = lo que recaudamos
+   * nosotros, gris = lo que vino migrado), porque pintarlas iguales sí diría
+   * que respondemos por un recaudo que no registramos.
+   */
+  cubiertas: number;
+  cubiertoCop: number;
 }
 
 /**
@@ -213,6 +233,9 @@ export function amortizacionDe(
     total,
     pagadoCop,
     anterioresCop,
+    // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado.
+    cubiertas: pagadasFilas.length + anteriores,
+    cubiertoCop: pagadoCop + anterioresCop,
     pactadoCop,
     porcentaje: total === 0 ? 0 : Math.round((pagadasFilas.length / total) * 100),
     porcentajeAnterior: total === 0 ? 0 : Math.round((anteriores / total) * 100),

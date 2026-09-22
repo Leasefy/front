@@ -172,7 +172,12 @@ describe('EstadoDeCuentaDocumento', () => {
       <EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [contrato()] })} hoy={HOY} />,
     );
     expect(host.querySelector('[data-testid="amortizacion-1298"]')).not.toBeNull();
-    expect(host.textContent).toContain('1 de 4 cuotas');
+    /* 🔴 21-09: «2 de 4» y no «1 de 4». Este contrato tiene una cuota cancelada
+       en Leasefy y otra que vino PAGADA del sistema anterior, y una cuota que
+       vino pagada está pagada (Nico: «que haya pagado en el sistema anterior
+       quiere decir que pagó»). La distinción de dónde salió cada una la siguen
+       llevando la barra de dos tonos y su leyenda. */
+    expect(host.textContent).toContain('2 de 4 cuotas');
     expect(host.textContent).toContain('1 del sistema anterior');
   });
 

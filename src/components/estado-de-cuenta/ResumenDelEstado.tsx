@@ -209,7 +209,11 @@ export function BarraDeAmortizacion({
     <div className={cn('space-y-2', className)} data-testid={testid}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="text-body-sm text-fg">
-          {t('estadoDeCuenta.pagadasDe', { pagadas: a.pagadas, total: a.total })}
+          {/* 🔴 `cubiertas`, no `pagadas`: una cuota que vino pagada del sistema
+              anterior está pagada (Nico, 21-09). La distinción entre lo que
+              recaudamos nosotros y lo migrado la siguen llevando la barra y su
+              leyenda, que es donde no se puede perder. */}
+          {t('estadoDeCuenta.pagadasDe', { pagadas: a.cubiertas, total: a.total })}
           {a.anteriores > 0 && (
             <span className="text-fg-subtle">
               {' '}
@@ -219,7 +223,7 @@ export function BarraDeAmortizacion({
         </span>
         <span className="font-mono text-caption tabular-nums text-fg-muted">
           {t('estadoDeCuenta.deLoPactado', {
-            pagado: formatCurrency(a.pagadoCop),
+            pagado: formatCurrency(a.cubiertoCop),
             pactado: formatCurrency(a.pactadoCop),
           })}
         </span>
@@ -228,7 +232,7 @@ export function BarraDeAmortizacion({
         className="flex h-2 overflow-hidden rounded-full bg-surface-muted"
         role="img"
         aria-label={t('estadoDeCuenta.cuotasDe', {
-          pagadas: a.pagadas,
+          pagadas: a.cubiertas,
           total: a.total,
         })}
       >

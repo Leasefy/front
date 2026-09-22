@@ -735,7 +735,6 @@ export function RegistrarPagoModal({
     onSubmit,
     puedeEnviar,
     quienPaga,
-    saludos,
     sinConciliar,
     t,
     tenantId,

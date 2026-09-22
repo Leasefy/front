@@ -139,7 +139,8 @@ describe('solicitudes — el gate de la página es el mismo que el del sidebar',
     permisos.canAccess = () => false
     try {
       await montar()
-      expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+      // QA 22-09: negada ya no redirige callada — pinta «No tienes acceso».
+    expect(container.querySelector('[data-testid="pantalla-negada"]')).not.toBeNull()
       expect(container.textContent).not.toContain('inmobiliaria.pqrs.title')
     } finally {
       permisos.canAccess = antes

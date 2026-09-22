@@ -116,6 +116,29 @@ export function estadoDeDispersion(status: string): DispersionStatus {
 }
 
 /**
+ * El camino de vuelta: el estado de la VISTA, con el nombre que guarda el back.
+ *
+ * ⚠️ La pestaña «Pendientes» de Dispersiones mandaba `status=pending` tal cual
+ * y el back —que sólo conoce `DISP_PENDING | PROCESSING | DISP_COMPLETED |
+ * FAILED`— respondía 500 (referencia 500-1844). El back ya acepta los dos
+ * nombres, pero se manda el del enum: es el único que entiende también un back
+ * desplegado antes del arreglo.
+ *
+ * Un valor que no es de la vista se manda tal cual: si es basura, el back
+ * contesta 400 con la lista de los válidos, que es más honesto que adivinar.
+ */
+const ESTADOS_DEL_BACK: Record<DispersionStatus, string> = {
+  pending: 'DISP_PENDING',
+  processing: 'PROCESSING',
+  completed: 'DISP_COMPLETED',
+  failed: 'FAILED',
+};
+
+export function estadoParaElBack(status: string): string {
+  return ESTADOS_DEL_BACK[status as DispersionStatus] ?? status;
+}
+
+/**
  * La cuenta bancaria, o `null` si no hay ninguna registrada.
  *
  * Nulable a propósito: un objeto con strings vacíos se pinta como una cuenta

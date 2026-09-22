@@ -397,8 +397,11 @@ function TesoreriaContent() {
               <section className="rounded-lg border border-border bg-card overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
                   <PestanasDeLiquidaciones />
+                  {/* `w-56` y no `min-w`: el trigger del DS es `w-full`, así que
+                      con sólo un mínimo se estiraba a todo el renglón y el mes
+                      quedaba de banda, peor que antes. */}
                   <Select value={month} onValueChange={setMonth}>
-                    <SelectTrigger className="min-w-[200px] gap-2" aria-label="Mes de la liquidación">
+                    <SelectTrigger className="w-56 gap-2" aria-label="Mes de la liquidación">
                       <CalendarBlank className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
                       <SelectValue />
                     </SelectTrigger>

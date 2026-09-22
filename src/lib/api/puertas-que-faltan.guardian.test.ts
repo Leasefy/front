@@ -183,7 +183,6 @@ const DECLARADOS: readonly string[] = [
   'leadsApi.reasignarVencidos',
   'leadsApi.respondido',
   'mantenimientoApi.changeStatus',
-  'mantenimientoApi.getKanban',
   'mantenimientoApi.reabrirPorGarantia',
   'matchingApi.guardarPesos',
   'mediosDePagoApi.catalogo',

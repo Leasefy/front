@@ -303,7 +303,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
       <div className="overflow-hidden rounded-lg border border-border">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold text-fg">Los 20 deudores más grandes</h3>
-          <p className="text-xs text-fg-muted">{QUE_ES_LA_ETAPA}</p>
+          <p className="text-caption text-fg-muted">{QUE_ES_LA_ETAPA}</p>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -328,7 +328,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
                 cartera.deudores.map((d, i) => (
                   <TableRow key={d.clienteId ?? `${d.nombre}-${i}`} data-testid="fila-deudor">
                     <TableCell className="font-medium text-fg">{d.nombre}</TableCell>
-                    <TableCell className="font-mono text-xs">{d.documento || '—'}</TableCell>
+                    <TableCell className="font-mono text-caption">{d.documento || '—'}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">
                       {formatCurrency(d.saldoCop)}
                     </TableCell>

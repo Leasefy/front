@@ -224,7 +224,7 @@ export function ComprobantesSinContrato({
         </div>
       ) : null}
 
-      <p className="mt-3 flex items-start gap-1.5 text-xs text-fg-subtle">
+      <p className="mt-3 flex items-start gap-1.5 text-caption text-fg-subtle">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Un comprobante se cuelga de un contrato por el documento o el nombre del tercero, o
         porque el concepto dice «CONTRATO N» o el código del inmueble. Colgarlo del contrato

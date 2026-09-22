@@ -141,27 +141,27 @@ export function NominaElectronicaPanel() {
                         const dePrueba = d.cune?.startsWith('PRUEBA-') ?? false;
                         return (
                           <TableRow key={d.id} data-testid={`doc-${d.id}`}>
-                            <TableCell className="font-mono text-xs">
+                            <TableCell className="font-mono text-caption">
                               {d.prefijo}-{d.numero}
                             </TableCell>
-                            <TableCell className="text-xs">{d.periodo}</TableCell>
-                            <TableCell className="text-xs">
+                            <TableCell className="text-caption">{d.periodo}</TableCell>
+                            <TableCell className="text-caption">
                               {d.tipo.replace(/_/g, ' ').toLowerCase()}
                             </TableCell>
-                            <TableCell className="text-xs">
+                            <TableCell className="text-caption">
                               {d.estado.toLowerCase()}
                               {d.intentos > 1 ? ` · ${d.intentos} intentos` : ''}
                               {d.ultimoError ? (
-                                <p className="max-w-xs text-xs leading-relaxed text-warning">
+                                <p className="max-w-xs text-caption leading-relaxed text-warning">
                                   {d.ultimoError}
                                 </p>
                               ) : null}
                             </TableCell>
-                            <TableCell className="font-mono text-xs">
+                            <TableCell className="font-mono text-caption">
                               {d.cune ?? '—'}
                               {dePrueba ? (
                                 <span
-                                  className="ml-1 block text-xs font-medium text-warning"
+                                  className="ml-1 block text-caption font-medium text-warning"
                                   data-testid={`de-prueba-${d.id}`}
                                 >
                                   No se informó a la DIAN

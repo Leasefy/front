@@ -121,7 +121,7 @@ export function ParametrosDeNominaPanel({ anio }: { anio?: number }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Label htmlFor="anio-de-nomina" className="text-xs text-fg-muted">
+        <Label htmlFor="anio-de-nomina" className="text-caption text-fg-muted">
           Año
         </Label>
         <Input
@@ -282,7 +282,7 @@ function Formulario({
           está bien. Guardar de nuevo NO reconfirma.
         */}
         <div
-          className="rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+          className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
           data-testid="quien-y-cuando"
         >
           {cargado ? (
@@ -348,7 +348,7 @@ function Formulario({
                 }
                 data-testid={`campo-${clave}`}
               />
-              <p className="text-xs text-fg-muted" data-testid={`ref-${clave}`}>
+              <p className="text-caption text-fg-muted" data-testid={`ref-${clave}`}>
                 {referencia != null
                   ? `En ${referencia.anio} fue ${
                       ref != null ? formatCurrency(ref) : SIN_MEDIR
@@ -386,7 +386,7 @@ function Formulario({
                   }
                   data-testid={`campo-${c.campo}`}
                 />
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {c.unidad === 'bps'
                     ? `${((entero(c.campo) ?? 0) / 100).toFixed(2)} %`
                     : c.unidad}
@@ -454,7 +454,7 @@ function Formulario({
             Deshacer los cambios
           </Button>
         </div>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Guardar deja tu nombre y la fecha en «Cargadas»; confirmar es un acto
           aparte, y corregir una cifra lo borra — si cambia el número, el contador
           tiene que volver a mirarlo.

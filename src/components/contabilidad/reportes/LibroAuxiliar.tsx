@@ -105,7 +105,7 @@ export function LibroAuxiliar() {
             className="w-full"
           />
           {errorDeCuentas ? (
-            <p className="text-xs text-danger" role="alert">
+            <p className="text-caption text-danger" role="alert">
               No se pudo cargar el plan de cuentas.{' '}
               <button type="button" className="underline" onClick={() => void recargar()}>
                 Reintentar

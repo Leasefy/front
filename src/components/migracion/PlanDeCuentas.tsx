@@ -718,11 +718,11 @@ function PendientesDelContador({
                   <span className="font-mono tabular-nums">{p.codigo}</span> · {p.nombre}
                 </p>
                 {p.nota ? <p className="mt-0.5 text-sm text-fg-muted">{p.nota}</p> : null}
-                {p.uso ? <p className="mt-0.5 text-xs text-fg-subtle">{p.uso}</p> : null}
+                {p.uso ? <p className="mt-0.5 text-caption text-fg-subtle">{p.uso}</p> : null}
                 {!cargada ? (
-                  <p className="mt-1 text-xs text-fg-subtle">No está en tu plan.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">No está en tu plan.</p>
                 ) : !cargada.activa ? (
-                  <p className="mt-1 text-xs text-fg-subtle">Desactivada.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">Desactivada.</p>
                 ) : null}
               </div>
               {cargada && cargada.activa ? (
@@ -993,7 +993,7 @@ function FormularioDeCuenta({
             aria-describedby="puc-codigo-ayuda"
             data-testid="puc-codigo"
           />
-          <p id="puc-codigo-ayuda" className="text-xs text-fg-subtle">
+          <p id="puc-codigo-ayuda" className="text-caption text-fg-subtle">
             {fueraDelArbol
               ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
               : sugerido
@@ -1016,7 +1016,7 @@ function FormularioDeCuenta({
             aria-invalid={nombre.length > 0 && !nombreValido}
             data-testid="puc-nombre"
           />
-          <p className="text-xs text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
+          <p className="text-caption text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
         </div>
 
         <div className="space-y-1">
@@ -1052,7 +1052,7 @@ function FormularioDeCuenta({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas.
             </p>
           </div>
@@ -1068,7 +1068,7 @@ function FormularioDeCuenta({
           />
           <span>
             Recibe movimientos
-            <span className="block text-xs text-fg-subtle">
+            <span className="block text-caption text-fg-subtle">
               Las cuentas con subcuentas no: los movimientos van en la subcuenta.
             </span>
           </span>
@@ -1078,7 +1078,7 @@ function FormularioDeCuenta({
             <Checkbox checked={activa} onCheckedChange={(c) => setActiva(c === true)} />
             <span>
               Activa
-              <span className="block text-xs text-fg-subtle">
+              <span className="block text-caption text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
               </span>
             </span>
@@ -1096,7 +1096,7 @@ function FormularioDeCuenta({
             />
             <span>
               {frasesNoDeducible.titulo}
-              <span className="block max-w-prose text-xs text-fg-subtle">
+              <span className="block max-w-prose text-caption text-fg-subtle">
                 {frasesNoDeducible.explicacion}
               </span>
             </span>

@@ -400,7 +400,7 @@ export function DeterioroDeCarteraPanel() {
                 </p>
               ) : null}
 
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 En siniestro: {formatCurrency(datos.calculo.enSiniestroCop)} en{' '}
                 {NUMERO.format(datos.calculo.cuotasEnSiniestro)} cuotas, fuera de esta provisión. Su
                 deterioro depende de la póliza, no de la edad de la cuota.
@@ -441,7 +441,7 @@ export function DeterioroDeCarteraPanel() {
                 Anular
               </Button>
               {cambiado ? (
-                <span className="text-xs text-warning" data-testid="hay-cambios-sin-guardar">
+                <span className="text-caption text-warning" data-testid="hay-cambios-sin-guardar">
                   Cambiaste porcentajes y todavía no los propusiste: lo que se ve acá no es lo que
                   está guardado.
                 </span>

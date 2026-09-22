@@ -276,71 +276,11 @@ export function useApplication(id: string | null | undefined) {
 }
 
 // ============================================================================
-// usePropertyApplications - landlord view of applications for a property
+// 🔴 usePropertyApplications — borrado el 22-09
+//
+// Llamaba a `applicationsApi.getByProperty`, que pedía
+// `GET /applications/property/:id`: una ruta que el back no expone. No lo
+// usaba ninguna pantalla, así que el 404 nunca llegó a verse. El hook vuelve
+// el día que exista la ruta.
 // ============================================================================
 
-export function usePropertyApplications(propertyId: string | null | undefined) {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
-
-  const fetch = useCallback(async () => {
-    if (!propertyId) {
-      setApplications([]);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    setErrorCrudo(null);
-    try {
-      const result = await applicationsApi.getByProperty(propertyId);
-      setApplications(result);
-    } catch (err) {
-      setErrorCrudo(err);
-      const message = err instanceof Error ? err.message : 'Error cargando aplicaciones';
-      setError(message);
-      setApplications([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [propertyId]);
-
-  useEffect(() => {
-    if (!propertyId) {
-      setApplications([]);
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-    setErrorCrudo(null);
-
-    applicationsApi
-      .getByProperty(propertyId)
-      .then((result) => {
-        if (!cancelled) {
-          setApplications(result);
-          setIsLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setErrorCrudo(err);
-          setError(err instanceof Error ? err.message : 'Error cargando aplicaciones');
-          setApplications([]);
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [propertyId]);
-
-  useRefrescoAutomatico(['applications', 'postulaciones'], fetch);
-  return { applications, isLoading, error, errorCrudo, refetch: fetch };
-}

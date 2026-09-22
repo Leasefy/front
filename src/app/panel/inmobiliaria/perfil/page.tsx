@@ -25,59 +25,17 @@ interface SetupStep {
   action?: string;
 }
 
+import {
+  datosDelUsuario,
+  oNulo,
+  type DatosDelPerfil,
+} from './datos-del-perfil';
+
 type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
-/** Los campos que esta pantalla pinta y edita. */
-export interface DatosDelPerfil {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  birthDate: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-}
-
-/**
- * El retrato del usuario tal como lo guarda el backend.
- *
- * 🔴 Existe porque «Cancelar» no cancelaba. El formulario se sembraba UNA vez
- * en el `useState` inicial y `handleCancelEdit` sólo cerraba la edición: lo
- * tipeado quedaba en `formData`, que es lo mismo que pinta la vista de lectura.
- * Entonces escribías un nombre, dabas Cancelar, y la ficha seguía mostrando el
- * nombre descartado — y el siguiente «Guardar» de CUALQUIER sección lo mandaba
- * al backend como si lo hubieras confirmado.
- */
-export function datosDelUsuario(
-  user: Partial<DatosDelPerfil> | null | undefined,
-): DatosDelPerfil {
-  return {
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    birthDate: user?.birthDate || '',
-    emergencyContactName: user?.emergencyContactName || '',
-    emergencyContactPhone: user?.emergencyContactPhone || '',
-  };
-}
-
-/**
- * Un campo vaciado se manda como `null`, no como `undefined`.
- *
- * 🔴 `UsersService.updateProfile` distingue las dos cosas a propósito —«null
- * clears the field; undefined leaves it unchanged»— y esta pantalla mandaba
- * `undefined` con un `|| undefined`. `JSON.stringify` borra las claves
- * `undefined`, así que el campo ni siquiera llegaba al backend: borrabas tu
- * teléfono, apretabas Guardar, salía «Cambios guardados» y el número volvía.
- * El toast afirmaba un borrado que nunca pasó.
- */
-export function oNulo(valor: string): string | null {
-  const limpio = valor.trim();
-  return limpio === '' ? null : limpio;
-}
+// 🔴 `DatosDelPerfil`, `datosDelUsuario` y `oNulo` viven en
+// `datos-del-perfil.ts`: un archivo de página no puede exportar nada fuera del
+// juego que Next admite, y estaban exportados para poder probarlos.
 
 const AGENCY_ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',

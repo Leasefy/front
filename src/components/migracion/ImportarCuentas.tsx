@@ -392,7 +392,7 @@ export function ImportarCuentas({
             <p className="text-sm font-medium text-fg">
               Arrastra el archivo o haz clic para elegirlo
             </p>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Excel o CSV. Nada se crea todavía.
             </p>
           </div>
@@ -435,7 +435,7 @@ export function ImportarCuentas({
               <TableBody>
                 {mapeo.map((m) => (
                   <TableRow key={m.columna}>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption">
                       {m.columna}
                     </TableCell>
                     <TableCell>
@@ -469,7 +469,7 @@ export function ImportarCuentas({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       {m.isManual ? "elegido a mano" : m.porque}
                     </TableCell>
                   </TableRow>
@@ -604,21 +604,21 @@ function TablaDeRevision({
               {pageItems.map((f) => (
                 <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
                   {/* +2: en el archivo la primera fila de datos es la 2. */}
-                  <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
+                  <TableCell className="font-mono text-caption tabular-nums text-fg-subtle">
                     {f.indice + 2}
                   </TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">
+                  <TableCell className="font-mono text-caption tabular-nums">
                     {f.codigo || f.codigoOriginal}
                   </TableCell>
                   <TableCell className="text-sm">{f.nombre}</TableCell>
-                  <TableCell className="text-xs text-fg-muted">
+                  <TableCell className="text-caption text-fg-muted">
                     {f.naturaleza === "DEBITO"
                       ? "Débito"
                       : f.naturaleza === "CREDITO"
                         ? "Crédito"
                         : "—"}
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-caption">
                     <Veredicto fila={f} />
                   </TableCell>
                 </TableRow>
@@ -640,7 +640,7 @@ function TablaDeRevision({
         ) : null}
       </div>
       {ordenadas.length > 1 ? (
-        <p className="mt-2 text-xs text-fg-subtle">
+        <p className="mt-2 text-caption text-fg-subtle">
           Primero las que necesitan atención.
         </p>
       ) : null}

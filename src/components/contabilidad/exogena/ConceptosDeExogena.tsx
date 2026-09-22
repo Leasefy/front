@@ -282,7 +282,7 @@ export function ConceptosDeExogena({
                   return (
                     <TableRow key={`${c.cuentaId}-${c.formato}`} data-testid={`concepto-${c.codigo}`}>
                       <TableCell>
-                        <p className="font-mono text-xs text-fg">{c.codigo}</p>
+                        <p className="font-mono text-caption text-fg">{c.codigo}</p>
                         <p className="text-caption text-fg-muted">{c.nombre}</p>
                       </TableCell>
                       <TableCell>

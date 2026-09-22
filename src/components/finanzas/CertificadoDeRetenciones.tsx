@@ -235,7 +235,7 @@ export function CertificadoDeRetencionesPanel() {
             <option value="PAGADO">Por caja (pagado)</option>
           </select>
         </label>
-        <p className="max-w-xl text-xs leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
+        <p className="max-w-xl text-caption leading-relaxed text-fg-muted" data-testid="que-mide-el-criterio">
           {QUE_MIDE_EL_CRITERIO[criterio]}
         </p>
         {/* 🔴 (18-09) Antes esto sólo se podía emitir de a uno: una inmobiliaria
@@ -250,7 +250,7 @@ export function CertificadoDeRetencionesPanel() {
           Emitir el de todos
         </Button>
       </div>
-      <p className="max-w-2xl text-xs leading-relaxed text-fg-muted">
+      <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
         Al cerrar el año esto se hace SOLO para todos tus propietarios y queda disponible en su
         portal. El botón está acá para el año que el cierre automático no alcanzó, o para la
         historia que acabas de migrar: se salta a quien ya lo tiene, así que apretarlo dos veces no
@@ -349,12 +349,12 @@ export function CertificadoDeRetencionesPanel() {
                                 )}
                                 {f.nombre}
                               </button>
-                              <span className="block pl-5 text-xs text-fg-muted">
+                              <span className="block pl-5 text-caption text-fg-muted">
                                 {NUMERO.format(f.periodos)}{' '}
                                 {f.periodos === 1 ? 'período' : 'períodos'}
                               </span>
                             </TableCell>
-                            <TableCell className="font-mono text-xs">
+                            <TableCell className="font-mono text-caption">
                               {f.documento || (
                                 <span className="text-warning">Sin documento</span>
                               )}
@@ -378,7 +378,7 @@ export function CertificadoDeRetencionesPanel() {
                               {emitido ? (
                                 <span className="flex flex-col items-start gap-1">
                                   <span
-                                    className="inline-flex items-center gap-1 text-xs text-success"
+                                    className="inline-flex items-center gap-1 text-caption text-success"
                                     data-testid={`emitido-${f.propietarioId}`}
                                   >
                                     <SealCheck className="h-3.5 w-3.5" aria-hidden="true" />
@@ -452,7 +452,7 @@ export function CertificadoDeRetencionesPanel() {
               </div>
             </div>
 
-            <p className="text-xs leading-relaxed text-fg-muted">
+            <p className="text-caption leading-relaxed text-fg-muted">
               Emitir FIJA el número y la fecha del certificado: es el acto de entregarlo, no el
               cálculo. El cálculo sale de las cuotas y se puede volver a mirar cuando quieras — por
               eso no se guarda una segunda copia de la plata.

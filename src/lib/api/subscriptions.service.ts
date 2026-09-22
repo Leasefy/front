@@ -8,7 +8,6 @@ import type {
   BackendSubscription,
   BackendSubscriptionMeResponse,
   BackendSubscriptionPlan,
-  CreateSubscriptionDto,
   ValidateCouponDto,
   BackendCouponValidationResult,
   DisplaySubscription,
@@ -155,12 +154,11 @@ export const subscriptionsApi = {
   },
 
   /**
-   * Create a new subscription
+   * 🔴 Acá vivía `createSubscription`, un `POST /subscriptions` que el back no
+   * expone (404 «Cannot POST», medido). El controlador de suscripciones no
+   * tiene raíz: se entra por `trial`, por `subscribe` —que es la que usa
+   * `subscribeWithPSE`, acá abajo— o por `change-plan`. Nadie la llamaba.
    */
-  async createSubscription(dto: CreateSubscriptionDto): Promise<DisplaySubscription> {
-    const backend = await apiClient.post<BackendSubscription>('/subscriptions', dto);
-    return mapSubscription(backend);
-  },
 
   /**
    * Subscribe to a plan with PSE payment data.

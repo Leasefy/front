@@ -402,7 +402,7 @@ export function MigrarAsientos({
               <p className="text-sm font-medium text-fg">
                 Arrastra el archivo o haz clic para elegirlo
               </p>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Excel o CSV. Nada se crea todavía.
               </p>
             </div>
@@ -457,7 +457,7 @@ export function MigrarAsientos({
               <TableBody>
                 {mapeo.map((m) => (
                   <TableRow key={m.columna}>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption">
                       {m.columna}
                     </TableCell>
                     <TableCell>
@@ -491,7 +491,7 @@ export function MigrarAsientos({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       {m.isManual ? "elegido a mano" : m.porque}
                     </TableCell>
                   </TableRow>
@@ -615,7 +615,7 @@ export function MigrarAsientos({
                 className="w-72"
                 data-testid="nombre-del-lote-asientos"
               />
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Para reconocerlo después. Subir el mismo lote dos veces no
                 duplica nada.
               </p>
@@ -827,10 +827,10 @@ function Revision({
                   <TableBody>
                     {pag.pageItems.map((f) => (
                       <TableRow key={f.clave}>
-                        <TableCell className="font-mono text-xs tabular-nums">
+                        <TableCell className="font-mono text-caption tabular-nums">
                           {f.fila}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="font-mono text-caption">
                           {f.numeroOriginal ?? "—"}
                         </TableCell>
                         <TableCell className="text-sm">
@@ -1036,7 +1036,7 @@ function Dato({
 }) {
   return (
     <div className="rounded-md border border-border p-3">
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p
         className={`font-mono text-xl font-semibold tabular-nums ${
           tono === "ok" && valor > 0

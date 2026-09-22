@@ -216,7 +216,7 @@ export function EstadoDeCuenta() {
               <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-muted px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-fg">{elegido.nombre}</p>
-                  <p className="truncate font-mono text-xs text-fg-muted">{elegido.detalle}</p>
+                  <p className="truncate font-mono text-caption text-fg-muted">{elegido.detalle}</p>
                 </div>
                 <button
                   type="button"
@@ -263,7 +263,7 @@ export function EstadoDeCuenta() {
                             }}
                           >
                             <span className="text-sm text-fg">{c.nombre}</span>
-                            <span className="font-mono text-xs text-fg-muted">{c.detalle}</span>
+                            <span className="font-mono text-caption text-fg-muted">{c.detalle}</span>
                           </button>
                         </li>
                       ))
@@ -284,7 +284,7 @@ export function EstadoDeCuenta() {
                 aria-invalid={(idManual.trim() !== '' && !UUID.test(idManual.trim())) || undefined}
               />
               {idManual.trim() !== '' && !UUID.test(idManual.trim()) ? (
-                <p className="text-xs text-danger" role="alert">
+                <p className="text-caption text-danger" role="alert">
                   Tiene que ser un id (uuid).
                 </p>
               ) : null}

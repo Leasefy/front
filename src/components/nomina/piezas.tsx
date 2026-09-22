@@ -364,7 +364,7 @@ export function EstadoDelPeriodo({ estado }: { estado: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-medium',
         TONO_DEL_ESTADO[estado] ?? TONO_DEL_ESTADO.BORRADOR,
       )}
       data-testid={`estado-${estado}`}

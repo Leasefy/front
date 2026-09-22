@@ -331,7 +331,7 @@ export function RubrosDelPyg() {
                           <ul className="flex flex-wrap gap-1.5">
                             {r.cuentas.map((c) => (
                               <li key={c.id}>
-                                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-muted py-0.5 pl-2 pr-1 font-mono text-xs text-fg">
+                                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-muted py-0.5 pl-2 pr-1 font-mono text-caption text-fg">
                                   {c.codigo} · {c.nombre}
                                   {!c.imputable ? (
                                     <span

@@ -240,7 +240,7 @@ export function LibroMayor() {
                     {mayor.filas.map((f) => (
                       <TableRow key={f.codigo} data-testid={`mayor-${f.codigo}`}>
                         <TableCell className="sticky left-0 whitespace-nowrap bg-surface">
-                          <span className="font-mono text-xs">{f.codigo}</span> {f.nombre}
+                          <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
                         </TableCell>
                         <TableCell className="text-right">
                           <Monto valor={f.saldoAnteriorCop} vacioSiCero className="text-sm" />

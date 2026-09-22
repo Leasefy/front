@@ -41,7 +41,11 @@ import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 const ROOT = 'inmobiliaria.ai.mantenimiento'
 
-export const MOTIVO_SOLO_LECTURA =
+// 🔴 Sin `export`: un archivo de página sólo puede exportar el juego cerrado
+// que Next admite, y esto no lo importa nadie más. No rompía `next build`
+// —`ignoreBuildErrors` está en true— ni lo veía el CI; sólo aparece al correr
+// `tsc` después de compilar en local.
+const MOTIVO_SOLO_LECTURA =
   'Desde acá el ticket sólo se mira: el agente todavía no expone una ruta para asignar, ' +
   'pedir información, escalar ni cerrar. Para operar de verdad usa la pestaña Mantenimiento.'
 

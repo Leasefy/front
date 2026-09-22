@@ -316,7 +316,7 @@ function Comparacion({
               <TableCell>Total</TableCell>
               <Monto id="total-presupuesto" valor={comparacion.totales.presupuestoCop} />
               <Monto id="total-real" valor={comparacion.totales.realCop} />
-              <TableCell colSpan={3} className="text-right text-xs text-fg-muted">
+              <TableCell colSpan={3} className="text-right text-caption text-fg-muted">
                 {comparacion.totales.rubrosSinReal > 0
                   ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} ${comparacion.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${comparacion.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
                   : 'Todos los rubros se pudieron medir.'}
@@ -428,7 +428,7 @@ function DialogoDeCarga({
               ))}
             </datalist>
             {elegido?.motivoSinReal ? (
-              <p className="text-xs leading-relaxed text-fg-muted" data-testid="aviso-sin-real">
+              <p className="text-caption leading-relaxed text-fg-muted" data-testid="aviso-sin-real">
                 {elegido.motivoSinReal}
               </p>
             ) : null}

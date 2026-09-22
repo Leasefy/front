@@ -94,7 +94,7 @@ export function TerceroDeApertura({
 
   if (valor) {
     return (
-      <div className="mt-1.5 flex items-center gap-1.5 text-xs" data-testid={`${testId}-elegido`}>
+      <div className="mt-1.5 flex items-center gap-1.5 text-caption" data-testid={`${testId}-elegido`}>
         <span className="text-fg-muted">{NOMBRE_DE_TIPO[valor.tipo]}:</span>
         <span className="font-medium text-fg">{valor.nombre}</span>
         <Button
@@ -115,7 +115,7 @@ export function TerceroDeApertura({
     <div className="mt-1.5 space-y-1" data-testid={testId}>
       <div className="flex items-center gap-1.5">
         <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeTerceroDeApertura)}>
-          <SelectTrigger className="h-8 w-32 text-xs" aria-label="Tipo de tercero" data-testid={`${testId}-tipo`}>
+          <SelectTrigger className="h-8 w-32 text-caption" aria-label="Tipo de tercero" data-testid={`${testId}-tipo`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -131,7 +131,7 @@ export function TerceroDeApertura({
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Nombre o documento (opcional)"
           aria-label="Buscar el tercero"
-          className="h-8 text-xs"
+          className="h-8 text-caption"
           data-testid={`${testId}-buscar`}
         />
       </div>
@@ -143,7 +143,7 @@ export function TerceroDeApertura({
                 type="button"
                 role="option"
                 aria-selected={false}
-                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-xs hover:bg-surface-muted"
+                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-caption hover:bg-surface-muted"
                 onClick={() => {
                   onCambio({ tipo, id: c.id, nombre: c.nombre });
                   setBusqueda('');

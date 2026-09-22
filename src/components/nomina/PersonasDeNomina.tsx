@@ -128,7 +128,7 @@ export function PersonasDeNominaPanel() {
                     data-testid={`tipo-${t.tipo}`}
                   >
                     <p className="text-sm font-medium text-fg">{t.nombre}</p>
-                    <p className="text-xs leading-relaxed text-fg-muted">
+                    <p className="text-caption leading-relaxed text-fg-muted">
                       {t.descripcion}
                     </p>
                   </div>
@@ -165,23 +165,23 @@ export function PersonasDeNominaPanel() {
                           <TableCell>
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
-                              <span className="ml-1.5 text-xs text-fg-muted">
+                              <span className="ml-1.5 text-caption text-fg-muted">
                                 {p.documento}
                               </span>
                             ) : (
-                              <span className="ml-1.5 text-xs text-warning">
+                              <span className="ml-1.5 text-caption text-warning">
                                 sin documento
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-caption">
                             {p.tipo.replace(/_/g, ' ').toLowerCase()}
                             {p.salarioIntegral ? ' · integral' : ''}
                             {p.etapaAprendizaje
                               ? ` · ${p.etapaAprendizaje.toLowerCase()}`
                               : ''}
                           </TableCell>
-                          <TableCell className="text-xs text-fg-muted">
+                          <TableCell className="text-caption text-fg-muted">
                             {p.cargo ?? '—'}
                           </TableCell>
                           <TableCell className="text-right font-mono tabular-nums">
@@ -189,15 +189,15 @@ export function PersonasDeNominaPanel() {
                               ? formatCurrency(p.salarioCop)
                               : '—'}
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-caption">
                             {p.periodicidad.toLowerCase()}
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-caption">
                             {p.claseRiesgoArl ?? (
                               <span className="text-warning">sin clase</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-caption">
                             {p.activo
                               ? 'Activo'
                               : `Retirado${p.fechaRetiro ? ` el ${p.fechaRetiro.slice(0, 10)}` : ''}`}
@@ -208,7 +208,7 @@ export function PersonasDeNominaPanel() {
                   </Table>
                 </div>
               )}
-              <p className="text-xs text-fg-muted">{catalogo.fuenteArl}</p>
+              <p className="text-caption text-fg-muted">{catalogo.fuenteArl}</p>
             </section>
 
             <NuevaPersona
@@ -303,7 +303,7 @@ function NuevaPersona({
             </select>
             {descripcion ? (
               <p
-                className="text-xs leading-relaxed text-fg-muted"
+                className="text-caption leading-relaxed text-fg-muted"
                 data-testid="descripcion-del-tipo"
               >
                 {descripcion}
@@ -391,7 +391,7 @@ function NuevaPersona({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 La asigna la ARL según el cargo. Sin ella el aporte sale en cero.
               </p>
             </div>

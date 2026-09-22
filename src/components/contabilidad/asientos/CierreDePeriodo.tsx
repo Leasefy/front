@@ -193,7 +193,7 @@ export function CierreDePeriodo({
           Cerrar período…
         </Button>
         {problema && !cargando ? (
-          <p className="basis-full text-xs text-danger" role="alert">
+          <p className="basis-full text-caption text-danger" role="alert">
             {problema}
           </p>
         ) : null}

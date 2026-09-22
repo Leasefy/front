@@ -416,7 +416,7 @@ export function GenerarDispersion({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
         <div>
           <p className="text-sm font-medium text-fg">El mes que vas a liquidar</p>
-          <p className="text-xs text-fg-muted" data-testid="rotulo-de-la-base">
+          <p className="text-caption text-fg-muted" data-testid="rotulo-de-la-base">
             {ROTULO_DEL_CANON[base]}
             {base === 'RECAUDADO'
               ? ' · sólo entran las cuotas que el inquilino ya pagó completas'
@@ -627,7 +627,7 @@ export function GenerarDispersion({
               es una promesa que el back no firmó. */}
           {!total.exacto && (
             <p
-              className="mt-2 flex items-center gap-1.5 text-xs text-fg-muted"
+              className="mt-2 flex items-center gap-1.5 text-caption text-fg-muted"
               data-testid="recalculando"
             >
               <Warning className="h-3.5 w-3.5" aria-hidden="true" />
@@ -635,7 +635,7 @@ export function GenerarDispersion({
             </p>
           )}
           {haySumables && (
-            <p className="mt-2 text-xs text-fg-muted" data-testid="confirmacion-tardias">
+            <p className="mt-2 text-caption text-fg-muted" data-testid="confirmacion-tardias">
               Y a {tardiasQueSeSuman.length}{' '}
               {tardiasQueSeSuman.length === 1
                 ? 'liquidación que ya existe se le suman'

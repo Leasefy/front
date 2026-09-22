@@ -357,7 +357,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                                 f.nivel === 'cuenta' && 'pl-12 text-fg-muted',
                               )}
                             >
-                              <span className="font-mono text-xs">{f.codigo}</span> {f.nombre}
+                              <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
                             </TableCell>
                             {columnas.map((c) => {
                               const valor =
@@ -571,7 +571,7 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                           <li key={g.codigo} className="p-3">
                             <div className="flex items-baseline justify-between gap-2">
                               <p className="text-sm font-medium text-fg">
-                                <span className="font-mono text-xs">{g.codigo}</span> {g.nombre}
+                                <span className="font-mono text-caption">{g.codigo}</span> {g.nombre}
                               </p>
                               <Monto valor={g.totalCop} className="text-sm" />
                             </div>

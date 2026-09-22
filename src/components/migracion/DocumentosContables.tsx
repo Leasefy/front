@@ -305,7 +305,7 @@ export function DocumentosContables({
             <p className="text-sm font-medium text-fg">
               Arrastra el CSV de comprobantes o haz clic para elegirlo
             </p>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Se lee por partes, así que un archivo de decenas de miles de filas
               no congela la pantalla. Nada se escribe hasta que lo pidas.
             </p>
@@ -541,7 +541,7 @@ function Dato({
     tono === "danger" ? "text-danger" : tono === "success" ? "text-success" : "text-fg";
   return (
     <div className="rounded-md border border-border bg-surface-muted p-3">
-      <dt className="text-xs text-fg-muted">{titulo}</dt>
+      <dt className="text-caption text-fg-muted">{titulo}</dt>
       <dd className={`mt-0.5 font-mono text-lg tabular-nums ${color}`}>
         {valor.toLocaleString("es-CO")}
       </dd>

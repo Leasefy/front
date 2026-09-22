@@ -95,9 +95,16 @@ function metodosSinLlamador(): string[] {
   const producto = archivos
     .filter((p) => !esPrueba(p) && !p.startsWith(DIR))
     .map((p) => readFileSync(p, 'utf8'));
-  const otrosServicios = archivos.filter(
-    (p) => p.startsWith(DIR) && !esPrueba(p),
-  );
+  /**
+   * 🔴 Leído UNA vez, no una vez por método. Con `readFileSync` metido en el
+   * bucle interno esto eran ~800 métodos × ~95 servicios = 76.000 lecturas de
+   * disco, y la prueba se pasaba de los 5 s en cuanto la máquina tenía algo más
+   * corriendo: verde o roja según la carga, que es lo peor que puede ser un
+   * guardián.
+   */
+  const otrosServicios: Array<[string, string]> = archivos
+    .filter((p) => p.startsWith(DIR) && !esPrueba(p))
+    .map((p) => [p, readFileSync(p, 'utf8')]);
 
   const huerfanos: string[] = [];
   for (const f of readdirSync(DIR).filter((x) => x.endsWith('.service.ts'))) {
@@ -111,7 +118,7 @@ function metodosSinLlamador(): string[] {
         if (producto.some((t) => t.includes(aguja))) continue;
         // Un servicio que llama a otro tampoco es una puerta que falta.
         const desdeOtroServicio = otrosServicios.some(
-          (p) => p !== ruta && readFileSync(p, 'utf8').includes(aguja),
+          ([p, t]) => p !== ruta && t.includes(aguja),
         );
         if (desdeOtroServicio) continue;
         huerfanos.push(`${objeto}.${metodo}`);
@@ -129,12 +136,16 @@ function metodosSinLlamador(): string[] {
  * esta prueba viene a impedir.
  */
 const DECLARADOS: readonly string[] = [
-  'actasApi.complete',
   'actasApi.objetar',
   'agencyApi.declineInvitation',
   'agencyApi.getOnboardingStatus',
   'agencySubscriptionApi.chargePseCheckout',
   'agentesApi.getLeaderboard',
+  // Los dos quedaron BIEN (22-09: pedían la métrica por la cadena de
+  // consulta y el back la pide en la ruta), pero sin pantalla. Los dos
+  // hooks que los llamaban se borraron: llamaban sin métrica.
+  'analyticsApi.getForecasts',
+  'analyticsApi.getTrends',
   'aiAnalysisApi.getDocumentResult',
   'aiAnalysisApi.triggerDocumentAnalysis',
   'bitacoraApi.acciones',
@@ -216,8 +227,6 @@ const DECLARADOS: readonly string[] = [
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
   'propertiesApi.removeAgent',
-  'propietariosApi.getCobros',
-  'propietariosApi.getDispersiones',
   'proveedoresDeMantenimientoApi.calificar',
   'pseCheckoutApi.checkout',
   'pseCheckoutApi.getRequestStatus',
@@ -228,11 +237,9 @@ const DECLARADOS: readonly string[] = [
   'renovacionAutomaticaApi.registrarAviso',
   'renovacionesApi.getUpcoming',
   'reportesApi.export',
-  'reportesApi.getDefinitions',
   'sessionApi.claim',
   'sessionApi.revoke',
   'subscriptionsApi.cancelSubscription',
-  'subscriptionsApi.createSubscription',
   'subscriptionsApi.getPlan',
   'tesoreriaApi.detalleDelArchivo',
   'tesoreriaApi.listarArchivos',
@@ -261,7 +268,7 @@ describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
     const yaConectados = DECLARADOS.filter((m) => !hoy.has(m));
     expect(
       yaConectados,
-      `Estos ya tienen quien los llame: sácalos de DECLARADOS.\n\n  ${yaConectados.join('\n  ')}\n`,
+      `Estos ya salieron de la lista de huérfanos —o los llama alguien, o se\nborraron—: sácalos de DECLARADOS.\n\n  ${yaConectados.join('\n  ')}\n`,
     ).toEqual([]);
   });
 

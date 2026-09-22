@@ -365,7 +365,7 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
             </EstadoDeDatos>
 
             {recortado ? (
-              <p className="text-xs text-fg-muted" data-testid="comprobantes-recortados">
+              <p className="text-caption text-fg-muted" data-testid="comprobantes-recortados">
                 Se muestran los {historia!.mostrados.toLocaleString('es-CO')} más recientes
                 de {historia!.total.toLocaleString('es-CO')} en esta pestaña. Los demás están
                 guardados —no se perdió ninguno—, pero acá sólo caben estos.
@@ -410,19 +410,19 @@ function TablaDeComprobantes({
             <TableRow key={d.id} data-testid="comprobante-migrado">
               <TableCell className="whitespace-nowrap">
                 {d.tipo || '—'}
-                {d.anulado ? <span className="ml-2 text-xs text-danger">anulado</span> : null}
+                {d.anulado ? <span className="ml-2 text-caption text-danger">anulado</span> : null}
               </TableCell>
               {/* El prefijo puede venir vacío («FV-26766» vs «26766»), y el
                   consecutivo 0 es un consecutivo: `filter(Boolean)` lo
                   borraría. */}
-              <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums">
+              <TableCell className="whitespace-nowrap font-mono text-caption tabular-nums">
                 {d.prefijo ? `${d.prefijo}-${d.consecutivo}` : String(d.consecutivo)}
               </TableCell>
               <TableCell className="whitespace-nowrap">{diaLegible(d.fecha)}</TableCell>
               <TableCell className="max-w-[28rem] text-fg-muted">
                 <span className="line-clamp-2">{d.concepto || '—'}</span>
                 {d.esAnticipo ? (
-                  <span className="block text-xs text-fg-subtle">
+                  <span className="block text-caption text-fg-subtle">
                     Anticipo
                     {d.anticipoAplicado ? ' aplicado' : ' sin aplicar'}
                     {d.terceroAnticipo ? ` · ${d.terceroAnticipo}` : ''}
@@ -433,7 +433,7 @@ function TablaDeComprobantes({
                     quien lee la ficha puede comprobar que el concepto lo dice. */}
                 {d.asociadoPor !== 'ninguno' ? (
                   <span
-                    className="block text-xs text-fg-subtle"
+                    className="block text-caption text-fg-subtle"
                     data-testid="comprobante-asociado-por"
                   >
                     Asociado {COMO_SE_ASOCIO[d.asociadoPor] ?? d.asociadoPor}
@@ -447,7 +447,7 @@ function TablaDeComprobantes({
                     falso mostrado con total confianza. */}
                 {d.debitos === null ? '—' : formatCurrency(d.debitos)}
                 {d.descuadrado ? (
-                  <span className="block text-xs font-sans text-warning">
+                  <span className="block text-caption font-sans text-warning">
                     descuadrado
                     {d.creditos === null ? '' : ` · créditos ${formatCurrency(d.creditos)}`}
                   </span>
@@ -472,7 +472,7 @@ function FilaDelArchivo({ datos }: { datos: Record<string, unknown> }) {
     ([, valor]) => valor !== '' && valor !== null && valor !== undefined,
   )
   return (
-    <details className="mt-1 text-xs" data-testid="comprobante-fila-del-archivo">
+    <details className="mt-1 text-caption" data-testid="comprobante-fila-del-archivo">
       <summary className="cursor-pointer text-fg-subtle hover:text-fg">
         Ver la fila del archivo
       </summary>

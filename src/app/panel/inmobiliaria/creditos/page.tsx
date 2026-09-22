@@ -529,7 +529,11 @@ function PurchaseModal({
  * Se apaga desde el front con `NEXT_PUBLIC_CREDITOS_DE_IA_ENABLED`, que espeja
  * `CREDITOS_DE_IA_ENABLED` del back. Los dos por defecto: apagado.
  */
-export const CREDITOS_APAGADOS =
+// 🔴 Sin `export`: un archivo de página sólo puede exportar el juego cerrado
+// que Next admite, y esto no lo importa nadie más. No rompía `next build`
+// —`ignoreBuildErrors` está en true— ni lo veía el CI; sólo aparece al correr
+// `tsc` después de compilar en local.
+const CREDITOS_APAGADOS =
   process.env.NEXT_PUBLIC_CREDITOS_DE_IA_ENABLED !== 'true';
 
 function CreditosIncluidosEnElPlan() {

@@ -380,20 +380,13 @@ export const propietariosApi = {
     return apiClient.post(`${BASE}/propietarios/${id}/invitar-al-portal`, {});
   },
 
-  async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/propietarios/${id}/consignaciones`);
-    return lista(res);
-  },
-
-  async getCobros(id: string): Promise<Cobro[]> {
-    const res = await apiClient.get<{ data: Cobro[] } | Cobro[]>(`${BASE}/propietarios/${id}/cobros`);
-    return lista(res);
-  },
-
-  async getDispersiones(id: string): Promise<Dispersion[]> {
-    const res = await apiClient.get<{ data: Dispersion[] } | Dispersion[]>(`${BASE}/propietarios/${id}/dispersiones`);
-    return lista(res);
-  },
+  /**
+   * 🔴 Acá vivían `getConsignaciones`, `getCobros` y `getDispersiones`, copiadas
+   * de `agentesApi` cambiando «agentes» por «propietarios». Las tres rutas
+   * responden 404: del propietario cuelgan su extracto y sus cambios de cuenta,
+   * no las consignaciones (esas son del AGENTE que captó) ni los cobros (esos
+   * son del CONTRATO: `GET /contracts/:id/cobros`).
+   */
 
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
     const qs = month ? `?month=${month}` : '';
@@ -458,17 +451,16 @@ export const agentesApi = {
     return apiClient.get<Agente>(`${BASE}/agentes/${id}`);
   },
 
-  async create(data: AgenteFormData): Promise<Agente> {
-    return apiClient.post<Agente>(`${BASE}/agentes`, data);
-  },
-
-  async update(id: string, data: Partial<AgenteFormData>): Promise<Agente> {
-    return apiClient.patch<Agente>(`${BASE}/agentes/${id}`, data);
-  },
-
-  async delete(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/agentes/${id}`);
-  },
+  /**
+   * 🔴 Acá vivían `create`, `update` y `delete`. Las tres pedían rutas que el
+   * back NO expone —`POST /inmobiliaria/agentes`, `PATCH` y `DELETE` sobre
+   * `:id` responden 404 «Cannot …», medido contra el back vivo— y ninguna
+   * pantalla las llamaba: al equipo se entra por `inmobiliariaConfigApi`
+   * (`POST /agency/members`), que es la ruta que sí existe.
+   *
+   * De `@Controller('inmobiliaria/agentes')` sólo cuelgan lecturas y la
+   * disponibilidad. Un agente no se crea ni se borra por ahí.
+   */
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
     const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/agentes/${id}/consignaciones`);
@@ -1574,9 +1566,15 @@ export const mantenimientoApi = {
     );
   },
 
+  /**
+   * 🔴 22-09: era un `patch` y el back sólo expone `@Put(':id')`; respondía 404
+   * «Cannot PATCH». No rompía ninguna pantalla porque las que editan una
+   * solicitud usan `updateStatus` (`PUT :id/status`), pero quedaba puesta la
+   * trampa para la primera que quisiera guardar el resto de la solicitud.
+   */
   async update(id: string, data: Partial<SolicitudMantenimiento>): Promise<SolicitudMantenimiento> {
     return mantenimientoDelBack(
-      await apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
+      await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
     );
   },
 
@@ -1675,10 +1673,14 @@ export const mantenimientoApi = {
     return mantenimientoDelBack(respuesta);
   },
 
-  async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
-    const columnas = await apiClient.get<Record<string, SolicitudMantenimiento[]>>(`${BASE}/mantenimiento/kanban`);
-    return Object.fromEntries(Object.entries(columnas).map(([k, filas]) => [k, (filas ?? []).map(mantenimientoDelBack)]));
-  },
+  /**
+   * 🔴 Acá vivía `getKanban`, un `GET /inmobiliaria/mantenimiento/kanban` que
+   * el back no expone. Y era de los engañosos: `kanban` entra por
+   * `@Get(':id')`, así que la petición NO daba «Cannot GET» —daba 401, y con
+   * sesión buena habría dado un 400 por un id que no es un UUID—. Nadie la
+   * llamaba. El tablero de mantenimiento, cuando se haga, se arma con
+   * `getAll()` y se agrupa en el front.
+   */
 };
 
 // ============================================================================
@@ -1817,10 +1819,13 @@ export const renovacionesApi = {
 // ============================================================================
 
 export const reportesApi = {
-  async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] } | ReportDefinition[]>(`${BASE}/reports/definitions`);
-    return lista(res);
-  },
+  /**
+   * 🔴 Acá vivía `getDefinitions`, que pedía un CATÁLOGO de informes en
+   * `GET /inmobiliaria/reports/definitions`. Esa ruta no existe (404): el back
+   * expone los nueve informes como rutas fijas —cartera, comisiones, ocupación,
+   * vencimientos, flujo de caja, rentabilidad, rendimiento de agentes, extracto
+   * y export—, no una lista que se pueda recorrer.
+   */
 
   async getCartera(params?: { startDate?: string; endDate?: string }): Promise<CarteraReport> {
     const query = new URLSearchParams();
@@ -1945,14 +1950,25 @@ export const analyticsApi = {
     return apiClient.get<AnalyticsData>(`${BASE}/analytics/charts${qs}`);
   },
 
-  async getTrends(metricId?: string): Promise<TrendAnalysis[]> {
-    const qs = metricId ? `?metricId=${metricId}` : '';
-    return apiClient.get<TrendAnalysis[]>(`${BASE}/analytics/trends${qs}`);
+  /**
+   * 🔴 22-09: estas dos mandaban la métrica por la CADENA DE CONSULTA
+   * (`/analytics/trends?metricId=x`) y el back la pide en la RUTA
+   * (`@Get('trends/:metricId')`). Con métrica o sin ella, las dos respondían
+   * 404 — medido contra el back vivo. Y el parámetro era opcional, que es lo
+   * que escondía el defecto: sin métrica la llamada se veía razonable.
+   *
+   * Ahora la métrica es obligatoria, porque sin ella no hay ruta que llamar.
+   */
+  async getTrends(metricId: string): Promise<TrendAnalysis[]> {
+    return apiClient.get<TrendAnalysis[]>(
+      `${BASE}/analytics/trends/${encodeURIComponent(metricId)}`,
+    );
   },
 
-  async getForecasts(metricId?: string): Promise<ForecastData[]> {
-    const qs = metricId ? `?metricId=${metricId}` : '';
-    return apiClient.get<ForecastData[]>(`${BASE}/analytics/forecast${qs}`);
+  async getForecasts(metricId: string): Promise<ForecastData[]> {
+    return apiClient.get<ForecastData[]>(
+      `${BASE}/analytics/forecast/${encodeURIComponent(metricId)}`,
+    );
   },
 };
 
@@ -1998,13 +2014,25 @@ export const actasApi = {
     return apiClient.post<ActaEntrega>(`${BASE}/actas`, data);
   },
 
+  /**
+   * 🔴 22-09: esto era un `patch` y el back sólo expone `@Put(':id')`. Medido
+   * contra el back vivo: `PATCH /inmobiliaria/actas/:id` responde 404 «Cannot
+   * PATCH». Nadie lo llamaba todavía, así que no rompía una pantalla — pero el
+   * día que alguien cableara «Guardar el acta» habría enviado los cambios al
+   * vacío.
+   */
   async update(id: string, data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.patch<ActaEntrega>(`${BASE}/actas/${id}`, data);
+    return apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data);
   },
 
-  async complete(id: string): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/complete`, {});
-  },
+  /**
+   * 🔴 Acá vivía `complete()`, un `POST :id/complete` que el back NO expone
+   * (404 «Cannot POST», medido). Era el cierre del diseño viejo, y el cierre de
+   * verdad son los dos de abajo: `sign` cuando el inquilino firma y
+   * `cerrarSinFirma` cuando no. Se borró en vez de arreglarse porque no hay ruta
+   * que arreglar: dejarlo era dejar puesta la trampa de cablear «Completar el
+   * acta» a un 404.
+   */
 
   /**
    * 🔴 I-03: el inquilino no firma. El asesor la cierra con fotos y un TESTIGO,
@@ -2062,9 +2090,14 @@ export const inmobiliariaConfigApi = {
     return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members`, payload);
   },
 
-  async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
-    return apiClient.patch<AgencyUser>(`${BASE}/agency/members/${id}`, data);
-  },
+  /**
+   * 🔴 Acá vivía `updateUser`, un `PATCH /agency/members/:id` que prometía
+   * cambiarle CUALQUIER campo a un miembro. Esa ruta no existe (404) y el
+   * parecido con la que sí existe es engañoso: `PATCH members/:id/profile` sólo
+   * toca cargo, zona, especialización y comisión — ni el nombre, ni el rol, ni
+   * el estado. Cada una de esas tres tiene su ruta y su método más abajo:
+   * `actualizarPerfilDelMiembro`, `cambiarRol` y `cambiarEstado`.
+   */
 
   async deleteUser(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/agency/members/${id}`);

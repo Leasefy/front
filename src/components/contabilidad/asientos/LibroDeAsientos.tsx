@@ -257,7 +257,7 @@ export function LibroDeAsientos() {
           </div>
         </div>
         {errorDeCuentas ? (
-          <p className="text-xs text-warning" role="status">
+          <p className="text-caption text-warning" role="status">
             No se pudo cargar el plan de cuentas: el filtro por cuenta y el asiento manual no van a
             tener opciones hasta recargar.
           </p>

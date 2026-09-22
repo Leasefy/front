@@ -1241,7 +1241,7 @@ export interface MapeoDeRubroNuevo {
   cuentaIds: string[];
 }
 
-/** Respuesta de `POST /mapeo/rubros/sembrar`. No pisa lo ya asignado. */
+/** Respuesta de `POST /mapeo/rubros/semilla`. No pisa lo ya asignado. */
 export interface ResultadoDeSembrarRubros {
   asignados: string[];
   yaEstaban: string[];
@@ -1522,9 +1522,17 @@ export const contabilidadApi = {
       );
     },
 
-    /** Asigna el preset a los rubros vacíos; no pisa lo asignado. */
+    /**
+     * Asigna el preset a los rubros vacíos; no pisa lo asignado.
+     *
+     * 🔴 22-09: la ruta decía `rubros/sembrar` y el back expone
+     * `@Post('rubros/semilla')`. Las otras dos semillas de este mismo archivo
+     * —`/mapeo/semilla` y `/mapeo/gastos/semilla`— sí estaban bien; se coló en
+     * una de tres. El botón «Sembrar el preset» de Mapeo contable recibía un
+     * 404 cada vez que alguien lo apretaba.
+     */
     async sembrarRubros(): Promise<ResultadoDeSembrarRubros> {
-      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/sembrar`, {});
+      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/semilla`, {});
     },
 
     /** 204. Saca el rubro del mapeo, con sus cuentas. */

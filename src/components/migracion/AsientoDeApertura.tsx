@@ -509,7 +509,7 @@ function Total({
 }) {
   return (
     <div>
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p
         className={`font-mono text-lg font-semibold tabular-nums ${
           tono === "ok"
@@ -523,7 +523,7 @@ function Total({
       </p>
       {nota ? (
         <p
-          className={`text-xs ${tono === "ok" ? "text-success" : "text-fg-muted"}`}
+          className={`text-caption ${tono === "ok" ? "text-success" : "text-fg-muted"}`}
         >
           {nota}
         </p>

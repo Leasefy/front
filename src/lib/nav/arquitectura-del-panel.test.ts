@@ -205,7 +205,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 26 módulos en 5 grupos con nombre (+ Inicio y Chat = 28 filas)', () => {
+  it('el sidebar tiene 25 módulos en 5 grupos con nombre (+ Inicio y Chat = 27 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -222,6 +222,11 @@ describe('arquitectura del panel — sidebar', () => {
     // dibuja con una card sola, así que una única sub-pantalla de Inmuebles
     // quedaría inalcanzable desde el menú. Eran 24 hasta que entró «Listas»
     // (C-06, 18-09-2026): va como fila y no como sub-pantalla de Propietarios
+    // 🔴 22-09: volvieron a ser 25 — **Portales salió del menú** (Nico: «para
+    // qué es eso si no tenemos integración directa»). La ruta sigue viva; lo
+    // que se retiró es la fila, porque un módulo en el menú promete que el
+    // producto hace ese trabajo y el aviso lo sube una persona a mano.
+    // Ver `docs/portales-de-publicacion.md`.
     // porque las listas restrictivas aplican a TODOS los terceros —propietarios,
     // inquilinos, codeudores y proveedores— y colgarla de uno solo la
     // escondería para los demás.
@@ -230,7 +235,7 @@ describe('arquitectura del panel — sidebar', () => {
     // a quién se llama para cada oficio. Va como FILA por la misma regla de
     // Portales — Mantenimientos no tiene secciones, y una sola card no dibuja
     // el riel, así que colgarla de ahí la volvería inalcanzable.
-    expect(modulos).toHaveLength(26);
+    expect(modulos).toHaveLength(25);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {

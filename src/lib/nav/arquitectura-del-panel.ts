@@ -34,7 +34,6 @@ import {
   ArrowLineUp,
   HandCoins,
   IdentificationBadge,
-  CloudArrowUp,
   Files,
   CalendarCheck,
   Signature,
@@ -424,7 +423,18 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // `SeccionesDelModulo` no dibuja el riel con una sola card (decisión del
       // 2026-09-16), así que una única sub-pantalla quedaría inalcanzable desde
       // el menú. Mismo `module` y mismo `scope`: no abre ni cierra puertas.
-      { key: 'portales', labelKey: 'inmobiliaria.nav.portalesDePublicacion', href: r('/inmuebles/portales'), icon: CloudArrowUp, module: 'portafolio', scope: 'comercial' },
+      // 🔴 22-09 · PORTALES SALE DEL MENÚ (Nico): «para qué es eso si no
+      // tenemos integración directa». Tiene razón: la pantalla registra en qué
+      // portal quedó cada inmueble, pero el aviso lo sube una persona a mano —
+      // la propia pantalla lo dice («todavía no publicamos solos en ninguno»).
+      // Un módulo en el menú promete que el producto hace ese trabajo.
+      //
+      // 🔴 La RUTA se queda viva a propósito: `/inmuebles/portales` responde
+      // igual que antes, para no dejar un 404 a quien la tenga guardada. Lo
+      // que se retira es la promesa del menú.
+      //
+      // Qué hay construido y qué haría falta para prenderla:
+      // `docs/portales-de-publicacion.md`.
       {
         key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: 'portafolio', scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
         // Matching y Asegurabilidad se mudaron a «Agentes IA» (2026-09-16).

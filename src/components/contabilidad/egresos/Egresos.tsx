@@ -383,10 +383,18 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 Lotes ({lotes.length})
               </TabsTrigger>
             </TabsList>
+            {/* 🔴 LA MISMA FRASE NO SE DICE DOS VECES. Acá estaba escrito otra
+                vez lo que ya dice el subtítulo de la pantalla —«lo que la
+                inmobiliaria le paga a sus proveedores… no es el giro al
+                propietario»—, palabra por palabra y a 80 px de distancia. Lo
+                vi en el navegador, no en el código: leídos seguidos saltan.
+                La distinción con el giro al propietario se queda ACÁ —pegada
+                a la tabla, que es donde la lee quien está por actuar— y sale
+                del subtítulo de la pantalla, que es donde sobraba. */}
             <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
               {parte === 'egresos'
-                ? 'Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados. No es el giro al propietario: ese baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
-                : 'Un lote se arma, lo aprueba otra persona, sale el archivo para el banco, se marca pagado y ahí se numeran los comprobantes. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+                ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
+                : 'Un lote se arma, lo aprueba otra persona, sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
             </p>
           </div>
 

@@ -150,6 +150,26 @@ afterEach(() => {
 
 const q = (s: string) => document.querySelector(s);
 
+/**
+ * 🔴 «Anular» vive en el kebab de la fila desde el 21-09: escrito al lado del
+ * estado, la tabla no cabía y la pantalla avisaba «se corre a los lados».
+ * El disparador de Radix abre con `pointerdown`, NO con `click`, y el menú se
+ * monta en un portal colgado de `document.body`.
+ */
+async function abrirAcciones(id: string) {
+  const kebab = q(`[data-testid="acciones-${id}"]`) as HTMLButtonElement;
+  await act(async () => {
+    kebab.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        pointerId: 1,
+      }),
+    );
+  });
+}
+
 /** El formulario ya no está puesto en la pantalla: lo abre su CTA. */
 async function abrirCarga() {
   const boton = q('[data-testid="resolucion-abrir-carga"]') as HTMLButtonElement;
@@ -270,8 +290,9 @@ describe('ResolucionDeFacturacion', () => {
     }
 
     async function abrirDialogo() {
+      await abrirAcciones('res-1');
       await act(async () => {
-        (q('[data-testid="anular-res-1"]') as HTMLButtonElement).click();
+        (q('[data-testid="anular-res-1"]') as HTMLElement).click();
       });
     }
 

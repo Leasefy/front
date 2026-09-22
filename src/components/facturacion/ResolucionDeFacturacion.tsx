@@ -45,7 +45,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Certificate, SealWarning } from '@phosphor-icons/react'
+import { Certificate, DotsThreeVertical, SealWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -68,6 +68,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
@@ -293,7 +299,12 @@ export function ResolucionDeFacturacion({
                           {fechaLegible(r.vigenteDesde)} –{' '}
                           {fechaLegible(r.vigenteHasta)}
                         </TableCell>
-                        <TableCell className="max-w-[260px]">
+                        {/* 🔴 El estado en UN renglón. Con la acción escrita al
+                            lado, la tabla no cabía —la pantalla decía «esta
+                            tabla no cabe entera: se corre a los lados»— y
+                            «Numerando · sigue el PRU-1» se partía en tres
+                            líneas. */}
+                        <TableCell className="whitespace-nowrap">
                           {r.puedeNumerar ? (
                             <span className="text-caption text-primary">
                               Numerando · sigue el {r.siguiente}
@@ -304,17 +315,38 @@ export function ResolucionDeFacturacion({
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
+                        {/* 🔴 Las acciones van en el kebab, como en el resto del
+                            panel: un botón con texto por fila empuja la tabla
+                            fuera de la pantalla y ademas grita más que el dato. */}
+                        <TableCell className="w-10 whitespace-nowrap text-right">
                           {!r.anulada && (
-                            <Button
-                              variant="ghost"
-                              hideArrow
-                              disabled={anulando === r.id}
-                              onClick={() => pedirAnulacion(r)}
-                              data-testid={`anular-${r.id}`}
-                            >
-                              Anular
-                            </Button>
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8"
+                                  disabled={anulando === r.id}
+                                  aria-label={`Acciones de la resolución ${r.numero}`}
+                                  data-testid={`acciones-${r.id}`}
+                                >
+                                  <DotsThreeVertical
+                                    className="h-4 w-4"
+                                    weight="bold"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className="w-52">
+                                <DropdownListItem
+                                  onSelect={() => pedirAnulacion(r)}
+                                  data-testid={`anular-${r.id}`}
+                                >
+                                  Anular la resolución
+                                </DropdownListItem>
+                              </DropdownListContent>
+                            </DropdownList>
                           )}
                         </TableCell>
                       </TableRow>

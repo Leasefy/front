@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -232,30 +232,30 @@ export function ConfigCicloDeVidaDelContrato({
           ))}
         </RadioGroup>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block" htmlFor="garantia-tope-periodos">
-            Tope, en períodos de facturación
+          <div className="space-y-1.5">
+            <Label htmlFor="garantia-tope-periodos">Tope, en períodos de facturación</Label>
             <Input
               id="garantia-tope-periodos"
               inputMode="numeric"
               value={periodos}
               onChange={(e) => setPeriodos(e.target.value)}
               placeholder="2"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="garantia-tope-periodos"
             />
-          </label>
-          <label className="block" htmlFor="garantia-tope">
-            Tope en pesos (además del anterior)
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="garantia-tope">Tope en pesos (además del anterior)</Label>
             <Input
               id="garantia-tope"
               inputMode="numeric"
               value={tope}
               onChange={(e) => setTope(e.target.value)}
               placeholder="Sin tope en pesos"
-              className="mt-1 w-40"
+              className="w-40"
               data-testid="garantia-tope"
             />
-          </label>
+          </div>
         </div>
         <p className="text-muted-foreground">
           El valor sugerido es el promedio mensual de los últimos 6 meses del inmueble. Con 2 períodos, la garantía no
@@ -275,18 +275,18 @@ export function ConfigCicloDeVidaDelContrato({
           Cuántos días le vale al solicitante el estudio aprobado para postularse a cualquier inmueble tuyo sin volver
           a pagarlo. Vacío = 60 días.
         </p>
-        <label className="block" htmlFor="vigencia-estudio">
-          Vigencia del estudio (días)
+        <div className="space-y-1.5">
+          <Label htmlFor="vigencia-estudio">Vigencia del estudio (días)</Label>
           <Input
             id="vigencia-estudio"
             inputMode="numeric"
             value={vigencia}
             onChange={(e) => setVigencia(e.target.value)}
             placeholder="60"
-            className="mt-1 w-24"
+            className="w-24"
             data-testid="vigencia-estudio"
           />
-        </label>
+        </div>
       </fieldset>
 
       <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
@@ -297,30 +297,30 @@ export function ConfigCicloDeVidaDelContrato({
           hoy.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block" htmlFor="seguro-pct-basico">
-            Plan básico (% del canon)
+          <div className="space-y-1.5">
+            <Label htmlFor="seguro-pct-basico">Plan básico (% del canon)</Label>
             <Input
               id="seguro-pct-basico"
               inputMode="decimal"
               value={pctBasico}
               onChange={(e) => setPctBasico(e.target.value)}
               placeholder="1.5"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="seguro-pct-BASIC"
             />
-          </label>
-          <label className="block" htmlFor="seguro-pct-premium">
-            Plan premium (% del canon)
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="seguro-pct-premium">Plan premium (% del canon)</Label>
             <Input
               id="seguro-pct-premium"
               inputMode="decimal"
               value={pctPremium}
               onChange={(e) => setPctPremium(e.target.value)}
               placeholder="3"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="seguro-pct-PREMIUM"
             />
-          </label>
+          </div>
         </div>
       </fieldset>
 

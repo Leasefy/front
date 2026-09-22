@@ -125,8 +125,15 @@ export function StepTenantWelcome() {
         transition={{ delay: 0.4 }}
         className="pt-4 border-t border-border-faint"
       >
+        {/* 🔴 22-09: decía `/auth/login?redirect=/inquilino`, y estaba mal dos
+            veces. `/auth/login` NO EXISTE —la pantalla es `/auth`—, así que
+            «¿Ya tienes cuenta? Inicia sesión» llevaba a un 404. Y el parámetro
+            es `returnUrl`: nadie lee `redirect`, así que aun llegando, después
+            de entrar no volvía al portal del inquilino.
+            El mismo error ya se había arreglado en `FalloDeCarga.tsx`; quedó
+            el comentario y no se barrió el resto. */}
         <Link
-          href="/auth/login?redirect=/inquilino"
+          href={`/auth?returnUrl=${encodeURIComponent('/inquilino')}`}
           className="flex items-center justify-center gap-2 w-full py-3 text-sm text-fg-subtle hover:text-primary transition-colors rounded-xl hover:bg-surface-muted"
         >
           <SignIn className="w-4 h-4" />

@@ -104,6 +104,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { elLibroEnUnaFrase } from '@/lib/contabilidad/el-libro-en-una-frase';
 import {
   contabilidadApi,
   type AsientoContable,
@@ -138,6 +139,7 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Monto } from './Monto';
 import { RangoDeFechas } from './RangoDeFechas';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
 
 const BASE = '/panel/inmobiliaria/contabilidad';
@@ -401,43 +403,6 @@ interface FalloDeTarjeta {
   reintentando: boolean;
 }
 
-function Cifra({
-  etiqueta,
-  valor: v,
-  pie,
-  cargando,
-  fallo,
-}: {
-  etiqueta: string;
-  valor: number | null;
-  pie?: string;
-  cargando: boolean;
-  fallo?: FalloDeTarjeta;
-}) {
-  return (
-    <div className="space-y-1">
-      <dt className="font-mono text-label uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
-      <dd className="text-2xl font-semibold tabular-nums text-fg">
-        {cargando ? (
-          <span
-            className="inline-block h-7 w-16 animate-pulse rounded-sm bg-surface-muted"
-            aria-label="cargando"
-          />
-        ) : v === null ? (
-          <span className="text-fg-subtle">—</span>
-        ) : (
-          v.toLocaleString('es-CO')
-        )}
-      </dd>
-      {!cargando && fallo ? (
-        <NoCargo {...fallo} />
-      ) : pie && !cargando ? (
-        <p className="text-caption text-fg-muted">{pie}</p>
-      ) : null}
-    </div>
-  );
-}
-
 const PINTURA: Record<AlertaDescrita['severidad'], { caja: string; icono: string; Icono: Icon }> = {
   danger: { caja: 'border-danger/40 bg-danger-soft', icono: 'text-danger', Icono: WarningCircle },
   warning: { caja: 'border-warning/40 bg-warning-soft', icono: 'text-warning', Icono: Warning },
@@ -545,10 +510,25 @@ function UltimosAsientos({
   );
 }
 
+/**
+ * 🔴 EL RANGO DE FECHAS SE PIDE DESPUÉS, NO ANTES (Nico, 22-09).
+ *
+ * «Tiene cosas por un lado y por el otro que se podrían hacer de otra manera o
+ * hasta con un CTA que luego pida el resto de información.»
+ *
+ * En la portada había dos campos de fecha puestos encima de un botón. Bajar el
+ * libro para el contador se hace una vez al mes; dos campos de fecha
+ * permanentes en la portada del módulo ocupan lugar todos los días y —como
+ * pasó con la resolución— **se leen como un filtro de la pantalla**, no como
+ * los parámetros de una descarga.
+ *
+ * Ahora la portada tiene el botón, y el botón abre el cajón que pide el rango.
+ */
 function ParaElContador() {
   const inicial = useMemo(() => rangoDelMesAnterior(), []);
   const [rango, setRango] = useState({ desde: inicial.desde, hasta: inicial.hasta });
   const [bajando, setBajando] = useState(false);
+  const [pidiendoRango, setPidiendoRango] = useState(false);
 
   const invertido = rangoInvertido(rango.desde, rango.hasta);
 
@@ -581,6 +561,7 @@ function ParaElContador() {
       enlace.remove();
       URL.revokeObjectURL(url);
       toast.success('El libro del rango quedó descargado.');
+      setPidiendoRango(false);
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudo armar el archivo.'));
     } finally {
@@ -598,18 +579,71 @@ function ParaElContador() {
         </p>
       </div>
 
-      <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} disabled={bajando} />
-
       <Button
         variant="outline"
         hideArrow
-        onClick={() => void descargar()}
-        disabled={bajando || invertido}
+        onClick={() => setPidiendoRango(true)}
+        disabled={bajando}
         data-testid="descargar-csv"
       >
         <DownloadSimple className="mr-1.5 h-4 w-4" aria-hidden="true" />
         {bajando ? 'Armando el archivo…' : 'Descargar el libro en CSV'}
       </Button>
+
+      <Cajon
+        abierto={pidiendoRango}
+        onOpenChange={(v) => {
+          // Mientras el archivo se arma no se cierra: cerrar a mitad dejaría
+          // sin saber si la descarga salió.
+          if (!v && bajando) return;
+          setPidiendoRango(v);
+        }}
+        ancho="sm:max-w-lg"
+        data-testid="cajon-del-libro"
+      >
+        <CajonCabecera
+          titulo="Descargar el libro en CSV"
+          descripcion="Una línea por movimiento, con su cuenta y su lado. Es lo que el contador carga en su software."
+        />
+        <CajonCuerpo className="space-y-4">
+          <RangoDeFechas
+            desde={rango.desde}
+            hasta={rango.hasta}
+            onChange={setRango}
+            disabled={bajando}
+          />
+          <p className="text-caption text-fg-muted">
+            Viene cargado el mes pasado, que es el que se le manda al contador.
+            El archivo lo arma el servidor: con un rango largo puede tardar.
+          </p>
+        </CajonCuerpo>
+        <CajonPie
+          ayuda={
+            invertido
+              ? 'La fecha de «hasta» es anterior a la de «desde».'
+              : 'El libro sale completo: no hay tope de filas.'
+          }
+        >
+          <Button
+            variant="outline"
+            hideArrow
+            disabled={bajando}
+            onClick={() => setPidiendoRango(false)}
+            data-testid="cajon-del-libro-cancelar"
+          >
+            Cancelar
+          </Button>
+          <Button
+            hideArrow
+            onClick={() => void descargar()}
+            disabled={bajando || invertido}
+            data-testid="cajon-del-libro-descargar"
+          >
+            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+            {bajando ? 'Armando el archivo…' : 'Descargar'}
+          </Button>
+        </CajonPie>
+      </Cajon>
 
       {/* 🔴 20-09 · Eran ONCE enlaces azules en una fila envuelta, todos con
           el mismo peso y sin decir qué es qué: «Balance de prueba · Libro
@@ -913,39 +947,62 @@ export function HubDeContabilidad() {
 
   // Un cero de este mes no significa un libro vacío: si el último asiento es
   // de agosto y estamos en septiembre, el 0 es correcto y engañoso a la vez.
+  // `elLibroEnUnaFrase` es la que decide cómo se dice eso.
   const ultimo = datos.ultimos?.[0];
-  const pieDelMes =
-    datos.asientosDelMes === 0 && ultimo ? `el último, el ${diaLegible(ultimo.fecha)}` : undefined;
 
   const revisionesCaidas = cargando ? [] : REVISIONES.filter((r) => r.consulta in datos.fallos);
   const faltantes = datos.faltantes;
 
   return (
     <div className="space-y-6">
-      <dl
-        className="grid gap-6 rounded-lg border border-border bg-surface p-6 sm:grid-cols-3"
+      {/* 🔴 EL RESUMEN ES UNA FRASE (regla 1 del molde, Nico 22-09: «esto
+          también parece un vómito y tiene cosas por un lado y por el otro»).
+          Eran tres fichas del mismo tamaño y el mismo peso —CUENTAS ACTIVAS
+          2.790 · ASIENTOS ESTE MES 0 · ASIENTOS EN EL LIBRO 0— y las tres
+          juntas no decían nada: un 0 al lado de un 2.790 se lee como un error,
+          no como «el plan está cargado y el libro todavía no arrancó».
+          La frase la arma `elLibroEnUnaFrase`, que está probada aparte: los
+          casos raros son varios (libro vacío, mes en cero con libro lleno, y
+          cualquiera de los tres números sin poder leerse). */}
+      <section
+        className="rounded-lg border border-border bg-surface p-5"
         aria-label="Resumen del libro"
       >
-        <Cifra
-          etiqueta="Cuentas activas"
-          valor={datos.cuentasActivas}
-          cargando={cargando}
-          fallo={falloDe('cuentas')}
-        />
-        <Cifra
-          etiqueta="Asientos este mes"
-          valor={datos.asientosDelMes}
-          pie={pieDelMes}
-          cargando={cargando}
-          fallo={falloDe('delMes')}
-        />
-        <Cifra
-          etiqueta="Asientos en el libro"
-          valor={datos.asientosEnElLibro}
-          cargando={cargando}
-          fallo={falloDe('libro')}
-        />
-      </dl>
+        {cargando ? (
+          <span
+            className="inline-block h-6 w-96 max-w-full animate-pulse rounded-sm bg-surface-muted"
+            aria-label="cargando"
+          />
+        ) : (
+          <p className="text-body text-fg" data-testid="el-libro-en-una-frase">
+            {elLibroEnUnaFrase({
+              cuentasActivas: datos.cuentasActivas,
+              asientosEnElLibro: datos.asientosEnElLibro,
+              asientosDelMes: datos.asientosDelMes,
+              ultimoDia: ultimo ? diaLegible(ultimo.fecha) : null,
+            }).map((trozo, i) =>
+              trozo.tipo === 'texto' ? (
+                <span key={i}>{trozo.texto}</span>
+              ) : (
+                <strong
+                  key={i}
+                  className="font-mono font-semibold tabular-nums text-fg"
+                  title={trozo.rotulo}
+                >
+                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString('es-CO')}
+                </strong>
+              ),
+            )}
+          </p>
+        )}
+        {/* Cada consulta falla por separado y lo DICE: sin esto, un número que
+            no se pudo leer saldría como un guion mudo. */}
+        {!cargando &&
+          (['cuentas', 'delMes', 'libro'] as const)
+            .map((c) => falloDe(c))
+            .filter((f): f is NonNullable<typeof f> => Boolean(f))
+            .map((f, i) => <NoCargo key={i} {...f} />)}
+      </section>
 
       {/* CT1: que no aparezca ninguna alerta sólo vale si se pudo revisar. */}
       {revisionesCaidas.length > 0 ? (

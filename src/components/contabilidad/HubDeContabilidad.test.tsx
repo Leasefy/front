@@ -61,7 +61,11 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('./Monto', () => ({
   Monto: ({ valor }: { valor: number }) => <span>{valor}</span>,
 }));
-vi.mock('./RangoDeFechas', () => ({ RangoDeFechas: () => <div /> }));
+// El rango sale con su marca, para poder afirmar DÓNDE vive (en el cajón, no
+// en la portada) sin montar los dos `<input type="date">` de verdad.
+vi.mock('./RangoDeFechas', () => ({
+  RangoDeFechas: () => <div data-testid="rango-de-fechas" />,
+}));
 vi.mock('./asientos/CierreDePeriodo', () => ({
   CierreDePeriodo: ({ fallo }: { fallo?: boolean }) => (
     <div data-testid="cierre" data-fallo={String(Boolean(fallo))} />
@@ -518,5 +522,38 @@ describe('HubDeContabilidad — la contabilidad completa del 18-09', () => {
     expect(caidas).toContain('esperando aprobación');
     expect($('[data-testid="no-cargo-lotes"]')).not.toBeNull();
     expect($('[data-testid="reintentar-lotes"]')).not.toBeNull();
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09, sobre esta portada: «esto también parece un vómito y tiene
+ * cosas por un lado y por el otro que se podrían hacer de otra manera o hasta
+ * con un CTA que luego pida el resto de información».
+ */
+describe('HubDeContabilidad · el resumen es una frase y el rango se pide después', () => {
+  it('🔴 arriba va UNA frase, no tres fichas del mismo peso', async () => {
+    await montar();
+    const resumen = host.querySelector('[aria-label="Resumen del libro"]')!;
+    const frase = resumen.querySelector('[data-testid="el-libro-en-una-frase"]')!;
+    expect(frase).not.toBeNull();
+    // Dice la RELACIÓN, no tres números sueltos.
+    expect(frase.textContent).toMatch(/plan de|asiento/i);
+    // Y ya no hay una rejilla de tres columnas de cifras.
+    expect(resumen.querySelectorAll('dd')).toHaveLength(0);
+  });
+
+  it('🔴 el rango de fechas NO está puesto en la portada: lo pide el cajón', async () => {
+    await montar();
+    // Cerrado: el rango no está en ninguna parte de la portada.
+    expect(document.querySelector('[data-testid="rango-de-fechas"]')).toBeNull();
+    expect(document.querySelector('[data-testid="cajon-del-libro"]')).toBeNull();
+
+    await clic($('[data-testid="descargar-csv"]'));
+
+    // El cajón vive en un portal: se busca en el documento.
+    const cajon = document.querySelector('[data-testid="cajon-del-libro"]')!;
+    expect(cajon).not.toBeNull();
+    expect(cajon.querySelector('[data-testid="rango-de-fechas"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="cajon-del-libro-descargar"]')).not.toBeNull();
   });
 });

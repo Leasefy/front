@@ -729,6 +729,7 @@ function FilaDelPropietario({
               {inmuebles.length} inmuebles
               {conInmueblesFuera > 0 && (
                 <span className="text-warning">
+                  {' '}
                   · {conInmueblesFuera} sin girar
                 </span>
               )}

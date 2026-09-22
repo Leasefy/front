@@ -121,18 +121,30 @@ export function ElegirAQuienPagarle({
     [datos],
   );
 
+  /*
+   * 🔴 QA 22-09: sin nada tildado el resumen decía «Vas a dispersar $0 a 0
+   * propietarios» justo antes de confirmar, y el botón dice «Armar lote con el
+   * mes entero» —que es lo que el back hace con la lista vacía—: el toast
+   * después decía «1 pagos por $4.710.000». Sin selección, el resumen cuenta
+   * el MES ENTERO, que es lo que se va a armar.
+   */
+  const todoElMes = elegidos.size === 0;
+  const entra = useCallback(
+    (id: string) => todoElMes || elegidos.has(id),
+    [todoElMes, elegidos],
+  );
+
   const totalElegido = useMemo(
-    () =>
-      girables.reduce((s, c) => (elegidos.has(c.dispersionId) ? s + c.netoCop : s), 0),
-    [girables, elegidos],
+    () => girables.reduce((s, c) => (entra(c.dispersionId) ? s + c.netoCop : s), 0),
+    [girables, entra],
   );
 
   /** A cuántos se les gira de verdad; los que se cierran en $0 se cuentan aparte. */
   const cerradosEnCero = useMemo(
-    () => compensables.filter((c) => elegidos.has(c.dispersionId)).length,
-    [compensables, elegidos],
+    () => compensables.filter((c) => entra(c.dispersionId)).length,
+    [compensables, entra],
   );
-  const girados = elegidos.size - cerradosEnCero;
+  const girados = todoElMes ? girables.length : elegidos.size - cerradosEnCero;
 
   const disponible = datos?.plata.disponibleCop ?? 0;
   // El descubierto se mide contra el disponible, nunca contra 0: si ya venía
@@ -338,7 +350,7 @@ export function ElegirAQuienPagarle({
         data-testid="resumen-de-lo-elegido"
       >
         <p className="text-sm text-fg">
-          Vas a dispersar{' '}
+          {todoElMes && girables.length + compensables.length > 0 ? 'Con el mes entero, vas a dispersar' : 'Vas a dispersar'}{' '}
           <strong className="font-mono tabular-nums">{formatCurrency(totalElegido)}</strong> a{' '}
           <strong>{girados}</strong> {girados === 1 ? 'propietario' : 'propietarios'}
           {cerradosEnCero > 0 && (

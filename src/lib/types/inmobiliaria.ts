@@ -2620,7 +2620,22 @@ export const PLAN_LIMITS: Record<BillingPlan, PlanLimits> = {
 // Configuracion - Users & Permissions
 // ============================================================================
 
-export type AgencyRole = 'admin' | 'agente' | 'contador' | 'viewer';
+/**
+ * El rol del sistema de un miembro, en minúsculas (el servicio lo sube a
+ * mayúsculas al hablar con el back).
+ *
+ * 🔴 QA 22-09: acá había cuatro y el back tiene SIETE (`AgencyMemberRole`).
+ * Invitar sólo podía crear agentes y «Editar rol» ofrecía cuatro; un miembro
+ * COORDINADOR salía con el rol «—» en la tabla.
+ */
+export type AgencyRole =
+  | 'admin'
+  | 'agente'
+  | 'contador'
+  | 'viewer'
+  | 'coordinador'
+  | 'auxiliar_cartera'
+  | 'abogado_externo';
 
 export type PermissionModule =
   | 'dashboard'
@@ -2690,11 +2705,30 @@ export function getRoleLabel(role: AgencyRole | null | undefined): string {
     // «Asesor» (Nico, 17-09-2026): el rol AGENTE es el asesor comercial.
     agente: 'Asesor comercial',
     contador: 'Contador',
-    viewer: 'Solo Lectura',
+    viewer: 'Solo lectura',
+    coordinador: 'Coordinador',
+    auxiliar_cartera: 'Auxiliar de cartera',
+    abogado_externo: 'Abogado externo',
   };
   // Unknown/undefined role (e.g. an invited member with incomplete data) → '—'.
   return (role && labels[role]) || '—';
 }
+
+/**
+ * Los siete roles del sistema, en el orden en que se ofrecen, con el MISMO
+ * nombre que la tabla del equipo. Una sola lista para invitar, editar el rol y
+ * filtrar: antes cada selector tenía la suya («Agente» en uno, «Asesor
+ * comercial» en la tabla; «Contable» y «Contador»; «Viewer» en inglés).
+ */
+export const ROLES_DEL_SISTEMA: readonly AgencyRole[] = [
+  'admin',
+  'coordinador',
+  'agente',
+  'auxiliar_cartera',
+  'contador',
+  'abogado_externo',
+  'viewer',
+];
 
 export function getRoleColor(role: AgencyRole | null | undefined): string {
   const colors: Record<AgencyRole, string> = {
@@ -2702,6 +2736,9 @@ export function getRoleColor(role: AgencyRole | null | undefined): string {
     agente: 'bg-primary-soft text-primary',
     contador: 'bg-success-soft text-success',
     viewer: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    coordinador: 'bg-primary-soft text-primary',
+    auxiliar_cartera: 'bg-success-soft text-success',
+    abogado_externo: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   // Always a valid color-class string, even for an unknown/undefined role.
   return (role && colors[role]) || NEUTRAL_BADGE_COLOR;
@@ -2758,7 +2795,14 @@ export function getActionLabel(action: PermissionAction): string {
 }
 
 // Default permissions by role
-export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
+/**
+ * Los roles que la matriz editable de Permisos muestra hoy. Los otros tres
+ * (coordinador, auxiliar de cartera, abogado externo) tienen permisos fijos en
+ * el back y todavía no salen en esa matriz; se asignan desde el equipo.
+ */
+export type RolDeLaMatriz = Extract<AgencyRole, 'admin' | 'agente' | 'contador' | 'viewer'>;
+
+export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = {
   admin: {
     role: 'admin',
     permissions: [

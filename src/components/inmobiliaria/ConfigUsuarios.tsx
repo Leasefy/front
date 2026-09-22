@@ -64,6 +64,7 @@ import type {
 import {
   getRoleLabel,
   getRoleColor,
+  ROLES_DEL_SISTEMA,
   getUserStatusColor,
   getUserStatusLabel,
 } from '@/lib/types/inmobiliaria';
@@ -148,10 +149,13 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
-                <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
-                <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
-                <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
+                {/* Los SIETE roles del back, con el nombre de la tabla (QA 22-09:
+                    ofrecía cuatro, con otros nombres). */}
+                {ROLES_DEL_SISTEMA.map((rol) => (
+                  <SelectItem key={rol} value={rol}>
+                    {getRoleLabel(rol)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -397,10 +401,11 @@ export function ConfigUsuarios({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('inmobiliaria.config.users.allRoles')}</SelectItem>
-            <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
-            <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
-            <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
-            <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
+            {ROLES_DEL_SISTEMA.map((rol) => (
+              <SelectItem key={rol} value={rol}>
+                {getRoleLabel(rol)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

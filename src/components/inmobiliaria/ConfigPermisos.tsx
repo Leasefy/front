@@ -53,7 +53,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import type {
-  AgencyRole,
   RolePermissions,
   PermissionModule,
   PermissionAction,
@@ -66,17 +65,21 @@ import {
   ALL_PERMISSION_MODULES,
   ALL_PERMISSION_ACTIONS,
   DEFAULT_ROLE_PERMISSIONS,
+  type RolDeLaMatriz,
   hasPermission,
   updateRolePermission,
 } from '@/lib/types/inmobiliaria';
+
+// La matriz editable sólo muestra los cuatro roles de siempre (ver RolDeLaMatriz).
+type AgencyRole = RolDeLaMatriz;
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface ConfigPermisosProps {
-  permissions: Record<AgencyRole, RolePermissions>;
-  onSave?: (permissions: Record<AgencyRole, RolePermissions>) => void;
+  permissions: Record<RolDeLaMatriz, RolePermissions>;
+  onSave?: (permissions: Record<RolDeLaMatriz, RolePermissions>) => void;
   /**
    * Reset every role to the system defaults on the server (destructive — also
    * clears per-member overrides). When provided, "Restablecer" delegates here
@@ -286,7 +289,7 @@ export function ConfigPermisos({
   const { t } = useI18n();
 
   // Local state for editing
-  const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(initialPermissions);
+  const [permissions, setPermissions] = useState<Record<RolDeLaMatriz, RolePermissions>>(initialPermissions);
   const [activeRole, setActiveRole] = useState<AgencyRole>('admin');
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);

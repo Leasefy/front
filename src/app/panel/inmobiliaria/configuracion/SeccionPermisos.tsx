@@ -18,7 +18,7 @@ import { ConfigPermisos } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { PermMap, RoleMatrices, UpdateRolePermissionsBody } from '@/lib/api/inmobiliaria.service';
-import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
+import { DEFAULT_ROLE_PERMISSIONS, type RolDeLaMatriz } from '@/lib/types/inmobiliaria';
 import { EsqueletoDeSeccion } from './piezas';
 import type {
   AgencyRole,
@@ -40,7 +40,7 @@ function permMapToRolePermissions(role: AgencyRole, map: PermMap): RolePermissio
   };
 }
 
-function matricesToUiMatrix(matrices: RoleMatrices): Record<AgencyRole, RolePermissions> {
+function matricesToUiMatrix(matrices: RoleMatrices): Record<RolDeLaMatriz, RolePermissions> {
   return {
     admin: permMapToRolePermissions('admin', matrices.roles.ADMIN),
     agente: permMapToRolePermissions('agente', matrices.roles.AGENTE),
@@ -59,7 +59,7 @@ export function SeccionPermisos() {
   const { t } = useI18n();
   const { refetch: refetchMyPermissions } = usePermissions();
 
-  const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(DEFAULT_ROLE_PERMISSIONS);
+  const [permissions, setPermissions] = useState<Record<RolDeLaMatriz, RolePermissions>>(DEFAULT_ROLE_PERMISSIONS);
   // Sube en cada sincronización con el servidor y hace de `key`: el componente
   // se vuelve a montar con la matriz fresca (y sus contadores y su «hay
   // cambios sin guardar» vuelven a cero).
@@ -101,7 +101,7 @@ export function SeccionPermisos() {
     };
   }, [intento]);
 
-  const guardar = async (nuevos: Record<AgencyRole, RolePermissions>) => {
+  const guardar = async (nuevos: Record<RolDeLaMatriz, RolePermissions>) => {
     setGuardando(true);
     try {
       // ADMIN nunca se manda: es acceso total y de sólo lectura en el back.

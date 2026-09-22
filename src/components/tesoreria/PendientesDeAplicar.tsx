@@ -27,10 +27,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowUUpLeft, CheckCircle } from '@phosphor-icons/react';
+import { ArrowUUpLeft, CheckCircle, Hourglass } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { SinLaMigracion } from '@/components/finanzas/piezas';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -121,14 +122,24 @@ export function PendientesDeAplicarPanel() {
         onReintentar={cargar}
         vacio={datos?.disponible === true && datos.aplicables.length === 0}
         cuandoVacio={
-          <p
-            className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted"
+          /* 🔴 El vacío NO repite el intro de la pantalla (Nico, 21-09: «no se
+             entiende nada»). Decía casi palabra por palabra el mismo párrafo
+             del encabezado, y sin pendientes ESO era la pantalla entera: el
+             mismo texto dos veces.
+             Un vacío tiene que decir tres cosas que el intro no dice: que está
+             bien que esté vacío, qué haría aparecer algo acá, y que no hay nada
+             que hacer. */
+          <div
+            className="rounded-lg border border-border bg-surface p-5"
             data-testid="sin-pendientes"
           >
-            No hay plata pendiente de aplicar. Acá aparece lo que una aseguradora pagó por encima
-            de lo vencido de un inquilino: un siniestro cubre la mora, no adelanta cánones que
-            todavía no vencen.
-          </p>
+            <SinDatos
+              queSon="plata pendiente de aplicar"
+              icono={Hourglass}
+              titulo="No hay nada pendiente, y está bien"
+              descripcion="Toda la plata que entró ya se aplicó o se devolvió. Acá va a aparecer una fila el día que una aseguradora pague más de lo que un inquilino tiene vencido."
+            />
+          </div>
         }
         conservarContenido
       >
@@ -142,14 +153,17 @@ export function PendientesDeAplicarPanel() {
 
         {datos && datos.aplicables.length > 0 ? (
           <>
-            <TituloDeBloque
-              titulo="Pendiente de aplicar"
-              explicacion={`Un pasivo: es plata de quien la puso hasta que se aplique a deuda vencida o se le devuelva. ${
-                datos.totalAplicableCop
-                  ? `Hoy se podrían aplicar ${formatCurrency(datos.totalAplicableCop)}.`
-                  : 'Hoy ninguno tiene deuda vencida contra la que aplicarse.'
-              }`}
-            />
+            {/* 🔴 El título era «Pendiente de aplicar», el MISMO de la página
+                dos renglones arriba. Un bloque no se llama igual que la
+                pantalla que lo contiene: acá lo que hace falta decir es
+                cuántos son y cuánto se puede mover hoy. */}
+            <p className="text-sm text-fg-muted" data-testid="cuanto-se-puede-aplicar">
+              {datos.aplicables.length}{' '}
+              {datos.aplicables.length === 1 ? 'entrada' : 'entradas'} esperando.{' '}
+              {datos.totalAplicableCop
+                ? `Hoy se podrían aplicar ${formatCurrency(datos.totalAplicableCop)} a deuda ya vencida.`
+                : 'Ninguna tiene hoy deuda vencida contra la que aplicarse: hay que esperar que venzan más cuotas, o devolverla.'}
+            </p>
             <ul className="space-y-4" data-testid="pendientes">
               {datos.aplicables.map((item) => (
                 <li

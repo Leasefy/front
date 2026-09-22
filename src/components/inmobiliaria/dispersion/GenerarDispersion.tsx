@@ -454,7 +454,7 @@ export function GenerarDispersion({
                   ¿A quién le giras este mes?
                 </h2>
                 <span
-                  className="text-sm text-fg-muted tabular-nums"
+                  className="font-mono text-sm text-fg-muted tabular-nums"
                   data-testid="cuantos-seleccionados"
                 >
                   {dentro.length} de {candidatos.length}{' '}
@@ -639,7 +639,7 @@ function Cifra({
       <dt className="text-xs uppercase tracking-wide text-fg-muted">{rotulo}</dt>
       <dd
         className={cn(
-          'font-semibold tabular-nums text-fg',
+          'font-mono font-semibold tabular-nums text-fg',
           grande ? 'text-2xl' : 'text-lg',
         )}
         data-testid={testId}
@@ -684,13 +684,21 @@ function FilaDelPropietario({
   ).length;
 
   return (
+    /* 🔴 LA FILA RESPIRA (Nico, 21-09: «esto debería de tener más espacio, están
+       súper juntos y hay textos demasiado de pequeños»). Tres cosas cambiaron y
+       las tres importan en una pantalla donde se decide a quién se le gira
+       plata: el alto de la fila (py-3 → py-4, que es el paso `lg` de la escala
+       de 4 pt de `docs/DESIGN.md`), el nombre en `.text-body` (16 px) —es el
+       dato que se busca con el ojo— y ninguna línea por debajo de 14 px: la
+       cuenta bancaria y el desglose estaban en 12, que no es un texto
+       secundario, es un texto que no se lee. */
     <li
-      className={cn('px-4 py-3', !dentro && 'bg-surface-muted/40')}
+      className={cn('px-4 py-4', !dentro && 'bg-surface-muted/40')}
       data-testid="fila-propietario"
       data-propietario={p.propietarioId}
       data-dentro={dentro ? 'si' : 'no'}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         <Checkbox
           checked={marcado}
           onCheckedChange={onAlternar}
@@ -698,15 +706,20 @@ function FilaDelPropietario({
           className="mt-1"
         />
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2">
-            <p className={cn('font-medium text-fg', !dentro && 'text-fg-muted')}>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p
+              className={cn(
+                'text-base font-medium leading-snug text-fg',
+                !dentro && 'text-fg-muted',
+              )}
+            >
               {p.propietarioName}
             </p>
             {/* Sin cuenta registrada se DICE. Antes se fabricaba una —banco
                 «bancolombia», cuenta «****0000»—: en una pantalla sobre a dónde
                 girar plata, un dato inventado se ve igual que uno real. */}
-            <span className="text-xs text-fg-muted">
+            <span className="text-sm text-fg-muted">
               {p.propietarioBankAccount
                 ? `${p.propietarioBankName ?? 'Cuenta'} ${p.propietarioBankAccount}`
                 : 'Sin cuenta registrada'}
@@ -718,7 +731,7 @@ function FilaDelPropietario({
               type="button"
               onClick={onAlternarDetalle}
               aria-expanded={abierto}
-              className="mt-0.5 inline-flex items-center gap-1 text-sm text-fg-muted hover:text-primary"
+              className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-primary"
               data-testid="abrir-inmuebles"
             >
               {abierto ? (
@@ -735,23 +748,26 @@ function FilaDelPropietario({
               )}
             </button>
           ) : (
-            <p className="mt-0.5 truncate text-sm text-fg-muted">
+            <p className="truncate text-sm text-fg-muted">
               {inmuebles[0]?.titulo ?? p.items[0]?.propertyTitle ?? '—'}
             </p>
           )}
         </div>
 
-        <div className="text-right">
+        <div className="space-y-1.5 text-right">
+          {/* `font-mono` por regla del DS: todos los números van en JetBrains
+              Mono con `tabular-nums`, para que las columnas de plata se
+              alineen dígito a dígito. */}
           <p
             className={cn(
-              'font-semibold tabular-nums',
+              'font-mono text-lg font-semibold leading-none tabular-nums',
               dentro ? 'text-fg' : 'text-fg-muted line-through',
             )}
             data-testid="neto-del-propietario"
           >
             {formatCurrency(numeros.netoCop)}
           </p>
-          <p className="text-xs text-fg-muted tabular-nums">
+          <p className="font-mono text-sm text-fg-muted tabular-nums">
             {ROTULO_DEL_CANON[base]} {formatCurrency(numeros.canonCop)} · comisión{' '}
             {formatCurrency(numeros.comisionCop)}
           </p>
@@ -761,7 +777,7 @@ function FilaDelPropietario({
       {/* Los inmuebles del propietario, con su plata y su casilla. Van acá, en
           la misma pantalla: eran el paso 2 y el paso 4 del asistente. */}
       {varios && abierto && (
-        <ul className="ml-8 mt-2 space-y-1 border-l border-border-faint pl-3">
+        <ul className="ml-8 mt-4 space-y-3 border-l border-border-faint pl-4">
           {inmuebles.map((inm) => {
             const renglones = p.items.filter((i) => i.propertyId === inm.propertyId);
             const canon = renglones.reduce((s, i) => s + i.rentCollected, 0);
@@ -771,7 +787,7 @@ function FilaDelPropietario({
             return (
               <li
                 key={inm.propertyId}
-                className="flex items-center gap-3 text-sm"
+                className="flex items-center gap-4 text-sm"
                 data-testid="fila-inmueble"
                 data-inmueble={inm.propertyId}
               >
@@ -789,12 +805,12 @@ function FilaDelPropietario({
                 >
                   {inm.titulo}
                 </span>
-                <span className="tabular-nums text-fg-muted">
+                <span className="font-mono tabular-nums text-fg-muted">
                   comisión {formatCurrency(comision)}
                 </span>
                 <span
                   className={cn(
-                    'w-28 text-right tabular-nums',
+                    'w-28 text-right font-mono tabular-nums',
                     marcadoInm && marcado ? 'font-medium text-fg' : 'text-fg-muted line-through',
                   )}
                   data-testid="neto-del-inmueble"

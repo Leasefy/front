@@ -11405,6 +11405,8 @@
       "descripcion": "You are recording that money came in. It is applied to the oldest debt first and issues one numbered receipt per month it covers.",
       "montoLabel": "How much are they paying?",
       "maximo": "Maximum you can apply: {{monto}}",
+      "deudaTotal": "Total debt, due and upcoming: {{monto}}",
+      "confirmarAFavor": "Yes, {{monto}} stays as credit for {{nombre}}",
       "abonarTodo": "Pay the whole debt",
       "montoRequerido": "Enter how much came in",
       "montoPositivo": "It has to be greater than zero",

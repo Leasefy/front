@@ -11439,6 +11439,8 @@
       "descripcion": "Vas a dejar constancia de que entró plata. Se aplica a la deuda más vieja primero y sale un recibo numerado por cada mes que toque.",
       "montoLabel": "¿Cuánto va a pagar?",
       "maximo": "Máximo abonable: {{monto}}",
+      "deudaTotal": "Deuda total, vencida y futura: {{monto}}",
+      "confirmarAFavor": "Sí, quedan {{monto}} a favor de {{nombre}}",
       "abonarTodo": "Paga toda la deuda",
       "montoRequerido": "Escribe cuánto entró",
       "montoPositivo": "Tiene que ser mayor que cero",

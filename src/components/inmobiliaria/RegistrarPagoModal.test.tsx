@@ -825,6 +825,31 @@ describe('<RegistrarPagoModal> pagar de más', () => {
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
   });
 
+  it('🔴 lo que queda a favor se CONFIRMA antes de emitir (QA 22-09: un dedo de más y pasaba)', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    const onSubmit = await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+    elegirMedio('transferencia');
+
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    const casilla = document.body.querySelector<HTMLElement>('[data-testid="confirmar-a-favor-casilla"]');
+    expect(casilla).toBeTruthy();
+    await act(async () => {
+      casilla!.click();
+    });
+    await enviar();
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('con anticipo habilitado no lo llama «máximo»: es la deuda total', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    expect(document.body.textContent).toContain('recibos.form.deudaTotal');
+    expect(document.body.textContent).not.toContain('recibos.form.maximo');
+  });
+
   it('sin saldo a favor disponible sigue topando el monto', async () => {
     carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: false }));
     await abrir({});

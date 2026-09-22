@@ -81,6 +81,7 @@
  */
 
 import * as React from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import {
   Bank,
@@ -267,6 +268,14 @@ export function RegistrarPagoModal({
 
   const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);
+  /**
+   * 🔴 QA 22-09: con un dedo de más el campo quedó en $7.480.366.500.000, el
+   * diálogo dijo «superan TODA la deuda… quedan a su favor» y dejó pulsar
+   * «Emitir». Pagar de más es legítimo (CEO, 15-09) y no se le pone un tope
+   * inventado; lo que no puede pasar es que ocurra sin que nadie lo decida.
+   * Guarda el monto que se confirmó: si el monto cambia, la confirmación se va.
+   */
+  const [aFavorConfirmado, setAFavorConfirmado] = React.useState<number | null>(null);
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy);
   const [saludos, setSaludos] = React.useState('');
@@ -426,6 +435,7 @@ export function RegistrarPagoModal({
     (cartera.total > 0 || puedeGuardarAFavor) &&
     montoValido &&
     !seExcede &&
+    (excedente === 0 || aFavorConfirmado === monto) &&
     medio !== '' &&
     !faltaElPagador(quienPaga) &&
     problemaDeLaFecha === null &&
@@ -877,7 +887,11 @@ export function RegistrarPagoModal({
                   className="h-12 text-lg font-semibold"
                 />
                 <p className="text-xs text-fg-muted">
-                  {t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
+                  {/* Con anticipo habilitado NO es un máximo —se puede pagar de
+                      más y queda a favor—: llamarlo «Máximo abonable» mentía. */}
+                  {puedeGuardarAFavor && quienPaga.tipo !== 'ASEGURADORA'
+                    ? t('recibos.form.deudaTotal', { monto: formatCurrency(maximo) })
+                    : t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
                   {/* El máximo ya trae la mora adentro: se dice cuánto es. */}
                   {(cartera.interesCop ?? 0) > 0 && (
                     <span data-testid="maximo-con-intereses">
@@ -907,6 +921,22 @@ export function RegistrarPagoModal({
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
                   </p>
+                )}
+                {excedente > 0 && puedeGuardarAFavor && !seExcede && (
+                  <label className="flex items-start gap-2 text-sm text-fg" data-testid="confirmar-a-favor">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={aFavorConfirmado === monto}
+                      onCheckedChange={(v) => setAFavorConfirmado(v === true ? monto : null)}
+                      data-testid="confirmar-a-favor-casilla"
+                    />
+                    <span>
+                      {t('recibos.form.confirmarAFavor', {
+                        monto: formatCurrency(excedente),
+                        nombre: cartera?.nombre ?? 'el cliente',
+                      })}
+                    </span>
+                  </label>
                 )}
                 {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
               </div>

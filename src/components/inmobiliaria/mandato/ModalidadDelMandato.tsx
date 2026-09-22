@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { enCristiano } from '@/lib/errores/en-cristiano';
 import { HandCoins, WarningCircle } from '@phosphor-icons/react';
 
@@ -227,6 +228,12 @@ function EditarModalidad({
 
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-foreground">Modalidad</legend>
+          {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px. */}
+          <RadioGroup
+            className="space-y-2"
+            value={modalidad ?? ''}
+            onValueChange={(v) => setModalidad(v as typeof modalidad)}
+          >
           {(
             [
               [
@@ -244,20 +251,14 @@ function EditarModalidad({
               key={valor}
               className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover"
             >
-              <input
-                type="radio"
-                name="modalidad"
-                value={valor}
-                checked={modalidad === valor}
-                onChange={() => setModalidad(valor)}
-                className="mt-1"
-              />
+              <RadioGroupItem value={valor} className="mt-1" />
               <span>
                 <span className="block text-sm text-foreground">{nombre}</span>
                 {ayuda ? <span className="block text-xs text-muted-foreground">{ayuda}</span> : null}
               </span>
             </label>
           ))}
+        </RadioGroup>
         </fieldset>
 
         <fieldset className="space-y-2">

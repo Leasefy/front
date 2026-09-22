@@ -97,7 +97,11 @@ describe('SeccionMandato', () => {
     await pintar();
     expect(botonPorTexto('Guardar').disabled).toBe(true);
 
-    const radios = [...container.querySelectorAll<HTMLInputElement>('input[name="modalidad-por-defecto"]')];
+    /* 🔴 Los radios son los del sistema de diseño desde el 21-09: `role="radio"`
+       sobre un `<button>`, no `<input name=...>` de 13 px. Se busca por rol, que
+       además es lo que ve un lector de pantalla. */
+    const radios = [...container.querySelectorAll<HTMLElement>('[role="radio"]')];
+    expect(radios.length).toBeGreaterThan(1);
     await act(async () => {
       radios[1].click();
     });

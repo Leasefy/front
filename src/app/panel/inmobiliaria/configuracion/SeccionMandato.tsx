@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { Checkbox } from '@/components/ui/checkbox';
 import { HandCoins, Percent, Plus, Receipt, Trash, WarningCircle } from '@phosphor-icons/react';
 
@@ -121,7 +122,12 @@ function ModalidadPorDefecto({
         Con qué base se le gira al propietario. Cada mandato la puede cambiar en la ficha del inmueble; los que
         no tengan una propia usan ésta.
       </p>
-      <div className="space-y-2">
+      {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px. */}
+      <RadioGroup
+        className="space-y-2"
+        value={valor ?? ''}
+        onValueChange={(nuevo) => setValor((nuevo || null) as typeof valor)}
+      >
         {(
           [
             ['', 'Sin modalidad', 'La liquidación de siempre: la base la escoge quien genera los giros (lo causado, por defecto).'],
@@ -133,11 +139,8 @@ function ModalidadPorDefecto({
             key={v || 'ninguna'}
             className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover"
           >
-            <input
-              type="radio"
-              name="modalidad-por-defecto"
-              checked={valor === v}
-              onChange={() => setValor(v)}
+            <RadioGroupItem
+              value={v ?? ''}
               disabled={!config.disponible}
               className="mt-1"
             />
@@ -147,7 +150,7 @@ function ModalidadPorDefecto({
             </span>
           </label>
         ))}
-      </div>
+      </RadioGroup>
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
           {config.modalidadDeMandatoDesde

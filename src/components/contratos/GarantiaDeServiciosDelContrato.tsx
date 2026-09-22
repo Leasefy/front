@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { AunNoDisponible } from './AunNoDisponible';
 
 import { Button } from '@/components/ui/button';
@@ -324,16 +325,21 @@ function RegistrarGarantia({
   return (
     <div className="space-y-3 border-t border-border pt-3 text-sm" data-testid="registrar-garantia">
       <p className="font-medium">Registrar la garantía</p>
-      <div className="flex gap-4 text-xs">
-        <label className="flex items-center gap-1">
-          <input type="radio" checked={forma === 'FACTURAS'} onChange={() => setForma('FACTURAS')} data-testid="forma-facturas" />
-          Digitar las últimas facturas
+      {/* Radios del sistema de diseño: el del navegador mide 13 px (21-09). */}
+      <RadioGroup
+        className="flex flex-wrap gap-x-5 gap-y-2"
+        value={forma}
+        onValueChange={(v) => setForma(v as typeof forma)}
+      >
+        <label className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
+          <RadioGroupItem value="FACTURAS" data-testid="forma-facturas" />
+          <span>Digitar las últimas facturas</span>
         </label>
-        <label className="flex items-center gap-1">
-          <input type="radio" checked={forma === 'PROMEDIO'} onChange={() => setForma('PROMEDIO')} data-testid="forma-promedio" />
-          Digitar el promedio
+        <label className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
+          <RadioGroupItem value="PROMEDIO" data-testid="forma-promedio" />
+          <span>Digitar el promedio</span>
         </label>
-      </div>
+      </RadioGroup>
 
       {forma === 'FACTURAS' ? (
         <div className="space-y-2">

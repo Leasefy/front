@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { Bank, CheckCircle, Paperclip, ShieldWarning, WarningCircle } from '@phosphor-icons/react';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -353,14 +354,21 @@ function PedirCambioDeCuenta({
               ))}
             </select>
           </div>
-          <div className="flex gap-3">
+          <RadioGroup
+            className="flex gap-x-5 gap-y-2"
+            value={tipo}
+            onValueChange={(v) => setTipo(v as typeof tipo)}
+          >
             {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
-              <label key={t} className="flex items-center gap-2 text-sm">
-                <input type="radio" name="tipo-de-cuenta" checked={tipo === t} onChange={() => setTipo(t)} />
-                {t === 'AHORROS' ? 'Ahorros' : 'Corriente'}
+              <label
+                key={t}
+                className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+              >
+                <RadioGroupItem value={t} />
+                <span>{t === 'AHORROS' ? 'Ahorros' : 'Corriente'}</span>
               </label>
             ))}
-          </div>
+          </RadioGroup>
           <div className="space-y-1.5">
             <Label htmlFor="numero-nuevo">Número de cuenta</Label>
             <Input

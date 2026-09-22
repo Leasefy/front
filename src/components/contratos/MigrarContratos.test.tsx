@@ -111,9 +111,9 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function render() {
+function render(props: { onLoteCambio?: () => void } = {}) {
   act(() => {
-    root.render(<MigrarContratos />)
+    root.render(<MigrarContratos {...props} />)
   })
 }
 
@@ -1482,7 +1482,8 @@ describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el 
 
 describe('<MigrarContratos> — 🔴 después de cargar los inmuebles, primero se cruza (QA 22-09)', () => {
   it('«Volver a cruzar» va ANTES que «Crear los N que faltan», y al terminar el cruce la cuenta se vuelve a pedir', async () => {
-    render()
+    const onLoteCambio = vi.fn()
+    render({ onLoteCambio })
     await esperar()
     vi.mocked(contractsApi.migracion.inmueblesFaltantes)
       .mockResolvedValueOnce({ candidatas: 164, activadas: 0, ambiguas: 0, sinDireccion: 0 })
@@ -1505,6 +1506,8 @@ describe('<MigrarContratos> — 🔴 después de cargar los inmuebles, primero s
     })
     await act(async () => {})
 
+    // Y el veredicto de la página, que vive afuera, se entera.
+    expect(onLoteCambio).toHaveBeenCalled()
     // Antes seguía diciendo 164 hasta recargar la página.
     expect(
       container.querySelector('[data-testid="crear-inmuebles-faltantes-abrir"]')?.textContent,

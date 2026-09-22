@@ -227,9 +227,19 @@ function duenosDe(
 export interface MigrarContratosProps {
   /** Aviso hacia el muro: `true` mientras se están ACTIVANDO los contratos. */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * El lote cambió (se cruzó, se activó, se resolvió una fila). Quien pinta
+   * un resumen propio por fuera —el veredicto de la página— lo vuelve a
+   * pedir: sin esto seguía diciendo «164 sin inmueble» después de un cruce
+   * que los encontró (QA 22-09).
+   */
+  onLoteCambio?: () => void;
 }
 
-export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
+export function MigrarContratos({
+  onOcupado,
+  onLoteCambio,
+}: MigrarContratosProps = {}) {
   /**
    * El archivo tal cual, no sólo lo que salió de leerlo. La tarjeta necesita
    * nombre y peso, y `null` es lo que distingue «todavía no hay archivo» de
@@ -512,6 +522,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    * y su porcentaje, y las que además necesitan algo lo dicen en su fila. Es
    * una sola lista en vez de dos, que es la otra mitad de lo que confundía.
    */
+  // En un ref: `refrescar` es estable a propósito (lo usan muchos efectos) y
+  // no puede cambiar de identidad cada vez que el padre re-renderiza.
+  const onLoteCambioRef = useRef(onLoteCambio);
+  onLoteCambioRef.current = onLoteCambio;
   const refrescar = useCallback(async (elLote: string, pag = 1) => {
     const [r, p] = await Promise.all([
       contractsApi.migracion.resumen(elLote),
@@ -524,6 +538,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     setFilasDelLote(p.filas);
     setTotalDelLote(p.total);
     setPagina(p.pagina);
+    onLoteCambioRef.current?.();
     // T-0033 §3.2.G4 — antes reseteaba `seleccion` acá, así que cambiar de
     // página (o refrescar tras resolver una fila) borraba la selección. La
     // única forma de aplicar algo a más de una página era repetir la masiva

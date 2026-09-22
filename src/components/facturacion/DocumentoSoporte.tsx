@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
@@ -73,6 +74,8 @@ export function DocumentoSoporte() {
     null,
   )
   const [trabajando, setTrabajando] = useState(false)
+  /** El cajón de emitir: es un evento, no un filtro de la tabla. */
+  const [emitiendo, setEmitiendo] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -147,6 +150,7 @@ export function DocumentoSoporte() {
       toast.success(`Documento soporte ${r.numeroInterno} emitido`)
       setForm(VACIO)
       setPrevia(null)
+      setEmitiendo(false)
       await cargar()
     } catch (e) {
       toast.error(
@@ -174,6 +178,40 @@ export function DocumentoSoporte() {
         </div>
       )}
 
+      {/* 🔴 EL CTA, NO EL FORMULARIO PUESTO (Nico, 22-09: «así hay muchas
+          cosas no sólo en estas tablas dentro de facturación que deberían ser
+          mejor un CTA que saque toda la información y ya funcione desde ahí»).
+          Emitir un documento soporte se hace cuando le pagas a un técnico que
+          no factura: es un evento, no un filtro. Cuatro campos debajo de la
+          tabla se leen como los filtros de la tabla — pasó con la resolución,
+          y acá tenía la misma forma. */}
+      <section
+        className="overflow-x-clip rounded-lg border border-border bg-surface"
+        data-testid="documento-soporte-tarjeta"
+      >
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-body font-semibold text-fg">
+              Documentos soporte emitidos
+            </h3>
+            <p className="text-caption text-fg-muted">
+              Lo que le pagas a un proveedor que NO factura. Lleva un número
+              que no se borra y sustenta el gasto ante la DIAN.
+            </p>
+          </div>
+          {proveedores?.disponible && (
+            <Button
+              hideArrow
+              className="shrink-0"
+              onClick={() => setEmitiendo(true)}
+              data-testid="ds-abrir"
+            >
+              <Receipt className="h-4 w-4" weight="bold" />
+              Emitir un documento soporte
+            </Button>
+          )}
+        </div>
+
       <EstadoDeDatos
         cargando={cargando}
         error={error}
@@ -181,7 +219,7 @@ export function DocumentoSoporte() {
         queEs="los documentos soporte"
         onReintentar={cargar}
       >
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -256,22 +294,25 @@ export function DocumentoSoporte() {
           </Table>
         </div>
       </EstadoDeDatos>
+      </section>
 
       {proveedores?.disponible && (
-        <section
-          className="rounded-lg border border-border bg-surface p-4 space-y-4"
-          data-testid="documento-soporte-formulario"
+        <Cajon
+          abierto={emitiendo}
+          onOpenChange={(v) => {
+            // Mientras la orden viaja no se cierra: cerrar a mitad dejaría sin
+            // saber si el documento quedó emitido, y lleva número.
+            if (!v && trabajando) return
+            setEmitiendo(v)
+          }}
+          ancho="sm:max-w-xl"
+          data-testid="cajon-del-documento-soporte"
         >
-          <div>
-            <h3 className="text-body font-semibold text-fg">
-              Emitir un documento soporte
-            </h3>
-            <p className="text-caption text-fg-muted">
-              Se ve primero con sus retenciones y después se emite: lleva un
-              número que no se borra.
-            </p>
-          </div>
-
+          <CajonCabecera
+            titulo="Emitir un documento soporte"
+            descripcion="Se ve primero con sus retenciones y después se emite: lleva un número que no se borra."
+          />
+          <CajonCuerpo className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="ds-proveedor">Proveedor</Label>
@@ -360,7 +401,16 @@ export function DocumentoSoporte() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          </CajonCuerpo>
+          <CajonPie
+            ayuda={
+              !completo
+                ? 'Faltan el proveedor, la fecha, el concepto y el valor.'
+                : !previa
+                  ? 'Primero mira las retenciones: es lo que de verdad se le paga.'
+                  : 'Al emitirlo queda con número y no se borra.'
+            }
+          >
             <Button
               variant="outline"
               hideArrow
@@ -378,8 +428,8 @@ export function DocumentoSoporte() {
             >
               Emitir el documento soporte
             </Button>
-          </div>
-        </section>
+          </CajonPie>
+        </Cajon>
       )}
     </div>
   )

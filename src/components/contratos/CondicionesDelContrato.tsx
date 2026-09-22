@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox, Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { AunNoDisponible } from './AunNoDisponible';
 
 import { Button } from '@/components/ui/button';
@@ -158,26 +159,31 @@ function GastosDeCobranza({
         Si no los pacta, la regla de gastos de cobranza no se le cobra (el interés de mora sí). Tu inmobiliaria, por
         defecto, {deLaAgencia}.
       </p>
-      <div className="flex flex-wrap gap-3 text-xs">
+      {/* 🔴 21-09 · Radios del design system, no `<input type="radio">` crudos.
+          Nico: «¿por qué no estás usando checkbox de cadence? y haz eso más
+          grande, eso ni se ve». El control del navegador queda en 13 px y sin
+          los estados de foco del sistema; el de Cadence mide 20 y se ve. */}
+      <RadioGroup
+        className="flex flex-wrap gap-x-5 gap-y-2"
+        value={valor}
+        onValueChange={(v) => onCambiar(v === 'SI' ? true : v === 'NO' ? false : null)}
+      >
         {(
           [
-            ['SI', true, 'Sí los pacta'],
-            ['NO', false, 'No los pacta'],
-            ['HEREDA', null, 'Lo que diga la inmobiliaria'],
+            ['SI', 'Sí los pacta'],
+            ['NO', 'No los pacta'],
+            ['HEREDA', 'Lo que diga la inmobiliaria'],
           ] as const
-        ).map(([clave, pacta, nombre]) => (
-          <label key={clave} className="flex items-center gap-1">
-            <input
-              type="radio"
-              name="pacta-gastos"
-              checked={valor === clave}
-              onChange={() => onCambiar(pacta)}
-              data-testid={`pacta-gastos-${clave}`}
-            />
-            {nombre}
+        ).map(([clave, nombre]) => (
+          <label
+            key={clave}
+            className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+          >
+            <RadioGroupItem value={clave} data-testid={`pacta-gastos-${clave}`} />
+            <span>{nombre}</span>
           </label>
         ))}
-      </div>
+      </RadioGroup>
       {g.resuelto === false && (
         <p className="text-xs text-plan-status-yellow" data-testid="gastos-no-pactados">
           Este contrato no causa gastos de cobranza.
@@ -260,9 +266,13 @@ function SeguroOpcional({
           )}
           {editable && s.disponible && (
             <>
-              <label className="flex items-center gap-2 text-xs">
-                <input type="checkbox" checked={casilla} onChange={(e) => setCasilla(e.target.checked)} data-testid="acepta-seguro" />
-                El inquilino aceptó expresamente el seguro opcional
+              <label className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
+                <Checkbox
+                  checked={casilla}
+                  onCheckedChange={(v) => setCasilla(v === true)}
+                  data-testid="acepta-seguro"
+                />
+                <span>El inquilino aceptó expresamente el seguro opcional</span>
               </label>
               {casilla && (
                 <div className="flex flex-wrap items-end gap-2">
@@ -352,28 +362,71 @@ function Poliza({
       <p className="text-xs text-muted-foreground">
         Su prima la paga la inmobiliaria dentro de su porcentaje de administración: no se le cobra al inquilino.
       </p>
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs">
-          Aseguradora
-          <Input value={aseguradora} onChange={(e) => setAseguradora(e.target.value)} disabled={!habil} className="mt-1 w-48" />
-        </label>
-        <label className="text-xs">
-          Número
-          <Input value={numero} onChange={(e) => setNumero(e.target.value)} disabled={!habil} className="mt-1 w-32" />
-        </label>
-        <label className="text-xs">
-          Desde
-          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} disabled={!habil} className="mt-1" />
-        </label>
-        <label className="text-xs">
-          Hasta
-          <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} disabled={!habil} className="mt-1" />
-        </label>
+      {/* 🔴 21-09 · Nico: «este form está horrible». Lo estaba, y por tres
+          razones que se arreglan juntas:
+
+            · los rótulos iban DENTRO del `<label>` y delante de un `Input` de
+              bloque, así que se veían pegados a la izquierda del campo y a
+              media altura — «Aseguradora [____]» en vez de uno encima del otro;
+            · `flex-wrap` con anchos a mano (`w-48`, `w-32`, dos fechas sin
+              ancho) dejaba los cuatro campos de tamaños distintos y las filas
+              cortadas donde cayera;
+            · y «Cobertura» quedaba de ancho completo al lado de campos de 12
+              rem, que es lo que hacía que la fila anterior se viera torcida.
+
+          Ahora es una grilla: cada campo en su celda, el rótulo ARRIBA, todos
+          del mismo alto, y «Cobertura» ocupando su propia fila entera porque de
+          verdad la necesita. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-aseguradora">Aseguradora</Label>
+          <Input
+            id="poliza-aseguradora"
+            value={aseguradora}
+            onChange={(e) => setAseguradora(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-numero">Número</Label>
+          <Input
+            id="poliza-numero"
+            value={numero}
+            onChange={(e) => setNumero(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-desde">Desde</Label>
+          <Input
+            id="poliza-desde"
+            type="date"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-hasta">Hasta</Label>
+          <Input
+            id="poliza-hasta"
+            type="date"
+            value={hasta}
+            onChange={(e) => setHasta(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+          <Label htmlFor="poliza-cobertura">Cobertura</Label>
+          <Input
+            id="poliza-cobertura"
+            value={cobertura}
+            onChange={(e) => setCobertura(e.target.value)}
+            disabled={!habil}
+            placeholder="Qué cubre y hasta cuánto"
+          />
+        </div>
       </div>
-      <label className="block text-xs">
-        Cobertura
-        <Input value={cobertura} onChange={(e) => setCobertura(e.target.value)} disabled={!habil} className="mt-1" />
-      </label>
       {habil && (
         <Button
           size="sm"
@@ -440,14 +493,18 @@ function Administracion({
           propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
         </p>
       )}
-      <div className="space-y-1">
+      <RadioGroup
+        className="space-y-2"
+        value={modalidad ?? ''}
+        onValueChange={(v) => setModalidad((v || null) as typeof modalidad)}
+      >
         {MODALIDADES.map((m) => (
-          <label key={m.valor || 'hoy'} className="flex items-start gap-2 text-xs">
-            <input
-              type="radio"
-              name="modalidad-administracion"
-              checked={modalidad === m.valor}
-              onChange={() => setModalidad(m.valor)}
+          <label
+            key={m.valor || 'hoy'}
+            className="flex cursor-pointer items-start gap-2.5 text-body-sm text-fg"
+          >
+            <RadioGroupItem
+              value={m.valor ?? ''}
               className="mt-0.5"
               data-testid={`modalidad-${m.valor || 'HOY'}`}
             />
@@ -456,7 +513,7 @@ function Administracion({
             </span>
           </label>
         ))}
-      </div>
+      </RadioGroup>
       {pagaLaInmobiliaria && (
         <label className="block text-xs">
           Valor mensual de la administración

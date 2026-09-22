@@ -338,10 +338,15 @@ describe('<CondicionesDelContrato> (17-09)', () => {
     const aviso = $('administracion-por-respaldo');
     expect(aviso).toBeTruthy();
     expect(aviso!.textContent).toContain('viene del sistema anterior');
-    // La casilla marcada es la que de verdad está rigiendo hoy, para que
-    // «Guardar» la deje por escrito con un clic.
-    expect(($('modalidad-LA_PAGA_LA_INMOBILIARIA') as HTMLInputElement).checked).toBe(true);
-    expect(($('modalidad-HOY') as HTMLInputElement).checked).toBe(false);
+    /* La opción marcada es la que de verdad está rigiendo hoy, para que
+       «Guardar» la deje por escrito con un clic.
+
+       🔴 21-09: se lee `data-state` y no `.checked` porque el control dejó de
+       ser un `<input type="radio">` del navegador —13 px y sin los estados del
+       sistema de diseño— y es el `RadioGroupItem` de Cadence, que es un
+       `<button>`. Lo que este test protege no cambió. */
+    expect($('modalidad-LA_PAGA_LA_INMOBILIARIA')?.getAttribute('data-state')).toBe('checked');
+    expect($('modalidad-HOY')?.getAttribute('data-state')).toBe('unchecked');
   });
 });
 

@@ -70,6 +70,7 @@ import {
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
@@ -317,11 +318,12 @@ function DialogoDeCuenta({
         </div>
 
         <label className="flex items-start gap-2.5 rounded-lg border border-border p-3">
-          <input
-            type="checkbox"
+          {/* Casilla del sistema de diseño (21-09): la del navegador mide 13 px
+              con `h-4 w-4` puesto encima y no trae el foco de la casa. */}
+          <Checkbox
             checked={activa}
-            onChange={(e) => setActiva(e.target.checked)}
-            className="mt-0.5 h-4 w-4"
+            onCheckedChange={(v) => setActiva(v === true)}
+            className="mt-0.5"
             data-testid="cuenta-activa"
           />
           <span className="text-sm">
@@ -582,13 +584,12 @@ function DialogoDePublicar({
                       key={p.portal}
                       className="flex items-start gap-2.5 rounded-lg border border-border p-3"
                     >
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 h-4 w-4"
+                      <Checkbox
+                        className="mt-0.5"
                         checked={marcados.includes(p.portal)}
-                        onChange={(e) =>
+                        onCheckedChange={(v) =>
                           setMarcados((antes) =>
-                            e.target.checked
+                            v === true
                               ? [...antes, p.portal]
                               : antes.filter((x) => x !== p.portal),
                           )

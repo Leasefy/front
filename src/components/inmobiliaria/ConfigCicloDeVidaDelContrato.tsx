@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -175,7 +176,13 @@ export function ConfigCicloDeVidaDelContrato({
           <strong>Sugerido: «sí, por defecto»</strong> si tus contratos ya los pactan — deja por escrito lo que hoy ya
           pasa («sin elegir» se comporta igual que «sí»), y a partir de ahí un contrato puede decir «no» y se respeta.
         </p>
-        <div className="flex flex-wrap gap-3">
+        {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px
+            —«eso ni se ve»— y no trae los estados de foco de la casa. */}
+        <RadioGroup
+          className="flex flex-wrap gap-x-5 gap-y-2"
+          value={gastos}
+          onValueChange={(v) => setGastos(v as typeof gastos)}
+        >
           {(
             [
               ['SI', 'Sí, por defecto'],
@@ -183,18 +190,15 @@ export function ConfigCicloDeVidaDelContrato({
               ['SIN_ELEGIR', 'Sin elegir (se cobran como hoy)'],
             ] as const
           ).map(([valor, etiqueta]) => (
-            <label key={valor} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="gastos-pactados"
-                checked={gastos === valor}
-                onChange={() => setGastos(valor)}
-                data-testid={`gastos-${valor}`}
-              />
-              {etiqueta}
+            <label
+              key={valor}
+              className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            >
+              <RadioGroupItem value={valor} data-testid={`gastos-${valor}`} />
+              <span>{etiqueta}</span>
             </label>
           ))}
-        </div>
+        </RadioGroup>
       </fieldset>
 
       <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
@@ -203,7 +207,11 @@ export function ConfigCicloDeVidaDelContrato({
           Es plata del inquilino para las facturas de servicios que llegan después de entregar: se pagan con ella y se
           le devuelve el resto. Su valor es el promedio de las últimas facturas del inmueble.
         </p>
-        <div className="flex flex-wrap gap-3">
+        <RadioGroup
+          className="flex flex-wrap gap-x-5 gap-y-2"
+          value={momento}
+          onValueChange={(v) => setMomento(v as typeof momento)}
+        >
           {(
             [
               ['', 'No se exige'],
@@ -211,18 +219,18 @@ export function ConfigCicloDeVidaDelContrato({
               ['ENTREGA', 'A la entrega (antes de recibir el inmueble)'],
             ] as const
           ).map(([valor, etiqueta]) => (
-            <label key={valor || 'no'} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="garantia-momento"
-                checked={momento === valor}
-                onChange={() => setMomento(valor)}
+            <label
+              key={valor || 'no'}
+              className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            >
+              <RadioGroupItem
+                value={valor}
                 data-testid={`garantia-momento-${valor || 'NO'}`}
               />
-              {etiqueta}
+              <span>{etiqueta}</span>
             </label>
           ))}
-        </div>
+        </RadioGroup>
         <div className="flex flex-wrap items-end gap-3">
           <label className="block" htmlFor="garantia-tope-periodos">
             Tope, en períodos de facturación

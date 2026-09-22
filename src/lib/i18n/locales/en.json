@@ -597,7 +597,8 @@
         "manager": "Manager",
         "accountant": "Accountant",
         "viewer": "Viewer"
-      }
+      },
+      "noMembers": "No one on the team yet"
     },
     "security": {
       "title": "Security",
@@ -1138,7 +1139,8 @@
           "deposito": "The ERP",
           "llamada": "Calls",
           "whatsapp": "WhatsApp"
-        }
+        },
+        "loQuePaso": "What happened"
       },
       "dock": {
         "boton": "Processes",
@@ -1164,7 +1166,8 @@
           "copiloto": "Copilot",
           "autonomo": "Autonomous"
         },
-        "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own."
+        "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own.",
+        "contadorTitulo": "{{n}} of {{total}} agents can act on their own, with nobody approving"
       },
       "pulso": {
         "titulo": "Pilot pulse",
@@ -1222,6 +1225,10 @@
         "switchAria": "Turn {agente} on or off for your agency",
         "toastOn": "{agente} turned on for your agency",
         "toastOff": "{agente} turned off for your agency"
+      },
+      "catalogo": {
+        "titulo": "All processes",
+        "descripcion": "Every piece of the platform, process by process: what each one does, who runs it, what mode it is in and when it was last seen."
       }
     },
     "mobileNav": {
@@ -1533,7 +1540,8 @@
         "inviteEmailNotDelivered": "Invitation created, email not sent",
         "inviteEmailNotDeliveredDesc": "We couldn't send the email. Use \"Resend invitation\" or check the address.",
         "resendEmailNotDelivered": "Could not resend the email",
-        "resendEmailNotDeliveredDesc": "The member is still active, but the email wasn't sent. Check the address and try again."
+        "resendEmailNotDeliveredDesc": "The member is still active, but the email wasn't sent. Check the address and try again.",
+        "error": "Could not save"
       },
       "profile": {
         "title": "Agency Profile",
@@ -4647,7 +4655,8 @@
       "scheduledExport": "Scheduled export",
       "cuotasEnCartera": "{{count}} installments in the portfolio",
       "claimsBucket": "In claims",
-      "bucketsAddUp": "The buckets add up to the portfolio: active collections by days past due plus what is already in claims."
+      "bucketsAddUp": "The buckets add up to the portfolio: active collections by days past due plus what is already in claims.",
+      "upgradeToAccess": "Upgrade plan"
     },
     "mantenimiento": {
       "priorityEmergency": "Emergency",

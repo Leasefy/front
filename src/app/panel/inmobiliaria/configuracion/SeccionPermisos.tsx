@@ -118,7 +118,12 @@ export function SeccionPermisos() {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
     } catch (error) {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos', {
+      // 🔴 Acá había `t(...) || 'Error al guardar permisos'`. Ese `||` NUNCA
+      // corre: `t()` de una clave que falta devuelve LA CLAVE, y una clave es
+      // un texto con contenido. Lo que salía en el toast era
+      // «inmobiliaria.config.toasts.error». La clave ya existe en los dos
+      // idiomas; el mensaje concreto va en la descripción.
+      toast.error(t('inmobiliaria.config.toasts.error'), {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {
@@ -138,7 +143,7 @@ export function SeccionPermisos() {
         description: t('inmobiliaria.config.toasts.permissionsResetDesc'),
       });
     } catch (error) {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al restablecer permisos', {
+      toast.error(t('inmobiliaria.config.toasts.error'), {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {

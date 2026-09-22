@@ -203,7 +203,7 @@ export default function PagosFunnelClient() {
   // keeps the chip controls reachable so the operator can clear filters.
   if (!isLoading && !error && rows.length === 0 && !hasActiveFilters) {
     return (
-      <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-4 lg:p-8">
         <header className="mb-5">
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.pagos.title')}
@@ -221,7 +221,7 @@ export default function PagosFunnelClient() {
             href: '/panel/inmobiliaria/pagos/cobranza/deudores',
           }}
         />
-      </main>
+      </div>
     )
   }
 
@@ -309,7 +309,7 @@ export default function PagosFunnelClient() {
   )
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.pagos.title')}
@@ -622,6 +622,6 @@ export default function PagosFunnelClient() {
           </div>
         )}
       </Card>
-    </main>
+    </div>
   )
 }

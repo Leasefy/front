@@ -487,3 +487,34 @@ describe('buscar y paginar en vez de un scroll infinito', () => {
     );
   });
 });
+
+/*
+ * 🔴 EL MOLDE (regla 5): la fila abre cajón, el kebab actúa. La fila de
+ * Liquidaciones no hacía nada (coordinador, 22-09). El cajón pinta lo que la
+ * fila ya trae: no se le pide nada nuevo al back.
+ */
+describe('la fila abre el cajón de la liquidación', () => {
+  it('clic en la fila: desglose del mes de ese propietario, sin otra llamada al back', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    const llamadas = preview.mock.calls.length;
+    const fila = host.querySelector<HTMLElement>('[data-testid="tesoreria-fila"]')!;
+    await act(async () => {
+      fila.click();
+    });
+    const cajon = document.body.querySelector('[data-testid="cajon-liquidacion"]');
+    expect(cajon).not.toBeNull();
+    expect(cajon!.textContent).toContain('El mes, en plata');
+    expect(document.body.querySelector('[data-testid="cajon-liquidacion-neto"]')).not.toBeNull();
+    expect(preview.mock.calls.length).toBe(llamadas);
+  });
+
+  it('el kebab no abre el cajón', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    await act(async () => {
+      host.querySelector<HTMLElement>('[data-testid="liquidacion-kebab"]')!.click();
+    });
+    expect(document.body.querySelector('[data-testid="cajon-liquidacion"]')).toBeNull();
+  });
+});

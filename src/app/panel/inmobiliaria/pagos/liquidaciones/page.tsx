@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
+import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import {
@@ -169,6 +170,8 @@ function TesoreriaContent() {
    * la cuenta que tiene que cuadrar con lo que se va a girar.
    */
   const [busqueda, setBusqueda] = useState('');
+  /** La fila abre su cajón (el molde, regla 5); el kebab sigue actuando. */
+  const [abierta, setAbierta] = useState<Propietario | null>(null);
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return propietarios;
@@ -469,7 +472,21 @@ function TesoreriaContent() {
                     </TableHeader>
                     <TableBody>
                       {paginado.pageItems.map((p) => (
-                        <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
+                        <TableRow
+                          key={p.propietarioId}
+                          data-testid="tesoreria-fila"
+                          onClick={() => setAbierta(p)}
+                          className="cursor-pointer"
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Ver la liquidación de ${p.propietarioName}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setAbierta(p);
+                            }
+                          }}
+                        >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
                           <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
@@ -526,7 +543,8 @@ function TesoreriaContent() {
                           {/* 🔴 Las acciones, en el kebab de la derecha (Nico,
                               21-09). Era un botón de texto ocupando una columna
                               entera en una tabla que ya no cabía. */}
-                          <TableCell className="w-10">
+                          {/* El kebab actúa; el clic no sube a la fila. */}
+                          <TableCell className="w-10" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                             <DropdownList>
                               <DropdownListTrigger asChild>
                                 <Button
@@ -578,6 +596,12 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
+      <CajonDeLaLiquidacion
+        propietario={abierta}
+        mes={mesEnTitulo(month)}
+        base={base === 'RECAUDADO' ? 'RECAUDADO' : 'CAUSADO'}
+        onCerrar={() => setAbierta(null)}
+      />
     </div>
   );
 }

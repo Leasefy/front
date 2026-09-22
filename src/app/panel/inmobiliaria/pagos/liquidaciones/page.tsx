@@ -195,7 +195,17 @@ function TesoreriaContent() {
     { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
-  const neto = suma('netToPropietario');
+  /*
+   * 🔴 QA 22-09: con deducciones, `netToPropietario` ya viene RESTADO y la
+   * pantalla las restaba otra vez debajo: «Neto $329.220.440 · Deducciones
+   * −$2.000.000 · A girar $329.932.440» no sumaba. El neto de esta fila es el
+   * del mes ANTES de deducciones (`conDeducciones.netoDelMesCop`); sin bloque,
+   * el de siempre.
+   */
+  const neto = propietarios.reduce(
+    (s, p) => s + (p.conDeducciones ? p.conDeducciones.netoDelMesCop : p.netToPropietario),
+    0,
+  );
   /*
    * Con deducciones el back manda el bloque de cada propietario. Lo que se
    * SUMA acá son totales de varios propietarios; lo que se gira a cada uno

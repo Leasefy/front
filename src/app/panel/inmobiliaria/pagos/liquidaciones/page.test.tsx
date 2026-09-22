@@ -397,6 +397,9 @@ describe('Deducciones del mes', () => {
     expect(netos[1].textContent).not.toContain('Queda debiendo');
     expect(netos[1].querySelector('[data-testid="tesoreria-en-contra-fila"]')).not.toBeNull();
 
+    // 🔴 QA 22-09: el neto del mes es ANTES de deducciones (540.000 + 360.000),
+    // no la suma de netToPropietario (que ya las trae restadas).
+    expect(q('tesoreria-neto-total')?.textContent).toContain('900.000');
     expect(q('tesoreria-deducciones-total')?.textContent).toContain('800.000');
     // Lo que sale del banco: 240.000 + 0.
     expect(q('tesoreria-a-girar-total')?.textContent).toContain('240.000');

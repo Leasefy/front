@@ -42,7 +42,8 @@ export interface Lease {
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;
-  propertyThumbnail: string;
+  /** `null` cuando el inmueble no tiene fotos (todos los migrados). */
+  propertyThumbnail: string | null;
 
   // Tenant info (denormalized for landlord view)
   tenantName: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -429,11 +429,10 @@ export default function PanelPage() {
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
-                                <Image
-                                  src={property.thumbnailUrl}
+                                <PortadaDelInmueble
+                                  property={property}
                                   alt={property.title}
-                                  fill
-                                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                  className="group-hover:scale-105 transition-transform duration-500"
                                 />
                                 {/* Status badge on image */}
                                 <div className="absolute top-3 left-3">

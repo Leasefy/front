@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
@@ -270,11 +270,11 @@ export default function LeaseDetailPage() {
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
-              <Image
-                src={lease.propertyThumbnail}
+              {/* Sin foto, «Sin fotos» y no `<Image src={null}>`, que tumbaba la pantalla (QA 22-09). */}
+              <PortadaDelInmueble
+                property={{ thumbnailUrl: lease.propertyThumbnail }}
                 alt={lease.propertyTitle}
-                fill
-                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 400px"
                 priority
               />
               {/* Status Badge Overlay */}

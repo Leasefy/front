@@ -11,16 +11,18 @@
  *
  * Tres cosas que la pantalla hace a propósito:
  *
- * · TODOS los bancos grandes aparecen, también los que todavía no tienen
- *   formato. Elegir uno de esos no está prohibido: dice sin rodeos que no
- *   generamos su archivo y pide el instructivo del banco. Esconderlo haría que
- *   la inmobiliaria creyera que su banco no existe para nosotros.
+ * · TODOS los bancos aparecen y todos se pueden elegir (Nico, 22-09: «el
+ *   archivo plano para TODOS los bancos de Colombia»), AGRUPADOS por lo que
+ *   reciben: «Archivo del banco — oficial», «— de tercero, sin verificar» o
+ *   «Planilla para cargar a mano». La planilla es para los bancos que no
+ *   publican cómo se arma su archivo: se dice sin rodeos, con el porqué, y se
+ *   pide el instructivo del banco.
  * · Propone lo último que eligió la agencia (lo guarda el back con cada lote).
  * · Si la inmobiliaria ya registró la cuenta en Medios de pago, se ofrece con
  *   un clic: nadie tiene que escribir de memoria una cuenta que ya está.
  *
- * Nunca un formato adivinado: si el back no tiene el instructivo oficial del
- * banco, el botón de armar no se habilita con ese banco.
+ * Nunca un formato adivinado: si el back no tiene la estructura del banco,
+ * lo que sale es la planilla, y la pantalla lo dice antes de armar.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -40,6 +42,8 @@ import {
 } from '@/lib/api/lotes-de-dispersion.service';
 import { cn } from '@/lib/utils';
 import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
+
+import { entregaDe, ETIQUETA_DE_LA_ENTREGA, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
 
 /** Lo que la pantalla de armar necesita saber para habilitar el botón. */
 export interface EleccionDelBanco {
@@ -164,39 +168,71 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
       <div className="space-y-1">
         <p className="text-sm font-medium text-fg">¿Desde qué banco vas a dispersar?</p>
         <p className="text-caption text-fg-muted">
-          El archivo sale en el formato de ese banco, listo para subirlo a su portal.
+          Cada banco dice qué recibes: su archivo, listo para subirlo a su portal, o una planilla para cargar a
+          mano cuando el banco no publica cómo se arma su archivo.
         </p>
       </div>
 
-      <div role="radiogroup" aria-label="Banco desde el que se gira" className="flex flex-wrap gap-2">
-        {datos.bancos.map((b) => {
-          const activo = b.id === banco;
+      <div role="radiogroup" aria-label="Banco desde el que se gira" className="space-y-3">
+        {ORDEN_DE_LA_ENTREGA.map((entrega) => {
+          const delGrupo = datos.bancos.filter((b) => entregaDe(b) === entrega);
+          if (delGrupo.length === 0) return null;
           return (
-            <button
-              key={b.id}
-              type="button"
-              role="radio"
-              aria-checked={activo}
-              data-testid={`banco-${b.id}`}
-              onClick={() => elegirBanco(b.id)}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                activo ? 'border-primary bg-primary-soft text-fg' : 'border-border text-fg hover:border-border-strong',
-                !b.formato && !activo && 'text-fg-muted',
-              )}
-            >
-              {b.nombre}
-              {!b.formato && <span className="ml-1.5 text-caption text-fg-muted">· formato no disponible todavía</span>}
-            </button>
+            <div key={entrega} className="space-y-1.5" data-testid={`grupo-${entrega}`}>
+              <p className="text-caption text-fg-muted">{ETIQUETA_DE_LA_ENTREGA[entrega]}</p>
+              <div className="flex flex-wrap gap-2">
+                {delGrupo.map((b) => {
+                  const activo = b.id === banco;
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={activo}
+                      data-testid={`banco-${b.id}`}
+                      onClick={() => elegirBanco(b.id)}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                        activo
+                          ? 'border-primary bg-primary-soft text-fg'
+                          : 'border-border text-fg hover:border-border-strong',
+                        !b.formato && !activo && 'text-fg-muted',
+                      )}
+                    >
+                      {b.nombre}
+                      {!b.formato && <span className="ml-1.5 text-caption text-fg-muted">· no disponible todavía</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
 
       {elegido && !elegido.formato && (
         <div data-testid="banco-sin-formato">
-          <Banner variant="warning" title={`Todavía no generamos el archivo de ${elegido.nombre}`}>
-            {elegido.porQueNo} Mientras tanto, este lote no se puede armar desde {elegido.nombre}: un archivo
-            con un formato adivinado hace que el banco lo rechace o, peor, que gire mal.
+          <Banner variant="warning" title={`Todavía no se puede girar desde ${elegido.nombre}`}>
+            {elegido.porQueNo}
+          </Banner>
+        </div>
+      )}
+
+      {elegido?.formato && entregaDe(elegido) === 'PLANILLA' && (
+        <div data-testid="banco-con-planilla">
+          <Banner variant="info" title={`Para ${elegido.nombre} te damos una planilla para cargar a mano`}>
+            {elegido.porQueNo} La planilla trae, por pago, el titular, su documento, el banco y su código, el tipo y
+            el número de cuenta y el valor, para digitarlos en el portal o pegarlos en la plantilla que te dé tu
+            banco. Si tu ejecutivo te da el instructivo del archivo plano, envíanoslo y generamos el archivo.
+          </Banner>
+        </div>
+      )}
+
+      {elegido?.formato && entregaDe(elegido) === 'ARCHIVO_DE_TERCERO' && elegido.fuente && (
+        <div data-testid="banco-de-tercero">
+          <Banner variant="warning" title="Formato de un tercero, sin verificar">
+            Formato tomado de {elegido.fuente.documento}; sube primero un archivo de prueba al portal y revisa que
+            lo valide sin errores antes de autorizar.
           </Banner>
         </div>
       )}
@@ -271,7 +307,7 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
               y la próxima vez aparece aquí.
             </p>
           )}
-          {elegido.fuente && (
+          {elegido.fuente && entregaDe(elegido) === 'ARCHIVO_OFICIAL' && (
             <p className="text-caption text-fg-muted" data-testid="fuente-del-formato">
               Archivo «{elegido.nombreDelFormato}», armado campo por campo con{' '}
               <a

@@ -142,6 +142,10 @@ export function esSinVerificar(nombreArchivo: string): boolean {
 export const NOMBRE_DEL_FORMATO: Record<FormatoArchivoDePagos, string> = {
   BANCOLOMBIA_PAB: 'Bancolombia — pagos PAB',
   BANCO_DE_BOGOTA: 'Banco de Bogotá — pagos masivos',
+  BANCO_AGRARIO: 'Banco Agrario — pagos masivos',
+  BANCO_AV_VILLAS: 'AV Villas — pagos a terceros ACH',
+  BANCO_CAJA_SOCIAL: 'Banco Caja Social — pagos masivos (.csv)',
+  PLANILLA_MANUAL: 'Planilla para cargar a mano',
   BANCOLOMBIA_SAP: 'Bancolombia SAP',
   ONEPAY: 'OnePay',
 };

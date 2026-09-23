@@ -107,6 +107,7 @@ import {
   useGirosDevueltos,
 } from './GirosDevueltos';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
+import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -348,6 +349,11 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   // se puede llamar condicionalmente.
   const lotePagado = vista?.lote.estado === 'PAGADO';
   const giros = useGirosDevueltos(lotePagado);
+  /*
+   * 🔴 Wompi · Pagos a terceros (23-09). Falla abierto: si la lectura falla,
+   * `wompi.vista` queda en `null` y el lote sigue por archivo como siempre.
+   */
+  const wompi = useLoteEnWompi(id, vista?.lote.estado ?? 'BORRADOR');
   // El contrato pide `dispersiones:edit` para marcar devuelto y para regirar.
   const puedeTocarGiros = canAccess('dispersiones', 'edit');
 
@@ -490,9 +496,15 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </Button>
           )}
           {acciones.includes('generarArchivo') && (
-            <Button onClick={() => setDialogo('generarArchivo')} hideArrow>
+            /* Con Wompi listo para este lote, la acción principal es «Enviar a
+               Wompi» (abajo) y el archivo queda como alternativa. */
+            <Button
+              variant={wompi.vista?.sePuedeEnviar ? 'secondary' : 'default'}
+              onClick={() => setDialogo('generarArchivo')}
+              hideArrow
+            >
               <FileText className="h-4 w-4" />
-              Generar archivo
+              {wompi.vista?.sePuedeEnviar ? 'Usar el archivo del banco' : 'Generar archivo'}
             </Button>
           )}
           {acciones.includes('descargarArchivo') && (
@@ -524,6 +536,18 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </section>
       )}
+
+      {/* ── Wompi · Pagos a terceros ─────────────────────────────────────── */}
+      <LoteEnWompi
+        loteId={lote.id}
+        estado={lote.estado}
+        vista={wompi.vista}
+        puedeEditar={canAccess('dispersiones', 'edit')}
+        onCambio={(v) => {
+          wompi.setVista(v);
+          void refetch();
+        }}
+      />
 
       {/* ── Datos del cierre ────────────────────────────────────────────── */}
       {(vista.origen || lote.formatoArchivo || lote.referenciaBanco) && (
@@ -848,6 +872,8 @@ function Cifra({
 function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
   const alcanzado = pasoAlcanzado(lote);
   const anulado = lote.estado === 'ANULADO';
+  // Un lote que salió por Wompi no tuvo archivo: ese paso fue Wompi.
+  const porWompi = lote.estado === 'EN_WOMPI' || (lote.referenciaBanco ?? '').startsWith('Wompi ');
   const fechas: Record<string, string | null> = {
     BORRADOR: lote.createdAt,
     ESPERANDO_APROBACION: null,
@@ -893,7 +919,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
                 actual || hecho ? 'font-medium text-fg' : 'text-fg-muted',
               )}
             >
-              {NOMBRE_DEL_ESTADO[estado]}
+              {porWompi && estado === 'ARCHIVO_GENERADO' ? 'En Wompi' : NOMBRE_DEL_ESTADO[estado]}
             </span>
             {(hecho || (actual && !anulado)) && fecha && (
               <span className="font-mono text-[10px] text-fg-muted">{formatDateTime(fecha)}</span>

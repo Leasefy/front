@@ -13,6 +13,7 @@ export type TipoDeProceso =
   | 'MIGRACION_CONTRATOS'
   | 'MIGRACION_INMUEBLES'
   | 'EXPORTACION'
+  | 'ENVIO_A_WOMPI'
 
 export interface Proceso {
   id: string

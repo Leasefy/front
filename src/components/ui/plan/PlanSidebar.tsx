@@ -329,7 +329,10 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
           enSeccion
             ? // El tramo encendido cae exactamente sobre la guía de la sección
               // (`GUIA_DE_SECCION`: 1 px de borde + 3 px de aire → centro a −3,5 px).
-              "data-[active]:before:absolute data-[active]:before:-left-[4.5px] data-[active]:before:top-1.5 data-[active]:before:bottom-1.5 data-[active]:before:w-[2px] data-[active]:before:rounded-full data-[active]:before:bg-primary data-[active]:before:content-['']"
+              // Nico, 23-09: «que se vea algo más top, glow up esa línea»: 3 px,
+              // degradado del primario hacia abajo y un halo del mismo color, así
+              // se lee como luz sobre la guía y no como un borde más.
+              "data-[active]:before:absolute data-[active]:before:-left-[5px] data-[active]:before:top-1 data-[active]:before:bottom-1 data-[active]:before:w-[3px] data-[active]:before:rounded-full data-[active]:before:bg-gradient-to-b data-[active]:before:from-primary data-[active]:before:via-primary data-[active]:before:to-primary/50 data-[active]:before:shadow-[0_0_10px_1px_hsl(var(--primary)/0.55)] data-[active]:before:content-[''] motion-safe:data-[active]:before:animate-in motion-safe:data-[active]:before:fade-in motion-safe:data-[active]:before:duration-300"
             : undefined
         }
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
@@ -442,8 +445,11 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
       >
         <span
           className={cn(
-            'min-w-0 flex-1 truncate text-[13px] font-semibold tracking-[-0.01em]',
-            marcada ? 'text-primary' : 'text-fg',
+            // La cabecera de sección habla con la voz de las etiquetas de la
+            // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
+            // distingue de las filas sin competir con ellas (Nico, 23-09).
+            'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
+            marcada ? 'text-primary' : 'text-fg-subtle group-hover/seccion:text-fg-muted',
           )}
         >
           {bloque.cabecera.label}

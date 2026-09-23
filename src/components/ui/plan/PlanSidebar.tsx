@@ -200,6 +200,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = item.children && item.children.length > 0;
   const pathname = usePathname();
+  const router = useRouter();
 
   const checkChildActive = (children: NavItem[]) => {
     return children.some(child => {
@@ -310,12 +311,33 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   }
 
   // Expanded leaf row — the REAL Cadence SidebarItem (owns hover/active/focus).
-  // legacyBehavior + passHref bridges Next client routing onto the DS anchor.
+  //
+  // 🔴 Sin el puente `legacyBehavior` + `passHref` de `Link` (QA 23-09): Next 15 lo depreca y lo
+  // avisa en la consola. `SidebarItem` pinta su propio `<a>` y no tiene
+  // `asChild`, así que la navegación del lado del cliente se hace acá, con lo
+  // MISMO que hacía el puente: `href` real en el ancla (⌘/Ctrl/Shift/clic del
+  // medio abren otra pestaña como cualquier enlace) y, en un clic simple,
+  // `router.push` sin recargar. El prefetch de `Link` se conserva al pasar el
+  // mouse o enfocar la fila.
   // SidebarItemProps (HTMLAttributes) can't type data-*, so the PanelTour hook
   // rides on a minimal wrapper only when present.
+  const navegar = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onClick?.();
+    if (e.defaultPrevented) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    router.push(item.href);
+  };
+  const precargar = () => {
+    try {
+      router.prefetch?.(item.href);
+    } catch {
+      /* el prefetch es una cortesía */
+    }
+  };
   const row = (
-    <Link href={item.href} legacyBehavior passHref>
       <SidebarItem
+        href={item.href}
         icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
         label={displayLabel(item)}
         active={isActive}
@@ -324,7 +346,9 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         // the IA / Próximamente pills ride here without forking the DS row.
         badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
         depth={depth}
-        onClick={onClick}
+        onClick={navegar}
+        onMouseEnter={precargar}
+        onFocus={precargar}
         className={
           enSeccion
             ? // El tramo encendido cae exactamente sobre la guía de la sección
@@ -340,7 +364,6 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
         title={enSeccion ? displayLabel(item) : undefined}
       />
-    </Link>
   );
 
   return item.dataTourTarget ? <div data-tour-target={item.dataTourTarget}>{row}</div> : row;

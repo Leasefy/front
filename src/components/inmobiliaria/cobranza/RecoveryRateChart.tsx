@@ -134,8 +134,10 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
         />
         <Tooltip />
         <Legend />
-        {stages.map((stage) => (
-          <>
+        {/* Un arreglo plano de <Line> con su `key`, no un `<>` sin llave por
+            etapa: React avisaba «Each child in a list should have a unique
+            "key"» (QA 23-09). */}
+        {stages.flatMap((stage) => [
             <Line
               key={`${stage}-n`}
               yAxisId="left"
@@ -145,7 +147,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               dot={false}
               strokeWidth={1.5}
               name={`${stage} ${t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.legend.transitions')}`}
-            />
+            />,
             <Line
               key={`${stage}-cop`}
               yAxisId="right"
@@ -156,9 +158,8 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               strokeWidth={1}
               strokeDasharray="4 2"
               name={`${stage} ${t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.legend.cop')}`}
-            />
-          </>
-        ))}
+            />,
+          ])}
       </LineChart>
     </ResponsiveContainer>
   );

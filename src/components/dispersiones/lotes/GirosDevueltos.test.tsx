@@ -187,7 +187,7 @@ describe('la celda del giro', () => {
   it('un giro ya regirado dice cuándo salió y no ofrece la acción otra vez', async () => {
     await pintarCelda({ giro: giro({ dispersionNuevaId: 'd-1', fechaDelNuevoGiro: '2026-09-18' }) });
     expect(container.querySelector('[data-testid="regirado-d-1"]')?.textContent).toContain(
-      '2026-09-18',
+      '18 de septiembre de 2026',
     );
     expect(container.querySelector('[data-testid="regirar-d-1"]')).toBeNull();
   });
@@ -297,12 +297,18 @@ describe('volver a girar', () => {
     expect(document.body.querySelector('[data-testid="motivo-del-egreso"]')?.textContent).toContain(
       'la fecha del egreso pasa a la del giro que sí salió',
     );
-    expect(document.body.textContent).toContain('El egreso quedó con fecha 2026-09-18');
+    expect(document.body.textContent).toContain('El egreso quedó con fecha 18 de septiembre de 2026');
   });
 
   it('dice desde cuándo está devuelto, para poder elegir bien la fecha', async () => {
     await abrir();
-    expect(document.body.textContent).toContain('2026-09-15');
+    expect(document.body.textContent).toContain('El giro se devolvió el 15 de septiembre de 2026');
+  });
+
+  it('🔴 la fecha que llega como medianoche UTC (`@db.Date`) sale en palabras, no cruda ni corrida (QA 23-09)', async () => {
+    await abrir(giro({ fechaDeLaDevolucion: '2026-09-23T00:00:00.000Z' }));
+    expect(document.body.textContent).toContain('El giro se devolvió el 23 de septiembre de 2026');
+    expect(document.body.textContent).not.toContain('T00:00:00');
   });
 });
 

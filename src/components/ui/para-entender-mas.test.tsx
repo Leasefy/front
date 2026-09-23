@@ -17,10 +17,15 @@ import { act } from 'react';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { propsDelContenido } = vi.hoisted(() => ({ propsDelContenido: [] as Record<string, unknown>[] }));
+
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,
+  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => {
+    propsDelContenido.push(p);
+    return <div {...p}>{children}</div>;
+  },
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
@@ -85,5 +90,15 @@ describe('<ParaEntenderMas>', () => {
     expect(contenedor.querySelector('[data-testid="modal"]')).not.toBeNull();
     expect(contenedor.textContent).toContain('El recorrido completo');
     expect(pintado).toHaveBeenCalled();
+  });
+
+  it('🔴 sin descripción, le dice a Radix que no hay (aria-describedby={undefined}) y no avisa en la consola (QA 23-09)', async () => {
+    propsDelContenido.length = 0;
+    await montar();
+    await abrir();
+    const ultimo = propsDelContenido[propsDelContenido.length - 1];
+    expect(ultimo).toBeDefined();
+    expect('aria-describedby' in ultimo).toBe(true);
+    expect(ultimo['aria-describedby']).toBeUndefined();
   });
 });

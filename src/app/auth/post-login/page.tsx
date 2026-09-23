@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 
 /**
  * Post-login resolver for the OAuth (Google) flow.
@@ -54,7 +55,7 @@ function PostLoginResolver() {
     if (authLoading) return;
     // MFA gate first (security): never bypass a pending second factor.
     if (mfaRequired) {
-      router.replace('/auth/mfa-verify');
+      router.replace(rutaAlSegundoFactor(returnUrl));
       return;
     }
     // Honor an invitation returnUrl before the generic onboarding redirect —

@@ -13,6 +13,22 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
+import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
+
+/**
+ * El `returnUrl` de la barra. Se lee de `window.location` y no con
+ * `useSearchParams` a propósito: éste obliga a envolver la página en
+ * `<Suspense>` y el valor sólo se necesita al irse. Se sanea al usarlo.
+ */
+function returnUrlDeLaBarra(): string | null {
+  if (typeof window === 'undefined') return null;
+  // Se sanea ACÁ, donde se lee (lo exige el guardián de destinos de la URL);
+  // `destinoTrasElSegundoFactor` vuelve a mirar, que no cuesta nada.
+  const crudo = new URLSearchParams(window.location.search).get('returnUrl');
+  const saneado = sanitizeReturnUrl(crudo, '/');
+  return saneado === '/' ? null : saneado;
+}
 
 export default function MfaVerifyPage() {
   const router = useRouter();
@@ -49,15 +65,10 @@ export default function MfaVerifyPage() {
   const [hayError, setHayError] = useState(false);
   const inscribiendo = tieneFactor === false || quiereInscribir;
 
-  // If MFA is not required, redirect to dashboard
+  // Sin segundo factor pendiente: al destino (el `returnUrl` saneado) o al inicio.
   useEffect(() => {
     if (user && !mfaRequired) {
-      const dashboardPath = user.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role));
     }
   }, [user, mfaRequired, router]);
 
@@ -116,13 +127,8 @@ export default function MfaVerifyPage() {
       // Mark MFA as verified in context
       setMfaVerified();
 
-      // Redirect to dashboard
-      const dashboardPath = user?.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user?.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      // Al destino que traía la persona (QA 23-09), o al inicio de su panel.
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
     } catch (err) {
       const msg = (err as Error).message || '';
       // 🔴 Las casillas se pintan en rojo además del aviso: el aviso se va solo

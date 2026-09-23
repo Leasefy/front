@@ -195,6 +195,12 @@ export interface LoteResumen {
   descubiertoCop?: number | null;
   /** Qué se decidió sobre la factura al marcar pagado. */
   facturarAhora?: boolean | null;
+  /**
+   * Quién armó / aprobó, con su NOMBRE resuelto por el back (QA 23-09).
+   * Opcional: back anterior. `null` = no se supo.
+   */
+  creadoPorNombre?: string | null;
+  aprobadoPorNombre?: string | null;
 }
 
 /** Una dispersión dentro del lote, con los datos bancarios congelados. */
@@ -336,6 +342,12 @@ export interface VistaDelLote {
    * puede aprobar (Nico, 23-09). Opcional: back anterior.
    */
   devolucionesRegistradasPor?: string[];
+  /**
+   * Quién armó / aprobó, con su NOMBRE (QA 23-09: «Armado por Usuario
+   * 435f5734»). Opcional: back anterior. `null` = no se supo.
+   */
+  creadoPorNombre?: string | null;
+  aprobadoPorNombre?: string | null;
 }
 
 export interface LoteArmado {

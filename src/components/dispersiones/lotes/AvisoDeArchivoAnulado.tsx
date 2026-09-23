@@ -30,11 +30,13 @@ export function AvisoDeArchivoAnulado({ pagos }: { pagos: SalioEnUnArchivoAnulad
       : t('inmobiliaria.dispersiones.lote.archivoAnulado.titulo', { n: pagos.length });
   return (
     <Banner variant="warning" title={titulo}>
-      <div className="space-y-2" data-testid="aviso-archivo-anulado">
-        <p>{t('inmobiliaria.dispersiones.lote.archivoAnulado.texto')}</p>
-        <ul className="space-y-1">
+      {/* Sólo contenido en línea: el Banner envuelve a sus hijos en un <p>, y
+          un <div>/<p>/<ul> adentro es un error de hidratación (QA 23-09). */}
+      <span className="block space-y-2" data-testid="aviso-archivo-anulado">
+        <span className="block">{t('inmobiliaria.dispersiones.lote.archivoAnulado.texto')}</span>
+        <span role="list" className="block space-y-1">
           {pagos.map((p) => (
-            <li key={p.dispersionId} data-testid={`salio-en-archivo-anulado-${p.dispersionId}`}>
+            <span role="listitem" className="block" key={p.dispersionId} data-testid={`salio-en-archivo-anulado-${p.dispersionId}`}>
               <span className="font-medium">{p.nombre}</span>{' '}
               <span className="font-mono">{formatCurrency(p.valorCop)}</span>{' '}
               —{' '}
@@ -51,10 +53,10 @@ export function AvisoDeArchivoAnulado({ pagos }: { pagos: SalioEnUnArchivoAnulad
                   })}
                 </span>
               ) : null}
-            </li>
+            </span>
           ))}
-        </ul>
-      </div>
+        </span>
+      </span>
     </Banner>
   );
 }

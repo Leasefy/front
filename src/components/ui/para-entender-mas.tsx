@@ -91,6 +91,11 @@ export function ParaEntenderMas({
         <DialogContent
           className={ancho === 'ancho' ? 'sm:max-w-5xl' : 'sm:max-w-lg'}
           data-testid="para-entender-mas-contenido"
+          /* Sin `descripcion`, se dice EXPLÍCITO que no hay: Radix avisaba en la
+             consola «Missing `Description` or `aria-describedby={undefined}`»
+             en cada apertura (QA 23-09). El contenido del modal ya es la
+             explicación; una descripción de relleno repetiría el título. */
+          {...(descripcion ? {} : { 'aria-describedby': undefined })}
         >
           <DialogHeader>
             <DialogTitle>{titulo ?? etiqueta}</DialogTitle>

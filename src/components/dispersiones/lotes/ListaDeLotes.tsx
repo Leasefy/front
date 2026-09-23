@@ -269,9 +269,9 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                       <TableCell className="text-right font-mono tabular-nums text-fg">
                         {formatCurrency(lote.totalCop)}
                       </TableCell>
-                      <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId)}</TableCell>
+                      <TableCell className="text-fg-muted">{nombreDe(lote.creadoPorUserId, lote.creadoPorNombre)}</TableCell>
                       <TableCell className="text-fg-muted">
-                        {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId) : '—'}
+                        {lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, lote.aprobadoPorNombre) : '—'}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-fg-muted">
                         {formatDateTime(lote.createdAt)}

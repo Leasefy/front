@@ -309,6 +309,16 @@ describe('<DetalleDelLote> — qué se ofrece en cada estado', () => {
     expect(container.textContent).toContain('Armado por Ana Ruiz');
   });
 
+  it('🔴 quien armó NO está en la lista de agentes (un administrador): el nombre lo dice el back (QA 23-09)', async () => {
+    await render(
+      vista(lote({ creadoPorUserId: '435f5734-0000-4000-8000-000000000000' }), {
+        creadoPorNombre: 'Nicolás García',
+      }),
+    );
+    expect(container.textContent).toContain('Armado por Nicolás García');
+    expect(container.textContent).not.toContain('Usuario 435f5734');
+  });
+
   it('APROBADO: generar archivo y anular', async () => {
     await render(vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:00:00.000Z' })));
     expect(acciones()).toEqual(['Generar archivo', 'Anular']);
@@ -769,6 +779,35 @@ describe('<DetalleDelLote> — cierre', () => {
     expect(
       container.querySelector('[data-testid="facturacion-del-lote"]')?.textContent,
     ).toContain('La plata ya salió del banco');
+  });
+
+  it('🔴 el aviso de la facturación no mete bloques dentro del <p> del Banner (error de hidratación, QA 23-09)', async () => {
+    const errores: string[] = [];
+    const espia = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errores.push(a.map(String).join(' '));
+    });
+    try {
+      await render(listoParaPagar());
+      vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+        pagadoCon({
+          pedida: true,
+          candidatas: 2,
+          emitidas: 1,
+          yaEstaban: 0,
+          sinNumero: 0,
+          totalCop: 100_000,
+          numeros: ['FE-1'],
+          fallas: [{ mes: '2026-08', motivo: 'La resolución venció.' }],
+        }),
+      );
+      await pagar(true);
+    } finally {
+      espia.mockRestore();
+    }
+    expect(errores.filter((e) => /cannot (be a descendant of|contain a nested)/.test(e))).toEqual([]);
+    expect(container.querySelector('[data-testid="falla-2026-08"]')?.textContent).toContain(
+      'La resolución venció.',
+    );
   });
 
   it('«ya estaban» se cuenta, no se pinta como error', async () => {

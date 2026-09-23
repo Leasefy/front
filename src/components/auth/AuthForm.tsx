@@ -13,6 +13,7 @@ import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { SesionYaAbierta } from './SesionYaAbierta';
 import { MedidorDeContrasena } from './MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
@@ -421,7 +422,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     // MFA gate first (security): never bypass a pending second factor, regardless
     // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
     if (mfaRequired) {
-      window.location.href = '/auth/mfa-verify';
+      // El destino viaja con el segundo factor (QA 23-09): si no, tras el
+      // código la persona caía en el inicio y no en lo que vino a hacer.
+      window.location.href = rutaAlSegundoFactor(returnUrl);
       return;
     }
     // Invitation flow: the /invitacion/[token] page handles needsOnboarding on its

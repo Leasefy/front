@@ -66,6 +66,7 @@ import {
   type Regiro,
 } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 
@@ -163,7 +164,7 @@ export function AccionesDelGiro({
   if (giro && !estaSinResolver(giro)) {
     return (
       <span className="text-xs text-fg-muted" data-testid={`regirado-${dispersionId}`}>
-        Se volvió a girar{giro.fechaDelNuevoGiro ? ` el ${giro.fechaDelNuevoGiro}` : ''}.
+        Se volvió a girar{giro.fechaDelNuevoGiro ? ` el ${diaLegible(giro.fechaDelNuevoGiro)}` : ''}.
       </span>
     );
   }
@@ -496,7 +497,7 @@ export function RegirarDialog({
             </p>
             <p className="text-fg-muted">
               {resultado.egreso.seReFecho
-                ? `El egreso quedó con fecha ${resultado.egreso.fecha}.`
+                ? `El egreso quedó con fecha ${diaLegible(resultado.egreso.fecha)}.`
                 : 'El egreso conservó su fecha original.'}
             </p>
           </div>
@@ -511,7 +512,9 @@ export function RegirarDialog({
                 onChange={(e) => setFecha(e.target.value)}
               />
               <p className="text-xs text-fg-muted">
-                El giro se devolvió el {giro?.fechaDeLaDevolucion ?? '—'}.
+                {/* QA 23-09: pintaba «2026-09-23T00:00:00.000Z». Es una fecha
+                    CIVIL (`@db.Date`): en palabras y sin pasar por la zona. */}
+                El giro se devolvió el {diaLegible(giro?.fechaDeLaDevolucion)}.
               </p>
             </div>
             <p className="rounded-md border border-border px-4 py-3 text-xs text-fg-muted">

@@ -2496,6 +2496,8 @@
         "call": "Call",
         "email": "Email",
         "titularDeLaFichaHoy": "Taken from today's profile: this disbursement predates the holder copy.",
+        "repartoTitulo": "Split across {{n}} accounts",
+        "repartoANombreDe": "In the name of {{titular}}",
         "titularOtraPersona": "someone else"
       },
       "resumen": {

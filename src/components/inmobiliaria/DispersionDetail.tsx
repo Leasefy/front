@@ -611,6 +611,32 @@ export function DispersionDetail({
                   </p>
                 )}
               </div>
+              {/* 🔴 22-09: el neto repartido entre varias cuentas, copiado con el
+                  giro: «50 % · Bancolombia ····4521 · $904.803». Los datos de
+                  arriba son los de la cuenta principal. */}
+              {dispersion.repartoDeLaCuenta && dispersion.repartoDeLaCuenta.length > 1 ? (
+                <div className="col-span-2" data-testid="dispersion-reparto">
+                  <p className="text-sm text-muted-foreground">
+                    {t('inmobiliaria.dispersiones.detailView.repartoTitulo', {
+                      n: dispersion.repartoDeLaCuenta.length,
+                    })}
+                  </p>
+                  <ul className="mt-1 space-y-1">
+                    {dispersion.repartoDeLaCuenta.map((parte, i) => (
+                      <li key={i} className="text-sm text-foreground">
+                        <span className="font-mono">{parte.enUnaLinea}</span>
+                        {parte.titularDeOtraPersona ? (
+                          <span className="block text-muted-foreground">
+                            {t('inmobiliaria.dispersiones.detailView.repartoANombreDe', {
+                              titular: parte.titularDeOtraPersona,
+                            })}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
             )}
           </div>

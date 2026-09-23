@@ -20,7 +20,8 @@ export type BankCode =
   | 'itau'
   | 'avvillas'
   | 'bancoomeva'
-  | 'pichincha';
+  | 'pichincha'
+  | 'nu';
 
 export type WalletCode = 'nequi' | 'daviplata' | 'dale' | 'movii' | 'rappipay';
 
@@ -126,6 +127,10 @@ export const COLOMBIAN_BANKS: BankInfo[] = [
   { code: 'avvillas', name: 'Banco AV Villas', shortName: 'AV Villas', color: '#C10230' },
   { code: 'bancoomeva', name: 'Bancoomeva', shortName: 'Bancoomeva', color: '#00A94F' },
   { code: 'pichincha', name: 'Banco Pichincha', shortName: 'Pichincha', color: '#FFD100' },
+  // 22-09 (el reparto de Nico: «otro 20 % en Nubank»). Ojo: Nu Colombia NO está
+  // en la tabla CENIT del Banco de la República, así que el archivo de pagos
+  // masivos no le gira; el back lo excluye del lote con ese motivo.
+  { code: 'nu', name: 'Nu Colombia (Nubank)', shortName: 'Nu', color: '#820AD1' },
 ];
 
 // ============================================================================

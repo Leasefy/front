@@ -88,12 +88,18 @@ export function TitularDeLaCuentaCampos({
   onCambiar,
   errores = {},
   nombreDelPropietario,
+  prefijo = '',
 }: {
   valor: ValorDelTitular;
   onCambiar: (v: ValorDelTitular) => void;
   errores?: ErroresDelTitular;
   /** Para decir a nombre de quién queda cuando la cuenta es suya. */
   nombreDelPropietario: string;
+  /**
+   * Antepuesto a los `id` (22-09): el reparto pinta un bloque por cuenta, y
+   * dos `id="titular-numero"` en la misma página rompen las etiquetas.
+   */
+  prefijo?: string;
 }) {
   const { t } = useI18n();
   const cambiar = (parcial: Partial<ValorDelTitular>) => onCambiar({ ...valor, ...parcial });
@@ -102,11 +108,11 @@ export function TitularDeLaCuentaCampos({
   return (
     <div className="space-y-4" data-testid="titular-de-la-cuenta">
       <div className="space-y-1.5">
-        <p id="titular-pregunta" className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <p id={`${prefijo}titular-pregunta`} className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.propietario.form.titularPregunta')}
           <span className="text-danger ml-0.5">*</span>
         </p>
-        <div role="radiogroup" aria-labelledby="titular-pregunta" className="flex gap-3">
+        <div role="radiogroup" aria-labelledby={`${prefijo}titular-pregunta`} className="flex gap-3">
           {(['PROPIETARIO', 'TERCERO'] as const).map((opcion) => (
             <Chip
               key={opcion}
@@ -137,13 +143,13 @@ export function TitularDeLaCuentaCampos({
 
           <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,200px)_1fr] gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="titular-tipo" className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={`${prefijo}titular-tipo`} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.propietario.form.holderDocumentType')}
                 <span className="text-danger ml-0.5">*</span>
               </label>
               <Select value={valor.tipo || undefined} onValueChange={(v) => cambiar({ tipo: v as DocumentType })}>
                 <SelectTrigger
-                  id="titular-tipo"
+                  id={`${prefijo}titular-tipo`}
                   data-testid="titular-tipo-documento"
                   className={cn(errores.tipo && 'border-danger/30')}
                 >
@@ -161,7 +167,7 @@ export function TitularDeLaCuentaCampos({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="titular-numero" className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={`${prefijo}titular-numero`} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.propietario.form.titularNumero')}
                 <span className="text-danger ml-0.5">*</span>
               </label>
@@ -171,7 +177,7 @@ export function TitularDeLaCuentaCampos({
                   aria-hidden="true"
                 />
                 <Input
-                  id="titular-numero"
+                  id={`${prefijo}titular-numero`}
                   type="text"
                   value={valor.numero}
                   onChange={(e) => cambiar({ numero: e.target.value })}
@@ -184,7 +190,7 @@ export function TitularDeLaCuentaCampos({
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="titular-nombre" className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={`${prefijo}titular-nombre`} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.propietario.form.titularNombre')}
               <span className="text-danger ml-0.5">*</span>
             </label>
@@ -194,12 +200,12 @@ export function TitularDeLaCuentaCampos({
                 aria-hidden="true"
               />
               <Input
-                id="titular-nombre"
+                id={`${prefijo}titular-nombre`}
                 type="text"
                 value={valor.nombre}
                 onChange={(e) => cambiar({ nombre: e.target.value })}
                 className={cn('pl-10', errores.nombre && 'border-danger/30')}
-                data-testid="titular-nombre"
+                data-testid={`${prefijo}titular-nombre`}
               />
             </div>
             {errores.nombre ? (

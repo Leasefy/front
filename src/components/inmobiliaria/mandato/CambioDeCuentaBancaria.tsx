@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { Chip, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { Bank, CheckCircle, Paperclip, ShieldWarning, WarningCircle } from '@phosphor-icons/react';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -39,6 +39,8 @@ import {
   mandatoApi,
   type CambioDeCuenta,
   type CambiosDeCuentaDelPropietario,
+  type CuentaBancaria,
+  type CuentaDelReparto,
 } from '@/lib/api/mandato.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -56,10 +58,84 @@ import {
   type ErroresDelTitular,
   type ValorDelTitular,
 } from '@/components/inmobiliaria/TitularDeLaCuentaCampos';
+import {
+  RepartoDeCuentasCampos,
+  cuentaVacia,
+  type CuentaDelFormulario,
+  type ErroresDeLaCuenta,
+} from '@/components/inmobiliaria/mandato/RepartoDeCuentasCampos';
+import {
+  cuentaDelRepartoEnUnaLinea,
+  porcentajeEntero,
+  problemaDelReparto,
+} from '@/lib/propietarios/reparto-de-cuentas';
 
 function cuentaCorta(c: { bankName: string | null; bankAccountType: string | null; bankAccountNumber: string | null }) {
   const numero = c.bankAccountNumber ? `•••• ${c.bankAccountNumber.slice(-4)}` : 'sin número';
   return [c.bankName, c.bankAccountType, numero].filter(Boolean).join(' · ');
+}
+
+/**
+ * La cuenta de un cambio en pantalla: una línea, o una por cuenta cuando el
+ * cambio reparte la plata (22-09: «50 % · Bancolombia · Ahorros · •••• 4521»).
+ */
+function CuentasDelCambio({ cuenta }: { cuenta: CuentaBancaria }) {
+  if (cuenta.reparto && cuenta.reparto.length > 1) {
+    return (
+      <ul className="space-y-0.5" data-testid="reparto-del-cambio">
+        {cuenta.reparto.map((c, i) => (
+          <li key={i} className="font-mono">
+            {cuentaDelRepartoEnUnaLinea(c)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return <span className="font-mono">{cuentaCorta(cuenta)}</span>;
+}
+
+/** «Banco de Bogota» (back) → `bogota`: sin tildes ni mayúsculas. */
+function codigoDelBanco(nombre: string | null): BankCode | '' {
+  const llave = (nombre ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (!llave) return '';
+  const limpio = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const banco = COLOMBIAN_BANKS.find(
+    (b) => limpio(b.name) === llave || limpio(b.shortName) === llave || llave.includes(limpio(b.shortName)),
+  );
+  return banco?.code ?? '';
+}
+
+/** Una cuenta vigente, lista para editar en el reparto. */
+function cuentaDelFormularioDe(
+  c: CuentaDelReparto,
+  propietario: { nombre: string; documento: string } | undefined,
+  conPorcentaje: boolean,
+): CuentaDelFormulario {
+  const titular = titularInicial({
+    nombreDelPropietario: propietario?.nombre ?? '',
+    documentoDelPropietario: propietario?.documento ?? '',
+    nombreDelTitular: c.bankAccountHolder,
+    documentoDelTitular: c.bankAccountHolderDocument,
+  });
+  return cuentaVacia({
+    titular:
+      titular === 'TERCERO'
+        ? {
+            titular: 'TERCERO',
+            nombre: c.bankAccountHolder ?? '',
+            tipo: (c.bankAccountHolderDocumentType ?? '') as ValorDelTitular['tipo'],
+            numero: c.bankAccountHolderDocument ?? '',
+          }
+        : { titular: 'PROPIETARIO', nombre: '', tipo: '', numero: '' },
+    banco: codigoDelBanco(c.bankName),
+    tipo: /corriente|checking/i.test(c.bankAccountType ?? '') ? 'CORRIENTE' : 'AHORROS',
+    numero: (c.bankAccountNumber ?? '').replace(/\D/g, ''),
+    porcentaje: conPorcentaje ? String(c.porcentaje) : '',
+  });
 }
 
 /**
@@ -183,6 +259,19 @@ export function CambioDeCuentaBancaria({
         ) : null}
       </div>
 
+      {datos.cuentasVigentes && datos.cuentasVigentes.length > 1 ? (
+        <div className="text-sm" data-testid="reparto-vigente">
+          <p className="text-muted-foreground">Recibe en {datos.cuentasVigentes.length} cuentas:</p>
+          <ul className="mt-1 space-y-0.5">
+            {datos.cuentasVigentes.map((c, i) => (
+              <li key={i} className="font-mono">
+                {cuentaDelRepartoEnUnaLinea(c)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {!datos.disponible ? (
         <p className="text-xs text-muted-foreground">{datos.motivo}</p>
       ) : !ultimo ? (
@@ -204,12 +293,18 @@ export function CambioDeCuentaBancaria({
             <dd className="text-foreground font-medium" data-testid="estado-del-cambio">
               {ESTADO_DEL_CAMBIO_DE_CUENTA[ultimo.estado]}
             </dd>
-            <dt className="text-muted-foreground">Cuenta nueva</dt>
-            <dd className="font-mono">{cuentaCorta(ultimo.cuentaNueva)}</dd>
+            <dt className="text-muted-foreground">
+              {ultimo.cuentaNueva.reparto && ultimo.cuentaNueva.reparto.length > 1 ? 'Reparto nuevo' : 'Cuenta nueva'}
+            </dt>
+            <dd>
+              <CuentasDelCambio cuenta={ultimo.cuentaNueva} />
+            </dd>
             <dt className="text-muted-foreground">A nombre de</dt>
             <dd data-testid="titular-del-cambio">{titularCorto(ultimo.cuentaNueva, propietario)}</dd>
-            <dt className="text-muted-foreground">Cuenta anterior</dt>
-            <dd className="font-mono">{cuentaCorta(ultimo.cuentaAnterior)}</dd>
+            <dt className="text-muted-foreground">Antes</dt>
+            <dd>
+              <CuentasDelCambio cuenta={ultimo.cuentaAnterior} />
+            </dd>
             {ultimo.destinoEnmascarado ? (
               <>
                 <dt className="text-muted-foreground">Confirmación</dt>
@@ -290,6 +385,9 @@ export function CambioDeCuentaBancaria({
         <PedirCambioDeCuenta
           propietarioId={propietarioId}
           propietario={propietario}
+          cuentasVigentes={datos.cuentasVigentes ?? []}
+          repartoDisponible={datos.repartoDisponible ?? false}
+          motivoDelReparto={datos.motivoDelReparto ?? null}
           onCerrar={() => setPidiendo(false)}
           onPedido={async (enlace) => {
             setPidiendo(false);
@@ -331,15 +429,38 @@ export function CambioDeCuentaBancaria({
 function PedirCambioDeCuenta({
   propietarioId,
   propietario,
+  cuentasVigentes,
+  repartoDisponible,
+  motivoDelReparto,
   onCerrar,
   onPedido,
 }: {
   propietarioId: string;
   propietario?: { nombre: string; documento: string };
+  /** Las cuentas de hoy: con reparto, el formulario arranca en ellas. */
+  cuentasVigentes: CuentaDelReparto[];
+  repartoDisponible: boolean;
+  motivoDelReparto: string | null;
   onCerrar: () => void;
   onPedido: (enlaceDePrueba?: string) => void;
 }) {
   const { t } = useI18n();
+  /*
+   * 🔴 22-09: ¿en cuántas cuentas recibe? Con reparto vigente se arranca en
+   * «Varias» con sus cuentas cargadas: cambiar un porcentaje no puede obligar a
+   * reescribir las tres cuentas. Volver a «Una» termina el reparto al confirmar.
+   */
+  const yaReparte = cuentasVigentes.length > 1;
+  const [modo, setModo] = useState<'UNA' | 'VARIAS'>(yaReparte && repartoDisponible ? 'VARIAS' : 'UNA');
+  const [cuentas, setCuentas] = useState<CuentaDelFormulario[]>(() =>
+    yaReparte
+      ? cuentasVigentes.map((c) => cuentaDelFormularioDe(c, propietario, true))
+      : [
+          ...cuentasVigentes.slice(0, 1).map((c) => cuentaDelFormularioDe(c, propietario, false)),
+          ...Array.from({ length: Math.max(0, 2 - cuentasVigentes.slice(0, 1).length) }, () => cuentaVacia()),
+        ],
+  );
+  const [erroresDelReparto, setErroresDelReparto] = useState<ErroresDeLaCuenta[]>([]);
   const [banco, setBanco] = useState<BankCode | ''>('');
   const [tipo, setTipo] = useState<'AHORROS' | 'CORRIENTE'>('AHORROS');
   const [numero, setNumero] = useState('');
@@ -353,9 +474,66 @@ function PedirCambioDeCuenta({
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const listo = !!banco && numero.length >= 4 && !!archivo && !guardando;
+  const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
+  const listo =
+    !!archivo &&
+    !guardando &&
+    (modo === 'UNA' ? !!banco && numero.length >= 4 : problema === null);
+
+  async function pedirReparto() {
+    if (!archivo) return;
+    const errores: ErroresDeLaCuenta[] = cuentas.map((c) => {
+      const e: ErroresDeLaCuenta = {};
+      const delTitular = erroresDelTitular(t, c.titular, (tipoDoc, numeroDoc) =>
+        revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento),
+      );
+      if (Object.keys(delTitular).length > 0) e.titular = delTitular;
+      if (!c.banco) e.banco = 'Escoge el banco.';
+      if (c.numero.length < 4) e.numero = 'Escribe el número de la cuenta.';
+      if (porcentajeEntero(c.porcentaje) === null) e.porcentaje = 'Un número entero entre 1 y 100.';
+      return e;
+    });
+    setErroresDelReparto(errores);
+    if (errores.some((e) => Object.keys(e).length > 0) || problema) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const r = await mandatoApi.solicitarCambioDeCuenta(propietarioId, {
+        reparto: cuentas.map((c) => {
+          const tercero = c.titular.titular === 'TERCERO';
+          return {
+            bankCode: mapBankCodeToWire(c.banco as BankCode),
+            bankAccountType: c.tipo,
+            bankAccountNumber: c.numero,
+            titularDeLaCuenta: c.titular.titular,
+            ...(tercero
+              ? {
+                  bankAccountHolder: c.titular.nombre.replace(/\s+/g, ' ').trim(),
+                  bankAccountHolderDocument: c.titular.numero.trim(),
+                  bankAccountHolderDocumentType: c.titular.tipo || undefined,
+                }
+              : {}),
+            porcentaje: porcentajeEntero(c.porcentaje) ?? 0,
+          };
+        }),
+        certificacion: archivo,
+      });
+      toast.success('Reparto pedido.', {
+        description:
+          r.cambio.envioEstado === 'SIMULADO'
+            ? 'El envío de correos está apagado en este entorno: no le llegó nada al propietario.'
+            : `Le pedimos confirmar el reparto al propietario por correo (${r.cambio.destinoEnmascarado ?? ''}).`,
+      });
+      onPedido(r.enlaceDePrueba);
+    } catch (e) {
+      setError(mensajeDelFallo(e, 'No se pudo pedir el reparto.'));
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   async function pedir() {
+    if (modo === 'VARIAS') return pedirReparto();
     if (!banco || !archivo) return;
     const errores = erroresDelTitular(t, titular, (tipoDoc, numeroDoc) =>
       revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento),
@@ -405,6 +583,57 @@ function PedirCambioDeCuenta({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <p id="cuantas-cuentas" className="text-sm font-medium text-fg">
+              ¿En cuántas cuentas recibe?
+            </p>
+            <div role="radiogroup" aria-labelledby="cuantas-cuentas" className="flex gap-3">
+              <Chip
+                type="button"
+                role="radio"
+                aria-checked={modo === 'UNA'}
+                selected={modo === 'UNA'}
+                onClick={() => setModo('UNA')}
+                className="flex-1 justify-center"
+                data-testid="modo-una-cuenta"
+              >
+                En una cuenta
+              </Chip>
+              <Chip
+                type="button"
+                role="radio"
+                aria-checked={modo === 'VARIAS'}
+                selected={modo === 'VARIAS'}
+                disabled={!repartoDisponible}
+                onClick={() => setModo('VARIAS')}
+                className="flex-1 justify-center"
+                data-testid="modo-varias-cuentas"
+              >
+                Repartido en varias
+              </Chip>
+            </div>
+            {!repartoDisponible && motivoDelReparto ? (
+              <p className="text-sm text-muted-foreground">{motivoDelReparto}</p>
+            ) : null}
+            {modo === 'UNA' && yaReparte ? (
+              <p className="text-sm text-muted-foreground">
+                Hoy recibe en {cuentasVigentes.length} cuentas: al confirmar, todo pasa a esta cuenta.
+              </p>
+            ) : null}
+          </div>
+
+          {modo === 'VARIAS' ? (
+            <RepartoDeCuentasCampos
+              cuentas={cuentas}
+              onCambiar={(v) => {
+                setCuentas(v);
+                setErroresDelReparto([]);
+              }}
+              errores={erroresDelReparto}
+              nombreDelPropietario={propietario?.nombre ?? ''}
+            />
+          ) : (
+          <>
           {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
           <TitularDeLaCuentaCampos
             valor={titular}
@@ -456,8 +685,14 @@ function PedirCambioDeCuenta({
               onChange={(e) => setNumero(e.target.value.replace(/[^0-9]/g, ''))}
             />
           </div>
+          </>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
+            <Label htmlFor="certificacion">
+              {modo === 'VARIAS'
+                ? 'Certificaciones bancarias de las cuentas nuevas, en un solo archivo (obligatorio)'
+                : 'Certificación bancaria (PDF o foto, obligatoria)'}
+            </Label>
             <Input
               id="certificacion"
               type="file"
@@ -478,7 +713,7 @@ function PedirCambioDeCuenta({
             Cancelar
           </Button>
           <Button onClick={pedir} disabled={!listo} isLoading={guardando} data-testid="enviar-cambio">
-            Pedir el cambio
+            {modo === 'VARIAS' ? 'Pedir el reparto' : 'Pedir el cambio'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -525,8 +760,11 @@ function AprobarCambio({
         <DialogHeader>
           <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
           <DialogDescription>
-            {cuentaCorta(cambio.cuentaNueva)}, a nombre de {titularCorto(cambio.cuentaNueva, propietario)}. Revisa
-            la certificación antes de aprobar: desde este momento los giros salen a esta cuenta.
+            {cambio.cuentaNueva.reparto && cambio.cuentaNueva.reparto.length > 1
+              ? `Reparto en ${cambio.cuentaNueva.reparto.length} cuentas: ${cambio.cuentaNueva.reparto
+                  .map(cuentaDelRepartoEnUnaLinea)
+                  .join('; ')}. Revisa las certificaciones antes de aprobar: desde este momento los giros se reparten así.`
+              : `${cuentaCorta(cambio.cuentaNueva)}, a nombre de ${titularCorto(cambio.cuentaNueva, propietario)}. Revisa la certificación antes de aprobar: desde este momento los giros salen a esta cuenta.`}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">

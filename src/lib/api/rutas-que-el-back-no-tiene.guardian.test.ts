@@ -186,10 +186,20 @@ export function llamadasDelFront(): {
     };
 
     for (const m of texto.matchAll(
-      /apiClient\.(get|post|put|patch|delete|del)\s*(?:<[\s\S]*?>)?\s*\(\s*/g,
+      /apiClient\.(getBlob|get|post|put|patch|delete|del)\s*(?:<[\s\S]*?>)?\s*\(\s*/g,
     )) {
+      /*
+       * 🔴 `getBlob` es un GET que baja un archivo (22-09). No estaba en la
+       * lista, así que TODA descarga —PDF, ZIP, CSV— pasaba sin mirar: la del
+       * PDF de la factura podía pedir una ruta inexistente y quedar verde.
+       */
+      const verbo = m[1] === 'getBlob' ? 'get' : m[1];
       const quien = quienEn(m.index!);
-      const desde = m.index! + m[0].length;
+      let desde = m.index! + m[0].length;
+      // `conQuery(`/x`, {...})` arma la cadena de consulta: la RUTA es su
+      // primer argumento. Las tres descargas que lo usan quedaban sin leer.
+      const envuelta = texto.slice(desde).match(/^conQuery\(\s*/);
+      if (envuelta) desde += envuelta[0].length;
       const comilla = texto[desde];
       if (comilla !== '`' && comilla !== "'" && comilla !== '"') {
         // La ruta puede venir en una constante del propio archivo
@@ -202,7 +212,7 @@ export function llamadasDelFront(): {
         }
         llamadas.push({
           quien,
-          forma: formaDeLaRuta(m[1], valor.startsWith('/') ? valor : '/' + valor),
+          forma: formaDeLaRuta(verbo, valor.startsWith('/') ? valor : '/' + valor),
           archivo: f,
         });
         continue;
@@ -219,7 +229,7 @@ export function llamadasDelFront(): {
         continue;
       }
       if (!ruta.startsWith('/')) ruta = '/' + ruta;
-      llamadas.push({ quien, forma: formaDeLaRuta(m[1], ruta), archivo: f });
+      llamadas.push({ quien, forma: formaDeLaRuta(verbo, ruta), archivo: f });
     }
   }
   return { llamadas, sinPoderLeer };

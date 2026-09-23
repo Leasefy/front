@@ -24,7 +24,7 @@
  */
 
 import Link from 'next/link'
-import { Receipt, Warning } from '@phosphor-icons/react'
+import { DownloadSimple, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +53,14 @@ export interface CajonDeLaFacturaProps {
   /** Por qué no se puede emitir nada ahora (resolución vencida, corrida en curso). */
   motivoParaNoEmitir: string | null
   ocupado: boolean
+  /**
+   * 🔴 Bajar el PDF de la factura EMITIDA (Nico, 22-09: «si ya acabó, en el
+   * drawer debería de verse»). Sin esto el cajón de una emitida no tenía
+   * ninguna acción: sólo «Cerrar».
+   */
+  onDescargarPdf?: (factura: FacturaDelMes) => void
+  /** El `facturaId` que se está bajando. */
+  descargando?: string | null
 }
 
 /** Un dato con su rótulo. Los números en `font-mono`, por regla del DS. */
@@ -81,6 +89,8 @@ export function CajonDeLaFactura({
   onGenerarUna,
   motivoParaNoEmitir,
   ocupado,
+  onDescargarPdf,
+  descargando = null,
 }: CajonDeLaFacturaProps) {
   const emitida = factura?.estado === 'EMITIDA'
   const bloqueada = factura ? !emitida && !factura.emitible : false
@@ -155,6 +165,52 @@ export function CajonDeLaFactura({
                   </p>
                 ))}
               </div>
+            )}
+
+            {/* 🔴 EL DOCUMENTO, sólo en la emitida: es la respuesta a «dónde
+                descargo esa factura» (Nico, 22-09). El número que vale ante la
+                DIAN, el interno para cruzarlo, y el PDF. El XML firmado y el
+                CUFE los devuelve el proveedor de facturación electrónica, que
+                todavía no está conectado: se dice, no se promete un botón. */}
+            {emitida && (
+              <section
+                className="space-y-3 rounded-lg border border-border p-4"
+                data-testid="cajon-documento"
+              >
+                <h3 className="text-caption uppercase tracking-wide text-fg-muted">Documento</h3>
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <Dato rotulo="Número" mono>
+                    {factura.numeroDian ?? `N° ${factura.numero}`}
+                  </Dato>
+                  {factura.numeroDian && factura.numero !== null && (
+                    <Dato rotulo="Consecutivo interno" mono>
+                      N° {factura.numero}
+                    </Dato>
+                  )}
+                </dl>
+                {factura.facturaId && onDescargarPdf ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    disabled={descargando !== null}
+                    isLoading={descargando === factura.facturaId}
+                    onClick={() => onDescargarPdf(factura)}
+                    data-testid="cajon-descargar-pdf"
+                  >
+                    <DownloadSimple className="h-4 w-4" weight="bold" aria-hidden="true" />
+                    Descargar el PDF
+                  </Button>
+                ) : (
+                  <p className="text-sm text-fg-muted" data-testid="cajon-sin-pdf">
+                    Actualiza la lista para poder descargar el PDF de esta factura.
+                  </p>
+                )}
+                <p className="text-sm text-fg-muted">
+                  El XML firmado y el CUFE los entrega el proveedor de facturación
+                  electrónica, que todavía no está conectado: el PDF lo dice en su pie.
+                </p>
+              </section>
             )}
 
             <dl className="grid gap-4 sm:grid-cols-2">

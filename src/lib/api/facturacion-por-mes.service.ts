@@ -48,6 +48,13 @@ import type {
 
 const BASE = '/inmobiliaria/facturacion'
 
+/**
+ * El tope de la descarga directa en ZIP. Es el MISMO número del back
+ * (`DocumentoDeLaFacturaService.MAXIMO_POR_ZIP`): con más, el botón se apaga
+ * diciendo por qué en vez de esperar un 400.
+ */
+export const MAXIMO_FACTURAS_POR_ZIP = 50
+
 // ══ Vocabulario del back ════════════════════════════════════════════════════
 
 /** `DestinatarioDeFactura` en `schema.prisma`. */
@@ -165,6 +172,12 @@ export interface FacturaDelMes {
   numero: number | null
   /** El número autorizado por la resolución de la DIAN («FE-1042»). */
   numeroDian: string | null
+  /**
+   * El id de la factura cuando ya existe (22-09). Con él se baja el PDF de la
+   * fila emitida. Opcional: un back anterior no lo manda, y entonces no se
+   * ofrece la descarga en vez de pedir `/facturacion/undefined/pdf`.
+   */
+  facturaId?: string | null
   diasFacturados: number
   diasDelMes: number
   /** Lo que el propietario paga y NO se factura: va a deducción del egreso. */
@@ -356,6 +369,8 @@ export interface ResultadoDeGeneracion {
     numero: number
     numeroDian: string
     totalCop: number
+    /** El id de la factura emitida. `null` si el back no pudo leerlo de vuelta. */
+    facturaId?: string | null
   }[]
 }
 
@@ -525,6 +540,24 @@ export const facturacionPorMesService = {
     apiClient.post<ResultadoDeGeneracion>(
       `${BASE}/generar`,
       claves && claves.length > 0 ? { mes, claves } : { mes },
+    ),
+
+  /**
+   * 🔴 El PDF de UNA factura emitida (Nico, 22-09: «dónde puedo descargar […]
+   * esa factura en sí»). Por `getBlob` y no un `<a href>`: la ruta pide el
+   * token de la sesión. Pide lo mismo que ver facturación (`cobros:view`).
+   */
+  pdfDeLaFactura: (facturaId: string) =>
+    apiClient.getBlob(`${BASE}/${encodeURIComponent(facturaId)}/pdf`),
+
+  /**
+   * Los PDFs de varias facturas emitidas, en un ZIP. El back arma la descarga
+   * directa hasta `MAXIMO_FACTURAS_POR_ZIP`; más que eso responde 400 con el
+   * porqué (un lote de cientos tiene que ir a una tarea en segundo plano).
+   */
+  zipDeFacturas: (facturaIds: readonly string[]) =>
+    apiClient.getBlob(
+      `${BASE}/documentos.zip?ids=${facturaIds.map(encodeURIComponent).join(',')}`,
     ),
 
   /** Las resoluciones de la agencia. Sólo ADMIN o CONTADOR. */

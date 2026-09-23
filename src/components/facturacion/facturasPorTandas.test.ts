@@ -177,3 +177,34 @@ describe('generarPorTandas', () => {
     expect(informe.pedidas).toBe(0)
   })
 })
+
+describe('🔴 las facturas de la corrida, para descargarlas (22-09)', () => {
+  it('junta el id y el número de lo emitido en TODAS las tandas', async () => {
+    const generar = (mes: string, lote: string[]): Promise<ResultadoDeGeneracion> =>
+      Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: lote.length * 1_000,
+        facturas: lote.map((clave, i) => ({
+          clave,
+          numero: i,
+          numeroDian: `PRU-${clave.split('|')[0]}`,
+          totalCop: 1_000,
+          // Una sin id (un back viejo): no entra, no hay PDF que pedir.
+          facturaId: clave === 'ct-1|2026-09|INQUILINO' ? null : `fac-${clave}`,
+        })),
+      })
+
+    const { informe } = await generarPorTandas('2026-09', claves(3), generar, undefined, {
+      tamano: 2,
+    })
+
+    expect(informe.documentos).toEqual([
+      { facturaId: 'fac-ct-0|2026-09|INQUILINO', numero: 'PRU-ct-0' },
+      { facturaId: 'fac-ct-2|2026-09|INQUILINO', numero: 'PRU-ct-2' },
+    ])
+  })
+})

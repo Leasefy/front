@@ -65,6 +65,9 @@ vi.mock('@/components/ui/select', async () => {
 
 const porGenerarMock = vi.fn();
 const generarMock = vi.fn();
+const pdfMock = vi.fn();
+const zipMock = vi.fn();
+const descargarBlobMock = vi.fn();
 const toastOk = vi.fn();
 const toastErr = vi.fn();
 
@@ -77,9 +80,15 @@ vi.mock('@/lib/api/facturacion-por-mes.service', async () => {
     facturacionPorMesService: {
       porGenerar: (...a: unknown[]) => porGenerarMock(...a),
       generar: (...a: unknown[]) => generarMock(...a),
+      pdfDeLaFactura: (...a: unknown[]) => pdfMock(...a),
+      zipDeFacturas: (...a: unknown[]) => zipMock(...a),
     },
   };
 });
+
+vi.mock('@/lib/reportes/exportables', () => ({
+  descargarBlob: (...a: unknown[]) => descargarBlobMock(...a),
+}));
 
 vi.mock('@/components/ui/toast', () => ({
   toast: {
@@ -263,6 +272,9 @@ async function clic(sel: string) {
 beforeEach(() => {
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
+  pdfMock.mockReset().mockResolvedValue(new Blob(['%PDF']));
+  zipMock.mockReset().mockResolvedValue(new Blob(['PK']));
+  descargarBlobMock.mockReset();
   irAResolucion.mockReset();
   toastOk.mockReset();
   toastErr.mockReset();
@@ -1512,5 +1524,160 @@ describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-
     const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
     expect(cajon.querySelector('[data-testid="cajon-escenario-sin-confirmar"]')).toBeNull();
     expect(cajon.textContent).toContain('Escenario 1 · Vivienda o local entre personas naturales');
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote o
+ * esa factura en sí, porque literal no deja ver en ningún lado; y pues si ya
+ * acabó, en el drawer debería de verse, y también ahí donde dice estado». La
+ * fila emitida mostraba «PRU-3 · interna Nº 4» como texto y el aviso de la
+ * emisión sólo ofrecía «Cerrar».
+ */
+describe('🔴 el documento de la factura emitida (22-09)', () => {
+  const emitida = factura({
+    estado: 'EMITIDA',
+    numero: 4,
+    numeroDian: 'PRU-3',
+    facturaId: 'fac-3',
+  });
+  const soltarTareas = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+  it('la columna de estado dice «Emitida · PRU-3» y baja su PDF sin abrir el cajón', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    const clave = 'ct-1|2026-09|INQUILINO';
+    expect(q(`[data-testid="emitida-${clave}"]`)?.textContent).toBe('Emitida · PRU-3');
+
+    await clic(`[data-testid="descargar-pdf-${clave}"]`);
+    await soltarTareas();
+
+    expect(pdfMock).toHaveBeenCalledWith('fac-3');
+    expect(descargarBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'factura-PRU-3.pdf');
+    // El botón vive en la celda que frena la propagación: no abre el cajón.
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+  });
+
+  it('lo mismo en la lista de propietarios', async () => {
+    const comision = factura({
+      clave: 'ct-1|2026-09|PROPIETARIO',
+      destinatario: 'PROPIETARIO',
+      terceroNombre: 'Jorge Restrepo',
+      estado: 'EMITIDA',
+      numero: 5,
+      numeroDian: 'PRU-4',
+      facturaId: 'fac-4',
+    });
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [], propietarios: [comision] }));
+    await montar();
+    await verA('Propietarios');
+    await clic('[data-testid="descargar-pdf-ct-1|2026-09|PROPIETARIO"]');
+    await soltarTareas();
+    expect(pdfMock).toHaveBeenCalledWith('fac-4');
+  });
+
+  it('sin `facturaId` (un back viejo) no se ofrece una descarga que pediría /undefined/pdf', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [{ ...emitida, facturaId: undefined }], propietarios: [] }),
+    );
+    await montar();
+    expect(q('[data-testid="emitida-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="descargar-pdf-ct-1|2026-09|INQUILINO"]')).toBeNull();
+  });
+
+  it('🔴 el cajón de una EMITIDA tiene la sección «Documento» con el PDF', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    const documento = cajon.querySelector('[data-testid="cajon-documento"]')!;
+    expect(documento.textContent).toContain('PRU-3');
+    expect(documento.textContent).toContain('N° 4');
+
+    await act(async () => {
+      (documento.querySelector('[data-testid="cajon-descargar-pdf"]') as HTMLElement).click();
+    });
+    await soltarTareas();
+    expect(pdfMock).toHaveBeenCalledWith('fac-3');
+  });
+
+  it('🔴 y el de una POR EMITIR no: no hay documento todavía', async () => {
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon.querySelector('[data-testid="cajon-documento"]')).toBeNull();
+  });
+
+  it('🔴 el aviso «Se emitió 1 factura» baja ESA factura', async () => {
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 1,
+      yaEstaban: 0,
+      sinNumero: 0,
+      motivo: null,
+      totalCop: 1_879_608,
+      facturas: [
+        { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_879_608, facturaId: 'fac-3' },
+      ],
+    });
+    await montar();
+    await clic('[data-testid="facturacion-generar"]');
+    await soltarTareas();
+
+    const boton = q('[data-testid="facturacion-informe-descargar"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Descargar la factura');
+    await act(async () => {
+      boton.click();
+    });
+    await soltarTareas();
+    expect(pdfMock).toHaveBeenCalledWith('fac-3');
+    expect(zipMock).not.toHaveBeenCalled();
+  });
+
+  it('🔴 varias → el ZIP de las de ESTA corrida', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [factura(), factura({ clave: 'ct-2|2026-09|INQUILINO', contractId: 'ct-2' })],
+        propietarios: [],
+      }),
+    );
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 2,
+      yaEstaban: 0,
+      sinNumero: 0,
+      motivo: null,
+      totalCop: 3_600_000,
+      facturas: [
+        { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_800_000, facturaId: 'fac-3' },
+        { clave: 'ct-2|2026-09|INQUILINO', numero: 5, numeroDian: 'PRU-4', totalCop: 1_800_000, facturaId: 'fac-4' },
+      ],
+    });
+    await montar();
+    await clic('[data-testid="facturacion-generar"]');
+    await soltarTareas();
+    await act(async () => {
+      (q('[data-testid="facturacion-informe-descargar"]') as HTMLButtonElement).click();
+    });
+    await soltarTareas();
+    expect(zipMock).toHaveBeenCalledWith(['fac-3', 'fac-4']);
+    expect(descargarBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'facturas-2026-09-2.zip');
+  });
+
+  it('un error de la descarga se dice, con las palabras del back', async () => {
+    pdfMock.mockRejectedValue(new Error('Esa factura no existe.'));
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    await clic('[data-testid="descargar-pdf-ct-1|2026-09|INQUILINO"]');
+    await soltarTareas();
+    expect(toastErr).toHaveBeenCalledWith('Esa factura no existe.');
+    expect(descargarBlobMock).not.toHaveBeenCalled();
   });
 });

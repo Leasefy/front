@@ -373,6 +373,10 @@ export interface ResultadoDeGeneracion {
     /** El id de la factura emitida. `null` si el back no pudo leerlo de vuelta. */
     facturaId?: string | null
   }[]
+  /** Su fila en el centro de procesos (22-09). Ausente en un back sin centro. */
+  procesoId?: string | null
+  /** `true` = el ZIP con los PDF de ESTA tanda se está armando en ese proceso. */
+  zipEnElCentro?: boolean
 }
 
 /** Una resolución cargada, con su estado ya resuelto por el back. */
@@ -559,6 +563,17 @@ export const facturacionPorMesService = {
    * directa hasta `MAXIMO_FACTURAS_POR_ZIP`; más que eso responde 400 con el
    * porqué (un lote de cientos tiene que ir a una tarea en segundo plano).
    */
+  /**
+   * El ZIP de muchas facturas —sin el tope de la descarga directa— armado en
+   * el centro de procesos: responde el id del proceso y el archivo aparece ahí.
+   */
+  zipEnSegundoPlano: (facturaIds: readonly string[]) => {
+    anunciarProceso()
+    return apiClient.post<{ procesoId: string }>(`${BASE}/documentos.zip/en-segundo-plano`, {
+      ids: [...facturaIds],
+    })
+  },
+
   zipDeFacturas: (facturaIds: readonly string[]) =>
     apiClient.getBlob(
       `${BASE}/documentos.zip?ids=${facturaIds.map(encodeURIComponent).join(',')}`,

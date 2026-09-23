@@ -78,6 +78,11 @@ export interface InformeDeFacturas {
    * id (un back viejo) no entran: sin id no hay PDF que pedir.
    */
   documentos: { facturaId: string; numero: string | null }[]
+  /**
+   * Los procesos del centro que están armando el ZIP de cada tanda (22-09).
+   * Con UNA sola tanda, ese ZIP es el lote entero y se baja de ahí.
+   */
+  procesosConZip: string[]
 }
 
 /** Por qué terminó la corrida. */
@@ -136,6 +141,7 @@ export async function generarPorTandas(
     totalCop: 0,
     motivos: [],
     documentos: [],
+    procesosConZip: [],
   }
   let corte: CorteDeLaCorrida = 'completa'
   let error: unknown = null
@@ -166,6 +172,7 @@ export async function generarPorTandas(
     for (const f of r.facturas ?? []) {
       if (f.facturaId) informe.documentos.push({ facturaId: f.facturaId, numero: f.numeroDian })
     }
+    if (r.zipEnElCentro && r.procesoId) informe.procesosConZip.push(r.procesoId)
 
     onProgreso?.({ hechas: enviadas, total: claves.length, tanda: i + 1, tandas: partes.length })
 

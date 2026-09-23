@@ -23,6 +23,7 @@
  * acaba de ver ni dejar a alguien esperando.
  */
 
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import Link from 'next/link'
 import { DownloadSimple, Receipt, Warning } from '@phosphor-icons/react'
 
@@ -212,6 +213,11 @@ export function CajonDeLaFactura({
                 </p>
               </section>
             )}
+
+            {/* Quién emitió, descargó o anuló esta factura, con su rol
+                (bitácora de movimientos). Sólo existe con número: antes de
+                emitirla no hay factura sobre la cual registrar nada. */}
+            {factura.facturaId && <BitacoraDelRecurso tipo="factura" id={factura.facturaId} />}
 
             <dl className="grid gap-4 sm:grid-cols-2">
               <Dato rotulo="Contrato">

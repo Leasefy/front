@@ -154,14 +154,26 @@ describe('<PropietarioForm> — ¿a quién pertenece la cuenta?', () => {
     expect(container.textContent).toContain('inmobiliaria.propietario.form.errHolderDocTypeRequired')
   })
 
-  it('«De otra persona» sin nombre ni documento no se guarda', async () => {
+  it('«De otra persona» sin nombre ni documento no se guarda: pide el tipo de documento', async () => {
     const onSubmit = await render({
       initialFormData: { ...deOtraPersona, accountHolder: '', accountHolderDocument: '', accountHolderDocumentType: '' },
     })
     await clic('titular-tercero')
     await submit()
     expect(onSubmit).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('inmobiliaria.propietario.form.titularErrNombre')
+    expect(container.textContent).toContain('inmobiliaria.propietario.form.errHolderDocTypeRequired')
+  })
+
+  it('🔴 «De otra persona» sin nombre pero con tipo y número se guarda: el nombre es opcional (Nico, 23-09)', async () => {
+    const onSubmit = await render({ initialFormData: { ...deOtraPersona, accountHolder: '' } })
+    await submit()
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      titularDeLaCuenta: 'TERCERO',
+      accountHolder: '',
+      accountHolderDocumentType: 'CC',
+      accountHolderDocument: '8001234',
+    })
   })
 
   it('«De otra persona» con la cédula del propietario se rechaza: no es otra persona', async () => {

@@ -85,10 +85,13 @@ export type RevisionDelDocumento =
   | { ok: true; numero: string }
   | { ok: false; motivo: MotivoDelDocumento; min?: number; max?: number; dv?: number };
 
-const LARGOS: Record<'CC' | 'CE' | 'TI', { min: number; max: number }> = {
+const LARGOS: Record<'CC' | 'CE' | 'TI' | 'PPT', { min: number; max: number }> = {
   CC: { min: 6, max: 10 },
   CE: { min: 5, max: 10 },
   TI: { min: 10, max: 11 },
+  // Permiso por Protección Temporal: numérico. Ancho a propósito (espejo del
+  // back, `titular-de-la-cuenta.ts`): no hay una longitud oficial que citar.
+  PPT: { min: 5, max: 15 },
 };
 
 /** El número del documento del titular según su tipo. Nunca lanza. */

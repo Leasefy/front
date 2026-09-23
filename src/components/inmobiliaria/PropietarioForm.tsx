@@ -77,6 +77,7 @@ const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
   { value: 'TI', hint: 'Ej: 1.023.456.789' },
   { value: 'NIT', hint: 'Ej: 900.456.789-1' },
   { value: 'PASSPORT', hint: 'Ej: AB123456' },
+  { value: 'PPT', hint: 'Ej: 4829107' },
 ];
 
 const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
@@ -85,6 +86,7 @@ const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
   TI: 'inmobiliaria.propietario.form.docTI',
   NIT: 'inmobiliaria.propietario.form.docNIT',
   PASSPORT: 'inmobiliaria.propietario.form.docPassport',
+  PPT: 'inmobiliaria.propietario.form.docPPT',
 };
 
 const ACCOUNT_TYPE_VALUES: AccountType[] = ['savings', 'checking'];

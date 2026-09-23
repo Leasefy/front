@@ -26,7 +26,8 @@ import type {
 // Propietario (Property Owner/Client)
 // ============================================================================
 
-export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
+/** `PPT` = Permiso por Protección Temporal (22-09, «agrega la PPT»). */
+export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT' | 'PPT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;

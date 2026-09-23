@@ -10,7 +10,7 @@
  */
 
 /** Los valores del enum `PropietarioDocumentType` del back. */
-export type TipoDeDocumento = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
+export type TipoDeDocumento = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT' | 'PPT';
 
 const SINONIMOS: Record<string, TipoDeDocumento> = {
   cc: 'CC',
@@ -23,6 +23,9 @@ const SINONIMOS: Record<string, TipoDeDocumento> = {
   pasaporte: 'PASSPORT',
   ps: 'PASSPORT',
   pa: 'PASSPORT',
+  // Permiso por Protección Temporal (22-09). «pep» NO: es el permiso anterior.
+  ppt: 'PPT',
+  permisoporprotecciontemporal: 'PPT',
 };
 
 /**
@@ -52,6 +55,7 @@ const AYUDA: Record<TipoDeDocumento, string> = {
   TI: '3 a 20 dígitos, sin puntos ni espacios.',
   CE: '3 a 20 dígitos, sin puntos ni espacios.',
   PASSPORT: '3 a 20 letras o dígitos, sin espacios.',
+  PPT: '3 a 20 dígitos, sin puntos ni espacios.',
 };
 
 /** Sin tipo no se adivina la regla: se pide el tipo primero. */

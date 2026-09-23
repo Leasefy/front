@@ -56,6 +56,13 @@ describe('revisarDocumentoDelTitular', () => {
     expect(revisarDocumentoDelTitular('PASSPORT', 'a1')).toMatchObject({ ok: false, motivo: 'pasaporte' })
   })
 
+  // «agrega la PPT» (Nico, 22-09): numérico, como la cédula.
+  it('PPT: dígitos, sin letras, con su largo', () => {
+    expect(revisarDocumentoDelTitular('PPT', '4.829.107')).toEqual({ ok: true, numero: '4829107' })
+    expect(revisarDocumentoDelTitular('PPT', '48A9107')).toMatchObject({ ok: false, motivo: 'soloNumeros' })
+    expect(revisarDocumentoDelTitular('PPT', '123')).toMatchObject({ ok: false, motivo: 'largo', min: 5, max: 15 })
+  })
+
   it('vacío se dice como vacío', () => {
     expect(revisarDocumentoDelTitular('CE', '  ')).toEqual({ ok: false, motivo: 'vacio' })
   })

@@ -18,6 +18,9 @@ describe('tipoDeDocumentoDe', () => {
     ['PASSPORT', 'PASSPORT'],
     ['Pasaporte', 'PASSPORT'],
     ['PS', 'PASSPORT'],
+    ['PPT', 'PPT'],
+    ['P.P.T.', 'PPT'],
+    ['Permiso por Protección Temporal', 'PPT'],
   ])('«%s» → %s', (crudo, esperado) => {
     expect(tipoDeDocumentoDe(crudo)).toBe(esperado);
   });
@@ -25,6 +28,7 @@ describe('tipoDeDocumentoDe', () => {
   it('lo que no se reconoce es null, no CC: no se adivina', () => {
     expect(tipoDeDocumentoDe('')).toBeNull();
     expect(tipoDeDocumentoDe('RUT')).toBeNull();
+    expect(tipoDeDocumentoDe('PEP')).toBeNull(); // el permiso anterior al PPT
     expect(tipoDeDocumentoDe(null)).toBeNull();
     expect(tipoDeDocumentoDe(undefined)).toBeNull();
     expect(tipoDeDocumentoDe(42)).toBeNull();

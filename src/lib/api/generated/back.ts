@@ -9830,10 +9830,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, TI, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT, PPT)
              * @enum {string}
              */
-            documentType: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            documentType: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Document number */
             documentNumber: string;
             /** @description Physical address */
@@ -9854,7 +9854,7 @@ export interface components {
              * @description Tipo de documento del titular de la cuenta, si no es el propietario
              * @enum {string}
              */
-            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Documento del titular de la cuenta, si no es el propietario */
             bankAccountHolderDocument?: string;
             /** @description Additional notes */
@@ -9878,10 +9878,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, TI, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT, PPT)
              * @enum {string}
              */
-            documentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            documentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Document number */
             documentNumber?: string;
             /** @description Physical address */
@@ -9902,7 +9902,7 @@ export interface components {
              * @description Tipo de documento del titular de la cuenta, si no es el propietario
              * @enum {string}
              */
-            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Documento del titular de la cuenta, si no es el propietario */
             bankAccountHolderDocument?: string;
             /** @description Additional notes */

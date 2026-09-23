@@ -38,7 +38,7 @@ export interface ErroresDelTitular {
   numero?: string;
 }
 
-const TIPOS: DocumentType[] = ['CC', 'CE', 'NIT', 'PASSPORT', 'TI'];
+const TIPOS: DocumentType[] = ['CC', 'CE', 'NIT', 'PASSPORT', 'TI', 'PPT'];
 
 const ETIQUETA_DEL_TIPO: Record<DocumentType, string> = {
   CC: 'inmobiliaria.propietario.form.docCC',
@@ -46,6 +46,7 @@ const ETIQUETA_DEL_TIPO: Record<DocumentType, string> = {
   TI: 'inmobiliaria.propietario.form.docTI',
   NIT: 'inmobiliaria.propietario.form.docNIT',
   PASSPORT: 'inmobiliaria.propietario.form.docPassport',
+  PPT: 'inmobiliaria.propietario.form.docPPT',
 };
 
 /** El motivo de `revisarDocumentoDelTitular`, dicho con su clave. */

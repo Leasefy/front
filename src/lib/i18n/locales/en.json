@@ -1762,6 +1762,15 @@
         "alcancePlata": "Without «Disbursements · View», the owner record arrives without bank details or money, and their statements, debts and deductions do not open.",
         "alcanceContabilidad": "Accounting (ledger, trial balance, chart of accounts) requires «Reports · View».",
         "alcanceAsesor": "By default the Sales advisor has none of the three: they see the commercial side and nothing of operations. Grant them here if your agency works differently.",
+        "puntualesTitulo": "Specific permissions",
+        "puntualesDescripcion": "A single action granted by name. Checking a module's whole row does not grant it.",
+        "puntualAdminSiempre": "The administrator always has it.",
+        "puntuales": {
+          "cambiar_fecha_egreso": {
+            "nombre": "Change the date of a disbursement",
+            "descripcion": "Correct the date, reference or note of a disbursement already recorded. Changing the date moves its journal entry to another day. By default, only the administrator."
+          }
+        },
         "confirmTitle": "Confirm changes",
         "confirmDescription": "Permission changes will immediately affect all users with these roles.",
         "cancel": "Cancel",

@@ -27,7 +27,7 @@ import type { Egreso, LoteDeEgreso } from '@/lib/api/gastos.service';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { gastos, escrituraMock, toastMock } = vi.hoisted(() => ({
+const { gastos, escrituraMock, cambioMock, toastMock } = vi.hoisted(() => ({
   gastos: {
     egresos: {
       listar: vi.fn(),
@@ -48,6 +48,8 @@ const { gastos, escrituraMock, toastMock } = vi.hoisted(() => ({
     },
   },
   escrituraMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
+  // El permiso PUNTUAL de corregir un egreso (22-09), aparte de la escritura.
+  cambioMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
@@ -61,7 +63,11 @@ vi.mock('../use-puede-escribir', async () => {
   const actual = await vi.importActual<typeof import('../use-puede-escribir')>(
     '../use-puede-escribir',
   );
-  return { ...actual, usePuedeEscribir: () => escrituraMock };
+  return {
+    ...actual,
+    usePuedeEscribir: () => escrituraMock,
+    usePuedeCambiarEgresos: () => cambioMock,
+  };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
@@ -70,6 +76,7 @@ vi.mock('@/lib/i18n', () => ({
 
 import { Egresos, parteDeEgresos } from './Egresos';
 import { ApiError } from '@/lib/api/client';
+import { MOTIVO_SIN_CAMBIO_DE_EGRESO } from '../use-puede-escribir';
 
 const egreso = (extra: Partial<Egreso> = {}): Egreso => ({
   id: 'e1',
@@ -146,6 +153,8 @@ beforeEach(() => {
   escrituraMock.puede = true;
   escrituraMock.motivo = null;
   escrituraMock.usuarioId = 'u-yo';
+  cambioMock.puede = true;
+  cambioMock.motivo = null;
 });
 
 afterEach(() => {
@@ -657,15 +666,48 @@ describe('🔴 el cajón del egreso', () => {
     );
   });
 
-  it('🔴 sin permiso de escritura los campos llegan apagados, con el porqué, y no hay botón de guardar', async () => {
-    escrituraMock.puede = false;
-    escrituraMock.motivo = 'Sólo el administrador o el contador pueden mover la contabilidad.';
+  /**
+   * 🔴 22-09 · «que sólo lo pueda hacer alguien con permisos». Corregir un
+   * egreso ya no es la escritura contable: es el permiso puntual
+   * `cambiar_fecha_egreso`. Un contador —que SÍ escribe en el libro— sin ese
+   * permiso ve los campos apagados, con la frase que dice quién lo tiene y
+   * dónde se otorga.
+   */
+  it('🔴 con escritura pero SIN el permiso de corregir egresos, los campos llegan apagados con el porqué', async () => {
+    escrituraMock.puede = true;
+    cambioMock.puede = false;
+    cambioMock.motivo = MOTIVO_SIN_CAMBIO_DE_EGRESO;
     await abrir();
     expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
     expect((q('egreso-referencia') as HTMLInputElement).disabled).toBe(true);
     expect((q('egreso-nota') as HTMLTextAreaElement).disabled).toBe(true);
-    expect(q('egreso-fecha-motivo')!.textContent).toContain('administrador o el contador');
+    expect(q('egreso-fecha-motivo')!.textContent).toContain('Cambiar la fecha de un egreso');
+    expect(q('egreso-fecha-motivo')!.textContent).toContain('Permisos');
     expect(q('guardar-cambio-del-egreso')).toBeNull();
+  });
+
+  it('con el permiso otorgado, aunque el rol no escriba en el libro, los campos se pueden tocar', async () => {
+    escrituraMock.puede = false;
+    escrituraMock.motivo = 'Sólo el administrador o el contador pueden mover la contabilidad.';
+    cambioMock.puede = true;
+    await abrir();
+    expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(false);
+    expect((q('egreso-nota') as HTMLTextAreaElement).disabled).toBe(false);
+  });
+
+  it('🔴 si igual llega el 403 del back, se dice con la frase del permiso, no «el administrador o el contador»', async () => {
+    gastos.egresos.cambiar.mockRejectedValue(
+      new ApiError(403, 'No tienes el permiso…', 'SIN_PERMISO_PUNTUAL'),
+    );
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-10');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'Rechazo');
+    });
+    await act(async () => {
+      (q('guardar-cambio-del-egreso') as HTMLButtonElement).click();
+    });
+    expect(toastMock.error).toHaveBeenCalledWith(MOTIVO_SIN_CAMBIO_DE_EGRESO);
   });
 
   it('un egreso sin pagar no deja cambiar la fecha, pero sí la nota', async () => {

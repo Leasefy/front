@@ -33,16 +33,17 @@ export interface LoQueSePuedeCambiar {
 const SI: Permiso = { puede: true, motivo: null };
 
 /**
- * `escritura` es el motivo de `usePuedeEscribir` (rol sin permiso, sesión sin
- * resolver): manda sobre todo lo demás, porque una pantalla negada no deja
- * hacer nada.
+ * `escritura` es el permiso puntual de corregir egresos
+ * (`usePuedeCambiarEgresos`, 22-09: por defecto sólo el administrador) o su
+ * motivo (sin el permiso, sesión sin resolver): manda sobre todo lo demás,
+ * porque una pantalla negada no deja hacer nada.
  */
 export function queSePuedeCambiar(
   egreso: Pick<Egreso, 'estado' | 'fechaDelEgreso'>,
   escritura: { puede: boolean; motivo: string | null },
 ): LoQueSePuedeCambiar {
   if (!escritura.puede) {
-    const no = { puede: false, motivo: escritura.motivo ?? 'No tienes permiso para mover la contabilidad.' };
+    const no = { puede: false, motivo: escritura.motivo ?? 'No tienes permiso para corregir egresos.' };
     return { fecha: no, referencia: no, nota: no };
   }
   if (egreso.estado === 'ANULADO') {

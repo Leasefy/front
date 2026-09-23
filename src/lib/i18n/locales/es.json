@@ -1814,7 +1814,7 @@
         "resetDescription": "Esto restablecera los permisos de todos los roles a sus valores por defecto.",
         "resetWarning": "Todos los cambios personalizados se perderan. Esta accion no se puede deshacer.",
         "adminNote": "Los administradores tienen todos los permisos por defecto y no se pueden modificar.",
-        "memberOverrideNote": "Guardar o restablecer los permisos de un rol restablece las personalizaciones individuales de los miembros de ese rol."
+        "memberOverrideNote": "Si una persona de este rol tiene permisos propios, los conserva: guardar sólo cambia lo que hereda del rol. «Restablecer» sí borra los permisos propios de todo el equipo."
       },
       "integrations": {
         "title": "Integraciones",

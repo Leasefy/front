@@ -60,6 +60,15 @@ export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
  * rechazada 40 minutos después —ya fuera del apartamento— no se puede volver
  * a tomar.
  */
+/**
+ * Cuánto puede medir la URL de la foto. 2048 y no 500 (23-09-2026): la foto
+ * del inventario viene del back como URL FIRMADA del bucket privado —≈550
+ * caracteres con su token— y cortarla a 500 le arrancaba el token (el back
+ * igual saca la ruta, pero la vista previa quedaba rota). Es el mismo tope del
+ * back (`ItemDeInventarioDto.photoUrl`).
+ */
+export const LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO = 2048;
+
 export function revisarFoto(archivo: File): string | null {
   if (!FOTO_TIPOS.includes(archivo.type)) return 'La foto tiene que ser JPG, PNG o WebP.';
   if (archivo.size > FOTO_MAX_BYTES) return 'La foto no puede pesar más de 5 MB.';
@@ -169,7 +178,9 @@ export function InventarioItemDialog({
         quantity: cantidad,
         condition,
         ...(notes.trim() ? { notes: notes.trim().slice(0, 500) } : {}),
-        ...(photoUrl.trim() ? { photoUrl: photoUrl.trim().slice(0, 500) } : {}),
+        ...(photoUrl.trim()
+          ? { photoUrl: photoUrl.trim().slice(0, LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO) }
+          : {}),
         ...(conEspacio && espacio.trim() ? { espacio: espacio.trim().slice(0, 80) } : {}),
       },
       foto,
@@ -336,7 +347,7 @@ export function InventarioItemDialog({
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
               placeholder={t('inmobiliaria.acta.itemDialog.photoUrlPlaceholder')}
-              maxLength={500}
+              maxLength={LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO}
               aria-label={t('inmobiliaria.acta.itemDialog.photoUrl')}
             />
           </div>

@@ -10352,9 +10352,30 @@
       "planNotFound": "No se encontró el plan seleccionado. Vuelve a la lista de planes.",
       "planLoadError": "Error al cargar el plan. Intenta de nuevo.",
       "processing": "Procesando...",
-      "securePayment": "Pago seguro procesado por Stripe",
+      "securePayment": "Pago seguro por PSE, procesado por Wompi",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
-      "paymentSuccess": "Pago exitoso! Plan {{name}} activado."
+      "paymentSuccess": "Pago exitoso! Plan {{name}} activado.",
+      "pseTitle": "Datos del pago por PSE",
+      "pseHint": "Te llevamos a tu banco para aprobar el pago. El plan se activa cuando el banco lo confirma.",
+      "bank": "Banco",
+      "bankPlaceholder": "Elige tu banco",
+      "banksError": "No pudimos cargar la lista de bancos. Recarga la página para intentarlo de nuevo.",
+      "personType": "Tipo de persona",
+      "personNatural": "Persona natural",
+      "personJuridica": "Persona jurídica",
+      "documentType": "Tipo de documento",
+      "documentTypes": {
+        "CC": "Cédula de ciudadanía",
+        "CE": "Cédula de extranjería",
+        "NIT": "NIT",
+        "PP": "Pasaporte"
+      },
+      "documentNumber": "Número de documento",
+      "fullName": "Nombre del titular de la cuenta",
+      "email": "Correo",
+      "completePayerData": "Completa los datos del pago: banco, documento (6 a 15 dígitos), nombre y correo.",
+      "bankLinkMissing": "Tu banco todavía no nos devolvió el enlace de pago. Inténtalo de nuevo en unos minutos.",
+      "paymentStartError": "No pudimos iniciar el pago. Inténtalo de nuevo."
     },
     "upgrade": {
       "unlockPotential": "Desbloquea todo el potencial",

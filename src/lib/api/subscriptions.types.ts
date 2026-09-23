@@ -80,25 +80,34 @@ export interface CreateSubscriptionDto {
 }
 
 // ============================================================================
-// PSE Subscribe DTO (POST /subscriptions/subscribe)
+// PSE real del plan (POST /subscriptions/pse/checkout — back
+// `PseSubscriptionCheckoutDto`). Reemplaza al `/pse-mock` (borrado el 23-09).
 // ============================================================================
 
 export type PSEDocumentType = 'CC' | 'CE' | 'NIT' | 'PP';
 export type SubscriptionCycle = 'MONTHLY' | 'ANNUAL';
 
-export interface PSEPaymentData {
-  documentType: PSEDocumentType;
-  documentNumber: string;
-  bankCode: string;
-  holderName: string;
-  phoneNumber?: string;
+export interface SubscriptionPseCheckoutDto {
+  planId: string; // UUID del plan en el back
+  cycle: SubscriptionCycle;
+  couponCode?: string;
+  userType: 'NATURAL' | 'JURIDICA';
+  legalIdType: PSEDocumentType;
+  /** 6 a 15 dígitos (el back lo valida con la misma regla). */
+  legalId: string;
+  /** `financial_institution_code` del catálogo de Wompi. */
+  financialInstitutionCode: string;
+  email: string;
+  fullName: string;
 }
 
-export interface SubscribeWithPSEDto {
-  planId: string; // backend UUID
-  cycle: SubscriptionCycle;
-  psePaymentData?: PSEPaymentData; // required for paid plans, omit for Starter/free
-  couponCode?: string;
+export interface SubscriptionPseCheckoutResponse {
+  subscriptionId: string;
+  subscriptionPaymentId: string;
+  wompiTransactionId: string;
+  /** URL del banco. Puede venir null si Wompi aún no la generó. */
+  asyncPaymentUrl: string | null;
+  status: 'PENDING_PAYMENT';
 }
 
 // ============================================================================

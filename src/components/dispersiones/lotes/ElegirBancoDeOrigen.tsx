@@ -31,10 +31,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Banner } from '@leasefy/cadence';
 import { ArrowSquareOut } from '@phosphor-icons/react';
-import Link from 'next/link';
 
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
   lotesDeDispersionApi,
@@ -44,8 +41,8 @@ import {
   type TipoDeCuentaDeOrigen,
 } from '@/lib/api/lotes-de-dispersion.service';
 import { cn } from '@/lib/utils';
-import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
 
+import { CamposDeLaCuentaDeOrigen, cuentaEscritaValida } from './CamposDeLaCuentaDeOrigen';
 import { entregaDe, ETIQUETA_DE_LA_ENTREGA, fuenteCorta, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
 
 /** Lo que la pantalla de armar necesita saber para habilitar el botón. */
@@ -56,16 +53,8 @@ export interface EleccionDelBanco {
   listo: boolean;
 }
 
-const TIPOS: Array<{ id: TipoDeCuentaDeOrigen; nombre: string }> = [
-  { id: 'AHORROS', nombre: 'Ahorros' },
-  { id: 'CORRIENTE', nombre: 'Corriente' },
-];
-
-/** Lo que se escribe a mano: dígitos, con guiones o espacios si los trae. */
-export function cuentaEscritaValida(texto: string): boolean {
-  const limpio = texto.trim();
-  return /^[\d\s.-]+$/.test(limpio) && /\d/.test(limpio);
-}
+/** Se mudó a `CamposDeLaCuentaDeOrigen` (la comparte «Marcar como girada»). */
+export { cuentaEscritaValida };
 
 export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBanco) => void }) {
   const [datos, setDatos] = useState<BancosParaGirar | null>(null);
@@ -291,74 +280,14 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
 
       {elegido?.formato && (
         <div className="space-y-3 rounded-md border border-border p-3" data-testid="cuenta-de-origen">
-          {cuentasDelBanco.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-caption text-fg-muted">Tus cuentas de {elegido.nombre}:</span>
-              {cuentasDelBanco.map((c) => (
-                <button
-                  key={c.medioDePagoId}
-                  type="button"
-                  onClick={() => {
-                    setNumero(c.numeroDeCuenta);
-                    if (c.tipoDeCuenta) setTipo(c.tipoDeCuenta);
-                  }}
-                  className="rounded-full border border-border px-2.5 py-1 text-caption text-fg hover:border-border-strong"
-                >
-                  {c.nombre} · <span className="font-mono">{c.numeroDeCuenta}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <span className="block text-caption text-fg-muted" id="tipo-de-cuenta-origen">
-                Tipo de cuenta
-              </span>
-              <div role="radiogroup" aria-labelledby="tipo-de-cuenta-origen" className="flex gap-1">
-                {TIPOS.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={tipo === t.id}
-                    onClick={() => setTipo(t.id)}
-                    className={cn(
-                      'rounded-full border px-3 py-1.5 text-sm',
-                      tipo === t.id ? 'border-primary bg-primary-soft text-fg' : 'border-border text-fg-muted',
-                    )}
-                  >
-                    {t.nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="numero-de-cuenta-origen" className="text-caption text-fg-muted">
-                Número de la cuenta de {elegido.nombre} desde la que sale la plata
-              </Label>
-              <Input
-                id="numero-de-cuenta-origen"
-                inputMode="numeric"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-                className="h-10 w-56 font-mono"
-                aria-invalid={numero !== '' && !numeroValido}
-              />
-            </div>
-          </div>
-          {numero !== '' && !numeroValido && (
-            <p className="text-caption text-danger">El número de cuenta sólo lleva dígitos.</p>
-          )}
-          {cuentasDelBanco.length === 0 && (
-            <p className="text-caption text-fg-muted">
-              ¿La tienes registrada? Guárdala en{' '}
-              <Link href={hrefDeSeccion('medios-de-pago')} className="text-primary underline-offset-4 hover:underline">
-                Medios de pago
-              </Link>{' '}
-              y la próxima vez aparece aquí.
-            </p>
-          )}
+          <CamposDeLaCuentaDeOrigen
+            nombreDelBanco={elegido.nombre}
+            cuentas={cuentasDelBanco}
+            tipo={tipo}
+            onTipo={setTipo}
+            numero={numero}
+            onNumero={setNumero}
+          />
           {elegido.fuente && entregaDe(elegido) === 'ARCHIVO_OFICIAL' && (
             <p className="text-caption text-fg-muted" data-testid="fuente-del-formato">
               Archivo «{elegido.nombreDelFormato}», armado campo por campo con{' '}

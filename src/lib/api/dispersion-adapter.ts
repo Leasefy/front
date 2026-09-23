@@ -36,6 +36,7 @@ import type {
 import { baseDeLaDispersion } from '@/lib/propietarios/base-del-canon';
 import type { DeduccionesDeLaLiquidacion } from '@/lib/types/deducciones';
 import type { TitularDelGiro } from '@/lib/propietarios/titular-de-la-cuenta';
+import type { OrigenDelGiroEnPantalla } from './lotes-de-dispersion.types';
 
 /** Lo que manda el back, tal cual. */
 export interface DispersionDelBack {
@@ -59,6 +60,11 @@ export interface DispersionDelBack {
   titularDeLaCuenta?: TitularDelGiro | null;
   /** 🔴 22-09: el reparto entre varias cuentas, en pesos. `null` = una sola. */
   repartoDeLaCuenta?: ParteDelReparto[] | null;
+  /**
+   * 23-09: desde qué cuenta de la inmobiliaria salió el giro (el suelto o el
+   * del lote que lo pagó), tapada. `null` = no quedó; ausente = back anterior.
+   */
+  origenDelGiro?: OrigenDelGiroEnPantalla | null;
   month: string;
   /**
    * Con qué base salió el canon. La manda `GET /inmobiliaria/dispersiones` (y
@@ -208,6 +214,7 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     // Tal cual: ausente = back anterior; la pantalla dice «—».
     ...(d.titularDeLaCuenta !== undefined ? { titularDeLaCuenta: d.titularDeLaCuenta } : {}),
     ...(d.repartoDeLaCuenta ? { repartoDeLaCuenta: d.repartoDeLaCuenta } : {}),
+    ...(d.origenDelGiro ? { origenDelGiro: d.origenDelGiro } : {}),
     month: d.month,
     items: (d.items ?? []).map((i) => ({
       cobroId: i.cobroId,

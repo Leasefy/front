@@ -68,6 +68,7 @@ import type {
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
+import type { OpcionesDelOrigenDelGiro, OrigenPedido } from './lotes-de-dispersion.types';
 import {
   adaptarDispersion,
   estadoParaElBack,
@@ -1506,13 +1507,41 @@ export const dispersionesApi = {
    * exactamente lo que pasaba antes mientras la pantalla festejaba «Transferencia
    * enviada».
    */
-  async process(id: string, transferReference: string): Promise<Dispersion> {
+  async process(
+    id: string,
+    transferReference: string,
+    /**
+     * Desde qué cuenta de la inmobiliaria salió (Nico, 23-09). Con la
+     * migración `origenes_de_giro` el back lo exige (400
+     * `FALTA_EL_ORIGEN_DEL_GIRO`); sin ella no se manda. El cuerpo se arma
+     * clave por clave: `forbidNonWhitelisted`.
+     */
+    origen?: OrigenPedido | null,
+  ): Promise<Dispersion> {
     return adaptarDispersion(
       await apiClient.put<DispersionDelBack>(
         `${BASE}/dispersiones/${id}/process`,
-        { transferReference },
+        origen
+          ? {
+              transferReference,
+              origen: {
+                banco: origen.banco,
+                tipoDeCuenta: origen.tipoDeCuenta,
+                numeroDeCuenta: origen.numeroDeCuenta,
+              },
+            }
+          : { transferReference },
       ),
     );
+  },
+
+  /**
+   * Lo que «Marcar como girada» necesita para preguntar el banco de origen:
+   * los bancos, las cuentas de Medios de pago y la última cuenta usada por la
+   * agencia (de un lote o de un giro suelto), que es la que se propone.
+   */
+  async origenDelGiro(): Promise<OpcionesDelOrigenDelGiro> {
+    return apiClient.get<OpcionesDelOrigenDelGiro>(`${BASE}/dispersiones/origen-del-giro`);
   },
 
   /**

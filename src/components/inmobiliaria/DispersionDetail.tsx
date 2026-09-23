@@ -44,6 +44,11 @@ import Link from 'next/link';
 import { rutaDeLotesDelMes } from '@/lib/api/dispersiones-errores';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 import { ResumenDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
+import {
+  ElegirCuentaDeOrigenDelGiro,
+  type EleccionDelOrigenDelGiro,
+} from '@/components/dispersiones/ElegirCuentaDeOrigenDelGiro';
+import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -58,9 +63,14 @@ interface DispersionDetailProps {
    * Segundo par de ojos: anotar la referencia del giro YA hecho. El sistema no
    * transfiere, así que la referencia es obligatoria y la escribe una persona.
    */
-  onProcess?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
+  onProcess?: (
+    dispersion: Dispersion,
+    transferReference: string,
+    /** Desde qué cuenta de la inmobiliaria salió (23-09). `null` = sin la migración. */
+    origen?: OrigenPedido | null,
+  ) => Promise<void> | void;
   onViewExtracto?: (dispersion: Dispersion) => void;
-  onRetry?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
+  onRetry?: (dispersion: Dispersion, transferReference: string, origen?: OrigenPedido | null) => Promise<void> | void;
   /**
    * La inmobiliaria aprueba y gira por lote, con código. El back responde 409
    * `APROBAR_POR_LOTE` a aprobar Y a marcar girada una suelta, así que esos
@@ -259,6 +269,15 @@ export function DispersionDetail({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
   const [errorDeReferencia, setErrorDeReferencia] = React.useState<string | null>(null);
+  /**
+   * Desde qué cuenta salió el giro (Nico, 23-09). Hasta que el selector
+   * diga `listo` —cargó, y hay banco y número válidos, o el back no tiene la
+   * migración— «Marcar como girada» no se deja tocar.
+   */
+  const [origenDelGiro, setOrigenDelGiro] = React.useState<EleccionDelOrigenDelGiro>({
+    origen: null,
+    listo: false,
+  });
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
   const { t, formatDate, formatCurrency } = useI18n();
   const { config } = useInmobiliariaConfig();
@@ -299,7 +318,7 @@ export function DispersionDetail({
     setErrorDeReferencia(null);
     setIsProcessing(true);
     try {
-      await onProcess(dispersion, ref);
+      await onProcess(dispersion, ref, origenDelGiro.origen);
       setReferencia('');
     } finally {
       setIsProcessing(false);
@@ -317,7 +336,7 @@ export function DispersionDetail({
     setErrorDeReferencia(null);
     setIsProcessing(true);
     try {
-      await onRetry(dispersion, ref);
+      await onRetry(dispersion, ref, origenDelGiro.origen);
       setReferencia('');
     } finally {
       setIsProcessing(false);
@@ -396,6 +415,11 @@ export function DispersionDetail({
     </p>
   ) : conReferencia || esperaReferencia ? (
       <div className="space-y-3">
+        {/* Desde qué cuenta salió: el «Desde» del correo «Te giramos». Quien
+            aprobó no marca girada, así que a esa persona no se le pregunta. */}
+        {conReferencia && !esQuienAprobo && (
+          <ElegirCuentaDeOrigenDelGiro key={dispersion.id} onCambio={setOrigenDelGiro} />
+        )}
         {conReferencia && (
           <div className="space-y-1.5">
             <label
@@ -843,6 +867,19 @@ export function DispersionDetail({
                 <p className="text-sm font-mono font-semibold text-success mt-0.5">
                   {dispersion.transferReference}
                 </p>
+                {dispersion.origenDelGiro && (
+                  <p className="text-sm text-success mt-1" data-testid="dispersion-desde">
+                    {t('inmobiliaria.dispersiones.origenDelGiro.desde', {
+                      banco: dispersion.origenDelGiro.nombreDelBanco,
+                      tipo: t(
+                        `inmobiliaria.dispersiones.cuentaDeOrigen.tipos.${
+                          dispersion.origenDelGiro.tipoDeCuenta === 'CORRIENTE' ? 'CORRIENTE' : 'AHORROS'
+                        }`,
+                      ),
+                    })}{' '}
+                    <span className="font-mono">{dispersion.origenDelGiro.cuenta}</span>
+                  </p>
+                )}
               </div>
               <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
             </div>
@@ -951,7 +988,7 @@ export function DispersionDetail({
             onClick={handleProcess}
             // Quien aprobó no la marca girada: se deshabilita ANTES, con la
             // explicación encima, y no después de un 409.
-            disabled={isProcessing || esQuienAprobo}
+            disabled={isProcessing || esQuienAprobo || !origenDelGiro.listo}
             data-testid="dispersion-marcar-girada"
           >
             {isProcessing ? (
@@ -973,7 +1010,7 @@ export function DispersionDetail({
           <Button
             className="bg-warning hover:bg-warning text-white"
             onClick={handleRetry}
-            disabled={isProcessing || esQuienAprobo}
+            disabled={isProcessing || esQuienAprobo || !origenDelGiro.listo}
           >
             {isProcessing ? (
               <span className="flex items-center gap-2">

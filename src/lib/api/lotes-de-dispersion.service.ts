@@ -213,6 +213,8 @@ export type {
   EntregaDelFormato,
   FuenteDelFormato,
   OrigenDelLote,
+  OrigenDelGiroEnPantalla,
+  OpcionesDelOrigenDelGiro,
   OrigenPedido,
   TipoDeCuentaDeOrigen,
   CandidatosDeDispersion,

@@ -2567,6 +2567,27 @@
         "failedAbbr": "{{count}} fail.",
         "emptyTitle": "No disbursements to show",
         "emptyDescription": "Generate month's disbursements to send payments to owners"
+      },
+      "cuentaDeOrigen": {
+        "tusCuentas": "Your {{banco}} accounts:",
+        "tipo": "Account type",
+        "tipos": {
+          "AHORROS": "Savings",
+          "CORRIENTE": "Checking"
+        },
+        "numero": "Number of the {{banco}} account the money leaves from",
+        "soloDigitos": "The account number only has digits.",
+        "laTienesRegistrada": "Is it registered? Save it in",
+        "mediosDePago": "Payment methods",
+        "yLaProximaVez": "and it will show up here next time."
+      },
+      "origenDelGiro": {
+        "pregunta": "Which agency account did the transfer leave from?",
+        "elegirBanco": "Choose the bank",
+        "ayuda": "We tell the owner in the transfer email: it is what they look for in their bank statement to recognize the money. We suggest the last account you transferred from.",
+        "cargando": "Loading banks…",
+        "errorAlCargar": "The bank list could not be loaded.",
+        "desde": "From {{banco}} · {{tipo}}"
       }
     },
     "operaciones": {

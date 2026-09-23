@@ -2601,6 +2601,27 @@
         "failedAbbr": "{{count}} fall.",
         "emptyTitle": "No hay dispersiones para mostrar",
         "emptyDescription": "Genera las dispersiones del mes para enviar pagos a los propietarios"
+      },
+      "cuentaDeOrigen": {
+        "tusCuentas": "Tus cuentas de {{banco}}:",
+        "tipo": "Tipo de cuenta",
+        "tipos": {
+          "AHORROS": "Ahorros",
+          "CORRIENTE": "Corriente"
+        },
+        "numero": "Número de la cuenta de {{banco}} desde la que sale la plata",
+        "soloDigitos": "El número de cuenta sólo lleva dígitos.",
+        "laTienesRegistrada": "¿La tienes registrada? Guárdala en",
+        "mediosDePago": "Medios de pago",
+        "yLaProximaVez": "y la próxima vez aparece aquí."
+      },
+      "origenDelGiro": {
+        "pregunta": "¿Desde qué cuenta de la inmobiliaria salió el giro?",
+        "elegirBanco": "Elige el banco",
+        "ayuda": "Se lo decimos al propietario en el correo del giro: es lo que busca en el extracto de su banco para reconocer la plata. Te proponemos la última cuenta desde la que giraste.",
+        "cargando": "Cargando los bancos…",
+        "errorAlCargar": "No se pudo cargar la lista de bancos.",
+        "desde": "Desde {{banco}} · {{tipo}}"
       }
     },
     "operaciones": {

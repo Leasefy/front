@@ -73,6 +73,20 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useInmobiliariaConfig: () => ({ config: undefined }),
 }));
 
+// «Marcar como girada» pregunta el banco de origen (23-09): el selector lee
+// `GET /dispersiones/origen-del-giro`. Por defecto, una base SIN la migración.
+const origenDelGiroMock = vi.fn();
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  dispersionesApi: { origenDelGiro: () => origenDelGiroMock() as unknown },
+}));
+const SIN_MIGRACION = {
+  disponible: false,
+  motivo: 'Preguntar desde qué banco salió el giro necesita la migración 20260923010000_origen_del_giro.',
+  bancos: [],
+  cuentas: [],
+  ultima: null,
+};
+
 import { DispersionDetail } from './DispersionDetail';
 
 const BASE_PROPIETARIO: Propietario = {
@@ -119,6 +133,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  origenDelGiroMock.mockResolvedValue(SIN_MIGRACION);
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -235,8 +250,9 @@ describe('<DispersionDetail> D4 — quien aprobó no marca girada', () => {
     expect(onProcess).not.toHaveBeenCalled();
   });
 
-  it('si la aprobó otra persona: se puede anotar la referencia', () => {
+  it('si la aprobó otra persona: se puede anotar la referencia', async () => {
     renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    await act(async () => {});
     expect((q('dispersion-referencia') as HTMLInputElement).disabled).toBe(false);
     expect((q('dispersion-marcar-girada') as HTMLButtonElement).disabled).toBe(false);
     expect(q('dispersion-aprobador-no-gira')).toBeNull();
@@ -415,5 +431,109 @@ describe('<DispersionDetail> el IVA de la comisión', () => {
       {},
     );
     expect(q('dispersion-aviso-iva')?.textContent).toContain('$19.000');
+  });
+});
+
+/**
+ * «Marcar como girada» pregunta desde qué cuenta salió la plata (Nico, 23-09:
+ * «que "Marcar como girada" pregunte el banco de origen»). Es el «Desde» del
+ * correo «Te giramos». Lo que se mira es lo que el cajón le PASA a quien
+ * llama —el `origen` que termina en el cuerpo del `PUT .../process`—.
+ */
+describe('<DispersionDetail> «Marcar como girada» pregunta el banco de origen', () => {
+  const aprobada: Dispersion = { ...BASE_DISPERSION, status: 'processing', approvedBy: 'u-1' };
+  const CON_TABLA = {
+    disponible: true,
+    motivo: null,
+    bancos: [
+      { id: 'BANCOLOMBIA', nombre: 'Bancolombia' },
+      { id: 'BANCO_BOGOTA', nombre: 'Banco de Bogotá' },
+    ],
+    cuentas: [],
+    ultima: null,
+  };
+
+  function escribir(el: HTMLInputElement | HTMLSelectElement, valor: string) {
+    const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+  }
+
+  async function abrir(onProcess: () => void) {
+    renderConProps(aprobada, { onProcess, usuarioActualId: 'u-2' });
+    await act(async () => {});
+    act(() => escribir(q('dispersion-referencia') as HTMLInputElement, 'TRF-9'));
+  }
+
+  it('propone la última cuenta de la agencia y la MANDA con la referencia', async () => {
+    origenDelGiroMock.mockResolvedValue({
+      ...CON_TABLA,
+      ultima: { banco: 'BANCOLOMBIA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '12345674321' },
+    });
+    const onProcess = vi.fn();
+    await abrir(onProcess);
+
+    expect((q('origen-del-giro-banco') as HTMLSelectElement).value).toBe('BANCOLOMBIA');
+    await act(async () => (q('dispersion-marcar-girada') as HTMLButtonElement).click());
+
+    expect(onProcess).toHaveBeenCalledWith(aprobada, 'TRF-9', {
+      banco: 'BANCOLOMBIA',
+      tipoDeCuenta: 'AHORROS',
+      numeroDeCuenta: '12345674321',
+    });
+  });
+
+  it('sin cuenta propuesta, «Marcar como girada» no se deja tocar hasta elegir banco y número', async () => {
+    origenDelGiroMock.mockResolvedValue(CON_TABLA);
+    const onProcess = vi.fn();
+    await abrir(onProcess);
+
+    const boton = () => q('dispersion-marcar-girada') as HTMLButtonElement;
+    expect(boton().disabled).toBe(true);
+
+    act(() => escribir(q('origen-del-giro-banco') as HTMLSelectElement, 'BANCO_BOGOTA'));
+    expect(boton().disabled).toBe(true);
+    act(() =>
+      escribir(container.querySelector('#numero-de-cuenta-origen-del-giro') as HTMLInputElement, '0001-2345-7788'),
+    );
+    expect(boton().disabled).toBe(false);
+
+    await act(async () => boton().click());
+    expect(onProcess).toHaveBeenCalledWith(aprobada, 'TRF-9', {
+      banco: 'BANCO_BOGOTA',
+      tipoDeCuenta: 'AHORROS',
+      numeroDeCuenta: '0001-2345-7788',
+    });
+  });
+
+  it('sin la migración: no pregunta, dice por qué, y marca girada sin origen como antes', async () => {
+    const onProcess = vi.fn();
+    await abrir(onProcess);
+
+    expect(q('origen-del-giro-banco')).toBeNull();
+    expect(q('origen-del-giro-sin-migracion')?.textContent).toContain('20260923010000_origen_del_giro');
+    await act(async () => (q('dispersion-marcar-girada') as HTMLButtonElement).click());
+    expect(onProcess).toHaveBeenCalledWith(aprobada, 'TRF-9', null);
+  });
+
+  it('girada: el cajón dice «Desde» con la cuenta tapada', () => {
+    renderConProps(
+      {
+        ...BASE_DISPERSION,
+        status: 'completed',
+        transferReference: 'TRF-9',
+        origenDelGiro: {
+          banco: 'BANCOLOMBIA',
+          nombreDelBanco: 'Bancolombia',
+          tipoDeCuenta: 'AHORROS',
+          cuenta: '•••• 4321',
+          de: 'GIRO',
+        },
+      },
+      {},
+    );
+    const desde = q('dispersion-desde');
+    expect(desde?.textContent).toContain('inmobiliaria.dispersiones.origenDelGiro.desde');
+    expect(desde?.textContent).toContain('•••• 4321');
   });
 });

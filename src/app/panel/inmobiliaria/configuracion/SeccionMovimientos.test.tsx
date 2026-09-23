@@ -124,6 +124,21 @@ describe('<SeccionMovimientos>', () => {
     expect(listar.mock.calls.length).toBe(llamadas)
   })
 
+  it('dice cuánto se guarda con el número que manda el back (Nico: 5 años)', async () => {
+    listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      pagina: 1,
+      porPagina: 50,
+      resumen: { negados: 1, errores: 0, personas: 1 },
+      retencion: { anos: 5 },
+      filas: [NEGADO],
+    })
+    await montar()
+    expect(q('retencion-de-la-bitacora')?.textContent).toMatch(/Se guarda 5 años/)
+  })
+
   it('sin la migración lo dice: vacía no es «nadie hizo nada»', async () => {
     listar.mockResolvedValue({
       disponible: false,

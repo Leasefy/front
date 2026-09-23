@@ -2912,11 +2912,13 @@ export function getActionLabel(action: PermissionAction): string {
 
 // Default permissions by role
 /**
- * Los roles que la matriz editable de Permisos muestra hoy. Los otros tres
- * (coordinador, auxiliar de cartera, abogado externo) tienen permisos fijos en
- * el back y todavía no salen en esa matriz; se asignan desde el equipo.
+ * Los roles que la matriz de «Permisos por rol» muestra: los SIETE.
+ *
+ * 🔴 22-09 noche: eran cuatro. Coordinador, auxiliar de cartera y abogado
+ * externo no salían, y como el cuerpo del PUT mandaba sólo tres roles, el back
+ * reescribía el objeto entero y devolvía a fábrica lo que no venía.
  */
-export type RolDeLaMatriz = Extract<AgencyRole, 'admin' | 'agente' | 'contador' | 'viewer'>;
+export type RolDeLaMatriz = AgencyRole;
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = {
   admin: {
@@ -2973,6 +2975,45 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'portafolio', actions: ['view'] },
       { module: 'cobros', actions: ['view'] },
       { module: 'reportes', actions: ['view'] },
+    ],
+  },
+  // Los tres roles de O-05 (18-09-2026). Espejo de `AGENCY_ROLE_DEFAULTS` del
+  // back: la pantalla SIEMPRE pinta lo que devuelve el back; esto sólo es el
+  // punto de partida mientras carga.
+  coordinador: {
+    role: 'coordinador',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view'] },
+      { module: 'pipeline', actions: ['view', 'create', 'edit'] },
+      { module: 'agentes', actions: ['view', 'create', 'edit'] },
+      { module: 'operaciones', actions: ['view', 'create', 'edit'] },
+      { module: 'reportes', actions: ['view'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'analytics', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+      { module: 'subscription', actions: ['view'] },
+      { module: 'avaluos', actions: ['view'] },
+    ],
+  },
+  auxiliar_cartera: {
+    role: 'auxiliar_cartera',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'cobros', actions: ['view', 'create'] },
+      { module: 'reportes', actions: ['view'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+    ],
+  },
+  abogado_externo: {
+    role: 'abogado_externo',
+    permissions: [
+      { module: 'cobros', actions: ['view', 'edit'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
     ],
   },
 };
@@ -3253,7 +3294,11 @@ export function updateRolePermission(
   action: AccionDePermiso,
   enabled: boolean
 ): RolePermissions {
-  const newPermissions = { ...permissions };
+  // 🔴 22-09 noche: copia TAMBIÉN el arreglo. Antes sólo copiaba el objeto y
+  // asignaba sobre `permissions[moduleIndex]`, que es el MISMO arreglo del
+  // estado anterior: marcar una casilla mutaba la matriz cargada, y «qué roles
+  // cambiaron» comparaba una matriz contra sí misma.
+  const newPermissions = { ...permissions, permissions: [...permissions.permissions] };
   const moduleIndex = newPermissions.permissions.findIndex((p) => p.module === module);
 
   if (moduleIndex === -1) {

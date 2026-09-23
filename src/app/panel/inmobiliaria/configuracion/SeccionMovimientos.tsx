@@ -184,6 +184,14 @@ export function SeccionMovimientos() {
       {datos.disponible ? (
         <p className="text-sm text-fg" data-testid="frase-del-resumen">
           {fraseDelResumen(datos, cuando)}
+          {/* Nico, 22-09 noche: «se guarda 5 años». El número lo manda el back. */}
+          {datos.retencion ? (
+            <span className="text-fg-muted" data-testid="retencion-de-la-bitacora">
+              {' '}
+              Se guarda <span className="font-mono">{datos.retencion.anos}</span>{' '}
+              {datos.retencion.anos === 1 ? 'año' : 'años'}; lo más viejo se borra solo.
+            </span>
+          ) : null}
         </p>
       ) : (
         <p

@@ -118,9 +118,17 @@ export interface MemberPermissionsResponse {
   role: string;
   isAdmin: boolean;
   permissions: Record<string, string[]> | null;
-  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
+  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]> | null;
   usingDefaults: boolean;
   note?: string;
+  /**
+   * 🔴 22-09 noche · Lo que la persona HEREDA de su rol en esta inmobiliaria
+   * (módulos del panel, completos). Con `effectivePermissions` dice qué se le
+   * sumó y qué se le quitó. Sólo lo trae el endpoint del miembro (no el ADMIN).
+   */
+  delRol?: Record<string, string[]>;
+  /** Si tiene permisos propios, distintos de los de su rol. */
+  tienePropios?: boolean;
   /**
    * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
    *
@@ -2384,14 +2392,29 @@ export interface RoleMatrices {
     AGENTE: PermMap;
     CONTADOR: PermMap;
     VIEWER: PermMap;
+    /**
+     * Los tres de O-05. Opcionales en el tipo para que un back anterior al
+     * 22-09 noche, que no los manda, no rompa la pantalla.
+     */
+    COORDINADOR?: PermMap;
+    AUXILIAR_CARTERA?: PermMap;
+    ABOGADO_EXTERNO?: PermMap;
   };
 }
 
-/** Body for the PUT — only the editable roles; ADMIN is never sent. */
+/**
+ * Body for the PUT — ADMIN is never sent.
+ *
+ * 🔴 Sólo van los roles que la persona TOCÓ (`rolesQueCambiaron`): el back
+ * deja como están los que no vienen.
+ */
 export interface UpdateRolePermissionsBody {
   AGENTE?: PermMap;
   CONTADOR?: PermMap;
   VIEWER?: PermMap;
+  COORDINADOR?: PermMap;
+  AUXILIAR_CARTERA?: PermMap;
+  ABOGADO_EXTERNO?: PermMap;
 }
 
 export const rolePermissionsApi = {

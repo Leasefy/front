@@ -1404,7 +1404,7 @@
         "bitacora": "Money log",
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
         "movimientos": "Activity log",
-        "movimientosDesc": "Who did what across the panel, with their role and the outcome. It cannot be edited or deleted.",
+        "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },
@@ -1780,7 +1780,7 @@
         "resetDescription": "This will reset permissions for all roles to their default values.",
         "resetWarning": "All custom changes will be lost. This action cannot be undone.",
         "adminNote": "Admins have all permissions by default and cannot be modified.",
-        "memberOverrideNote": "Saving or resetting a role's permissions will reset the individual customizations of that role's members."
+        "memberOverrideNote": "If someone in this role has their own permissions, they keep them: saving only changes what the role gives. «Reset» does erase everyone's own permissions."
       },
       "integrations": {
         "title": "Integrations",

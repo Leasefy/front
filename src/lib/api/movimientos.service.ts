@@ -49,6 +49,12 @@ export interface PaginaDeMovimientos {
   pagina: number;
   porPagina: number;
   resumen: { negados: number; errores: number; personas: number };
+  /**
+   * Cuánto se guarda (Nico, 22-09 noche: 5 años). El número vive en el back
+   * (`ANOS_DE_BITACORA`) y la pantalla lo lee de acá; opcional para no romper
+   * con un back anterior, que no lo manda.
+   */
+  retencion?: { anos: number };
   filas: Movimiento[];
 }
 

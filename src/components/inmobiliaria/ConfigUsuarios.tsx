@@ -16,6 +16,7 @@ import {
   Phone,
   Clock,
   Users,
+  ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -85,6 +86,12 @@ interface ConfigUsuariosProps {
   onDelete?: (userId: string) => void;
   /** Abrir la ficha de la persona. Sin esto, la fila no es clickeable. */
   onVerFicha?: (user: AgencyUser) => void;
+  /**
+   * 🔴 22-09 noche · «Permisos de esta persona». Siempre se ofrece; si quien
+   * mira no puede administrar el equipo, sale APAGADO con `permisosApagadoPorque`.
+   */
+  onPermisos?: (user: AgencyUser) => void;
+  permisosApagadoPorque?: string | null;
   /** `?invitar=1`: abre el formulario apenas se puede. */
   abrirInvitacion?: boolean;
   isLoading?: boolean;
@@ -249,6 +256,8 @@ export function ConfigUsuarios({
   onResendInvite,
   onDelete,
   onVerFicha,
+  onPermisos,
+  permisosApagadoPorque = null,
   abrirInvitacion = false,
   isLoading = false,
 }: ConfigUsuariosProps) {
@@ -590,7 +599,7 @@ export function ConfigUsuarios({
                             aria-label="Acciones"
                           />
                         </DropdownListTrigger>
-                        <DropdownListContent align="end" className="w-48">
+                        <DropdownListContent align="end" className="w-64">
                           {/* Ver ficha */}
                           {onVerFicha && (
                             <DropdownListItem className="gap-3" onClick={() => onVerFicha(user)}>
@@ -614,6 +623,30 @@ export function ConfigUsuarios({
                               <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
                             </DropdownListItem>
                           )}
+
+                          {/* Permisos de esta persona: apagado con el porqué, nunca un 403. */}
+                          {onPermisos && (() => {
+                            const porque =
+                              user.role === 'admin'
+                                ? 'Un administrador tiene todos los permisos.'
+                                : permisosApagadoPorque;
+                            return (
+                              <DropdownListItem
+                                className="gap-3"
+                                disabled={!!porque}
+                                onClick={() => !porque && onPermisos(user)}
+                                data-testid={`permisos-de-${user.id}`}
+                              >
+                                <ShieldCheck className="w-4 h-4 shrink-0" />
+                                <span className="flex flex-col">
+                                  <span className="text-sm">Permisos de esta persona</span>
+                                  {porque ? (
+                                    <span className="text-caption text-fg-muted">{porque}</span>
+                                  ) : null}
+                                </span>
+                              </DropdownListItem>
+                            );
+                          })()}
 
                           {/* Resend Invite (if invited) */}
                           {user.status === 'invited' && onResendInvite && (

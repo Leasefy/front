@@ -5020,7 +5020,8 @@
           "NIT": "NIT",
           "PASSPORT": "Pasaporte",
           "PPT": "PPT"
-        }
+        },
+        "emailSoloAdministrador": "Sólo un administrador cambia el correo de un propietario: es por donde confirma los cambios de su cuenta bancaria y con el que entra a su portal."
       },
       "stats": {
         "properties": "Propiedades",

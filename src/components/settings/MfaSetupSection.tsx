@@ -94,7 +94,16 @@ interface EnrollData {
   secret: string;
 }
 
-export function MfaSetupSection() {
+export function MfaSetupSection({
+  onActivado,
+}: {
+  /**
+   * Quedó inscrito y verificado. 🔴 Ojo: la inscripción va por HTTP, fuera
+   * del SDK, así que la sesión del SDK sigue en `aal1`; quien necesite `aal2`
+   * (el panel de administración, 23-09) pide enseguida un código con el SDK.
+   */
+  onActivado?: (factorId: string) => void;
+} = {}) {
   const [state, setState] = useState<MfaState>('idle');
   const [enrollData, setEnrollData] = useState<EnrollData | null>(null);
   const [code, setCode] = useState('');
@@ -230,6 +239,7 @@ export function MfaSetupSection() {
       setEnrollData(null);
       setCode('');
       toast.success('Autenticación de dos factores activada');
+      onActivado?.(currentEnroll.factorId);
     } catch (err) {
       const msg = (err as Error).message || '';
       if (msg.includes('invalid') || msg.includes('expired')) {

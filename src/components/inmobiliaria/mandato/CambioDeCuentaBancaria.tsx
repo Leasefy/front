@@ -477,14 +477,38 @@ export function CambioDeCuentaBancaria({
 
           {ultimo.estado === 'CONFIRMADO' ? (
             isAdmin ? (
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" hideArrow onClick={() => setAprobando(ultimo)} data-testid="aprobar-cambio-de-cuenta">
-                  <CheckCircle className="w-4 h-4 mr-1" aria-hidden="true" />
-                  Aprobar el giro a la cuenta nueva
-                </Button>
-                <Button variant="ghost" size="sm" hideArrow onClick={() => setCerrando(ultimo)}>
-                  Rechazar
-                </Button>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {/* 🔴 23-09: quien pidió el cambio no lo aprueba si hay otro
+                      administrador. El back decide y dice por qué; acá el botón
+                      se apaga con ese mismo porqué, nunca un cable muerto. */}
+                  <Button
+                    size="sm"
+                    hideArrow
+                    onClick={() => setAprobando(ultimo)}
+                    disabled={ultimo.aprobacion?.puede === false}
+                    title={ultimo.aprobacion?.puede === false ? (ultimo.aprobacion.motivo ?? undefined) : undefined}
+                    aria-describedby={ultimo.aprobacion?.puede === false ? 'por-que-no-aprueba' : undefined}
+                    data-testid="aprobar-cambio-de-cuenta"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" aria-hidden="true" />
+                    Aprobar el giro a la cuenta nueva
+                  </Button>
+                  <Button variant="ghost" size="sm" hideArrow onClick={() => setCerrando(ultimo)}>
+                    Rechazar
+                  </Button>
+                </div>
+                {ultimo.aprobacion?.puede === false && ultimo.aprobacion.motivo ? (
+                  <p id="por-que-no-aprueba" className="text-sm text-muted-foreground" data-testid="por-que-no-aprueba">
+                    {ultimo.aprobacion.motivo}
+                  </p>
+                ) : null}
+                {ultimo.aprobacion?.puede && ultimo.aprobacion.mismaPersona ? (
+                  <p className="text-sm text-muted-foreground" data-testid="aprueba-quien-lo-pidio">
+                    Eres el único administrador activo: puedes aprobar el cambio que tú mismo pediste, pero queda
+                    marcado en la bitácora. El propietario ya lo confirmó por su cuenta.
+                  </p>
+                ) : null}
               </div>
             ) : (
               <p className="text-caption text-muted-foreground">Lo aprueba o lo rechaza un administrador.</p>

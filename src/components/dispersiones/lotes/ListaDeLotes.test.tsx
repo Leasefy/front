@@ -274,6 +274,84 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     expect(planilla).not.toContain('Bancolombia');
   });
 
+  it('cada banco dice de dónde sale lo suyo, y una copia sin verificar pide probar primero', async () => {
+    bancos.mockResolvedValue({
+      ...lista(),
+      bancos: [
+        ...lista().bancos,
+        {
+          id: 'BANCOOMEVA',
+          nombre: 'Bancoomeva',
+          formato: 'BANCOOMEVA',
+          nombreDelFormato: 'Bancoomeva — transferencias masivas',
+          entrega: 'ARCHIVO_OFICIAL',
+          etiquetaDeLaFuente: 'Oficial · manual OVE V12 (2026)',
+          avisoAntesDeSubir: 'El manual de Bancoomeva se contradice en el separador (coma o punto y coma).',
+          fuente: {
+            url: 'https://www.bancoomeva.com.co/documentos/3632/manuales-de-uso/',
+            documento: 'SF-DC-0657 Manual de Usuario Oficina Virtual Empresarial V12',
+            version: 'V12, PDF de marzo de 2026',
+            consultado: '2026-09-22',
+          },
+          porQueNo: null,
+        },
+        {
+          id: 'BBVA',
+          nombre: 'BBVA',
+          formato: 'BANCO_BBVA',
+          nombreDelFormato: 'BBVA — Net Cash',
+          entrega: 'ARCHIVO_DE_TERCERO',
+          etiquetaDeLaFuente: 'Copia de la estructura del banco · sin verificar',
+          fuente: {
+            url: 'https://www.scribd.com/document/420970123/x',
+            documento: 'Estructura de archivos por adaptación BBVA Cash (copia en Scribd)',
+            version: 'sin fecha',
+            consultado: '2026-09-22',
+          },
+          porQueNo: null,
+        },
+        {
+          id: 'BANCO_FALABELLA',
+          nombre: 'Banco Falabella',
+          formato: 'PLANILLA_MANUAL',
+          nombreDelFormato: 'Planilla para cargar a mano',
+          entrega: 'PLANILLA',
+          etiquetaDeLaFuente: 'Planilla',
+          fuente: null,
+          porQueNo: 'Banco Falabella entrega su estructura sólo a sus clientes.',
+          loQueSabemos: 'Falabella entrega sus dos formatos por correo: pídelos a soportebancaempresas@bancofalabella.com.co.',
+        },
+      ],
+    });
+    await abrirArmar();
+
+    // La fuente, visible en la lista sin abrir nada.
+    expect(document.body.querySelector('[data-testid="fuente-corta-BANCOOMEVA"]')?.textContent).toContain(
+      'Oficial · manual OVE V12 (2026)',
+    );
+    const copia = document.body.querySelector('[data-testid="grupo-ARCHIVO_DE_TERCERO"]')?.textContent ?? '';
+    expect(copia).toContain('Archivo del banco — copia sin verificar');
+    expect(copia).toContain('BBVA');
+    expect(copia).toContain('sin verificar');
+    // La planilla genérica no repite «Planilla» en cada banco.
+    expect(document.body.querySelector('[data-testid="fuente-corta-BANCO_FALABELLA"]')).toBeNull();
+
+    await clicEn(document.body.querySelector('[data-testid="banco-BBVA"]'));
+    const tercero = document.body.querySelector('[data-testid="banco-de-tercero"]')?.textContent ?? '';
+    expect(tercero).toContain('Formato tomado de Estructura de archivos por adaptación BBVA Cash');
+    expect(tercero).toContain('sube primero un archivo de prueba al portal');
+
+    await clicEn(document.body.querySelector('[data-testid="banco-BANCOOMEVA"]'));
+    expect(document.body.querySelector('[data-testid="aviso-antes-de-subir"]')?.textContent).toContain(
+      'se contradice en el separador',
+    );
+
+    await clicEn(document.body.querySelector('[data-testid="banco-BANCO_FALABELLA"]'));
+    expect(document.body.querySelector('[data-testid="lo-que-sabemos"]')?.textContent).toContain(
+      'soportebancaempresas@bancofalabella.com.co',
+    );
+  });
+
   it('🔴 un banco sin estructura publicada recibe la PLANILLA, lo dice antes de armar y sí deja armar', async () => {
     armar.mockResolvedValue({
       lote: { id: 'lote-1', cantidad: 314, totalCop: 794_000_000 },

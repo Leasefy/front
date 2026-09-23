@@ -12,7 +12,7 @@ import type { EntregaDelFormato } from "@/lib/api/lotes-de-dispersion.service";
 
 export const ETIQUETA_DE_LA_ENTREGA: Record<EntregaDelFormato, string> = {
   ARCHIVO_OFICIAL: "Archivo del banco — oficial",
-  ARCHIVO_DE_TERCERO: "Archivo del banco — de tercero, sin verificar",
+  ARCHIVO_DE_TERCERO: "Archivo del banco — copia sin verificar",
   PLANILLA: "Planilla para cargar a mano",
 };
 
@@ -29,5 +29,17 @@ export function entregaDe(b: {
   formato: string | null;
 }): EntregaDelFormato {
   if (b.entrega) return b.entrega;
-  return b.formato === "PLANILLA_MANUAL" ? "PLANILLA" : "ARCHIVO_OFICIAL";
+  return b.formato?.startsWith("PLANILLA_") ? "PLANILLA" : "ARCHIVO_OFICIAL";
+}
+
+/**
+ * De dónde sale lo de ESE banco, en pocas palabras, para verlo en la lista
+ * sin abrir nada: «Oficial · manual OVE V12 (2026)», «Copia del instructivo
+ * del banco · sin verificar». `null` cuando no agrega nada al título del
+ * grupo (la planilla genérica dice «Planilla» y el grupo ya lo dice).
+ */
+export function fuenteCorta(b: { etiquetaDeLaFuente?: string }): string | null {
+  const e = b.etiquetaDeLaFuente?.trim();
+  if (!e || e === "Planilla") return null;
+  return e;
 }

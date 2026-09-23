@@ -8426,6 +8426,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/dispersiones/origen-del-giro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bancos y última cuenta de origen para marcar girada */
+        get: operations["DispersionesController_origenDelGiro"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/dispersiones/summary": {
         parameters: {
             query?: never;
@@ -10055,7 +10072,7 @@ export interface paths {
         /** Los cambios de cuenta bancaria del propietario */
         get: operations["CambiosDeCuentaController_listar"];
         put?: never;
-        /** Pedir el cambio de cuenta: certificación bancaria obligatoria; se le pide confirmar al propietario por correo */
+        /** Pedir el cambio de cuenta: certificación bancaria obligatoria (con reparto, una por cada cuenta nueva en `certificacion_<i>`); se le pide confirmar al propietario por correo */
         post: operations["CambiosDeCuentaController_solicitar"];
         delete?: never;
         options?: never;
@@ -10121,7 +10138,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** URL firmada de la certificación o del soporte de aprobación */
+        /** URL firmada de la certificación (`certificacion`, o `certificacion-<i>` la de la cuenta i del reparto) o del soporte de aprobación (`aprobacion`) */
         get: operations["CambiosDeCuentaController_archivo"];
         put?: never;
         post?: never;
@@ -17788,7 +17805,7 @@ export interface components {
              * @description Bank code for PSE
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
         };
         PseMockResponseDto: {
             /** @description Transaction ID (PSE-timestamp-random) */
@@ -18023,7 +18040,7 @@ export interface components {
              * @description Bank code for PSE payment
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @description Full name of account holder (min 3 characters) */
             holderName: string;
             /** @description Colombian phone number */
@@ -18096,7 +18113,7 @@ export interface components {
              * @description Bank code for PSE payment
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @description Full name of account holder (min 3 characters) */
             holderName: string;
             /** @description Colombian phone number */
@@ -21176,7 +21193,7 @@ export interface components {
              * @description Catalogued bank code. When present, the server derives bankName from it and the bankName below is ignored.
              * @enum {string}
              */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /**
              * @deprecated
              * @description Legacy free-text bank name for disbursements. Deprecated: ignored when bankCode is present, still accepted for backward compatibility.
@@ -21252,7 +21269,7 @@ export interface components {
              * @description Catalogued bank code. When present, the server derives bankName from it and the bankName below is ignored.
              * @enum {string}
              */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /**
              * @deprecated
              * @description Legacy free-text bank name for disbursements. Deprecated: ignored when bankCode is present, still accepted for backward compatibility.
@@ -21819,6 +21836,7 @@ export interface components {
              * @example TRF-2026-02-001
              */
             transferReference: string;
+            origen?: components["schemas"]["OrigenDelLoteDto"];
         };
         GuardarConexionWompiDto: {
             /** @enum {string} */
@@ -22390,7 +22408,7 @@ export interface components {
         };
         SolicitarCambioDeCuentaDto: {
             /** @enum {string} */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @example Bancolombia */
             bankName?: string;
             /** @enum {string} */
@@ -38880,6 +38898,24 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Entradas, comprometido y disponible */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_origenDelGiro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bancos, cuentas registradas y la última usada */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -298,14 +298,31 @@ function TablaDeFacturas({
    * peor que no tener buscador.
    */
   const [busqueda, setBusqueda] = useState('')
+  /*
+   * 🔴 QA de Nico, 22-09 («acá tampoco están teniendo en cuenta el IVA, ¡ojo
+   * con eso!»): las facturas cuyo contrato NO tiene el escenario tributario
+   * confirmado salen sin impuestos. La marca por fila existía, pero en 730
+   * filas nadie la ve antes de emitir. Se cuentan ARRIBA de la tabla, con la
+   * frase entera, y se pueden aislar para revisarlas una por una. Las ya
+   * emitidas no cuentan: ésas ya salieron.
+   */
+  const sinEscenario = useMemo(
+    () => filas.filter((f) => f.impuestosSinConfirmar && f.estado !== 'EMITIDA'),
+    [filas],
+  )
+  const [soloSinEscenario, setSoloSinEscenario] = useState(false)
+  const verSoloSinEscenario = soloSinEscenario && sinEscenario.length > 0
   const visibles = useMemo(() => {
+    const base = verSoloSinEscenario ? sinEscenario : filas
     const q = normalizar(busqueda)
-    if (q === '') return filas
-    return filas.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
-  }, [filas, busqueda])
+    if (q === '') return base
+    return base.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
+  }, [filas, sinEscenario, verSoloSinEscenario, busqueda])
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${testid}|${filas.length}|${busqueda}` })
+    useTablePagination(visibles, {
+      resetKey: `${testid}|${filas.length}|${busqueda}|${verSoloSinEscenario}`,
+    })
 
   /*
    * 🔴 Sólo lo que HOY se puede emitir entra a la selección. Una fila de un mes
@@ -390,6 +407,40 @@ function TablaDeFacturas({
           )}
         </div>
       </div>
+
+      {sinEscenario.length > 0 && (
+        <div
+          className="flex flex-col gap-2 border-b border-border bg-warning-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid={`facturacion-${testid}-sin-escenario`}
+        >
+          <p className="flex items-start gap-2 text-sm text-fg">
+            <SealWarning
+              className="mt-0.5 h-4 w-4 shrink-0 text-warning"
+              weight="fill"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-mono tabular-nums">
+                {sinEscenario.length.toLocaleString('es-CO')}
+              </span>{' '}
+              {sinEscenario.length === 1
+                ? 'factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.'
+                : 'facturas del mes saldrían sin impuestos porque su contrato no tiene el escenario tributario confirmado.'}{' '}
+              Ábrela para ir al contrato y confirmarlo antes de emitir.
+            </span>
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setSoloSinEscenario((v) => !v)}
+            aria-pressed={verSoloSinEscenario}
+            data-testid={`facturacion-${testid}-ver-sin-escenario`}
+          >
+            {verSoloSinEscenario ? 'Ver todas' : 'Ver sólo esas'}
+          </Button>
+        </div>
+      )}
 
       {/* 🔴 El buscador, DENTRO de la tabla (Nico, 18-09). A su lado, cuántas
           filas quedaron a la vista: las cifras de arriba siguen siendo las del

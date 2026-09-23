@@ -13,6 +13,8 @@ import type {
   DisplaySubscription,
   SubscriptionPseCheckoutDto,
   SubscriptionPseCheckoutResponse,
+  PuedePagarElPlan,
+  EstadoDelPagoPse,
 } from './subscriptions.types';
 import type { PlanId, BillingCycle, SubscriptionStatus } from '@/lib/types/subscription';
 import type { Coupon, CouponValidationResult, CouponDiscount } from '@/lib/types/coupon';
@@ -177,6 +179,23 @@ export const subscriptionsApi = {
     dto: SubscriptionPseCheckoutDto,
   ): Promise<SubscriptionPseCheckoutResponse> {
     return apiClient.post<SubscriptionPseCheckoutResponse>('/subscriptions/pse/checkout', dto);
+  },
+
+  /**
+   * ¿Puede pagar el plan del propietario? El panel independiente puede estar
+   * en pausa (409 `PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO` en el checkout):
+   * el front lo pregunta ANTES de ofrecer el pago (QA 23-09).
+   */
+  async puedePagarElPlanDelPropietario(): Promise<PuedePagarElPlan> {
+    return apiClient.get<PuedePagarElPlan>('/subscriptions/pse/puede-pagar');
+  },
+
+  /**
+   * Cómo terminó UN pago PSE del plan: la página a la que vuelve la persona
+   * después del banco (`/panel/checkout?resultado=pse&pago=<id>`).
+   */
+  async estadoDelPagoPse(pagoId: string): Promise<EstadoDelPagoPse> {
+    return apiClient.get<EstadoDelPagoPse>(`/subscriptions/pse/pagos/${encodeURIComponent(pagoId)}`);
   },
 
   /**

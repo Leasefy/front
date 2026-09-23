@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
 import type { Plan, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { Gift, Calendar, Info } from '@phosphor-icons/react';
@@ -32,13 +33,15 @@ export function PriceSummary({
     ? plan.price.monthly
     : plan.price.yearly;
 
+  // `null` = el precio todavía no llegó del back (el precio lo dice el back,
+  // no `PLANS`, QA 23-09): el resumen dice «—» y no hace cuentas de cupón.
   // Calculate final price and savings
-  let finalPrice = originalPrice;
+  let finalPrice: number | null = originalPrice;
   let savings = 0;
   let isTrial = false;
   let trialDays = 0;
 
-  if (appliedCoupon) {
+  if (appliedCoupon && originalPrice !== null) {
     switch (appliedCoupon.type) {
       case 'PERCENTAGE':
         finalPrice = Math.max(0, Math.round(originalPrice - originalPrice * (appliedCoupon.discount / 100)));
@@ -80,7 +83,7 @@ export function PriceSummary({
             'font-medium font-mono tabular-nums',
             appliedCoupon && savings > 0 && 'line-through text-muted-foreground'
           )}>
-            {formatCurrency(originalPrice)}/{billingLabel}
+            {precioLegible(originalPrice)}/{billingLabel}
           </span>
         </div>
 
@@ -126,7 +129,7 @@ export function PriceSummary({
           </span>
           <div className="text-right">
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
-              {isFree ? 'Gratis' : formatCurrency(finalPrice)}
+              {isFree ? 'Gratis' : precioLegible(finalPrice)}
             </span>
             {!isFree && (
               <span className="text-muted-foreground text-sm ml-1">

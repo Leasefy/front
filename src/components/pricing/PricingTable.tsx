@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { PricingCard } from './PricingCard';
 import { AgencyTierCard } from './AgencyTierCard';
-import { PLANS, PLAN_COMPARISON } from '@/lib/constants/subscription-plans';
+import { PLAN_COMPARISON } from '@/lib/constants/subscription-plans';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
 import { Check, X } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -51,6 +52,8 @@ export function PricingTable({
   agencyPlans,
 }: PricingTableProps) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  // Los planes del propietario con el precio que cobra el back (QA 23-09).
+  const { planes: planesDelPropietario } = usePlanesDelPropietario();
 
   const handlePlanSelect = (planId: string) => {
     onSelectPlan?.(planId);
@@ -124,7 +127,7 @@ export function PricingTable({
 
       {/* Plans grid with stagger animation */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 stagger-children">
-        {PLANS.map((plan) => (
+        {planesDelPropietario.map((plan) => (
           <PricingCard
             key={plan.id}
             plan={plan}

@@ -191,3 +191,17 @@ export interface DisplaySubscription {
   cancelAtPeriodEnd: boolean;
   trialEndsAt?: string;
 }
+
+/** `GET /subscriptions/pse/puede-pagar` (QA 23-09). */
+export interface PuedePagarElPlan {
+  puede: boolean;
+  code: 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO' | null;
+  motivo: string | null;
+}
+
+/** `GET /subscriptions/pse/pagos/:id` (QA 23-09). */
+export interface EstadoDelPagoPse {
+  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  planNombre: string | null;
+  ciclo: string;
+}

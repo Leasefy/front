@@ -21,20 +21,26 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { routerPush, startPseCheckout, getPlans, getFinancialInstitutions } = vi.hoisted(() => ({
+const { routerPush, startPseCheckout, getPlans, getFinancialInstitutions, puedePagar, estadoDelPago, barra } = vi.hoisted(() => ({
   routerPush: vi.fn(),
   startPseCheckout: vi.fn(),
   getPlans: vi.fn(),
   getFinancialInstitutions: vi.fn(),
+  puedePagar: vi.fn(),
+  estadoDelPago: vi.fn(),
+  barra: { query: 'plan=pro&billing=monthly' },
 }))
 
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams('plan=pro&billing=monthly'),
+  useSearchParams: () => new URLSearchParams(barra.query),
   useRouter: () => ({ push: routerPush, replace: vi.fn(), back: vi.fn() }),
 }))
 
 vi.mock('@/lib/i18n', () => ({
-  useI18n: () => ({ locale: 'es', t: (k: string) => k }),
+  useI18n: () => ({
+    locale: 'es',
+    t: (k: string, v?: Record<string, unknown>) => (v ? `${k} ${JSON.stringify(v)}` : k),
+  }),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -42,7 +48,12 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('@/lib/api/subscriptions.service', () => ({
-  subscriptionsApi: { getPlans, startPseCheckout },
+  subscriptionsApi: {
+    getPlans,
+    startPseCheckout,
+    puedePagarElPlanDelPropietario: puedePagar,
+    estadoDelPagoPse: estadoDelPago,
+  },
 }))
 
 vi.mock('@/lib/api/pse-checkout.service', () => ({
@@ -60,7 +71,8 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   RadioCardGroup: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('div', null, children),
-  RadioCard: () => null,
+  RadioCard: ({ label, badge }: { label?: React.ReactNode; badge?: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'ciclo' }, label, badge),
 }))
 
 // Radix Select no se deja manejar en happy-dom: lo reemplazamos por un
@@ -123,7 +135,14 @@ function botonDePagar(): HTMLButtonElement {
 beforeEach(async () => {
   routerPush.mockReset()
   startPseCheckout.mockReset()
-  getPlans.mockResolvedValue([{ id: 'plan-uuid-pro', tier: 'PRO' }])
+  // Lo que cobra el back (seed-plans): NO las cifras que tenía el front.
+  getPlans.mockResolvedValue([
+    { id: 'plan-uuid-pro', tier: 'PRO', monthlyPrice: 149_000, annualPrice: 1_430_000 },
+  ])
+  puedePagar.mockReset()
+  puedePagar.mockResolvedValue({ puede: true, code: null, motivo: null })
+  estadoDelPago.mockReset()
+  barra.query = 'plan=pro&billing=monthly'
   getFinancialInstitutions.mockResolvedValue([
     { financial_institution_code: '1007', financial_institution_name: 'BANCOLOMBIA' },
   ])
@@ -212,5 +231,76 @@ describe('checkout del plan del propietario', () => {
 
     expect(assign).not.toHaveBeenCalled()
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('landlord.checkout.bankLinkMissing')
+  })
+
+  it('🔴 los precios son los que cobra el back, no los del front (QA 23-09)', () => {
+    const texto = Array.from(host.querySelectorAll('[data-testid="ciclo"]')).map((c) => c.textContent).join(' | ')
+    expect(texto).toContain('149.000')
+    expect(texto).toContain('1.430.000')
+    expect(texto).not.toContain('149.900')
+    expect(texto).not.toContain('1.439.000')
+    // El -20 % también sale de esas cifras, no de un texto fijo.
+    expect(texto).toContain('landlord.checkout.yearlySaving {"percent":20}')
+  })
+})
+
+describe('🔴 con el panel del propietario independiente en pausa (QA 23-09)', () => {
+  async function montarEnPausa() {
+    act(() => root.unmount())
+    puedePagar.mockResolvedValue({
+      puede: false,
+      code: 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO',
+      motivo: 'El panel del propietario independiente está en pausa.',
+    })
+    root = createRoot(host)
+    await act(async () => {
+      root.render(React.createElement(CheckoutPage))
+    })
+    await flush()
+  }
+
+  it('no ofrece pagar: el botón queda apagado con el porqué, aunque los datos estén completos', async () => {
+    await montarEnPausa()
+    const selects = host.querySelectorAll('select')
+    escribir(selects[0], '1007')
+    escribir(host.querySelector<HTMLInputElement>('#pse-documento')!, '1234567890')
+    escribir(host.querySelector<HTMLInputElement>('#pse-nombre')!, 'Ana Pérez')
+
+    expect(botonDePagar().disabled).toBe(true)
+    expect(host.querySelector('[data-testid="checkout-en-pausa"]')?.textContent).toContain('está en pausa')
+    await act(async () => {
+      botonDePagar().click()
+    })
+    expect(startPseCheckout).not.toHaveBeenCalled()
+  })
+})
+
+describe('🔴 el regreso del banco (QA 23-09)', () => {
+  async function volverDelBanco() {
+    act(() => root.unmount())
+    barra.query = 'resultado=pse&pago=pago-1&plan=pro&id=wompi-tx'
+    root = createRoot(host)
+    await act(async () => {
+      root.render(React.createElement(CheckoutPage))
+    })
+    await flush()
+  }
+
+  it('pregunta al back por ESE pago y dice que el plan quedó activo', async () => {
+    estadoDelPago.mockResolvedValue({ estado: 'APROBADO', planNombre: 'Propietario', ciclo: 'MONTHLY' })
+    await volverDelBanco()
+    expect(estadoDelPago).toHaveBeenCalledWith('pago-1')
+    expect(host.querySelector('[data-estado="APROBADO"]')?.textContent).toContain('landlord.checkout.resultadoAprobado')
+    expect(startPseCheckout).not.toHaveBeenCalled()
+  })
+
+  it('rechazado: lo dice y ofrece intentar de nuevo con el mismo plan', async () => {
+    estadoDelPago.mockResolvedValue({ estado: 'RECHAZADO', planNombre: 'Propietario', ciclo: 'MONTHLY' })
+    await volverDelBanco()
+    expect(host.querySelector('[data-estado="RECHAZADO"]')).not.toBeNull()
+    const reintentar = Array.from(host.querySelectorAll('a')).find((a) =>
+      a.textContent?.includes('landlord.checkout.resultadoIntentarDeNuevo'),
+    )
+    expect(reintentar?.getAttribute('href')).toBe('/panel/checkout?plan=pro')
   })
 })

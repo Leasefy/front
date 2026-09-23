@@ -125,10 +125,8 @@ export const PLANS: Plan[] = [
     id: 'pro',
     name: 'Propietario',
     description: 'Tu administras, nosotros te damos las herramientas',
-    price: {
-      monthly: 149900,
-      yearly: 1439000,
-    },
+    // El precio lo dice el back (ver `Plan.price`).
+    price: { monthly: null, yearly: null },
     features: [
       { ...PLAN_FEATURES.property_listing, included: true, limit: 10 },
       { ...PLAN_FEATURES.basic_search, included: true },
@@ -147,10 +145,8 @@ export const PLANS: Plan[] = [
     id: 'flex',
     name: 'Flex',
     description: 'Para propietarios con múltiples inmuebles',
-    price: {
-      monthly: 299900,
-      yearly: 2879000,
-    },
+    // El precio lo dice el back (ver `Plan.price`).
+    price: { monthly: null, yearly: null },
     features: [
       { ...PLAN_FEATURES.property_listing, included: true, limit: 25 },
       { ...PLAN_FEATURES.basic_search, included: true },
@@ -452,9 +448,11 @@ export function canPlanAccessFeature(planId: PlanId, featureId: string): boolean
 }
 
 export function getYearlySavings(plan: Plan): number {
-  if (plan.price.monthly === 0) return 0;
-  const monthlyTotal = plan.price.monthly * 12;
-  const savings = ((monthlyTotal - plan.price.yearly) / monthlyTotal) * 100;
+  const { monthly, yearly } = plan.price;
+  // Sin el precio del back (`null`) no se afirma un ahorro.
+  if (monthly === null || yearly === null || monthly === 0) return 0;
+  const monthlyTotal = monthly * 12;
+  const savings = ((monthlyTotal - yearly) / monthlyTotal) * 100;
   return Math.round(savings);
 }
 

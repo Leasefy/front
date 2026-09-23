@@ -14,19 +14,23 @@ import {
   VERIFICATION_OPTIONS,
 } from '@/lib/types/publish';
 import { formatCurrency } from '@/lib/format';
-import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import { AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
+import type { Plan } from '@/lib/types/subscription';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, flex: Buildings, enterprise: Buildings } as const;
 
-const PLAN_INFO = Object.fromEntries([
-  ...PLANS.map((plan) => [
+/** Con el precio que cobra el back (QA 23-09): `PLANS` ya no trae cifras. */
+const infoDeLosPlanes = (planes: Plan[]) => Object.fromEntries([
+  ...planes.map((plan) => [
     plan.id,
     {
       name: `Plan ${plan.name}`,
       icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
-      price: plan.price.monthly === 0 ? '$0' : `${formatCurrency(plan.price.monthly)}/mes`,
+      price: plan.price.monthly === 0 ? '$0' : `${precioLegible(plan.price.monthly)}/mes`,
       color: 'bg-primary-soft text-primary',
     },
   ]),
@@ -71,6 +75,8 @@ function Section({ title, onEdit, children }: SectionProps) {
 
 export function StepReview() {
   const { draft, goToStep } = usePublish();
+  const { planes } = usePlanesDelPropietario();
+  const PLAN_INFO = infoDeLosPlanes(planes);
 
   const typeLabel = PROPERTY_TYPES.find(t => t.value === draft.type)?.label || '';
   const selectedAmenities = AMENITIES_OPTIONS.filter(a => draft.amenities.includes(a.value));

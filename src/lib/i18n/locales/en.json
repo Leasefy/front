@@ -10378,7 +10378,17 @@
       "email": "Email",
       "completePayerData": "Complete the payment details: bank, document (6 to 15 digits), name and email.",
       "bankLinkMissing": "Your bank hasn't returned the payment link yet. Try again in a few minutes.",
-      "paymentStartError": "We couldn't start the payment. Try again."
+      "paymentStartError": "We couldn't start the payment. Try again.",
+      "priceLoading": "The price comes from the server; if it doesn't show up, reload the page.",
+      "yearlySaving": "-{{percent}}%",
+      "noPuedePagar": "You can't pay for this plan right now",
+      "resultadoTitulo": "Your plan payment",
+      "resultadoAprobado": "The bank approved the payment: your {{name}} plan is active.",
+      "resultadoRechazado": "The bank didn't approve the payment. You weren't charged for the plan.",
+      "resultadoPendiente": "We're waiting for the bank's confirmation. This can take a few minutes; you can close this page, the plan activates on its own when the bank confirms.",
+      "resultadoError": "We couldn't check how the payment ended. Check your plan in Settings in a few minutes.",
+      "resultadoIrAlPanel": "Go to my panel",
+      "resultadoIntentarDeNuevo": "Try again"
     },
     "upgrade": {
       "unlockPotential": "Unlock the full potential",

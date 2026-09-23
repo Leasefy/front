@@ -10412,7 +10412,17 @@
       "email": "Correo",
       "completePayerData": "Completa los datos del pago: banco, documento (6 a 15 dígitos), nombre y correo.",
       "bankLinkMissing": "Tu banco todavía no nos devolvió el enlace de pago. Inténtalo de nuevo en unos minutos.",
-      "paymentStartError": "No pudimos iniciar el pago. Inténtalo de nuevo."
+      "paymentStartError": "No pudimos iniciar el pago. Inténtalo de nuevo.",
+      "priceLoading": "El precio lo trae el servidor; si no aparece, recarga la página.",
+      "yearlySaving": "-{{percent}}%",
+      "noPuedePagar": "No puedes pagar este plan ahora",
+      "resultadoTitulo": "El pago de tu plan",
+      "resultadoAprobado": "El banco aprobó el pago: tu plan {{name}} quedó activo.",
+      "resultadoRechazado": "El banco no aprobó el pago. No se te cobró el plan.",
+      "resultadoPendiente": "Estamos esperando la confirmación del banco. Esto puede tardar unos minutos; puedes cerrar esta página, el plan se activa solo cuando el banco confirme.",
+      "resultadoError": "No pudimos consultar cómo terminó el pago. Revisa tu plan en Configuración en unos minutos.",
+      "resultadoIrAlPanel": "Ir a mi panel",
+      "resultadoIntentarDeNuevo": "Intentar de nuevo"
     },
     "upgrade": {
       "unlockPotential": "Desbloquea todo el potencial",

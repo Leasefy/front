@@ -48,10 +48,17 @@ export interface Plan {
   id: PlanId;
   name: string;
   description: string;
-  /** Monthly and yearly prices in COP */
+  /**
+   * Monthly and yearly prices in COP.
+   *
+   * 🔴 `null` = el precio lo dice el BACK (`GET /subscription-plans`), no esta
+   * constante. QA 23-09: el checkout del propietario mostraba $149.900/mes y
+   * $1.439.000/año desde acá mientras el back cobraba $149.000 y $1.430.000.
+   * Se leen con `conPrecioDelBack` / `usePlanesDelPropietario`.
+   */
   price: {
-    monthly: number;
-    yearly: number;
+    monthly: number | null;
+    yearly: number | null;
   };
   features: PlanFeature[];
   /** Whether to visually highlight this plan */

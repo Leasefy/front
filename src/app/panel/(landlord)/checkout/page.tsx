@@ -15,13 +15,14 @@ import {
 } from '@/components/ui/select';
 import { RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { CouponInput, PriceSummary } from '@/components/pricing';
-import { getPlanById } from '@/lib/constants/subscription-plans';
+import { getPlanById, getYearlySavings } from '@/lib/constants/subscription-plans';
+import { conPrecioDelBack, precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
+import { ResultadoDelPagoPse } from './ResultadoDelPagoPse';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
 import type { PseFinancialInstitution } from '@/lib/api/pse-checkout.types';
-import type { PSEDocumentType } from '@/lib/api/subscriptions.types';
+import type { BackendSubscriptionPlan, PSEDocumentType, PuedePagarElPlan } from '@/lib/api/subscriptions.types';
 import { useAuth } from '@/lib/auth';
-import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { useI18n } from '@/lib/i18n';
@@ -43,7 +44,12 @@ function CheckoutContent() {
   const planId = (searchParams.get('plan') || 'pro') as PlanId;
   const initialBilling = (searchParams.get('billing') || 'monthly') as BillingCycle;
 
-  const plan = getPlanById(planId);
+  // 🔴 El PRECIO lo dice el back (QA 23-09): esta pantalla mostraba
+  // $149.900/$1.439.000 de `PLANS` mientras el back cobraba $149.000/$1.430.000.
+  // Del catálogo del front queda el nombre y los rasgos; las cifras, del plan
+  // que devuelve `GET /subscription-plans`, el mismo con el que se cobra.
+  const [planesDelBack, setPlanesDelBack] = useState<BackendSubscriptionPlan[]>([]);
+  const plan = conPrecioDelBack(getPlanById(planId), planesDelBack);
 
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialBilling);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -75,8 +81,33 @@ function CheckoutContent() {
       .catch(() => setBancosError(true));
   }, []);
 
-  // Get price based on billing cycle
+  // Get price based on billing cycle (`null` mientras no llegue del back).
   const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
+  const ahorroAnual = getYearlySavings(plan);
+
+  /*
+   * 🔴 ¿Puede pagar? (QA 23-09) Con el panel del propietario independiente EN
+   * PAUSA el back rechaza el checkout (409): no se ofrece un botón que termina
+   * en error — se dice el porqué y el botón queda apagado. `null` = todavía no
+   * se sabe (el botón espera); si la pregunta falla, no se bloquea: el back
+   * vuelve a mirar al cobrar y su 409 se muestra igual.
+   */
+  const [puedePagar, setPuedePagar] = useState<PuedePagarElPlan | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    subscriptionsApi
+      .puedePagarElPlanDelPropietario()
+      .then((r) => {
+        if (vivo) setPuedePagar(r);
+      })
+      .catch(() => {
+        if (vivo) setPuedePagar({ puede: true, code: null, motivo: null });
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const enPausa = puedePagar?.puede === false;
 
   // Resolve the backend plan UUID for this landlord tier — the real PSE flow
   // needs the id, not the marketing slug. (Previously "Pagar" was a fake
@@ -85,6 +116,7 @@ function CheckoutContent() {
     subscriptionsApi
       .getPlans('LANDLORD')
       .then((plans) => {
+        setPlanesDelBack(plans);
         const match = plans.find((p) => p.tier?.toLowerCase() === planId.toLowerCase());
         if (match) setBackendPlanId(match.id);
         else setPlanError(t('landlord.checkout.planNotFound'));
@@ -105,7 +137,7 @@ function CheckoutContent() {
   // `/pse-mock?amount=…`, que simulaba el banco; en producción el back rechaza
   // ese riel, así que el propietario nunca lograba pagar.)
   const handleSubmit = async () => {
-    if (!backendPlanId || !datosCompletos) return;
+    if (!backendPlanId || !datosCompletos || enPausa) return;
     setIsProcessing(true);
     setPagoError(null);
     try {
@@ -208,7 +240,7 @@ function CheckoutContent() {
                     <span className="block">
                       <span className="block">{t('landlord.checkout.monthly')}</span>
                       <span className="block mt-1 text-lg font-bold text-foreground">
-                        {formatCurrency(plan.price.monthly)}
+                        {precioLegible(plan.price.monthly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
                       </span>
                     </span>
@@ -218,15 +250,17 @@ function CheckoutContent() {
                   value="yearly"
                   className="flex-1"
                   badge={
-                    <span className="px-2 py-0.5 text-xs font-medium bg-success text-white rounded-sm">
-                      -20%
-                    </span>
+                    ahorroAnual > 0 ? (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-success text-white rounded-sm">
+                        {t('landlord.checkout.yearlySaving', { percent: ahorroAnual })}
+                      </span>
+                    ) : undefined
                   }
                   label={
                     <span className="block">
                       <span className="block">{t('landlord.checkout.yearly')}</span>
                       <span className="block mt-1 text-lg font-bold text-foreground">
-                        {formatCurrency(plan.price.yearly)}
+                        {precioLegible(plan.price.yearly)}
                         <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
                       </span>
                     </span>
@@ -237,12 +271,16 @@ function CheckoutContent() {
 
             {/* Coupon input */}
             <div className="bg-card rounded-sm border border-border p-5">
-              <CouponInput
-                planId={planId}
-                price={price}
-                appliedCoupon={appliedCoupon}
-                onApplyCoupon={setAppliedCoupon}
-              />
+              {price !== null ? (
+                <CouponInput
+                  planId={planId}
+                  price={price}
+                  appliedCoupon={appliedCoupon}
+                  onApplyCoupon={setAppliedCoupon}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('landlord.checkout.priceLoading')}</p>
+              )}
             </div>
 
             {/* Datos del pago por PSE (Wompi) */}
@@ -373,6 +411,17 @@ function CheckoutContent() {
                 </div>
               )}
 
+              {enPausa && (
+                <div
+                  role="alert"
+                  data-testid="checkout-en-pausa"
+                  className="rounded-sm bg-warning-soft p-3 text-sm text-warning"
+                >
+                  <p className="font-medium">{t('landlord.checkout.noPuedePagar')}</p>
+                  <p className="mt-1">{puedePagar?.motivo}</p>
+                </div>
+              )}
+
               {pagoError && (
                 <div role="alert" className="flex items-center gap-2 rounded-sm bg-destructive/10 p-3 text-sm text-destructive">
                   <WarningCircle className="w-4 h-4 shrink-0" />
@@ -385,8 +434,23 @@ function CheckoutContent() {
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isProcessing || loadingPlan || !backendPlanId || !datosCompletos}
-                title={!datosCompletos ? t('landlord.checkout.completePayerData') : undefined}
+                disabled={
+                  isProcessing ||
+                  loadingPlan ||
+                  !backendPlanId ||
+                  !datosCompletos ||
+                  puedePagar === null ||
+                  enPausa ||
+                  price === null
+                }
+                title={
+                  enPausa
+                    ? (puedePagar?.motivo ?? undefined)
+                    : !datosCompletos
+                      ? t('landlord.checkout.completePayerData')
+                      : undefined
+                }
+                data-testid="checkout-pagar"
               >
                 {isProcessing ? (
                   <>
@@ -423,6 +487,19 @@ function CheckoutContent() {
 }
 
 /**
+ * El regreso del banco: el PSE del plan vuelve a
+ * `/panel/checkout?resultado=pse&pago=<id>` (QA 23-09: antes no volvía).
+ */
+function CheckoutORegreso() {
+  const searchParams = useSearchParams();
+  const pagoId = searchParams.get('pago');
+  if (searchParams.get('resultado') === 'pse' && pagoId) {
+    return <ResultadoDelPagoPse pagoId={pagoId} plan={searchParams.get('plan')} />;
+  }
+  return <CheckoutContent />;
+}
+
+/**
  * Checkout page with coupon integration
  * Wrapped in Suspense for Next.js 14 useSearchParams requirement
  */
@@ -433,7 +510,7 @@ export default function CheckoutPage() {
         <Spinner size="md" />
       </div>
     }>
-      <CheckoutContent />
+      <CheckoutORegreso />
     </Suspense>
   );
 }

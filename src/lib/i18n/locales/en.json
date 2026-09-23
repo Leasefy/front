@@ -1412,6 +1412,8 @@
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
         "movimientos": "Activity log",
         "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
+        "proteccionDeDatos": "Data protection",
+        "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },
@@ -1980,7 +1982,8 @@
         "exportError": "Could not export. Try again.",
         "createError": "Could not create the owner. Please try again.",
         "updateError": "Could not update the owner. Please try again.",
-        "deleteError": "Could not delete the owner. Please try again."
+        "deleteError": "Could not delete the owner. Please try again.",
+        "loadForEditError": "Could not open the owner record for editing. Try again in a moment."
       },
       "detail": {
         "title": "Owner Details",
@@ -4958,6 +4961,7 @@
         "optional": "Optional",
         "bankDataTitle": "Bank details for disbursements",
         "bankDataInfo": "This information will be used to transfer the monthly rent to the owner, after deducting the management commission.",
+        "bankDataHidden": "Your role cannot see owners’ bank accounts. Saving here leaves the account untouched; someone with access to payouts registers or corrects it.",
         "bank": "Bank",
         "selectBank": "Select bank...",
         "accountType": "Account type",

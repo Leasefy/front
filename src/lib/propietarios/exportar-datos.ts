@@ -247,13 +247,19 @@ export function armarHojaDeLaLista(
       'Saldo pendiente',
       'Banco',
       'Tipo de cuenta',
-      'Número de cuenta',
+      // 🔴 23-09 (datos personales): la LISTA ya no trae el número de cuenta,
+      // sólo sus 4 últimos dígitos. Un Excel con las cuentas enteras de toda
+      // la cartera es justo lo que no tiene que salir de la pantalla de a
+      // muchos; el número entero se exporta desde la ficha de cada uno.
+      'Cuenta (últimos 4)',
       'Titular',
       'Creado',
     ],
     ...propietarios.map((p) => {
       const cuenta = p.bankAccount;
-      const tieneCuenta = Boolean(cuenta?.accountNumber);
+      const ultimos4 =
+        cuenta?.ultimos4 ?? (cuenta?.accountNumber ? cuenta.accountNumber.replace(/\s+/g, '').slice(-4) : null);
+      const tieneCuenta = Boolean(ultimos4);
       return [
         p.name,
         p.documentType,
@@ -267,7 +273,7 @@ export function armarHojaDeLaLista(
         p.pendingBalance,
         tieneCuenta ? nombreDelBanco(cuenta) : '',
         tieneCuenta ? (cuenta.accountType === 'savings' ? 'Ahorros' : 'Corriente') : '',
-        tieneCuenta ? cuenta.accountNumber : '',
+        tieneCuenta ? `•••• ${ultimos4}` : '',
         tieneCuenta ? cuenta.accountHolder : '',
         p.createdAt.slice(0, 10),
       ];

@@ -21,11 +21,12 @@ peerDependencyRules:
 #   source maps previos, arreglados en 8.5.18+). Misma API 8.x.
 # - next acepta sharp ^0.34.3 || ^0.35.4 pero el lock quedaba en 0.34.5 (libvips
 #   y libheif vulnerables; sharp procesa las imágenes de next/image).
-# - mysql2 y @opentelemetry/propagator-jaeger los arrastran la CLI de prisma y
-#   el SDK de inngest; ninguno corre en el front, pero la versión parchada es
-#   del mismo major y no cuesta nada.
+# - mysql2 lo arrastra la CLI de prisma; no corre en el front, pero la versión
+#   parchada es del mismo major y no cuesta nada. (El override de
+#   @opentelemetry/propagator-jaeger se fue el 23-09 con el SDK de inngest, que
+#   era lo único que lo traía: el front no importaba ni inngest, ni
+#   @mastra/core, ni @anthropic-ai/sdk.)
 overrides:
   'next>postcss': ^8.5.18
   'next>sharp': ^0.35.4
   'mysql2': ^3.22.0
-  '@opentelemetry/propagator-jaeger': ^2.9.0

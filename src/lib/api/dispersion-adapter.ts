@@ -94,6 +94,8 @@ export interface DispersionDelBack {
   conDeducciones?: DeduccionesDeLaLiquidacion | null;
   status: string;
   approvedBy?: string | null;
+  /** 🔴 23-09: el nombre de quien aprobó. Ausente = back anterior. */
+  aprobadoPorNombre?: string | null;
   approvedAt?: string | null;
   processedAt?: string | null;
   transferReference?: string | null;
@@ -260,6 +262,7 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     ...(d.interesesCop !== undefined ? { interesesCop: d.interesesCop } : {}),
     status: estadoDeDispersion(d.status),
     approvedBy: d.approvedBy ?? undefined,
+    ...(d.aprobadoPorNombre ? { approvedByName: d.aprobadoPorNombre } : {}),
     approvedAt: d.approvedAt ?? undefined,
     processedAt: d.processedAt ?? undefined,
     transferReference: d.transferReference ?? undefined,

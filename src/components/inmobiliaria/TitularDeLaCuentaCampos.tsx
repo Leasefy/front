@@ -40,6 +40,20 @@ export interface ErroresDelTitular {
 
 const TIPOS: DocumentType[] = ['CC', 'CE', 'NIT', 'PASSPORT', 'TI', 'PPT'];
 
+/**
+ * 🔴 23-09 (QA): cerrado, el selector pintaba «Permiso por Protección Temporal
+ * (PPT)» partido en tres líneas y salido de su caja. La lista abierta tiene
+ * ancho para el nombre entero; cerrado va la etiqueta corta.
+ */
+const ETIQUETA_CORTA_DEL_TIPO: Record<DocumentType, string> = {
+  CC: 'inmobiliaria.propietario.form.docCorto.CC',
+  CE: 'inmobiliaria.propietario.form.docCorto.CE',
+  TI: 'inmobiliaria.propietario.form.docCorto.TI',
+  NIT: 'inmobiliaria.propietario.form.docCorto.NIT',
+  PASSPORT: 'inmobiliaria.propietario.form.docCorto.PASSPORT',
+  PPT: 'inmobiliaria.propietario.form.docCorto.PPT',
+};
+
 const ETIQUETA_DEL_TIPO: Record<DocumentType, string> = {
   CC: 'inmobiliaria.propietario.form.docCC',
   CE: 'inmobiliaria.propietario.form.docCE',
@@ -151,9 +165,12 @@ export function TitularDeLaCuentaCampos({
                 <SelectTrigger
                   id={`${prefijo}titular-tipo`}
                   data-testid="titular-tipo-documento"
-                  className={cn(errores.tipo && 'border-danger/30')}
+                  title={valor.tipo ? t(ETIQUETA_DEL_TIPO[valor.tipo]) : undefined}
+                  className={cn('[&>span]:truncate [&>span]:text-left', errores.tipo && 'border-danger/30')}
                 >
-                  <SelectValue placeholder={t('inmobiliaria.propietario.form.holderDocumentTypePlaceholder')} />
+                  <SelectValue placeholder={t('inmobiliaria.propietario.form.holderDocumentTypePlaceholder')}>
+                    {valor.tipo ? t(ETIQUETA_CORTA_DEL_TIPO[valor.tipo]) : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {TIPOS.map((tipo) => (
@@ -236,8 +253,15 @@ export function erroresDelTitular(
   if (valor.nombre.replace(/\s+/g, ' ').trim().length < 3) {
     errores.nombre = t('inmobiliaria.propietario.form.titularErrNombre');
   }
+  /*
+   * 🔴 23-09 (QA): sin tipo, el número no se revisaba, así que el primer
+   * intento marcaba tipo y nombre y el número vacío aparecía recién en el
+   * segundo. Todo lo que falta se marca de una vez: vacío es vacío con o sin
+   * tipo; lo demás (largo, NIT…) depende del tipo y espera a que lo haya.
+   */
   if (!valor.tipo) {
     errores.tipo = t('inmobiliaria.propietario.form.errHolderDocTypeRequired');
+    if (!valor.numero.trim()) errores.numero = t('inmobiliaria.propietario.form.titularErrVacio');
   } else {
     const numero = mensajeDelDocumento(t, revisar(valor.tipo, valor.numero));
     if (numero) errores.numero = numero;

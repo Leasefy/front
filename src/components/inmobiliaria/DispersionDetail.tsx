@@ -239,7 +239,7 @@ function TimelineEvent({
           {title}
         </p>
         {date && (
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-caption text-muted-foreground mt-0.5">
             {formattedDate || date}
           </p>
         )}
@@ -395,6 +395,16 @@ export function DispersionDetail({
    * Antes se descubría DESPUÉS de escribir la referencia del banco. Se compara
    * con el id de la sesión, que es el mismo que el back guarda en `approvedBy`.
    */
+  /*
+   * 🔴 23-09 (QA): el historial decía «Por: eb859b1c-…», el id de quien
+   * aprobó. El back manda su nombre (`aprobadoPorNombre`); si no lo supo, la
+   * sesión se reconoce («ti») y si tampoco, no se dice «Por»: nunca un uuid.
+   */
+  const quienAprobo =
+    dispersion.approvedByName ??
+    (dispersion.approvedBy && dispersion.approvedBy === usuarioActualId
+      ? t('inmobiliaria.dispersiones.detailView.aprobadoPorTi')
+      : null);
   const esQuienAprobo = Boolean(
     pideReferencia &&
       usuarioActualId &&
@@ -403,74 +413,85 @@ export function DispersionDetail({
   );
 
   /*
-   * Lo que va ENCIMA de los botones del pie: la referencia del giro —la
-   * escribe una persona, el sistema no transfiere; sin esto el back responde
-   * 400 y la pantalla festejaba igual— y el aviso de que falta el segundo par
-   * de ojos.
+   * 🔴 23-09 (QA): todo esto vivía en el PIE del cajón —el banco de origen, el
+   * tipo, el número, la referencia y tres ayudas— y el pie, que es fijo, se
+   * comía media pantalla. El pie queda con los botones y una línea; lo que
+   * hay que LLENAR para marcar girada es una sección del cuerpo, justo
+   * después del propietario, y se desplaza con el resto.
+   */
+  const registrarElGiro =
+    !ofreceLote && (conReferencia || (esperaReferencia && !esQuienAprobo)) ? (
+      <section className="space-y-3" data-testid="dispersion-registrar-el-giro">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Lightning className="w-4 h-4 text-primary" />
+          {t('inmobiliaria.dispersiones.detailView.registrarElGiro')}
+        </h3>
+        <div className="p-4 rounded-lg border border-border space-y-4">
+          {/* Desde qué cuenta salió: el «Desde» del correo «Te giramos». Quien
+              aprobó no marca girada, así que a esa persona no se le pregunta. */}
+          {conReferencia && !esQuienAprobo && (
+            <ElegirCuentaDeOrigenDelGiro key={dispersion.id} onCambio={setOrigenDelGiro} />
+          )}
+          {conReferencia && (
+            <div className="space-y-1.5">
+              <label htmlFor="dispersion-referencia" className="block text-sm font-medium text-foreground">
+                {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
+              </label>
+              <input
+                id="dispersion-referencia"
+                data-testid="dispersion-referencia"
+                value={referencia}
+                disabled={esQuienAprobo}
+                aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : 'dispersion-referencia-ayuda'}
+                onChange={(e) => {
+                  setReferencia(e.target.value);
+                  if (errorDeReferencia) setErrorDeReferencia(null);
+                }}
+                placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
+                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              {!esQuienAprobo && (
+                <p id="dispersion-referencia-ayuda" className="text-caption text-muted-foreground">
+                  {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
+                </p>
+              )}
+              {errorDeReferencia && (
+                <p role="alert" className="text-caption text-danger">
+                  {errorDeReferencia}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Aprobada: falta que OTRA persona cargue la referencia. */}
+          {esperaReferencia && !esQuienAprobo && (
+            <p className="text-caption text-muted-foreground">
+              {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
+            </p>
+          )}
+        </div>
+      </section>
+    ) : null;
+
+  /*
+   * Lo que va ENCIMA de los botones del pie: UNA línea que dice por qué el
+   * botón no está o está apagado (por lote, o quien aprobó no gira).
    */
   const ayudaDelPie = ofreceLote ? (
-    <p className="text-[11px] text-muted-foreground" data-testid="dispersion-por-lote">
+    <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
       Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en
       Lotes, no desde acá.
     </p>
-  ) : conReferencia || esperaReferencia ? (
-      <div className="space-y-3">
-        {/* Desde qué cuenta salió: el «Desde» del correo «Te giramos». Quien
-            aprobó no marca girada, así que a esa persona no se le pregunta. */}
-        {conReferencia && !esQuienAprobo && (
-          <ElegirCuentaDeOrigenDelGiro key={dispersion.id} onCambio={setOrigenDelGiro} />
-        )}
-        {conReferencia && (
-          <div className="space-y-1.5">
-            <label
-              htmlFor="dispersion-referencia"
-              className="text-xs font-semibold text-foreground"
-            >
-              {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
-            </label>
-            <input
-              id="dispersion-referencia"
-              data-testid="dispersion-referencia"
-              value={referencia}
-              disabled={esQuienAprobo}
-              aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : undefined}
-              onChange={(e) => {
-                setReferencia(e.target.value);
-                if (errorDeReferencia) setErrorDeReferencia(null);
-              }}
-              placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
-              className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            {esQuienAprobo ? (
-              <p
-                id="dispersion-aprobador-no-gira"
-                data-testid="dispersion-aprobador-no-gira"
-                className="text-[11px] text-warning"
-              >
-                Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
-                equipo. Es el segundo par de ojos sobre la plata del propietario.
-              </p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">
-                {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
-              </p>
-            )}
-            {errorDeReferencia && (
-              <p role="alert" className="text-[11px] text-danger">
-                {errorDeReferencia}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Aprobada: falta que OTRA persona cargue la referencia. */}
-        {esperaReferencia && !esQuienAprobo && (
-          <p className="text-[11px] text-muted-foreground">
-            {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
-          </p>
-        )}
-      </div>
-    ) : undefined;
+  ) : conReferencia && esQuienAprobo ? (
+    <p
+      id="dispersion-aprobador-no-gira"
+      data-testid="dispersion-aprobador-no-gira"
+      className="text-caption text-warning"
+    >
+      Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
+      equipo. Es el segundo par de ojos sobre la plata del propietario.
+    </p>
+  ) : undefined;
 
   return (
     <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
@@ -550,6 +571,8 @@ export function DispersionDetail({
             )}
           </div>
         </motion.section>
+
+        {registrarElGiro}
 
         {/* Bank Account Section */}
         <motion.section
@@ -807,7 +830,7 @@ export function DispersionDetail({
                 title={t('inmobiliaria.dispersiones.detailView.approved')}
                 date={dispersion.approvedAt}
                 formattedDate={dispersion.approvedAt ? formatDate(dispersion.approvedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                description={dispersion.approvedBy ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: dispersion.approvedBy }) : undefined}
+                description={quienAprobo ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: quienAprobo }) : undefined}
               />
             )}
             {dispersion.processedAt && (

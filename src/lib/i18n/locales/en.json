@@ -51,7 +51,14 @@
     "hours": "hours",
     "minutes": "minutes",
     "refresh": "Refresh",
-    "retry": "Retry"
+    "retry": "Retry",
+    "selectorDeArchivo": {
+      "elegir": "Choose file",
+      "elegirOtro": "Choose another",
+      "quitar": "Remove",
+      "quitarArchivo": "Remove {{nombre}}",
+      "ninguno": "No file chosen"
+    }
   },
   "nav": {
     "panel": "Home",
@@ -2055,7 +2062,9 @@
         "statusInProcess": "In process",
         "tenant": "Tenant",
         "saleCommission": "Sale commission",
-        "propertiesCount": "property(ies)"
+        "propertiesCount": "property(ies)",
+        "copiarCorreo": "Copy the email",
+        "copiarTelefono": "Copy the phone"
       }
     },
     "agentes": {
@@ -2509,7 +2518,9 @@
         "titularDeLaFichaHoy": "Taken from today's profile: this disbursement predates the holder copy.",
         "repartoTitulo": "Split across {{n}} accounts",
         "repartoANombreDe": "In the name of {{titular}}",
-        "titularOtraPersona": "someone else"
+        "titularOtraPersona": "someone else",
+        "registrarElGiro": "Record the transfer",
+        "aprobadoPorTi": "you"
       },
       "resumen": {
         "summaryMonth": "Summary {{month}}",
@@ -2584,10 +2595,11 @@
       "origenDelGiro": {
         "pregunta": "Which agency account did the transfer leave from?",
         "elegirBanco": "Choose the bank",
-        "ayuda": "We tell the owner in the transfer email: it is what they look for in their bank statement to recognize the money. We suggest the last account you transferred from.",
+        "ayuda": "We tell the owner in the transfer email: it is what they look for in their bank statement to recognize the money.",
         "cargando": "Loading banks…",
         "errorAlCargar": "The bank list could not be loaded.",
-        "desde": "From {{banco}} · {{tipo}}"
+        "desde": "From {{banco}} · {{tipo}}",
+        "teProponemosLaUltima": "We suggest the last account you transferred from."
       }
     },
     "operaciones": {
@@ -4966,7 +4978,15 @@
         "titularErrPasaporte": "A passport has only letters and digits, 5 to 20",
         "titularErrNit": "Write the NIT like this: 900123456-7 (the check digit is optional)",
         "titularErrDv": "The check digit doesn't match: it is {{dv}}",
-        "titularErrEsElPropietario": "That is the owner's ID: if the account is theirs, choose «The owner»"
+        "titularErrEsElPropietario": "That is the owner's ID: if the account is theirs, choose «The owner»",
+        "docCorto": {
+          "CC": "ID (CC)",
+          "CE": "Foreign ID (CE)",
+          "TI": "Identity (TI)",
+          "NIT": "NIT",
+          "PASSPORT": "Passport",
+          "PPT": "PPT"
+        }
       },
       "stats": {
         "properties": "Properties",
@@ -4987,7 +5007,9 @@
         "ofTotalRented": "{{rentados}} of {{total}} rented",
         "copropiedades": "{{n}} as co-owner",
         "sinPropiedades": "no properties",
-        "lastPayment": "Last payout"
+        "lastPayment": "Last payout",
+        "unaPropiedad": "1 property",
+        "nPropiedades": "{{n}} properties"
       },
       "alertas": {
         "sinCuenta": {
@@ -5065,15 +5087,25 @@
       "cambioDeCuenta": {
         "certificacionDeLaCuenta": "Bank certificate for this account (PDF or photo, required)",
         "yaCertificada": "Already certified: this account already receives payouts, only its percentage changes.",
-        "faltanCertificaciones": "Missing the certificate for {{cuentas}}: each bank certifies one account.",
         "certificacionesDelReparto": "Certificates of the split",
         "certificacionDeLaCuentaN": "Certificate for account {{n}}",
-        "cuentaN": "account {{n}}",
         "sinCertificacionNueva": "already certified",
         "certificacionUnica": "Certificate",
         "revisarCertificaciones": "Check the certificate of each new account before approving.",
         "certificacionDeTercero": "Bank certificate for this account (required: it is in another person's name)",
-        "certificacionNuevaOpcional": "Has the certificate expired? Attach a new one (optional)"
+        "certificacionNuevaOpcional": "Has the certificate expired? Attach a new one (optional)",
+        "paraPedirloCompleta": "To request it, fill in {{que}}.",
+        "enLaCuentaN": "in account {{n}}, {{campos}}",
+        "campo": {
+          "tipoDoc": "the holder's ID type",
+          "numeroDoc": "the holder's ID number",
+          "nombre": "the holder's name",
+          "banco": "the bank",
+          "numeroCuenta": "the account number",
+          "certificacion": "the bank certificate"
+        },
+        "faltaCertificacionDeLaCuenta": "Missing the certificate for account {{n}}: each bank certifies one account.",
+        "faltanCertificacionesDeLasCuentas": "Missing the certificates for accounts {{cuentas}}: each bank certifies one account."
       }
     },
     "finance": {

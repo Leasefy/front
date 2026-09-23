@@ -863,7 +863,10 @@ export interface Dispersion {
 
   // Status
   status: DispersionStatus;
+  /** El id de quien aprobó: sirve para comparar con la sesión, no para mostrar. */
   approvedBy?: string;
+  /** Su nombre (23-09), para mostrar. Ausente = back anterior o no se supo. */
+  approvedByName?: string;
   approvedAt?: string;
   processedAt?: string;
   transferReference?: string;

@@ -168,6 +168,20 @@ const BANK_CODE_TO_WIRE: Record<BankCode, string> = {
   bancoomeva: 'BANCOOMEVA',
   pichincha: 'BANCO_PICHINCHA',
   nu: 'NU_COLOMBIA',
+  // 23-09: los mismos ids que `ColombianBank` del back y `lotes/formatos/bancos.ts`.
+  agrario: 'BANCO_AGRARIO',
+  finandina: 'BANCO_FINANDINA',
+  bancamia: 'BANCAMIA',
+  gnbsudameris: 'GNB_SUDAMERIS',
+  santander: 'SANTANDER',
+  serfinanza: 'BANCO_SERFINANZA',
+  coopcentral: 'BANCO_COOPCENTRAL',
+  mundomujer: 'BANCO_MUNDO_MUJER',
+  ban100: 'BAN100',
+  btgpactual: 'BTG_PACTUAL',
+  jpmorgan: 'JP_MORGAN',
+  citibank: 'CITIBANK',
+  lulo: 'LULO_BANK',
 };
 
 /** contract.md §3.3 (T-0014) — front account type -> backend enum. */

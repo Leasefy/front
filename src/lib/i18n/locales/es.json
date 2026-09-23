@@ -51,7 +51,14 @@
     "hours": "horas",
     "minutes": "minutos",
     "refresh": "Actualizar",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "selectorDeArchivo": {
+      "elegir": "Elegir archivo",
+      "elegirOtro": "Elegir otro",
+      "quitar": "Quitar",
+      "quitarArchivo": "Quitar {{nombre}}",
+      "ninguno": "Ningún archivo elegido"
+    }
   },
   "nav": {
     "panel": "Inicio",
@@ -2089,7 +2096,9 @@
         "statusInProcess": "En proceso",
         "tenant": "Inquilino",
         "saleCommission": "Comisión de venta",
-        "propertiesCount": "propiedad(es)"
+        "propertiesCount": "propiedad(es)",
+        "copiarCorreo": "Copiar el correo",
+        "copiarTelefono": "Copiar el teléfono"
       }
     },
     "agentes": {
@@ -2543,7 +2552,9 @@
         "titularDeLaFichaHoy": "Tomado de la ficha de hoy: esta dispersión es anterior a la copia del titular.",
         "repartoTitulo": "Repartido en {{n}} cuentas",
         "repartoANombreDe": "A nombre de {{titular}}",
-        "titularOtraPersona": "otra persona"
+        "titularOtraPersona": "otra persona",
+        "registrarElGiro": "Registrar el giro",
+        "aprobadoPorTi": "ti"
       },
       "resumen": {
         "summaryMonth": "Resumen {{month}}",
@@ -2618,10 +2629,11 @@
       "origenDelGiro": {
         "pregunta": "¿Desde qué cuenta de la inmobiliaria salió el giro?",
         "elegirBanco": "Elige el banco",
-        "ayuda": "Se lo decimos al propietario en el correo del giro: es lo que busca en el extracto de su banco para reconocer la plata. Te proponemos la última cuenta desde la que giraste.",
+        "ayuda": "Se lo decimos al propietario en el correo del giro: es lo que busca en el extracto de su banco para reconocer la plata.",
         "cargando": "Cargando los bancos…",
         "errorAlCargar": "No se pudo cargar la lista de bancos.",
-        "desde": "Desde {{banco}} · {{tipo}}"
+        "desde": "Desde {{banco}} · {{tipo}}",
+        "teProponemosLaUltima": "Te proponemos la última cuenta desde la que giraste."
       }
     },
     "operaciones": {
@@ -5000,7 +5012,15 @@
         "titularErrPasaporte": "El pasaporte lleva sólo letras y números, entre 5 y 20",
         "titularErrNit": "Escribe el NIT así: 900123456-7 (el dígito de verificación es opcional)",
         "titularErrDv": "El dígito de verificación no corresponde: es {{dv}}",
-        "titularErrEsElPropietario": "Ese es el documento del propietario: si la cuenta es suya, elige «Del propietario»"
+        "titularErrEsElPropietario": "Ese es el documento del propietario: si la cuenta es suya, elige «Del propietario»",
+        "docCorto": {
+          "CC": "Cédula (CC)",
+          "CE": "Extranjería (CE)",
+          "TI": "Identidad (TI)",
+          "NIT": "NIT",
+          "PASSPORT": "Pasaporte",
+          "PPT": "PPT"
+        }
       },
       "stats": {
         "properties": "Propiedades",
@@ -5021,7 +5041,9 @@
         "ofTotalRented": "{{rentados}} de {{total}} arrendados",
         "copropiedades": "{{n}} como copropietario",
         "sinPropiedades": "sin inmuebles",
-        "lastPayment": "Último giro"
+        "lastPayment": "Último giro",
+        "unaPropiedad": "1 propiedad",
+        "nPropiedades": "{{n}} propiedades"
       },
       "alertas": {
         "sinCuenta": {
@@ -5099,15 +5121,25 @@
       "cambioDeCuenta": {
         "certificacionDeLaCuenta": "Certificación bancaria de esta cuenta (PDF o foto, obligatoria)",
         "yaCertificada": "Ya certificada: esta cuenta ya recibe hoy, sólo le cambia el porcentaje.",
-        "faltanCertificaciones": "Falta la certificación de {{cuentas}}: cada banco certifica una cuenta.",
         "certificacionesDelReparto": "Certificaciones del reparto",
         "certificacionDeLaCuentaN": "Certificación de la cuenta {{n}}",
-        "cuentaN": "la cuenta {{n}}",
         "sinCertificacionNueva": "ya certificada",
         "certificacionUnica": "Certificación",
         "revisarCertificaciones": "Revisa la certificación de cada cuenta nueva antes de aprobar.",
         "certificacionDeTercero": "Certificación bancaria de esta cuenta (obligatoria: está a nombre de otra persona)",
-        "certificacionNuevaOpcional": "¿La certificación venció? Adjunta una nueva (opcional)"
+        "certificacionNuevaOpcional": "¿La certificación venció? Adjunta una nueva (opcional)",
+        "paraPedirloCompleta": "Para pedirlo, completa {{que}}.",
+        "enLaCuentaN": "en la cuenta {{n}}, {{campos}}",
+        "campo": {
+          "tipoDoc": "el tipo de documento del titular",
+          "numeroDoc": "el número de documento del titular",
+          "nombre": "el nombre del titular",
+          "banco": "el banco",
+          "numeroCuenta": "el número de la cuenta",
+          "certificacion": "la certificación bancaria"
+        },
+        "faltaCertificacionDeLaCuenta": "Falta la certificación de la cuenta {{n}}: cada banco certifica una cuenta.",
+        "faltanCertificacionesDeLasCuentas": "Falta la certificación de las cuentas {{cuentas}}: cada banco certifica una cuenta."
       }
     },
     "finance": {

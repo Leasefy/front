@@ -24,7 +24,8 @@ void React;
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
-    t: (k: string) => k,
+    // Con los parámetros a la vista: «Por: {{name}}» tiene que llevar el NOMBRE.
+    t: (k: string, p?: Record<string, unknown>) => (p ? `${k}(${Object.values(p).join(',')})` : k),
     locale: 'es',
     formatDate: (d: string) => d,
     formatCurrency: (n: number) => `$${n}`,
@@ -535,5 +536,94 @@ describe('<DispersionDetail> «Marcar como girada» pregunta el banco de origen'
     const desde = q('dispersion-desde');
     expect(desde?.textContent).toContain('inmobiliaria.dispersiones.origenDelGiro.desde');
     expect(desde?.textContent).toContain('•••• 4321');
+  });
+});
+
+/**
+ * 🔴 23-09, QA en el navegador: el historial del cajón decía «Por:
+ * eb859b1c-…» —el id de quien aprobó pintado como si fuera su nombre—.
+ */
+describe('<DispersionDetail> quién aprobó, con su nombre', () => {
+  const ID = 'eb859b1c-1111-2222-3333-444455556666';
+  const aprobada: Dispersion = {
+    ...BASE_DISPERSION,
+    status: 'processing',
+    approvedBy: ID,
+    approvedAt: '2026-07-02T10:00:00.000Z',
+  };
+
+  it('el historial nombra a la persona y nunca muestra su id', () => {
+    renderConProps({ ...aprobada, approvedByName: 'Ana Ruiz' }, {});
+    expect(container.textContent).toContain('inmobiliaria.dispersiones.detailView.approvedBy(Ana Ruiz)');
+    expect(container.textContent).not.toContain(ID);
+  });
+
+  it('sin nombre del back: si la aprobó la sesión, «ti»; si no, no hay «Por»', () => {
+    renderConProps(aprobada, { usuarioActualId: ID });
+    expect(container.textContent).toContain(
+      'inmobiliaria.dispersiones.detailView.approvedBy(inmobiliaria.dispersiones.detailView.aprobadoPorTi)',
+    );
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderConProps(aprobada, { usuarioActualId: 'otra' });
+    expect(container.textContent).not.toContain(ID);
+    expect(container.textContent).not.toContain('detailView.approvedBy');
+  });
+});
+
+/**
+ * 🔴 23-09, QA: el pie fijo del cajón cargaba el banco de origen, el número,
+ * la referencia y tres ayudas, y se comía media pantalla. Lo que se LLENA va
+ * en el cuerpo; el pie queda con los botones.
+ */
+describe('<DispersionDetail> el pie queda con los botones', () => {
+  const aprobada: Dispersion = { ...BASE_DISPERSION, status: 'processing', approvedBy: 'u-1' };
+
+  it('la referencia y el banco de origen viven en «Registrar el giro», no en el pie', async () => {
+    origenDelGiroMock.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      bancos: [{ id: 'BANCOLOMBIA', nombre: 'Bancolombia' }],
+      cuentas: [],
+      ultima: null,
+    });
+    renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    await act(async () => {});
+    const seccion = q('dispersion-registrar-el-giro');
+    expect(seccion?.querySelector('[data-testid="dispersion-referencia"]')).not.toBeNull();
+    expect(seccion?.querySelector('[data-testid="origen-del-giro-banco"]')).not.toBeNull();
+    const pie = q('dispersion-marcar-girada')?.closest('.border-t');
+    expect(pie?.querySelector('[data-testid="dispersion-referencia"]')).toBeNull();
+    expect(pie?.querySelector('[data-testid="origen-del-giro"]')).toBeNull();
+  });
+
+  it('«Te proponemos la última cuenta» sólo sale cuando HAY una última', async () => {
+    const opciones = {
+      disponible: true,
+      motivo: null,
+      bancos: [{ id: 'BANCOLOMBIA', nombre: 'Bancolombia' }],
+      cuentas: [],
+      ultima: null as null | { banco: string; tipoDeCuenta: string; numeroDeCuenta: string },
+    };
+    origenDelGiroMock.mockResolvedValue(opciones);
+    renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    await act(async () => {});
+    expect(container.textContent).not.toContain('teProponemosLaUltima');
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    origenDelGiroMock.mockResolvedValue({
+      ...opciones,
+      ultima: { banco: 'BANCOLOMBIA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '12345674321' },
+    });
+    renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    await act(async () => {});
+    expect(container.textContent).toContain('teProponemosLaUltima');
+  });
+
+  it('las ayudas de la referencia no bajan de 13 px (`text-caption`, no `text-[11px]`)', async () => {
+    renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    await act(async () => {});
+    expect(container.innerHTML).not.toContain('text-[11px]');
   });
 });

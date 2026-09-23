@@ -576,3 +576,30 @@ describe('O3 — la ficha sólo ofrece lo que el back va a dejar hacer', () => {
     expect(container.querySelector('[data-testid="accion-exportar"]')).not.toBeNull();
   });
 });
+
+/** 🔴 23-09, QA en el navegador: dos detalles del encabezado y el contacto. */
+describe('encabezado y contacto (QA 23-09)', () => {
+  it('con un inmueble dice «1 propiedad» por clave, no «propiedade» quitándole la s', async () => {
+    datos.propietario = { ...PROPIETARIO, propertyCount: 1 };
+    await render();
+    const resumen = container.querySelector('[data-testid="propietario-resumen"]')?.textContent ?? '';
+    expect(resumen).toContain('inmobiliaria.propietario.stats.unaPropiedad');
+    expect(resumen).not.toContain('propertie');
+  });
+
+  it('con varios, el plural lleva el número', async () => {
+    datos.propietario = { ...PROPIETARIO, propertyCount: 3 };
+    await render();
+    expect(container.querySelector('[data-testid="propietario-resumen"]')?.textContent).toContain(
+      'inmobiliaria.propietario.stats.nPropiedades(3)',
+    );
+  });
+
+  it('el botón de copiar dice lo que HACE; «copiado» sólo después de copiar', async () => {
+    await render();
+    const botones = Array.from(container.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'));
+    expect(botones).toContain('inmobiliaria.propietarios.detail.copiarCorreo');
+    expect(botones).toContain('inmobiliaria.propietarios.detail.copiarTelefono');
+    expect(botones).not.toContain('inmobiliaria.propietarios.detail.copied');
+  });
+});

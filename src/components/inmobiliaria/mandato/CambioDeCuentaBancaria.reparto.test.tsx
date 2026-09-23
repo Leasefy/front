@@ -248,8 +248,9 @@ describe('una certificación por cada cuenta nueva', () => {
     expect(porTestId('certificacion-cuenta-2')).not.toBeNull();
 
     expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    // 23-09 (QA): decía «de la cuenta 2, la cuenta 3».
     expect(porTestId('faltan-certificaciones')?.textContent).toBe(
-      'Falta la certificación de la cuenta 2, la cuenta 3: cada banco certifica una cuenta.',
+      'Falta la certificación de las cuentas 2 y 3: cada banco certifica una cuenta.',
     );
     await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
     expect(porTestId('faltan-certificaciones')?.textContent).toBe(
@@ -391,6 +392,36 @@ describe('una certificación por cada cuenta nueva', () => {
     abrir.mockRestore();
   });
 
+  it('🔴 cada cuenta del reparto dice a nombre de quién está, en la tarjeta y al aprobar', async () => {
+    // 23-09 (QA): «A nombre de: El propietario» sobre un reparto con una
+    // cuenta de María Fernanda Ruiz (PPT): la línea miraba sólo la principal.
+    const DE_MARIA = {
+      ...FICHA,
+      bankName: 'BBVA Colombia',
+      bankAccountNumber: '001300987654',
+      bankAccountHolder: 'María Fernanda Ruiz',
+      bankAccountHolderDocument: '5123456',
+      bankAccountHolderDocumentType: 'PPT',
+      porcentaje: 50,
+      certificacion: { nombre: 'maria.pdf', tipo: 'application/pdf' },
+    };
+    h.cambiosDeCuenta.mockResolvedValue({
+      ...SIN_CAMBIOS,
+      cambios: [{ ...CAMBIO, cuentaNueva: { ...CUENTA_NUEVA, reparto: [CUENTA_NUEVA.reparto[0], DE_MARIA] } }],
+    });
+    await pintar();
+
+    expect(porTestId('titular-de-la-cuenta-0')?.textContent).toBe('A nombre de Jorge Restrepo, el propietario');
+    expect(porTestId('titular-de-la-cuenta-1')?.textContent).toBe('A nombre de María Fernanda Ruiz · PPT 5123456');
+    // La línea única para todo el reparto no vuelve.
+    expect(porTestId('titular-del-cambio')).toBeNull();
+
+    await clic(porTestId('aprobar-cambio-de-cuenta'));
+    const aRevisar = porTestId('certificaciones-a-revisar');
+    expect(aRevisar?.textContent).toContain('A nombre de María Fernanda Ruiz · PPT 5123456');
+    expect(aRevisar?.textContent).toContain('A nombre de Jorge Restrepo, el propietario');
+  });
+
   it('una solicitud vieja (una certificación para todo el reparto) sigue con su botón único', async () => {
     h.cambiosDeCuenta.mockResolvedValue({
       ...SIN_CAMBIOS,
@@ -407,5 +438,98 @@ describe('una certificación por cada cuenta nueva', () => {
     await pintar();
     expect(porTestId('abrir-certificacion')).not.toBeNull();
     expect(porTestId('abrir-certificacion-1')).toBeNull();
+  });
+});
+
+/**
+ * 🔴 23-09, QA: con «De otra persona» y sus datos vacíos, «Pedir el reparto»
+ * estaba ENCENDIDO; el primer clic marcaba tipo y nombre, y el número faltante
+ * salía recién en el segundo. Ahora el botón se apaga y dice todo lo que falta
+ * de una vez, igual que con las certificaciones.
+ */
+describe('lo que falta, todo de una vez y con el botón apagado', () => {
+  it('otra persona sin datos: el botón se apaga y nombra tipo, número y nombre juntos', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      cambios: [],
+      cuentasVigentes: [{ ...FICHA, porcentaje: 100 }],
+      repartoDisponible: true,
+      motivoDelReparto: null,
+    });
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    await clic(porTestId('modo-varias-cuentas'));
+    await escribir(campo('reparto-0-porcentaje'), '50');
+    await escribir(campo('reparto-1-banco'), 'bbva');
+    await escribir(campo('reparto-1-numero'), '001300987654');
+    await escribir(campo('reparto-1-porcentaje'), '50');
+    await adjuntar('certificacion-cuenta-1', 'maria.pdf');
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(false);
+
+    const cuenta2 = porTestId('cuenta-del-reparto-1')!;
+    await clic(cuenta2.querySelector<HTMLElement>('[data-testid="titular-tercero"]'));
+
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    expect(porTestId('faltan-datos')?.textContent).toBe(
+      'Para pedirlo, completa en la cuenta 2, el tipo de documento del titular, el número de documento del titular y el nombre del titular.',
+    );
+    // Lo vacío no se pinta en rojo antes de tiempo: lo dice la frase.
+    expect(cuenta2.querySelector('[role="alert"]')).toBeNull();
+
+    await escribir(campo('reparto-1-titular-nombre'), 'María Fernanda Ruiz');
+    await escribir(campo('reparto-1-titular-numero'), '5123456');
+    expect(porTestId('faltan-datos')?.textContent).toBe(
+      'Para pedirlo, completa en la cuenta 2, el tipo de documento del titular.',
+    );
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('una cuenta sola: sin banco, número ni certificación, el botón dice las tres cosas', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      cambios: [],
+      cuentasVigentes: [],
+      repartoDisponible: true,
+      motivoDelReparto: null,
+    });
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    expect(porTestId('faltan-datos')?.textContent).toBe(
+      'Para pedirlo, completa el banco, el número de la cuenta y la certificación bancaria.',
+    );
+  });
+});
+
+/**
+ * 🔴 23-09, QA: el giro de la inmobiliaria ofrecía 25 bancos y el cambio de
+ * cuenta del propietario 14. Un propietario recibe en cualquier banco.
+ */
+describe('el catálogo completo de bancos', () => {
+  it('se puede pedir el cambio a un banco que antes no estaba (Banco Agrario)', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      cambios: [],
+      cuentasVigentes: [],
+      repartoDisponible: true,
+      motivoDelReparto: null,
+    });
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    const banco = campo<HTMLSelectElement>('banco-nuevo')!;
+    const nombres = Array.from(banco.options).map((o) => o.textContent);
+    for (const n of ['Banco Agrario', 'Lulo Bank', 'Banco Santander', 'Nu Colombia (Nubank)', 'Banco Pichincha']) {
+      expect(nombres).toContain(n);
+    }
+    await escribir(banco, 'agrario');
+    await escribir(campo('numero-nuevo'), '4000123456');
+    await adjuntar();
+    expect(porTestId('faltan-datos')).toBeNull();
+    await clic(porTestId('enviar-cambio'));
+    const [, solicitud] = h.solicitarCambioDeCuenta.mock.calls[0];
+    expect(solicitud.bankCode).toBe('BANCO_AGRARIO');
   });
 });

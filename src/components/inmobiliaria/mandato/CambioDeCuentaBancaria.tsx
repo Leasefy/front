@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { mapBankCodeToWire } from '@/lib/api/inmobiliaria.service';
@@ -93,19 +94,27 @@ function certificacionesPorCuenta(cuenta: CuentaBancaria): boolean {
  */
 function CuentasDelCambio({
   cuenta,
+  propietario,
   onAbrirCertificacion,
 }: {
   cuenta: CuentaBancaria;
+  /** Para decir a nombre de quién está cada cuenta del reparto. */
+  propietario?: { nombre: string; documento: string };
   onAbrirCertificacion?: (indice: number) => void;
 }) {
   const { t } = useI18n();
   if (cuenta.reparto && cuenta.reparto.length > 1) {
     const conCertificaciones = !!onAbrirCertificacion && certificacionesPorCuenta(cuenta);
     return (
-      <ul className="space-y-1" data-testid="reparto-del-cambio">
+      <ul className="space-y-1.5" data-testid="reparto-del-cambio">
         {cuenta.reparto.map((c, i) => (
           <li key={i} className="flex flex-wrap items-center gap-x-2">
             <span className="font-mono">{cuentaDelRepartoEnUnaLinea(c)}</span>
+            {/* 🔴 23-09 (QA): cada cuenta dice su titular; un reparto puede
+                mezclar la del propietario con la de otra persona. */}
+            <span className="basis-full text-sm text-muted-foreground" data-testid={`titular-de-la-cuenta-${i}`}>
+              A nombre de {titularCorto(c, propietario)}
+            </span>
             {conCertificaciones && c.certificacion ? (
               <Button
                 variant="ghost"
@@ -178,11 +187,17 @@ function cuentaDelFormularioDe(
 }
 
 /**
- * A nombre de quién está una cuenta del cambio (22-09): «El propietario» o
- * «Carlos Restrepo · CC 80012345». Con la regla de `titular-de-la-cuenta.ts`.
+ * A nombre de quién está una cuenta del cambio (22-09): «Jorge Restrepo, el
+ * propietario» o «Carlos Restrepo · CC 80012345». Con la regla de
+ * `titular-de-la-cuenta.ts`.
+ *
+ * 🔴 23-09 (QA): la tarjeta decía «A nombre de: El propietario» sobre un
+ * reparto con una cuenta de María Fernanda Ruiz (PPT), porque miraba sólo la
+ * cuenta principal. Ahora se pregunta por CADA cuenta (sirve igual para la
+ * del cambio y para una del reparto: mismos campos).
  */
 function titularCorto(
-  c: CambioDeCuenta['cuentaNueva'],
+  c: Pick<CuentaDelReparto, 'bankAccountHolder' | 'bankAccountHolderDocument' | 'bankAccountHolderDocumentType'>,
   propietario: { nombre: string; documento: string } | undefined,
 ): string {
   const elegido = titularInicial({
@@ -191,14 +206,52 @@ function titularCorto(
     nombreDelTitular: c.bankAccountHolder,
     documentoDelTitular: c.bankAccountHolderDocument,
   });
-  if (elegido === 'PROPIETARIO') return 'El propietario';
+  if (elegido === 'PROPIETARIO') {
+    const nombre = propietario?.nombre.trim();
+    return nombre ? `${nombre}, el propietario` : 'el propietario';
+  }
   return (
     titularEnUnaLinea({
       nombre: c.bankAccountHolder,
       tipoDocumento: c.bankAccountHolderDocumentType,
       numeroDocumento: c.bankAccountHolderDocument,
-    }) || 'Otra persona, sin datos'
+    }) || 'otra persona, sin sus datos'
   );
+}
+
+/** Con mayúscula inicial, para cuando va solo en una celda. */
+function conMayuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function esReparto(c: CuentaBancaria): boolean {
+  return !!c.reparto && c.reparto.length > 1;
+}
+
+const ARCHIVOS_DE_CERTIFICACION = 'application/pdf,image/jpeg,image/png,image/webp';
+
+/** «2», «2 y 3», «2, 3 y 4». */
+function enumerar(partes: readonly string[], y: string): string {
+  if (partes.length <= 1) return partes[0] ?? '';
+  return `${partes.slice(0, -1).join(', ')} ${y} ${partes[partes.length - 1]}`;
+}
+
+/**
+ * De los errores en vivo, los que se marcan EN el campo: lo escrito que está
+ * mal. Lo vacío no se pinta en rojo antes de que la persona llegue a él; lo
+ * nombra la frase de al lado del botón.
+ */
+function loEscritoQueEstaMal(
+  e: ErroresDeLaCuenta,
+  c: { titular: ValorDelTitular; numero?: string },
+): ErroresDeLaCuenta {
+  const titular: ErroresDelTitular = {};
+  if (e.titular?.numero && c.titular.numero.trim()) titular.numero = e.titular.numero;
+  if (e.titular?.nombre && c.titular.nombre.trim()) titular.nombre = e.titular.nombre;
+  return {
+    ...(Object.keys(titular).length > 0 ? { titular } : {}),
+    ...(e.numero && c.numero?.trim() ? { numero: e.numero } : {}),
+  };
 }
 
 export function CambioDeCuentaBancaria({
@@ -303,8 +356,9 @@ export function CambioDeCuentaBancaria({
           <p className="text-muted-foreground">Recibe en {datos.cuentasVigentes.length} cuentas:</p>
           <ul className="mt-1 space-y-0.5">
             {datos.cuentasVigentes.map((c, i) => (
-              <li key={i} className="font-mono">
-                {cuentaDelRepartoEnUnaLinea(c)}
+              <li key={i}>
+                <span className="font-mono">{cuentaDelRepartoEnUnaLinea(c)}</span>
+                <span className="block text-muted-foreground">A nombre de {titularCorto(c, propietario)}</span>
               </li>
             ))}
           </ul>
@@ -312,7 +366,7 @@ export function CambioDeCuentaBancaria({
       ) : null}
 
       {!datos.disponible ? (
-        <p className="text-xs text-muted-foreground">{datos.motivo}</p>
+        <p className="text-caption text-muted-foreground">{datos.motivo}</p>
       ) : !ultimo ? (
         <p className="text-sm text-muted-foreground">
           {tieneCuenta
@@ -338,14 +392,21 @@ export function CambioDeCuentaBancaria({
             <dd>
               <CuentasDelCambio
                 cuenta={ultimo.cuentaNueva}
+                propietario={propietario}
                 onAbrirCertificacion={(i) => abrirArchivo(ultimo, i)}
               />
             </dd>
-            <dt className="text-muted-foreground">A nombre de</dt>
-            <dd data-testid="titular-del-cambio">{titularCorto(ultimo.cuentaNueva, propietario)}</dd>
+            {/* Con reparto, el titular va en cada cuenta: una sola línea para
+                todas mentía cuando una era de otra persona. */}
+            {esReparto(ultimo.cuentaNueva) ? null : (
+              <>
+                <dt className="text-muted-foreground">A nombre de</dt>
+                <dd data-testid="titular-del-cambio">{conMayuscula(titularCorto(ultimo.cuentaNueva, propietario))}</dd>
+              </>
+            )}
             <dt className="text-muted-foreground">Antes</dt>
             <dd>
-              <CuentasDelCambio cuenta={ultimo.cuentaAnterior} />
+              <CuentasDelCambio cuenta={ultimo.cuentaAnterior} propietario={propietario} />
             </dd>
             {ultimo.destinoEnmascarado ? (
               <>
@@ -387,7 +448,7 @@ export function CambioDeCuentaBancaria({
           </div>
 
           {enlaceDePrueba ? (
-            <p className="text-xs text-muted-foreground break-all">
+            <p className="text-caption text-muted-foreground break-all">
               Enlace de prueba (sólo en desarrollo): <a className="underline" href={enlaceDePrueba}>{enlaceDePrueba}</a>
             </p>
           ) : null}
@@ -426,7 +487,7 @@ export function CambioDeCuentaBancaria({
                 </Button>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Lo aprueba o lo rechaza un administrador.</p>
+              <p className="text-caption text-muted-foreground">Lo aprueba o lo rechaza un administrador.</p>
             )
           ) : null}
         </div>
@@ -512,7 +573,6 @@ function PedirCambioDeCuenta({
           ...Array.from({ length: Math.max(0, 2 - cuentasVigentes.slice(0, 1).length) }, () => cuentaVacia()),
         ],
   );
-  const [erroresDelReparto, setErroresDelReparto] = useState<ErroresDeLaCuenta[]>([]);
   const [banco, setBanco] = useState<BankCode | ''>('');
   const [tipo, setTipo] = useState<'AHORROS' | 'CORRIENTE'>('AHORROS');
   const [numero, setNumero] = useState('');
@@ -521,7 +581,6 @@ function PedirCambioDeCuenta({
    * Arranca en «Del propietario»: la cuenta NUEVA se declara de cero.
    */
   const [titular, setTitular] = useState<ValorDelTitular>({ titular: 'PROPIETARIO', nombre: '', tipo: '', numero: '' });
-  const [erroresTitular, setErroresTitular] = useState<ErroresDelTitular>({});
   const [archivo, setArchivo] = useState<File | null>(null);
   /*
    * 🔴 23-09 (Nico: «que el reparto pida una certificación por cada cuenta
@@ -552,26 +611,67 @@ function PedirCambioDeCuenta({
   const [error, setError] = useState<string | null>(null);
 
   const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
+
+  /*
+   * 🔴 23-09 (QA): la validación iba en dos vueltas y con el botón prendido.
+   * Con otra persona como titular y sus datos vacíos, «Pedir el reparto»
+   * estaba encendido; el primer clic marcaba tipo y nombre, y el número
+   * faltante aparecía recién en el segundo. Ahora los errores se calculan en
+   * VIVO con las mismas reglas del envío: el botón se apaga mientras falte
+   * algo y dice QUÉ falta, todo de una vez, igual que con las certificaciones.
+   * En cada campo se marca lo escrito que está mal («entre 5 y 15 dígitos»);
+   * lo vacío lo nombra la frase de al lado del botón.
+   */
+  const revisarDocumento = (tipoDoc: Parameters<typeof revisarDocumentoDelTitular>[0], numeroDoc: string) =>
+    revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento);
+  const erroresDeLaCuenta = (c: CuentaDelFormulario): ErroresDeLaCuenta => {
+    const e: ErroresDeLaCuenta = {};
+    const delTitular = erroresDelTitular(t, c.titular, revisarDocumento);
+    if (Object.keys(delTitular).length > 0) e.titular = delTitular;
+    if (!c.banco) e.banco = 'Escoge el banco.';
+    if (c.numero.length < 4) e.numero = 'Escribe el número de la cuenta.';
+    if (porcentajeEntero(c.porcentaje) === null) e.porcentaje = 'Un número entero entre 1 y 100.';
+    return e;
+  };
+  const erroresDelReparto = cuentas.map(erroresDeLaCuenta);
+  const erroresTitular = erroresDelTitular(t, titular, revisarDocumento);
+  const campos = (k: string) => t(`inmobiliaria.propietario.cambioDeCuenta.campo.${k}`);
+  const y = t('common.and');
+  /** Lo que le falta a una cuenta, dicho con palabras: «el banco», «el nombre del titular». */
+  const faltaEnLaCuenta = (
+    e: { titular?: ErroresDelTitular; banco?: string; numero?: string },
+  ): string[] => [
+    ...(e.titular?.tipo ? [campos('tipoDoc')] : []),
+    ...(e.titular?.numero ? [campos('numeroDoc')] : []),
+    ...(e.titular?.nombre ? [campos('nombre')] : []),
+    ...(e.banco ? [campos('banco')] : []),
+    ...(e.numero ? [campos('numeroCuenta')] : []),
+  ];
+  const faltantes: string[] =
+    modo === 'UNA'
+      ? [
+          ...faltaEnLaCuenta({
+            titular: erroresTitular,
+            banco: banco ? undefined : 'x',
+            numero: numero.length >= 4 ? undefined : 'x',
+          }),
+          ...(archivo ? [] : [campos('certificacion')]),
+        ]
+      : cuentas
+          .map((_, i) => {
+            const falta = faltaEnLaCuenta(erroresDelReparto[i]);
+            return falta.length > 0
+              ? t('inmobiliaria.propietario.cambioDeCuenta.enLaCuentaN', { n: i + 1, campos: enumerar(falta, y) })
+              : null;
+          })
+          .filter((f): f is string => f !== null);
   const listo =
     !guardando &&
-    (modo === 'UNA'
-      ? !!archivo && !!banco && numero.length >= 4
-      : problema === null && sinCertificacion.length === 0);
+    faltantes.length === 0 &&
+    (modo === 'UNA' || (problema === null && sinCertificacion.length === 0));
 
   async function pedirReparto() {
-    const errores: ErroresDeLaCuenta[] = cuentas.map((c) => {
-      const e: ErroresDeLaCuenta = {};
-      const delTitular = erroresDelTitular(t, c.titular, (tipoDoc, numeroDoc) =>
-        revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento),
-      );
-      if (Object.keys(delTitular).length > 0) e.titular = delTitular;
-      if (!c.banco) e.banco = 'Escoge el banco.';
-      if (c.numero.length < 4) e.numero = 'Escribe el número de la cuenta.';
-      if (porcentajeEntero(c.porcentaje) === null) e.porcentaje = 'Un número entero entre 1 y 100.';
-      return e;
-    });
-    setErroresDelReparto(errores);
-    if (errores.some((e) => Object.keys(e).length > 0) || problema || sinCertificacion.length > 0) return;
+    if (!listo) return;
     setGuardando(true);
     setError(null);
     try {
@@ -613,12 +713,7 @@ function PedirCambioDeCuenta({
 
   async function pedir() {
     if (modo === 'VARIAS') return pedirReparto();
-    if (!banco || !archivo) return;
-    const errores = erroresDelTitular(t, titular, (tipoDoc, numeroDoc) =>
-      revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento),
-    );
-    setErroresTitular(errores);
-    if (Object.keys(errores).length > 0) return;
+    if (!listo || !banco || !archivo) return;
     const tercero = titular.titular === 'TERCERO';
     setGuardando(true);
     setError(null);
@@ -704,11 +799,8 @@ function PedirCambioDeCuenta({
           {modo === 'VARIAS' ? (
             <RepartoDeCuentasCampos
               cuentas={cuentas}
-              onCambiar={(v) => {
-                setCuentas(v);
-                setErroresDelReparto([]);
-              }}
-              errores={erroresDelReparto}
+              onCambiar={setCuentas}
+              errores={cuentas.map((c, i) => loEscritoQueEstaMal(erroresDelReparto[i], c))}
               nombreDelPropietario={propietario?.nombre ?? ''}
               pieDeCuenta={(c, i) => {
                 const opcional = requisito(c) === 'OPCIONAL';
@@ -727,15 +819,12 @@ function PedirCambioDeCuenta({
                           ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
                           : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
                     </Label>
-                    <Input
+                    <SelectorDeArchivo
                       id={`reparto-${i}-certificacion`}
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const elegido = e.target.files?.[0] ?? null;
-                        setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
-                      }}
-                      data-testid={`certificacion-cuenta-${i}`}
+                      accept={ARCHIVOS_DE_CERTIFICACION}
+                      archivo={certificaciones[c.llave] ?? null}
+                      onElegir={(elegido) => setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }))}
+                      testid={`certificacion-cuenta-${i}`}
                     />
                   </div>
                 );
@@ -746,11 +835,8 @@ function PedirCambioDeCuenta({
           {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
           <TitularDeLaCuentaCampos
             valor={titular}
-            onCambiar={(v) => {
-              setTitular(v);
-              setErroresTitular({});
-            }}
-            errores={erroresTitular}
+            onCambiar={setTitular}
+            errores={loEscritoQueEstaMal({ titular: erroresTitular }, { titular }).titular}
             nombreDelPropietario={propietario?.nombre ?? ''}
           />
           <div className="space-y-1.5">
@@ -799,22 +885,33 @@ function PedirCambioDeCuenta({
           {modo === 'UNA' ? (
             <div className="space-y-1.5">
               <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
-              <Input
+              <SelectorDeArchivo
                 id="certificacion"
-                type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
-                onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-                data-testid="archivo-certificacion"
+                accept={ARCHIVOS_DE_CERTIFICACION}
+                archivo={archivo}
+                onElegir={setArchivo}
+                testid="archivo-certificacion"
               />
             </div>
-          ) : problema === null && sinCertificacion.length > 0 ? (
-            // El botón apagado dice por qué.
-            <p className="text-sm text-muted-foreground" data-testid="faltan-certificaciones">
-              {t('inmobiliaria.propietario.cambioDeCuenta.faltanCertificaciones', {
-                cuentas: sinCertificacion
-                  .map((i) => t('inmobiliaria.propietario.cambioDeCuenta.cuentaN', { n: i + 1 }))
-                  .join(', '),
+          ) : null}
+          {/* El botón apagado dice por qué: lo que falta, todo de una vez. */}
+          {faltantes.length > 0 ? (
+            <p className="text-sm text-muted-foreground" data-testid="faltan-datos">
+              {t('inmobiliaria.propietario.cambioDeCuenta.paraPedirloCompleta', {
+                que: modo === 'UNA' ? enumerar(faltantes, y) : faltantes.join('; '),
               })}
+            </p>
+          ) : null}
+          {modo === 'VARIAS' && problema === null && sinCertificacion.length > 0 ? (
+            <p className="text-sm text-muted-foreground" data-testid="faltan-certificaciones">
+              {sinCertificacion.length === 1
+                ? t('inmobiliaria.propietario.cambioDeCuenta.faltaCertificacionDeLaCuenta', { n: sinCertificacion[0] + 1 })
+                : t('inmobiliaria.propietario.cambioDeCuenta.faltanCertificacionesDeLasCuentas', {
+                    cuentas: enumerar(
+                      sinCertificacion.map((i) => String(i + 1)),
+                      y,
+                    ),
+                  })}
             </p>
           ) : null}
           {error ? (
@@ -880,33 +977,42 @@ function AprobarCambio({
         <DialogHeader>
           <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
           <DialogDescription>
-            {cambio.cuentaNueva.reparto && cambio.cuentaNueva.reparto.length > 1
-              ? `Reparto en ${cambio.cuentaNueva.reparto.length} cuentas: ${cambio.cuentaNueva.reparto
-                  .map(cuentaDelRepartoEnUnaLinea)
-                  .join('; ')}.${
+            {esReparto(cambio.cuentaNueva)
+              ? `Reparto en ${cambio.cuentaNueva.reparto!.length} cuentas.${
                   certificacionesPorCuenta(cambio.cuentaNueva) ? '' : ' Revisa las certificaciones antes de aprobar.'
                 } Desde este momento los giros se reparten así.`
               : `${cuentaCorta(cambio.cuentaNueva)}, a nombre de ${titularCorto(cambio.cuentaNueva, propietario)}. Revisa la certificación antes de aprobar: desde este momento los giros salen a esta cuenta.`}
           </DialogDescription>
         </DialogHeader>
+        {/* Cada cuenta con su porcentaje y su TITULAR (23-09): quien aprueba
+            tiene que ver a nombre de quién sale cada parte de la plata. */}
         {certificacionesPorCuenta(cambio.cuentaNueva) ? (
           <div className="space-y-1.5 text-sm" data-testid="certificaciones-a-revisar">
             <p className="font-medium text-foreground">
               {t('inmobiliaria.propietario.cambioDeCuenta.certificacionesDelReparto')}
             </p>
             <p className="text-muted-foreground">{t('inmobiliaria.propietario.cambioDeCuenta.revisarCertificaciones')}</p>
-            <CuentasDelCambio cuenta={cambio.cuentaNueva} onAbrirCertificacion={onAbrirCertificacion} />
+            <CuentasDelCambio
+              cuenta={cambio.cuentaNueva}
+              propietario={propietario}
+              onAbrirCertificacion={onAbrirCertificacion}
+            />
+          </div>
+        ) : esReparto(cambio.cuentaNueva) ? (
+          <div className="text-sm" data-testid="cuentas-a-aprobar">
+            <CuentasDelCambio cuenta={cambio.cuentaNueva} propietario={propietario} />
           </div>
         ) : null}
         <div className="space-y-1.5">
           <Label htmlFor="soporte-aprobacion">Soporte de la aprobación (opcional)</Label>
-          <Input
+          <SelectorDeArchivo
             id="soporte-aprobacion"
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
+            accept={ARCHIVOS_DE_CERTIFICACION}
+            archivo={soporte}
+            onElegir={setSoporte}
+            testid="soporte-aprobacion"
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Sin soporte, la bitácora anexa la certificación sobre la que se aprobó.
           </p>
         </div>

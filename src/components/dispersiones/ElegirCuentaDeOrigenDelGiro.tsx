@@ -174,7 +174,12 @@ export function ElegirCuentaDeOrigenDelGiro({
             </option>
           ))}
         </select>
-        <p className="text-caption text-fg-muted">{t('inmobiliaria.dispersiones.origenDelGiro.ayuda')}</p>
+        <p className="text-caption text-fg-muted">
+          {t('inmobiliaria.dispersiones.origenDelGiro.ayuda')}
+          {/* 🔴 23-09 (QA): «Te proponemos la última cuenta desde la que
+              giraste» salía aunque la agencia nunca hubiera girado. */}
+          {datos.ultima ? ` ${t('inmobiliaria.dispersiones.origenDelGiro.teProponemosLaUltima')}` : null}
+        </p>
       </div>
       {elegido && (
         <CamposDeLaCuentaDeOrigen

@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { geocodeApi, GeocodeApiError } from '../geocode.service';
+import { setAccessToken } from '../client';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -146,5 +147,30 @@ describe('geocodeApi.reverse', () => {
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.signal).toBe(controller.signal);
+  });
+});
+
+/*
+ * 23-09: `/api/geocode/*` exige sesión. Si el cliente no manda el token, la
+ * ruta responde 401 y el buscador de direcciones queda muerto en /publicar y
+ * en el panel — sin que ninguna otra prueba lo note.
+ */
+describe('geocodeApi — manda la sesión', () => {
+  it.each([
+    ['autocomplete', () => geocodeApi.autocomplete('Calle 123')],
+    ['reverse', () => geocodeApi.reverse(6.2, -75.5)],
+  ])('%s lleva Authorization: Bearer', async (_caso, llamar) => {
+    setAccessToken('token-de-la-sesion');
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [], result: null }),
+    } as unknown as Response);
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    await llamar();
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer token-de-la-sesion');
   });
 });

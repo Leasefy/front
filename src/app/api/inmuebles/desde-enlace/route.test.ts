@@ -26,6 +26,7 @@ vi.mock('node:dns/promises', () => {
 
 import { POST } from './route';
 import { _olvidarSesionesVerificadas } from '@/lib/api/sesion-de-la-ruta';
+import { _olvidarCuentas, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta';
 
 function pedir(url: string, token: string | null) {
   return POST(
@@ -41,6 +42,7 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://proyecto.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'sb_publishable_prueba';
   _olvidarSesionesVerificadas();
+  _olvidarCuentas();
 });
 
 describe('POST /api/inmuebles/desde-enlace', () => {
@@ -71,5 +73,24 @@ describe('POST /api/inmuebles/desde-enlace', () => {
     const res = await pedir('https://example.com/inmueble/1', TOKEN_VALIDO);
     expect(res.status).toBe(200);
     expect((await res.json()).ok).toBe(true);
+  });
+});
+
+/*
+ * 🔴 Auditoría de seguridad (23-09): con sesión y todo, esta ruta baja páginas
+ * de terceros desde nuestro servidor. Sin techo, una IP la usaba para
+ * martillar a otro sitio.
+ */
+describe('POST /api/inmuebles/desde-enlace — límite por IP', () => {
+  it('pasado el techo responde 429 sin bajar nada, antes de mirar la sesión', async () => {
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    for (let i = 0; i < POLITICAS_DE_LAS_RUTAS.desdeEnlace.maximo; i++) {
+      await pedir('', TOKEN_VALIDO);
+    }
+    const res = await pedir('https://example.com/inmueble/1', TOKEN_VALIDO);
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

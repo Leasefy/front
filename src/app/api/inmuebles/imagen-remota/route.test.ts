@@ -36,6 +36,7 @@ vi.mock('@supabase/supabase-js', () => ({
 import { lookup } from 'node:dns/promises';
 import { GET } from './route';
 import { _olvidarSesionesVerificadas } from '@/lib/api/sesion-de-la-ruta';
+import { _olvidarCuentas } from '@/lib/api/limite-de-la-ruta';
 
 function streamDe(bytes: Uint8Array): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -71,6 +72,7 @@ const HTML = new TextEncoder().encode('<!DOCTYPE html><html><body>No soy una fot
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://proyecto.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'sb_publishable_prueba';
+  _olvidarCuentas();
   _olvidarSesionesVerificadas();
   vi.mocked(lookup).mockResolvedValue([{ address: '203.0.113.10' }] as never);
 });

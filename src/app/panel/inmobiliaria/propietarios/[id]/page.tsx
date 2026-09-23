@@ -867,6 +867,7 @@ function PropietarioDetailContent() {
               {/* Bank Info */}
               <PropietarioBankInfo
                 bankAccount={propietario.bankAccount}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
                 onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
               />
 
@@ -876,6 +877,7 @@ function PropietarioDetailContent() {
               <CambioDeCuentaBancaria
                 propietarioId={propietario.id}
                 tieneCuenta={!!propietario.bankAccount?.accountNumber}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
                 puedeEditar={puedeEditar}
                 onCuentaCambiada={() => void refetch()}
               />

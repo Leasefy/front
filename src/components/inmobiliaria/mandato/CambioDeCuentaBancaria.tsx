@@ -44,10 +44,46 @@ import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ESTADO_DEL_CAMBIO_DE_CUENTA } from '@/lib/mandato/textos';
 import { COLOMBIAN_BANKS, type BankCode } from '@/lib/types/payment-accounts';
+import { useI18n } from '@/lib/i18n';
+import {
+  revisarDocumentoDelTitular,
+  titularEnUnaLinea,
+  titularInicial,
+} from '@/lib/propietarios/titular-de-la-cuenta';
+import {
+  TitularDeLaCuentaCampos,
+  erroresDelTitular,
+  type ErroresDelTitular,
+  type ValorDelTitular,
+} from '@/components/inmobiliaria/TitularDeLaCuentaCampos';
 
 function cuentaCorta(c: { bankName: string | null; bankAccountType: string | null; bankAccountNumber: string | null }) {
   const numero = c.bankAccountNumber ? `•••• ${c.bankAccountNumber.slice(-4)}` : 'sin número';
   return [c.bankName, c.bankAccountType, numero].filter(Boolean).join(' · ');
+}
+
+/**
+ * A nombre de quién está una cuenta del cambio (22-09): «El propietario» o
+ * «Carlos Restrepo · CC 80012345». Con la regla de `titular-de-la-cuenta.ts`.
+ */
+function titularCorto(
+  c: CambioDeCuenta['cuentaNueva'],
+  propietario: { nombre: string; documento: string } | undefined,
+): string {
+  const elegido = titularInicial({
+    nombreDelPropietario: propietario?.nombre ?? '',
+    documentoDelPropietario: propietario?.documento ?? '',
+    nombreDelTitular: c.bankAccountHolder,
+    documentoDelTitular: c.bankAccountHolderDocument,
+  });
+  if (elegido === 'PROPIETARIO') return 'El propietario';
+  return (
+    titularEnUnaLinea({
+      nombre: c.bankAccountHolder,
+      tipoDocumento: c.bankAccountHolderDocumentType,
+      numeroDocumento: c.bankAccountHolderDocument,
+    }) || 'Otra persona, sin datos'
+  );
 }
 
 export function CambioDeCuentaBancaria({
@@ -55,8 +91,14 @@ export function CambioDeCuentaBancaria({
   tieneCuenta,
   puedeEditar,
   onCuentaCambiada,
+  propietario,
 }: {
   propietarioId: string;
+  /**
+   * Nombre y documento del propietario (22-09): para decir si la cuenta es suya
+   * o de otra persona, y para no dejar pedir «otra persona» con su cédula.
+   */
+  propietario?: { nombre: string; documento: string };
   /** La ficha ya tiene una cuenta: el cambio va por acá, no por «Editar». */
   tieneCuenta: boolean;
   puedeEditar: boolean;
@@ -164,6 +206,8 @@ export function CambioDeCuentaBancaria({
             </dd>
             <dt className="text-muted-foreground">Cuenta nueva</dt>
             <dd className="font-mono">{cuentaCorta(ultimo.cuentaNueva)}</dd>
+            <dt className="text-muted-foreground">A nombre de</dt>
+            <dd data-testid="titular-del-cambio">{titularCorto(ultimo.cuentaNueva, propietario)}</dd>
             <dt className="text-muted-foreground">Cuenta anterior</dt>
             <dd className="font-mono">{cuentaCorta(ultimo.cuentaAnterior)}</dd>
             {ultimo.destinoEnmascarado ? (
@@ -245,6 +289,7 @@ export function CambioDeCuentaBancaria({
       {pidiendo ? (
         <PedirCambioDeCuenta
           propietarioId={propietarioId}
+          propietario={propietario}
           onCerrar={() => setPidiendo(false)}
           onPedido={async (enlace) => {
             setPidiendo(false);
@@ -257,6 +302,7 @@ export function CambioDeCuentaBancaria({
       {aprobando ? (
         <AprobarCambio
           propietarioId={propietarioId}
+          propietario={propietario}
           cambio={aprobando}
           onCerrar={() => setAprobando(null)}
           onAprobado={async () => {
@@ -284,17 +330,25 @@ export function CambioDeCuentaBancaria({
 
 function PedirCambioDeCuenta({
   propietarioId,
+  propietario,
   onCerrar,
   onPedido,
 }: {
   propietarioId: string;
+  propietario?: { nombre: string; documento: string };
   onCerrar: () => void;
   onPedido: (enlaceDePrueba?: string) => void;
 }) {
+  const { t } = useI18n();
   const [banco, setBanco] = useState<BankCode | ''>('');
   const [tipo, setTipo] = useState<'AHORROS' | 'CORRIENTE'>('AHORROS');
   const [numero, setNumero] = useState('');
-  const [titular, setTitular] = useState('');
+  /*
+   * 🔴 «¿A quién pertenece la cuenta?» (22-09), la misma pregunta que la ficha.
+   * Arranca en «Del propietario»: la cuenta NUEVA se declara de cero.
+   */
+  const [titular, setTitular] = useState<ValorDelTitular>({ titular: 'PROPIETARIO', nombre: '', tipo: '', numero: '' });
+  const [erroresTitular, setErroresTitular] = useState<ErroresDelTitular>({});
   const [archivo, setArchivo] = useState<File | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +357,12 @@ function PedirCambioDeCuenta({
 
   async function pedir() {
     if (!banco || !archivo) return;
+    const errores = erroresDelTitular(t, titular, (tipoDoc, numeroDoc) =>
+      revisarDocumentoDelTitular(tipoDoc, numeroDoc, propietario?.documento),
+    );
+    setErroresTitular(errores);
+    if (Object.keys(errores).length > 0) return;
+    const tercero = titular.titular === 'TERCERO';
     setGuardando(true);
     setError(null);
     try {
@@ -310,7 +370,14 @@ function PedirCambioDeCuenta({
         bankCode: mapBankCodeToWire(banco),
         bankAccountType: tipo,
         bankAccountNumber: numero,
-        bankAccountHolder: titular.trim() || undefined,
+        titularDeLaCuenta: titular.titular,
+        ...(tercero
+          ? {
+              bankAccountHolder: titular.nombre.replace(/\s+/g, ' ').trim(),
+              bankAccountHolderDocument: titular.numero.trim(),
+              bankAccountHolderDocumentType: titular.tipo || undefined,
+            }
+          : {}),
         certificacion: archivo,
       });
       toast.success('Cambio pedido.', {
@@ -333,11 +400,21 @@ function PedirCambioDeCuenta({
         <DialogHeader>
           <DialogTitle>Cambiar la cuenta bancaria</DialogTitle>
           <DialogDescription>
-            Con la certificación bancaria a nombre del propietario. Él confirma el cambio por correo y el primer
-            giro a la cuenta nueva queda retenido hasta que un administrador lo apruebe.
+            Con la certificación bancaria a nombre del titular de la cuenta. El propietario confirma el cambio por
+            correo y el primer giro a la cuenta nueva queda retenido hasta que un administrador lo apruebe.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
+          <TitularDeLaCuentaCampos
+            valor={titular}
+            onCambiar={(v) => {
+              setTitular(v);
+              setErroresTitular({});
+            }}
+            errores={erroresTitular}
+            nombreDelPropietario={propietario?.nombre ?? ''}
+          />
           <div className="space-y-1.5">
             <Label htmlFor="banco-nuevo">Banco</Label>
             <select
@@ -380,10 +457,6 @@ function PedirCambioDeCuenta({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="titular-nuevo">Titular (si no es el propietario)</Label>
-            <Input id="titular-nuevo" value={titular} onChange={(e) => setTitular(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
             <Input
               id="certificacion"
@@ -415,11 +488,13 @@ function PedirCambioDeCuenta({
 
 function AprobarCambio({
   propietarioId,
+  propietario,
   cambio,
   onCerrar,
   onAprobado,
 }: {
   propietarioId: string;
+  propietario?: { nombre: string; documento: string };
   cambio: CambioDeCuenta;
   onCerrar: () => void;
   onAprobado: () => void;
@@ -450,8 +525,8 @@ function AprobarCambio({
         <DialogHeader>
           <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
           <DialogDescription>
-            {cuentaCorta(cambio.cuentaNueva)}. Revisa la certificación antes de aprobar: desde este momento los
-            giros salen a esta cuenta.
+            {cuentaCorta(cambio.cuentaNueva)}, a nombre de {titularCorto(cambio.cuentaNueva, propietario)}. Revisa
+            la certificación antes de aprobar: desde este momento los giros salen a esta cuenta.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">

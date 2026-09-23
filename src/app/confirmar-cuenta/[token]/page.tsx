@@ -76,6 +76,13 @@ export default function ConfirmarCuentaBancariaPage() {
               <p className="text-body-sm text-fg-muted">
                 {cambio.tipoDeCuenta ?? ''} · <span className="font-mono">{cambio.cuentaEnmascarada}</span>
               </p>
+              {/* 🔴 22-09: si la cuenta es de otra persona, el propietario tiene que
+                  leer de quién ANTES de autorizar que su plata salga para allá. */}
+              {cambio.titularDeOtraPersona ? (
+                <p className="mt-1 text-body-sm text-fg" data-testid="titular-de-otra-persona">
+                  A nombre de <strong>{cambio.titularDeOtraPersona}</strong>, no tuyo.
+                </p>
+              ) : null}
             </div>
 
             {cambio.estado === 'PENDIENTE_CONFIRMACION' && !cambio.vencido ? (

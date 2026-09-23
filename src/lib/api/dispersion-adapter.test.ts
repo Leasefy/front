@@ -78,6 +78,22 @@ describe('adaptarDispersion', () => {
       ).toBe('Hernán Botero Ochoa')
     })
 
+    it('🔴 el titular del GIRO (22-09) gana: nombre y documento de la otra persona', () => {
+      const d = adaptarDispersion({
+        ...DEL_BACK,
+        titularDeLaCuenta: {
+          esElPropietario: false,
+          tipoDocumento: 'CC',
+          numeroDocumento: '80012345',
+          nombre: 'Carlos Restrepo',
+          copiadoAlGenerar: true,
+        },
+      })
+      expect(d.propietarioBankAccount?.accountHolder).toBe('Carlos Restrepo')
+      expect(d.propietarioBankAccount?.accountHolderDocument).toBe('80012345')
+      expect(d.titularDeLaCuenta?.esElPropietario).toBe(false)
+    })
+
     it('el tipo, si el back lo manda, se entiende en español o en inglés', () => {
       expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'Ahorros' })?.accountType).toBe('savings')
       expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'CORRIENTE' })?.accountType).toBe('checking')

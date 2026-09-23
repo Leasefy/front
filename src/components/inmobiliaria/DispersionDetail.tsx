@@ -26,6 +26,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
 import { useI18n } from '@/lib/i18n';
 import { SheetTitle } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
@@ -582,11 +583,33 @@ export function DispersionDetail({
                   <CopyButton text={dispersion.propietarioBankAccount.accountNumber} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
                 </div>
               </div>
-              <div>
+              <div className="col-span-2" data-testid="dispersion-titular">
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
-                <p className="text-sm font-medium text-foreground truncate">
-                  {dispersion.propietarioBankAccount.accountHolder || '—'}
-                </p>
+                {/* 🔴 22-09: «Titular: Nombre · CC 123», el del GIRO (copiado al
+                    generarse) y, si es de otra persona, se dice. Decía «—». */}
+                {dispersion.titularDeLaCuenta ? (
+                  <>
+                    <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+                      <span className="truncate" title={titularEnUnaLinea(dispersion.titularDeLaCuenta)}>
+                        {titularEnUnaLinea(dispersion.titularDeLaCuenta) || '—'}
+                      </span>
+                      {!dispersion.titularDeLaCuenta.esElPropietario ? (
+                        <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-caption text-warning">
+                          {t('inmobiliaria.dispersiones.detailView.titularOtraPersona')}
+                        </span>
+                      ) : null}
+                    </p>
+                    {!dispersion.titularDeLaCuenta.copiadoAlGenerar ? (
+                      <p className="mt-0.5 text-caption text-muted-foreground">
+                        {t('inmobiliaria.dispersiones.detailView.titularDeLaFichaHoy')}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {dispersion.propietarioBankAccount.accountHolder || '—'}
+                  </p>
+                )}
               </div>
             </div>
             )}

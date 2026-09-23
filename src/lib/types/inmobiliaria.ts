@@ -130,6 +130,12 @@ export interface PropietarioFormData {
   /** Documento del titular de la cuenta si no es el propietario; vacío = es el propietario. */
   accountHolderDocumentType?: DocumentType | '';
   accountHolderDocument?: string;
+  /**
+   * 🔴 «¿A quién pertenece la cuenta?» (22-09). Con la respuesta, el back valida
+   * y guarda el titular (`TERCERO` exige nombre, tipo y documento; `PROPIETARIO`
+   * lo limpia). Ausente = el titular viaja como estaba (editar sin tocarlo).
+   */
+  titularDeLaCuenta?: 'PROPIETARIO' | 'TERCERO';
   notes?: string;
   /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
   responsableIva?: boolean | null;
@@ -773,6 +779,12 @@ export interface Dispersion {
    * arma `adaptarDispersion`. Ver `lib/api/dispersion-adapter.ts`.
    */
   propietarioBankAccount: PropietarioBankAccount | null;
+  /**
+   * 🔴 A nombre de quién sale ESTE giro (22-09): del propietario u otra persona,
+   * con su documento, copiado al generar la dispersión. Ver
+   * `lib/propietarios/titular-de-la-cuenta.ts`.
+   */
+  titularDeLaCuenta?: import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro | null;
 
   month: string; // '2026-02'
   items: DispersionItem[];
@@ -897,6 +909,11 @@ export interface VistaPreviaDeDispersiones {
     propietarioName: string;
     propietarioBankName: string | null;
     propietarioBankAccount: string | null;
+    /**
+     * A nombre de quién está la cuenta HOY (22-09); es lo que se copia con la
+     * dispersión al generarla. Opcional: back anterior.
+     */
+    titularDeLaCuenta?: Omit<import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro, 'copiadoAlGenerar'>;
     yaExiste: boolean;
     totalCollected: number;
     totalCommission: number;

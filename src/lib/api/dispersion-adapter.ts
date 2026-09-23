@@ -34,6 +34,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { baseDeLaDispersion } from '@/lib/propietarios/base-del-canon';
 import type { DeduccionesDeLaLiquidacion } from '@/lib/types/deducciones';
+import type { TitularDelGiro } from '@/lib/propietarios/titular-de-la-cuenta';
 
 /** Lo que manda el back, tal cual. */
 export interface DispersionDelBack {
@@ -48,6 +49,13 @@ export interface DispersionDelBack {
    */
   propietarioBankAccountType?: string | null;
   propietarioBankAccountHolder?: string | null;
+  /**
+   * 🔴 A nombre de quién sale ESTE giro (22-09): del propietario u otra persona,
+   * con su documento. Lo manda `GET /inmobiliaria/dispersiones` (y `/:id`);
+   * `copiadoAlGenerar: false` = es la ficha de hoy, no la copia del giro.
+   * `null` = no se pudo leer; ausente = back anterior.
+   */
+  titularDeLaCuenta?: TitularDelGiro | null;
   month: string;
   /**
    * Con qué base salió el canon. La manda `GET /inmobiliaria/dispersiones` (y
@@ -128,7 +136,9 @@ export function cuentaDelPropietario(
     DispersionDelBack,
     'propietarioBankName' | 'propietarioBankAccount' | 'propietarioName'
   > &
-    Partial<Pick<DispersionDelBack, 'propietarioBankAccountType' | 'propietarioBankAccountHolder'>>,
+    Partial<
+      Pick<DispersionDelBack, 'propietarioBankAccountType' | 'propietarioBankAccountHolder' | 'titularDeLaCuenta'>
+    >,
 ): PropietarioBankAccount | null {
   if (!d.propietarioBankAccount) return null;
   return {
@@ -143,7 +153,9 @@ export function cuentaDelPropietario(
      * la esposa»). El titular no se deduce del propietario: si el back no lo
      * manda, queda vacío y el cajón dice «—».
      */
-    accountHolder: d.propietarioBankAccountHolder?.trim() || '',
+    accountHolder: d.titularDeLaCuenta?.nombre?.trim() || d.propietarioBankAccountHolder?.trim() || '',
+    // El documento del titular del giro, cuando el back lo manda.
+    ...(d.titularDeLaCuenta?.numeroDocumento ? { accountHolderDocument: d.titularDeLaCuenta.numeroDocumento } : {}),
   };
 }
 
@@ -161,6 +173,8 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     propietarioId: d.propietarioId,
     propietarioName: d.propietarioName,
     propietarioBankAccount: cuentaDelPropietario(d),
+    // Tal cual: ausente = back anterior; la pantalla dice «—».
+    ...(d.titularDeLaCuenta !== undefined ? { titularDeLaCuenta: d.titularDeLaCuenta } : {}),
     month: d.month,
     items: (d.items ?? []).map((i) => ({
       cobroId: i.cobroId,

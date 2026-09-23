@@ -2492,7 +2492,9 @@
         "downloading": "Downloading...",
         "copyTooltip": "Copy",
         "call": "Call",
-        "email": "Email"
+        "email": "Email",
+        "titularDeLaFichaHoy": "Taken from today's profile: this disbursement predates the holder copy.",
+        "titularOtraPersona": "someone else"
       },
       "resumen": {
         "summaryMonth": "Summary {{month}}",
@@ -4887,15 +4889,11 @@
         "checking": "Checking",
         "accountNumber": "Account number",
         "hintDigitsOnly": "Digits only, no dots or dashes",
-        "accountHolder": "Account holder",
-        "hintMatchBank": "Must match the name registered with the bank",
         "department": "Department",
         "selectDepartment": "Select a department…",
         "noDepartment": "No department",
         "holderDocumentType": "Holder's ID type",
         "holderDocumentTypePlaceholder": "Type",
-        "holderDocument": "Holder's ID number",
-        "hintHolderDocument": "Only if the account belongs to someone else. Bancolombia requires it in the disbursement file.",
         "errHolderDocTypeRequired": "Choose the holder's ID type",
         "internalNotes": "Internal notes",
         "hintTeamOnly": "Only visible to the team",
@@ -4916,7 +4914,22 @@
         "errAccountTypeRequired": "Select account type",
         "errAccountNumRequired": "Account number required",
         "errAccountNumInvalid": "Invalid account number (10-20 digits)",
-        "errHolderRequired": "Account holder name required"
+        "titularPregunta": "Who owns the account?",
+        "titularDelPropietario": "The owner",
+        "titularDeOtraPersona": "Someone else",
+        "titularEsElPropietario": "The account is in {{name}}'s name, with their ID.",
+        "titularAvisoOtraPersona": "First, the person who owns the account: the bank checks the transfer against their ID, not the owner's.",
+        "titularNombre": "Account holder's full name",
+        "titularNombreHint": "As registered with the bank",
+        "titularNumero": "Account holder's ID number",
+        "titularErrNombre": "Enter the full name of the account holder",
+        "titularErrVacio": "Enter the account holder's ID number",
+        "titularErrSoloNumeros": "This ID only has digits",
+        "titularErrLargo": "It must have between {{min}} and {{max}} digits",
+        "titularErrPasaporte": "A passport has only letters and digits, 5 to 20",
+        "titularErrNit": "Write the NIT like this: 900123456-7 (the check digit is optional)",
+        "titularErrDv": "The check digit doesn't match: it is {{dv}}",
+        "titularErrEsElPropietario": "That is the owner's ID: if the account is theirs, choose «The owner»"
       },
       "stats": {
         "properties": "Properties",
@@ -4998,7 +5011,9 @@
         "show": "Show",
         "copy": "Copy",
         "verified": "Data verified",
-        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil."
+        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil.",
+        "titularOtraPersona": "Someone else",
+        "titularElPropietario": "The owner"
       },
       "selector": {
         "searchPlaceholder": "Search owner by name, email or document...",

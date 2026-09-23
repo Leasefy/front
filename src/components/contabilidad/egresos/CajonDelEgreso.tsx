@@ -23,9 +23,12 @@
  *
  * ── Una pantalla negada no deja hacer nada ─────────────────────────────────
  *
- * Sin permiso de escritura (`usePuedeEscribir`), los campos llegan apagados con
- * el porqué y el botón no se ofrece activo. Si igual llega un 403, se dice en
- * palabras (`mensajeDeContabilidad`).
+ * 🔴 22-09 · Corregir un egreso pide un PERMISO PROPIO («que sólo lo pueda
+ * hacer alguien con permisos»): `cambiar_fecha_egreso`, que por defecto tiene
+ * sólo el administrador (`usePuedeCambiarEgresos`). Ya no alcanza con escribir
+ * en la contabilidad. Sin él, los campos llegan apagados con el porqué —que
+ * dice quién lo tiene y dónde se otorga— y el botón no se ofrece activo. Si
+ * igual llega el 403 del back, se dice con esas mismas palabras.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -58,7 +61,7 @@ import {
 import { diaDe, diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 import { Nota } from '../piezas';
-import type { PuedeEscribir } from '../use-puede-escribir';
+import { MOTIVO_SIN_CAMBIO_DE_EGRESO, type PuedeEscribir } from '../use-puede-escribir';
 
 /**
  * El mensaje del back, tal cual, cuando lo hay: sus 409 de este flujo dicen
@@ -71,7 +74,11 @@ function mensajeDelCambio(e: unknown): string {
   if (e instanceof ApiError && e.status === 503) {
     return 'Todavía no se pueden corregir egresos: falta un paso de la base de datos que nuestro equipo está habilitando.';
   }
-  if (e instanceof ApiError && e.status !== 403 && e.message) return e.message;
+  // El 403 de esta ruta es el del permiso puntual: dice lo mismo que el cajón
+  // dice antes del intento. `mensajeDeContabilidad` diría «el administrador o
+  // el contador», y el contador sin el permiso es justo quien lo está leyendo.
+  if (e instanceof ApiError && e.status === 403) return MOTIVO_SIN_CAMBIO_DE_EGRESO;
+  if (e instanceof ApiError && e.message) return e.message;
   return mensajeDeContabilidad(e, 'No se pudo guardar el cambio.');
 }
 
@@ -83,12 +90,13 @@ function valorLegible(cambio: CambioDeEgreso, cual: 'valorAnterior' | 'valorNuev
 
 export function CajonDelEgreso({
   egreso,
-  escritura,
+  permiso,
   onCerrar,
   onCambiado,
 }: {
   egreso: Egreso | null;
-  escritura: PuedeEscribir;
+  /** El permiso puntual de corregir egresos (`usePuedeCambiarEgresos`). */
+  permiso: PuedeEscribir;
   onCerrar: () => void;
   /** Después de guardar: la lista se vuelve a pedir (la fecha y el asiento cambiaron). */
   onCambiado: (egreso: Egreso) => void;
@@ -131,8 +139,8 @@ export function CajonDelEgreso({
 
   const hoyEs = hoy();
   const permisos = useMemo(
-    () => (egreso ? queSePuedeCambiar(egreso, escritura) : null),
-    [egreso, escritura],
+    () => (egreso ? queSePuedeCambiar(egreso, permiso) : null),
+    [egreso, permiso],
   );
 
   /*

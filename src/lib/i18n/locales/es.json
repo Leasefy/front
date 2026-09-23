@@ -1796,6 +1796,15 @@
         "alcancePlata": "Sin «Dispersiones · Ver», la ficha del propietario llega sin cuenta bancaria ni plata, y sus extractos, deudas y deducciones no se abren.",
         "alcanceContabilidad": "La contabilidad (libro, balance, PUC) pide «Reportes · Ver».",
         "alcanceAsesor": "Por defecto el Asesor comercial no tiene ninguno de los tres: ve lo comercial y nada de la operación. Dáselos aquí si tu inmobiliaria trabaja distinto.",
+        "puntualesTitulo": "Permisos puntuales",
+        "puntualesDescripcion": "Una acción concreta que se otorga con nombre propio. No entra con marcar la fila entera de un módulo.",
+        "puntualAdminSiempre": "El administrador siempre lo tiene.",
+        "puntuales": {
+          "cambiar_fecha_egreso": {
+            "nombre": "Cambiar la fecha de un egreso",
+            "descripcion": "Corregir la fecha, la referencia o la nota de un egreso ya registrado. Cambiar la fecha mueve su asiento a otro día. Por defecto, sólo el administrador."
+          }
+        },
         "confirmTitle": "Confirmar cambios",
         "confirmDescription": "Los cambios en permisos afectaran inmediatamente a todos los usuarios con estos roles.",
         "cancel": "Cancelar",

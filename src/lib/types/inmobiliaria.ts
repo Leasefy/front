@@ -2713,9 +2713,43 @@ export type PermissionModule =
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
+/**
+ * 🔴 PERMISOS PUNTUALES (22-09-2026): una cosa concreta que la inmobiliaria
+ * otorga con nombre propio, no una de las cinco acciones de la matriz.
+ *
+ * Espejo de `PERMISOS_PUNTUALES` del back (`agency-permissions.ts`). El primero:
+ * cambiar la fecha (y la referencia o la nota) de un egreso ya registrado —
+ * Nico: «que sólo lo pueda hacer alguien con permisos». Por defecto lo tiene
+ * SÓLO el administrador.
+ *
+ * Cuelga del módulo `reportes` por una razón de almacenamiento (el eje de
+ * módulos está congelado con el agente; `reportes` es con el que ya se entra a
+ * la contabilidad). La pantalla de permisos NO lo muestra como una columna de
+ * la matriz: lo muestra aparte, con su nombre, y marcar la fila de Reportes
+ * entera no lo otorga.
+ */
+export type AccionPuntual = 'cambiar_fecha_egreso';
+
+/** Todo lo que puede ir en la lista de acciones de un módulo. */
+export type AccionDePermiso = PermissionAction | AccionPuntual;
+
+export interface PermisoPuntual {
+  accion: AccionPuntual;
+  /** De qué módulo cuelga en la matriz que viaja al back. */
+  modulo: PermissionModule;
+}
+
+/**
+ * El nombre y la descripción viven en i18n:
+ * `inmobiliaria.config.permissions.puntuales.<accion>.nombre|descripcion`.
+ */
+export const PERMISOS_PUNTUALES: readonly PermisoPuntual[] = [
+  { accion: 'cambiar_fecha_egreso', modulo: 'reportes' },
+];
+
 export interface RolePermission {
   module: PermissionModule;
-  actions: PermissionAction[];
+  actions: AccionDePermiso[];
 }
 
 export interface RolePermissions {
@@ -3178,7 +3212,7 @@ export interface RendimientoAgentesReport {
 export function hasPermission(
   permissions: RolePermissions,
   module: PermissionModule,
-  action: PermissionAction
+  action: AccionDePermiso
 ): boolean {
   const modulePermission = permissions.permissions.find((p) => p.module === module);
   if (!modulePermission) return false;
@@ -3189,7 +3223,7 @@ export function hasPermission(
 export function updateRolePermission(
   permissions: RolePermissions,
   module: PermissionModule,
-  action: PermissionAction,
+  action: AccionDePermiso,
   enabled: boolean
 ): RolePermissions {
   const newPermissions = { ...permissions };

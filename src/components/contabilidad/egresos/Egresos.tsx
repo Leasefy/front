@@ -103,7 +103,7 @@ import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
-import { usePuedeEscribir } from '../use-puede-escribir';
+import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
@@ -164,6 +164,9 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   const [movimientoBancarioId, setMovimientoBancarioId] = useState('');
 
   const escritura = usePuedeEscribir();
+  // 🔴 22-09: corregir un egreso ya registrado es un permiso PROPIO, no la
+  // escritura contable (por defecto, sólo el administrador).
+  const cambioDeEgreso = usePuedeCambiarEgresos();
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -787,7 +790,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
       <CajonDelEgreso
         egreso={abierto}
-        escritura={escritura}
+        permiso={cambioDeEgreso}
         onCerrar={() => setAbierto(null)}
         onCambiado={(cambiado) => {
           // La fecha y el asiento cambiaron: la lista se vuelve a pedir, y el

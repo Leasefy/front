@@ -2356,8 +2356,18 @@ export const permissionsApi = {
 // Role Permissions (per-agency role templates)
 // ============================================================================
 
-/** The 5 granular actions a role can hold on a module. */
-export type AgencyAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+/**
+ * Las cinco acciones de la matriz y las PUNTUALES (22-09: `cambiar_fecha_egreso`,
+ * que viaja dentro de `reportes`; ver `PERMISOS_PUNTUALES` en
+ * `lib/types/inmobiliaria.ts`).
+ */
+export type AgencyAction =
+  | 'view'
+  | 'create'
+  | 'edit'
+  | 'delete'
+  | 'export'
+  | 'cambiar_fecha_egreso';
 
 /** module key → allowed actions (an absent module means no access). */
 export type PermMap = Record<string, AgencyAction[]>;

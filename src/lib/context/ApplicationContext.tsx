@@ -30,6 +30,7 @@ import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
 import { getAccessToken, ApiError } from '@/lib/api/client';
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
 import { aplicarPrefill, aplicarIdentidadDelEstudio } from '@/lib/tenant/prefill-a-postulacion';
 
@@ -45,6 +46,25 @@ function getStorageKey(propertyId: string): string {
 
 function createApplicationStorage(propertyId: string): StorageManager<Application> {
   return new StorageManager<Application>(getStorageKey(propertyId));
+}
+
+/**
+ * `/auth?returnUrl=…` para volver a esta postulación después de entrar.
+ *
+ * La vuelta es la URL actual si ya estamos en el asistente de postulación (así
+ * se conservan `?ref=` y `?link=`, que atribuyen la postulación a un agente),
+ * y si no, el asistente de este inmueble. Pasa por `sanitizeReturnUrl` igual
+ * que todo destino que sale de la URL: el `?returnUrl=` lo lee `/auth` y lo
+ * sigue después del inicio de sesión.
+ */
+export function rutaParaIniciarSesion(propertyId: string): string {
+  const porDefecto = `/aplicar/${encodeURIComponent(propertyId)}`;
+  const actual =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/aplicar/')
+      ? `${window.location.pathname}${window.location.search}`
+      : porDefecto;
+  const vuelta = sanitizeReturnUrl(actual, porDefecto);
+  return `/auth?returnUrl=${encodeURIComponent(vuelta)}`;
 }
 
 // ============================================================================
@@ -94,6 +114,12 @@ interface ApplicationContextValue {
   clearApplication: () => void;
   submitApplication: () => Promise<void>;
   submissionError: string | null;
+  /**
+   * Cuando el envío falló porque el correo YA tiene cuenta (409
+   * `INICIA_SESION` de `POST /applications/guest`): a dónde ir a iniciar
+   * sesión, con la vuelta a esta misma postulación. `null` en todo otro caso.
+   */
+  submissionLoginHref: string | null;
   isGuestSubmission: boolean;
 
   // Computed values
@@ -183,6 +209,7 @@ export function ApplicationProvider({
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submissionLoginHref, setSubmissionLoginHref] = useState<string | null>(null);
   const [isGuestSubmission, setIsGuestSubmission] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
@@ -526,6 +553,7 @@ export function ApplicationProvider({
 
     setIsLoading(true);
     setSubmissionError(null);
+    setSubmissionLoginHref(null);
 
     const payload = {
       propertyId,
@@ -712,6 +740,18 @@ export function ApplicationProvider({
         setSubmissionError(
           'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recarga la página para traer tus datos actualizados e intenta de nuevo.',
         );
+      } else if (err instanceof ApiError && err.code === 'INICIA_SESION') {
+        // 🔴 Auditoría de seguridad (23-09): el back ya no radica una
+        // postulación de invitado a nombre de una cuenta existente (cualquiera
+        // podía meterle una a otro con sólo saber su correo). Quien tiene
+        // cuenta se postula con sesión: se lo decimos y lo mandamos a entrar,
+        // con la vuelta a ESTA postulación — el borrador sigue guardado en
+        // este navegador, así que no pierde lo que llenó.
+        setSubmissionError(
+          err.message ||
+            'Ya tienes una cuenta con ese correo: inicia sesión para postularte.',
+        );
+        setSubmissionLoginHref(rutaParaIniciarSesion(propertyId));
       } else if (err instanceof ApiError && err.code === 'PROPIEDAD_EN_VENTA') {
         // contract.md T-0038 §3.3 (WU-2) — hits both POST /applications
         // (authenticated) and POST /applications/guest (this same catch
@@ -860,6 +900,7 @@ export function ApplicationProvider({
     clearApplication,
     submitApplication,
     submissionError,
+    submissionLoginHref,
     isGuestSubmission,
 
     completedSteps,

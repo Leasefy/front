@@ -22,6 +22,7 @@
 
 import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 
 export type TipoDeFallo =
   | 'noExiste'
@@ -496,11 +497,20 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   // como un 500 genérico invita a machacar «Intentar de nuevo», que es
   // exactamente lo que agravó el burst original (ver ledger de la tarea).
   if (status === 429) {
+    // 23-09: el limitador del back dice cuánto falta (`reintentarEnSegundos`,
+    // lo pone `client.ts`). Con el número, la persona sabe cuándo volver en
+    // vez de machacar «Intentar de nuevo».
+    const espera =
+      error instanceof ApiError &&
+      typeof error.detalle?.reintentarEnSegundos === 'number'
+        ? (error.detalle.reintentarEnSegundos as number)
+        : null
     return {
       tipo: 'limitado',
       titulo: 'Estamos recibiendo muchas solicitudes',
-      descripcion:
-        'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
+      descripcion: espera
+        ? `Espera ${cuantoEsperar(espera)} y vuelve a intentar — no es un error, es el sistema protegiéndose de una ráfaga.`
+        : 'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,

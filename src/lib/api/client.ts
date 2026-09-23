@@ -1,5 +1,10 @@
 import { compartirGet, invalidar, recursoDe } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import {
+  CODIGO_DEMASIADAS_SOLICITUDES,
+  mensajeDeDemasiadasSolicitudes,
+  segundosDeEspera,
+} from './demasiadas-solicitudes'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -256,6 +261,23 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * El 429 del limitador del back (o del proxy de adelante), convertido en un
+ * `ApiError` que dice CUÁNTO esperar. Va en todas las ramas que leen una
+ * respuesta —`request`, `requestBlob` y los `fetch` a mano que lo importen—
+ * para que ninguna pantalla muestre «Error 429». Ver `demasiadas-solicitudes.ts`.
+ */
+export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiError> {
+  const cuerpo: Record<string, unknown> = await res.json().catch(() => ({}))
+  const segundos = segundosDeEspera(res.headers, cuerpo)
+  return new ApiError(
+    429,
+    mensajeDeDemasiadasSolicitudes(segundos),
+    CODIGO_DEMASIADAS_SOLICITUDES,
+    { ...cuerpo, reintentarEnSegundos: segundos },
+  )
+}
+
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -416,6 +438,10 @@ async function request<T>(
     )
   }
 
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
+  }
+
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
     // Forwarded generally — not a special case for any one endpoint. 401
@@ -507,6 +533,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
     }
 
     throw new ApiError(401, errorBody.message || 'No autorizado', code)
+  }
+
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
   }
 
   if (!res.ok) {

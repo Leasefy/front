@@ -21795,7 +21795,15 @@ export interface components {
             /** @enum {string} */
             formato?: "BANCOLOMBIA_PAB" | "BANCOLOMBIA_SAP" | "ONEPAY" | "BANCO_DE_BOGOTA" | "BANCO_AGRARIO" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "PLANILLA_MANUAL" | "BANCOOMEVA" | "BANCO_DAVIVIENDA" | "BANCO_DAVIBANK" | "BANCO_BBVA" | "BANCO_DE_OCCIDENTE" | "PLANILLA_FINANDINA" | "PLANILLA_BANCAMIA";
         };
-        MarcarPagadoDto: Record<string, never>;
+        DispersionLoteMarcarPagadoDto: {
+            /**
+             * @description Referencia con la que el banco confirmó el pago del lote
+             * @example BC-20260907-00123
+             */
+            referenciaBanco: string;
+            /** @example false */
+            facturarAhora?: boolean;
+        };
         AnularLoteDto: {
             /**
              * @description Por qué se anula. Sin motivo no se anula.
@@ -22242,8 +22250,8 @@ export interface components {
             /** @description Registra y causa en un solo paso (genera el asiento). */
             causar?: boolean;
         };
-        MotivoDto: {
-            /** @example La comisión de septiembre se traslada junto con la de octubre. */
+        GastoMotivoDto: {
+            /** @example La factura llegó con el NIT equivocado */
             motivo: string;
         };
         CambiarEgresoDto: {
@@ -22325,7 +22333,14 @@ export interface components {
              */
             concepto: string;
         };
-        GuardarConceptosDto: Record<string, never>;
+        ExogenaGuardarConceptosDto: {
+            /**
+             * @description El año GRAVABLE (el de los datos).
+             * @example 2026
+             */
+            anio: number;
+            conceptos: components["schemas"]["EntradaDeConceptoDto"][];
+        };
         AprobarExogenaDto: {
             /** @example 2026 */
             anio: number;
@@ -23310,6 +23325,10 @@ export interface components {
             /** @description Notas internas. */
             notas?: string;
         };
+        CastigoMotivoDto: {
+            /** @description Por qué. Lo lee quien propuso. */
+            motivo: string;
+        };
         GuardarUsuraDto: {
             /** @example 2026-09 */
             mes: string;
@@ -23346,7 +23365,10 @@ export interface components {
             sedeId?: string;
             notas?: string;
         };
-        AnularDto: Record<string, never>;
+        FinanzasAnularDto: {
+            /** @example El contador la rehizo con otros porcentajes. */
+            motivo: string;
+        };
         CrearSedeDto: {
             /** @example Sede Poblado */
             nombre: string;
@@ -23591,6 +23613,10 @@ export interface components {
             /** @description El lote de dispersión que lo disparó. Con lote, el traslado queda atado a ese cierre de liquidación. */
             loteId?: string;
         };
+        TesoreriaMotivoDto: {
+            /** @example La comisión de septiembre se traslada junto con la de octubre. */
+            motivo: string;
+        };
         AplicarPendienteDto: {
             /**
              * @description Cuánto aplicar. Sin esto, todo el saldo del pendiente (topeado por la deuda VENCIDA del cliente).
@@ -23643,6 +23669,8 @@ export interface components {
         CrearNovedadDto: Record<string, never>;
         ActualizarNovedadDto: Record<string, never>;
         ArmarBorradorDto: Record<string, never>;
+        NominaAnularDto: Record<string, never>;
+        NominaMarcarPagadoDto: Record<string, never>;
         CalcularDefinitivaDto: Record<string, never>;
         RegistrarPagoDePrestacionDto: Record<string, never>;
         LiquidarContratistaDto: Record<string, never>;
@@ -24317,6 +24345,7 @@ export interface components {
         AssignEscalationDto: Record<string, never>;
         ResolveEscalationDto: Record<string, never>;
         GuardarAnioDto: Record<string, never>;
+        ExogenaPlataformaGuardarConceptosDto: Record<string, never>;
         PublicarDto: Record<string, never>;
         PatchRegistrationProfileDto: Record<string, never>;
         PatchPrescoringConfigDto: {
@@ -38786,7 +38815,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MarcarPagadoDto"];
+                "application/json": components["schemas"]["DispersionLoteMarcarPagadoDto"];
             };
         };
         responses: {
@@ -40446,7 +40475,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["GastoMotivoDto"];
             };
         };
         responses: {
@@ -40653,7 +40682,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["GastoMotivoDto"];
             };
         };
         responses: {
@@ -40762,7 +40791,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["GastoMotivoDto"];
             };
         };
         responses: {
@@ -40822,7 +40851,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GuardarConceptosDto"];
+                "application/json": components["schemas"]["ExogenaGuardarConceptosDto"];
             };
         };
         responses: {
@@ -45511,7 +45540,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["CastigoMotivoDto"];
             };
         };
         responses: {
@@ -45534,7 +45563,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["CastigoMotivoDto"];
             };
         };
         responses: {
@@ -45757,7 +45786,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnularDto"];
+                "application/json": components["schemas"]["FinanzasAnularDto"];
             };
         };
         responses: {
@@ -46023,7 +46052,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnularDto"];
+                "application/json": components["schemas"]["FinanzasAnularDto"];
             };
         };
         responses: {
@@ -46498,7 +46527,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MotivoDto"];
+                "application/json": components["schemas"]["TesoreriaMotivoDto"];
             };
         };
         responses: {
@@ -47183,7 +47212,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnularDto"];
+                "application/json": components["schemas"]["NominaAnularDto"];
             };
         };
         responses: {
@@ -47225,7 +47254,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MarcarPagadoDto"];
+                "application/json": components["schemas"]["NominaMarcarPagadoDto"];
             };
         };
         responses: {
@@ -47403,7 +47432,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnularDto"];
+                "application/json": components["schemas"]["NominaAnularDto"];
             };
         };
         responses: {
@@ -50016,7 +50045,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GuardarConceptosDto"];
+                "application/json": components["schemas"]["ExogenaPlataformaGuardarConceptosDto"];
             };
         };
         responses: {

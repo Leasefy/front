@@ -42,6 +42,12 @@ export interface PropietarioBankAccount {
   accountNumber: string;
   accountHolder: string;
   /**
+   * 🔴 Los 4 últimos dígitos, lo único que trae la LISTA de propietarios
+   * (23-09, datos personales): ahí `accountNumber` llega vacío y el número
+   * entero sólo viene en la ficha (`getById`). `null`/ausente en la ficha.
+   */
+  ultimos4?: string | null;
+  /**
    * Documento del titular cuando la cuenta NO es del propietario (2026-09-07).
    * Bancolombia lo exige en el archivo de dispersión; sin él el lote usa el
    * documento del propietario. Sólo vienen cuando existen.
@@ -64,6 +70,13 @@ export interface Propietario {
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
   department?: string | null;
   bankAccount: PropietarioBankAccount;
+  /**
+   * 🔴 `true` cuando quien mira no ve la plata del propietario (sin
+   * `dispersiones:view`, el asesor comercial): el back manda la cuenta en
+   * `null` y esto dice por qué — una cuenta en blanco no es «no tiene cuenta».
+   * El formulario no muestra ni exige el bloque bancario y guardar no lo toca.
+   */
+  datosBancariosOcultos?: boolean;
   /** Mandatos donde es el propietario PRINCIPAL (el de mayor participación). */
   propertyCount: number;
   /**

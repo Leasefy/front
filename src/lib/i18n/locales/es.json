@@ -2014,7 +2014,8 @@
         "exportError": "No se pudo exportar. Intenta de nuevo.",
         "createError": "No se pudo crear el propietario. Intenta de nuevo.",
         "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
-        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
+        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo.",
+        "loadForEditError": "No se pudo abrir la ficha del propietario para editarla. Intenta de nuevo en un momento."
       },
       "detail": {
         "title": "Detalle del Propietario",
@@ -4992,6 +4993,7 @@
         "optional": "Opcional",
         "bankDataTitle": "Datos bancarios para dispersiones",
         "bankDataInfo": "Estos datos se usarán para transferir el canon mensual al propietario, después de descontar la comisión de administración.",
+        "bankDataHidden": "Tu rol no ve la cuenta bancaria de los propietarios. Lo que guardes aquí no la cambia; la registra o la corrige quien tenga acceso a los giros.",
         "bank": "Banco",
         "selectBank": "Seleccionar banco...",
         "accountType": "Tipo de cuenta",

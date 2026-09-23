@@ -18,7 +18,9 @@ void React;
 const h = vi.hoisted(() => ({ permisos: null as null | { isAdmin: boolean } }));
 
 vi.mock('@/lib/context/PermissionsContext', () => ({
-  usePermissionsContextSafe: () => h.permisos,
+  // Con la cuenta a la vista: este archivo mira el correo, no la cuenta.
+  usePermissionsContextSafe: () =>
+    h.permisos && { ...h.permisos, isLoading: false, canAccess: () => true },
 }));
 /* El traductor con el es.json REAL: una clave que falta sale cruda y se ve. */
 vi.mock('@/lib/i18n', async () => {

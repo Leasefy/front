@@ -227,6 +227,8 @@ type PropietarioDelBack = Omit<
   bankAccountHolder?: string | null;
   bankAccountHolderDocument?: string | null;
   bankAccountHolderDocumentType?: DocumentType | null;
+  /** Sólo en la LISTA (23-09): los 4 últimos dígitos; el número llega en null. */
+  bankAccountUltimos4?: string | null;
   propertyCount?: number;
   activeLeases?: number;
   totalMonthlyRent?: number;
@@ -259,6 +261,7 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
     bankAccountHolder,
     bankAccountHolderDocument,
     bankAccountHolderDocumentType,
+    bankAccountUltimos4,
     ...rest
   } = raw;
   return {
@@ -277,6 +280,7 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
       accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
       accountNumber: bankAccountNumber ?? '',
       accountHolder: bankAccountHolder ?? '',
+      ...(bankAccountUltimos4 ? { ultimos4: bankAccountUltimos4 } : {}),
       ...(bankAccountHolderDocument ? { accountHolderDocument: bankAccountHolderDocument } : {}),
       ...(bankAccountHolderDocument && bankAccountHolderDocumentType
         ? { accountHolderDocumentType: bankAccountHolderDocumentType }

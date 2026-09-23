@@ -60,6 +60,7 @@ import {
   CLAVES_DE_PAGADO,
   CLAVES_DE_ANULAR,
   CLAVES_DE_CONCILIAR,
+  CLAVES_DE_CAMBIAR_EGRESO,
   MAX_LIMITE_DE_FACTURAS,
   type FacturaNueva,
 } from './gastos.service';
@@ -151,6 +152,10 @@ describe('las listas de claves son las del DTO del contrato', () => {
     expect([...CLAVES_DE_PAGADO]).toEqual(['fecha', 'referenciaBanco']);
     expect([...CLAVES_DE_ANULAR]).toEqual(['motivo']);
     expect([...CLAVES_DE_CONCILIAR]).toEqual(['movimientoBancarioId']);
+  });
+
+  it('cambiar un egreso: `CambiarEgresoDto` del back (22-09), ni monto ni beneficiario', () => {
+    expect([...CLAVES_DE_CAMBIAR_EGRESO]).toEqual(['fecha', 'referencia', 'nota', 'motivo']);
   });
 
   it('🔴 de los totales viaja SÓLO el control; los liquidados no', () => {
@@ -375,6 +380,23 @@ describe('egresos', () => {
   it('comprobante es un GET a su propia ruta', async () => {
     await gastosApi.egresos.comprobante('e1');
     expect(clienteMock.get).toHaveBeenCalledWith(`${BASE}/egresos/e1/comprobante`);
+  });
+
+  it('el historial es un GET a `/cambios`', async () => {
+    await gastosApi.egresos.historial('e1');
+    expect(clienteMock.get).toHaveBeenCalledWith(`${BASE}/egresos/e1/cambios`);
+  });
+
+  it('🔴 cambiar deja caer lo que el DTO no declara: un monto colado es un 400 del pedido entero', async () => {
+    await gastosApi.egresos.cambiar('e1', {
+      fecha: '2026-09-18',
+      motivo: 'El banco rechazó el giro',
+      ...({ valorCop: 1 } as object),
+    });
+    expect(clienteMock.post).toHaveBeenCalledWith(`${BASE}/egresos/e1/cambios`, {
+      fecha: '2026-09-18',
+      motivo: 'El banco rechazó el giro',
+    });
   });
 });
 

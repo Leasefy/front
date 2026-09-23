@@ -104,6 +104,7 @@ import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { CajonDelEgreso } from './CajonDelEgreso';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
   {
@@ -151,6 +152,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
     { tipo: 'lote'; lote: LoteDeEgreso } | { tipo: 'egreso'; egreso: Egreso } | null
   >(null);
   const [motivo, setMotivo] = useState('');
+
+  /**
+   * El egreso abierto en su cajón (Nico, 22-09: poder entrar a un egreso y
+   * cambiarle la fecha). La fila lo abre; los botones de la fila actúan.
+   */
+  const [abierto, setAbierto] = useState<Egreso | null>(null);
 
   /** El egreso que se está conciliando contra el extracto. */
   const [conciliando, setConciliando] = useState<Egreso | null>(null);
@@ -424,8 +431,24 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                     {egresos.map((e) => {
                       const falta = faltaParaGirar(e);
                       return (
-                        <TableRow key={e.id} data-testid={`egreso-${e.id}`}>
-                          <TableCell>
+                        <TableRow
+                          key={e.id}
+                          data-testid={`egreso-${e.id}`}
+                          tabIndex={0}
+                          aria-label={`Abrir el egreso a ${e.beneficiarioNombre}`}
+                          className="cursor-pointer focus-visible:bg-surface-muted"
+                          onClick={() => setAbierto(e)}
+                          onKeyDown={(ev) => {
+                            // Sólo la fila: un Enter en un botón de adentro es de ese botón.
+                            if (ev.target !== ev.currentTarget) return;
+                            if (ev.key === 'Enter' || ev.key === ' ') {
+                              ev.preventDefault();
+                              setAbierto(e);
+                            }
+                          }}
+                        >
+                          {/* Marcar para el lote no abre el cajón. */}
+                          <TableCell onClick={(ev) => ev.stopPropagation()}>
                             {e.estado === 'PENDIENTE' ? (
                               <Checkbox
                                 checked={elegidos.has(e.id)}
@@ -479,6 +502,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                             <Badge variant={TONO_DEL_ESTADO[e.estado]}>
                               {NOMBRE_DEL_ESTADO_DE_EGRESO[e.estado]}
                             </Badge>
+                            {e.estado === 'PAGADO' && e.fechaDelEgreso ? (
+                              <p
+                                className="mt-1 font-mono text-caption text-fg-muted"
+                                data-testid={`fecha-del-egreso-${e.id}`}
+                              >
+                                {diaLegible(e.fechaDelEgreso)}
+                              </p>
+                            ) : null}
                             {e.estado === 'PAGADO' ? (
                               <p
                                 className="mt-1 text-caption text-fg-muted"
@@ -490,7 +521,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               </p>
                             ) : null}
                           </TableCell>
-                          <TableCell>
+                          {/* Los botones actúan; no abren el cajón. */}
+                          <TableCell onClick={(ev) => ev.stopPropagation()}>
                             <div className="flex flex-wrap gap-2">
                               <AccionConMotivo
                                 puede={e.numero !== null}
@@ -752,6 +784,18 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       </Tabs>
 
       {/* ══ Diálogos ══════════════════════════════════════════════════ */}
+
+      <CajonDelEgreso
+        egreso={abierto}
+        escritura={escritura}
+        onCerrar={() => setAbierto(null)}
+        onCambiado={(cambiado) => {
+          // La fecha y el asiento cambiaron: la lista se vuelve a pedir, y el
+          // cajón sigue abierto sobre el egreso como quedó.
+          setAbierto((previo) => (previo ? { ...previo, ...cambiado } : previo));
+          void cargar();
+        }}
+      />
 
       <AlertDialog
         open={pagando !== null}
@@ -1023,6 +1067,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                   {comprobante.lote.referenciaBanco
                     ? ` · ref. ${comprobante.lote.referenciaBanco}`
                     : ''}
+                </p>
+              ) : null}
+
+              {comprobante.nota ? (
+                <p className="text-sm text-fg-muted" data-testid="nota-del-comprobante">
+                  Nota: {comprobante.nota}
                 </p>
               ) : null}
 

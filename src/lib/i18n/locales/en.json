@@ -1404,7 +1404,7 @@
         "bitacora": "Money log",
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
         "movimientos": "Activity log",
-        "movimientosDesc": "Who did what across the panel, with their role and the outcome. It cannot be edited or deleted.",
+        "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },

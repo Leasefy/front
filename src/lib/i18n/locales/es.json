@@ -1438,7 +1438,7 @@
         "bitacora": "Bitácora de plata",
         "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas.",
         "movimientos": "Bitácora de movimientos",
-        "movimientosDesc": "Quién hizo qué en todo el panel, con su rol y el resultado. No se edita ni se borra.",
+        "movimientosDesc": "Quién hizo qué en todo el panel, con su rol y el resultado. Nadie la edita ni la borra a mano.",
         "slaDePqrs": "Tiempo de respuesta",
         "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo."
       },

@@ -1414,3 +1414,103 @@ describe('NuevaFactura · la fila abre el cajón', () => {
     expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
   });
 });
+
+/**
+ * 🔴 QA de Nico, 22-09: «acá tampoco están teniendo en cuenta el IVA, ¡ojo con
+ * eso!». La factura de un LOCAL salió sin IVA, con «ESCENARIO TRIBUTARIO
+ * SIN_DEFINIR» y la explicación enterrada al pie del cajón. Lo que se congela:
+ * el conteo se ve ARRIBA de la tabla antes de emitir, se pueden aislar esas
+ * facturas, y el cajón dice en palabras por qué sale sin impuestos y lleva al
+ * contrato a confirmarlo.
+ */
+describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-09)', () => {
+  const confirmada = factura({
+    clave: 'ct-2|2026-09|INQUILINO',
+    cuotaId: 'cu-2',
+    contractId: 'ct-2',
+    terceroNombre: 'Marta Confirmada',
+    impuestosSinConfirmar: false,
+    notasTributarias: [],
+    escenario: { codigo: 'E1', nombre: 'Vivienda o local entre personas naturales', certeza: 'CONFIRMADO' },
+  });
+  const papas = factura({
+    clave: 'ct-151|2026-09|INQUILINO',
+    cuotaId: 'cu-151',
+    contractId: 'ct-151',
+    numeroExterno: '3',
+    codigo: 151,
+    terceroNombre: 'J y C Papas S.A.S',
+    escenario: { codigo: 'SIN_DEFINIR', nombre: 'Escenario sin definir', certeza: 'SIN_DEFINIR' },
+    notasTributarias: [
+      'La cuota de 2026-09 se generó SIN impuestos porque el escenario tributario del contrato estaba deducido o sin definir. Confírmalo en la ficha del contrato y vuelve a generar la tabla de amortización.',
+    ],
+  });
+  const yaEmitida = factura({
+    clave: 'ct-3|2026-09|INQUILINO',
+    cuotaId: 'cu-3',
+    contractId: 'ct-3',
+    terceroNombre: 'Ya Emitida',
+    estado: 'EMITIDA',
+    numero: 7,
+  });
+
+  it('dice cuántas saldrían sin impuestos, sin contar las ya emitidas', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada, papas, yaEmitida], propietarios: [] }),
+    );
+    await montar();
+    const aviso = q('[data-testid="facturacion-inquilinos-sin-escenario"]');
+    expect(aviso?.textContent).toContain(
+      '1 factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.',
+    );
+  });
+
+  it('«Ver sólo esas» deja en la tabla únicamente las que salen sin impuestos', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada, papas, yaEmitida], propietarios: [] }),
+    );
+    await montar();
+    await clic('[data-testid="facturacion-inquilinos-ver-sin-escenario"]');
+    expect(q('[data-testid="factura-ct-151|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="factura-ct-2|2026-09|INQUILINO"]')).toBeNull();
+    expect(q('[data-testid="facturacion-inquilinos-ver-sin-escenario"]')?.textContent).toBe(
+      'Ver todas',
+    );
+  });
+
+  it('con todo confirmado no hay aviso', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada], propietarios: [] }),
+    );
+    await montar();
+    expect(q('[data-testid="facturacion-inquilinos-sin-escenario"]')).toBeNull();
+  });
+
+  it('el cajón dice «Escenario sin definir» (nunca SIN_DEFINIR) y lleva al contrato a confirmarlo', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [papas], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-151|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    const aviso = cajon.querySelector('[data-testid="cajon-escenario-sin-confirmar"]');
+    expect(aviso?.textContent).toContain('Escenario sin definir');
+    expect(cajon.textContent).not.toContain('SIN_DEFINIR');
+    expect(
+      cajon.querySelector('[data-testid="cajon-confirmar-escenario"]')?.getAttribute('href'),
+    ).toBe('/panel/inmobiliaria/contratos/ct-151#escenario-tributario');
+    // La nota del back dice lo mismo que el aviso: no se repite.
+    expect(cajon.textContent).not.toContain('se generó SIN impuestos');
+  });
+
+  it('una factura con el escenario confirmado no muestra el aviso en el cajón', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [confirmada], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-2|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon.querySelector('[data-testid="cajon-escenario-sin-confirmar"]')).toBeNull();
+    expect(cajon.textContent).toContain('Escenario 1 · Vivienda o local entre personas naturales');
+  });
+});

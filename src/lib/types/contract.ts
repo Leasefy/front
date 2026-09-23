@@ -397,6 +397,23 @@ export interface EscenarioTributarioDelContrato {
     retencionSobreLaComision: EjeDelEscenario;
   };
   fueraDelCatalogo: string[];
+  /**
+   * El escenario que el contrato MIGRADO trae de su sistema anterior (la nota
+   * «Escenario tributario (migrado)») y si quedó mandando. `null` = el
+   * contrato no lo trae. Opcional: un back anterior al 22-09 no lo manda.
+   */
+  delArchivo?: EscenarioDelArchivo | null;
+}
+
+export interface EscenarioDelArchivo {
+  /** El texto tal cual el archivo. */
+  texto: string;
+  /** El escenario del catálogo que es, o `null` si no es ninguno. */
+  codigo: Exclude<CodigoDeEscenario, 'SIN_DEFINIR'> | null;
+  /** `true` = sus impuestos son los que se facturan. */
+  aplicado: boolean;
+  /** Por qué no se aplicó. En español, se muestra tal cual. */
+  motivo: string | null;
 }
 
 // ============================================================================

@@ -36,6 +36,14 @@ import {
   type FacturaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
 
+/**
+ * «Escenario 8» a partir de `E8`. `SIN_DEFINIR` no es un escenario: nunca se
+ * pinta el código crudo de la base.
+ */
+function etiquetaDelEscenario(codigo: string): string {
+  return /^E\d$/.test(codigo) ? `Escenario ${codigo.slice(1)}` : 'Escenario sin definir'
+}
+
 export interface CajonDeLaFacturaProps {
   /** `null` = cerrado. Es la misma fila que pinta la tabla. */
   factura: FacturaDelMes | null
@@ -76,6 +84,14 @@ export function CajonDeLaFactura({
 }: CajonDeLaFacturaProps) {
   const emitida = factura?.estado === 'EMITIDA'
   const bloqueada = factura ? !emitida && !factura.emitible : false
+  /*
+   * La nota «se generó SIN impuestos…» del back dice lo mismo que el aviso del
+   * escenario sin confirmar, que ya va arriba con su botón: la misma frase no
+   * se dice dos veces.
+   */
+  const notasSinRepetir = (factura?.notasTributarias ?? []).filter(
+    (n) => !/se generó SIN impuestos/i.test(n),
+  )
 
   return (
     <Cajon
@@ -258,24 +274,55 @@ export function CajonDeLaFactura({
               )}
             </dl>
 
-            {factura.escenario && (
+            {factura.escenario && factura.escenario.certeza === 'CONFIRMADO' && (
               <Dato rotulo="Escenario tributario">
-                {factura.escenario.codigo} · {factura.escenario.nombre}
-                {factura.escenario.certeza !== 'CONFIRMADO' && (
-                  <span className="text-warning">
-                    {' '}
-                    · {factura.escenario.certeza === 'DEDUCIDO' ? 'deducido' : 'sin definir'}
-                  </span>
-                )}
+                {etiquetaDelEscenario(factura.escenario.codigo)} · {factura.escenario.nombre}
               </Dato>
             )}
 
-            {factura.notasTributarias.length > 0 && (
+            {/* 🔴 QA de Nico, 22-09: la factura de un local salía con
+                «ESCENARIO TRIBUTARIO SIN_DEFINIR» —el código crudo de la base—
+                y una nota larga al pie. Un escenario sin confirmar es la razón
+                de que la factura salga SIN impuestos: se dice en palabras y con
+                la salida al lado, que es confirmarlo en el contrato. */}
+            {(factura.impuestosSinConfirmar ||
+              (factura.escenario !== null && factura.escenario.certeza !== 'CONFIRMADO')) && (
+              <section
+                className="space-y-2 rounded-lg border border-warning/40 bg-warning-soft p-3"
+                data-testid="cajon-escenario-sin-confirmar"
+              >
+                <p className="flex items-start gap-2 text-sm font-medium text-fg">
+                  <Warning
+                    className="mt-0.5 h-4 w-4 shrink-0 text-warning"
+                    weight="fill"
+                    aria-hidden="true"
+                  />
+                  {factura.escenario?.certeza === 'DEDUCIDO'
+                    ? `Escenario deducido, sin confirmar: ${etiquetaDelEscenario(factura.escenario.codigo)} · ${factura.escenario.nombre}`
+                    : 'Escenario sin definir'}
+                </p>
+                <p className="text-sm text-fg-muted">
+                  Esta factura sale sin IVA ni retenciones porque nadie confirmó el
+                  escenario tributario de su contrato. Confírmalo en la ficha del
+                  contrato y vuelve a generar su tabla de cuotas.
+                </p>
+                <Button asChild variant="outline" size="sm">
+                  <Link
+                    href={`/panel/inmobiliaria/contratos/${factura.contractId}#escenario-tributario`}
+                    data-testid="cajon-confirmar-escenario"
+                  >
+                    Confirmar el escenario en el contrato
+                  </Link>
+                </Button>
+              </section>
+            )}
+
+            {notasSinRepetir.length > 0 && (
               <section className="space-y-1.5">
                 <h3 className="text-caption uppercase tracking-wide text-fg-muted">
                   Notas tributarias
                 </h3>
-                {factura.notasTributarias.map((n) => (
+                {notasSinRepetir.map((n) => (
                   <p key={n} className="text-sm text-fg-muted">
                     {n}
                   </p>

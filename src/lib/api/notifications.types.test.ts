@@ -150,7 +150,7 @@ describe('actionUrl de una notificación', () => {
   });
 
   it.each([
-    ['/panel/inmobiliaria/cobros?highlight=abc'],
+    ['/panel/inmobiliaria/pagos?highlight=abc'],
     ['/inquilino/pagos'],
     ['https://leasefy.co/estado-de-cuenta/tok123'],
     ['http://localhost:3011/estado-de-cuenta/tok123'],

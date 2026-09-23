@@ -57,6 +57,7 @@ import { usePuedeEscribir } from '../use-puede-escribir';
 import { EventosDeGasto } from './EventosDeGasto';
 import { RubrosDelPyg } from './RubrosDelPyg';
 import { NOMBRE_DEL_LADO, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
+import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 
 /** Cómo va el mapeo, para quien lo tiene adentro. Ver `onEstado`. */
 export interface EstadoDelMapeo {
@@ -370,10 +371,11 @@ export function MapeoContable({
             hideArrow
             onClick={() => void reprocesar()}
             disabled={reprocesando || !escritura.puede}
-            title={escritura.motivo ?? undefined}
+            // Sin «Reprocesando…» (23-09): el avance es del centro de procesos.
+            title={escritura.motivo ?? (reprocesando ? EN_CURSO_EN_EL_CENTRO : undefined)}
             data-testid="reprocesar-asientos"
           >
-            {reprocesando ? 'Reprocesando…' : 'Reprocesar'}
+            Reprocesar
           </Button>
         </div>
       ) : null}

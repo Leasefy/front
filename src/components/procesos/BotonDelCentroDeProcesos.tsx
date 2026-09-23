@@ -17,7 +17,7 @@
  * lleva al historial completo.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Queue } from '@phosphor-icons/react'
 
@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils'
 import { FilaDeProceso } from './FilaDeProceso'
 import { DetalleDelProceso } from './DetalleDelProceso'
 import type { Proceso } from '@/lib/api/procesos.types'
-import { estaActivo } from './estado-del-proceso'
+import { anuncioResuelto, estaActivo, MS_TOPE_DEL_ANUNCIO, type AnuncioPendiente } from './estado-del-proceso'
 
 export const RUTA_DEL_CENTRO = '/panel/inmobiliaria/procesos'
 
@@ -57,11 +57,13 @@ const CIRCUNFERENCIA = 2 * Math.PI * RADIO
  * La frase de arriba del panel: el resumen es una FRASE (el molde), no un
  * contador suelto.
  */
-export function resumenDelCentro(data: ListaDeProcesos | null): string {
+export function resumenDelCentro(data: ListaDeProcesos | null, arrancando = false): string {
   if (!data) return 'Leyendo…'
   if (!data.disponible) return data.motivo ?? 'El centro de procesos todavía no está disponible.'
   const vivos = data.activos
   const quien = data.veTodos ? 'del equipo' : 'tuyos'
+  // Lo que se acaba de lanzar todavía no llegó: «Nada en curso» lo desmentiría.
+  if (vivos === 0 && arrancando) return 'Arrancando lo que acabas de lanzar.'
   if (vivos === 0) {
     return data.procesos.length === 0
       ? 'Aquí aparecen las emisiones, archivos, cargas y exportaciones que lances, con su avance y lo que dejan para descargar.'
@@ -74,7 +76,8 @@ export function BotonDelCentroDeProcesos() {
   const [abierto, setAbierto] = useState(false)
   /** El proceso recién lanzado: va arriba y resaltado. `'nuevo'` = el más nuevo activo. */
   const [resaltar, setResaltar] = useState<string | null>(null)
-  const [anunciado, setAnunciado] = useState<string | null>(null)
+  /** Lo anunciado que el back todavía no muestra: la línea «Arrancando…». */
+  const [anuncio, setAnuncio] = useState<AnuncioPendiente | null>(null)
   /** El cajón de «Ver detalle» vive FUERA del popover: el popover se cierra al abrirlo. */
   const [detalle, setDetalle] = useState<Proceso | null>(null)
   const verDetalle = (p: Proceso) => {
@@ -84,6 +87,9 @@ export function BotonDelCentroDeProcesos() {
   const centro = useCentroDeProcesos({ limite: TOPE })
   const data = centro.data
   const activos = data?.activos ?? 0
+  /** La lista al momento del anuncio: lo que no esté ahí nació después. */
+  const ultimaLista = useRef<ListaDeProcesos | null>(null)
+  ultimaLista.current = data
 
   /*
    * 🔴 El centro se hace PRESENTE (Nico, 22-09: «mandé a emitir algo y el
@@ -95,7 +101,15 @@ export function BotonDelCentroDeProcesos() {
     () =>
       alEventoDelCentro((e) => {
         setResaltar(e.procesoId ?? 'nuevo')
-        if (e.titulo) setAnunciado(e.titulo)
+        if (e.titulo) {
+          setAnuncio({
+            titulo: e.titulo,
+            procesoId: e.procesoId ?? null,
+            tipo: e.tipoDeProceso ?? null,
+            conocidos: new Set((ultimaLista.current?.procesos ?? []).map((p) => p.id)),
+            desde: Date.now(),
+          })
+        }
         if (e.tipo === 'anuncio' && hayUnDialogoAbierto()) {
           toast.info(e.titulo ?? 'Proceso en marcha', {
             description: 'Lo sigues en el centro de procesos.',
@@ -107,6 +121,24 @@ export function BotonDelCentroDeProcesos() {
       }),
     [],
   )
+
+  /*
+   * 🔴 El «Arrancando…» se quita cuando el back ya muestra ese proceso —en
+   * curso o ya terminado— o, a lo sumo, pasado `MS_TOPE_DEL_ANUNCIO`. Antes
+   * sólo se escondía con algo EN CURSO y se borraba al cerrar el panel.
+   */
+  useEffect(() => {
+    if (!anuncio) return
+    if (anuncioResuelto(anuncio, data?.procesos ?? [])) {
+      setAnuncio(null)
+      return
+    }
+    const t = setTimeout(
+      () => setAnuncio((a) => (a === anuncio ? null : a)),
+      Math.max(0, anuncio.desde + MS_TOPE_DEL_ANUNCIO - Date.now()),
+    )
+    return () => clearTimeout(t)
+  }, [anuncio, data])
 
   const vivos = useMemo(() => (data?.procesos ?? []).filter(estaActivo), [data])
   const recientes = useMemo(
@@ -142,7 +174,7 @@ export function BotonDelCentroDeProcesos() {
         if (o) void centro.refetch()
         else {
           setResaltar(null)
-          setAnunciado(null)
+          setAnuncio(null)
         }
       }}
     >
@@ -206,7 +238,7 @@ export function BotonDelCentroDeProcesos() {
             <p className="text-caption text-fg-muted" data-testid="centro-de-procesos-resumen">
               {centro.error && !data
                 ? 'No pudimos leer el centro de procesos. Vuelve a abrirlo en un momento.'
-                : resumenDelCentro(data)}
+                : resumenDelCentro(data, anuncio !== null)}
             </p>
           </div>
         </header>
@@ -217,10 +249,10 @@ export function BotonDelCentroDeProcesos() {
           style={{ overscrollBehavior: 'contain' }}
         >
           {/* Recién lanzado y el back todavía no lo registró: se ve igual. */}
-          {anunciado && vivos.length === 0 && (
+          {anuncio && (
             <p className="flex items-center gap-2 px-4 py-3 text-caption text-fg-muted" data-testid="centro-arrancando">
               <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
-              Arrancando «{anunciado}»…
+              Arrancando «{anuncio.titulo}»…
             </p>
           )}
 

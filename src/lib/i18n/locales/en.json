@@ -4956,10 +4956,9 @@
         "titularDeOtraPersona": "Someone else",
         "titularEsElPropietario": "The account is in {{name}}'s name, with their ID.",
         "titularAvisoOtraPersona": "First, the person who owns the account: the bank checks the transfer against their ID, not the owner's.",
-        "titularNombre": "Account holder's full name",
+        "titularNombre": "Account holder's full name (optional)",
         "titularNombreHint": "As registered with the bank",
         "titularNumero": "Account holder's ID number",
-        "titularErrNombre": "Enter the full name of the account holder",
         "titularErrVacio": "Enter the account holder's ID number",
         "titularErrSoloNumeros": "This ID only has digits",
         "titularErrLargo": "It must have between {{min}} and {{max}} digits",
@@ -5071,7 +5070,9 @@
         "cuentaN": "account {{n}}",
         "sinCertificacionNueva": "already certified",
         "certificacionUnica": "Certificate",
-        "revisarCertificaciones": "Check the certificate of each new account before approving."
+        "revisarCertificaciones": "Check the certificate of each new account before approving.",
+        "certificacionDeTercero": "Bank certificate for this account (required: it is in another person's name)",
+        "certificacionNuevaOpcional": "Has the certificate expired? Attach a new one (optional)"
       }
     },
     "finance": {

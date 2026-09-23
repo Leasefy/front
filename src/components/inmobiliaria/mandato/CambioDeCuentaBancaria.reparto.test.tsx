@@ -242,7 +242,8 @@ describe('una certificación por cada cuenta nueva', () => {
     await repartoDeTres();
     expect(porTestId('archivo-certificacion')).toBeNull();
     expect(porTestId('cuenta-ya-certificada-0')?.textContent).toContain('Ya certificada');
-    expect(porTestId('certificacion-cuenta-0')).toBeNull();
+    // Para la que ya recibe, el archivo es opcional (por si la anterior venció).
+    expect(document.body.textContent).toContain('¿La certificación venció? Adjunta una nueva (opcional)');
     expect(porTestId('certificacion-cuenta-1')).not.toBeNull();
     expect(porTestId('certificacion-cuenta-2')).not.toBeNull();
 
@@ -281,6 +282,54 @@ describe('una certificación por cada cuenta nueva', () => {
       null,
       'occidente.pdf',
     ]);
+  });
+
+  it('🔴 a la cuenta que ya recibe se le puede adjuntar una certificación nueva, y viaja en su posición', async () => {
+    await repartoDeTres();
+    await adjuntar('certificacion-cuenta-0', 'bancolombia-2026.pdf');
+    await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
+    await adjuntar('certificacion-cuenta-2', 'occidente.pdf');
+    await clic(porTestId('enviar-cambio'));
+    const [, solicitud] = h.solicitarCambioDeCuenta.mock.calls[0];
+    expect((solicitud.certificacionesPorCuenta as (File | null)[]).map((a) => a?.name ?? null)).toEqual([
+      'bancolombia-2026.pdf',
+      'nubank.pdf',
+      'occidente.pdf',
+    ]);
+  });
+
+  it('🔴 una cuenta que YA recibe pero está a nombre de otra persona sí pide su certificación', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      ...SIN_CAMBIOS,
+      cuentasVigentes: [
+        { ...FICHA, porcentaje: 60 },
+        {
+          ...FICHA,
+          bankName: 'Banco de Occidente',
+          bankAccountNumber: '990001234',
+          bankAccountHolder: null,
+          bankAccountHolderDocument: '80012345',
+          bankAccountHolderDocumentType: 'CC',
+          porcentaje: 40,
+        },
+      ],
+    });
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    await escribir(campo('reparto-0-porcentaje'), '50');
+    await escribir(campo('reparto-1-porcentaje'), '50');
+    expect(porTestId('suma-del-reparto')?.textContent).toBe('Suman 100 %.');
+    expect(porTestId('cuenta-ya-certificada-0')).not.toBeNull();
+    expect(porTestId('cuenta-ya-certificada-1')).toBeNull();
+    expect(document.body.textContent).toContain(
+      'Certificación bancaria de esta cuenta (obligatoria: está a nombre de otra persona)',
+    );
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    expect(porTestId('faltan-certificaciones')?.textContent).toBe(
+      'Falta la certificación de la cuenta 2: cada banco certifica una cuenta.',
+    );
+    await adjuntar('certificacion-cuenta-1', 'occidente.pdf');
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(false);
   });
 
   const CUENTA_NUEVA = {

@@ -4990,10 +4990,9 @@
         "titularDeOtraPersona": "De otra persona",
         "titularEsElPropietario": "La cuenta queda a nombre de {{name}}, con su documento.",
         "titularAvisoOtraPersona": "Primero, la persona dueña de la cuenta: el banco revisa el giro contra su documento, no contra el del propietario.",
-        "titularNombre": "Nombre completo del titular",
+        "titularNombre": "Nombre completo del titular (opcional)",
         "titularNombreHint": "Como aparece en el banco",
         "titularNumero": "Número de documento del titular",
-        "titularErrNombre": "Escribe el nombre completo de la persona dueña de la cuenta",
         "titularErrVacio": "Escribe el número de documento del titular",
         "titularErrSoloNumeros": "Este documento lleva sólo números",
         "titularErrLargo": "Debe tener entre {{min}} y {{max}} dígitos",
@@ -5105,7 +5104,9 @@
         "cuentaN": "la cuenta {{n}}",
         "sinCertificacionNueva": "ya certificada",
         "certificacionUnica": "Certificación",
-        "revisarCertificaciones": "Revisa la certificación de cada cuenta nueva antes de aprobar."
+        "revisarCertificaciones": "Revisa la certificación de cada cuenta nueva antes de aprobar.",
+        "certificacionDeTercero": "Certificación bancaria de esta cuenta (obligatoria: está a nombre de otra persona)",
+        "certificacionNuevaOpcional": "¿La certificación venció? Adjunta una nueva (opcional)"
       }
     },
     "finance": {

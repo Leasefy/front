@@ -533,9 +533,20 @@ function PedirCambioDeCuenta({
    */
   const [certificaciones, setCertificaciones] = useState<Record<string, File | null>>({});
   const vigentesDelFormulario = cuentasVigentes.map((c) => cuentaDelFormularioDe(c, propietario, false));
-  const esNueva = (c: CuentaDelFormulario) => !esCuentaVigente(c, vigentesDelFormulario);
+  /*
+   * Qué pide cada cuenta (espejo de `requisitosDelReparto` del back):
+   *   · NUEVA    → no recibe hoy: certificación obligatoria;
+   *   · TERCERO  → ya recibe, pero está a nombre de otra persona: también
+   *                obligatoria (Nico, 23-09: «al colocar otra persona… debe
+   *                subir el certificado y el número y tipo de documento»);
+   *   · OPCIONAL → ya recibe y es del propietario: «ya certificada», y se
+   *                puede adjuntar una nueva si la anterior venció.
+   */
+  const requisito = (c: CuentaDelFormulario): 'NUEVA' | 'TERCERO' | 'OPCIONAL' =>
+    !esCuentaVigente(c, vigentesDelFormulario) ? 'NUEVA' : c.titular.titular === 'TERCERO' ? 'TERCERO' : 'OPCIONAL';
+  const exigeCertificacion = (c: CuentaDelFormulario) => requisito(c) !== 'OPCIONAL';
   const sinCertificacion = cuentas
-    .map((c, i) => (esNueva(c) && !certificaciones[c.llave] ? i : null))
+    .map((c, i) => (exigeCertificacion(c) && !certificaciones[c.llave] ? i : null))
     .filter((i): i is number => i !== null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -583,7 +594,8 @@ function PedirCambioDeCuenta({
           };
         }),
         // En la posición de cada cuenta: el back empareja por `certificacion_<i>`.
-        certificacionesPorCuenta: cuentas.map((c) => (esNueva(c) ? (certificaciones[c.llave] ?? null) : null)),
+        // La opcional también viaja si la adjuntaron: reemplaza la vencida.
+        certificacionesPorCuenta: cuentas.map((c) => certificaciones[c.llave] ?? null),
       });
       toast.success('Reparto pedido.', {
         description:
@@ -698,11 +710,22 @@ function PedirCambioDeCuenta({
               }}
               errores={erroresDelReparto}
               nombreDelPropietario={propietario?.nombre ?? ''}
-              pieDeCuenta={(c, i) =>
-                esNueva(c) ? (
+              pieDeCuenta={(c, i) => {
+                const opcional = requisito(c) === 'OPCIONAL';
+                return (
                   <div className="space-y-1.5">
+                    {opcional ? (
+                      <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
+                      </p>
+                    ) : null}
                     <Label htmlFor={`reparto-${i}-certificacion`}>
-                      {t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
+                      {opcional
+                        ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
+                        : c.titular.titular === 'TERCERO'
+                          ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
+                          : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
                     </Label>
                     <Input
                       id={`reparto-${i}-certificacion`}
@@ -715,13 +738,8 @@ function PedirCambioDeCuenta({
                       data-testid={`certificacion-cuenta-${i}`}
                     />
                   </div>
-                ) : (
-                  <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
-                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                    {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
-                  </p>
-                )
-              }
+                );
+              }}
             />
           ) : (
           <>

@@ -778,6 +778,41 @@ export function moduloDeLaRuta(pathname: string): ModuloDelPanel | null {
   return candidatos.sort((a, b) => b.href.length - a.href.length)[0] ?? null;
 }
 
+/**
+ * La cara de la plata que DICE la ruta, o `null` si la pantalla no tiene una
+ * (el tablero financiero, que mira las tres) o no es de un módulo con caras.
+ */
+export function caraDeLaRuta(pathname: string): CaraDeLaPlata | null {
+  return pantallaDeLaRuta(pathname)?.pantalla.cara ?? null;
+}
+
+/**
+ * Qué cara queda elegida en el selector.
+ *
+ *   1. La de la pantalla, si tiene: estás en Dispersiones ⇒ estás en
+ *      Propietarios.
+ *   2. En una pantalla que mira TODAS (el tablero financiero), la ÚLTIMA cara
+ *      en la que estabas, si esta persona la puede ver.
+ *   3. Si no, la primera presente —Inquilinos—, donde se opera todos los días.
+ *
+ * 🔴 El paso 2 existe por un defecto que Nico encontró el 22-09: parado en
+ * «Pagar a propietarios · la plata que sale», un clic en «Tablero financiero»
+ * lo tiraba a «Cobrar a inquilinos». El tablero no tiene cara, así que caía
+ * siempre en la primera: el selector de arriba cambiaba de grupo sin que nadie
+ * lo pidiera y el riel de abajo mostraba las secciones de OTRO lado de la
+ * plata. Una pantalla compartida no puede elegir por ti de qué lado estás.
+ */
+export function caraDelSelector(
+  deLaPantalla: CaraDeLaPlata | null | undefined,
+  recordada: CaraDeLaPlata | null | undefined,
+  presentes: readonly CaraDeLaPlata[],
+): CaraDeLaPlata | null {
+  if (presentes.length === 0) return null;
+  if (deLaPantalla) return deLaPantalla;
+  if (recordada && presentes.includes(recordada)) return recordada;
+  return presentes[0] ?? null;
+}
+
 /** El grupo del sidebar al que pertenece un módulo (null si no está en el árbol). */
 export function grupoDelModulo(modulo: ModuloDelPanel): GrupoDelPanel | null {
   return ARQUITECTURA_DEL_PANEL.find((g) => g.modulos.some((m) => m.key === modulo.key)) ?? null;

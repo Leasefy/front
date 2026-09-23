@@ -49,6 +49,7 @@
  */
 
 import { apiClient } from './client';
+import { anunciarProceso } from './procesos.service';
 
 const BASE = '/inmobiliaria/contabilidad';
 
@@ -1077,6 +1078,8 @@ export interface ResultadoDeReproceso {
   asentados: number;
   sinResolver: number;
   motivos: string[];
+  /** Su fila en el centro de procesos; `null` sin la migración del back. */
+  procesoId?: string | null;
 }
 
 export type LadoDelEvento = 'DEBE' | 'HABER';
@@ -1385,6 +1388,9 @@ export const contabilidadApi = {
 
     /** Vuelve a asentar lo que quedó afuera. Idempotente por documento. */
     async reprocesar(): Promise<ResultadoDeReproceso> {
+      // Vive en el centro de procesos (22-09): el anillo del header aparece
+      // mientras corre, no cuando ya terminó.
+      anunciarProceso();
       return apiClient.post<ResultadoDeReproceso>(`${BASE}/asientos/reprocesar`, {});
     },
 

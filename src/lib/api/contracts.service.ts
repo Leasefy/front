@@ -4,6 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from './client';
+import { anunciarProceso } from './procesos.service';
 import type {
   BackendContract,
   CreateContractDto,
@@ -339,6 +340,8 @@ export const contractsApi = {
      * parecidos (N2).
      */
     async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
+      // La carga aparece en el centro de procesos del header (22-09).
+      anunciarProceso();
       return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
         lote: undefined,

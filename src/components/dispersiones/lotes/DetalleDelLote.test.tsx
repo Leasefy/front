@@ -57,7 +57,26 @@ vi.mock('@/lib/api/lotes-de-dispersion.service', () => ({
   },
 }));
 
+// El centro de procesos (22-09): el archivo del lote se lee de ahí.
+vi.mock('@/lib/api/procesos.service', () => ({
+  RECURSO_DE_PROCESOS: 'procesos',
+  RECURSO_LOTE: 'LOTE_DE_DISPERSION',
+  anunciarProceso: vi.fn(),
+  procesosApi: {
+    listar: vi.fn(),
+    descarga: vi.fn(),
+    cancelar: vi.fn(),
+  },
+}));
+
+vi.mock('@/components/procesos/descargar-archivo-del-proceso', () => ({
+  descargarArchivoDelProceso: vi.fn(async () => 'archivo.txt'),
+}));
+
 import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service';
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
+import { procesosApi } from '@/lib/api/procesos.service';
+import type { Proceso } from '@/lib/api/procesos.types';
 import { DetalleDelLote } from './DetalleDelLote';
 
 const ID = '6b0f2e2c-1d4a-4a2b-9c3e-0f1a2b3c4d5e';
@@ -158,7 +177,46 @@ beforeEach(() => {
   root = createRoot(container);
   usuarioActual = 'u-otro';
   guardar.mockReset();
+  vi.mocked(procesosApi.listar).mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    procesos: [],
+    activos: 0,
+    veTodos: false,
+  });
 });
+
+/** El proceso del centro que dejó el archivo del lote. */
+function procesoDelArchivo(extra: Partial<Proceso> = {}): Proceso {
+  return {
+    id: 'proc-lote',
+    tipo: 'ARCHIVO_DEL_LOTE',
+    titulo: 'Archivo del lote de Agosto de 2026 · Bancolombia',
+    estado: 'TERMINADO',
+    hechos: 1,
+    total: 1,
+    porcentaje: 100,
+    mensaje: '3 pagos en el archivo.',
+    lanzadoPor: { id: 'u-creador', nombre: 'Ana Ruiz', rol: 'ADMIN' },
+    esMio: false,
+    recurso: { tipo: 'LOTE_DE_DISPERSION', id: ID },
+    archivo: {
+      nombre: `lote-2026-08-bancolombia_pab-${ID.slice(0, 8)}-SIN-VERIFICAR.txt`,
+      tipo: 'text/plain',
+      bytes: 420,
+      venceAt: '2026-09-29T00:00:00.000Z',
+      vencido: false,
+    },
+    sePuedeCancelar: false,
+    cancelacionPedida: false,
+    interrumpido: false,
+    createdAt: '2026-09-22T15:00:00.000Z',
+    iniciadoAt: '2026-09-22T15:00:00.000Z',
+    terminadoAt: '2026-09-22T15:00:01.000Z',
+    actualizadoAt: '2026-09-22T15:00:01.000Z',
+    ...extra,
+  };
+}
 
 afterEach(() => {
   act(() => root.unmount());
@@ -440,17 +498,55 @@ describe('<DetalleDelLote> — el archivo', () => {
     expect(guardar).toHaveBeenCalledWith(blob, ARCHIVO_SIN_VERIFICAR.nombreArchivo);
   });
 
-  it('descargar desde ARCHIVO_GENERADO pide el mismo archivo (reenvío) sin elegir formato', async () => {
+  it('🔴 «Descargar archivo» con la copia en el centro de procesos la baja de ahí: sin diálogo, sin spinner, sin volver a pedirla', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      procesos: [procesoDelArchivo()],
+      activos: 0,
+      veTodos: false,
+    });
     await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'deadbeef' })));
+
+    // El estado del archivo lo pinta el componente del centro, con su fila.
+    const seccion = document.body.querySelector('[data-testid="archivo-del-lote"]');
+    expect(seccion?.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull();
+    expect(seccion?.textContent).toContain('Ana Ruiz');
+    // 🔴 El aviso SIN-VERIFICAR sigue antes de bajar nada.
+    expect(seccion?.textContent).toContain('no se verificó contra un archivo real del banco');
+    expect(procesosApi.listar).toHaveBeenCalledWith({
+      recursoTipo: 'LOTE_DE_DISPERSION',
+      recursoId: ID,
+      limite: 1,
+    });
+
+    await clic('Descargar archivo');
+
+    expect(descargarArchivoDelProceso).toHaveBeenCalledWith('proc-lote', undefined);
+    expect(lotesDeDispersionApi.generarArchivo).not.toHaveBeenCalled();
+    expect(document.body.querySelector('[data-testid="dialogo-archivo"]')).toBeNull();
+    expect(cuerpo()).not.toContain('Pidiendo el archivo');
+  });
+
+  it('sin copia en el centro (lote de antes, o venció) lo vuelve a preparar —cotejando el hash— y, sin centro en el back, lo baja por el GET del lote', async () => {
+    await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'deadbeef' })));
+    expect(document.body.querySelector('[data-testid="archivo-sin-proceso"]')?.textContent).toContain(
+      'antes del centro de procesos',
+    );
     vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({ ...ARCHIVO_SIN_VERIFICAR, reenvio: true });
+    const blob = new Blob([ARCHIVO_SIN_VERIFICAR.contenido]);
+    vi.mocked(lotesDeDispersionApi.descargarArchivo).mockResolvedValue(blob);
 
     await clic('Descargar archivo');
 
     expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID);
-    expect(cuerpo()).toContain('no se verificó contra un archivo real del banco');
+    expect(guardar).toHaveBeenCalledWith(blob, ARCHIVO_SIN_VERIFICAR.nombreArchivo);
+    expect(document.body.querySelector('[data-testid="archivo-del-lote"]')?.textContent).toContain(
+      'no se verificó contra un archivo real del banco',
+    );
   });
 
-  it('con el layout verificado NO aparece el aviso', async () => {
+  it('si el back lo dejó en el centro, el archivo re-preparado se baja del centro', async () => {
     await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'ok' })));
     vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
       ...ARCHIVO_SIN_VERIFICAR,
@@ -458,12 +554,15 @@ describe('<DetalleDelLote> — el archivo', () => {
       layoutVerificado: true,
       pendienteDeConfirmar: [],
       reenvio: true,
+      procesoId: 'proc-nuevo',
     });
 
     await clic('Descargar archivo');
 
+    expect(descargarArchivoDelProceso).toHaveBeenCalledWith('proc-nuevo', undefined);
+    expect(lotesDeDispersionApi.descargarArchivo).not.toHaveBeenCalled();
+    // Con el layout verificado NO aparece el aviso.
     expect(cuerpo()).not.toContain('no se verificó contra un archivo real del banco');
-    expect(cuerpo()).toContain('Layout verificado contra un archivo real del banco');
   });
 
   it('el error del back al generar llega tal cual', async () => {

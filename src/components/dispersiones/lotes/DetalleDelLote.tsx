@@ -98,6 +98,8 @@ import {
   type AccionDelLote,
 } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import { ArchivoDelLote, useArchivoDelLote } from './ArchivoDelLote';
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
 import {
   AccionesDelGiro,
   MarcarDevueltoDialog,
@@ -109,7 +111,6 @@ type Dialogo =
   | 'pedirAprobacion'
   | 'aprobar'
   | 'generarArchivo'
-  | 'descargarArchivo'
   | 'marcarPagado'
   | 'anular'
   | null;
@@ -333,6 +334,15 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    */
   const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
 
+  /*
+   * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
+   * carga de lotes es horrible»). «Descargar archivo» ya no abre un diálogo
+   * con un spinner: baja la copia del centro, y si no la hay la vuelve a
+   * preparar —cotejando el hash— como un proceso más. Antes de los returns
+   * tempranos: es un hook.
+   */
+  const archivoDelLote = useArchivoDelLote(id, vista?.lote.estado ?? 'BORRADOR', guardar);
+
   // Igual que el de arriba: antes de los returns tempranos, porque un hook no
   // se puede llamar condicionalmente.
   const lotePagado = vista?.lote.estado === 'PAGADO';
@@ -485,7 +495,11 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </Button>
           )}
           {acciones.includes('descargarArchivo') && (
-            <Button onClick={() => setDialogo('descargarArchivo')} hideArrow>
+            <Button
+              onClick={() => void archivoDelLote.descargar()}
+              isLoading={archivoDelLote.preparando}
+              hideArrow
+            >
               <DownloadSimple className="h-4 w-4" />
               Descargar archivo
             </Button>
@@ -554,6 +568,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </section>
       )}
+
+      {/* ── El archivo al banco, con el componente del centro de procesos ── */}
+      <ArchivoDelLote archivo={archivoDelLote} generadoAt={lote.archivoGeneradoAt} />
 
       {/* ── Excluidos ───────────────────────────────────────────────────── */}
       {excluidos.length > 0 && (
@@ -744,13 +761,15 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         onFallo={() => void refetch()}
       />
       <ArchivoDialog
-        abierto={dialogo === 'generarArchivo' || dialogo === 'descargarArchivo'}
-        modo={dialogo === 'descargarArchivo' ? 'descargar' : 'generar'}
+        abierto={dialogo === 'generarArchivo'}
         lote={lote}
         origen={vista.origen}
         guardar={guardar}
         onCerrar={cerrar}
-        onGenerado={() => void refetch()}
+        onGenerado={() => {
+          void refetch();
+          void archivoDelLote.refetch();
+        }}
       />
       <MarcarPagadoDialog
         abierto={dialogo === 'marcarPagado'}
@@ -1105,23 +1124,21 @@ function AprobarDialog({
 }
 
 /**
- * Generar (desde APROBADO) o descargar (desde ARCHIVO_GENERADO) el archivo.
+ * Generar el archivo (desde APROBADO).
  *
- * Las dos puntas pasan por el POST del back, que devuelve JSON con el aviso
- * del layout, los excluidos y las advertencias — eso se ve ANTES de guardar.
- * Al descargar, el POST además coteja el hash: si el contenido cambió por
- * debajo de un lote cerrado, el back no lo entrega y lo dice.
+ * El POST del back devuelve JSON con el aviso del layout, los excluidos y las
+ * advertencias — eso se ve ANTES de guardar. Volver a bajarlo (desde
+ * ARCHIVO_GENERADO) ya no pasa por acá: es la sección «El archivo al banco»,
+ * con el centro de procesos (`ArchivoDelLote.tsx`).
  */
 function ArchivoDialog({
   abierto,
-  modo,
   lote,
   origen,
   guardar,
   onCerrar,
   onGenerado,
 }: DialogoBase & {
-  modo: 'generar' | 'descargar';
   /**
    * El banco elegido al armar. `null` = el lote se armó sin preguntarlo y su
    * archivo no puede salir; `undefined` = un back anterior que no lo manda.
@@ -1154,18 +1171,23 @@ function ArchivoDialog({
       setError(null);
       setArchivo(null);
       setTrabajando(false);
-      return;
     }
-    // Al descargar no hay nada que elegir: se pide el archivo de una.
-    if (modo === 'descargar') void pedirAlBack();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [abierto, modo]);
+  }, [abierto]);
 
   const guardarEnElEscritorio = async () => {
     if (!archivo) return;
     setTrabajando(true);
     try {
-      // Tal cual se sube al banco: los bytes del GET, no el JSON.
+      // Del centro de procesos si el back lo dejó ahí (22-09); si no, tal cual
+      // se sube al banco: los bytes del GET, no el JSON.
+      if (archivo.procesoId) {
+        try {
+          await descargarArchivoDelProceso(archivo.procesoId);
+          return;
+        } catch {
+          /* la copia no quedó en el storage: por el GET del lote */
+        }
+      }
       const blob = await lotesDeDispersionApi.descargarArchivo(lote.id);
       guardar(blob, archivo.nombreArchivo);
       toast.success('Archivo guardado', { description: archivo.nombreArchivo });
@@ -1182,7 +1204,7 @@ function ArchivoDialog({
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
         <DialogHeader>
-          <DialogTitle>{modo === 'generar' ? 'Generar el archivo plano' : 'Descargar el archivo'}</DialogTitle>
+          <DialogTitle>Generar el archivo plano</DialogTitle>
           <DialogDescription>
             Lote de {nombreDelMes(lote.month)} · {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'} por{' '}
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
@@ -1190,7 +1212,7 @@ function ArchivoDialog({
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4 text-sm">
-          {!archivo && modo === 'generar' && origen && (
+          {!archivo && origen && (
             <p className="text-fg" data-testid="archivo-del-banco">
               Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
               {NOMBRE_DEL_FORMATO[origen.formato] ?? origen.formato}), girando desde la cuenta{' '}
@@ -1199,18 +1221,11 @@ function ArchivoDialog({
             </p>
           )}
 
-          {!archivo && modo === 'generar' && origen === null && (
+          {!archivo && origen === null && (
             <Banner variant="warning" title="Este lote no dice desde qué banco sale la plata">
               Se armó antes de que se preguntara el banco, y el archivo de cada banco lleva la cuenta desde
               la que se gira. Anúlalo y ármalo otra vez eligiendo el banco.
             </Banner>
-          )}
-
-          {!archivo && modo === 'descargar' && !error && (
-            <p className="flex items-center gap-2 text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Pidiendo el archivo y cotejando el hash…
-            </p>
           )}
 
           {archivo && (
@@ -1314,7 +1329,7 @@ function ArchivoDialog({
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={trabajando}>
             {archivo ? 'Cerrar' : 'Cancelar'}
           </Button>
-          {!archivo && modo === 'generar' && (
+          {!archivo && (
             <Button
               onClick={() => void pedirAlBack()}
               isLoading={trabajando}

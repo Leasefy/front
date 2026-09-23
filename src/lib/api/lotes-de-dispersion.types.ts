@@ -364,6 +364,11 @@ export interface ArchivoGenerado {
   origen?: OrigenDelLote;
   /** `true` cuando el lote ya estaba en ARCHIVO_GENERADO y se volvió a entregar el mismo. */
   reenvio: boolean;
+  /**
+   * Su fila en el centro de procesos (22-09): el archivo queda guardado ahí y
+   * se baja desde el centro. `null`/ausente = back sin la migración del centro.
+   */
+  procesoId?: string | null;
 }
 
 export interface FiltrosDeLotes {

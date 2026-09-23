@@ -17,6 +17,7 @@
 
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
+import { anunciarProceso } from './procesos.service';
 import type {
   ArchivoGenerado,
   BancosParaGirar,
@@ -151,6 +152,8 @@ export const lotesDeDispersionApi = {
   async generarArchivo(id: string, formato?: FormatoArchivoDePagos): Promise<ArchivoGenerado> {
     const cuerpo: Record<string, unknown> = {};
     if (formato) cuerpo.formato = formato;
+    // El archivo queda en el centro de procesos (22-09).
+    anunciarProceso();
     const res = await apiClient.post<ArchivoGenerado>(`${BASE_DE_LOTES}/${id}/archivo`, cuerpo);
     invalidar('dispersiones');
     return res;

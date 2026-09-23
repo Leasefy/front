@@ -6,8 +6,9 @@
  *     «pendientes» hace que el funcionario crea que no puede publicar porque le
  *     falta el RUT — que es de la otra puerta;
  *   · el certificado de tradición muestra los DÍAS que le quedan, no «está»;
- *   · 🔴 el token del enlace de firma se muestra UNA vez, con el aviso de
- *     copiarlo: no vuelve en ninguna lectura.
+ *   · 🔴 el enlace de firma NO pasa por la inmobiliaria (auditoría 23-09-2026):
+ *     el servidor se lo manda al propietario y la tarjeta dice a qué correo.
+ *     Ni el token ni un enlace se muestran, salvo el de prueba en local.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
@@ -17,11 +18,21 @@ const { api } = vi.hoisted(() => ({
   api: {
     documentos: (() => Promise.resolve(null)) as () => Promise<unknown>,
     firmas: (() => Promise.resolve(null)) as () => Promise<unknown>,
-    pedirFirma: vi.fn(async () => ({
-      id: 'f-1',
-      venceEl: '2026-09-25T15:00:00.000Z',
-      token: 'tok-secreto',
-    })),
+    pedirFirma: vi.fn(
+      async (): Promise<Record<string, unknown>> => ({
+        id: 'f-1',
+        venceEl: '2026-09-25T15:00:00.000Z',
+        enviadoA: 'jor***@correo.co',
+        envio: 'ENVIADO',
+      }),
+    ),
+    mandatoFirmado: vi.fn(
+      async (): Promise<unknown> => ({
+        url: 'https://almacen/mandato.pdf?firmada',
+        sha256: 'ab'.repeat(32),
+        verificado: true,
+      }),
+    ),
   },
 }))
 
@@ -36,6 +47,7 @@ vi.mock('@/lib/api/crm.service', async () => {
       documentos: () => api.documentos(),
       firmas: () => api.firmas(),
       pedirFirmaElectronica: api.pedirFirma,
+      mandatoFirmado: api.mandatoFirmado,
     },
   }
 })
@@ -141,16 +153,36 @@ describe('MandatoDelInmueble', () => {
     ).toContain('3 días')
   })
 
-  it('🔴 el token del enlace sale UNA vez, con el aviso de copiarlo', async () => {
+  it('🔴 el enlace va al correo del propietario: la tarjeta dice a cuál y no muestra ningún enlace', async () => {
     await pintar()
     await act(async () => {
       contenedor
         .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    const enlace = $('[data-testid="enlace-de-firma"]')?.textContent ?? ''
-    expect(enlace).toContain('no se vuelve a mostrar')
-    expect(enlace).toContain('tok-secreto')
+    const aviso = $('[data-testid="enlace-de-firma"]')?.textContent ?? ''
+    expect(aviso).toContain('Le enviamos el enlace a jor***@correo.co')
+    expect(aviso).not.toContain('/mandato/firma/')
+    expect($('[data-testid="enlace-de-prueba"]')).toBeNull()
+  })
+
+  it('en local, con el correo simulado, deja un enlace de prueba discreto', async () => {
+    api.pedirFirma.mockResolvedValueOnce({
+      id: 'f-1',
+      venceEl: '2026-09-25T15:00:00.000Z',
+      enviadoA: 'jor***@correo.co',
+      envio: 'SIMULADO',
+      enlaceDePrueba: 'http://localhost:3011/mandato/firma/tok',
+    })
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(
+      $('[data-testid="enlace-de-prueba"]')?.getAttribute('href'),
+    ).toBe('http://localhost:3011/mandato/firma/tok')
   })
 
   it('con el mandato ya firmado no ofrece crear otro enlace', async () => {
@@ -176,6 +208,43 @@ describe('MandatoDelInmueble', () => {
     await pintar()
     expect(contenedor.textContent).toContain('Firmado por Juan Pérez')
     expect($('[data-testid="pedir-firma"]')).toBeNull()
+  })
+
+  it('🔴 el mandato firmado se abre por la ruta que comprueba su huella', async () => {
+    const abrir = vi.fn()
+    vi.stubGlobal('open', abrir)
+    api.firmas = vi.fn(() =>
+      Promise.resolve({
+        disponible: true,
+        motivo: null,
+        firmas: [
+          {
+            id: 'f-7',
+            forma: 'ELECTRONICA' as const,
+            estado: 'FIRMADA' as const,
+            firmanteNombre: 'Jorge',
+            firmanteCorreo: 'jorge@correo.co',
+            venceEl: null,
+            firmadaEl: '2026-09-23T00:00:00.000Z',
+            pdfNombre: null,
+            createdAt: '2026-09-22T00:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="descargar-mandato-firmado"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(api.mandatoFirmado).toHaveBeenCalledWith('f-7')
+    expect(abrir).toHaveBeenCalledWith(
+      'https://almacen/mandato.pdf?firmada',
+      '_blank',
+      'noopener',
+    )
+    vi.unstubAllGlobals()
   })
 
   it('sin permiso no ofrece crear el enlace', async () => {

@@ -131,42 +131,20 @@ export function esSinVerificar(nombreArchivo: string): boolean {
   return /SIN-VERIFICAR/i.test(nombreArchivo);
 }
 
-export interface OpcionDeFormato {
-  codigo: FormatoArchivoDePagos;
-  nombre: string;
-  descripcion: string;
-  /** `false` = el back no tiene el layout; pedirlo devuelve 400. */
-  disponible: boolean;
-  porQueNo?: string;
-}
-
 /**
- * Los formatos, tal como los declara el back (`formatos/index.ts`): sólo PAB
- * tiene generador. Los otros dos se ven —para que se sepa que existen— y no
- * se pueden elegir, con el motivo.
+ * El nombre de cada formato, para mostrar el que tiene un lote.
+ *
+ * Ya no hay que elegir formato al generar el archivo: es el del BANCO que se
+ * eligió al armar el lote (Nico, 22-09). Cuáles bancos tienen formato y por
+ * qué los demás no lo dice el back (`GET /lotes-de-dispersion/bancos`), no una
+ * lista de acá que se pueda quedar vieja.
  */
-export const FORMATOS: readonly OpcionDeFormato[] = [
-  {
-    codigo: 'BANCOLOMBIA_PAB',
-    nombre: 'Bancolombia PAB',
-    descripcion: 'El del «conversor» (formato 2003). Pagos a proveedores.',
-    disponible: true,
-  },
-  {
-    codigo: 'BANCOLOMBIA_SAP',
-    nombre: 'Bancolombia SAP',
-    descripcion: 'Nómina y proveedores por Sucursal Virtual Empresas.',
-    disponible: false,
-    porQueNo: 'Pendiente del archivo de ejemplo del banco.',
-  },
-  {
-    codigo: 'ONEPAY',
-    nombre: 'OnePay',
-    descripcion: 'Pagos masivos por OnePay.',
-    disponible: false,
-    porQueNo: 'Pendiente del archivo de ejemplo del banco.',
-  },
-];
+export const NOMBRE_DEL_FORMATO: Record<FormatoArchivoDePagos, string> = {
+  BANCOLOMBIA_PAB: 'Bancolombia — pagos PAB',
+  BANCO_DE_BOGOTA: 'Banco de Bogotá — pagos masivos',
+  BANCOLOMBIA_SAP: 'Bancolombia SAP',
+  ONEPAY: 'OnePay',
+};
 
 /** Los 6 dígitos del código, y nada más: es lo que valida el DTO del back. */
 export function codigoValido(codigo: string): boolean {

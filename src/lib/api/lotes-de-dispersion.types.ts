@@ -18,10 +18,81 @@ export type EstadoDelLote =
   | 'ANULADO';
 
 /**
- * Formatos de archivo plano. Los tres existen en el back, pero HOY sólo
- * `BANCOLOMBIA_PAB` tiene generador: pedir otro devuelve 400 con el motivo.
+ * Formatos de archivo plano: el enum `FormatoArchivoDePagos` del back. Tienen
+ * generador `BANCOLOMBIA_PAB` y `BANCO_DE_BOGOTA` (cada uno sacado del
+ * instructivo oficial de su banco); los otros dos existen en el enum y no se
+ * generan. El formato NO se elige al final: es el del banco elegido al armar.
  */
-export type FormatoArchivoDePagos = 'BANCOLOMBIA_PAB' | 'BANCOLOMBIA_SAP' | 'ONEPAY';
+export type FormatoArchivoDePagos =
+  | 'BANCOLOMBIA_PAB'
+  | 'BANCOLOMBIA_SAP'
+  | 'ONEPAY'
+  | 'BANCO_DE_BOGOTA';
+
+/** Ahorros o corriente: la cuenta de la inmobiliaria desde la que se gira. */
+export type TipoDeCuentaDeOrigen = 'AHORROS' | 'CORRIENTE';
+
+/** El instructivo del banco del que sale cada posición del archivo. */
+export interface FuenteDelFormato {
+  url: string;
+  documento: string;
+  version: string;
+  consultado: string;
+}
+
+/**
+ * Desde qué banco y cuenta sale la plata de un lote (`origenes_de_lote`), como
+ * la muestra la pantalla: la cuenta llega tapada (`•••• 8901`).
+ */
+export interface OrigenDelLote {
+  /** Id del banco (`BANCOLOMBIA`, `BANCO_BOGOTA`…). */
+  banco: string;
+  nombreDelBanco: string;
+  formato: FormatoArchivoDePagos;
+  tipoDeCuenta: TipoDeCuentaDeOrigen;
+  cuenta: string;
+}
+
+/** Un banco de la pregunta «¿desde qué banco vas a dispersar?». */
+export interface BancoDeOrigen {
+  id: string;
+  nombre: string;
+  /** `null` = todavía no generamos su archivo; `porQueNo` dice por qué. */
+  formato: FormatoArchivoDePagos | null;
+  nombreDelFormato: string | null;
+  fuente: FuenteDelFormato | null;
+  porQueNo: string | null;
+}
+
+/** Una cuenta que la inmobiliaria ya registró en Medios de pago. */
+export interface CuentaRegistrada {
+  medioDePagoId: string;
+  nombre: string;
+  /** El banco reconocido, o `null` si no es ninguno de la lista. */
+  banco: string | null;
+  bancoEscrito: string | null;
+  tipoDeCuenta: TipoDeCuentaDeOrigen | null;
+  /** Sólo dígitos. */
+  numeroDeCuenta: string;
+}
+
+/** `GET /inmobiliaria/lotes-de-dispersion/bancos`. */
+export interface BancosParaGirar {
+  /** `false` = falta la migración: el lote se arma sin preguntar el banco. */
+  disponible: boolean;
+  motivo: string | null;
+  bancos: BancoDeOrigen[];
+  cuentas: CuentaRegistrada[];
+  /** Lo que eligió la agencia la última vez. */
+  ultima: { banco: string; tipoDeCuenta: TipoDeCuentaDeOrigen; numeroDeCuenta: string } | null;
+}
+
+/** Lo que se manda al armar: el banco, el tipo y el número de la cuenta. */
+export interface OrigenPedido {
+  banco: string;
+  tipoDeCuenta: TipoDeCuentaDeOrigen;
+  numeroDeCuenta: string;
+}
 
 /** Una fila de la lista. Sin ítems: son ~300 por lote. */
 export interface LoteResumen {
@@ -157,6 +228,12 @@ export interface FilaExcluida {
 
 export interface VistaDelLote {
   lote: LoteDeDispersion;
+  /**
+   * Desde qué banco se gira y, por lo tanto, en qué formato sale el archivo.
+   * `null` = el lote se armó sin preguntarlo (su archivo no sale).
+   * Opcional: back anterior al 2026-09-22.
+   */
+  origen?: OrigenDelLote | null;
   excluidos: FilaExcluida[];
   /** Las que se cierran en $0 por deducciones. Opcional: back anterior al 2026-09-16. */
   compensados?: FilaCompensada[];
@@ -177,6 +254,8 @@ export interface LoteArmado {
    * que no se puede es que el número no se vea antes de mandarlo a aprobación.
    */
   descubiertoCop: number;
+  /** El banco elegido. `null` sin la migración. */
+  origen?: OrigenDelLote | null;
 }
 
 /**
@@ -243,6 +322,8 @@ export interface QueMeterEnElLote {
   dispersionIds?: string[];
   orden?: OrdenDeCandidatos;
   topeCop?: number;
+  /** Desde qué banco y cuenta se gira. Sin la migración no se manda. */
+  origen?: OrigenPedido;
 }
 
 /**
@@ -278,6 +359,9 @@ export interface ArchivoGenerado {
   layoutVerificado: boolean;
   /** Qué del layout falta confirmar contra el banco. */
   pendienteDeConfirmar: string[];
+  /** El instructivo oficial del banco. Opcional: back anterior al 2026-09-22. */
+  fuente?: FuenteDelFormato;
+  origen?: OrigenDelLote;
   /** `true` cuando el lote ya estaba en ARCHIVO_GENERADO y se volvió a entregar el mismo. */
   reenvio: boolean;
 }

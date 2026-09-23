@@ -40,7 +40,7 @@ import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
 import Link from 'next/link';
-import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
+import { rutaDeLotesDelMes } from '@/lib/api/dispersiones-errores';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 import { ResumenDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
 
@@ -849,7 +849,7 @@ export function DispersionDetail({
             Marcar girada y Reintentar, que acá darían 409. */}
         {ofreceLote && (
           <Button asChild hideArrow className="gap-2">
-            <Link href={RUTA_LOTES} data-testid="dispersion-ir-a-lotes">
+            <Link href={rutaDeLotesDelMes(dispersion.month)} data-testid="dispersion-ir-a-lotes">
               <Bank className="w-4 h-4" />
               Ir a Lotes
             </Link>

@@ -12,7 +12,7 @@ import {
   CAMINO_DEL_LOTE,
   codigoValido,
   esSinVerificar,
-  FORMATOS,
+  NOMBRE_DEL_FORMATO,
   motivoValido,
   pasoAlcanzado,
   PERMISO_DE_LA_ACCION,
@@ -73,13 +73,10 @@ describe('esSinVerificar', () => {
   });
 });
 
-describe('FORMATOS', () => {
-  it('sólo Bancolombia PAB se puede generar hoy; los otros dicen por qué no', () => {
-    const disponibles = FORMATOS.filter((f) => f.disponible).map((f) => f.codigo);
-    expect(disponibles).toEqual(['BANCOLOMBIA_PAB']);
-    for (const f of FORMATOS.filter((f) => !f.disponible)) {
-      expect(f.porQueNo).toMatch(/archivo de ejemplo/);
-    }
+describe('NOMBRE_DEL_FORMATO', () => {
+  it('nombra el banco de cada formato que el back puede generar', () => {
+    expect(NOMBRE_DEL_FORMATO.BANCOLOMBIA_PAB).toMatch(/Bancolombia/);
+    expect(NOMBRE_DEL_FORMATO.BANCO_DE_BOGOTA).toMatch(/Banco de Bogotá/);
   });
 });
 

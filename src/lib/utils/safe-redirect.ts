@@ -51,3 +51,27 @@ export function sanitizeReturnUrl(value: unknown, fallback: string = '/'): strin
 
   return value;
 }
+
+/**
+ * El destino de una notificación, o `undefined` si no se puede seguir.
+ *
+ * `actionUrl` lo escribe el back, pero no siempre código nuestro con una
+ * constante: `POST /internal-agent/notify` lo recibe del micro de agentes tal
+ * cual (`dto.actionUrl`), y el compartir del estado de cuenta manda una URL
+ * ABSOLUTA del front. Las tres bandejas lo pasaban directo a `router.push`,
+ * que con `javascript:…` corre código en nuestro origen (auditoría de
+ * seguridad 23-09). Se acepta lo que se usa hoy —una ruta del front, o un
+ * enlace http(s)— y nada más.
+ */
+export function destinoDeNotificacion(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.length === 0) return undefined;
+  const relativa = sanitizeReturnUrl(value, '');
+  if (relativa) return relativa;
+  if (UNSAFE_CHARS.test(value)) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}

@@ -18,7 +18,7 @@ import {
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { formatCurrency } from '@/lib/format';
 import type { PSEBank, PSEDocumentType, SubscriptionCycle } from '@/lib/api/subscriptions.types';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeReturnUrl } from '@/lib/utils';
 
 // ─── Fallback banks in case API fails ───────────────────────────────────────
 const FALLBACK_BANKS: PSEBank[] = [
@@ -63,7 +63,11 @@ function PSEMockContent() {
   const planName = searchParams.get('planName') ?? 'Plan';
   const amount = Number(searchParams.get('amount') ?? '0');
   const cycle = (searchParams.get('cycle') ?? 'MONTHLY') as SubscriptionCycle;
-  const returnUrl = searchParams.get('returnUrl') ?? '/panel/inmobiliaria';
+  // Saneado: termina en `router.push`, que con una URL absoluta (o
+  // `javascript:`) navega fuera de la app. Sin esto, un enlace a
+  // /pse-mock?returnUrl=… mandaba a quien «pagara» a donde quisiera el atacante
+  // (auditoría de seguridad 23-09).
+  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/panel/inmobiliaria');
 
   const [banks, setBanks] = useState<PSEBank[]>(FALLBACK_BANKS);
   const [pageState, setPageState] = useState<PageState>('form');

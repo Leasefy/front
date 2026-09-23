@@ -40,7 +40,11 @@ const DICE_QUE_FALLO = /(no se pudo|no salió|quedaron? sin|falló|fallaron|pero
 /** El registro de pasos del proceso, en orden. Puro: se prueba solo. */
 export function registroDelProceso(p: Proceso): PasoDelProceso[] {
   const pasos: PasoDelProceso[] = [
-    { cuando: p.createdAt, texto: `Lo lanzó ${quienLoLanzo(p).replace(/^Tú$/, 'ti')}.`, tono: 'neutro' },
+    {
+      cuando: p.createdAt,
+      texto: p.esMio ? 'Lo lanzaste tú.' : `Lo lanzó ${quienLoLanzo(p)}.`,
+      tono: 'neutro',
+    },
   ]
   if (p.iniciadoAt && p.iniciadoAt !== p.createdAt) {
     pasos.push({ cuando: p.iniciadoAt, texto: 'Empezó a correr.', tono: 'neutro' })
@@ -67,7 +71,7 @@ export function registroDelProceso(p: Proceso): PasoDelProceso[] {
       cuando: cierre,
       texto: p.archivo.vencido
         ? `Dejó ${p.archivo.nombre}, que ya venció.`
-        : `Dejó ${p.archivo.nombre}${p.archivo.bytes != null ? ` (${tamanoDelArchivo(p.archivo.bytes)})` : ''}${p.archivo.venceAt ? `, disponible hasta el ${formatDateTime(p.archivo.venceAt)}` : ''}.`,
+        : `Dejó ${p.archivo.nombre}${p.archivo.bytes != null ? ` (${tamanoDelArchivo(p.archivo.bytes)})` : ''}${p.archivo.venceAt ? `; se puede bajar hasta el ${formatDateTime(p.archivo.venceAt)}` : '.'}`,
       tono: p.archivo.vencido ? 'neutro' : 'ok',
     })
   }

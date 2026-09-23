@@ -208,3 +208,25 @@ describe('🔴 las facturas de la corrida, para descargarlas (22-09)', () => {
     ])
   })
 })
+
+describe('generarPorTandas — los ZIP del centro de procesos (22-09)', () => {
+  it('junta el proceso de cada tanda que está armando su ZIP; sin `zipEnElCentro` no cuenta', async () => {
+    let n = 0
+    const generar = (mes: string, lote: string[]): Promise<ResultadoDeGeneracion> => {
+      n += 1
+      return Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 0,
+        facturas: [],
+        procesoId: `proc-${n}`,
+        zipEnElCentro: n !== 2,
+      })
+    }
+    const { informe } = await generarPorTandas('2026-09', claves(450), generar)
+    expect(informe.procesosConZip).toEqual(['proc-1', 'proc-3'])
+  })
+})

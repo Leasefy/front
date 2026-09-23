@@ -13,12 +13,16 @@
  * distintos según desde dónde se apretó.
  *
  * Una factura → su PDF (`GET /facturacion/:id/pdf`). Varias → un ZIP
- * (`GET /facturacion/documentos.zip?ids=`), hasta `MAXIMO_FACTURAS_POR_ZIP`;
- * más que eso no se pide (el back respondería 400) y quien llama apaga el
- * botón diciendo por qué.
+ * (`GET /facturacion/documentos.zip?ids=`), hasta `MAXIMO_FACTURAS_POR_ZIP`.
+ *
+ * 🔴 Más que eso (22-09) ya NO se apaga: el ZIP se arma en el CENTRO DE
+ * PROCESOS y se baja de ahí. Si la corrida fue de una sola tanda, su proceso
+ * ya lo está armando y se abre ése; si fue de varias, se lanza uno con todos
+ * los ids. Mientras tanto el botón dice cuánto va, y si la persona se va de
+ * la pantalla el archivo la espera en el botón de procesos de arriba.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { toast } from '@/components/ui/toast'
 import { descargarBlob } from '@/lib/reportes/exportables'
@@ -26,6 +30,17 @@ import {
   MAXIMO_FACTURAS_POR_ZIP,
   facturacionPorMesService,
 } from '@/lib/api/facturacion-por-mes.service'
+import { anunciarProceso, procesosApi } from '@/lib/api/procesos.service'
+import type { Proceso } from '@/lib/api/procesos.types'
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso'
+
+/** Cada cuánto se pregunta por el ZIP que arma el centro. */
+export const MS_ENTRE_CONSULTAS_DEL_ZIP = 2_000
+
+/** ¿Este lote se arma en el centro de procesos en vez de bajarse directo? */
+export function vaPorElCentro(cuantas: number): boolean {
+  return cuantas > MAXIMO_FACTURAS_POR_ZIP
+}
 
 /** `PRU-3` → `factura-PRU-3.pdf`. Sin caracteres que un sistema de archivos rechace. */
 export function nombreDelPdf(numero: string | null): string {
@@ -36,9 +51,6 @@ export function nombreDelPdf(numero: string | null): string {
 /** Por qué no se puede bajar el lote, o `null` si se puede. */
 export function motivoParaNoDescargarLote(cuantas: number): string | null {
   if (cuantas <= 0) return 'No hay facturas emitidas que descargar.'
-  if (cuantas > MAXIMO_FACTURAS_POR_ZIP) {
-    return `Son ${cuantas.toLocaleString('es-CO')} facturas: la descarga directa llega hasta ${MAXIMO_FACTURAS_POR_ZIP}. Descárgalas desde la tabla, una por una o por partes.`
-  }
   return null
 }
 
@@ -57,17 +69,61 @@ export interface DocumentoParaDescargar {
 export interface DescargaDeFacturas {
   /** El PDF de una factura. */
   descargarUna: (facturaId: string, numero: string | null) => Promise<void>
-  /** Una factura → su PDF; varias → el ZIP. */
+  /**
+   * Una factura → su PDF; varias → el ZIP; más del tope → el ZIP del centro
+   * de procesos (el de la tanda si hay uno solo en `procesosConZip`).
+   */
   descargarLote: (
     facturas: readonly DocumentoParaDescargar[],
     nombreDelZip: string,
+    opciones?: { procesosConZip?: readonly string[] },
   ) => Promise<void>
   /** El id (o `'lote'`) de lo que se está bajando. `null` = nada. */
   descargando: string | null
+  /** El proceso del centro que está armando el ZIP, con su avance. */
+  zipEnElCentro: Proceso | null
 }
 
 export function useDescargarFacturas(): DescargaDeFacturas {
   const [descargando, setDescargando] = useState<string | null>(null)
+  const [zipEnElCentro, setZipEnElCentro] = useState<Proceso | null>(null)
+  // Se deja de preguntar si la pantalla se desmonta: el archivo igual queda
+  // en el centro de procesos.
+  const montado = useRef(true)
+  useEffect(() => {
+    montado.current = true
+    return () => {
+      montado.current = false
+    }
+  }, [])
+
+  const porElCentro = useCallback(
+    async (ids: string[], procesosConZip: readonly string[]) => {
+      const procesoId =
+        procesosConZip.length === 1
+          ? procesosConZip[0]
+          : (await facturacionPorMesService.zipEnSegundoPlano(ids)).procesoId
+      anunciarProceso()
+      toast.info('Armando el ZIP en el centro de procesos.', {
+        description: 'Si te vas de esta pantalla, lo bajas desde el botón de procesos de arriba.',
+      })
+      for (;;) {
+        const p = await procesosApi.ver(procesoId)
+        if (!montado.current) return
+        setZipEnElCentro(p)
+        if (p.estado === 'TERMINADO' && p.archivo && !p.archivo.vencido) {
+          await descargarArchivoDelProceso(p.id)
+          return
+        }
+        if (p.estado === 'TERMINADO' || p.estado === 'FALLO' || p.estado === 'CANCELADO') {
+          toast.error(p.mensaje ?? 'El ZIP no se pudo armar.')
+          return
+        }
+        await new Promise((r) => setTimeout(r, MS_ENTRE_CONSULTAS_DEL_ZIP))
+      }
+    },
+    [],
+  )
 
   const descargarUna = useCallback(
     async (facturaId: string, numero: string | null) => {
@@ -85,7 +141,11 @@ export function useDescargarFacturas(): DescargaDeFacturas {
   )
 
   const descargarLote = useCallback(
-    async (facturas: readonly DocumentoParaDescargar[], nombreDelZip: string) => {
+    async (
+      facturas: readonly DocumentoParaDescargar[],
+      nombreDelZip: string,
+      opciones: { procesosConZip?: readonly string[] } = {},
+    ) => {
       const motivo = motivoParaNoDescargarLote(facturas.length)
       if (motivo) {
         toast.error(motivo)
@@ -96,6 +156,22 @@ export function useDescargarFacturas(): DescargaDeFacturas {
         return
       }
       setDescargando('lote')
+      if (vaPorElCentro(facturas.length)) {
+        try {
+          await porElCentro(
+            facturas.map((f) => f.facturaId),
+            opciones.procesosConZip ?? [],
+          )
+        } catch (error) {
+          toast.error(mensajeDeError(error))
+        } finally {
+          if (montado.current) {
+            setDescargando(null)
+            setZipEnElCentro(null)
+          }
+        }
+        return
+      }
       try {
         const blob = await facturacionPorMesService.zipDeFacturas(
           facturas.map((f) => f.facturaId),
@@ -107,8 +183,8 @@ export function useDescargarFacturas(): DescargaDeFacturas {
         setDescargando(null)
       }
     },
-    [descargarUna],
+    [descargarUna, porElCentro],
   )
 
-  return { descargarUna, descargarLote, descargando }
+  return { descargarUna, descargarLote, descargando, zipEnElCentro }
 }

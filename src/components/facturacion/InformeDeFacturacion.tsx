@@ -23,7 +23,7 @@ import { formatCurrency } from '@/lib/format'
 import { mesLegible } from '@/lib/api/facturacion-por-mes.service'
 import { cn } from '@/lib/utils'
 import { quedaronPendientes, type ResultadoDeLaCorrida } from './facturasPorTandas'
-import { motivoParaNoDescargarLote, useDescargarFacturas } from './useDescargarFacturas'
+import { motivoParaNoDescargarLote, useDescargarFacturas, vaPorElCentro } from './useDescargarFacturas'
 
 const numero = (n: number) => n.toLocaleString('es-CO')
 const facturas = (n: number) => `${numero(n)} ${n === 1 ? 'factura' : 'facturas'}`
@@ -48,7 +48,7 @@ export function InformeDeFacturacion({
    * El aviso decía «Se emitió 1 factura» y sólo ofrecía «Cerrar». Una → su PDF;
    * varias → el ZIP de ESTA corrida; más del tope → apagado diciendo por qué.
    */
-  const { descargarLote, descargando } = useDescargarFacturas()
+  const { descargarLote, descargando, zipEnElCentro } = useDescargarFacturas()
   const documentos = informe.documentos ?? []
   const noSeDescarga = motivoParaNoDescargarLote(documentos.length)
   const pendientes = quedaronPendientes(informe)
@@ -128,6 +128,18 @@ export function InformeDeFacturacion({
               ))}
             </ul>
           )}
+          {/* Más de 50: el ZIP lo arma el centro de procesos (22-09). */}
+          {vaPorElCentro(documentos.length) && (
+            <p className="mt-2 text-body-sm text-fg-muted" data-testid="facturacion-informe-por-el-centro">
+              {zipEnElCentro
+                ? `Armando el ZIP en el centro de procesos${
+                    zipEnElCentro.total
+                      ? ` · ${Math.min(zipEnElCentro.hechos, zipEnElCentro.total).toLocaleString('es-CO')} de ${zipEnElCentro.total.toLocaleString('es-CO')} PDF`
+                      : ''
+                  }. Si te vas, lo bajas desde el botón de procesos de arriba.`
+                : `Son ${numero(documentos.length)} facturas: el ZIP se arma en el centro de procesos y se baja de ahí.`}
+            </p>
+          )}
           {documentos.length > 0 && noSeDescarga && (
             <p className="mt-2 text-body-sm text-fg-muted" data-testid="facturacion-informe-sin-descarga">
               {noSeDescarga}
@@ -148,7 +160,9 @@ export function InformeDeFacturacion({
               isLoading={descargando !== null}
               title={noSeDescarga ?? undefined}
               onClick={() =>
-                void descargarLote(documentos, `facturas-${informe.mes}-${documentos.length}.zip`)
+                void descargarLote(documentos, `facturas-${informe.mes}-${documentos.length}.zip`, {
+                  procesosConZip: informe.procesosConZip ?? [],
+                })
               }
               data-testid="facturacion-informe-descargar"
             >

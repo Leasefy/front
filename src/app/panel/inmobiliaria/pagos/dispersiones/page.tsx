@@ -75,6 +75,7 @@ import {
   apruebaPorLote as apruebaPorLoteSegun,
   esAprobadorYEjecutor,
   esAprobarPorLote,
+  loteQueTieneLaDispersion,
   motivoLegible,
 } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
@@ -296,6 +297,21 @@ function DispersionesContent() {
   const porLote = loteConfirmadoPorElBack || apruebaPorLoteSegun(agencia);
 
   /** El 409 de aprobar por lote: se dice qué pasó y a dónde ir, no «Error». */
+  /** 409 `DISPERSION_EN_UN_LOTE`: el mensaje del back y el enlace al lote que la tiene. */
+  const avisarQueEstaEnUnLote = useCallback(
+    (enLote: { href: string; mensaje: string }, id?: string) => {
+      toast.error(t('inmobiliaria.dispersiones.enUnLote.titulo'), {
+        id,
+        description: enLote.mensaje,
+        action: {
+          label: t('inmobiliaria.dispersiones.enUnLote.irAlLote'),
+          onClick: () => router.push(enLote.href),
+        },
+      });
+    },
+    [router, t],
+  );
+
   const avisarQueEsPorLote = useCallback(
     (error: ApiError, id?: string) => {
       setLoteConfirmadoPorElBack(true);
@@ -418,12 +434,17 @@ function DispersionesContent() {
         avisarQueEsPorLote(error, id);
         return;
       }
+      const enLote = loteQueTieneLaDispersion(error);
+      if (enLote) {
+        avisarQueEstaEnUnLote(enLote, id);
+        return;
+      }
       toast.error('No se pudo aprobar la dispersión', {
         id,
         description: motivoDeLaAccion(error),
       });
     }
-  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote]);
+  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
 
   /**
    * El botón de la fila (tabla y tarjeta).
@@ -476,6 +497,11 @@ function DispersionesContent() {
         avisarQueEsPorLote(error, id);
         return;
       }
+      const enLote = loteQueTieneLaDispersion(error);
+      if (enLote) {
+        avisarQueEstaEnUnLote(enLote, id);
+        return;
+      }
       toast.error(
         esAprobadorYEjecutor(error)
           ? 'El giro lo anota otra persona'
@@ -483,7 +509,7 @@ function DispersionesContent() {
         { id, description: motivoDeLaAccion(error) },
       );
     }
-  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote]);
+  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
 
   // Reintentar una fallida es el mismo camino: la referencia sigue siendo del banco.
   const handleRetryDispersion = useCallback(async (

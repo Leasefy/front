@@ -299,6 +299,22 @@ export interface FilaExcluida {
   motivo: string;
 }
 
+/**
+ * Un pago de ESTE lote que ya salió en el archivo de un lote ANULADO después
+ * de generar su archivo (back, 23-09-2026). Ese archivo pudo llegar al banco:
+ * girarlo otra vez es pagarle dos veces al propietario.
+ */
+export interface SalioEnUnArchivoAnulado {
+  dispersionId: string;
+  propietarioId: string;
+  nombre: string;
+  valorCop: number;
+  loteAnteriorId: string;
+  archivoGeneradoAt: string | null;
+  anuladoAt: string | null;
+  motivoDeLaAnulacion: string | null;
+}
+
 export interface VistaDelLote {
   lote: LoteDeDispersion;
   /**
@@ -313,6 +329,8 @@ export interface VistaDelLote {
   /** Intentos de código que quedan antes de que el lote se bloquee. */
   intentosRestantes: number;
   bloqueado: boolean;
+  /** Opcional: back anterior al 2026-09-23. Vacío = ninguno. */
+  salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
 }
 
 export interface LoteArmado {
@@ -327,6 +345,8 @@ export interface LoteArmado {
    * que no se puede es que el número no se vea antes de mandarlo a aprobación.
    */
   descubiertoCop: number;
+  /** Opcional: back anterior al 2026-09-23. Ver `SalioEnUnArchivoAnulado`. */
+  salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
   /** El banco elegido. `null` sin la migración. */
   origen?: OrigenDelLote | null;
 }

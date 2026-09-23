@@ -108,6 +108,8 @@ import {
 } from './GirosDevueltos';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
+import { AvisoDeArchivoAnulado } from './AvisoDeArchivoAnulado';
+import { useI18n } from '@/lib/i18n';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -440,6 +442,10 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
+      )}
+
+      {lote.estado !== 'ANULADO' && (
+        <AvisoDeArchivoAnulado pagos={vista.salieronEnUnArchivoAnulado} />
       )}
 
       {/* ── Línea de tiempo ────────────────────────────────────────────── */}
@@ -1557,14 +1563,25 @@ function AnularDialog({
   onCerrar,
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
+  const { t } = useI18n();
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
+   * procesó en el banco (back, 23-09-2026: 409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin la confirmación). Sin
+   * esta casilla el botón mandaba el cuerpo de siempre y el lote no se podía
+   * anular nunca.
+   */
+  const conArchivo = lote.estado === 'ARCHIVO_GENERADO';
+  const [confirmo, setConfirmo] = useState(false);
 
   useEffect(() => {
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setConfirmo(false);
     }
   }, [abierto]);
 
@@ -1573,10 +1590,14 @@ function AnularDialog({
       setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
+    if (conArchivo && !confirmo) {
+      setError(t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar'));
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
-      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo);
+      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
       toast.success('Lote anulado', {
         description: 'Sus dispersiones quedaron libres para entrar en otro lote.',
@@ -1611,13 +1632,34 @@ function AnularDialog({
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          {conArchivo && (
+            <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
+              <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  data-testid="casilla-archivo-del-banco"
+                  checked={confirmo}
+                  onCheckedChange={(v) => setConfirmo(v === true)}
+                />
+                <span>{t('inmobiliaria.dispersiones.lote.anular.confirmaArchivo')}</span>
+              </label>
+            </div>
+          )}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={() => void anular()} isLoading={enviando} hideArrow>
+          <Button
+            variant="destructive"
+            onClick={() => void anular()}
+            isLoading={enviando}
+            disabled={conArchivo && !confirmo}
+            title={conArchivo && !confirmo ? t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar') : undefined}
+            hideArrow
+            data-testid="boton-anular-lote"
+          >
             <Prohibit className="h-4 w-4" />
             Anular lote
           </Button>

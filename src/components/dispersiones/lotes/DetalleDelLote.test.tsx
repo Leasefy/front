@@ -21,6 +21,8 @@ import type { LoteDeDispersion, VistaDelLote } from '@/lib/api/lotes-de-dispersi
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
@@ -883,7 +885,7 @@ describe('<DetalleDelLote> — cierre', () => {
     await escribir('motivo-de-anulacion', 'Cambió una cuenta');
     await clic('Anular lote');
 
-    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta', false);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Anulado');
   });
 
@@ -949,5 +951,68 @@ describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
   it('sin compensados no aparece la sección', async () => {
     await render(vista(lote()));
     expect(container.querySelector('[data-testid="compensados-del-lote"]')).toBeNull();
+  });
+});
+
+describe('<DetalleDelLote> — el archivo que pudo llegar al banco (23-09)', () => {
+  async function marcarCasilla() {
+    await act(async () => {
+      (document.body.querySelector('[data-testid="casilla-archivo-del-banco"]') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('🔴 con el archivo generado, anular pide la casilla y manda la confirmación al back', async () => {
+    await render(
+      vista(lote({ estado: 'ARCHIVO_GENERADO', archivoGeneradoAt: '2026-09-20T14:00:00.000Z' })),
+    );
+    vi.mocked(lotesDeDispersionApi.anular).mockResolvedValue(
+      lote({ estado: 'ANULADO', anuladoAt: '2026-09-21T10:00:00.000Z', motivoDeLaAnulacion: 'El banco lo rechazó' }),
+    );
+
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).not.toBeNull();
+    await escribir('motivo-de-anulacion', 'El banco lo rechazó');
+    // Sin la casilla, el botón está apagado y no se le pega al back.
+    expect(boton('Anular lote').disabled).toBe(true);
+    expect(lotesDeDispersionApi.anular).not.toHaveBeenCalled();
+
+    await marcarCasilla();
+    await clic('Anular lote');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'El banco lo rechazó', true);
+  });
+
+  it('un lote sin archivo se anula sin casilla', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).toBeNull();
+  });
+
+  it('🔴 los pagos que ya salieron en el archivo de un lote anulado se avisan en el detalle', async () => {
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), {
+        salieronEnUnArchivoAnulado: [
+          {
+            dispersionId: 'disp-1',
+            propietarioId: 'prop-1',
+            nombre: 'JORGE RESTREPO',
+            valorCop: 1_800_000,
+            loteAnteriorId: 'lote-viejo',
+            archivoGeneradoAt: '2026-09-20T14:00:00.000Z',
+            anuladoAt: '2026-09-21T10:00:00.000Z',
+            motivoDeLaAnulacion: 'El banco lo rechazó',
+          },
+        ],
+      }),
+    );
+
+    const aviso = container.querySelector('[data-testid="aviso-archivo-anulado"]');
+    expect(aviso).not.toBeNull();
+    expect(cuerpo()).toContain('1 pago de este lote ya salió en el archivo de un lote anulado');
+    expect(aviso?.textContent).toContain('JORGE RESTREPO');
+    expect(aviso?.textContent).toContain('El banco lo rechazó');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/dispersiones/lotes/lote-viejo',
+    );
   });
 });

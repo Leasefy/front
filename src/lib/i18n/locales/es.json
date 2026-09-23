@@ -2634,6 +2634,25 @@
         "errorAlCargar": "No se pudo cargar la lista de bancos.",
         "desde": "Desde {{banco}} · {{tipo}}",
         "teProponemosLaUltima": "Te proponemos la última cuenta desde la que giraste."
+      },
+      "lote": {
+        "archivoAnulado": {
+          "titulo": "{{n}} pagos de este lote ya salieron en el archivo de un lote anulado",
+          "tituloUno": "1 pago de este lote ya salió en el archivo de un lote anulado",
+          "texto": "Ese archivo se generó y pudo haberse subido al banco. Antes de mandar este lote a aprobación, confirma en el portal del banco que esos pagos NO se procesaron: si se procesaron, girarlos otra vez le paga dos veces al propietario.",
+          "fila": "salió en el archivo del {{generado}}; ese lote se anuló el {{anulado}}",
+          "motivo": "Motivo de la anulación: {{motivo}}",
+          "alArmar": "Revisa el aviso del lote: {{n}} de estos pagos ya salieron en el archivo de un lote anulado."
+        },
+        "anular": {
+          "confirmaArchivo": "Confirmo que revisé en el portal del banco que este archivo NO se procesó. Si llegó al banco, anular este lote hace que sus pagos se giren dos veces.",
+          "avisoArchivo": "El archivo de este lote ya se generó y pudo haberse subido al banco.",
+          "faltaConfirmar": "Marca la confirmación: el archivo de este lote ya se generó."
+        }
+      },
+      "enUnLote": {
+        "titulo": "Esta liquidación ya está en un lote",
+        "irAlLote": "Abrir el lote"
       }
     },
     "operaciones": {
@@ -10143,6 +10162,11 @@
       "elInmueble": "el inmueble",
       "elContrato": "el contrato",
       "viendoCopia": "Estás sin señal. Estás viendo la copia guardada el {{cuando}}; lo que llenes se sube cuando vuelva la señal."
+    },
+    "egresos": {
+      "anularPagado": "Un egreso pagado no se anula: la plata ya salió del banco y el comprobante tiene número. Si la devolvieron, regístralo como ingreso con tu contador; si la fecha está mal, cámbiala desde el egreso.",
+      "anularAnulado": "Este egreso ya está anulado.",
+      "anulado": "Egreso anulado. Vuelve a quedar sin pagar."
     }
   },
   "validation": {

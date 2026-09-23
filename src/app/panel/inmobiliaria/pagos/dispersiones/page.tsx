@@ -78,6 +78,7 @@ import {
   motivoLegible,
 } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { SegmentedControl } from '@leasefy/cadence';
 
 // View modes
@@ -449,12 +450,17 @@ function DispersionesContent() {
    * banco. Por eso la referencia es obligatoria (el back la exige) y el texto
    * dejó de prometer «Transferencia enviada».
    */
-  const handleProcessDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
+  const handleProcessDispersion = useCallback(async (
+    dispersion: Dispersion,
+    transferReference: string,
+    // Desde qué cuenta salió (23-09): el «Desde» del correo al propietario.
+    origen?: OrigenPedido | null,
+  ) => {
     const id = `process-${dispersion.id}`;
     try {
       toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), { id });
 
-      await dispersionesApi.process(dispersion.id, transferReference);
+      await dispersionesApi.process(dispersion.id, transferReference, origen);
       await refetchDispersiones();
       void cargarResumen();
 
@@ -480,8 +486,12 @@ function DispersionesContent() {
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote]);
 
   // Reintentar una fallida es el mismo camino: la referencia sigue siendo del banco.
-  const handleRetryDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
-    await handleProcessDispersion(dispersion, transferReference);
+  const handleRetryDispersion = useCallback(async (
+    dispersion: Dispersion,
+    transferReference: string,
+    origen?: OrigenPedido | null,
+  ) => {
+    await handleProcessDispersion(dispersion, transferReference, origen);
   }, [handleProcessDispersion]);
 
   /*

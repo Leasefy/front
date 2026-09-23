@@ -134,6 +134,32 @@ export interface BancosParaGirar {
   ultima: { banco: string; tipoDeCuenta: TipoDeCuentaDeOrigen; numeroDeCuenta: string } | null;
 }
 
+/**
+ * `GET /inmobiliaria/dispersiones/origen-del-giro`: lo que «Marcar como
+ * girada» necesita para preguntar desde qué banco salió la plata (Nico, 23-09).
+ * Sin formatos —un giro suelto no genera archivo—; `ultima` es la última
+ * cuenta de origen de la agencia, de un lote o de un giro suelto.
+ */
+export interface OpcionesDelOrigenDelGiro {
+  /** `false` = falta la migración: se marca girada sin preguntar. */
+  disponible: boolean;
+  motivo: string | null;
+  bancos: Array<{ id: string; nombre: string }>;
+  cuentas: CuentaRegistrada[];
+  ultima: { banco: string; tipoDeCuenta: TipoDeCuentaDeOrigen; numeroDeCuenta: string } | null;
+}
+
+/** «Desde»: la cuenta de la inmobiliaria de la que salió un giro, tapada. */
+export interface OrigenDelGiroEnPantalla {
+  banco: string;
+  nombreDelBanco: string;
+  tipoDeCuenta: string;
+  /** `•••• 8901`. */
+  cuenta: string;
+  /** El giro suelto («Marcar como girada») o el lote que lo pagó. */
+  de: 'GIRO' | 'LOTE';
+}
+
 /** Lo que se manda al armar: el banco, el tipo y el número de la cuenta. */
 export interface OrigenPedido {
   banco: string;

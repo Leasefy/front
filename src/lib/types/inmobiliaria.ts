@@ -812,6 +812,11 @@ export interface Dispersion {
   titularDeLaCuenta?: import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro | null;
   /** 🔴 22-09: el reparto entre varias cuentas. `null`/ausente = una sola. */
   repartoDeLaCuenta?: ParteDelReparto[] | null;
+  /**
+   * 23-09 · «Desde»: la cuenta de la inmobiliaria de la que salió el giro (la
+   * del giro suelto o la del lote que lo pagó), tapada. Ausente = no quedó.
+   */
+  origenDelGiro?: import('@/lib/api/lotes-de-dispersion.types').OrigenDelGiroEnPantalla;
 
   month: string; // '2026-02'
   items: DispersionItem[];

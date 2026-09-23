@@ -26,6 +26,10 @@ import type {
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// La cuenta de origen (`CamposDeLaCuentaDeOrigen`) habla por i18n: el stub
+// resuelve contra el es.json real, así los textos en español siguen valiendo.
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));

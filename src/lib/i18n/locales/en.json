@@ -4986,7 +4986,8 @@
           "NIT": "NIT",
           "PASSPORT": "Passport",
           "PPT": "PPT"
-        }
+        },
+        "emailSoloAdministrador": "Only an administrator can change an owner’s email: it is how they confirm bank account changes and how they sign in to their portal."
       },
       "stats": {
         "properties": "Properties",

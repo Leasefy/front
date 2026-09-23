@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 import {
@@ -145,6 +146,17 @@ export function PropietarioForm({
   serverError,
 }: PropietarioFormProps) {
   const { t } = useI18n();
+  /*
+   * 🔴 23-09 (auditoría de seguridad): el correo de un propietario es por
+   * donde confirma los cambios de su cuenta bancaria y con el que entra a su
+   * portal, así que cambiar uno que YA estaba es cosa de un administrador (el
+   * back lo exige: `CORREO_SOLO_ADMINISTRADOR`). Registrar el primero de una
+   * ficha que no tenía sigue abierto. Fuera del proveedor de permisos no se
+   * sabe el rol y se deja editable: decide el back.
+   */
+  const permisos = usePermissionsContextSafe();
+  const correoBloqueado =
+    mode === 'edit' && !!initialData?.email?.trim() && permisos !== null && !permisos.isAdmin;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -422,11 +434,14 @@ export function PropietarioForm({
             label="Email"
             required
             error={touched.email ? errors.email : undefined}
+            hint={correoBloqueado ? t('inmobiliaria.propietario.form.emailSoloAdministrador') : undefined}
           >
             <div className="relative">
               <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
                 type="email"
+                disabled={correoBloqueado}
+                data-testid="correo-del-propietario"
                 value={formData.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}

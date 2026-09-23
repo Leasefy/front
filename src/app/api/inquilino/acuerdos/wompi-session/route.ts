@@ -19,6 +19,7 @@
 
 import { NextResponse } from 'next/server'
 
+import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types'
 
@@ -52,6 +53,14 @@ export async function POST(req: Request) {
 
   if (!planId) {
     return NextResponse.json({ error: 'planId required' }, { status: 400 })
+  }
+  // `planId` va dentro de la ruta del back y de la referencia firmada; la cuota,
+  // si viene, es un número de cuota y nada más. Ver `identificador-seguro.ts`.
+  if (!esIdentificadorSeguro(planId)) {
+    return NextResponse.json({ error: 'invalid_planId' }, { status: 400 })
+  }
+  if (cuotaNumber !== undefined && !(Number.isInteger(cuotaNumber) && cuotaNumber >= 1)) {
+    return NextResponse.json({ error: 'invalid_cuotaNumber' }, { status: 400 })
   }
 
   // --- Server-only env vars (no public prefix) ---

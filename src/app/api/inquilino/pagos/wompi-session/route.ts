@@ -16,6 +16,7 @@
 import { NextResponse } from 'next/server'
 
 import type { BackendPaymentInfo } from '@/lib/api/leases.types'
+import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 import { computeWompiIntegrity } from '@/lib/payments/wompi-integrity'
 import {
   buildRentReference,
@@ -38,6 +39,11 @@ export async function POST(req: Request) {
 
   if (!leaseId) {
     return NextResponse.json({ error: 'leaseId required' }, { status: 400 })
+  }
+  // Va dentro de la ruta del back Y de la referencia firmada: nada que cambie
+  // la forma de la URL (`../`, `?`, `#`). Ver `identificador-seguro.ts`.
+  if (!esIdentificadorSeguro(leaseId)) {
+    return NextResponse.json({ error: 'invalid_leaseId' }, { status: 400 })
   }
 
   // --- Server-only env vars (no public prefix) ---

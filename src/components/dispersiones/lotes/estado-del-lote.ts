@@ -17,7 +17,11 @@ import type {
   LoteResumen,
 } from '@/lib/api/lotes-de-dispersion.types';
 
-/** El camino feliz, en orden. `ANULADO` es una salida, no un paso. */
+/**
+ * El camino feliz, en orden. `ANULADO` es una salida, no un paso. `EN_WOMPI`
+ * ocupa el lugar del archivo cuando el lote sale por Wompi · Pagos a terceros
+ * (`pasoAlcanzado` lo pone ahí).
+ */
 export const CAMINO_DEL_LOTE: readonly EstadoDelLote[] = [
   'BORRADOR',
   'ESPERANDO_APROBACION',
@@ -33,6 +37,7 @@ export const NOMBRE_DEL_ESTADO: Record<EstadoDelLote, string> = {
   ARCHIVO_GENERADO: 'Archivo generado',
   PAGADO: 'Pagado',
   ANULADO: 'Anulado',
+  EN_WOMPI: 'En Wompi',
 };
 
 /** Qué significa el estado y qué sigue, para quien abre el lote. */
@@ -46,6 +51,8 @@ export const QUE_SIGUE: Record<EstadoDelLote, string> = {
     'Descarga el archivo y súbelo al banco. Cuando el banco confirme el pago, marca el lote como pagado con la referencia.',
   PAGADO: 'La plata salió. Un lote pagado no se anula: un pago hecho se corrige con una contrapartida.',
   ANULADO: 'Las dispersiones de este lote volvieron a quedar libres para entrar en otro.',
+  EN_WOMPI:
+    'El lote está en Wompi. Se cierra solo cuando Wompi confirme cada pago; lo que el banco rechace vuelve a la lista para otro lote.',
 };
 
 /** Variantes del `Badge` local (adaptador de cadence). */
@@ -58,6 +65,7 @@ export const TONO_DEL_ESTADO: Record<EstadoDelLote, TonoDeBadge> = {
   ARCHIVO_GENERADO: 'default',
   PAGADO: 'success',
   ANULADO: 'destructive',
+  EN_WOMPI: 'warning',
 };
 
 export type AccionDelLote =
@@ -103,6 +111,9 @@ export function accionesPara(estado: EstadoDelLote): AccionDelLote[] {
       return ['descargarArchivo', 'marcarPagado', 'anular'];
     case 'PAGADO':
     case 'ANULADO':
+    // 🔴 En Wompi no se baja el archivo (sería girar dos veces), no se marca
+    // pagado a mano y no se anula: se cierra solo, o vuelve a APROBADO.
+    case 'EN_WOMPI':
       return [];
   }
 }
@@ -115,6 +126,8 @@ export function accionesPara(estado: EstadoDelLote): AccionDelLote[] {
  * murió en borrador o esperando aprobación: se muestra el borrador.
  */
 export function pasoAlcanzado(lote: Pick<LoteResumen, 'estado' | 'aprobadoAt' | 'archivoGeneradoAt' | 'pagadoAt'>): number {
+  // En Wompi el lote está donde estaría el archivo: aprobado y saliendo.
+  if (lote.estado === 'EN_WOMPI') return 3;
   if (lote.estado !== 'ANULADO') return CAMINO_DEL_LOTE.indexOf(lote.estado);
   if (lote.pagadoAt) return 4;
   if (lote.archivoGeneradoAt) return 3;

@@ -15,7 +15,13 @@ export type EstadoDelLote =
   | 'APROBADO'
   | 'ARCHIVO_GENERADO'
   | 'PAGADO'
-  | 'ANULADO';
+  | 'ANULADO'
+  /**
+   * Se mandó a Wompi · Pagos a terceros: espera al Aprobador en el panel de
+   * Wompi, o Wompi lo está pagando. No saca archivo ni se anula; se cierra
+   * solo cuando Wompi confirma, o vuelve a APROBADO si lo rechaza sin pagar.
+   */
+  | 'EN_WOMPI';
 
 /**
  * Formatos de archivo plano: el enum `FormatoArchivoDePagos` del back
@@ -344,6 +350,12 @@ export interface CandidatoDeDispersion {
   seCompensa?: boolean;
   /** Lo que pasa a su siguiente liquidación si se cierra en $0. */
   saldoEnContraCop?: number;
+  /**
+   * Por qué Wompi no la pagó la última vez, en español (la causal del banco).
+   * Informativo: no la excluye —la cuenta pudo corregirse—. `null` o ausente =
+   * nunca la rechazó.
+   */
+  rechazoDeWompi?: string | null;
 }
 
 export interface CandidatosDeDispersion {

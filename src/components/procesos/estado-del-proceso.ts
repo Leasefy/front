@@ -13,6 +13,7 @@ export const NOMBRE_DEL_TIPO: Record<string, string> = {
   MIGRACION_CONTRATOS: 'Carga de contratos',
   MIGRACION_INMUEBLES: 'Carga de inmuebles',
   EXPORTACION: 'Exportación',
+  ENVIO_A_WOMPI: 'Lote en Wompi · Pagos a terceros',
 }
 
 export const NOMBRE_DEL_ESTADO: Record<EstadoDeProceso, string> = {

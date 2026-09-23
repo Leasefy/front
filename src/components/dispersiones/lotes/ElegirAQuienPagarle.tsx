@@ -459,7 +459,17 @@ function FilaDelCandidato({
           aria-label={`Pagarle a ${candidato.propietarioName}`}
         />
       </TableCell>
-      <TableCell className="font-medium text-fg">{candidato.propietarioName}</TableCell>
+      <TableCell>
+        <span className="font-medium text-fg">{candidato.propietarioName}</span>
+        {/* 🔴 El banco la rechazó la última vez que salió por Wompi: se dice
+            antes de volver a mandarla. No la excluye —la cuenta pudo
+            corregirse—. */}
+        {candidato.rechazoDeWompi ? (
+          <p className="text-caption text-warning" data-testid={`rechazo-de-wompi-${candidato.dispersionId}`}>
+            Wompi la rechazó la última vez: {candidato.rechazoDeWompi}
+          </p>
+        ) : null}
+      </TableCell>
       <TableCell className="text-fg-muted">{nombreDelMes(candidato.month)}</TableCell>
       <TableCell className="text-right font-mono tabular-nums text-fg">
         {formatCurrency(candidato.netoCop)}

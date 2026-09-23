@@ -40,6 +40,10 @@ describe('accionesPara', () => {
     expect(accionesPara('ANULADO')).toEqual([]);
   });
 
+  it('🔴 EN_WOMPI no ofrece archivo, pagado ni anular: sería girar dos veces', () => {
+    expect(accionesPara('EN_WOMPI')).toEqual([]);
+  });
+
   it('cada acción tiene el permiso del @RequirePermission del back', () => {
     expect(PERMISO_DE_LA_ACCION.generarArchivo).toBe('export');
     expect(PERMISO_DE_LA_ACCION.descargarArchivo).toBe('export');

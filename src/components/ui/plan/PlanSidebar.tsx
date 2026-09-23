@@ -481,9 +481,9 @@ function SidebarContent({
                 className="h-8 w-8 rounded-[8px] object-cover"
               />
             ) : (
-              // Mismo criterio monocromo que la fila expandida, para que el rail
-              // colapsado no cambie de identidad al plegar el sidebar.
-              <span className="flex h-8 w-8 items-center justify-center text-fg">
+              // Mismo azul que la fila expandida, para que el rail colapsado no
+              // cambie de identidad al plegar el sidebar.
+              <span className="flex h-8 w-8 items-center justify-center text-primary">
                 <LeasefySymbol size={18} />
               </span>
             )}
@@ -494,8 +494,9 @@ function SidebarContent({
         // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
         // en su propio contexto (encabezados, documentos); repetirla acá arriba
         // solo confundía sobre en qué
-        // producto estás parado. Monocromo con `text-fg` → negro en claro,
-        // blanco en oscuro, sin ramificar por tema.
+        // producto estás parado. En el azul `primary` (Nico, 22-09: «el logo de
+        // la sidebar en todas las plataformas en el azul primary»): el token ya
+        // cambia a su versión clara en oscuro, sin ramificar por tema.
         //
         // Igual en los TRES paneles. Antes inquilino y propietario caían a un
         // fallback con otro logo y otro tamaño: la misma app cambiaba de firma
@@ -505,7 +506,7 @@ function SidebarContent({
             href={logo?.href ?? '/'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
-            className="flex w-full items-center rounded-[12px] px-[10px] py-[6px] text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full items-center rounded-[12px] px-[10px] py-[6px] text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LeasefyLogotype size={26} />
           </Link>

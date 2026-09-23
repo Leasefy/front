@@ -28,6 +28,8 @@ import { alEventoDelCentro } from '@/lib/api/procesos.service'
 import type { ListaDeProcesos } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
 import { FilaDeProceso } from './FilaDeProceso'
+import { DetalleDelProceso } from './DetalleDelProceso'
+import type { Proceso } from '@/lib/api/procesos.types'
 import { estaActivo } from './estado-del-proceso'
 
 export const RUTA_DEL_CENTRO = '/panel/inmobiliaria/procesos'
@@ -73,6 +75,12 @@ export function BotonDelCentroDeProcesos() {
   /** El proceso recién lanzado: va arriba y resaltado. `'nuevo'` = el más nuevo activo. */
   const [resaltar, setResaltar] = useState<string | null>(null)
   const [anunciado, setAnunciado] = useState<string | null>(null)
+  /** El cajón de «Ver detalle» vive FUERA del popover: el popover se cierra al abrirlo. */
+  const [detalle, setDetalle] = useState<Proceso | null>(null)
+  const verDetalle = (p: Proceso) => {
+    setAbierto(false)
+    setDetalle(p)
+  }
   const centro = useCentroDeProcesos({ limite: TOPE })
   const data = centro.data
   const activos = data?.activos ?? 0
@@ -122,6 +130,11 @@ export function BotonDelCentroDeProcesos() {
       : 'Centro de procesos'
 
   return (
+    <>
+    <DetalleDelProceso
+      proceso={detalle ? ((data?.procesos ?? []).find((p) => p.id === detalle.id) ?? detalle) : null}
+      onCerrar={() => setDetalle(null)}
+    />
     <Popover
       open={abierto}
       onOpenChange={(o) => {
@@ -220,6 +233,7 @@ export function BotonDelCentroDeProcesos() {
                   compacta
                   resaltado={p.id === idResaltado}
                   onCambio={() => void centro.refetch()}
+                  onVerDetalle={verDetalle}
                 />
               ))}
             </Seccion>
@@ -234,6 +248,7 @@ export function BotonDelCentroDeProcesos() {
                   compacta
                   resaltado={p.id === idResaltado}
                   onCambio={() => void centro.refetch()}
+                  onVerDetalle={verDetalle}
                 />
               ))}
             </Seccion>
@@ -262,6 +277,7 @@ export function BotonDelCentroDeProcesos() {
         </footer>
       </PopoverContent>
     </Popover>
+    </>
   )
 }
 

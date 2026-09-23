@@ -22,6 +22,7 @@ import Link from 'next/link'
 import {
   ArrowClockwise,
   ArrowRight,
+  ListBullets,
   Books,
   CheckCircle,
   Clock,
@@ -44,6 +45,7 @@ import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service'
 import type { Proceso } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
 import { descargarArchivoDelProceso, type Navegar } from './descargar-archivo-del-proceso'
+import { DetalleDelProceso } from './DetalleDelProceso'
 import {
   NOMBRE_DEL_ESTADO,
   avanceEnPalabras,
@@ -105,6 +107,12 @@ export interface FilaDeProcesoProps {
   /** Sin acciones de navegación (la línea de Facturación ya está en su pantalla). */
   sinVerResultado?: boolean
   as?: 'li' | 'div'
+  /**
+   * Quién abre el cajón de «Ver detalle». El panel del header lo abre FUERA
+   * del popover (si no, el clic en el cajón cerraría el popover y con él la
+   * fila). Sin esto, la fila abre su propio cajón.
+   */
+  onVerDetalle?: (p: Proceso) => void
 }
 
 export function FilaDeProceso({
@@ -118,7 +126,11 @@ export function FilaDeProceso({
   ahora,
   sinVerResultado = false,
   as: Contenedor = 'li',
+  onVerDetalle,
 }: FilaDeProcesoProps) {
+  const [detalleAbierto, setDetalleAbierto] = useState(false)
+  const esLocal = p.id === 'corrida-local'
+  const verDetalle = () => (onVerDetalle ? onVerDetalle(p) : setDetalleAbierto(true))
   const [bajando, setBajando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [reintentando, setReintentando] = useState(false)
@@ -183,6 +195,7 @@ export function FilaDeProceso({
   }
 
   const hayAcciones =
+    !esLocal ||
     (p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO') ||
     resultado ||
     p.sePuedeCancelar ||
@@ -350,9 +363,17 @@ export function FilaDeProceso({
                 {cancelando || deteniendo ? 'Deteniendo…' : 'Detener'}
               </AccionSuave>
             )}
+            {!esLocal && (
+              <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
+                Ver detalle
+              </AccionSuave>
+            )}
           </div>
         )}
       </div>
+      {!onVerDetalle && !esLocal && (
+        <DetalleDelProceso proceso={detalleAbierto ? p : null} onCerrar={() => setDetalleAbierto(false)} />
+      )}
     </Contenedor>
   )
 }

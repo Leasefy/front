@@ -269,6 +269,6 @@ describe('generarPorTandas — una emisión = UN proceso (23-09)', () => {
   it('una sola tanda no manda nada de corrida (es su propio proceso)', async () => {
     const generar = vi.fn(todoSale)
     await generarPorTandas('2026-09', claves(50), generar)
-    expect(generar.mock.calls[0][2]).toBeUndefined()
+    expect((generar.mock.calls[0] as unknown[])[2]).toBeUndefined()
   })
 })

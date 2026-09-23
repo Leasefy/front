@@ -44,6 +44,7 @@ import {
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
 import { ApiError } from '@/lib/api/client';
+import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
 import { clasificarFallo } from '@/lib/errores/clasificar';
 
 /**
@@ -411,7 +412,13 @@ export function mensajeDeFalloDelChat(error: unknown): string {
     case 'sinCreditos':
       return 'Tu plan se quedó sin créditos de IA. Pídele a quien administra la cuenta que recargue o cambie de plan.';
     case 'limitado':
-      return 'Demasiadas consultas seguidas. Espera un momento y vuelve a preguntar.';
+      // La misma frase que el 429 del back (`demasiadas-solicitudes.ts`), con
+      // el plazo cuando el micro lo dijo: un mensaje por límite, no dos.
+      return mensajeDeDemasiadasSolicitudes(
+        error instanceof ApiError && typeof error.detalle?.reintentarEnSegundos === 'number'
+          ? (error.detalle.reintentarEnSegundos as number)
+          : null,
+      );
     case 'tardo':
       return 'El asistente tardó demasiado en responder. Prueba de nuevo en un momento.';
     case 'sinSesion':

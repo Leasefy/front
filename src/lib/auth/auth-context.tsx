@@ -15,7 +15,8 @@ import {
   registrarCierreDeSesion,
   haySesionGuardada,
 } from './session-terminal'
-import { claimSession, revokeSession } from '@/lib/api/session.service'
+import { claimSession } from '@/lib/api/session.service'
+import { revocarSesion } from './revocar-sesion'
 import { CLAVE_DE_PERFIL_ELEGIDO, leerPerfilElegido, type PerfilDeOnboarding } from './perfil-de-onboarding'
 import { getDeviceId } from '@/lib/auth/device-id'
 import {
@@ -984,7 +985,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.race([
         Promise.all([
           removeFcmToken().catch(() => {}),
-          tokenVivo ? revokeSession(tokenVivo).catch(() => {}) : Promise.resolve(),
+          // Back + Supabase (el refresh token), ANTES de borrar las cookies:
+          // ver `revocar-sesion.ts`.
+          tokenVivo ? revocarSesion(tokenVivo) : Promise.resolve(),
         ]),
         new Promise((resolve) => setTimeout(resolve, 1500)),
       ])

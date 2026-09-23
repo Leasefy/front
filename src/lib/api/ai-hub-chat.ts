@@ -16,7 +16,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
 import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
@@ -451,6 +451,13 @@ export function handleSSEEvent(
  * distingue.
  */
 async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+  // El 429 del micro (su limitador, o el `agents_limit` de NGINX) se dice
+  // IGUAL que el del back: «Espera 45 segundos y vuelve a intentar», con el
+  // número cuando viene en el cuerpo o en `Retry-After`. Antes pasaba el
+  // `message` crudo del micro (en inglés, o «ai-hub chat 429») y la burbuja
+  // decía «espera un momento» sin plazo, que invita a machacar el botón y
+  // alarga el bloqueo (auditoría de seguridad 23-09).
+  if (res.status === 429) return errorDeDemasiadasSolicitudes(res);
   let cuerpo: Record<string, unknown> | undefined;
   try {
     const json: unknown = await res.json();

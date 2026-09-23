@@ -213,8 +213,10 @@ describe('IdleSessionGuard', () => {
   })
 
   describe('apagado', () => {
-    it('sin la variable no hace absolutamente nada', async () => {
-      vi.stubEnv('NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES', '')
+    it('con 0 (apagado a propósito) no hace absolutamente nada', async () => {
+      // Sin la variable ya NO está apagado: cae a 240 minutos (ver
+      // `idle-timeout.ts`). Apagarlo es explícito.
+      vi.stubEnv('NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES', '0')
       montar()
       inactivoHace(24 * 60 * MIN)
       await avanzar(5000)

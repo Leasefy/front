@@ -41,19 +41,34 @@ export const AVISO_MS = 60_000
 const PERIODO_DE_ESCRITURA_MS = 5_000
 
 /**
- * Minutos de inactividad configurados. `0`/ausente/ilegible = apagado.
+ * Si nadie configuró nada, la sesión inactiva se cierra a las 4 horas.
  *
- * Un valor basura se trata como apagado a propósito, igual que
- * `AUTH_MAX_SESSION_AGE_DAYS` en el backend: un typo en el `.env` no puede
- * convertirse en una expulsión masiva de usuarios.
+ * Antes la variable ausente APAGABA la función (endurecimiento de la sesión,
+ * 23-09): un despliegue que se olvidara de `NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES`
+ * dejaba abierta para siempre la sesión de un equipo compartido en una oficina
+ * — con acceso a giros y cuentas bancarias de propietarios—. Ahora apagarla es
+ * una decisión explícita (`0`), no un olvido. 240 es lo que ya usaba el entorno
+ * local: una jornada de medio día sin tocar nada.
+ */
+export const MINUTOS_DE_INACTIVIDAD_POR_DEFECTO = 240
+
+/**
+ * Minutos de inactividad configurados. `0` = apagado A PROPÓSITO.
+ *
+ * Ausente, vacío o ilegible → el valor por defecto, nunca «apagado» y nunca
+ * «tope de 0 minutos»: un typo en el `.env` no puede ni convertirse en una
+ * expulsión masiva (igual que `AUTH_MAX_SESSION_AGE_DAYS` en el backend) ni
+ * dejar sesiones abiertas para siempre.
  *
  * Se lee de `process.env` en cada llamada —y no en una constante de módulo—
  * porque Next inlinea las `NEXT_PUBLIC_*` en build y los tests necesitan poder
  * cambiarla.
  */
 export function minutosDeInactividad(): number {
-  const min = Number(process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES)
-  if (!Number.isFinite(min) || min <= 0) return 0
+  const crudo = process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES?.trim()
+  if (crudo === '0') return 0
+  const min = Number(crudo)
+  if (!crudo || !Number.isFinite(min) || min <= 0) return MINUTOS_DE_INACTIVIDAD_POR_DEFECTO
   return min
 }
 

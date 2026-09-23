@@ -364,16 +364,17 @@ describe('mapBackendBriefing (tolerant)', () => {
  * transporte rechaza con `ApiError`, que `clasificarFallo` sabe leer.
  */
 describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', () => {
-  const respuesta = (status: number, cuerpo: unknown) =>
+  const respuesta = (status: number, cuerpo: unknown, cabeceras: Record<string, string> = {}) =>
     ({
       ok: false,
       status,
       body: null,
+      headers: new Headers(cabeceras),
       json: async () => cuerpo,
       text: async () => JSON.stringify(cuerpo),
     }) as unknown as Response;
 
-  it.each([402, 429, 503])('POST con %i rechaza con ApiError y ese status', async (status) => {
+  it.each([402, 503])('POST con %i rechaza con ApiError y ese status', async (status) => {
     process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
     const { postChatTurn } = await import('./ai-hub-chat');
     const { ApiError } = await import('@/lib/api/client');
@@ -383,6 +384,39 @@ describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', 
       expect(err).toBeInstanceOf(ApiError);
       expect(err.status).toBe(status);
       expect(err.code).toBe('X');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  /**
+   * 23-09 — el 429 del micro se dice IGUAL que el del back: con cuánto
+   * esperar. Antes llegaba a la burbuja el `message` crudo del micro («Too
+   * many requests») o «ai-hub chat 429», sin plazo.
+   */
+  it('un 429 del micro dice cuánto esperar, con el mismo mensaje que el del back', async () => {
+    process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
+    const { postChatTurn, streamChatTurn } = await import('./ai-hub-chat');
+    const { ApiError } = await import('@/lib/api/client');
+    const { mensajeDeDemasiadasSolicitudes, CODIGO_DEMASIADAS_SOLICITUDES } = await import(
+      '@/lib/api/demasiadas-solicitudes'
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respuesta(429, { message: 'Too many requests' }, { 'Retry-After': '45' })),
+    );
+    try {
+      for (const intento of [
+        () => postChatTurn({ agencyId: 'ag-1', message: 'hola' }),
+        () => streamChatTurn({ agencyId: 'ag-1', message: 'hola', handlers: {} }),
+      ]) {
+        const err = await intento().catch((e) => e);
+        expect(err).toBeInstanceOf(ApiError);
+        expect(err.status).toBe(429);
+        expect(err.code).toBe(CODIGO_DEMASIADAS_SOLICITUDES);
+        expect(err.message).toBe(mensajeDeDemasiadasSolicitudes(45));
+        expect(err.detalle.reintentarEnSegundos).toBe(45);
+      }
     } finally {
       vi.unstubAllGlobals();
     }

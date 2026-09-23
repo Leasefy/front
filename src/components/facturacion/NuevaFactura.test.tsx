@@ -610,9 +610,18 @@ describe('NuevaFactura', () => {
 
   it('🔴 dice que un escenario sin confirmar se factura SIN impuestos', async () => {
     await montar();
-    expect(host.textContent).toContain('se factura SIN impuestos');
+    // La explicación vive detrás de «Cómo se factura» (no sobre la tabla):
+    // se abre y se lee en el diálogo, que se monta en el body.
+    const boton = Array.from(host.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Cómo se factura'),
+    );
+    expect(boton).toBeTruthy();
+    await act(async () => {
+      boton!.click();
+    });
+    expect(document.body.textContent).toContain('se factura SIN impuestos');
     // Y que numerar no es transmitir: la factura electrónica no está.
-    expect(host.textContent).toContain('todavía no se transmite');
+    expect(document.body.textContent).toContain('todavía no se transmite');
   });
 
   /**

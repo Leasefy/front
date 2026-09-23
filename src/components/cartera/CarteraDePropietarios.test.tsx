@@ -63,6 +63,10 @@ function mes(p: Partial<MesDelPropietario> = {}): MesDelPropietario {
     month: '2026-08',
     recaudadoCop: 2_100_000,
     comisionCop: 210_000,
+    // 🔴 22-09: el IVA de la comisión, en su columna. 0 por defecto; la
+    // prueba del IVA lo pone.
+    ivaComisionCop: 0,
+    retencionesComisionCop: 0,
     conceptosAFavorCop: 0,
     // Una reparación de lavamanos: se le descuenta al dueño, no se le
     // factura a nadie.
@@ -72,7 +76,12 @@ function mes(p: Partial<MesDelPropietario> = {}): MesDelPropietario {
   }
   const netoCop =
     p.netoCop ??
-    base.recaudadoCop + base.conceptosAFavorCop - base.comisionCop - base.conceptosACargoCop
+    base.recaudadoCop +
+      base.conceptosAFavorCop +
+      base.retencionesComisionCop -
+      base.comisionCop -
+      base.ivaComisionCop -
+      base.conceptosACargoCop
   const giradoCop = p.giradoCop ?? (base.estado === 'DISP_COMPLETED' ? netoCop : 0)
   return { ...base, netoCop, giradoCop, pendienteCop: netoCop - giradoCop }
 }
@@ -228,11 +237,12 @@ describe('CarteraDePropietarios', () => {
     let sumaDeNetos = 0
     let sumaDePendientes = 0
     for (const fila of meses) {
-      const [recaudado, comision, aFavor, aCargo, neto, pendiente] = pesosDe(fila)
-      // La comisión y lo que se le cobra al dueño se pintan en negativo.
+      const [recaudado, comision, iva, aFavor, aCargo, neto, pendiente] = pesosDe(fila)
+      // La comisión, su IVA y lo que se le cobra al dueño se pintan en negativo.
       expect(comision).toBeLessThan(0)
+      expect(iva).toBeLessThanOrEqual(0)
       expect(aCargo).toBeLessThanOrEqual(0)
-      expect(recaudado! + comision! + aFavor! + aCargo!).toBe(neto)
+      expect(recaudado! + comision! + iva! + aFavor! + aCargo!).toBe(neto)
       sumaDeNetos += neto!
       sumaDePendientes += pendiente!
     }
@@ -242,6 +252,37 @@ describe('CarteraDePropietarios', () => {
     )
     expect(sumaDeNetos).toBe(netoDeLaFila)
     expect(sumaDePendientes).toBe(pendienteDeLaFila)
+  })
+
+  it('🔴 22-09: el IVA de la comisión tiene su columna y la fila sigue cerrando contra el neto', () => {
+    // El caso de la captura: 2.054.037 − 205.404 − 39.027 = 1.809.606.
+    const conIva = mes({
+      month: '2026-09',
+      recaudadoCop: 2_054_037,
+      comisionCop: 205_404,
+      ivaComisionCop: 39_027,
+      conceptosACargoCop: 0,
+    })
+    expect(conIva.netoCop).toBe(1_809_606)
+    conDatos(
+      datosDe({
+        propietarios: [
+          {
+            propietarioId: 'p1',
+            nombre: 'Marta Cifuentes',
+            meses: [conIva],
+            totales: { netoCop: conIva.netoCop, giradoCop: 0, pendienteCop: conIva.netoCop },
+          },
+        ],
+      }),
+    )
+    montar()
+    clic($('[data-testid="fila-propietario"] button'))
+    const [fila] = todos('[data-testid="detalle-de-meses"] tbody tr')
+    const [recaudado, comision, iva, aFavor, aCargo, neto] = pesosDe(fila!)
+    expect(iva).toBe(-39_027)
+    expect(recaudado! + comision! + iva! + aFavor! + aCargo!).toBe(neto)
+    expect(neto).toBe(1_809_606)
   })
 
   it('un mes girado ya no se debe, y lo dice', () => {

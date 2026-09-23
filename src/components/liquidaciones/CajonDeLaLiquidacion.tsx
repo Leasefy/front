@@ -77,6 +77,26 @@ export function CajonDeLaLiquidacion({
                   valor={p.totalCollected}
                 />
                 <Renglon etiqueta="Comisión" valor={p.totalCommission} signo="−" tono="text-danger" />
+                {/* 🔴 22-09 (Nico: «no estás teniendo en cuenta el IVA en la
+                    comisión»): el IVA va entre la comisión y el neto, en su
+                    línea. El back ya no lo esconde en los conceptos a cargo. */}
+                {(p.totalIvaComision ?? 0) > 0 && (
+                  <Renglon
+                    etiqueta="IVA de la comisión"
+                    valor={p.totalIvaComision ?? 0}
+                    signo="−"
+                    tono="text-danger"
+                    testid="cajon-liquidacion-iva"
+                  />
+                )}
+                {(p.totalRetencionesComision ?? 0) > 0 && (
+                  <Renglon
+                    etiqueta="Retenido sobre la comisión"
+                    valor={p.totalRetencionesComision ?? 0}
+                    signo="+"
+                    testid="cajon-liquidacion-retenido"
+                  />
+                )}
                 {p.totalConceptosAFavor > 0 && (
                   <Renglon etiqueta="Conceptos a su favor" valor={p.totalConceptosAFavor} signo="+" />
                 )}
@@ -127,7 +147,8 @@ export function CajonDeLaLiquidacion({
                         {i.propertyTitle}
                       </p>
                       <p className="font-mono text-caption tabular-nums text-fg-muted">
-                        canon {formatCurrency(i.rentCollected)} · comisión {formatCurrency(i.commissionAmount)} · neto{' '}
+                        canon {formatCurrency(i.rentCollected)} · comisión {formatCurrency(i.commissionAmount)}
+                        {(i.ivaComisionAmount ?? 0) > 0 && ` · IVA ${formatCurrency(i.ivaComisionAmount ?? 0)}`} · neto{' '}
                         {formatCurrency(i.netAmount)}
                       </p>
                     </li>

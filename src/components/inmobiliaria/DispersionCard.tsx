@@ -228,6 +228,13 @@ export function DispersionCard({
             <span>Comision agencia</span>
             <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
+          {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
+          {(dispersion.totalIvaComision ?? 0) > 0 && (
+            <div className="flex items-center justify-between text-warning" data-testid="tarjeta-iva-comision">
+              <span>IVA de la comisión</span>
+              <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
+            </div>
+          )}
         </div>
       </div>
 

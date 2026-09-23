@@ -190,3 +190,55 @@ describe('las deducciones de la liquidación', () => {
     expect(adaptarDispersion({ ...DEL_BACK, conDeducciones: null }).conDeducciones).toBeUndefined()
   })
 })
+
+/*
+ * 🔴 22-09 · El IVA de la comisión (Nico: «no estás teniendo en cuenta el IVA
+ * en la comisión»). El back lo manda aparte —total y por renglón— y el aviso
+ * de una dispersión que se generó sin él. Si el adaptador lo tirara, el cajón
+ * volvería a decir «Comisión · Neto» con una resta que no cierra.
+ */
+describe('el IVA de la comisión', () => {
+  const CON_IVA: DispersionDelBack = {
+    ...DEL_BACK,
+    totalCollected: 2_054_037,
+    totalCommission: 205_404,
+    totalIvaComision: 39_027,
+    totalRetencionesComision: 0,
+    totalConceptosACargo: 0,
+    netToPropietario: 1_809_606,
+    items: [
+      {
+        cobroId: null,
+        cuotaId: 'cuota-1',
+        propertyTitle: 'Apto 301',
+        rentCollected: 2_054_037,
+        commissionPercent: 10,
+        commissionAmount: 205_404,
+        ivaComisionAmount: 39_027,
+        netAmount: 1_809_606,
+      },
+    ],
+  }
+
+  it('pasa el total y el del renglón tal cual', () => {
+    const d = adaptarDispersion(CON_IVA)
+    expect(d.totalIvaComision).toBe(39_027)
+    expect(d.items[0].ivaComisionAmount).toBe(39_027)
+    expect(d.totalCollected - d.totalCommission - (d.totalIvaComision ?? 0)).toBe(d.netToPropietario)
+  })
+
+  it('un back anterior lo lee como cero, sin aviso', () => {
+    const d = adaptarDispersion(DEL_BACK)
+    expect(d.totalIvaComision).toBe(0)
+    expect(d.totalRetencionesComision).toBe(0)
+    expect(d.avisoDelIvaDeLaComision).toBeNull()
+  })
+
+  it('el aviso de una dispersión generada sin IVA llega a la pantalla', () => {
+    const d = adaptarDispersion({
+      ...DEL_BACK,
+      avisoDelIvaDeLaComision: 'Esta liquidación se generó sin el IVA de la comisión',
+    })
+    expect(d.avisoDelIvaDeLaComision).toContain('sin el IVA')
+  })
+})

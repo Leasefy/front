@@ -370,3 +370,50 @@ describe('DispersionDetail — el titular del giro', () => {
     );
   });
 });
+
+/*
+ * 🔴 22-09 · La captura de Nico: «Canon causado $2.054.037 · Comisión
+ * $205.404 · Neto $1.848.633» — «no estás teniendo en cuenta el IVA en la
+ * comisión». Con el IVA liquidado, el cajón tiene una ficha más entre la
+ * comisión y el neto; y una dispersión generada SIN él lo dice.
+ */
+describe('<DispersionDetail> el IVA de la comisión', () => {
+  const CON_IVA: Dispersion = {
+    ...BASE_DISPERSION,
+    totalCollected: 2_054_037,
+    totalCommission: 205_404,
+    totalIvaComision: 39_027,
+    totalRetencionesComision: 0,
+    netToPropietario: 1_809_606,
+  };
+
+  // El `formatCurrency` del stub de i18n no agrupa: «$39027».
+  it('pinta la ficha «IVA de la comisión» y la cuenta cierra con lo que se ve', () => {
+    renderConProps(CON_IVA, {});
+    const ficha = q('dispersion-iva-comision');
+    expect(ficha?.textContent).toContain('inmobiliaria.dispersiones.detailView.ivaComision');
+    expect(ficha?.textContent).toContain('$39027');
+    expect(q('dispersion-neto')?.textContent).toContain('$1809606');
+    // Entre la comisión y el neto.
+    const texto = container.textContent ?? '';
+    expect(texto.indexOf('$205404')).toBeLessThan(texto.indexOf('$39027'));
+    expect(texto.indexOf('$39027')).toBeLessThan(texto.indexOf('$1809606'));
+  });
+
+  it('sin IVA, las tres fichas de siempre', () => {
+    renderConProps(BASE_DISPERSION, {});
+    expect(q('dispersion-iva-comision')).toBeNull();
+  });
+
+  it('una dispersión generada sin el IVA lo avisa con el texto del back', () => {
+    renderConProps(
+      {
+        ...BASE_DISPERSION,
+        avisoDelIvaDeLaComision:
+          'Esta liquidación se generó sin el IVA de la comisión (19 % de $100.000 = $19.000).',
+      },
+      {},
+    );
+    expect(q('dispersion-aviso-iva')?.textContent).toContain('$19.000');
+  });
+});

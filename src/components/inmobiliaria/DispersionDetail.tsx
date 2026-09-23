@@ -627,7 +627,16 @@ export function DispersionDetail({
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
           </h3>
-          <div className="grid grid-cols-3 gap-3">
+          {/* 🔴 22-09 (Nico: «no estás teniendo en cuenta el IVA en la
+              comisión»): con IVA, cuatro fichas —canon, comisión, IVA de la
+              comisión, neto— en dos filas, para que la cuenta se lea en orden
+              y los montos quepan en el cajón. */}
+          <div
+            className={cn(
+              'grid gap-3',
+              (dispersion.totalIvaComision ?? 0) > 0 ? 'grid-cols-2' : 'grid-cols-3',
+            )}
+          >
             <div className="p-4 rounded-lg bg-muted/50 text-center">
               {/* 🔴 Decía «Recaudado» siempre, y la dispersión gira por defecto
                   con base CAUSADO: el canon del mes, haya pagado el inquilino
@@ -639,27 +648,54 @@ export function DispersionDetail({
                     : 'inmobiliaria.dispersiones.detailView.canonCausado',
                 )}
               </p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground font-mono tabular-nums">
                 {formatCurrency(dispersion.totalCollected)}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-primary-soft text-center">
               <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
-              <p className="text-lg font-bold text-primary">
+              <p className="text-lg font-bold text-primary font-mono tabular-nums">
                 {formatCurrency(dispersion.totalCommission)}
               </p>
             </div>
+            {(dispersion.totalIvaComision ?? 0) > 0 && (
+              <div className="p-4 rounded-lg bg-primary-soft text-center" data-testid="dispersion-iva-comision">
+                <p className="text-caption text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.ivaComision')}</p>
+                <p className="text-lg font-bold text-primary font-mono tabular-nums">
+                  {formatCurrency(dispersion.totalIvaComision ?? 0)}
+                </p>
+              </div>
+            )}
             <div className="p-4 rounded-lg bg-success-soft text-center">
               <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
               {/* Con deducciones, lo que se gira es el neto a girar del back
                   (entero o $0), no el neto guardado, que puede quedar en contra. */}
-              <p className="text-lg font-bold text-success" data-testid="dispersion-neto">
+              <p className="text-lg font-bold text-success font-mono tabular-nums" data-testid="dispersion-neto">
                 {formatCurrency(
                   dispersion.conDeducciones ? dispersion.conDeducciones.aGirarCop : dispersion.netToPropietario,
                 )}
               </p>
             </div>
           </div>
+          {(dispersion.totalRetencionesComision ?? 0) > 0 && (
+            <p className="text-sm text-fg-muted" data-testid="dispersion-retenido-comision">
+              {t('inmobiliaria.dispersiones.detailView.retenidoComision')}{' '}
+              <span className="font-mono tabular-nums text-fg">
+                +{formatCurrency(dispersion.totalRetencionesComision ?? 0)}
+              </span>
+            </p>
+          )}
+          {/* Generada antes del 22-09 sin el IVA: el back lo dice con el número
+              que falta. No se corrige solo: un giro no cambia sin que alguien
+              lo decida. */}
+          {dispersion.avisoDelIvaDeLaComision && (
+            <p
+              className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning"
+              data-testid="dispersion-aviso-iva"
+            >
+              {dispersion.avisoDelIvaDeLaComision}
+            </p>
+          )}
           <BloqueDeDeducciones bloque={dispersion.conDeducciones} propietarioId={dispersion.propietarioId} />
           {/* D1/D2 (17-09): lo girado sin recaudo y los intereses del propietario. */}
           <ResumenDelMandato

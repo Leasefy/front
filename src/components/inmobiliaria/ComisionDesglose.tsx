@@ -68,9 +68,10 @@ function calculateTotals(items: DispersionItem[]) {
     (acc, item) => ({
       totalCollected: acc.totalCollected + item.rentCollected,
       totalCommission: acc.totalCommission + item.commissionAmount,
+      totalIvaComision: acc.totalIvaComision + (item.ivaComisionAmount ?? 0),
       totalNet: acc.totalNet + item.netAmount,
     }),
-    { totalCollected: 0, totalCommission: 0, totalNet: 0 }
+    { totalCollected: 0, totalCommission: 0, totalIvaComision: 0, totalNet: 0 }
   );
 }
 
@@ -267,6 +268,12 @@ export function ComisionDesglose({
                     )}
                     <TableCell className="text-right font-medium text-primary">
                       {formatCurrency(item.commissionAmount)}
+                      {/* 🔴 22-09: el IVA de la comisión, debajo de ella. */}
+                      {(item.ivaComisionAmount ?? 0) > 0 && (
+                        <span className="block font-mono text-caption tabular-nums text-fg-muted" data-testid="desglose-iva-comision">
+                          + IVA {formatCurrency(item.ivaComisionAmount ?? 0)}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-success">
                       {formatCurrency(item.netAmount)}
@@ -287,6 +294,11 @@ export function ComisionDesglose({
               {showPercentages && <TableCell />}
               <TableCell className="text-right text-primary">
                 {formatCurrency(totals.totalCommission)}
+                {totals.totalIvaComision > 0 && (
+                  <span className="block font-mono text-caption tabular-nums text-fg-muted">
+                    + IVA {formatCurrency(totals.totalIvaComision)}
+                  </span>
+                )}
               </TableCell>
               <TableCell className="text-right text-success">
                 {formatCurrency(totals.totalNet)}

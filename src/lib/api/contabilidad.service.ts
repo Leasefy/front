@@ -968,7 +968,7 @@ export interface HistoriaDeComprobantes {
 
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
-/** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
+/** `EventoContable` en `schema.prisma`: los movimientos que el sistema asienta solo. */
 export type EventoDeRecaudoOGiro =
   | 'CARTERA_INQUILINOS'
   | 'RECIBO_BANCOS'
@@ -980,7 +980,15 @@ export type EventoDeRecaudoOGiro =
   | 'IVA_GENERADO'
   | 'GIRO_PROPIETARIO_BANCOS'
   /** Opcional (2026-09-16): sin cuenta propia, el ajuste va a «otros recaudos». */
-  | 'AJUSTE_AL_PESO';
+  | 'AJUSTE_AL_PESO'
+  /**
+   * 🔴 22-09 · Lo que el propietario agente retenedor le retiene a la comisión
+   * (135515 / 135517 / 135518, al DEBE). Opcionales en la pantalla; el back no
+   * los manda mientras la base no tenga su migración.
+   */
+  | 'RETENCION_RENTA_COMISION'
+  | 'RETENCION_IVA_COMISION'
+  | 'RETENCION_ICA_COMISION';
 
 /**
  * Los SIETE eventos de gasto (contrato del 18-09 §2): los que necesita la
@@ -1028,6 +1036,9 @@ export const EVENTOS_CONTABLES: readonly EventoDeRecaudoOGiro[] = [
   'IVA_GENERADO',
   'GIRO_PROPIETARIO_BANCOS',
   'AJUSTE_AL_PESO',
+  'RETENCION_RENTA_COMISION',
+  'RETENCION_IVA_COMISION',
+  'RETENCION_ICA_COMISION',
 ];
 
 export const EVENTOS_DE_GASTO: readonly EventoDeGasto[] = [

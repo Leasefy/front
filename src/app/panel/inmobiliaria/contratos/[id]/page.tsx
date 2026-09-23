@@ -69,6 +69,7 @@ import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaD
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso'
 import { CobrosAlArrendarDelContrato } from '@/components/inmobiliaria/mandato/CobrosAlArrendarDelContrato'
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
@@ -685,6 +686,14 @@ function ContratoDetalleContent() {
               <BitacoraDelContrato contractId={contract.id} />
             </>
           )}
+
+          {/* 🔴 22-09: quién tocó ESTE contrato, con su rol —firmar, editar,
+              renovar, bajar el PDF, y lo que se intentó sin permiso—. No
+              reemplaza la bitácora del mandato de arriba: aquélla guarda las
+              DECISIONES con su anexo; ésta, cada movimiento de cada persona. Y
+              va fuera del bloque de «firmado» porque un contrato en firma
+              también tiene quién lo tocó. */}
+          <BitacoraDelRecurso tipo="contrato" id={contract.id} />
 
           <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">

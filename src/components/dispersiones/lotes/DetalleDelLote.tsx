@@ -104,6 +104,7 @@ import {
   RegirarDialog,
   useGirosDevueltos,
 } from './GirosDevueltos';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -725,6 +726,10 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
         </p>
       </section>
+
+      {/* ── Movimientos: quién lo armó, aprobó, bajó el archivo, lo marcó
+          pagado — con su rol, y también quién lo intentó sin permiso. ──── */}
+      <BitacoraDelRecurso tipo="lote" id={lote.id} />
 
       {/* ── Diálogos ────────────────────────────────────────────────────── */}
       <PedirAprobacionDialog

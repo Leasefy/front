@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -421,6 +422,13 @@ export function CajonDelEgreso({
                 </p>
               ) : null}
             </section>
+
+            {/* ── Movimientos ─────────────────────────────────────────────
+                No duplica el historial de arriba: aquél dice QUÉ cambió (de
+                qué fecha a cuál, con qué motivo); éste dice QUIÉN tocó el
+                egreso, con qué rol —anular, conciliar, pagar en lote— y
+                también lo que se intentó sin permiso. */}
+            <BitacoraDelRecurso tipo="egreso" id={egreso.id} />
           </CajonCuerpo>
 
           <CajonPie ayuda={algoEditable && pedido && falta ? falta : undefined}>

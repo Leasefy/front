@@ -78,6 +78,7 @@ import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-reg
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
 
@@ -1079,6 +1080,11 @@ function PropietarioDetailContent() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* 🔴 22-09: quién tocó a este propietario, con su rol —crearlo,
+          editarlo, cambiarle la cuenta, bajar su extracto— y lo que se intentó
+          sin permiso. Debajo de las pestañas: vale para todas. */}
+      <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
       {/* Edit Modal */}
       <Modal

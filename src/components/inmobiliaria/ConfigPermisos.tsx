@@ -28,6 +28,7 @@ import {
   Handshake,
   CreditCard,
   Scales,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -106,6 +107,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   contratos: Handshake,
   subscription: CreditCard,
   avaluos: Scales,
+  bitacora: ClockCounterClockwise,
 };
 
 // Action icons map

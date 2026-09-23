@@ -30,6 +30,7 @@ import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
 import { useI18n } from '@/lib/i18n';
 import { SheetTitle } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -843,6 +844,9 @@ export function DispersionDetail({
             </div>
           </motion.section>
         )}
+
+        {/* Quién aprobó, marcó girada o bajó el extracto, con su rol. */}
+        <BitacoraDelRecurso tipo="dispersion" id={dispersion.id} />
       </CajonCuerpo>
 
       {/* Pie fijo: bajar el extracto a la izquierda; ver el extracto y la

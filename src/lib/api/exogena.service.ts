@@ -170,7 +170,7 @@ export interface ConceptosDeExogena {
   avisoLegal: string;
 }
 
-/** `GuardarConceptosDto`: la entrada anidada. */
+/** `ExogenaGuardarConceptosDto`: la entrada anidada. */
 export const CLAVES_DE_CONCEPTO = ['cuentaId', 'formato', 'concepto'] as const;
 
 export interface ConceptoNuevo {

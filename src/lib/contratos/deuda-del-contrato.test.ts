@@ -163,3 +163,26 @@ describe('deudaDelContrato — qué se suma y qué se cuenta', () => {
     expect(d.estado).toBe('AL_DIA')
   })
 })
+
+describe('deudaDelContrato — manda el cajón del back (QA 22-09: 135 vs 136)', () => {
+  it('con cajon y diasDeMora del back, la ficha dice lo mismo que el estado de cuenta', () => {
+    // El front recontaba `hoy − vencimiento − plazo` = 135; el back, con el día
+    // del vencimiento como día 1 del plazo, dice 136.
+    const c = contrato([
+      fila({ fechaVencimiento: '2026-05-03', cajon: 'CARTERA', diasDeMora: 136 }),
+      fila({ fechaVencimiento: '2026-10-03', cajon: 'POR_VENCER' }),
+    ])
+    const d = deudaDelContrato({ contrato: c, hoy: '2026-09-22', diasDePlazo: 7 })
+    expect(d.diasDeMora).toBe(136)
+    expect(d.estado).toBe('EN_CARTERA')
+    expect(d.proxima?.fecha).toBe('2026-10-03')
+  })
+
+  it('en el borde: si el back ya dice CARTERA, la ficha no dice «en plazo»', () => {
+    // Recontado por el front, 7 días desde el vencimiento con 7 de plazo = en plazo.
+    const c = contrato([fila({ fechaVencimiento: '2026-09-15', cajon: 'CARTERA', diasDeMora: 1 })])
+    const d = deudaDelContrato({ contrato: c, hoy: '2026-09-22', diasDePlazo: 7 })
+    expect(d.estado).toBe('EN_CARTERA')
+    expect(d.enCartera).toBe(1_650_000)
+  })
+})

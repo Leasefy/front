@@ -50,7 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { Avisos, SinLaMigracion } from '@/components/finanzas/piezas';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
   Table,
@@ -123,35 +123,57 @@ export function PresupuestoPanel() {
 
   return (
     <div className="space-y-6" data-testid="presupuesto">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <SelectorDeMes mes={mes} onCambiar={setMes} />
-        {puedeCargar ? (
-          <Button onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            Cargar un rubro
-          </Button>
-        ) : null}
-      </div>
-
       {cargado && cargado.disponible === false ? (
         <SinLaMigracion motivo={cargado.motivo} queSeEspera="cargar el presupuesto" />
       ) : null}
 
-      <EstadoDeDatos
-        cargando={cargando && !comparacion}
-        error={fallo}
-        vacio={!cargando && !comparacion}
-        onReintentar={cargar}
-        queEs="el presupuesto del mes"
-      >
-        {comparacion ? (
-          <Comparacion
-            comparacion={comparacion}
-            cargado={cargado?.filas ?? []}
-            onBorrar={setBorrando}
-          />
-        ) : null}
-      </EstadoDeDatos>
+      {/* 🔴 UNA SOLA COSA (Nico, 21-09): «así hay muchas tablas que tienen mes
+          afuera, switch tab afuera y deberían estar junto a la tabla».
+          El mes y «Cargar un rubro» flotaban arriba sin borde ni título, la
+          tabla tenía el suyo, y entre los dos había un bloque de título más un
+          bloque de avisos. Ahora es UNA tarjeta: el mes y el CTA en la cabecera
+          —junto al nombre de la tabla que gobiernan— y la tabla debajo. */}
+      <section className="overflow-x-clip rounded-lg border border-border bg-surface">
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-fg">
+              {comparacion
+                ? `Presupuesto vs. real vs. ${comparacion.mesDelAnioAnterior}`
+                : 'Presupuesto vs. real'}
+            </h2>
+            <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
+              Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año
+              pasado. Un rubro cuyo real no se puede calcular sale con guion y
+              dice por qué: un cero ahí se leería como «no gastaste nada».
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+            <SelectorDeMes mes={mes} onCambiar={setMes} />
+            {puedeCargar ? (
+              <Button onClick={() => setAbriendo(true)} data-testid="cargar-presupuesto">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Cargar un rubro
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        <EstadoDeDatos
+          cargando={cargando && !comparacion}
+          error={fallo}
+          vacio={!cargando && !comparacion}
+          onReintentar={cargar}
+          queEs="el presupuesto del mes"
+        >
+          {comparacion ? (
+            <Comparacion
+              comparacion={comparacion}
+              cargado={cargado?.filas ?? []}
+              onBorrar={setBorrando}
+            />
+          ) : null}
+        </EstadoDeDatos>
+      </section>
 
       <DialogoDeCarga
         abierto={abriendo}
@@ -195,15 +217,16 @@ function Comparacion({
   );
 
   return (
-    <div className="space-y-4">
-      <TituloDeBloque
-        titulo={`Presupuesto vs. real vs. ${comparacion.mesDelAnioAnterior}`}
-        explicacion="Lo que se planeó, lo que pasó y lo que pasó el mismo mes del año pasado. Un rubro cuyo real no se puede calcular sale con guion y dice por qué: un cero ahí se leería como «no gastaste nada»."
-      />
+    <div>
+      {/* El título ya lo dice la cabecera de la tarjeta: repetirlo acá era la
+          misma frase dicha dos veces. */}
+      {comparacion.avisos.length > 0 ? (
+        <div className="border-b border-border p-4">
+          <Avisos avisos={comparacion.avisos} testId="presupuesto-avisos" />
+        </div>
+      ) : null}
 
-      <Avisos avisos={comparacion.avisos} testId="presupuesto-avisos" />
-
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -224,12 +247,25 @@ function Comparacion({
                   <TableCell>
                     <div className="space-y-0.5">
                       <p className="font-medium text-fg">{fila.nombre}</p>
+                      {/* 🔴 20-09 · Acá se pintaba el motivo ENTERO —cuatro
+                          renglones— en cada fila que no se puede medir. Con
+                          once rubros así, el mismo párrafo salía ocho veces
+                          palabra por palabra y ocupaba el 70 % de la altura de
+                          la tabla; y el aviso de arriba YA lo dice una vez,
+                          con la lista de los once. Repetir una explicación no
+                          la hace más clara: enseña a saltársela, y el día que
+                          una fila diga algo distinto tampoco se va a leer.
+
+                          Queda la marca, que es lo que la fila tiene que
+                          decir, y el motivo completo en el `title` y en el
+                          detalle del rubro, donde se va a leer de verdad. */}
                       {fila.motivoSinReal ? (
                         <p
-                          className="max-w-md text-xs leading-relaxed text-fg-muted"
+                          className="text-caption text-fg-subtle"
+                          title={fila.motivoSinReal}
                           data-testid={`sin-real-${fila.rubro}`}
                         >
-                          {fila.motivoSinReal}
+                          Sin cuentas del PUC: no se puede medir
                         </p>
                       ) : null}
                     </div>
@@ -280,9 +316,9 @@ function Comparacion({
               <TableCell>Total</TableCell>
               <Monto id="total-presupuesto" valor={comparacion.totales.presupuestoCop} />
               <Monto id="total-real" valor={comparacion.totales.realCop} />
-              <TableCell colSpan={3} className="text-right text-xs text-fg-muted">
+              <TableCell colSpan={3} className="text-right text-caption text-fg-muted">
                 {comparacion.totales.rubrosSinReal > 0
-                  ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} rubro(s) que todavía no se pueden medir.`
+                  ? `El total del real NO incluye ${comparacion.totales.rubrosSinReal} ${comparacion.totales.rubrosSinReal === 1 ? 'rubro' : 'rubros'} que todavía no se ${comparacion.totales.rubrosSinReal === 1 ? 'puede' : 'pueden'} medir.`
                   : 'Todos los rubros se pudieron medir.'}
               </TableCell>
               <TableCell />
@@ -356,7 +392,7 @@ function DialogoDeCarga({
       const codigo = codigoSinMigrar(error);
       toast.error(
         codigo
-          ? 'Todavía no se puede cargar el presupuesto: falta la migración. La aplica Víctor.'
+          ? 'Todavía no se puede cargar el presupuesto: esta función aún no está disponible. Nuestro equipo la está habilitando.'
           : mensajeDelFallo(error, 'No se pudo cargar el presupuesto.'),
       );
     } finally {
@@ -392,7 +428,7 @@ function DialogoDeCarga({
               ))}
             </datalist>
             {elegido?.motivoSinReal ? (
-              <p className="text-xs leading-relaxed text-fg-muted" data-testid="aviso-sin-real">
+              <p className="text-caption leading-relaxed text-fg-muted" data-testid="aviso-sin-real">
                 {elegido.motivoSinReal}
               </p>
             ) : null}

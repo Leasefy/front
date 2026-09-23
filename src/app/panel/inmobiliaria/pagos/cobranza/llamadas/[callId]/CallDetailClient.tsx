@@ -163,7 +163,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   // -------- Error --------
   if (error && !data) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 max-w-xl">
           <p className="text-sm text-danger font-medium">
             {t('inmobiliaria.ai.cobranza.call.error')}
@@ -182,18 +182,18 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             {t('inmobiliaria.ai.cobranza.call.errorRetry')}
           </Button>
         </div>
-      </main>
+      </div>
     )
   }
 
   // -------- Empty (no data) --------
   if (!data) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.empty')}
         </p>
-      </main>
+      </div>
     )
   }
 
@@ -204,7 +204,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   const overallPct = data.qa.overall == null ? null : Math.round(data.qa.overall)
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-3">
         <Link
@@ -347,6 +347,6 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           */}
         </aside>
       </div>
-    </main>
+    </div>
   )
 }

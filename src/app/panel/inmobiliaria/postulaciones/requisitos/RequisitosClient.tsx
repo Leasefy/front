@@ -32,6 +32,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import {
   ListChecks,
@@ -270,13 +271,7 @@ function DialogoDeRequisito({
           </fieldset>
 
           <label className="flex items-start gap-2.5 rounded-lg border border-border p-3">
-            <input
-              type="checkbox"
-              checked={obligatorio}
-              onChange={(e) => setObligatorio(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
-              data-testid="req-obligatorio"
-            />
+            <Checkbox checked={obligatorio} onCheckedChange={(marcada: boolean) => setObligatorio(marcada)} className="mt-0.5" data-testid="req-obligatorio" />
             <span className="text-sm">
               <span className="font-medium text-fg">Es obligatorio</span>
               <span className="block text-fg-muted">

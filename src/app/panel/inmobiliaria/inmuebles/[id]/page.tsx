@@ -2,6 +2,7 @@
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -68,6 +69,7 @@ import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
 import { useSinSenal } from '@/lib/hooks/use-sin-senal';
 import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -411,9 +413,23 @@ function ConsignacionDetailContent() {
    * de red es lo esperado y ese cartel lo explica mejor.
    */
   if (!consignacion && errorConsignacion && !sinSenal) {
+    /*
+     * 🔴 20-09 · Mismo arreglo que la ficha del contrato (ver su comentario):
+     * el camino de vuelta va ARRIBA, donde vive en todas las pantallas del
+     * panel, y no sólo adentro de la tarjeta. Sin encabezado, un fallo a
+     * pantalla completa no dice en qué parte del panel estás.
+     */
     return (
-      <div className="p-4 md:p-6" data-testid="ficha-fallo">
-        <div className="max-w-lg mx-auto py-16">
+      <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-fallo">
+        <BackButton
+          href="/panel/inmobiliaria/inmuebles"
+          label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+        />
+        {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
+            Propiedad»): el menú dice Inmuebles y el producto no llama
+            «propiedad» a nada. */}
+        <h1 className="text-h2 text-fg">Inmueble</h1>
+        <div className="max-w-2xl">
           <FalloDeCarga
             error={errorConsignacion}
             queEs="el inmueble"
@@ -669,6 +685,17 @@ function ConsignacionDetailContent() {
           >
             <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
           </motion.div>
+
+          {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
+              en el back —el inmueble (`/properties/:id`: fotos, datos,
+              ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
+              estado, canon, terminación)— y aquí se leen como una sola lista. */}
+          <BitacoraDelRecurso
+            recursos={[
+              { tipo: 'inmueble', id: consignacion.propertyId },
+              { tipo: 'consignacion', id: consignacion.id },
+            ]}
+          />
         </div>
 
         {/* Right Column - Sidebar (1/3) */}

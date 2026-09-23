@@ -8,6 +8,7 @@ import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-
 import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-en-un-solo-lugar.data.mjs";
 import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
 import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
+import { LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA } from "./src/lib/nav/los-nombres-que-no-decian-nada.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -157,6 +158,11 @@ const nextConfig = {
       // src/lib/nav/la-sala-de-pagos-se-fue.data.mjs (con test que lee ESTE
       // archivo para exigir el orden).
       ...LA_SALA_DE_PAGOS_SE_FUE_DATA,
+      // Las dos pestañas del Pipeline que se renombraron el 21-09 («Calce» →
+      // «Qué ofrecer», «Visitas» → «Preparar visitas»). Fuentes literales, así
+      // que van arriba sin tapar nada. Ver
+      // src/lib/nav/los-nombres-que-no-decian-nada.data.mjs.
+      ...LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA,
       // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
       // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).

@@ -28,6 +28,7 @@ import {
   Handshake,
   CreditCard,
   Scales,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -53,7 +54,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import type {
-  AgencyRole,
+  AccionPuntual,
   RolePermissions,
   PermissionModule,
   PermissionAction,
@@ -66,17 +67,24 @@ import {
   ALL_PERMISSION_MODULES,
   ALL_PERMISSION_ACTIONS,
   DEFAULT_ROLE_PERMISSIONS,
+  type RolDeLaMatriz,
   hasPermission,
   updateRolePermission,
+  PERMISOS_PUNTUALES,
+  ROLES_DEL_SISTEMA,
 } from '@/lib/types/inmobiliaria';
+
+// Los siete roles del sistema (22-09 noche); sólo se muestran los que el back devolvió.
+type AgencyRole = RolDeLaMatriz;
+type Matrices = Partial<Record<RolDeLaMatriz, RolePermissions>>;
 
 // ============================================================================
 // Types
 // ============================================================================
 
 interface ConfigPermisosProps {
-  permissions: Record<AgencyRole, RolePermissions>;
-  onSave?: (permissions: Record<AgencyRole, RolePermissions>) => void;
+  permissions: Matrices;
+  onSave?: (permissions: Matrices) => void;
   /**
    * Reset every role to the system defaults on the server (destructive — also
    * clears per-member overrides). When provided, "Restablecer" delegates here
@@ -103,6 +111,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   contratos: Handshake,
   subscription: CreditCard,
   avaluos: Scales,
+  bitacora: ClockCounterClockwise,
 };
 
 // Action icons map
@@ -114,8 +123,6 @@ const ACTION_ICONS: Record<PermissionAction, React.ElementType> = {
   export: Export,
 };
 
-// All roles in order
-const ALL_ROLES: AgencyRole[] = ['admin', 'agente', 'contador', 'viewer'];
 
 // ============================================================================
 // Permission Cell Component
@@ -286,19 +293,25 @@ export function ConfigPermisos({
   const { t } = useI18n();
 
   // Local state for editing
-  const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(initialPermissions);
+  const [permissions, setPermissions] = useState<Matrices>(initialPermissions);
+  // Los roles que hay para editar: los siete, menos los que un back viejo no mandó.
+  const ALL_ROLES = useMemo(
+    () => ROLES_DEL_SISTEMA.filter((r) => initialPermissions[r] !== undefined),
+    [initialPermissions],
+  );
   const [activeRole, setActiveRole] = useState<AgencyRole>('admin');
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   // Current role permissions
-  const currentPermissions = permissions[activeRole];
+  const currentPermissions = permissions[activeRole] ?? { role: activeRole, permissions: [] };
   const isAdmin = activeRole === 'admin';
 
   // Count permissions per role
   const getPermissionCount = useCallback((role: AgencyRole) => {
     const rolePerms = permissions[role];
+    if (!rolePerms) return 0;
     return rolePerms.permissions.reduce((sum, p) => sum + p.actions.length, 0);
   }, [permissions]);
 
@@ -312,17 +325,34 @@ export function ConfigPermisos({
 
     setPermissions((prev) => ({
       ...prev,
-      [activeRole]: updateRolePermission(prev[activeRole], module, action, enabled),
+      [activeRole]: updateRolePermission(prev[activeRole] ?? { role: activeRole, permissions: [] }, module, action, enabled),
     }));
     setHasChanges(true);
   }, [activeRole, isAdmin]);
+
+  /**
+   * Un permiso PUNTUAL (22-09) se marca solo, con su nombre: no es una columna
+   * de la matriz y «todo el módulo» no lo incluye (la matriz recorre sus cinco
+   * acciones). Viaja dentro del módulo del que cuelga.
+   */
+  const handleTogglePuntual = useCallback(
+    (modulo: PermissionModule, accion: AccionPuntual, enabled: boolean) => {
+      if (isAdmin) return;
+      setPermissions((prev) => ({
+        ...prev,
+        [activeRole]: updateRolePermission(prev[activeRole] ?? { role: activeRole, permissions: [] }, modulo, accion, enabled),
+      }));
+      setHasChanges(true);
+    },
+    [activeRole, isAdmin],
+  );
 
   // Toggle all permissions for a module
   const handleToggleAllModule = useCallback((module: PermissionModule, enabled: boolean) => {
     if (isAdmin) return;
 
     setPermissions((prev) => {
-      let updated = prev[activeRole];
+      let updated = prev[activeRole] ?? { role: activeRole, permissions: [] };
       ALL_PERMISSION_ACTIONS.forEach((action) => {
         updated = updateRolePermission(updated, module, action, enabled);
       });
@@ -336,7 +366,7 @@ export function ConfigPermisos({
     if (isAdmin) return;
 
     setPermissions((prev) => {
-      let updated = prev[activeRole];
+      let updated = prev[activeRole] ?? { role: activeRole, permissions: [] };
       ALL_PERMISSION_MODULES.forEach((module) => {
         updated = updateRolePermission(updated, module, action, enabled);
       });
@@ -439,7 +469,7 @@ export function ConfigPermisos({
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as AgencyRole)}>
-        <TabsList variant="segmented" className="w-full sm:w-auto">
+        <TabsList variant="segmented" className="h-auto w-full flex-wrap sm:w-auto">
           {ALL_ROLES.map((role) => (
             <TabsTrigger
               key={role}
@@ -551,7 +581,7 @@ export function ConfigPermisos({
                     <PermissionRow
                       key={module}
                       module={module}
-                      permissions={permissions[role]}
+                      permissions={permissions[role] ?? { role, permissions: [] }}
                       isAdmin={role === 'admin'}
                       onToggle={handleTogglePermission}
                       onToggleAll={handleToggleAllModule}
@@ -560,6 +590,58 @@ export function ConfigPermisos({
                 </TableBody>
               </Table>
             </div>
+
+            {/* 🔴 22-09 · PERMISOS PUNTUALES. «Cambiar la fecha de un egreso»
+                (Nico: «que sólo lo pueda hacer alguien con permisos») es UNA
+                acción, no un módulo: va aparte de la matriz, con su nombre y
+                su consecuencia, porque una columna más de «Reportes» no le
+                diría a nadie que eso mueve un asiento. */}
+            <section
+              className="mt-4 rounded-lg border border-border bg-surface"
+              aria-labelledby={`puntuales-${role}`}
+              data-testid="permisos-puntuales"
+            >
+              <div className="space-y-0.5 border-b border-border px-4 py-3">
+                <h3 id={`puntuales-${role}`} className="text-sm font-semibold text-fg">
+                  {t('inmobiliaria.config.permissions.puntualesTitulo')}
+                </h3>
+                <p className="text-caption text-fg-muted">
+                  {t('inmobiliaria.config.permissions.puntualesDescripcion')}
+                </p>
+              </div>
+              <ul className="divide-y divide-border-faint">
+                {PERMISOS_PUNTUALES.map((p) => {
+                  const esAdmin = role === 'admin';
+                  const marcado = esAdmin || hasPermission(permissions[role] ?? { role, permissions: [] }, p.modulo, p.accion);
+                  const id = `puntual-${role}-${p.accion}`;
+                  return (
+                    <li key={p.accion} className="flex items-start gap-3 px-4 py-3">
+                      <Checkbox
+                        id={id}
+                        checked={marcado}
+                        disabled={esAdmin}
+                        onCheckedChange={(c) => handleTogglePuntual(p.modulo, p.accion, c === true)}
+                        className="mt-0.5"
+                        data-testid={`permiso-puntual-${p.accion}`}
+                      />
+                      <label htmlFor={id} className="min-w-0 flex-1 space-y-0.5">
+                        <span className="block text-sm font-medium text-fg">
+                          {t(`inmobiliaria.config.permissions.puntuales.${p.accion}.nombre`)}
+                        </span>
+                        <span className="block text-caption text-fg-muted">
+                          {t(`inmobiliaria.config.permissions.puntuales.${p.accion}.descripcion`)}
+                        </span>
+                        {esAdmin ? (
+                          <span className="block text-caption text-fg-subtle">
+                            {t('inmobiliaria.config.permissions.puntualAdminSiempre')}
+                          </span>
+                        ) : null}
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
 
             {/* Legend */}
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-fg-muted">

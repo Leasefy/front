@@ -13,6 +13,7 @@ import { useParams } from 'next/navigation';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { DetalleDelLote } from '@/components/dispersiones/lotes/DetalleDelLote';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
 
 export default function LoteDeDispersionPage() {
@@ -28,11 +29,19 @@ export default function LoteDeDispersionPage() {
         {id ? (
           <DetalleDelLote id={id} />
         ) : (
-          <FalloDeCarga
-            error={{ status: 404 }}
-            queEs="el lote"
-            volverA={{ label: 'Volver a Lotes', href: RUTA_LOTES }}
-          />
+          <div className="space-y-6">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+            <BackButton href={RUTA_LOTES} label="Lotes" />
+            <h1 className="text-h2 text-fg">Lote</h1>
+            <FalloDeCarga
+              error={{ status: 404 }}
+              queEs="el lote"
+              volverA={{ label: 'Lotes', href: RUTA_LOTES }}
+            />
+          </div>
         )}
       </div>
     </PageGuard>

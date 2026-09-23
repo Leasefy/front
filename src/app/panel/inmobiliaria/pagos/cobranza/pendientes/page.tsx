@@ -241,18 +241,18 @@ function PendientesContent() {
   // ── Primer load ────────────────────────────────────────────────────────────
   if (isLoading && items.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
         </div>
-      </main>
+      </div>
     )
   }
 
   // ── Empty state celebratorio ───────────────────────────────────────────────
   if (!isLoading && items.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
             {t(`${NS}.pageTitle`)}
@@ -266,12 +266,12 @@ function PendientesContent() {
           title={t(`${NS}.vacio`)}
           description={t(`${NS}.vacioHint`)}
         />
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-h2 text-fg">
@@ -340,7 +340,7 @@ function PendientesContent() {
           )}
         </div>
       )}
-    </main>
+    </div>
   )
 }
 

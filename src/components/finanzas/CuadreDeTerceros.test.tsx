@@ -189,3 +189,99 @@ describe('la identidad y sus explicaciones', () => {
     expect(testId('cuadre-avisos')?.textContent).toContain('IGNORADAS');
   });
 });
+
+/*
+ * 🔴 EL MISMO TEXTO NO SE DICE DOS VECES.
+ *
+ * Nico, 21-09: «esto también parece un vómito, hay que mejorar muchísimo esta
+ * pantalla también». Lo primero que se veía eran DOS cajas amarillas pegadas
+ * diciendo lo mismo: el veredicto y, debajo, el aviso del back — las dos «no
+ * hay extracto bancario cargado… cárgalo en Conciliación».
+ *
+ * Los dos bloques tienen trabajos distintos (el veredicto dice si se le puede
+ * creer a la pantalla; los avisos, qué NO cuentan estos números), y justo en el
+ * estado sin extracto son la misma frase. Manda el veredicto: está arriba y
+ * trae el enlace.
+ */
+describe('sin extracto, el aviso no repite el veredicto', () => {
+  it('el aviso del extracto no se muestra dos veces', async () => {
+    h.cuadre.mockResolvedValue(
+      respuesta({
+        haySaldoDelBanco: false,
+        diferenciaCop: null,
+        cuadra: false,
+        avisos: [
+          'No hay extracto bancario cargado hasta esta fecha: el saldo de la cuenta de recaudo es desconocido y el cuadre NO se puede hacer. Carga el extracto en Conciliación.',
+        ],
+      }),
+    );
+    await pintar();
+
+    expect(testId('cuadre-veredicto')?.textContent).toContain('No se pudo cuadrar');
+    // El bloque de avisos no se monta: lo único que traía ya lo dijo el veredicto.
+    expect(testId('cuadre-avisos')).toBeNull();
+  });
+
+  /*
+   * Lo que NO puede pasar: que el filtro se coma un aviso que dice otra cosa.
+   * «Faltan tarifas de los costos de la plata» no tiene nada que ver con el
+   * extracto y es lo único que avisa que el margen está incompleto.
+   */
+  it('los avisos que dicen OTRA cosa se siguen mostrando', async () => {
+    h.cuadre.mockResolvedValue(
+      respuesta({
+        haySaldoDelBanco: false,
+        diferenciaCop: null,
+        cuadra: false,
+        avisos: [
+          'No hay extracto bancario cargado hasta esta fecha.',
+          'Faltan tarifas de los costos de la plata: el margen no descuenta lo que no está configurado.',
+        ],
+      }),
+    );
+    await pintar();
+
+    const avisos = testId('cuadre-avisos')?.textContent ?? '';
+    expect(avisos).toContain('Faltan tarifas');
+    expect(avisos).not.toContain('extracto bancario');
+  });
+
+  /*
+   * 🔴 El caso que Nico vio de verdad: CON extracto cargado y descuadre. El
+   * veredicto dice «Falta plata de terceros: $1.604.900» y el back manda un
+   * aviso con el mismo número. Se cae el gemelo; el de las partidas por
+   * identificar, que es otro hecho, se queda.
+   */
+  it('con descuadre, el aviso que repite la diferencia se cae y el otro se queda', async () => {
+    h.cuadre.mockResolvedValue(
+      respuesta({
+        haySaldoDelBanco: true,
+        cuadra: false,
+        diferenciaCop: -1_604_900,
+        avisos: [
+          '🔴 En la cuenta de recaudo hay $1.604.900 MENOS de lo que se le debe a terceros. Esa plata es de propietarios e inquilinos: revísalo hoy.',
+          '2 partidas por identificar ($2.101.235): es plata de alguien y se queda en el pasivo hasta que se le asigne inquilino y cuota.',
+        ],
+      }),
+    );
+    await pintar();
+
+    const avisos = testId('cuadre-avisos')?.textContent ?? '';
+    expect(avisos).toContain('2 partidas por identificar');
+    expect(avisos).not.toContain('MENOS de lo que se le debe');
+    // Y el veredicto sí lo dice, con su color y su titular.
+    expect(testId('cuadre-veredicto')?.textContent).toContain('1.604.900');
+  });
+
+  it('con extracto cargado y cuadrando, los avisos pasan todos', async () => {
+    h.cuadre.mockResolvedValue(
+      respuesta({
+        haySaldoDelBanco: true,
+        avisos: ['Hay 3 entradas del extracto que nadie asignó.'],
+      }),
+    );
+    await pintar();
+
+    expect(testId('cuadre-avisos')?.textContent).toContain('nadie asignó');
+  });
+});

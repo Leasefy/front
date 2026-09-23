@@ -39,9 +39,18 @@ import {
 } from './InquilinosTable'
 
 function arriendo(p: Partial<ArriendoDeInquilino> = {}): ArriendoDeInquilino {
+  const leaseId = p.leaseId === undefined ? 'l1' : p.leaseId
   return {
-    leaseId: 'l1',
-    contractId: 'c1',
+    leaseId,
+    /*
+     * El `contractId` sigue al `leaseId` del fixture. Antes era fijo en 'c1',
+     * y los tests que arman dos arriendos variando sólo el `leaseId` dejaban
+     * dos hermanos con la MISMA llave de React (el despliegue key-ea por
+     * contrato). Salía una advertencia de llaves duplicadas en cada corrida —
+     * ruido sobre algo que en producción no puede pasar, porque el
+     * `contractId` es la PK del contrato.
+     */
+    contractId: leaseId ? `c-${leaseId}` : 'c1',
     estado: 'ACTIVE',
     desde: '2025-09-04',
     hasta: '2026-09-04',
@@ -367,5 +376,49 @@ describe('InquilinosTable — la persona sin arriendo', () => {
     expect(
       container!.querySelector('[data-testid="inquilino-crear-contrato"]'),
     ).toBeNull()
+  })
+})
+
+describe('<BarraDeInquilinos> · el número de cada pestaña', () => {
+  it('🔴 con conteos, cada pestaña dice cuántas personas hay detrás', () => {
+    montarEn(
+      <BarraDeInquilinos
+        buscar=""
+        onBuscar={vi.fn()}
+        estado="activos"
+        onEstado={vi.fn()}
+        conteos={{ activos: 1192, terminados: 644, todos: 1733 }}
+      />,
+    )
+    const texto = container!.textContent ?? ''
+    expect(texto).toContain('1.192')
+    expect(texto).toContain('644')
+    expect(texto).toContain('1.733')
+  })
+
+  it('un CERO se dice: es la respuesta a por qué la pestaña está vacía', () => {
+    montarEn(
+      <BarraDeInquilinos
+        buscar=""
+        onBuscar={vi.fn()}
+        estado="activos"
+        onEstado={vi.fn()}
+        conteos={{ activos: 5, terminados: 0, todos: 5 }}
+      />,
+    )
+    const terminados = Array.from(container!.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('inquilinos.filtros.terminados'),
+    )
+    expect(terminados!.textContent).toContain('0')
+  })
+
+  it('🔴 sin conteos (o si el conteo falló) las pestañas van SIN número, no con un cero falso', () => {
+    montarEn(
+      <BarraDeInquilinos buscar="" onBuscar={vi.fn()} estado="activos" onEstado={vi.fn()} />,
+    )
+    const activos = Array.from(container!.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('inquilinos.filtros.activos'),
+    )
+    expect(activos!.textContent?.trim()).toBe('inquilinos.filtros.activos')
   })
 })

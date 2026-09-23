@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -7,6 +8,8 @@ import { pasaGateDeFila } from '@/lib/nav/agency-nav-filter';
 import { canSeeBusinessModule } from '@/lib/nav/agency-module-scope';
 import {
   CARAS_DE_LA_PLATA,
+  caraDeLaRuta,
+  caraDelSelector,
   moduloDeLaRuta,
   pestanaActiva,
   pestanasDelModulo,
@@ -71,7 +74,9 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  *      distintas para dos niveles distintos (`BarraDePestanas`);
  *   3. **la cara se deduce de la RUTA** —estás en Dispersiones ⇒ estás en
  *      Propietarios— y por defecto entra Inquilinos, que es donde se opera
- *      todos los días;
+ *      todos los días. En el tablero, que no tiene cara, se queda la última
+ *      en la que estabas (22-09: el clic desde Propietarios te tiraba a
+ *      Inquilinos);
  *   4. cada cara es un ENLACE a su primera sección visible, así que viaja en
  *      la URL: se puede compartir y se puede volver.
  *
@@ -90,6 +95,18 @@ export function SeccionesDelModulo() {
   const pathname = usePathname() ?? '';
   const { t } = useI18n();
   const { canAccess, isAdmin, agencyRole, agentAccessStatus } = usePermissionsContext();
+
+  /*
+   * 🔴 La última cara en la que estuviste. El layout NO se desmonta al navegar
+   * dentro del panel, así que esto sobrevive al clic de Dispersiones al
+   * tablero financiero: el tablero, que no tiene cara, se queda en la tuya en
+   * vez de tirarte a Inquilinos (ver `caraDelSelector`).
+   */
+  const caraDeEstaRuta = caraDeLaRuta(pathname);
+  const [caraRecordada, setCaraRecordada] = useState<CaraDeLaPlata | null>(caraDeEstaRuta);
+  useEffect(() => {
+    if (caraDeEstaRuta) setCaraRecordada(caraDeEstaRuta);
+  }, [caraDeEstaRuta]);
 
   const modulo = moduloDeLaRuta(pathname);
   if (!modulo) return null;
@@ -119,11 +136,15 @@ export function SeccionesDelModulo() {
 
   /*
    * La cara activa sale de la RUTA. Una pantalla sin `cara` mira todas —hoy
-   * sólo el tablero financiero—, así que ahí se entra por la primera presente
-   * —Inquilinos—, que es donde se opera todos los días.
+   * sólo el tablero financiero—: ahí se queda la cara en la que venías, y sólo
+   * si no venías de ninguna entra la primera presente —Inquilinos—.
    */
   const caraActiva: CaraDeLaPlata | null = hayVariasCaras
-    ? (activa.cara ?? carasPresentes[0]!.cara)
+    ? caraDelSelector(
+        activa.cara,
+        caraRecordada,
+        carasPresentes.map((c) => c.cara),
+      )
     : null;
 
   /*

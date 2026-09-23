@@ -1,10 +1,9 @@
 /**
- * gapFiller.test.ts — T-0038 §3.2/§3.8: analyzeProperties must not suggest a
- * fabricated rental estimate for a SALE row's missing price.
+ * gapFiller.test.ts — analyzeProperties no propone valores inventados.
  *
- * `RENT_ESTIMATES` is Colombian rent-market data only — there is no
- * comparable sale-price table. Suggesting a rent estimate for a sale
- * listing's price field would be a wrong-field number, not a real gap fill.
+ * T-0038 prohibió sugerir un canon estimado para el precio de una VENTA; el
+ * 22-09 (regla de Nico: la migración no inventa nada) se fue también el de
+ * ARRIENDO, con la comisión del 10 %, el tipo y la ciudad por defecto.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -68,10 +67,29 @@ describe('mapRowsToProperties — T-0038 new mapped fields', () => {
 });
 
 describe('analyzeProperties — Rule 1 (missing price) is listingType-aware', () => {
-  it('suggests a rent estimate for a RENT row missing monthlyRent (regression)', () => {
-    const [result] = analyzeProperties([inmueble({ monthlyRent: undefined })]);
-    const suggestion = result.suggestions.find((s) => s.field === 'monthlyRent');
-    expect(suggestion).toBeTruthy();
+  // 🔴 22-09 · Regla de Nico: la migración no inventa nada. Antes esto EXIGÍA
+  // un canon de «promedios de mercado» que «Aceptar todas» guardaba como dato.
+  it('no inventa canon, comisión, tipo ni ciudad que el archivo no trae', () => {
+    const [result] = analyzeProperties([
+      inmueble({
+        monthlyRent: undefined,
+        commissionPercent: undefined,
+        propertyType: undefined as unknown as string,
+        propertyCity: undefined as unknown as string,
+        propertyAddress: 'CR 50 # 10-20',
+      }),
+    ]);
+    const inventados = result.suggestions.filter((s) =>
+      ['monthlyRent', 'commissionPercent', 'propertyType', 'propertyCity', 'propertyTitle'].includes(s.field),
+    );
+    expect(inventados).toEqual([]);
+  });
+
+  it('la ciudad sí se propone cuando está escrita en la dirección del archivo', () => {
+    const [result] = analyzeProperties([
+      inmueble({ propertyCity: undefined as unknown as string, propertyAddress: 'CR 50 # 10-20, Medellín' }),
+    ]);
+    expect(result.suggestions.find((s) => s.field === 'propertyCity')?.suggestedValue).toBe('Medellín');
   });
 
   it('does NOT suggest a monthlyRent estimate for a SALE row missing salePrice', () => {

@@ -20,7 +20,7 @@
 
 import { useCallback, useId, useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
-import { LockSimple } from '@phosphor-icons/react';
+import { LockKey, LockSimple, LockSimpleOpen } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
+import { Skeleton } from '@/components/ui/skeleton';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import {
   contabilidadApi,
@@ -41,6 +43,7 @@ import {
   type ResultadoDeCierre,
 } from '@/lib/api/contabilidad.service';
 import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
+import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-periodo-en-una-frase';
 import { Reapertura } from './Reapertura';
 
 export interface CierreDePeriodoProps {
@@ -136,70 +139,132 @@ export function CierreDePeriodo({
     }
   }, [escrito, hasta, onCerrado]);
 
+  const periodo = elPeriodoEnUnaFrase(estadoDelPeriodo(cierre, cargando, fallo));
+  const Candado =
+    periodo?.candado === 'abierto'
+      ? LockSimpleOpen
+      : periodo?.candado === 'cerrado'
+        ? LockSimple
+        : LockKey;
+
   return (
     <section
-      className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="space-y-5 rounded-lg border border-border bg-surface p-5 shadow-sm"
       aria-labelledby={`${id}-titulo`}
+      aria-busy={cargando || undefined}
       data-testid="cierre-de-periodo"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h2 id={`${id}-titulo`} className="flex items-center gap-2 text-base font-semibold text-fg">
-            <LockSimple className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-            Cierre de período
-          </h2>
-          <p className="max-w-xl text-sm text-fg-muted">
-            {cargando
-              ? 'Consultando hasta dónde está cerrada…'
-              : fallo
-                ? 'No se pudo consultar hasta dónde está cerrada. Cerrar sigue disponible: la fecha se valida al recibirla, así que no se puede cerrar un periodo que ya estaba cerrado.'
-                : cerradaHasta
-                ? (
-                    <>
-                      Cerrada hasta el{' '}
-                      <span className="font-mono tabular-nums text-fg" data-testid="cerrada-hasta">
-                        {diaLegible(cerradaHasta)}
-                      </span>
-                      . Nada con fecha igual o anterior se puede asentar ni reversar en esa fecha.
-                    </>
-                  )
-                : 'Todavía no se cerró ningún período: cualquier fecha admite asientos.'}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor={`${id}-hasta`}>Cerrar hasta</Label>
-          <Input
-            id={`${id}-hasta`}
-            type="date"
-            value={hasta}
-            min={cerradaHasta ?? undefined}
-            onChange={(e) => setHasta(e.target.value)}
-            disabled={cargando || enviando}
-            aria-invalid={Boolean(problema) || undefined}
-            className="w-48"
-            data-testid="cierre-hasta"
-          />
-        </div>
-        <Button
-          variant="outline"
-          hideArrow
-          onClick={abrir}
-          disabled={cargando || enviando || Boolean(problema)}
-          data-testid="abrir-cierre"
+      {/* 🔴 22-09 · EL ESTADO VA PRIMERO, EN UNA FRASE (Nico: «eso se ve por
+          ahí tirado todo»). Es lo que un contador busca en esta tarjeta —«¿puedo
+          asentar en agosto?»— y antes era un párrafo gris debajo del título.
+          La explicación larga (qué bloquea, cómo se deshace) va detrás de
+          «Cómo funciona», no puesta sobre la pantalla. */}
+      <header className="flex items-start gap-3">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted"
+          aria-hidden="true"
         >
-          Cerrar período…
-        </Button>
+          <Candado className="h-5 w-5 text-fg-muted" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <h2 id={`${id}-titulo`} className="text-sm font-semibold text-fg">
+              Período contable
+            </h2>
+            <ParaEntenderMas
+              etiqueta="Cómo funciona"
+              titulo="Cerrar y reabrir un período"
+              className="-my-1 h-auto px-2 py-1"
+            >
+              <div className="space-y-3 text-sm text-fg-muted">
+                <p>
+                  Cerrar hasta una fecha bloquea todo asiento con esa fecha o anterior: no entra
+                  ninguno nuevo, y lo que esté mal se corrige con una reversa fechada después.
+                </p>
+                <p>
+                  Para confirmar se escribe la fecha tal cual: un clic de más no puede cerrar un mes.
+                </p>
+                <p>
+                  Reabrir mueve la frontera hacia atrás. Lo hace sólo el administrador, con un motivo
+                  que queda en la bitácora con su nombre y la fecha. Los asientos que ya estaban
+                  marcados como cerrados no se desmarcan: corregir sigue siendo por reversa.
+                </p>
+              </div>
+            </ParaEntenderMas>
+          </div>
+          {periodo ? (
+            <>
+              <p className="text-body font-medium text-fg" data-testid="estado-del-periodo">
+                {periodo.frase}
+              </p>
+              {periodo.detalle ? (
+                <p className="text-caption text-fg-muted">{periodo.detalle}</p>
+              ) : null}
+            </>
+          ) : (
+            // La FORMA de la frase que va a llegar, no una barra suelta.
+            <div className="space-y-2 py-1" data-testid="estado-del-periodo-cargando">
+              <Skeleton className="h-5 w-full max-w-xs rounded-sm bg-surface-muted" />
+              <Skeleton className="h-3.5 w-2/3 max-w-[14rem] rounded-sm bg-surface-muted" />
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Cerrar: la acción de todos los meses, con forma de acción — un grupo
+          con su nombre, el día y el botón, en un pozo que lo separa de lo que
+          se lee. Durante la carga se ve igual pero apagado: la forma no salta
+          cuando llega el dato. */}
+      <div
+        className="space-y-3 rounded-md border border-border-faint bg-surface-muted p-4"
+        role="group"
+        aria-labelledby={`${id}-cerrar`}
+      >
+        <p id={`${id}-cerrar`} className="text-sm font-medium text-fg">
+          Cerrar el período
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-hasta`} className="text-caption text-fg-muted">
+              Hasta el día
+            </Label>
+            <Input
+              id={`${id}-hasta`}
+              type="date"
+              value={hasta}
+              min={cerradaHasta ?? undefined}
+              onChange={(e) => setHasta(e.target.value)}
+              disabled={cargando || enviando}
+              aria-invalid={Boolean(problema) || undefined}
+              className="w-44 bg-surface font-mono tabular-nums"
+              data-testid="cierre-hasta"
+            />
+          </div>
+          <Button
+            variant="outline"
+            hideArrow
+            className="bg-surface"
+            onClick={abrir}
+            disabled={cargando || enviando || Boolean(problema)}
+            data-testid="abrir-cierre"
+          >
+            <LockSimple className="h-4 w-4" aria-hidden="true" />
+            Cerrar período…
+          </Button>
+        </div>
         {problema && !cargando ? (
-          <p className="basis-full text-xs text-danger" role="alert">
+          <p className="text-caption text-danger" role="alert">
             {problema}
           </p>
         ) : null}
       </div>
 
-      <Reapertura cerradaHasta={cerradaHasta} onReabierto={() => onReabierto?.()} />
+      <Reapertura
+        cerradaHasta={cerradaHasta}
+        cargando={cargando}
+        fallo={fallo}
+        onReabierto={() => onReabierto?.()}
+      />
 
       <Dialog open={confirmando} onOpenChange={(open) => !open && cerrarDialogo()}>
         <DialogContent className="sm:max-w-md">

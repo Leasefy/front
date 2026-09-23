@@ -232,13 +232,13 @@ export const applicationsApi = {
     return mapToTenantView(ba);
   },
 
-  /** Get applications for a property (landlord view) */
-  async getByProperty(propertyId: string): Promise<Application[]> {
-    const result = await apiClient.get<BackendApplication[]>(
-      `/applications/property/${propertyId}`
-    );
-    return result.map(mapBackendApplication);
-  },
+  /**
+   * 🔴 Acá vivía `getByProperty`, un `GET /applications/property/:id` que el
+   * back no expone (404). Su hook —`usePropertyApplications`— no lo usaba
+   * ninguna pantalla, así que nunca se vio. Cuando haya que listarle al
+   * propietario las postulaciones de un inmueble, la ruta hay que pedirla:
+   * `@Controller('applications')` sólo tiene `mine`, `prefill` y `:id`.
+   */
 
   /**
    * Update a single step of an application (NEEDS_INFO / DRAFT flow)

@@ -204,18 +204,22 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                 </div>
               )}
 
-              {/* Assign Property Button */}
-              <Button
-                variant="outline"
-                hideArrow
-                onClick={onAssignProperty}
-                disabled
-                className="w-full border-dashed gap-2"
-                title={t('inmobiliaria.agente.comingSoon')}
-              >
-                <Plus className="w-4 h-4" />
-                {t('inmobiliaria.agente.assignProperty')}
-              </Button>
+              {/* Darle un inmueble. Hasta el 21-09-2026 estaba DESHABILITADO
+                  con «Disponible próximamente» sobre `PUT /inmobiliaria/
+                  consignaciones/:id/assign-agent`, que ya andaba —y que
+                  `AsignarAgente.tsx` ya usaba desde el lado del inmueble. Sin
+                  `onAssignProperty` no se pinta. */}
+              {onAssignProperty && (
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={onAssignProperty}
+                  className="w-full border-dashed gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('inmobiliaria.agente.assignProperty')}
+                </Button>
+              )}
             </div>
           </motion.div>
         )}

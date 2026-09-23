@@ -48,7 +48,7 @@ afterEach(() => {
 })
 
 describe('PestanasDeCartera', () => {
-  it('las cinco lecturas cuelgan de la misma ruta de Cartera', () => {
+  it('las seis lecturas cuelgan de la misma ruta de Cartera', () => {
     montarEn('/panel/inmobiliaria/pagos/cartera')
     expect(PESTANAS_DE_CARTERA.map((p) => p.href)).toEqual([
       '/panel/inmobiliaria/pagos/cartera',
@@ -56,8 +56,20 @@ describe('PestanasDeCartera', () => {
       '/panel/inmobiliaria/pagos/cartera/por-pagar',
       '/panel/inmobiliaria/pagos/cartera/cobros',
       '/panel/inmobiliaria/pagos/cartera/juridico',
+      // 🔴 21-09: la que se dejó de perseguir, al final del camino.
+      '/panel/inmobiliaria/pagos/cartera/castigada',
     ])
-    expect(host.querySelectorAll('a')).toHaveLength(5)
+    expect(host.querySelectorAll('a')).toHaveLength(6)
+  })
+
+  it('«Castigada» es una lectura de la cartera, con su texto traducido', () => {
+    montarEn('/panel/inmobiliaria/pagos/cartera/castigada')
+    const marcadas = Array.from(host.querySelectorAll('a[aria-current="page"]'))
+    expect(marcadas).toHaveLength(1)
+    expect(marcadas[0]!.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/cartera/castigada',
+    )
+    expect(marcadas[0]!.textContent).toContain('Castigada')
   })
 
   it('«Cobros emitidos» es una lectura de la cartera, con su texto traducido', () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Eye, PencilSimple, DotsThreeVertical, Users, CurrencyDollar, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -160,11 +160,10 @@ export default function PropiedadesPage() {
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">
-                      <Image
-                        src={property.thumbnailUrl}
+                      <PortadaDelInmueble
+                        property={property}
                         alt={property.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3">
                         {getStatusBadge(property.status)}
@@ -266,11 +265,10 @@ export default function PropiedadesPage() {
                   >
                     {/* Image */}
                     <div className="relative w-28 h-20 bg-surface-muted rounded-lg flex-shrink-0 overflow-hidden">
-                      <Image
-                        src={property.thumbnailUrl}
+                      <PortadaDelInmueble
+                        property={property}
                         alt={property.title}
-                        fill
-                        className="object-cover"
+                        compacta
                       />
                     </div>
 

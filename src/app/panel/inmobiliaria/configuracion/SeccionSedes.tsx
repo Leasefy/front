@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Storefront } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -319,13 +320,7 @@ function EditorDeSede({
             />
           </div>
           <label className="flex items-start gap-2 text-sm text-fg">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={porDefecto}
-              data-testid="sede-por-defecto"
-              onChange={(e) => setPorDefecto(e.target.checked)}
-            />
+            <Checkbox className="mt-1" checked={porDefecto} data-testid="sede-por-defecto" onCheckedChange={(marcada: boolean) => setPorDefecto(marcada)} />
             <span>
               Que sea la sede por defecto
               <span className="block text-xs text-fg-muted">
@@ -335,13 +330,7 @@ function EditorDeSede({
           </label>
           {sede ? (
             <label className="flex items-start gap-2 text-sm text-fg">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={activa}
-                data-testid="sede-activa"
-                onChange={(e) => setActiva(e.target.checked)}
-              />
+              <Checkbox className="mt-1" checked={activa} data-testid="sede-activa" onCheckedChange={(marcada: boolean) => setActiva(marcada)} />
               <span>
                 Activa
                 <span className="block text-xs text-fg-muted">

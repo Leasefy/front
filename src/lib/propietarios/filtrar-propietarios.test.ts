@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import {
   FILTROS_INICIALES,
+  conteosDePropietarios,
   filtrarPropietarios,
   hayFiltros,
 } from './filtrar-propietarios';
@@ -112,5 +113,55 @@ describe('orden', () => {
       sentido: 'desc',
     });
     expect(r[0].name).toBe('Constructora Andes SAS');
+  });
+});
+
+describe('conteosDePropietarios · el número de cada chip', () => {
+  const LISTA = [ANA, BETO, CONSTRUCTORA];
+
+  it('cuenta personas y empresas, y el total', () => {
+    expect(conteosDePropietarios(LISTA, FILTROS_INICIALES)).toEqual({
+      todos: 3,
+      persona: 2,
+      empresa: 1,
+      conSaldo: 1,
+    });
+  });
+
+  it('🔴 el número de un chip es LO QUE VERÍAS al clickearlo: respeta la búsqueda', () => {
+    const conteos = conteosDePropietarios(LISTA, {
+      ...FILTROS_INICIALES,
+      busqueda: 'constructora',
+    });
+    expect(conteos).toEqual({ todos: 1, persona: 0, empresa: 1, conSaldo: 0 });
+
+    // Y cuadra: clickear «Persona» con esa búsqueda deja la lista vacía.
+    expect(
+      filtrarPropietarios(LISTA, {
+        ...FILTROS_INICIALES,
+        busqueda: 'constructora',
+        tipo: 'person',
+      }),
+    ).toHaveLength(conteos.persona);
+  });
+
+  it('🔴 el chip del saldo no depende de sí mismo: cuenta igual prendido o apagado', () => {
+    const apagado = conteosDePropietarios(LISTA, { ...FILTROS_INICIALES, soloConSaldo: false });
+    const prendido = conteosDePropietarios(LISTA, { ...FILTROS_INICIALES, soloConSaldo: true });
+    expect(apagado.conSaldo).toBe(1);
+    expect(prendido.conSaldo).toBe(1);
+  });
+
+  it('con el saldo puesto, los chips de tipo cuentan DENTRO de ese filtro', () => {
+    /*
+     * Es la parte que hace que el número cuadre: con «Con saldo» prendido,
+     * «Persona» dice 1 —Beto— y no 2, porque al clickearlo se ve uno solo.
+     */
+    const conteos = conteosDePropietarios(LISTA, { ...FILTROS_INICIALES, soloConSaldo: true });
+    expect(conteos).toEqual({ todos: 1, persona: 1, empresa: 0, conSaldo: 1 });
+  });
+
+  it('un cero es una respuesta, no un hueco', () => {
+    expect(conteosDePropietarios([ANA], FILTROS_INICIALES).empresa).toBe(0);
   });
 });

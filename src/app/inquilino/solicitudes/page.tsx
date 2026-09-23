@@ -152,7 +152,14 @@ function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; l
 export default function SolicitudesPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { items, isLoading, error, refetch } = useTenantPqrs();
+  const { items, isLoading, error, disponible, refetch } = useTenantPqrs();
+  // Sin la ruta del back, el botón se apaga ANTES de que la persona escriba
+  // (QA 22-09: se enteraba al enviar, con las fotos ya adjuntas).
+  const sinRadicar = disponible === false;
+  const motivoSinRadicar =
+    locale === 'es'
+      ? 'Todavía no puedes radicar desde acá: escríbele a tu inmobiliaria.'
+      : 'You cannot submit requests here yet: write to your property manager.';
   const [modalOpen, setModalOpen] = useState(false);
 
   // Loading gate — never flash a fake-empty while a source is in flight.
@@ -212,15 +219,25 @@ export default function SolicitudesPage() {
                 : 'Open and track your maintenance requests and PQRS, all in one place.'}
             </p>
           </div>
-          <Button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            hideArrow
-            className="inline-flex items-center gap-2 flex-shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-          </Button>
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <Button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              disabled={sinRadicar}
+              title={sinRadicar ? motivoSinRadicar : undefined}
+              hideArrow
+              className="inline-flex items-center gap-2"
+              data-testid="nueva-solicitud"
+            >
+              <Plus className="w-4 h-4" />
+              {locale === 'es' ? 'Nueva solicitud' : 'New request'}
+            </Button>
+            {sinRadicar && (
+              <p className="max-w-xs text-right text-sm text-fg-muted" data-testid="nueva-solicitud-motivo">
+                {motivoSinRadicar}
+              </p>
+            )}
+          </div>
         </motion.header>
 
         {/* List — real own-requests, or an honest empty-state (incl. not-live []) */}
@@ -250,6 +267,8 @@ export default function SolicitudesPage() {
                 <Button
                   type="button"
                   onClick={() => setModalOpen(true)}
+                  disabled={sinRadicar}
+                  title={sinRadicar ? motivoSinRadicar : undefined}
                   hideArrow
                   className="inline-flex items-center gap-2"
                 >

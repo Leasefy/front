@@ -162,7 +162,8 @@ describe('GATE-CONTADOR — migración de contabilidad', () => {
     await abrir(Pagina);
 
     expect(container.querySelector('[data-testid="contenido"]')).toBeNull();
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria');
+    // QA 22-09: negada ya no redirige callada — pinta «No tienes acceso».
+    expect(container.querySelector('[data-testid="pantalla-negada"]')).not.toBeNull();
   });
 
   it.each(CONTABILIDAD)('%s sigue cerrada para el VIEWER', async (_ruta, Pagina) => {
@@ -170,7 +171,8 @@ describe('GATE-CONTADOR — migración de contabilidad', () => {
     await abrir(Pagina);
 
     expect(container.querySelector('[data-testid="contenido"]')).toBeNull();
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria');
+    // QA 22-09: negada ya no redirige callada — pinta «No tienes acceso».
+    expect(container.querySelector('[data-testid="pantalla-negada"]')).not.toBeNull();
   });
 });
 
@@ -185,6 +187,7 @@ describe('GATE-CONTADOR — la asimetría de terceros es deliberada', () => {
     await abrir(PaginaDeTerceros);
 
     expect(container.querySelector('[data-testid="contenido"]')).toBeNull();
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria');
+    // QA 22-09: negada ya no redirige callada — pinta «No tienes acceso».
+    expect(container.querySelector('[data-testid="pantalla-negada"]')).not.toBeNull();
   });
 });

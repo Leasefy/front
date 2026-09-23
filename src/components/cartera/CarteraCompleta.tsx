@@ -89,6 +89,7 @@ import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
   MagnifyingGlass,
+  Scales,
   ShieldWarning,
   Users,
   Warning,
@@ -182,6 +183,25 @@ export function CarteraCompleta() {
 
   const items = useMemo<CarteraItem[]>(() => report?.items ?? [], [report])
   const siniestros = report?.siniestros ?? null
+  /*
+   * 🔴 La cartera CASTIGADA (21-09-2026). NO es un segmento más de esta tabla:
+   * sus filas no están en `items` —salen del informe activo a propósito— y por
+   * eso la cifra ENLAZA a su pantalla en vez de filtrar acá. Se pinta siempre
+   * que el back la mande, aunque venga en cero: que exista la figura es lo que
+   * hace que el número de arriba cuadre con sus partes.
+   */
+  const castigada = report?.castigada ?? null
+  /*
+   * Los tramos por edad que NO PUEDEN llenarse con esta configuración: los que
+   * arrancan en o después del umbral de siniestro, porque esa cartera sale de
+   * los tramos y se va a su propio cajón.
+   */
+  const tramosQueNoSeLlenan = useMemo<Edad[]>(() => {
+    const umbral = siniestros?.diasParaSiniestro
+    if (umbral === undefined) return []
+    const DESDE: Record<Edad, number> = { '0-30': 1, '31-60': 31, '61-90': 61, '90+': 91 }
+    return EDADES.filter((e) => DESDE[e] >= umbral)
+  }, [siniestros])
   const casosEnSiniestro = useMemo<CarteraItem[]>(() => siniestros?.items ?? [], [siniestros])
   /** 🔴 TODA la deuda: los tres cajones y los casos en siniestro. */
   const todas = useMemo(() => [...items, ...casosEnSiniestro], [items, casosEnSiniestro])
@@ -328,7 +348,11 @@ export function CarteraCompleta() {
           className={cn(
             'grid grid-cols-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface',
             'lg:divide-x lg:divide-y-0',
-            siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4',
+            castigada && siniestros
+              ? 'lg:grid-cols-6'
+              : castigada || siniestros
+                ? 'lg:grid-cols-5'
+                : 'lg:grid-cols-4',
           )}
           data-testid="resumen-de-cartera"
         >
@@ -446,6 +470,33 @@ export function CarteraCompleta() {
               ) : null}
             </button>
           ) : null}
+
+          {castigada ? (
+            /*
+             * Enlace y no botón: lo castigado vive en otra pantalla porque el
+             * pedido es que SALGA de la cartera activa. Filtrar acá la
+             * volvería a poner en la lista de a quién llamar.
+             */
+            <Link
+              href="/panel/inmobiliaria/pagos/cartera/castigada"
+              className="block p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              data-testid="resumen-castigada"
+            >
+              <p className="flex items-center gap-1.5 text-xs text-fg-muted">
+                <Scales className="h-3.5 w-3.5" aria-hidden="true" />
+                Castigada
+              </p>
+              <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
+                {formatCurrency(castigada.totalCop)}
+              </p>
+              <p className="mt-0.5 text-xs text-fg-muted">
+                {castigada.cantidad === 0
+                  ? 'Ninguna'
+                  : `${castigada.cantidad} ${castigada.cantidad === 1 ? 'cuota' : 'cuotas'}`}
+                {' · '}ya no se persigue
+              </p>
+            </Link>
+          ) : null}
         </div>
 
         {/*
@@ -483,6 +534,22 @@ export function CarteraCompleta() {
         {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
         <div>
           <p className="mb-2 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
+          {/*
+            🔴 21-09-2026, abriendo esta pantalla con la agencia migrada:
+            «31 a 60», «61 a 90» y «Más de 90 días» salían en $0 con 788 casos
+            de 259 días de mora al lado. No es un error de la cuenta: con el
+            siniestro a los 30 días, TODA la cartera de más de 30 días sale de
+            los tramos y se va a «En siniestro», así que esos tres tramos no
+            pueden llenarse nunca. Tres ceros permanentes sin explicación se
+            leen como «no hay mora vieja», que es lo contrario de la verdad.
+          */}
+          {tramosQueNoSeLlenan.length > 0 ? (
+            <p className="mb-2 text-xs text-fg-muted" data-testid="tramos-que-no-se-llenan">
+              Con el siniestro a los {siniestros!.diasParaSiniestro} días, la cartera viva
+              no llega a {tramosQueNoSeLlenan.map((e) => NOMBRE_DE_EDAD[e]).join(', ')}:
+              esa mora está en «En siniestro».
+            </p>
+          ) : null}
           <div
             className={cn('grid grid-cols-2 gap-3', siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}
             role="group"

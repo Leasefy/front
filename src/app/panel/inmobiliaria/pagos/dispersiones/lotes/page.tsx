@@ -7,9 +7,22 @@
  * Permiso: `dispersiones`/view, el mismo del `GET` del back.
  */
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SectionLabel } from '@/components/ui/section-label';
 import { ListaDeLotes } from '@/components/dispersiones/lotes/ListaDeLotes';
+
+/**
+ * «Ir a Lotes» desde una dispersión trae su mes (`?mes=2026-09`): la pantalla
+ * abre en ESE mes y no en el de hoy. `useSearchParams` en Next 14 pide
+ * Suspense; el respaldo es la lista en el mes actual.
+ */
+function ListaEnElMesPedido() {
+  const params = useSearchParams();
+  return <ListaDeLotes mesInicial={params.get('mes')} />;
+}
 
 export default function LotesDeDispersionPage() {
   return (
@@ -19,11 +32,12 @@ export default function LotesDeDispersionPage() {
           <SectionLabel>Pagos</SectionLabel>
           <h1 className="text-h2 text-fg">Lotes al banco</h1>
           <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
-            Los pagos a propietarios de un mes, juntos: se arma el lote, lo aprueba otra persona y
-            sale el archivo plano para subir al banco.
+            Los pagos a propietarios de un mes, juntos, en el archivo plano del banco desde el que giras.
           </p>
         </header>
-        <ListaDeLotes />
+        <Suspense fallback={<ListaDeLotes />}>
+          <ListaEnElMesPedido />
+        </Suspense>
       </div>
     </PageGuard>
   );

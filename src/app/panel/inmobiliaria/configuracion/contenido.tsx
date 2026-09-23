@@ -11,6 +11,7 @@
 import { SeccionAvisos } from './SeccionAvisos';
 import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
 import { SeccionBitacora } from './SeccionBitacora';
+import { SeccionMovimientos } from './SeccionMovimientos';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -61,6 +62,9 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     // 🔴 18-09-2026: quién movió plata. Sólo lectura, para el dueño.
     case 'bitacora':
       return <SeccionBitacora />;
+    // 🔴 22-09-2026: quién hizo qué en TODO el panel, con su rol.
+    case 'movimientos':
+      return <SeccionMovimientos />;
     case 'avisos':
       return <SeccionAvisos />;
     case 'sla-de-pqrs':

@@ -30,6 +30,14 @@ import { join, relative } from 'node:path'
 
 import { CONCILIACION_EN_UN_SOLO_LUGAR } from './conciliacion-en-un-solo-lugar'
 
+
+/*
+ * ⏱️ 60 s: este guardián lee el repo entero y compite con las demás pruebas de
+ * la suite. Ver `el-producto-tutea.test.ts` para el caso en que 30 s no
+ * alcanzaron — medir un guardián aislado no lo mide dentro de la suite.
+ */
+const TIEMPO_DE_RECORRER_EL_REPO = 60_000
+
 const RAIZ = join(process.cwd(), 'src')
 
 const DESTINO = '/panel/inmobiliaria/conciliacion/movimientos'
@@ -70,7 +78,7 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
       .map(({ ruta }) => ruta)
 
     expect(culpables).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('la ruta vieja redirige, con sus sub-rutas', () => {
     const fuentes = CONCILIACION_EN_UN_SOLO_LUGAR.map((r) => r.source)
@@ -86,7 +94,7 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
       // 307, no 301: un permanente lo cachea el navegador para siempre.
       expect(r.permanent).toBe(false)
     }
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('la redirección está cableada en next.config.mjs', () => {
     // La tabla puede estar impecable y no estar enchufada: el config es el
@@ -94,14 +102,14 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
     const config = readFileSync(join(process.cwd(), 'next.config.mjs'), 'utf8')
     expect(config).toContain('conciliacion-en-un-solo-lugar.data.mjs')
     expect(config).toContain('...CONCILIACION_EN_UN_SOLO_LUGAR_DATA')
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('la carpeta vieja ya no existe — la redirección es la única puerta', () => {
     expect(existsSync(join(RAIZ, 'app/panel/inmobiliaria/cobros/extracto-bancario'))).toBe(false)
     expect(
       existsSync(join(RAIZ, 'app/panel/inmobiliaria/conciliacion/movimientos/page.tsx')),
     ).toBe(true)
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('la pantalla que quedó monta el extracto del ERP, que es el que emite el recibo', () => {
     // Lo que no se puede perder: recibo de caja, carga de Excel y lote de
@@ -115,7 +123,7 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
     expect(pagina).toMatch(/<ExtractoBancario\b/)
     // El ancla con la que la Sala enlaza «Subir extracto del banco».
     expect(pagina).toContain('idDeCarga="upload"')
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('el extracto del ERP conserva el recibo, el Excel y el lote de lo que calza exacto', () => {
     const extracto = readFileSync(
@@ -137,7 +145,7 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
       'utf8',
     )
     expect(cargar).toContain('parseSpreadsheetFile')
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('lo del micro no se borró: sigue montado debajo', () => {
     const pagina = readFileSync(
@@ -157,5 +165,5 @@ describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () =
     expect(agente).toContain('rejectMatch')
     // Y el ingest hacia el micro, que es su única puerta de entrada.
     expect(agente).toContain('ingestStatement')
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })

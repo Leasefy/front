@@ -78,6 +78,7 @@ function render() {
         totalFiltrado={1}
         total={1}
         filtros={FILTROS_INICIALES}
+        conteos={{ todos: 1, persona: 1, empresa: 0, conSaldo: 0 }}
         {...props}
       />,
     );
@@ -129,5 +130,40 @@ describe('<PropietarioTable> — el menú de la fila no abre la ficha por debajo
       (container.querySelector('tbody tr') as HTMLElement).click();
     });
     expect(onView).toHaveBeenCalledWith(ALTAVISTA);
+  });
+});
+
+describe('los chips llevan su número', () => {
+  it('🔴 «Persona» y «Empresa» dicen cuántos hay, y el cero también', () => {
+    /*
+     * 20-09 · Sin número había que clickear cada chip y leer el «N de M» del
+     * otro extremo de la barra para saber si existían empresas entre los
+     * 1.733 propietarios; con la respuesta en cero la pantalla quedaba vacía
+     * sin explicar que ese filtro nunca tuvo nada.
+     */
+    act(() => {
+      root.render(
+        <PropietarioTable
+          propietarios={[ALTAVISTA]}
+          totalFiltrado={1}
+          total={1733}
+          filtros={FILTROS_INICIALES}
+          conteos={{ todos: 1733, persona: 1620, empresa: 0, conSaldo: 87 }}
+          onView={vi.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
+          onFiltros={vi.fn()}
+        />,
+      );
+    });
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('1.620');
+    expect(texto).toContain('87');
+
+    const empresa = Array.from(container.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('company'),
+    );
+    expect(empresa).toBeTruthy();
+    expect(empresa!.textContent).toContain('0');
   });
 });

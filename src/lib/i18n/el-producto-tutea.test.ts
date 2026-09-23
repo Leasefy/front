@@ -79,6 +79,25 @@ const ENCLITICOS_SIN_TILDE = [
 const PROHIBIDAS = [...IMPERATIVOS_EN_AR, ...PRESENTES_VOSEO, ...ENCLITICOS_SIN_TILDE]
 
 /**
+ * Las prohibidas en UNA sola expresión, compilada UNA sola vez.
+ *
+ * 🔴 20-09 · Antes se construía un `new RegExp` por palabra y POR RENGLÓN:
+ * unas cien expresiones nuevas por línea, sobre miles de archivos. Corriendo
+ * este archivo solo tardaba medio segundo y parecía sano; dentro de la suite
+ * completa —mil archivos peleando por el CPU— se pasó de los 30 s y la tumbó.
+ *
+ * La lección, que vale para los quince guardianes que recorren el repo: medir
+ * un guardián aislado NO lo mide dentro de la suite.
+ *
+ * La frontera de palabra va a mano porque `\b` no trata las tildes como
+ * letras en algunos motores: «notificá» daría frontera adentro de la palabra.
+ */
+const UNA_SOLA_REGEX = new RegExp(
+  `(^|[^a-záéíóúñ])(${PROHIBIDAS.join('|')})(?![a-záéíóúñ])`,
+  'i',
+)
+
+/**
  * Marca renglón por renglón cuáles son COMENTARIO.
  *
  * 🔴 No alcanza con mirar cómo empieza cada renglón. Un bloque de varios
@@ -136,15 +155,12 @@ describe('el producto tutea', () => {
         const linea = lineas[i]
         if (esComentario[i]) continue
         const enMinuscula = linea.toLowerCase()
-        for (const mala of PROHIBIDAS) {
-          // Frontera de palabra a mano: las tildes rompen `\b` en algunos motores.
-          const re = new RegExp(`(^|[^a-záéíóúñ])${mala}(?![a-záéíóúñ])`, 'i')
-          if (re.test(enMinuscula)) {
-            hallazgos.push(
-              `${relative(RAIZ, ruta)}:${i + 1} · «${mala}» → ${linea.trim().slice(0, 110)}`,
-            )
-            break
-          }
+        const encontrada = UNA_SOLA_REGEX.exec(enMinuscula)
+        UNA_SOLA_REGEX.lastIndex = 0
+        if (encontrada) {
+          hallazgos.push(
+            `${relative(RAIZ, ruta)}:${i + 1} · «${encontrada[2]}» → ${linea.trim().slice(0, 110)}`,
+          )
         }
       }
     }
@@ -153,5 +169,14 @@ describe('el producto tutea', () => {
       `Voseo en texto que ve el usuario. El producto tutea (2026-09-07):\n` +
         hallazgos.join('\n'),
     ).toEqual([])
-  }, 30_000)
+    /*
+     * 🔴 20-09 · 120 s, no 30. Este guardián lee miles de archivos del repo, y
+     * corriendo SOLO tarda medio segundo — así se midió, y así pasó por sano.
+     * Dentro de la suite completa, con mil archivos de prueba peleando por el
+     * disco y el CPU, se pasó de los 30 s y tumbó la corrida entera.
+     *
+     * Medir un guardián aislado NO lo mide dentro de la suite. Vale para los
+     * quince que recorren el repo, no sólo para éste.
+     */
+  }, 120_000)
 })

@@ -196,9 +196,11 @@ describe('piezas puras', () => {
     expect(porcentaje(0.0611, 4)).toBe('0,0611 %');
   });
 
-  it('el 503 de la migración dice quién la aplica', () => {
+  it('el 503 de la migración NO le dice al cliente quién la aplica', () => {
     h.codigo.mockReturnValue('USURA_SIN_MIGRAR');
-    expect(explicar(new Error('Falta la migración X'), 'x')).toContain('la aplica Víctor');
+    const texto = explicar(new Error('Falta la migración X'), 'x');
+    expect(texto).not.toContain('Víctor');
+    expect(texto).toContain('está habilitando');
     h.codigo.mockReturnValue(null);
     expect(explicar(new Error('Otro fallo'), 'x')).toBe('Otro fallo');
   });

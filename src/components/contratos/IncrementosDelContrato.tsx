@@ -119,7 +119,7 @@ export function IncrementosDelContrato({
     <section className="space-y-3 rounded-lg border border-border p-4" data-testid="incrementos-del-contrato">
       <div>
         <h3 className="text-sm font-medium">Incrementos del canon</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {datos.uso === "VIVIENDA"
             ? "Vivienda: sube sola al 100 % del IPC del año anterior en cada aniversario. El mes del aniversario se cobra prorrateado."
             : comercial
@@ -128,15 +128,15 @@ export function IncrementosDelContrato({
           El canon sube aunque la carta no se haya enviado.
         </p>
         {!datos.disponible && (
-          <p className="mt-1 text-xs text-plan-status-yellow">
+          <p className="mt-1 text-caption text-plan-status-yellow">
             Falta una actualización de la base: todavía no se puede digitar ni generar cartas.
           </p>
         )}
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario y se envía con un clic.
         </p>
         {datos.correoSaleDeVerdad === false && (
-          <p className="mt-1 text-xs text-plan-status-yellow" data-testid="correo-simulado">
+          <p className="mt-1 text-caption text-plan-status-yellow" data-testid="correo-simulado">
             En este entorno el correo no sale: enviar simula y no deja constancia.
           </p>
         )}
@@ -144,7 +144,7 @@ export function IncrementosDelContrato({
 
       {comercial && (
         <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs" htmlFor="tasa-pactada">
+          <label className="text-caption" htmlFor="tasa-pactada">
             Tasa pactada para cada año (%)
             <Input
               id="tasa-pactada"
@@ -286,7 +286,7 @@ function Aniversario({
           <span className="text-muted-foreground">Sin incremento</span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         {sube ? ORIGEN[a.origen as string] : a.motivo}
         {a.carta && ` · ${CARTA[a.carta.estado]}`}
         {enviada && a.carta?.enviadaAt && ` el ${a.carta.enviadaAt.slice(0, 10)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
@@ -307,19 +307,19 @@ function Aniversario({
 
       {a.bandeja?.alertaRoja && (
         <p
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-caption font-medium text-destructive"
           data-testid={`alerta-sin-constancia-${a.desde}`}
         >
           Llegó el aniversario sin constancia de la carta. El canon subió igual: envíala o registra cómo se entregó.
         </p>
       )}
       {a.bandeja?.estado === "POR_ENVIAR" && (
-        <p className="text-xs text-plan-status-yellow" data-testid={`carta-por-enviar-${a.desde}`}>
+        <p className="text-caption text-plan-status-yellow" data-testid={`carta-por-enviar-${a.desde}`}>
           Carta por enviar: faltan {a.bandeja.diasParaElAniversario} días para el aniversario.
         </p>
       )}
       {a.carta?.ultimoIntento && !enviada && (
-        <p className="text-xs text-muted-foreground">Último intento: {a.carta.ultimoIntento}</p>
+        <p className="text-caption text-muted-foreground">Último intento: {a.carta.ultimoIntento}</p>
       )}
 
       {comercial && editable && (
@@ -377,14 +377,14 @@ function Aniversario({
               Se entregó por otro medio
             </Button>
             {!envioHabilitado && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-caption text-muted-foreground">
                 Falta una actualización de la base para enviar y dejar constancia. El canon sube igual.
               </span>
             )}
           </div>
           {constancia && (
             <div className="flex flex-wrap items-end gap-2 rounded-md border border-border p-2" data-testid={`constancia-${a.desde}`}>
-              <label className="text-xs">
+              <label className="text-caption">
                 Medio
                 <select
                   className="mt-1 block rounded-md border border-border bg-background px-2 py-1 text-sm"
@@ -396,17 +396,17 @@ function Aniversario({
                   <option value="OTRO">Otro</option>
                 </select>
               </label>
-              <label className="text-xs">
+              <label className="text-caption">
                 Fecha
                 <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1" />
               </label>
-              <label className="text-xs">
+              <label className="text-caption">
                 Cómo se entregó
                 <Input value={nota} onChange={(e) => setNota(e.target.value)} className="mt-1 w-64" placeholder="A quién, guía de envío…" />
               </label>
               {/* 🔴 El soporte es OPCIONAL (Nico, 17-09): una entrega en
                   portería sin papel también vale como constancia. */}
-              <label className="text-xs">
+              <label className="text-caption">
                 Soporte (opcional)
                 <Input
                   type="file"
@@ -425,7 +425,7 @@ function Aniversario({
               >
                 Registrar constancia
               </Button>
-              <p className="w-full text-xs text-muted-foreground">
+              <p className="w-full text-caption text-muted-foreground">
                 La guía del correo certificado o el acta de entrega ayudan, pero no son obligatorias: con la fecha, el
                 medio y quién la entregó la constancia ya vale.
               </p>

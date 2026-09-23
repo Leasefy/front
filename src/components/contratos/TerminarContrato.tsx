@@ -188,7 +188,7 @@ export function TerminarContrato({
               data-testid="terminado-en"
             />
             {vista?.finPactado && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Se había pactado hasta el {vista.finPactado}. Ese plazo queda
                 guardado.
               </p>
@@ -240,7 +240,7 @@ export function TerminarContrato({
               }}
               data-testid="penalidad-de-terminacion"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {penalidadInvalida
                 ? "La penalidad tiene que ser mayor que cero."
                 : penalidadCop
@@ -262,7 +262,7 @@ export function TerminarContrato({
                 onChange={(e) => setParaLaInmobiliaria(e.target.value.replace(/[^\d]/g, ""))}
                 data-testid="penalidad-para-la-inmobiliaria"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {repartoInvalido
                   ? "La parte de la inmobiliaria no puede ser mayor que la penalidad."
                   : `Al propietario le llegan ${PESOS.format(Math.max(0, penalidadCop - paraLaInmobiliariaCop))} menos la comisión.`}
@@ -294,7 +294,7 @@ export function TerminarContrato({
                  * inclusive». D8 —terminar un día antes— es la regla del
                  * TÉRMINO del contrato, no la de la entrega.
                  */
-                <p className="mt-1 text-xs text-muted-foreground" data-testid="ultimo-dia-cobrado">
+                <p className="mt-1 text-caption text-muted-foreground" data-testid="ultimo-dia-cobrado">
                   Se cobra hasta el {vista.prorrateoDelUltimoMes.ultimoDiaCobrado} inclusive: la fecha del acta se
                   cobra completa, porque ese día ocupó el inmueble.
                 </p>

@@ -28,6 +28,7 @@ import { Slider } from '@/components/ui/slider';
 import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
+import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 
 /**
  * Unified modal for creating agents AND inviting users.
@@ -113,12 +114,17 @@ export function AgenteFormModal({
     { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc'), disabled: true },
   ];
 
-  const SYSTEM_ROLE_OPTIONS: { value: AgencyRole; label: string }[] = [
-    { value: 'admin', label: 'Administrador' },
-    { value: 'agente', label: 'Agente' },
-    { value: 'contador', label: 'Contable' },
-    { value: 'viewer', label: 'Viewer' },
-  ];
+  /*
+   * 🔴 QA 22-09: esta lista existía y NUNCA se pintaba, así que invitar desde
+   * «Miembros y roles» siempre creaba un AGENTE (para tener un contador había
+   * que invitarlo como agente y después cambiarle el rol). Ahora se pinta en
+   * la variante `member`, con los siete roles del back y los nombres de la
+   * tabla del equipo.
+   */
+  const SYSTEM_ROLE_OPTIONS: { value: AgencyRole; label: string }[] = ROLES_DEL_SISTEMA.map((value) => ({
+    value,
+    label: getRoleLabel(value),
+  }));
 
   // Specialization by property type (matches the PropertyType enum) + "Todos".
   const SPECIALIZATION_OPTIONS = [
@@ -288,6 +294,27 @@ export function AgenteFormModal({
                   <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
                   {errors.email && <p className="text-xs text-danger">{errors.email}</p>}
                 </div>
+
+                {/* Rol del sistema — sólo al invitar un miembro */}
+                {variant === 'member' && (
+                  <div className="space-y-2">
+                    <label htmlFor="rol-del-sistema" className="text-sm font-medium text-foreground">
+                      Rol *
+                    </label>
+                    <Select value={systemRole} onValueChange={(v) => setSystemRole(v as AgencyRole)}>
+                      <SelectTrigger id="rol-del-sistema" data-testid="rol-del-sistema">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SYSTEM_ROLE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Phone — always for agent, shown for member when agente */}
                 {(variant === 'agent' || showAgentFields) && (

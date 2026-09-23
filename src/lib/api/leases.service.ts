@@ -110,6 +110,22 @@ function mapBackendPayment(bp: BackendPayment): Payment {
 // API
 // ============================================================================
 
+/** Lo que responde el back cuando el inquilino avisa que no renueva. */
+export interface AvisoDeNoRenovacion {
+  renovacionId: string;
+  avisadoEl: string;
+  por: string | null;
+  motivo: string | null;
+  finDelContrato: string;
+  /** Días entre el aviso y el fin. Negativo = el contrato ya venció. */
+  diasDeAnticipacion: number;
+  /** ¿Alcanza el preaviso de ley? */
+  aTiempo: boolean;
+  preavisoDeLey: number;
+  /** `false` = ya había un aviso; no se registró uno nuevo. */
+  reciénRegistrado: boolean;
+}
+
 export const leasesApi = {
   /** GET /leases — leases for the authenticated user */
   async getMine(): Promise<Lease[]> {
@@ -139,6 +155,26 @@ export const leasesApi = {
   /** POST /leases/:leaseId/renovacion/request — tenant asks the agency to renew */
   async requestRenovacion(leaseId: string): Promise<void> {
     await apiClient.post(`/leases/${leaseId}/renovacion/request`, {});
+  },
+
+  /**
+   * POST /leases/:leaseId/renovacion/no-renovar — el inquilino avisa que NO
+   * renueva. Devuelve con cuánta anticipación llegó el aviso: un aviso tarde se
+   * registra igual, y la pantalla tiene que poder decirlo.
+   */
+  async avisarQueNoRenueva(
+    leaseId: string,
+    motivo: string,
+  ): Promise<AvisoDeNoRenovacion> {
+    return apiClient.post<AvisoDeNoRenovacion>(
+      `/leases/${leaseId}/renovacion/no-renovar`,
+      { motivo },
+    );
+  },
+
+  /** DELETE — el inquilino se retracta. Sólo puede retirar SU propio aviso. */
+  async retirarElAvisoDeNoRenovacion(leaseId: string): Promise<void> {
+    await apiClient.delete(`/leases/${leaseId}/renovacion/no-renovar`);
   },
 
   /** GET /tenant-payments/lease/:leaseId — payments for a specific lease */

@@ -537,7 +537,7 @@ function TemplateEditorContent({
       </div>
 
       {/* Page body */}
-      <main className="p-4 md:p-6 space-y-6 flex-1">
+      <div className="p-4 md:p-6 space-y-6 flex-1">
         {/* Unknown variable warning (T-36-10-01 UI layer) */}
         {unknownVars.length > 0 && (
           <Alert
@@ -634,7 +634,7 @@ function TemplateEditorContent({
             )}
           </section>
         )}
-      </main>
+      </div>
 
       {/* Success toast */}
       {successToast && (

@@ -639,22 +639,56 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(celdas[2]!.textContent).toContain('2026')
   })
 
+  /*
+   * 🔴 ACTUALIZADO EL 21-09, y el porqué queda escrito: el estado de cuenta ya
+   * NO se abre desde el nombre de la fila.
+   *
+   * Nico pidió dos cosas el 21-09 —«no le hiciste el detalle al dar clic en un
+   * drawer» y «¿por qué no usas al lado derecho el kebab menu para agregar
+   * acciones?»— y las dos empujan al mismo lado: la fila abre su cajón y las
+   * acciones viven en el kebab. Un enlace dentro de una fila que también es
+   * clicable es un segundo destino en el mismo clic, y nadie puede saber cuál
+   * le va a tocar.
+   *
+   * Lo que estas pruebas cuidan NO cambió: con qué se identifica al inquilino
+   * (cuenta del portal, si no el documento) y que sin ninguno de los dos la
+   * puerta no se ofrezca. Lo que cambió es dónde está la puerta, así que hay
+   * que abrir el menú para verla — el menú de Radix monta su contenido recién
+   * al abrirse, y en un PORTAL sobre `document.body`, no dentro del host.
+   */
   describe('🔴 la puerta al estado de cuenta', () => {
-    it('sin cuenta del portal, el nombre abre el estado de cuenta POR DOCUMENTO', () => {
+    /**
+     * Abre el kebab de la primera fila y devuelve el enlace, si lo ofrece.
+     *
+     * El disparador de Radix abre con `pointerdown`, no con `click`: un
+     * `.click()` no monta nada y la prueba pasaría por la razón equivocada.
+     */
+    function abrirElKebab(): Element | null {
+      const kebab = todos('[data-testid="cuota-kebab"]')[0] as HTMLButtonElement
+      act(() => {
+        kebab.dispatchEvent(
+          new PointerEvent('pointerdown', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+            pointerId: 1,
+          }),
+        )
+      })
+      return document.body.querySelector('[data-testid="cuota-estado-de-cuenta"]')
+    }
+
+    it('sin cuenta del portal, el kebab abre el estado de cuenta POR DOCUMENTO', () => {
       montar()
-      const enlace = todos('[data-testid="cuota-fila"]')[0]!.querySelector(
-        '[data-testid="cuota-estado-de-cuenta"]',
-      )
-      expect(enlace?.getAttribute('href')).toBe(
+      expect(abrirElKebab()?.getAttribute('href')).toBe(
         '/panel/inmobiliaria/estado-de-cuenta/inquilino/70814637?volver=%2Fpanel%2Finmobiliaria%2Fpagos',
       )
-      expect(enlace?.textContent).toBe('Nicolás Rojas')
     })
 
     it('con cuenta del portal, la cuenta manda sobre el documento', () => {
       conMes(mes({ filas: [fila({ tenantId: 'u-77' })] }))
       montar()
-      expect($('[data-testid="cuota-estado-de-cuenta"]').getAttribute('href')).toBe(
+      expect(abrirElKebab()?.getAttribute('href')).toBe(
         '/panel/inmobiliaria/estado-de-cuenta/inquilino/u-77?volver=%2Fpanel%2Finmobiliaria%2Fpagos',
       )
     })
@@ -662,8 +696,27 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     it('sin cuenta ni documento no se ofrece una puerta que da 404, pero el nombre sigue', () => {
       conMes(mes({ filas: [fila({ tenantId: null, documento: null })] }))
       montar()
-      expect(host.querySelector('[data-testid="cuota-estado-de-cuenta"]')).toBeNull()
+      expect(abrirElKebab()).toBeNull()
       expect($('[data-testid="cuota-fila"]').textContent).toContain('Nicolás Rojas')
+    })
+
+    /*
+     * 🔴 La fila entera abre el detalle. Es la razón por la que el enlace se
+     * movió al kebab: sin esto, el cambio sería una acción escondida a cambio
+     * de nada.
+     */
+    it('hacer clic en la fila abre el cajón con el detalle de la cuota', () => {
+      montar()
+      act(() => {
+        ($('[data-testid="cuota-fila"]') as HTMLElement).click()
+      })
+      const cajon = document.body.querySelector('[data-testid="cajon-de-la-cuota"]')
+      expect(cajon).not.toBeNull()
+      expect(cajon?.textContent).toContain('Nicolás Rojas')
+      // Y la plata del detalle es la de la fila, sin una lectura nueva.
+      expect(cajon?.querySelector('[data-testid="cajon-se-debe"]')?.textContent).toContain(
+        '2.000.000',
+      )
     })
 
     it('el pie lo dice con palabras: cada fila es un mes del estado de cuenta', () => {
@@ -715,7 +768,11 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect($('[data-testid="mes-intereses"]').textContent).toBe(
       'cartera.interes.masIntereses:$52.000',
     )
-    expect($('[data-testid="mes-falta-con-intereses"]').textContent).toBe(
+    // `toContain` y no `toBe` desde el 21-09: el resumen del mes dejó de ser
+    // tres fichas y pasó a ser una frase, así que este renglón vive dentro de
+    // ella y trae el espacio y el punto de la oración. Lo que la prueba cuida
+    // es que el interés se diga aparte del capital, no la puntuación.
+    expect($('[data-testid="mes-falta-con-intereses"]').textContent).toContain(
       'cartera.interes.conIntereses:$6.052.000',
     )
     expect(todos('[data-testid="cuota-intereses"]').map((e) => e.textContent)).toEqual(

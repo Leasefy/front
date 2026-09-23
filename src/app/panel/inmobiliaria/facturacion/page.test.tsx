@@ -241,12 +241,21 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // botón que hace algo, no uno decorativo.
     const botones = qa('button');
     expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(8);
-    // En «Ventas» ya no hay botón suelto: la pestaña lista de verdad.
+    // En «Ventas» el único botón que no es pestaña es el selector de mes del
+    // DS —cuyo disparador ES un `<button role="combobox">`—, y ése sí hace
+    // algo: cambia el mes del listado. Ningún botón decorativo.
     expect(
       botones
-        .filter((b) => b.getAttribute('role') !== 'tab')
+        .filter(
+          (b) =>
+            b.getAttribute('role') !== 'tab' &&
+            b.getAttribute('role') !== 'combobox',
+        )
         .map((b) => b.getAttribute('data-testid')),
     ).toEqual([]);
+    expect(q('[data-testid="facturacion-mes-emitidas"]')!.getAttribute('role')).toBe(
+      'combobox',
+    );
 
     expect(texto).toContain(`${K}m2BannerTitle`);
   });

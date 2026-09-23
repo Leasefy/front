@@ -278,7 +278,7 @@ function LlamadasContent() {
   // ── Skeleton ────────────────────────────────────────────────────────────────
   if (isLoading && calls.length === 0 && !error) {
     return (
-      <main className="p-4 lg:p-8 max-w-7xl mx-auto" aria-busy="true">
+      <div className="p-4 lg:p-8" aria-busy="true">
         <header className="mb-5 space-y-2">
           <div className="h-7 w-40 rounded bg-surface-muted animate-pulse" />
           <div className="h-4 w-64 rounded bg-surface-muted animate-pulse" />
@@ -298,27 +298,27 @@ function LlamadasContent() {
             </TableBody>
           </Table>
         </Card>
-      </main>
+      </div>
     )
   }
 
   // ── Vacío global (sin filtros, sin datos, sin error) ─────────────────────────
   if (!isLoading && !hasFilters && calls.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <EmptyState
           icon={PhoneCall}
           title={t('inmobiliaria.ai.cobranza.llamadas.list.empty.title')}
           description={t('inmobiliaria.ai.cobranza.llamadas.list.empty.description')}
         />
-      </main>
+      </div>
     )
   }
 
   // ── Error sin datos: la pantalla NO puede afirmar nada sobre las llamadas ────
   if (error && calls.length === 0) {
     return (
-      <main className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-6 lg:p-8">
         {/* Interpolaba el error crudo del agente dentro del mensaje —«respondió
             con un error (Failed to fetch)»—: no le dice nada a quien lo lee y
             filtra internals. `FalloDeCarga` lo deja en el DOM para diagnóstico
@@ -328,12 +328,12 @@ function LlamadasContent() {
           queEs="las llamadas"
           onReintentar={refetch}
         />
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8">
       <div className="mb-5 space-y-1">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
@@ -593,7 +593,7 @@ function LlamadasContent() {
           </div>
         )}
       </Card>
-    </main>
+    </div>
   )
 }
 

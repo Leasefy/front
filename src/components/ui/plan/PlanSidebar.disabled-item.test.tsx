@@ -120,3 +120,14 @@ describe('<PlanSidebar> — fila con disabled: true', () => {
     expect(container.textContent).toContain('Próximamente')
   })
 })
+
+describe('<PlanSidebar> — tarjeta de invitar', () => {
+  it('🔴 no dice «3 invitaciones libres»: es el valor por defecto de cadence, nadie lo contó (QA 22-09)', () => {
+    act(() => {
+      root.render(
+        <PlanSidebar navItems={NAV_ITEMS} logo={{ title: 'Leasefy', href: '/' }} showInvite onInvite={() => {}} />,
+      )
+    })
+    expect(container.textContent).not.toMatch(/invitaciones libres/)
+  })
+})

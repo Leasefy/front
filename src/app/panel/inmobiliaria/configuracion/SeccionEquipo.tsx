@@ -28,6 +28,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
+import { PermisosDeLaPersona } from '@/components/inmobiliaria/PermisosDeLaPersona';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
@@ -46,6 +47,9 @@ export function SeccionEquipo() {
   const { canAccess, isAdmin } = usePermissions();
 
   const [vista, setVista] = useState<Vista>('miembros');
+  // 🔴 22-09 noche · «Permisos de esta persona». Las rutas del back son sólo
+  // del ADMIN (`ensureAdmin`), así que el gate es `isAdmin` y no el de invitar.
+  const [personaDePermisos, setPersonaDePermisos] = useState<AgencyUser | null>(null);
 
   const { users, isLoading, errorCrudo, refetch } = useAgencyUsers();
   // Sólo para Ranking y Carga: métricas por agente activo. No es un padrón, y
@@ -281,7 +285,15 @@ export function SeccionEquipo() {
             onResendInvite={puedeAdministrarEquipo ? reenviarInvitacion : undefined}
             onDelete={puedeAdministrarEquipo ? eliminar : undefined}
             onVerFicha={verFicha}
+            onPermisos={setPersonaDePermisos}
+            permisosApagadoPorque={
+              isAdmin ? null : 'Sólo un administrador cambia los permisos de una persona.'
+            }
             abrirInvitacion={invitarAlMontar}
+          />
+          <PermisosDeLaPersona
+            persona={personaDePermisos}
+            onCerrar={() => setPersonaDePermisos(null)}
           />
         </EstadoDeDatos>
       ) : (

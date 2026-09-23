@@ -26,9 +26,11 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
 import { useI18n } from '@/lib/i18n';
 import { SheetTitle } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -39,9 +41,14 @@ import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
 import Link from 'next/link';
-import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
+import { rutaDeLotesDelMes } from '@/lib/api/dispersiones-errores';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
 import { ResumenDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
+import {
+  ElegirCuentaDeOrigenDelGiro,
+  type EleccionDelOrigenDelGiro,
+} from '@/components/dispersiones/ElegirCuentaDeOrigenDelGiro';
+import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -56,9 +63,14 @@ interface DispersionDetailProps {
    * Segundo par de ojos: anotar la referencia del giro YA hecho. El sistema no
    * transfiere, así que la referencia es obligatoria y la escribe una persona.
    */
-  onProcess?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
+  onProcess?: (
+    dispersion: Dispersion,
+    transferReference: string,
+    /** Desde qué cuenta de la inmobiliaria salió (23-09). `null` = sin la migración. */
+    origen?: OrigenPedido | null,
+  ) => Promise<void> | void;
   onViewExtracto?: (dispersion: Dispersion) => void;
-  onRetry?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
+  onRetry?: (dispersion: Dispersion, transferReference: string, origen?: OrigenPedido | null) => Promise<void> | void;
   /**
    * La inmobiliaria aprueba y gira por lote, con código. El back responde 409
    * `APROBAR_POR_LOTE` a aprobar Y a marcar girada una suelta, así que esos
@@ -227,7 +239,7 @@ function TimelineEvent({
           {title}
         </p>
         {date && (
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-caption text-muted-foreground mt-0.5">
             {formattedDate || date}
           </p>
         )}
@@ -257,6 +269,15 @@ export function DispersionDetail({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
   const [errorDeReferencia, setErrorDeReferencia] = React.useState<string | null>(null);
+  /**
+   * Desde qué cuenta salió el giro (Nico, 23-09). Hasta que el selector
+   * diga `listo` —cargó, y hay banco y número válidos, o el back no tiene la
+   * migración— «Marcar como girada» no se deja tocar.
+   */
+  const [origenDelGiro, setOrigenDelGiro] = React.useState<EleccionDelOrigenDelGiro>({
+    origen: null,
+    listo: false,
+  });
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
   const { t, formatDate, formatCurrency } = useI18n();
   const { config } = useInmobiliariaConfig();
@@ -297,7 +318,7 @@ export function DispersionDetail({
     setErrorDeReferencia(null);
     setIsProcessing(true);
     try {
-      await onProcess(dispersion, ref);
+      await onProcess(dispersion, ref, origenDelGiro.origen);
       setReferencia('');
     } finally {
       setIsProcessing(false);
@@ -315,7 +336,7 @@ export function DispersionDetail({
     setErrorDeReferencia(null);
     setIsProcessing(true);
     try {
-      await onRetry(dispersion, ref);
+      await onRetry(dispersion, ref, origenDelGiro.origen);
       setReferencia('');
     } finally {
       setIsProcessing(false);
@@ -374,6 +395,16 @@ export function DispersionDetail({
    * Antes se descubría DESPUÉS de escribir la referencia del banco. Se compara
    * con el id de la sesión, que es el mismo que el back guarda en `approvedBy`.
    */
+  /*
+   * 🔴 23-09 (QA): el historial decía «Por: eb859b1c-…», el id de quien
+   * aprobó. El back manda su nombre (`aprobadoPorNombre`); si no lo supo, la
+   * sesión se reconoce («ti») y si tampoco, no se dice «Por»: nunca un uuid.
+   */
+  const quienAprobo =
+    dispersion.approvedByName ??
+    (dispersion.approvedBy && dispersion.approvedBy === usuarioActualId
+      ? t('inmobiliaria.dispersiones.detailView.aprobadoPorTi')
+      : null);
   const esQuienAprobo = Boolean(
     pideReferencia &&
       usuarioActualId &&
@@ -382,69 +413,85 @@ export function DispersionDetail({
   );
 
   /*
-   * Lo que va ENCIMA de los botones del pie: la referencia del giro —la
-   * escribe una persona, el sistema no transfiere; sin esto el back responde
-   * 400 y la pantalla festejaba igual— y el aviso de que falta el segundo par
-   * de ojos.
+   * 🔴 23-09 (QA): todo esto vivía en el PIE del cajón —el banco de origen, el
+   * tipo, el número, la referencia y tres ayudas— y el pie, que es fijo, se
+   * comía media pantalla. El pie queda con los botones y una línea; lo que
+   * hay que LLENAR para marcar girada es una sección del cuerpo, justo
+   * después del propietario, y se desplaza con el resto.
+   */
+  const registrarElGiro =
+    !ofreceLote && (conReferencia || (esperaReferencia && !esQuienAprobo)) ? (
+      <section className="space-y-3" data-testid="dispersion-registrar-el-giro">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Lightning className="w-4 h-4 text-primary" />
+          {t('inmobiliaria.dispersiones.detailView.registrarElGiro')}
+        </h3>
+        <div className="p-4 rounded-lg border border-border space-y-4">
+          {/* Desde qué cuenta salió: el «Desde» del correo «Te giramos». Quien
+              aprobó no marca girada, así que a esa persona no se le pregunta. */}
+          {conReferencia && !esQuienAprobo && (
+            <ElegirCuentaDeOrigenDelGiro key={dispersion.id} onCambio={setOrigenDelGiro} />
+          )}
+          {conReferencia && (
+            <div className="space-y-1.5">
+              <label htmlFor="dispersion-referencia" className="block text-sm font-medium text-foreground">
+                {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
+              </label>
+              <input
+                id="dispersion-referencia"
+                data-testid="dispersion-referencia"
+                value={referencia}
+                disabled={esQuienAprobo}
+                aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : 'dispersion-referencia-ayuda'}
+                onChange={(e) => {
+                  setReferencia(e.target.value);
+                  if (errorDeReferencia) setErrorDeReferencia(null);
+                }}
+                placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
+                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              {!esQuienAprobo && (
+                <p id="dispersion-referencia-ayuda" className="text-caption text-muted-foreground">
+                  {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
+                </p>
+              )}
+              {errorDeReferencia && (
+                <p role="alert" className="text-caption text-danger">
+                  {errorDeReferencia}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Aprobada: falta que OTRA persona cargue la referencia. */}
+          {esperaReferencia && !esQuienAprobo && (
+            <p className="text-caption text-muted-foreground">
+              {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
+            </p>
+          )}
+        </div>
+      </section>
+    ) : null;
+
+  /*
+   * Lo que va ENCIMA de los botones del pie: UNA línea que dice por qué el
+   * botón no está o está apagado (por lote, o quien aprobó no gira).
    */
   const ayudaDelPie = ofreceLote ? (
-    <p className="text-[11px] text-muted-foreground" data-testid="dispersion-por-lote">
+    <p className="text-caption text-muted-foreground" data-testid="dispersion-por-lote">
       Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en
       Lotes, no desde acá.
     </p>
-  ) : conReferencia || esperaReferencia ? (
-      <div className="space-y-3">
-        {conReferencia && (
-          <div className="space-y-1.5">
-            <label
-              htmlFor="dispersion-referencia"
-              className="text-xs font-semibold text-foreground"
-            >
-              {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
-            </label>
-            <input
-              id="dispersion-referencia"
-              data-testid="dispersion-referencia"
-              value={referencia}
-              disabled={esQuienAprobo}
-              aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : undefined}
-              onChange={(e) => {
-                setReferencia(e.target.value);
-                if (errorDeReferencia) setErrorDeReferencia(null);
-              }}
-              placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
-              className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            {esQuienAprobo ? (
-              <p
-                id="dispersion-aprobador-no-gira"
-                data-testid="dispersion-aprobador-no-gira"
-                className="text-[11px] text-warning"
-              >
-                Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
-                equipo. Es el segundo par de ojos sobre la plata del propietario.
-              </p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">
-                {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
-              </p>
-            )}
-            {errorDeReferencia && (
-              <p role="alert" className="text-[11px] text-danger">
-                {errorDeReferencia}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Aprobada: falta que OTRA persona cargue la referencia. */}
-        {esperaReferencia && !esQuienAprobo && (
-          <p className="text-[11px] text-muted-foreground">
-            {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
-          </p>
-        )}
-      </div>
-    ) : undefined;
+  ) : conReferencia && esQuienAprobo ? (
+    <p
+      id="dispersion-aprobador-no-gira"
+      data-testid="dispersion-aprobador-no-gira"
+      className="text-caption text-warning"
+    >
+      Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
+      equipo. Es el segundo par de ojos sobre la plata del propietario.
+    </p>
+  ) : undefined;
 
   return (
     <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
@@ -525,6 +572,8 @@ export function DispersionDetail({
           </div>
         </motion.section>
 
+        {registrarElGiro}
+
         {/* Bank Account Section */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
@@ -564,7 +613,13 @@ export function DispersionDetail({
               <div>
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
                 <p className="text-sm font-medium text-foreground capitalize">
-                  {dispersion.propietarioBankAccount.accountType === 'savings' ? t('inmobiliaria.dispersiones.detailView.savings') : t('inmobiliaria.dispersiones.detailView.checking')}
+                  {/* 🔴 QA 22-09: todo lo que no fuera «savings» se pintaba
+                      «Corriente» —también el tipo que no conocemos—. Sin dato, «—». */}
+                  {dispersion.propietarioBankAccount.accountType === 'savings'
+                    ? t('inmobiliaria.dispersiones.detailView.savings')
+                    : dispersion.propietarioBankAccount.accountType === 'checking'
+                      ? t('inmobiliaria.dispersiones.detailView.checking')
+                      : '—'}
                 </p>
               </div>
               <div>
@@ -576,12 +631,60 @@ export function DispersionDetail({
                   <CopyButton text={dispersion.propietarioBankAccount.accountNumber} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
                 </div>
               </div>
-              <div>
+              <div className="col-span-2" data-testid="dispersion-titular">
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
-                <p className="text-sm font-medium text-foreground truncate">
-                  {dispersion.propietarioBankAccount.accountHolder}
-                </p>
+                {/* 🔴 22-09: «Titular: Nombre · CC 123», el del GIRO (copiado al
+                    generarse) y, si es de otra persona, se dice. Decía «—». */}
+                {dispersion.titularDeLaCuenta ? (
+                  <>
+                    <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+                      <span className="truncate" title={titularEnUnaLinea(dispersion.titularDeLaCuenta)}>
+                        {titularEnUnaLinea(dispersion.titularDeLaCuenta) || '—'}
+                      </span>
+                      {!dispersion.titularDeLaCuenta.esElPropietario ? (
+                        <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-caption text-warning">
+                          {t('inmobiliaria.dispersiones.detailView.titularOtraPersona')}
+                        </span>
+                      ) : null}
+                    </p>
+                    {!dispersion.titularDeLaCuenta.copiadoAlGenerar ? (
+                      <p className="mt-0.5 text-caption text-muted-foreground">
+                        {t('inmobiliaria.dispersiones.detailView.titularDeLaFichaHoy')}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {dispersion.propietarioBankAccount.accountHolder || '—'}
+                  </p>
+                )}
               </div>
+              {/* 🔴 22-09: el neto repartido entre varias cuentas, copiado con el
+                  giro: «50 % · Bancolombia ····4521 · $904.803». Los datos de
+                  arriba son los de la cuenta principal. */}
+              {dispersion.repartoDeLaCuenta && dispersion.repartoDeLaCuenta.length > 1 ? (
+                <div className="col-span-2" data-testid="dispersion-reparto">
+                  <p className="text-sm text-muted-foreground">
+                    {t('inmobiliaria.dispersiones.detailView.repartoTitulo', {
+                      n: dispersion.repartoDeLaCuenta.length,
+                    })}
+                  </p>
+                  <ul className="mt-1 space-y-1">
+                    {dispersion.repartoDeLaCuenta.map((parte, i) => (
+                      <li key={i} className="text-sm text-foreground">
+                        <span className="font-mono">{parte.enUnaLinea}</span>
+                        {parte.titularDeOtraPersona ? (
+                          <span className="block text-muted-foreground">
+                            {t('inmobiliaria.dispersiones.detailView.repartoANombreDe', {
+                              titular: parte.titularDeOtraPersona,
+                            })}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
             )}
           </div>
@@ -598,7 +701,16 @@ export function DispersionDetail({
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
           </h3>
-          <div className="grid grid-cols-3 gap-3">
+          {/* 🔴 22-09 (Nico: «no estás teniendo en cuenta el IVA en la
+              comisión»): con IVA, cuatro fichas —canon, comisión, IVA de la
+              comisión, neto— en dos filas, para que la cuenta se lea en orden
+              y los montos quepan en el cajón. */}
+          <div
+            className={cn(
+              'grid gap-3',
+              (dispersion.totalIvaComision ?? 0) > 0 ? 'grid-cols-2' : 'grid-cols-3',
+            )}
+          >
             <div className="p-4 rounded-lg bg-muted/50 text-center">
               {/* 🔴 Decía «Recaudado» siempre, y la dispersión gira por defecto
                   con base CAUSADO: el canon del mes, haya pagado el inquilino
@@ -610,27 +722,54 @@ export function DispersionDetail({
                     : 'inmobiliaria.dispersiones.detailView.canonCausado',
                 )}
               </p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-lg font-bold text-foreground font-mono tabular-nums">
                 {formatCurrency(dispersion.totalCollected)}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-primary-soft text-center">
               <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
-              <p className="text-lg font-bold text-primary">
+              <p className="text-lg font-bold text-primary font-mono tabular-nums">
                 {formatCurrency(dispersion.totalCommission)}
               </p>
             </div>
+            {(dispersion.totalIvaComision ?? 0) > 0 && (
+              <div className="p-4 rounded-lg bg-primary-soft text-center" data-testid="dispersion-iva-comision">
+                <p className="text-caption text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.ivaComision')}</p>
+                <p className="text-lg font-bold text-primary font-mono tabular-nums">
+                  {formatCurrency(dispersion.totalIvaComision ?? 0)}
+                </p>
+              </div>
+            )}
             <div className="p-4 rounded-lg bg-success-soft text-center">
               <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
               {/* Con deducciones, lo que se gira es el neto a girar del back
                   (entero o $0), no el neto guardado, que puede quedar en contra. */}
-              <p className="text-lg font-bold text-success" data-testid="dispersion-neto">
+              <p className="text-lg font-bold text-success font-mono tabular-nums" data-testid="dispersion-neto">
                 {formatCurrency(
                   dispersion.conDeducciones ? dispersion.conDeducciones.aGirarCop : dispersion.netToPropietario,
                 )}
               </p>
             </div>
           </div>
+          {(dispersion.totalRetencionesComision ?? 0) > 0 && (
+            <p className="text-sm text-fg-muted" data-testid="dispersion-retenido-comision">
+              {t('inmobiliaria.dispersiones.detailView.retenidoComision')}{' '}
+              <span className="font-mono tabular-nums text-fg">
+                +{formatCurrency(dispersion.totalRetencionesComision ?? 0)}
+              </span>
+            </p>
+          )}
+          {/* Generada antes del 22-09 sin el IVA: el back lo dice con el número
+              que falta. No se corrige solo: un giro no cambia sin que alguien
+              lo decida. */}
+          {dispersion.avisoDelIvaDeLaComision && (
+            <p
+              className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning"
+              data-testid="dispersion-aviso-iva"
+            >
+              {dispersion.avisoDelIvaDeLaComision}
+            </p>
+          )}
           <BloqueDeDeducciones bloque={dispersion.conDeducciones} propietarioId={dispersion.propietarioId} />
           {/* D1/D2 (17-09): lo girado sin recaudo y los intereses del propietario. */}
           <ResumenDelMandato
@@ -691,7 +830,7 @@ export function DispersionDetail({
                 title={t('inmobiliaria.dispersiones.detailView.approved')}
                 date={dispersion.approvedAt}
                 formattedDate={dispersion.approvedAt ? formatDate(dispersion.approvedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                description={dispersion.approvedBy ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: dispersion.approvedBy }) : undefined}
+                description={quienAprobo ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: quienAprobo }) : undefined}
               />
             )}
             {dispersion.processedAt && (
@@ -751,6 +890,19 @@ export function DispersionDetail({
                 <p className="text-sm font-mono font-semibold text-success mt-0.5">
                   {dispersion.transferReference}
                 </p>
+                {dispersion.origenDelGiro && (
+                  <p className="text-sm text-success mt-1" data-testid="dispersion-desde">
+                    {t('inmobiliaria.dispersiones.origenDelGiro.desde', {
+                      banco: dispersion.origenDelGiro.nombreDelBanco,
+                      tipo: t(
+                        `inmobiliaria.dispersiones.cuentaDeOrigen.tipos.${
+                          dispersion.origenDelGiro.tipoDeCuenta === 'CORRIENTE' ? 'CORRIENTE' : 'AHORROS'
+                        }`,
+                      ),
+                    })}{' '}
+                    <span className="font-mono">{dispersion.origenDelGiro.cuenta}</span>
+                  </p>
+                )}
               </div>
               <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
             </div>
@@ -778,6 +930,9 @@ export function DispersionDetail({
             </div>
           </motion.section>
         )}
+
+        {/* Quién aprobó, marcó girada o bajó el extracto, con su rol. */}
+        <BitacoraDelRecurso tipo="dispersion" id={dispersion.id} />
       </CajonCuerpo>
 
       {/* Pie fijo: bajar el extracto a la izquierda; ver el extracto y la
@@ -820,7 +975,7 @@ export function DispersionDetail({
             Marcar girada y Reintentar, que acá darían 409. */}
         {ofreceLote && (
           <Button asChild hideArrow className="gap-2">
-            <Link href={RUTA_LOTES} data-testid="dispersion-ir-a-lotes">
+            <Link href={rutaDeLotesDelMes(dispersion.month)} data-testid="dispersion-ir-a-lotes">
               <Bank className="w-4 h-4" />
               Ir a Lotes
             </Link>
@@ -856,7 +1011,7 @@ export function DispersionDetail({
             onClick={handleProcess}
             // Quien aprobó no la marca girada: se deshabilita ANTES, con la
             // explicación encima, y no después de un 409.
-            disabled={isProcessing || esQuienAprobo}
+            disabled={isProcessing || esQuienAprobo || !origenDelGiro.listo}
             data-testid="dispersion-marcar-girada"
           >
             {isProcessing ? (
@@ -878,7 +1033,7 @@ export function DispersionDetail({
           <Button
             className="bg-warning hover:bg-warning text-white"
             onClick={handleRetry}
-            disabled={isProcessing || esQuienAprobo}
+            disabled={isProcessing || esQuienAprobo || !origenDelGiro.listo}
           >
             {isProcessing ? (
               <span className="flex items-center gap-2">

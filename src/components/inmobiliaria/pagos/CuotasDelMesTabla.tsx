@@ -37,13 +37,39 @@
  * los dos el nombre va en texto plano: un enlace que lleva a un 404 enseña que
  * la pantalla no sirve.
  *
+ * ── 🔴 Y el 21-09: LA FILA ABRE UN CAJÓN, y las acciones van en un kebab ────
+ *
+ * Nico: «no le hiciste el detalle al dar clic en un drawer» y «¿por qué no usas
+ * al lado derecho el kebab menu para agregar acciones?».
+ *
+ * Antes el único clic que hacía algo era el del nombre, y se iba de la
+ * pantalla: para responder «¿por qué éste está en cartera?» había que
+ * abandonar la lista —perdiendo el filtro y la página— y volver. Ahora:
+ *
+ *   · **la fila entera** abre `CuotaDelMesCajon` con todo su detalle;
+ *   · **el kebab** de la última columna junta lo que se puede hacer con esa
+ *     fila (ver el detalle, abrir el estado de cuenta). Un enlace azul suelto
+ *     debajo del nombre no escala: la segunda acción no tiene dónde ponerse.
+ *
+ * El nombre deja de ser un enlace, y es a propósito: con la fila abriendo el
+ * cajón, un enlace adentro de la fila es un segundo destino en el mismo clic —
+ * el usuario no puede saber cuál le va a tocar.
+ *
  * Sólo pinta. Cargando y fallo los resuelve `EstadoDeDatos` en el panel.
  */
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { CurrencyCircleDollar } from '@phosphor-icons/react'
+import { CurrencyCircleDollar, DotsThreeVertical } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -54,69 +80,24 @@ import { rotuloDelContrato } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
-import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
+import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
-
-/**
- * Cómo se lee cada cajón. Las palabras son las de la pantalla de cartera, no
- * unas nuevas: el mismo hecho tiene que llamarse igual en las dos.
- */
-export const NOMBRE_DEL_CAJON: Record<CajonDeLaCuota, string> = {
-  CARTERA: 'Cartera',
-  VENCIDA_EN_PLAZO: 'Vencido, en plazo',
-  POR_VENCER: 'Por vencer',
-  SIN_DEUDA: 'Pagada',
-}
-
-const VARIANTE_DEL_CAJON: Record<
-  CajonDeLaCuota,
-  'destructive' | 'warning' | 'secondary' | 'success'
-> = {
-  CARTERA: 'destructive',
-  VENCIDA_EN_PLAZO: 'warning',
-  POR_VENCER: 'secondary',
-  SIN_DEUDA: 'success',
-}
-
-/**
- * `vence` llega como 'YYYY-MM-DD' (el back ya lo recortó del `@db.Date`).
- * Se construye en hora LOCAL a partir de sus tres componentes: pasarlo por
- * `new Date(iso)` y formatearlo en Colombia (UTC-5) lo corre al día anterior.
- */
-export function fechaLocal(iso: string, locale: 'es' | 'en'): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
-  if (!m) return iso
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-  return d.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+import { CuotaDelMesCajon } from './CuotaDelMesCajon'
+import { NOMBRE_DEL_CAJON, VARIANTE_DEL_CAJON, fechaLocal } from './cajon-de-la-cuota'
 
 const VOLVER_A = '/panel/inmobiliaria/pagos'
 
 /**
- * El nombre del inquilino, que es la puerta a su estado de cuenta cuando se le
- * puede identificar. Sin referencia se pinta igual, pero sin enlace.
+ * ¿Se le puede abrir el estado de cuenta? Lo decide el `tenantRef`: la cuenta
+ * del portal si la tiene, si no el documento. Sin ninguno de los dos, la acción
+ * no se ofrece — mandar a `/estado-de-cuenta/inquilino/undefined` para que el
+ * back conteste 404 es peor que no ofrecerla, y el cajón dice por qué falta.
  */
-function EnlaceAlEstadoDeCuenta({ fila }: { fila: FilaDeLaCuotaDelMes }) {
-  const nombre = fila.inquilino ?? 'Sin nombre en el contrato'
+function hrefDelEstadoDeCuenta(fila: FilaDeLaCuotaDelMes): string | null {
   const ref = refDelInquilino(fila)
-  if (!ref) {
-    return <p className="truncate font-medium text-fg">{nombre}</p>
-  }
-  return (
-    <Link
-      href={`${rutaDelEstadoDeCuenta('inquilino', ref)}?volver=${encodeURIComponent(VOLVER_A)}`}
-      data-testid="cuota-estado-de-cuenta"
-      title={`Ver el estado de cuenta de ${nombre}`}
-      className="block truncate font-medium text-fg underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-    >
-      {nombre}
-    </Link>
-  )
+  if (!ref) return null
+  return `${rutaDelEstadoDeCuenta('inquilino', ref)}?volver=${encodeURIComponent(VOLVER_A)}`
 }
 
 export interface CuotasDelMesTablaProps {
@@ -135,7 +116,8 @@ export interface CuotasDelMesTablaProps {
   sinMarco?: boolean
 }
 
-const COLUMNAS = 6
+/** Las seis de datos más la del kebab. */
+const COLUMNAS = 7
 
 export function CuotasDelMesTabla({
   filas,
@@ -146,6 +128,8 @@ export function CuotasDelMesTabla({
 }: CuotasDelMesTablaProps) {
   const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
+  /** La fila abierta en el cajón. `null` = cerrado. */
+  const [abierta, setAbierta] = useState<FilaDeLaCuotaDelMes | null>(null)
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, { initialPageSize: 10, resetKey: `${mes}|${hayFiltros}` })
@@ -171,6 +155,9 @@ export function CuotasDelMesTabla({
               Pagado / falta
             </TableHead>
             <TableHead className="whitespace-nowrap">Vence</TableHead>
+            {/* La del kebab. Sin rótulo: nombrar «Acciones» gasta ancho para
+                decir lo que el icono ya dice. */}
+            <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -194,9 +181,27 @@ export function CuotasDelMesTabla({
             </TableRow>
           ) : (
             pageItems.map((f) => (
-              <TableRow key={f.cuotaId} data-testid="cuota-fila">
+              <TableRow
+                key={f.cuotaId}
+                data-testid="cuota-fila"
+                onClick={() => setAbierta(f)}
+                className="cursor-pointer"
+                /* Con teclado también: una fila que sólo abre con el mouse deja
+                   la pantalla sin su única salida al detalle. */
+                tabIndex={0}
+                role="button"
+                aria-label={`Ver el detalle de la cuota de ${f.inquilino ?? 'este contrato'}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setAbierta(f)
+                  }
+                }}
+              >
                 <TableCell>
-                  <EnlaceAlEstadoDeCuenta fila={f} />
+                  <p className="truncate font-medium text-fg">
+                    {f.inquilino ?? 'Sin nombre en el contrato'}
+                  </p>
                   <p className="truncate text-caption text-fg-muted">
                     {f.documento ? `CC ${f.documento}` : ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
@@ -261,6 +266,51 @@ export function CuotasDelMesTabla({
                     </p>
                   )}
                 </TableCell>
+
+                {/* 🔴 El kebab de acciones (Nico, 21-09). `stopPropagation` en
+                    la celda: sin eso, abrir el menú abre TAMBIÉN el cajón —el
+                    clic sube a la fila— y el menú queda detrás. */}
+                <TableCell
+                  className="w-10 align-top"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownList>
+                    <DropdownListTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        hideArrow
+                        className="h-8 w-8"
+                        aria-label={`Acciones de la cuota de ${f.inquilino ?? 'este contrato'}`}
+                        data-testid="cuota-kebab"
+                      >
+                        <DotsThreeVertical className="h-4 w-4" weight="bold" aria-hidden="true" />
+                      </Button>
+                    </DropdownListTrigger>
+                    <DropdownListContent align="end" className="w-52">
+                      <DropdownListItem onClick={() => setAbierta(f)}>
+                        Ver el detalle
+                      </DropdownListItem>
+                      {/* Sólo si se le puede identificar: una acción que lleva a
+                          un 404 enseña que la pantalla no sirve. El cajón
+                          explica por qué no está. */}
+                      {/* Va como enlace y no como `router.push`: es
+                          navegación, así que abrir en otra pestaña, copiar la
+                          dirección y el clic con la rueda tienen que funcionar
+                          — con un `onClick` no funciona ninguno de los tres. */}
+                      {hrefDelEstadoDeCuenta(f) ? (
+                        <DropdownListItem asChild>
+                          <Link
+                            href={hrefDelEstadoDeCuenta(f) as string}
+                            data-testid="cuota-estado-de-cuenta"
+                          >
+                            Estado de cuenta del cliente
+                          </Link>
+                        </DropdownListItem>
+                      ) : null}
+                    </DropdownListContent>
+                  </DropdownList>
+                </TableCell>
               </TableRow>
             ))
           )}
@@ -279,6 +329,14 @@ export function CuotasDelMesTabla({
           />
         </div>
       )}
+
+      {/* El detalle de la fila. Lee la MISMA fila que la tabla: no pide nada al
+          back y por eso no puede contradecirla. */}
+      <CuotaDelMesCajon
+        fila={abierta}
+        onCerrar={() => setAbierta(null)}
+        volverA={VOLVER_A}
+      />
     </div>
   )
 }

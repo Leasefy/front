@@ -99,7 +99,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               : ''}
             : no generan cobros.
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-caption text-muted-foreground">
             Ninguna dirección coincidió con tu portafolio. Podemos crear los inmuebles
             desde el archivo, consignarlos al propietario que trae cada fila y, si el
             contrato ya está activo, vincularlo — de una.
@@ -148,7 +148,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground" htmlFor="ciudad-inmuebles-faltantes">
+            <label className="text-caption text-muted-foreground" htmlFor="ciudad-inmuebles-faltantes">
               Ciudad para las filas que no la traen
             </label>
             <Input
@@ -205,13 +205,13 @@ function ResultadoDeCreacion({ resultado }: { resultado: ResultadoInmueblesFalta
         {resultado.consignados} {resultado.consignados === 1 ? 'consignado' : 'consignados'} al propietario del archivo
       </p>
       {resultado.vinculados > resultado.consignados ? (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           {resultado.vinculados - resultado.consignados} sin propietario: el archivo no traía
           su documento. Se registra desde la fila o desde Inmuebles.
         </p>
       ) : null}
       {problemas.length > 0 ? (
-        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+        <ul className="mt-2 space-y-1 text-caption text-muted-foreground">
           {problemas.map((p) => (
             <li key={p.id} className="flex items-start gap-1.5">
               <WarningCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />

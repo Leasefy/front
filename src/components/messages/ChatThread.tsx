@@ -112,7 +112,7 @@ export function ChatThread({ applicationId, className }: ChatThreadProps) {
       </div>
 
       {error && (
-        <p className="px-4 py-1.5 text-xs text-danger border-t border-border">{error}</p>
+        <p className="px-4 py-1.5 text-caption text-danger border-t border-border">{error}</p>
       )}
 
       <div className="flex items-center gap-2 px-3 py-2.5 border-t border-border bg-card">

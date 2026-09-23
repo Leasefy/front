@@ -223,7 +223,7 @@ export function EventosDeGasto({
                       <TableCell>
                         {e.propuesta ? (
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-fg-muted">
+                            <span className="font-mono text-caption text-fg-muted">
                               {e.propuesta.codigo} · {e.propuesta.nombre}
                             </span>
                             {!e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
@@ -245,7 +245,7 @@ export function EventosDeGasto({
                           </div>
                         ) : (
                           <span
-                            className="font-mono text-xs text-fg-subtle"
+                            className="font-mono text-caption text-fg-subtle"
                             title="Créala en el plan de cuentas con ese código, o elige otra"
                           >
                             {e.codigoPropuesto} no está en el PUC

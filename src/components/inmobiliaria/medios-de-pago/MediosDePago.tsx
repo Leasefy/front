@@ -35,6 +35,8 @@ import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { mediosDePagoApi, ordenarMedios } from '@/lib/api/medios-de-pago.service';
+import { finanzasApi } from '@/lib/api/finanzas.service';
+import { estaApagado } from '@/lib/finanzas/medios';
 import type { MedioDePago, NuevoMedioDePago } from '@/lib/api/medios-de-pago.types';
 import { cn } from '@/lib/utils';
 import { EditorDeMedio } from './EditorDeMedio';
@@ -85,6 +87,23 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // ¿La inmobiliaria recibe efectivo? Sólo entonces se sugiere crear ese medio.
+  const [efectivoHabilitado, setEfectivoHabilitado] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    finanzasApi
+      .medios()
+      .then((r) => {
+        if (vivo) setEfectivoHabilitado(!estaApagado('EFECTIVO', r.apagados ?? []));
+      })
+      .catch(() => {
+        if (vivo) setEfectivoHabilitado(false);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   const marcarOcupada = (id: string, ocupada: boolean) =>
     setOcupadas((previas) => {
@@ -189,7 +208,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
           />
           {puedeEditar && (
             <div className="grid gap-4 md:grid-cols-2">
-              {sugerencias(agencia).map((s) => (
+              {sugerencias(agencia, { efectivoHabilitado }).map((s) => (
                 <TarjetaDeSugerencia
                   key={s.id}
                   sugerencia={s}

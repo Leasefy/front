@@ -570,8 +570,81 @@ export interface ComprobanteDeEgreso {
     totalCop: number;
   } | null;
   lote: { concepto: string; referenciaBanco: string | null; pagadoAt: string | null } | null;
+  /**
+   * La referencia VIGENTE de la transferencia (la corregida, si alguien la
+   * cambió). Opcional: un back anterior al 22-09 no la manda.
+   */
+  referencia?: string | null;
+  /** La nota vigente del egreso. Opcional por lo mismo. */
+  nota?: string | null;
   asiento: { numero: number; fecha: string } | null;
   conciliado: boolean;
+}
+
+// ── Cambios a un egreso ya registrado ─────────────────────────────────────
+
+/**
+ * Lo que se le puede cambiar a un egreso después de registrado (Nico, 22-09:
+ * «si lo envío al banco y no llega o lo rechaza, en contabilidad no entró ese
+ * día… se debería de poder cambiar esa fecha»).
+ *
+ * 🔴 El MONTO y el BENEFICIARIO no están, y no por olvido: la plata ya le llegó
+ * a alguien por un valor. Si eso estuvo mal, se anula el egreso y se registra
+ * otro — el back no tiene cómo editarlos.
+ */
+export type CampoDeEgreso = 'FECHA' | 'REFERENCIA' | 'NOTA';
+
+/** Una fila del historial (`cambios_de_egreso`), tal cual la manda el back. */
+export interface CambioDeEgreso {
+  id: string;
+  campo: CampoDeEgreso;
+  /** La FECHA viaja como `AAAA-MM-DD`. */
+  valorAnterior: string | null;
+  valorNuevo: string | null;
+  /** `null` sólo en una NOTA: ahí la nota misma es la explicación. */
+  motivo: string | null;
+  /** Sólo en un cambio de FECHA: el asiento reversado, su reversa y el nuevo. */
+  asientoReversadoId: string | null;
+  asientoReversaId: string | null;
+  asientoNuevoId: string | null;
+  cambiadoPorUserId: string;
+  /** El nombre de quien lo cambió (o su correo); `null` si no se encontró la cuenta. */
+  cambiadoPorNombre: string | null;
+  createdAt: string;
+}
+
+/** `GET /egresos/:id/cambios`: lo que dice HOY y cómo llegó ahí. */
+export interface HistorialDelEgreso {
+  /** `false` = falta la migración `20260922150000_cambios_de_egreso`. */
+  disponible: boolean;
+  motivo: string | null;
+  /** La referencia vigente: la del último cambio, o la del lote si nunca cambió. */
+  referencia: string | null;
+  nota: string | null;
+  /** Del más nuevo al más viejo. */
+  cambios: CambioDeEgreso[];
+}
+
+/** `CambiarEgresoDto`. Un campo ausente no se toca; `''` quita referencia o nota. */
+export const CLAVES_DE_CAMBIAR_EGRESO = ['fecha', 'referencia', 'nota', 'motivo'] as const;
+
+export interface CambiosDelEgreso {
+  fecha?: string;
+  referencia?: string;
+  nota?: string;
+  /** Obligatorio si cambia la fecha o la referencia (el back responde 400). */
+  motivo?: string;
+}
+
+/** Lo que devuelve cambiar: el egreso, cómo se movió el asiento, y el historial. */
+export interface ResultadoDelCambio extends HistorialDelEgreso {
+  egreso: Egreso;
+  /** `null` si no cambió la fecha (la referencia y la nota no tocan el libro). */
+  asientos: {
+    reversado: { id: string; numero: number };
+    reversa: { id: string; numero: number };
+    nuevo: { id: string; numero: number };
+  } | null;
 }
 
 /** El 409 de pedir el comprobante de un egreso que todavía no se pagó. */
@@ -830,6 +903,26 @@ export const gastosApi = {
       return apiClient.post<Egreso>(
         `${BASE}/egresos/${encodeURIComponent(id)}/conciliar`,
         soloClaves({ movimientoBancarioId }, CLAVES_DE_CONCILIAR),
+      );
+    },
+
+    /** Lectura. Qué dice hoy el egreso (referencia, nota) y su historial. */
+    async historial(id: string): Promise<HistorialDelEgreso> {
+      return apiClient.get<HistorialDelEgreso>(
+        `${BASE}/egresos/${encodeURIComponent(id)}/cambios`,
+      );
+    },
+
+    /**
+     * Escritura. Cambia la fecha, la referencia o la nota. 🔴 Cambiar la FECHA
+     * mueve el asiento: el back reversa el vigente en su día y lo vuelve a
+     * causar en el nuevo. Con el período cerrado (en cualquiera de las dos
+     * puntas) responde 409 `PERIODO_CERRADO` sin escribir nada.
+     */
+    async cambiar(id: string, cambios: CambiosDelEgreso): Promise<ResultadoDelCambio> {
+      return apiClient.post<ResultadoDelCambio>(
+        `${BASE}/egresos/${encodeURIComponent(id)}/cambios`,
+        soloClaves(cambios, CLAVES_DE_CAMBIAR_EGRESO),
       );
     },
 

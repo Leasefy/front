@@ -8,6 +8,8 @@
  * se pinta lo que llega.
  */
 
+import type { Edad } from '@/lib/cartera/edades';
+
 /**
  * De dónde sale la deducción. `COBRO_AL_ARRENDAR` (17-09) es lo que la
  * inmobiliaria le cobra al PROPIETARIO por arrendar el inmueble —colocación,
@@ -263,6 +265,31 @@ export interface RenglonDeLaDeuda {
   fecha: string;
   mesDesde: string;
   tieneSoporte: boolean;
+  /**
+   * Días entre `fecha` y hoy: lo viejo que es este renglón. Lo calcula el
+   * back (`edades-de-la-deuda.ts`) con el mismo reloj con que lo mete en su
+   * tramo, para que la ficha y la cartera no den dos edades.
+   */
+  dias: number;
+}
+
+/** Un tramo del informe por edades de la deuda del propietario. */
+export interface TramoDeLaDeuda {
+  tramo: Edad;
+  /** El rótulo del back. En pantalla mandan los nombres de `lib/cartera/edades`. */
+  nombre: string;
+  debeCop: number;
+  renglones: number;
+}
+
+/**
+ * El informe por edades: los CUATRO tramos, siempre, aunque estén en cero, y
+ * sumando exactamente lo que se debe.
+ */
+export interface DeudaPorEdades {
+  tramos: TramoDeLaDeuda[];
+  /** La edad del renglón más viejo, en días. `0` si no debe nada. */
+  diasDelMasViejo: number;
 }
 
 export interface CuentaDeCobroResumida {
@@ -289,6 +316,7 @@ export interface DeudaDelPropietario {
   cuentasDeCobro: CuentaDeCobroResumida[];
   /** `false` = generar la cuenta de cobro responde 503 en esta base. */
   cuentaDeCobroDisponible: boolean;
+  porEdades: DeudaPorEdades;
 }
 
 export interface PropietarioQueDebe {
@@ -298,6 +326,8 @@ export interface PropietarioQueDebe {
   desde: string | null;
   sinCuentaDeCobroCop: number;
   ultimaCuentaDeCobro: CuentaDeCobroResumida | null;
+  /** Sus tramos de edad. Suman `debeCop`. */
+  porEdades: DeudaPorEdades;
 }
 
 export interface DeudasDePropietarios {
@@ -305,6 +335,8 @@ export interface DeudasDePropietarios {
   motivo: string | null;
   totalCop: number;
   propietarios: PropietarioQueDebe[];
+  /** Los tramos de toda la cartera: la suma de los de cada propietario. */
+  porEdades: DeudaPorEdades;
 }
 
 /** El documento de la cuenta de cobro al propietario. */

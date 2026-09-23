@@ -28,6 +28,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble'
 import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria'
+import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector'
 import { useAuth } from '@/lib/auth'
 import { ApiError } from '@/lib/api/client'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
@@ -103,7 +104,10 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
   const [enviando, setEnviando] = useState(false)
   const [personaId, setPersonaId] = useState<string>('')
 
-  const { consignaciones } = useConsignaciones()
+  /* El error se lee: con la lectura caída, «Sin inmuebles consignados» era un
+     fallo disfrazado de vacío (21-09). */
+  const { consignaciones, isLoading: cargandoInmuebles, errorCrudo: errorDeInmuebles } =
+    useConsignaciones()
   const { agentes } = useAgentes()
   const { user } = useAuth()
 
@@ -344,7 +348,14 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   options={opcionesInmueble}
                   value={form.consignacionId || undefined}
                   onChange={(v) => set('consignacionId', v ?? '')}
-                  placeholder={opcionesInmueble.length ? 'Buscar un inmueble' : 'Sin inmuebles consignados'}
+                  placeholder={loQueDiceUnSelector({
+                    cargando: cargandoInmuebles,
+                    error: errorDeInmuebles,
+                    cuantos: opcionesInmueble.length,
+                    queSon: 'los inmuebles',
+                    pista: 'Buscar un inmueble',
+                    cuandoNoHay: 'Sin inmuebles consignados',
+                  })}
                   searchPlaceholder="Código, título o dirección"
                   disabled={opcionesInmueble.length === 0}
                   contentClassName="z-[400]"

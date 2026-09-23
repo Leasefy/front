@@ -177,3 +177,98 @@ describe('generarPorTandas', () => {
     expect(informe.pedidas).toBe(0)
   })
 })
+
+describe('🔴 las facturas de la corrida, para descargarlas (22-09)', () => {
+  it('junta el id y el número de lo emitido en TODAS las tandas', async () => {
+    const generar = (mes: string, lote: string[]): Promise<ResultadoDeGeneracion> =>
+      Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: lote.length * 1_000,
+        facturas: lote.map((clave, i) => ({
+          clave,
+          numero: i,
+          numeroDian: `PRU-${clave.split('|')[0]}`,
+          totalCop: 1_000,
+          // Una sin id (un back viejo): no entra, no hay PDF que pedir.
+          facturaId: clave === 'ct-1|2026-09|INQUILINO' ? null : `fac-${clave}`,
+        })),
+      })
+
+    const { informe } = await generarPorTandas('2026-09', claves(3), generar, undefined, {
+      tamano: 2,
+    })
+
+    expect(informe.documentos).toEqual([
+      { facturaId: 'fac-ct-0|2026-09|INQUILINO', numero: 'PRU-ct-0' },
+      { facturaId: 'fac-ct-2|2026-09|INQUILINO', numero: 'PRU-ct-2' },
+    ])
+  })
+})
+
+describe('generarPorTandas — los ZIP del centro de procesos (22-09)', () => {
+  it('junta el proceso de cada tanda que está armando su ZIP; sin `zipEnElCentro` no cuenta', async () => {
+    let n = 0
+    const generar = (mes: string, lote: string[]): Promise<ResultadoDeGeneracion> => {
+      n += 1
+      return Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 0,
+        facturas: [],
+        procesoId: `proc-${n}`,
+        zipEnElCentro: n !== 2,
+      })
+    }
+    const { informe } = await generarPorTandas('2026-09', claves(450), generar)
+    expect(informe.procesosConZip).toEqual(['proc-1', 'proc-3'])
+  })
+})
+
+describe('generarPorTandas — una emisión = UN proceso (23-09)', () => {
+  it('🔴 las tandas le dicen al back a qué proceso suman; sólo la última cierra y lleva los ids de toda la corrida', async () => {
+    const llamadas: unknown[] = []
+    let n = 0
+    const generar = (mes: string, lote: string[], corrida?: unknown): Promise<ResultadoDeGeneracion> => {
+      n += 1
+      llamadas.push(corrida)
+      return Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 0,
+        facturas: [{ clave: `k${n}`, numero: n, numeroDian: `PRU-${n}`, totalCop: 1, facturaId: `f-${n}` }],
+        procesoId: 'proc-corrida',
+        zipEnElCentro: n === 3,
+        corridaAgrupable: true,
+      })
+    }
+    const { informe } = await generarPorTandas('2026-09', claves(450), generar)
+    expect(llamadas).toEqual([
+      { yaEnviadas: 0, totalDeLaCorrida: 450, ultimaTanda: false },
+      { procesoId: 'proc-corrida', yaEnviadas: 200, totalDeLaCorrida: 450, ultimaTanda: false },
+      {
+        procesoId: 'proc-corrida',
+        yaEnviadas: 400,
+        totalDeLaCorrida: 450,
+        ultimaTanda: true,
+        idsDeLaCorrida: ['f-1', 'f-2'],
+      },
+    ])
+    expect(informe.procesosConZip).toEqual(['proc-corrida'])
+  })
+
+  it('una sola tanda no manda nada de corrida (es su propio proceso)', async () => {
+    const generar = vi.fn(todoSale)
+    await generarPorTandas('2026-09', claves(50), generar)
+    expect((generar.mock.calls[0] as unknown[])[2]).toBeUndefined()
+  })
+})

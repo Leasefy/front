@@ -19,12 +19,19 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox, Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { AunNoDisponible } from './AunNoDisponible';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { clasificarFallo } from '@/lib/errores/clasificar';
+import {
+  copropiedadesApi,
+  nitLegible,
+  type Copropiedad,
+} from '@/lib/api/copropiedades.service';
 import {
   cicloDeVidaApi,
   type CondicionesDelContrato as Condiciones,
@@ -148,32 +155,37 @@ function GastosDeCobranza({
   return (
     <fieldset className="space-y-1 text-sm" disabled={!editable || !g.disponible} data-testid="gastos-de-cobranza">
       <legend className="font-medium">¿Pacta gastos de cobranza?</legend>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Si no los pacta, la regla de gastos de cobranza no se le cobra (el interés de mora sí). Tu inmobiliaria, por
         defecto, {deLaAgencia}.
       </p>
-      <div className="flex flex-wrap gap-3 text-xs">
+      {/* 🔴 21-09 · Radios del design system, no `<input type="radio">` crudos.
+          Nico: «¿por qué no estás usando checkbox de cadence? y haz eso más
+          grande, eso ni se ve». El control del navegador queda en 13 px y sin
+          los estados de foco del sistema; el de Cadence mide 20 y se ve. */}
+      <RadioGroup
+        className="flex flex-wrap gap-x-5 gap-y-2"
+        value={valor}
+        onValueChange={(v) => onCambiar(v === 'SI' ? true : v === 'NO' ? false : null)}
+      >
         {(
           [
-            ['SI', true, 'Sí los pacta'],
-            ['NO', false, 'No los pacta'],
-            ['HEREDA', null, 'Lo que diga la inmobiliaria'],
+            ['SI', 'Sí los pacta'],
+            ['NO', 'No los pacta'],
+            ['HEREDA', 'Lo que diga la inmobiliaria'],
           ] as const
-        ).map(([clave, pacta, nombre]) => (
-          <label key={clave} className="flex items-center gap-1">
-            <input
-              type="radio"
-              name="pacta-gastos"
-              checked={valor === clave}
-              onChange={() => onCambiar(pacta)}
-              data-testid={`pacta-gastos-${clave}`}
-            />
-            {nombre}
+        ).map(([clave, nombre]) => (
+          <label
+            key={clave}
+            className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+          >
+            <RadioGroupItem value={clave} data-testid={`pacta-gastos-${clave}`} />
+            <span>{nombre}</span>
           </label>
         ))}
-      </div>
+      </RadioGroup>
       {g.resuelto === false && (
-        <p className="text-xs text-plan-status-yellow" data-testid="gastos-no-pactados">
+        <p className="text-caption text-plan-status-yellow" data-testid="gastos-no-pactados">
           Este contrato no causa gastos de cobranza.
         </p>
       )}
@@ -214,7 +226,7 @@ function SeguroOpcional({
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="seguro-opcional">
       <p className="font-medium">Seguro opcional del inquilino</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Lo paga el inquilino, aparte del canon, sólo si lo acepta de forma expresa. No es la póliza del contrato.
       </p>
       {s.aceptado ? (
@@ -224,11 +236,11 @@ function SeguroOpcional({
             {s.aceptado.pct !== null ? ` (${s.aceptado.pct} % del canon)` : ''}.
           </p>
           {s.aceptado.pct !== null && (
-            <p className="text-xs text-muted-foreground" data-testid="seguro-sigue-al-canon">
+            <p className="text-caption text-muted-foreground" data-testid="seguro-sigue-al-canon">
               Es un porcentaje del canon: cuando el canon suba en el aniversario, la prima sube con él.
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Aceptado por {s.aceptado.aceptadoPor} el {s.aceptado.aceptadoEl}.
           </p>
           {editable && s.disponible && (
@@ -239,7 +251,7 @@ function SeguroOpcional({
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs">
+          <p className="text-caption">
             {s.oferta
               ? `Plan ofrecido: ${s.oferta.nombre}, ${PESOS.format(s.oferta.primaCop)} al mes${
                   pctDelPlan !== null ? ` (${pctDelPlan} % del canon de hoy)` : ''
@@ -247,34 +259,38 @@ function SeguroOpcional({
               : 'El contrato no ofrece un plan de seguro.'}
           </p>
           {s.oferta && pctDelPlan === null && s.porcentajeDisponible && (
-            <p className="text-xs text-muted-foreground" data-testid="seguro-sin-porcentaje">
+            <p className="text-caption text-muted-foreground" data-testid="seguro-sin-porcentaje">
               Tu inmobiliaria no le puso un porcentaje del canon a este plan: se cobraría la prima fija. El porcentaje
               se configura en Configuración → Ciclo de vida del contrato.
             </p>
           )}
           {editable && s.disponible && (
             <>
-              <label className="flex items-center gap-2 text-xs">
-                <input type="checkbox" checked={casilla} onChange={(e) => setCasilla(e.target.checked)} data-testid="acepta-seguro" />
-                El inquilino aceptó expresamente el seguro opcional
+              <label className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg">
+                <Checkbox
+                  checked={casilla}
+                  onCheckedChange={(v) => setCasilla(v === true)}
+                  data-testid="acepta-seguro"
+                />
+                <span>El inquilino aceptó expresamente el seguro opcional</span>
               </label>
               {casilla && (
                 <div className="flex flex-wrap items-end gap-2">
-                  <label className="text-xs">
+                  <label className="text-caption">
                     Quién aceptó
                     <Input value={quien} onChange={(e) => setQuien(e.target.value)} className="mt-1 w-56" data-testid="seguro-quien" />
                   </label>
-                  <label className="text-xs">
+                  <label className="text-caption">
                     Fecha
                     <Input type="date" value={cuando} onChange={(e) => setCuando(e.target.value)} className="mt-1" />
                   </label>
                   {pctDelPlan === null ? (
-                    <label className="text-xs">
+                    <label className="text-caption">
                       Prima mensual
                       <Input inputMode="numeric" value={prima} onChange={(e) => setPrima(e.target.value)} className="mt-1 w-32" />
                     </label>
                   ) : (
-                    <p className="text-xs" data-testid="seguro-prima-por-porcentaje">
+                    <p className="text-caption" data-testid="seguro-prima-por-porcentaje">
                       Prima: <strong>{PESOS.format(s.oferta?.primaCop ?? 0)}</strong> al mes ({pctDelPlan} % del
                       canon). La calcula el sistema y sigue al canon.
                     </p>
@@ -343,31 +359,74 @@ function Poliza({
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="poliza-del-contrato">
       <p className="font-medium">Póliza o afianzadora del contrato</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Su prima la paga la inmobiliaria dentro de su porcentaje de administración: no se le cobra al inquilino.
       </p>
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs">
-          Aseguradora
-          <Input value={aseguradora} onChange={(e) => setAseguradora(e.target.value)} disabled={!habil} className="mt-1 w-48" />
-        </label>
-        <label className="text-xs">
-          Número
-          <Input value={numero} onChange={(e) => setNumero(e.target.value)} disabled={!habil} className="mt-1 w-32" />
-        </label>
-        <label className="text-xs">
-          Desde
-          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} disabled={!habil} className="mt-1" />
-        </label>
-        <label className="text-xs">
-          Hasta
-          <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} disabled={!habil} className="mt-1" />
-        </label>
+      {/* 🔴 21-09 · Nico: «este form está horrible». Lo estaba, y por tres
+          razones que se arreglan juntas:
+
+            · los rótulos iban DENTRO del `<label>` y delante de un `Input` de
+              bloque, así que se veían pegados a la izquierda del campo y a
+              media altura — «Aseguradora [____]» en vez de uno encima del otro;
+            · `flex-wrap` con anchos a mano (`w-48`, `w-32`, dos fechas sin
+              ancho) dejaba los cuatro campos de tamaños distintos y las filas
+              cortadas donde cayera;
+            · y «Cobertura» quedaba de ancho completo al lado de campos de 12
+              rem, que es lo que hacía que la fila anterior se viera torcida.
+
+          Ahora es una grilla: cada campo en su celda, el rótulo ARRIBA, todos
+          del mismo alto, y «Cobertura» ocupando su propia fila entera porque de
+          verdad la necesita. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-aseguradora">Aseguradora</Label>
+          <Input
+            id="poliza-aseguradora"
+            value={aseguradora}
+            onChange={(e) => setAseguradora(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-numero">Número</Label>
+          <Input
+            id="poliza-numero"
+            value={numero}
+            onChange={(e) => setNumero(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-desde">Desde</Label>
+          <Input
+            id="poliza-desde"
+            type="date"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="poliza-hasta">Hasta</Label>
+          <Input
+            id="poliza-hasta"
+            type="date"
+            value={hasta}
+            onChange={(e) => setHasta(e.target.value)}
+            disabled={!habil}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+          <Label htmlFor="poliza-cobertura">Cobertura</Label>
+          <Input
+            id="poliza-cobertura"
+            value={cobertura}
+            onChange={(e) => setCobertura(e.target.value)}
+            disabled={!habil}
+            placeholder="Qué cubre y hasta cuánto"
+          />
+        </div>
       </div>
-      <label className="block text-xs">
-        Cobertura
-        <Input value={cobertura} onChange={(e) => setCobertura(e.target.value)} disabled={!habil} className="mt-1" />
-      </label>
       {habil && (
         <Button
           size="sm"
@@ -414,23 +473,38 @@ function Administracion({
     <fieldset className="space-y-2 border-t border-border pt-4 text-sm" disabled={!habil} data-testid="administracion-de-la-copropiedad">
       <legend className="font-medium">Administración de la copropiedad</legend>
       {a.delMandatoCop != null && a.delMandatoCop > 0 && (
-        <p className="text-xs text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
+        <p className="text-caption text-muted-foreground">La administración del mandato es {PESOS.format(a.delMandatoCop)}.</p>
       )}
+
+      {/* 🔴 20-09 · A QUÉ copropiedad. Este bloque decía «la administración de
+          la copropiedad» y nunca decía cuál, y sin ese dato la cuota se
+          asienta en el libro SIN TERCERO: es lo que tenía a la cuenta 2815 con
+          1.241 líneas sin dueño y la exógena trabada por ellas. */}
+      <ACualCopropiedad
+        consignacionId={a.consignacionId}
+        copropiedad={a.copropiedad}
+        sePuede={a.sePuedeDeclararLaCopropiedad}
+        editable={editable}
+      />
       {a.porRespaldo && (
-        <p className="text-xs text-plan-status-yellow" data-testid="administracion-por-respaldo">
+        <p className="text-caption text-plan-status-yellow" data-testid="administracion-por-respaldo">
           Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
           <strong>«la paga la inmobiliaria»</strong>: el inquilino no la paga aparte del canon y se le descuenta al
           propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
         </p>
       )}
-      <div className="space-y-1">
+      <RadioGroup
+        className="space-y-2"
+        value={modalidad ?? ''}
+        onValueChange={(v) => setModalidad((v || null) as typeof modalidad)}
+      >
         {MODALIDADES.map((m) => (
-          <label key={m.valor || 'hoy'} className="flex items-start gap-2 text-xs">
-            <input
-              type="radio"
-              name="modalidad-administracion"
-              checked={modalidad === m.valor}
-              onChange={() => setModalidad(m.valor)}
+          <label
+            key={m.valor || 'hoy'}
+            className="flex cursor-pointer items-start gap-2.5 text-body-sm text-fg"
+          >
+            <RadioGroupItem
+              value={m.valor ?? ''}
               className="mt-0.5"
               data-testid={`modalidad-${m.valor || 'HOY'}`}
             />
@@ -439,9 +513,9 @@ function Administracion({
             </span>
           </label>
         ))}
-      </div>
+      </RadioGroup>
       {pagaLaInmobiliaria && (
-        <label className="block text-xs">
+        <label className="block text-caption">
           Valor mensual de la administración
           <Input inputMode="numeric" value={valor} onChange={(e) => setValor(e.target.value)} className="mt-1 w-40" data-testid="valor-administracion" />
         </label>
@@ -470,5 +544,112 @@ function Administracion({
         />
       )}
     </fieldset>
+  );
+}
+
+
+/**
+ * A qué copropiedad pertenece el inmueble de este mandato.
+ *
+ * No es un adorno del bloque de administración: es lo que le permite al libro
+ * decir de quién es la cuota. Sin él, el movimiento a la 28150510 queda sin
+ * tercero, «Reportes → Terceros» lo cuenta entre los que no se sabe de quién
+ * son, y la exógena se traba — a propósito, porque reportarle esa plata a un
+ * NIT equivocado es una sanción de la DIAN.
+ */
+function ACualCopropiedad({
+  consignacionId,
+  copropiedad,
+  sePuede,
+  editable,
+}: {
+  consignacionId: string | null;
+  copropiedad: { id: string; nombre: string; nit: string; digitoVerificacion: number | null } | null;
+  sePuede: boolean;
+  editable: boolean;
+}) {
+  const [opciones, setOpciones] = useState<Copropiedad[] | null>(null);
+  const [elegida, setElegida] = useState(copropiedad?.id ?? '');
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    setElegida(copropiedad?.id ?? '');
+  }, [copropiedad?.id]);
+
+  useEffect(() => {
+    if (!sePuede || !editable) return;
+    let vivo = true;
+    /* `try/catch` alrededor del `await` y no un `.catch()` colgado: si la
+       llamada falla ANTES de devolver la promesa, un `.catch()` no la ve y el
+       componente se cae con la ficha entera adentro. Que no se pueda listar
+       las copropiedades no puede tumbar las condiciones del contrato. */
+    void (async () => {
+      try {
+        const r = await copropiedadesApi.listar();
+        if (vivo) setOpciones(r?.copropiedades ?? []);
+      } catch {
+        if (vivo) setOpciones([]);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [sePuede, editable]);
+
+  if (!sePuede) {
+    return (
+      <p className="text-caption text-muted-foreground" data-testid="copropiedad-sin-migracion">
+        Todavía no se puede decir a qué copropiedad pertenece este inmueble: esta función todavía no está
+        disponible y nuestro equipo la está habilitando. Mientras tanto la cuota se asienta sin
+        tercero, como hoy.
+      </p>
+    );
+  }
+
+  async function guardar(id: string) {
+    if (!consignacionId) return;
+    setGuardando(true);
+    try {
+      await copropiedadesApi.asignarAMandato(consignacionId, id === '' ? null : id);
+      setElegida(id);
+      toast.success(
+        id === ''
+          ? 'El inmueble quedó sin copropiedad. Su cuota de administración se va a asentar sin tercero.'
+          : 'Listo: de ahora en adelante la cuota de administración de este inmueble se asienta a nombre de esa copropiedad.',
+      );
+    } catch (e) {
+      toast.error(clasificarFallo(e).descripcion);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1" data-testid="a-cual-copropiedad">
+      <label className="block text-caption" htmlFor="copropiedad-del-mandato">
+        ¿A qué copropiedad pertenece el inmueble?
+      </label>
+      <select
+        id="copropiedad-del-mandato"
+        className="h-9 w-full max-w-sm rounded-md border border-border bg-surface px-2 text-caption text-fg"
+        value={elegida}
+        disabled={!editable || guardando || !consignacionId}
+        onChange={(e) => void guardar(e.target.value)}
+        data-testid="elegir-copropiedad"
+      >
+        <option value="">A ninguna (casa independiente)</option>
+        {(opciones ?? (copropiedad ? [copropiedad as Copropiedad] : [])).map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.nombre} — NIT {nitLegible(c)}
+          </option>
+        ))}
+      </select>
+      {elegida === '' ? (
+        <p className="text-caption text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
+          Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es
+          lo que traba la exógena. Las copropiedades se registran en Contabilidad → Copropiedades.
+        </p>
+      ) : null}
+    </div>
   );
 }

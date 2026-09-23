@@ -123,7 +123,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'cartera-edades',
     title: 'Cartera por Edades',
-    description: 'Analisis de mora segmentado por antiguedad (30/60/90+ dias)',
+    description: 'Análisis de mora segmentado por antigüedad (30/60/90+ días)',
     icon: 'Clock',
     category: 'financiero',
     format: 'excel',
@@ -142,8 +142,8 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'ocupacion-portafolio',
-    title: 'Ocupacion del Portafolio',
-    description: 'Porcentaje de ocupacion por zona y tipo de propiedad',
+    title: 'Ocupación del Portafolio',
+    description: 'Porcentaje de ocupación por zona y tipo de propiedad',
     icon: 'ChartPie',
     category: 'operativo',
     // Decía `pdf`, y por esa sola etiqueta la descarga caía en la rama «PDF en
@@ -156,7 +156,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'vencimientos',
     title: 'Vencimientos de Contratos',
-    description: 'Contratos proximos a vencer en los proximos 90 dias',
+    description: 'Contratos próximos a vencer en los próximos 90 días',
     icon: 'Calendar',
     category: 'operativo',
     format: 'excel',
@@ -166,7 +166,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'rendimiento-agentes',
     title: 'Rendimiento de Agentes',
-    description: 'KPIs comparativos de desempeno del equipo comercial',
+    description: 'KPIs comparativos de desempeño del equipo comercial',
     icon: 'ChartBar',
     category: 'agentes',
     format: 'pdf',
@@ -176,7 +176,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'flujo-caja',
     title: 'Flujo de Caja',
-    description: 'Ingresos vs dispersiones con proyeccion mensual',
+    description: 'Ingresos vs dispersiones con proyección mensual',
     icon: 'CurrencyDollar',
     category: 'financiero',
     format: 'excel',

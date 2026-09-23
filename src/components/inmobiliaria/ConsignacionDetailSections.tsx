@@ -678,7 +678,11 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
               variant="secondary"
               hideArrow
               disabled
-              title={t('inmobiliaria.consignaciones.header.comingSoon')}
+              /* No es «próximamente»: la pantalla del contrato existe y el
+                 botón de al lado lleva a ella. Lo que falta es el CONTRATO, y
+                 el aviso tiene que decir eso — culpar al producto de un estado
+                 del dato manda a la gente a esperar una función que ya está. */
+              title={t('inmobiliaria.consignaciones.detail.sinContratoTodavia')}
               className="w-full"
             >
               <FileText className="w-4 h-4" />

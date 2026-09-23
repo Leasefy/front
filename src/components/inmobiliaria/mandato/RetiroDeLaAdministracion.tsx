@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { ArrowSquareOut, DownloadSimple, FileText, SignOut, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -147,14 +148,19 @@ export function RetiroDeLaAdministracionDialog({
             </div>
           ) : null}
 
+          {/* Radios del sistema de diseño (21-09): el `<input type="radio">` del
+              navegador mide 13 px y no trae el foco de la casa. El `fieldset`
+              seguía sirviendo para deshabilitar el grupo entero. */}
           <fieldset className="space-y-2" disabled={!estado?.disponible}>
             <legend className="sr-only">Qué pasa con el contrato vigente</legend>
+            <RadioGroup
+              className="space-y-2"
+              value={modo}
+              onValueChange={(v) => setModo(v as typeof modo)}
+            >
             <label className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover">
-              <input
-                type="radio"
-                name="modo-de-retiro"
-                checked={modo === 'HASTA_FIN_DEL_CONTRATO'}
-                onChange={() => setModo('HASTA_FIN_DEL_CONTRATO')}
+              <RadioGroupItem
+                value="HASTA_FIN_DEL_CONTRATO"
                 className="mt-1"
                 data-testid="retiro-hasta-fin"
               />
@@ -169,11 +175,8 @@ export function RetiroDeLaAdministracionDialog({
               </span>
             </label>
             <label className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-surface-hover">
-              <input
-                type="radio"
-                name="modo-de-retiro"
-                checked={modo === 'CORTE'}
-                onChange={() => setModo('CORTE')}
+              <RadioGroupItem
+                value="CORTE"
                 className="mt-1"
                 data-testid="retiro-corte"
               />
@@ -185,6 +188,7 @@ export function RetiroDeLaAdministracionDialog({
                 </span>
               </span>
             </label>
+          </RadioGroup>
           </fieldset>
 
           {modo === 'CORTE' ? (

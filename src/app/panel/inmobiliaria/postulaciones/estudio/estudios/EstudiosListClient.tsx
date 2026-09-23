@@ -141,13 +141,13 @@ export default function EstudiosListClient() {
   // ── Zero-data EmptyState (no filters, genuinely empty, no error) ───────────
   if (!isLoading && !hasActiveFilters && items.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-4">
+      <div className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={ShieldCheck}
           title={t('inmobiliaria.ai.estudio.list.empty.title')}
           description={t('inmobiliaria.ai.estudio.list.empty.description')}
         />
-      </main>
+      </div>
     )
   }
 
@@ -243,7 +243,7 @@ export default function EstudiosListClient() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.estudio.list.title')}
@@ -475,6 +475,6 @@ export default function EstudiosListClient() {
           )}
         </section>
       </div>
-    </main>
+    </div>
   )
 }

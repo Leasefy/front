@@ -71,7 +71,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 /** El fallo en palabras y, si es el 503 de la migración, quién la aplica. */
 export function explicarGiro(error: unknown, porDefecto: string): string {
   const mensaje = mensajeDelFallo(error, porDefecto);
-  return codigoSinMigrar(error) ? `${mensaje} (la aplica Víctor)` : mensaje;
+  return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
 /** `YYYY-MM-DD` de hoy EN BOGOTÁ, no en el huso del navegador. */

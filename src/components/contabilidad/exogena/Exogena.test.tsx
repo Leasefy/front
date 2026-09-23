@@ -370,6 +370,42 @@ describe('<ConceptosDeExogena> dentro de la pantalla', () => {
     expect(cartel).toContain('la primera es la que más pesa');
   });
 
+  /**
+   * 🔴 20-09 · La tabla tenía 49 filas sin buscador ni paginador, en una
+   * página de 8.186 px. El contador va a una cuenta en particular —«¿qué
+   * concepto le pusieron a la 2408?»— y tenía que bajar con la rueda.
+   */
+  it('🔴 se puede buscar una cuenta por su código', async () => {
+    await pintar();
+    const buscador = q('buscar-concepto') as HTMLInputElement;
+    expect(buscador).not.toBeNull();
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )!.set!;
+      setter.call(buscador, '513595');
+      buscador.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(q('concepto-513595')).not.toBeNull();
+    expect(q('concepto-519595')).toBeNull();
+    expect(q('cuantos-conceptos')!.textContent).toContain(' de ');
+  });
+
+  it('buscar algo que no está lo dice dentro de la tabla, no con una tabla vacía', async () => {
+    await pintar();
+    const buscador = q('buscar-concepto') as HTMLInputElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )!.set!;
+      setter.call(buscador, 'zzzz');
+      buscador.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(document.body.textContent).toContain('Ninguna cuenta con ese código');
+  });
+
   it('guardar está apagado hasta que haya cambios', async () => {
     await pintar();
     const boton = q('guardar-conceptos') as HTMLButtonElement;

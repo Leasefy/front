@@ -87,7 +87,7 @@ export function TarjetaDeArchivo({
           {nombre}
         </p>
         {subtitulo ? (
-          <p className="truncate text-xs text-fg-muted">{subtitulo}</p>
+          <p className="truncate text-caption text-fg-muted">{subtitulo}</p>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1">

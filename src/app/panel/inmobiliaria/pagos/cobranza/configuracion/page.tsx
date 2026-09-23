@@ -446,7 +446,7 @@ function CobranzaConfiguracionContent() {
   }
 
   return (
-    <main className="p-4 md:p-6 space-y-6 pb-24">
+    <div className="p-4 md:p-6 space-y-6 pb-24">
       <div>
         {/* Vuelta al origen. Se llega acá desde «Ajustar» en Acuerdos de pago y
             no había cómo volver: el flujo quedaba cortado en una pantalla de
@@ -854,7 +854,7 @@ function CobranzaConfiguracionContent() {
           </Button>
         </div>
       </section>
-    </main>
+    </div>
   )
 }
 

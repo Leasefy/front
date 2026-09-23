@@ -21,7 +21,7 @@ export default function PanelNuevoAvaluoRedirectPage() {
   // Sin `AVALUO_WIZARD_URL` (falta `NEXT_PUBLIC_AVALUO_API_URL`) esto era un
   // callejón: una frase suelta, sin volver a ningún lado. Ahora tiene salida.
   return (
-    <main className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center">
       <p className="text-sm text-fg-muted">
         {AVALUO_WIZARD_URL
           ? 'Redirigiendo a la solicitud de avalúo…'
@@ -35,6 +35,6 @@ export default function PanelNuevoAvaluoRedirectPage() {
           Volver a Avalúos
         </Link>
       )}
-    </main>
+    </div>
   );
 }

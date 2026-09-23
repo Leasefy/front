@@ -145,6 +145,15 @@ function porTestId(id: string) {
   return contenedor.querySelector(`[data-testid="${id}"]`)
 }
 
+/**
+ * Lo que vive DENTRO de un modal no está en el contenedor del test: el diálogo
+ * de la casa se pinta con un portal, colgado del `body`. Buscarlo con
+ * `porTestId` devuelve null y el test falla por la razón equivocada.
+ */
+function enElModal(id: string) {
+  return document.body.querySelector(`[data-testid="${id}"]`)
+}
+
 async function clic(el: Element | null) {
   await act(async () => {
     el?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -183,12 +192,34 @@ describe('Publicación en portales', () => {
    * importa a quien está mirando: que la publicación la termina una persona
    * porque NOSOTROS no hemos construido la integración, y cuál portal pide qué.
    */
+  /**
+   * Abre «Cómo se publica un inmueble», que desde el 21-09 (segunda vuelta) ya
+   * no está puesto sobre la pantalla: son cuatro pasos y un párrafo que se leen
+   * una vez y después estorban todos los días encima de las seis tarjetas.
+   */
+  async function abrirComoSePublica() {
+    const botones = [...document.querySelectorAll<HTMLButtonElement>('[data-testid="para-entender-mas"]')]
+    const boton = botones.find((b) => b.textContent?.includes('Cómo se publica'))
+    expect(boton, 'no hay botón «Cómo se publica un inmueble»').toBeTruthy()
+    await clic(boton!)
+  }
+
   it('🔴 P7 — la razón que da es la nuestra, no una afirmación falsa sobre los portales', async () => {
     await montar()
+    /* La frase corta se queda EN la pantalla: no es «cómo se usa», es qué hace
+       y qué no hace la herramienta, y escondida alguien esperaría que el aviso
+       saliera solo. */
     const aviso = porTestId('aviso-sin-api')
     expect(aviso).not.toBeNull()
-    expect(aviso!.textContent).toMatch(/no hemos construido ninguna de las integraciones/i)
+    expect(aviso!.textContent).toMatch(/todavía no publicamos solos en ninguno/i)
     expect(aviso!.textContent).not.toMatch(/ning[uú]n portal de afuera publica solo/i)
+
+    // Y el porqué completo —que la culpa es NUESTRA, no de los portales— sigue
+    // existiendo, a un clic.
+    await abrirComoSePublica()
+    const detalle = enElModal('aviso-sin-api-detalle')!
+    expect(detalle.textContent).toMatch(/no hemos construido ninguna de las integraciones/i)
+    expect(detalle.textContent).not.toMatch(/ning[uú]n portal de afuera publica solo/i)
   })
 
   /*
@@ -216,14 +247,76 @@ describe('Publicación en portales', () => {
 
     // Sólo los que NO tienen cuenta anotada: en este falso Metrocuadrado ya
     // tiene una, y esa tarjeta habla de su publicación, no de qué pedirle.
+    /* 🔴 21-09 (segunda vuelta): la tarjeta dice el DATO que pide ese portal, y
+       nada más. La advertencia —«se autoriza con un botón», «WS3 se muestra una
+       sola vez»— se movió a donde sirve: junto al campo al configurar, y en
+       «Qué pide este portal» antes de decidir. En la tarjeta eran tres renglones
+       de prosa, seis veces. Lo que este test protege no cambió: que las seis NO
+       digan lo mismo. */
     expect(dice('FINCARAIZ')).toMatch(/ID de Cliente/i)
-    expect(dice('MERCADO_LIBRE')).toMatch(/se autoriza con un bot[oó]n/i)
-    expect(dice('CIENCUADRAS')).toMatch(/WS3/)
-    expect(dice('PROPERATI')).toMatch(/Proppit/)
+    expect(dice('MERCADO_LIBRE')).toMatch(/Usuario de Mercado Libre/i)
+    expect(dice('CIENCUADRAS')).toMatch(/Correo con el que entras a Ciencuadras/i)
+    expect(dice('PROPERATI')).toMatch(/Cuenta de Proppit/i)
 
     // Y no vuelven a decir todas lo mismo.
-    expect(dice('FINCARAIZ')).not.toMatch(/WS3/)
+    expect(dice('FINCARAIZ')).not.toMatch(/Proppit/i)
     expect(dice('CIENCUADRAS')).not.toMatch(/ID de Cliente/i)
+
+    // La advertencia NO está puesta en la tarjeta…
+    expect(dice('CIENCUADRAS')).not.toMatch(/WS3/)
+    // …pero no se perdió: vive en el modal de ese portal.
+    await clic(porTestId('portal-CIENCUADRAS')!.querySelector('[data-testid="para-entender-mas"]') as HTMLElement)
+    expect(enElModal('cuidado-en-el-modal')!.textContent).toMatch(/WS3/)
+  })
+
+  it('🔴 P7e — «qué pide este portal» está en la tarjeta y detrás de un botón, no dentro del diálogo', async () => {
+    /* 21-09-2026. Dos cosas se arreglan acá y las dos son de Nico:
+         · la explicación vivía DENTRO del diálogo de la cuenta y encima
+           plegada, o sea a dos clics de donde se decide si conectar el portal;
+         · «hay muchas pantallas que colocamos información ahí dispuesta y eso
+           llena las pantallas de carga cognitiva innecesaria» — de ahí que el
+           contenido no esté montado hasta que alguien lo pida.
+       Un `<details>` no servía para reemplazarlo: abierto crece dentro de la
+       pantalla. Y no se podía dejar en el diálogo porque un modal encima de un
+       modal no funciona. */
+    await montar()
+
+    // El botón está en la tarjeta del portal…
+    const tarjeta = porTestId('portal-FINCARAIZ')!
+    const boton = tarjeta.querySelector('[data-testid="para-entender-mas"]')
+    expect(boton).not.toBeNull()
+    // La etiqueta NO repite el nombre del portal: la tarjeta ya lo dice, y
+    // repetido hacía que la más larga envolviera a un segundo renglón.
+    expect(boton!.textContent).toMatch(/Qué pide este portal/)
+    expect(boton!.textContent).not.toMatch(/Fincaraíz/)
+
+    // …y lo que explica NO está puesto sobre la pantalla: nada de la lista
+    // está en el documento mientras nadie la pida.
+    expect(porTestId('que-pide-este-portal')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/ejecutivo comercial/)
+
+    // Y ya no vive dentro del diálogo de la cuenta.
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    const form = porTestId('form-de-cuenta')!
+    expect(form.textContent).not.toMatch(/ejecutivo comercial/)
+    expect(form.querySelector('details')).toBeNull()
+    // El cuidado del portal SÍ se queda: no es explicación, es una advertencia
+    // sobre el dato que se está escribiendo en ese instante.
+    expect(form.textContent).toMatch(/dado de alta como asesor/)
+  })
+
+  it('nuestro propio catálogo no ofrece «qué pide»: la respuesta sería «nada»', async () => {
+    h.api.cuentas.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      portales: [
+        { portal: 'SITIO_PROPIO', nombre: 'Sitio propio', tieneApi: true, cuenta: null },
+      ],
+    })
+    await montar()
+    expect(
+      porTestId('portal-SITIO_PROPIO')!.querySelector('[data-testid="para-entender-mas"]'),
+    ).toBeNull()
   })
 
   it('los nombres propios no se aplastan a minúsculas', async () => {
@@ -243,14 +336,18 @@ describe('Publicación en portales', () => {
 
   it('P7c — y distingue a los que SÍ se conectan solos de los que piden acuerdo', async () => {
     await montar()
-    const aviso = porTestId('aviso-sin-api')!.textContent ?? ''
+    await abrirComoSePublica()
+    const aviso = enElModal('aviso-sin-api-detalle')!.textContent ?? ''
     expect(aviso).toMatch(/Mercado Libre y Ciencuadras/i)
     expect(aviso).toMatch(/Fincara[ií]z y Metrocuadrado/i)
   })
 
   it('P7b — los cuatro pasos están, y numerados en orden', async () => {
     await montar()
-    const pasos = porTestId('como-funciona')!.querySelectorAll('ol > li')
+    // Ya no están puestos sobre la pantalla: se piden.
+    expect(porTestId('como-funciona')).toBeNull()
+    await abrirComoSePublica()
+    const pasos = enElModal('como-funciona')!.querySelectorAll('ol > li')
     expect(pasos.length).toBe(4)
     expect(pasos[0].textContent).toMatch(/Conecta tu cuenta/)
     expect(pasos[3].textContent).toMatch(/Confirma que ya salió/)
@@ -261,7 +358,7 @@ describe('Publicación en portales', () => {
     const fila = porTestId('portal-FINCARAIZ')!
     // 🔴 19-09: acá se esperaba la frase genérica que decían los SEIS portales.
     // Ahora cada tarjeta nombra el dato que pide el suyo (ver P7d).
-    expect(fila.textContent).toMatch(/necesitamos tu/i)
+    expect(fila.textContent).toMatch(/necesita tu/i)
     // Y ofrece anotarla, que es lo que faltaba en todo el producto.
     expect(porTestId('cuenta-FINCARAIZ')!.textContent).toMatch(/Configurar/)
   })

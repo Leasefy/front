@@ -148,13 +148,17 @@ export function BarraDeAccionesMasivas({
             <>
               <span className="font-medium">Preseleccionamos</span> {cuantas} {nombre}
               {deDonde ? ` ${deDonde}` : ''}
-              {monto ? <span className="tabular-nums"> · {monto}</span> : null}
+              {/* El monto no se parte: «$» en una línea y la cifra en otra se lee
+                  como dos datos (Facturación, 23-09). */}
+              {monto ? <span className="whitespace-nowrap tabular-nums"> · {monto}</span> : null}
             </>
           ) : (
             <>
               <span className="font-medium">Marcaste</span>{' '}
               <span className="tabular-nums">{cuantas}</span> {nombre}
-              {monto ? <span className="tabular-nums"> · {monto}</span> : null}
+              {/* El monto no se parte: «$» en una línea y la cifra en otra se lee
+                  como dos datos (Facturación, 23-09). */}
+              {monto ? <span className="whitespace-nowrap tabular-nums"> · {monto}</span> : null}
             </>
           )}
         </p>

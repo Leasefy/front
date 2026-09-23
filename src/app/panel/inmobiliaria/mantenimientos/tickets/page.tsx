@@ -41,7 +41,7 @@ export default function MantenimientoTicketsPage() {
   const activeFilters = hasActiveFilters(filters)
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8">
       <header className="mb-5">
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.mantenimiento.inbox.title')}
@@ -84,6 +84,6 @@ export default function MantenimientoTicketsPage() {
           />
         </section>
       </div>
-    </main>
+    </div>
   )
 }

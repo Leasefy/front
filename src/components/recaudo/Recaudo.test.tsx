@@ -350,3 +350,37 @@ describe('los helpers de la tabla', () => {
     expect(serie[0].month).toBe('2026-07');
   });
 });
+
+/*
+ * 🔴 CADA BLOQUE DICE QUÉ ES (21-09). Nico: «pasa lo mismo con esta de
+ * recaudo… es un vómito literal», «todo en esta pantalla está como suelto,
+ * nada realmente se sabe que es de qué».
+ *
+ * Eran cuatro bloques apilados y sólo UNO —el gráfico— llevaba su nombre. «No
+ * nombramos las tablas» vale cuando la tarjeta que las contiene ya lo dice; acá
+ * la tabla ERA la tarjeta entera, así que nada la nombraba.
+ */
+describe('cada bloque de Recaudo dice qué es', () => {
+  it('las dos tablas llevan título y una línea de qué muestran', async () => {
+    resumenMock.mockResolvedValue(resumen());
+    await montar();
+
+    const serie = host.querySelector('[data-testid="serie-mensual"]');
+    const porMedio = host.querySelector('[data-testid="por-medio"]');
+    expect(serie).not.toBeNull();
+    expect(porMedio).not.toBeNull();
+
+    // El título de cada una es el `aria-labelledby` de su sección: sin él, un
+    // lector de pantalla también lee cuatro bloques sin nombre.
+    const seccionDeLaSerie = serie!.closest('section');
+    const seccionDeLosMedios = porMedio!.closest('section');
+    expect(seccionDeLaSerie?.getAttribute('aria-labelledby')).toBe('serie-mensual-titulo');
+    expect(seccionDeLosMedios?.getAttribute('aria-labelledby')).toBe('por-medio-titulo');
+
+    expect(seccionDeLaSerie?.textContent).toContain('Mes por mes, en números');
+    expect(seccionDeLosMedios?.textContent).toContain('Cómo entró la plata');
+    // Y dice que su total es el mismo «Llegó» de arriba: sin eso son dos
+    // cifras iguales en dos lugares sin relación declarada.
+    expect(seccionDeLosMedios?.textContent).toContain('la misma cifra que «Llegó»');
+  });
+});

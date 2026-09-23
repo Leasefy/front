@@ -1,144 +1,178 @@
 /**
- * Autopago (domiciliación tokenizada) API service — CONTRACT ONLY (no backend today)
+ * Autopago del canon (la domiciliación), contra el back que YA existe.
  *
- * "Autopago" is a **tokenized recurring charge**: on a chosen day each month the
- * backend charges the tenant's rent automatically against a saved payment source.
- * That flow is owned END-TO-END by the backend + Wompi:
+ * 🔴 ESTE ARCHIVO ERA UN CONTRATO SIN BACK — el segundo que apareció, y de los
+ * cuatro huecos de la matriz de competencia el que más plata mueve. Declaraba
+ * `/tenant-payments/autopago` con tipos, manejo de errores y pantalla, y decía
+ * en su encabezado «CONTRACT ONLY (no backend today)». Se construyó el
+ * 21-09-2026 (`back-erp/src/tenant-payments/autopago/`) y ahora habla con rutas
+ * que existen: `/portal/autopago`.
  *
- *   1. **Wompi tokenization** creates a payment-source token (PCI scope). The token
- *      is minted and stored on Wompi / the backend — the frontend NEVER fabricates,
- *      persists, or displays a raw token or PAN.
- *   2. A **backend token store** binds that payment source to the lease.
- *   3. A **recurring scheduler** performs the monthly charge and records the result.
+ * ── Lo que cambió del contrato viejo, y por qué ─────────────────────────────
  *
- * None of that exists yet (see ROADMAP `v7-04 External deps`: Wompi payment-source
- * support + token store + scheduler are all backend). So this module is the
- * api-client CONTRACT only. It MUST NOT invent an "autopago activado" state, a
- * saved/masked card, or a `nextChargeDate` — every method degrades to an honest
- * "unavailable" posture (`{ enabled: false, available: false }`) so the UI shows a
- * truthful "Próximamente" empty-state (DESIGN.md §11).
+ *   · **Se llavea por CONTRATO, no por arriendo.** La deuda nace con el
+ *     contrato y vive en sus cuotas (Nico, 15-09); un `Lease` puede no existir
+ *     en un contrato migrado. El arriendo trae su `contractId`.
+ *   · **El tope es obligatorio.** Un cobro automático sin techo es un cheque en
+ *     blanco. La pantalla lo pide y el back lo exige.
+ *   · **El día se limita a 1-28.** Ningún febrero tiene 30.
+ *   · **La autorización tiene TEXTO, y lo manda el servidor.** El front no
+ *     puede decidir qué se está autorizando: pide el texto, lo muestra, y lo
+ *     devuelve tal cual con la autorización, que es lo que queda guardado.
  *
- * Modeled 1:1 on the tolerant idiom of `lease-documents.service.ts`: a missing
- * endpoint (403 not wired / 404 route absent / 0 offline) is surfaced as
- * "unavailable", never faked.
+ * ── 🔴 El número de la tarjeta NO pasa por nuestro back ────────────────────
+ *
+ * Lo tokeniza el navegador contra Wompi con la LLAVE PÚBLICA. Lo que viaja a
+ * nuestro servidor es el token. La contrapartida está escrita en el back
+ * (`AutopagoService.comoSeTokeniza`): esto deja el alcance PCI en una
+ * integración directa, y bajarlo más exige el widget en iframe de Wompi — una
+ * decisión de negocio, no de código.
  */
 
-import { apiClient, ApiError } from './client';
+import { apiClient } from './client';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+export type MetodoDeAutopago = 'CARD' | 'NEQUI' | 'BANCOLOMBIA_TRANSFER';
 
-/**
- * Status of a lease's tokenized autopago.
- *
- * `available` is the honesty gate: `false` means the backend / Wompi tokenization
- * is not live for this tenant, so the UI stays on "Próximamente". `enabled`,
- * `maskedMethod` and `nextChargeDate` are meaningful ONLY when the backend reports
- * `available: true` — they are never fabricated client-side.
- */
-export interface AutopagoStatus {
-  /** Whether a tokenized autopago is currently active for the lease. */
-  enabled: boolean;
-  /** Masked payment method (e.g. "**** 4242") — set by the backend only. */
-  maskedMethod?: string;
-  /** ISO-8601 date of the next scheduled automatic charge — set by the backend only. */
-  nextChargeDate?: string;
-  /**
-   * `false` when the tokenization backend is not live (403/404/offline). The UI
-   * degrades to an honest "Próximamente" empty-state instead of a fake activation.
-   */
-  available: boolean;
+export interface CobroDeAutopago {
+  id: string;
+  mes: string;
+  montoCop: number;
+  estado: string;
+  motivo: string | null;
+  intentadoAt: string;
+}
+
+export interface EstadoDelAutopago {
+  /** ¿La función está disponible (migración aplicada y pasarela puesta)? */
+  disponible: boolean;
+  motivo: string | null;
+  activo: boolean;
+  autopago: {
+    id: string;
+    estado: 'ACTIVO' | 'PAUSADO' | 'CANCELADO';
+    metodo: string;
+    marca: string | null;
+    /** «**** 4242». Para reconocer el medio, nada más. */
+    medioEnmascarado: string | null;
+    diaDelMes: number;
+    topeCop: number;
+    autorizadoAt: string;
+    fallosSeguidos: number;
+    ultimoCobroAt: string | null;
+    proximoCobro: string | null;
+  } | null;
+  cobros: CobroDeAutopago[];
+}
+
+export interface ComoSeTokeniza {
+  disponible: boolean;
+  motivo: string | null;
+  llavePublica: string | null;
+  ambiente: 'sandbox' | 'production' | null;
+  /** El texto exacto que la persona autoriza. Lo decide el servidor. */
+  textoDeAutorizacion: string;
+}
+
+export interface ResultadoDelCobro {
+  cobrado: boolean;
+  cobroId: string | null;
+  montoCop: number | null;
+  estado: 'APROBADO' | 'RECHAZADO' | 'PENDIENTE' | 'ERROR' | 'NO_SE_INTENTO';
+  motivo: string | null;
+  code: string | null;
+}
+
+/** Una tarjeta, tal como la escribe la persona. No sale de esta función. */
+export interface TarjetaParaTokenizar {
+  numero: string;
+  cvc: string;
+  mesDeVencimiento: string;
+  anioDeVencimiento: string;
+  nombreEnLaTarjeta: string;
 }
 
 /**
- * Payload to enable autopago. `paymentSourceToken` is the Wompi payment-source
- * token created on Wompi's tokenization flow — a placeholder here until that flow
- * exists. The frontend never mints this token; it only forwards one the backend
- * expects once the flow is wired.
+ * Tokeniza la tarjeta CONTRA WOMPI, desde el navegador.
+ *
+ * 🔴 Esta es la única función del front que ve un número de tarjeta, y lo manda
+ * a Wompi y a nadie más. No lo guarda, no lo registra y no lo pasa por nuestro
+ * back. Si alguna vez hay que auditar el alcance PCI, se audita ESTA función.
  */
-export interface EnableAutopagoPayload {
-  leaseId: string;
-  paymentSourceToken?: string;
+export async function tokenizarTarjeta(
+  llavePublica: string,
+  ambiente: 'sandbox' | 'production',
+  tarjeta: TarjetaParaTokenizar,
+): Promise<string> {
+  const host =
+    ambiente === 'production' ? 'production.wompi.co' : 'sandbox.wompi.co';
+  const res = await fetch(`https://${host}/v1/tokens/cards`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${llavePublica}`,
+    },
+    body: JSON.stringify({
+      number: tarjeta.numero.replace(/\s+/g, ''),
+      cvc: tarjeta.cvc,
+      exp_month: tarjeta.mesDeVencimiento,
+      exp_year: tarjeta.anioDeVencimiento,
+      card_holder: tarjeta.nombreEnLaTarjeta,
+    }),
+  });
+  const json: unknown = await res.json().catch(() => null);
+  const token = (json as { data?: { id?: string } } | null)?.data?.id;
+  if (!res.ok || !token) {
+    const mensaje =
+      (json as { error?: { reason?: string } } | null)?.error?.reason ??
+      'No pudimos validar la tarjeta. Revisa los datos.';
+    throw new Error(mensaje);
+  }
+  return token;
 }
-
-// ---------------------------------------------------------------------------
-// Endpoint-not-live detection
-// ---------------------------------------------------------------------------
-
-/** Posture returned whenever the tokenization backend is not live yet. */
-const UNAVAILABLE: AutopagoStatus = { enabled: false, available: false };
-
-/**
- * True when the failure means "endpoint not live yet" rather than a genuine
- * error: 404 (route absent), 403 (not wired for this tenant), or 0 (backend
- * unreachable / offline — `ApiError(0)` from the api-client). These degrade the
- * UI to the honest "Próximamente" empty-state instead of a crash.
- */
-function isEndpointUnavailable(err: unknown): boolean {
-  return (
-    err instanceof ApiError &&
-    (err.status === 404 || err.status === 403 || err.status === 0)
-  );
-}
-
-// ---------------------------------------------------------------------------
-// autopagoApi — the contract
-// ---------------------------------------------------------------------------
 
 export const autopagoApi = {
-  /**
-   * Reads the tenant's autopago status for a lease. On a not-live endpoint
-   * (403/404/offline) resolves to `{ enabled: false, available: false }` so the UI
-   * stays on "Próximamente" — never a fabricated enabled state, card, or charge date.
-   */
-  async get(leaseId: string): Promise<AutopagoStatus> {
-    try {
-      return await apiClient.get<AutopagoStatus>(
-        `/tenant-payments/autopago/${leaseId}`,
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        return UNAVAILABLE;
-      }
-      throw err;
-    }
+  /** Con qué tokenizar y qué se autoriza. */
+  async comoSeTokeniza(): Promise<ComoSeTokeniza> {
+    return apiClient.get<ComoSeTokeniza>('/portal/autopago/tokenizacion');
   },
 
-  /**
-   * Enables tokenized autopago for a lease using a Wompi payment-source token
-   * (created on Wompi's tokenization flow — placeholder until that exists). On a
-   * not-live endpoint (403/404/offline) resolves to `{ enabled: false,
-   * available: false }`; it never fabricates a token or an active autopago.
-   */
-  async enable(payload: EnableAutopagoPayload): Promise<AutopagoStatus> {
-    try {
-      return await apiClient.post<AutopagoStatus>(
-        '/tenant-payments/autopago',
-        payload,
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        return UNAVAILABLE;
-      }
-      throw err;
-    }
+  async estado(contractId: string): Promise<EstadoDelAutopago> {
+    return apiClient.get<EstadoDelAutopago>(`/portal/autopago/${contractId}`);
   },
 
-  /**
-   * Cancels tokenized autopago for a lease. On a not-live endpoint
-   * (403/404/offline) resolves to `{ enabled: false, available: false }`.
-   */
-  async cancel(leaseId: string): Promise<AutopagoStatus> {
-    try {
-      return await apiClient.delete<AutopagoStatus>(
-        `/tenant-payments/autopago/${leaseId}`,
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        return UNAVAILABLE;
-      }
-      throw err;
-    }
+  async activar(payload: {
+    contractId: string;
+    token: string;
+    metodo: MetodoDeAutopago;
+    diaDelMes: number;
+    topeCop: number;
+    autorizacionTexto: string;
+  }): Promise<EstadoDelAutopago> {
+    return apiClient.post<EstadoDelAutopago>('/portal/autopago', payload);
+  },
+
+  async pausarOReactivar(
+    contractId: string,
+    activar: boolean,
+  ): Promise<EstadoDelAutopago> {
+    return apiClient.patch<EstadoDelAutopago>(`/portal/autopago/${contractId}`, {
+      activar,
+    });
+  },
+
+  async cancelar(
+    contractId: string,
+    motivo?: string,
+  ): Promise<EstadoDelAutopago> {
+    return apiClient.delete<EstadoDelAutopago>(
+      `/portal/autopago/${contractId}${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`,
+    );
+  },
+
+  /** Cobrar ahora con el medio guardado, a pedido de la persona. */
+  async cobrarAhora(contractId: string): Promise<ResultadoDelCobro> {
+    return apiClient.post<ResultadoDelCobro>(
+      `/portal/autopago/${contractId}/cobrar-ahora`,
+    );
   },
 };

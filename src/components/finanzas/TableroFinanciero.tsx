@@ -64,10 +64,21 @@ const QUE_ES_LA_ETAPA =
   'Temprana: recién pasó el plazo · Administrativa: la persigue la cobranza · ' +
   'Prejurídica: última instancia antes del abogado · Jurídica: ya está en manos del abogado.';
 
-/** «1-30 días», «90+ días» — el rango del tramo, escrito. */
-export function rangoDelTramo(tramo: Pick<TramoDeCartera, 'desdeDias' | 'hastaDias'>): string {
-  if (tramo.hastaDias === null) return `${tramo.desdeDias}+ días de mora`;
-  return `${tramo.desdeDias}-${tramo.hastaDias} días de mora`;
+/**
+ * Qué dice la tarjeta de un tramo debajo del monto.
+ *
+ * 🔴 Antes armaba el rango con `desdeDias`/`hastaDias`, que EL BACK NO MANDA:
+ * en pantalla salía «undefined-undefined días de mora» en las cuatro tarjetas
+ * de «Cartera por edades». El rango ya viene escrito en `tramo.nombre` («0-30
+ * días»), que es el rótulo de la tarjeta, así que repetirlo abajo tampoco
+ * aportaba nada: lo que falta decir es cuántas cuotas son y desde dónde se
+ * cuentan los días, que no es obvio.
+ */
+export function definicionDelTramo(
+  tramo: Pick<TramoDeCartera, 'cuotas'>,
+): string {
+  const cuotas = `${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}`;
+  return `${cuotas} en mora. Los días se cuentan DESPUÉS del plazo del contrato.`;
 }
 
 /**
@@ -125,9 +136,17 @@ export function TableroFinancieroPanel() {
 
   return (
     <div className="space-y-6" data-testid="tablero-financiero">
-      {/* ── Mes y sede ────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SelectorDeMes mes={mes} onCambiar={setMes} />
+      {/* 🔴 El alcance DICE qué gobierna (Nico, 21-09: «todo súper separado»).
+          Eran dos controles flotando en el aire, sin borde y sin decir sobre
+          qué mandan: en una pantalla de cuatro bloques de cifras, un mes suelto
+          arriba se lee como si fuera del primer bloque. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">
+            Todo el tablero, de
+          </span>
+          <SelectorDeMes mes={mes} onCambiar={setMes} />
+        </div>
         <label className="flex items-center gap-2 text-sm text-fg-muted">
           <span>Sede</span>
           <select
@@ -167,7 +186,7 @@ export function TableroFinancieroPanel() {
             <BloqueDePropietarios tablero={tablero} />
             <BloqueDeMargen tablero={tablero} />
 
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Datos al {tablero.hoy} (hora de Bogotá).{' '}
               {tablero.sedeId === null
                 ? 'Consolidado de todas las sedes.'
@@ -272,11 +291,11 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
         />
         {cartera.tramos.map((tramo) => (
           <Cifra
-            key={tramo.nombre}
-            id={`tramo-${tramo.desdeDias}`}
+            key={tramo.tramo}
+            id={`tramo-${tramo.tramo}`}
             etiqueta={tramo.nombre}
             valor={tramo.carteraCop}
-            definicion={`${rangoDelTramo(tramo)}. ${NUMERO.format(tramo.cuotas)} ${tramo.cuotas === 1 ? 'cuota' : 'cuotas'}.`}
+            definicion={definicionDelTramo(tramo)}
           />
         ))}
       </div>
@@ -284,7 +303,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
       <div className="overflow-hidden rounded-lg border border-border">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold text-fg">Los 20 deudores más grandes</h3>
-          <p className="text-xs text-fg-muted">{QUE_ES_LA_ETAPA}</p>
+          <p className="text-caption text-fg-muted">{QUE_ES_LA_ETAPA}</p>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -309,7 +328,7 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
                 cartera.deudores.map((d, i) => (
                   <TableRow key={d.clienteId ?? `${d.nombre}-${i}`} data-testid="fila-deudor">
                     <TableCell className="font-medium text-fg">{d.nombre}</TableCell>
-                    <TableCell className="font-mono text-xs">{d.documento || '—'}</TableCell>
+                    <TableCell className="font-mono text-caption">{d.documento || '—'}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">
                       {formatCurrency(d.saldoCop)}
                     </TableCell>

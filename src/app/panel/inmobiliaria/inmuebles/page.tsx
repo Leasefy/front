@@ -273,17 +273,28 @@ function PortafolioContent() {
    * que hacer parte de la tabla»— y el que evita que el número y la forma de
    * ver ese número vuelvan a ser dos controles distintos.
    */
+  /**
+   * 🔴 Un total sólo se dice cuando se pudo contar — y acá hay DOS fuentes.
+   *
+   * Lo primero ya estaba: con la carga en curso o la principal caída, los
+   * chips iban en `null`, porque un cero es un dato y «no sé» no es cero (era
+   * el defecto L1 de las fichas viejas, que con el back caído decían «0
+   * totales · 0 arrendados» encima de una tabla que sí avisaba del fallo).
+   *
+   * Lo que faltaba es la SEGUNDA fuente. El portafolio se arma con los
+   * mandatos y con los inmuebles que todavía no lo tienen; si cualquiera de
+   * las dos falla, lo que queda en la lista es una PARTE, y una parte con cara
+   * de total miente. Medido en el navegador el 21-09-2026, con
+   * `/inmobiliaria/consignaciones` en 500 (P2022: falta la migración de
+   * copropiedades): el encabezado decía «25 inmuebles» —los 25 sin mandato,
+   * que sí cargaron— justo al lado de un «No pudimos cargar esto».
+   */
+  const sePudoContar =
+    !cargandoConsignaciones && !errorConsignaciones && !errorInmueblesSinConsignacion;
+
   const conteoPorCajon = useMemo(
-    () =>
-      /*
-       * 🔴 `null` mientras carga o si falló: un cero es un dato y «no sé» no
-       * es cero. Ése era el defecto L1 de las fichas viejas —con el back caído
-       * decían «0 totales · 0 arrendados» encima de una tabla que sí avisaba
-       * del fallo—, y al mudar los números a los chips había que traerse la
-       * protección, no dejarla atrás con las fichas.
-       */
-      cargandoConsignaciones || errorConsignaciones ? null : contarPorCajon(portafolioRows),
-    [portafolioRows, cargandoConsignaciones, errorConsignaciones],
+    () => (sePudoContar ? contarPorCajon(portafolioRows) : null),
+    [portafolioRows, sePudoContar],
   );
 
   /*
@@ -552,7 +563,11 @@ function PortafolioContent() {
             ]}
           />
           <span className="text-sm text-fg-muted tabular-nums">
-            {t('inmobiliaria.portafolio.stats.propertyCount', { count: filteredConsignaciones.length })}
+            {sePudoContar
+              ? t('inmobiliaria.portafolio.stats.propertyCount', {
+                  count: filteredConsignaciones.length,
+                })
+              : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
           </span>
         </div>
 
@@ -564,7 +579,7 @@ function PortafolioContent() {
           propietarios={allPropietarios}
           agentes={allAgentes}
           conteo={conteoPorCajon}
-          total={conteoPorCajon === null ? null : portafolioRows.length}
+          total={sePudoContar ? portafolioRows.length : null}
         />
 
         {/* Content */}
@@ -673,8 +688,15 @@ function PortafolioContent() {
           </EstadoDeDatos>
         </div>
 
-        {/* Pie de tabla — el paginador del design system. */}
-        {shouldPaginate && (
+        {/* Pie de tabla — el paginador del design system.
+
+            🔴 `sePudoContar` también manda acá (21-09, visto en el navegador):
+            con la lista caída, el pie seguía diciendo «Mostrando 1–10 de 25» y
+            ofreciendo las páginas 2 y 3 encima del cartel de que no se pudo
+            cargar. Es el mismo defecto que el contador del encabezado —un
+            número de UNA de las dos fuentes presentado como el total— y estaba
+            a dos renglones de distancia, fuera del `EstadoDeDatos`. */}
+        {shouldPaginate && sePudoContar && (
           <TablePagination
             className="border-t border-border px-4 py-3"
             total={totalPaginado}

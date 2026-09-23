@@ -77,6 +77,8 @@ import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos'
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
 
@@ -255,7 +257,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
                 <div className="h-8 w-px bg-border" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {consignacion.commissionPercent}%
+                    {textoDeLaComision(consignacion)}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
                 </div>
@@ -351,6 +353,7 @@ function FilaDeContacto({
   onCopiar,
   copiado,
   etiquetaCopiar,
+  etiquetaCopiado,
   mono,
 }: {
   etiqueta: string;
@@ -358,7 +361,13 @@ function FilaDeContacto({
   href?: string;
   onCopiar?: () => void;
   copiado?: boolean;
+  /** Lo que HACE el botón («Copiar el correo»). */
   etiquetaCopiar?: string;
+  /**
+   * Lo que pasó, sólo después de copiar. 🔴 23-09 (QA): el botón se anunciaba
+   * «Copiado al portapapeles» antes de que nadie copiara nada.
+   */
+  etiquetaCopiado?: string;
   mono?: boolean;
 }) {
   const texto = valor && valor.trim() ? valor : null;
@@ -382,7 +391,7 @@ function FilaDeContacto({
             variant="ghost"
             size="sm"
             onClick={onCopiar}
-            aria-label={etiquetaCopiar ?? 'Copiar'}
+            aria-label={(copiado ? etiquetaCopiado : etiquetaCopiar) ?? etiquetaCopiar ?? 'Copiar'}
             icon={copiado ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
           />
         ) : null}
@@ -687,9 +696,11 @@ function PropietarioDetailContent() {
             </div>
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
               {[
+                // 🔴 23-09 (QA): quitarle la «s» a «Propiedades» daba «1 propiedade».
+                // El singular y el plural son claves, no una regla sobre la palabra.
                 propietario.propertyCount === 1
-                  ? `1 ${t('inmobiliaria.propietario.stats.properties').toLowerCase().replace(/s$/, '')}`
-                  : `${propietario.propertyCount} ${t('inmobiliaria.propietario.stats.properties').toLowerCase()}`,
+                  ? t('inmobiliaria.propietario.stats.unaPropiedad')
+                  : t('inmobiliaria.propietario.stats.nPropiedades', { n: propietario.propertyCount }),
                 // Sus copropiedades, aparte: el minoritario también es dueño.
                 (propietario.copropiedadesCount ?? 0) > 0
                   ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
@@ -808,7 +819,8 @@ function PropietarioDetailContent() {
                 href={email ? `mailto:${email}` : undefined}
                 onCopiar={email ? () => handleCopy(email, 'email') : undefined}
                 copiado={copiedEmail}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarCorreo')}
+                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
               />
               <FilaDeContacto
                 etiqueta={t('inmobiliaria.propietarios.phone')}
@@ -816,7 +828,8 @@ function PropietarioDetailContent() {
                 href={phone ? `tel:${phone}` : undefined}
                 onCopiar={phone ? () => handleCopy(phone, 'phone') : undefined}
                 copiado={copiedPhone}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarTelefono')}
+                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
               />
               <FilaDeContacto
                 etiqueta={t('inmobiliaria.propietarios.detail.address')}
@@ -866,6 +879,7 @@ function PropietarioDetailContent() {
               {/* Bank Info */}
               <PropietarioBankInfo
                 bankAccount={propietario.bankAccount}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
                 onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
               />
 
@@ -875,6 +889,7 @@ function PropietarioDetailContent() {
               <CambioDeCuentaBancaria
                 propietarioId={propietario.id}
                 tieneCuenta={!!propietario.bankAccount?.accountNumber}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
                 puedeEditar={puedeEditar}
                 onCuentaCambiada={() => void refetch()}
               />
@@ -1076,6 +1091,11 @@ function PropietarioDetailContent() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* 🔴 22-09: quién tocó a este propietario, con su rol —crearlo,
+          editarlo, cambiarle la cuenta, bajar su extracto— y lo que se intentó
+          sin permiso. Debajo de las pestañas: vale para todas. */}
+      <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
       {/* Edit Modal */}
       <Modal

@@ -15,13 +15,157 @@ export type EstadoDelLote =
   | 'APROBADO'
   | 'ARCHIVO_GENERADO'
   | 'PAGADO'
-  | 'ANULADO';
+  | 'ANULADO'
+  /**
+   * Se mandó a Wompi · Pagos a terceros: espera al Aprobador en el panel de
+   * Wompi, o Wompi lo está pagando. No saca archivo ni se anula; se cierra
+   * solo cuando Wompi confirma, o vuelve a APROBADO si lo rechaza sin pagar.
+   */
+  | 'EN_WOMPI';
 
 /**
- * Formatos de archivo plano. Los tres existen en el back, pero HOY sólo
- * `BANCOLOMBIA_PAB` tiene generador: pedir otro devuelve 400 con el motivo.
+ * Formatos de archivo plano: el enum `FormatoArchivoDePagos` del back
+ * (`BANCOLOMBIA_SAP` y `ONEPAY` existen en el enum y no se generan). El
+ * formato NO se elige al final: es el del banco elegido al armar.
  */
-export type FormatoArchivoDePagos = 'BANCOLOMBIA_PAB' | 'BANCOLOMBIA_SAP' | 'ONEPAY';
+export type FormatoArchivoDePagos =
+  | 'BANCOLOMBIA_PAB'
+  | 'BANCOLOMBIA_SAP'
+  | 'ONEPAY'
+  | 'BANCO_DE_BOGOTA'
+  | 'BANCO_AGRARIO'
+  | 'BANCO_AV_VILLAS'
+  | 'BANCO_CAJA_SOCIAL'
+  | 'BANCOOMEVA'
+  /** Los de una copia del instructivo del banco, sin verificar (22-09 noche). */
+  | 'BANCO_DAVIVIENDA'
+  | 'BANCO_DAVIBANK'
+  | 'BANCO_BBVA'
+  | 'BANCO_DE_OCCIDENTE'
+  /** No es un archivo del banco: la planilla para cargar a mano. */
+  | 'PLANILLA_MANUAL'
+  /** Planillas con las columnas EXACTAS de la macro del banco. */
+  | 'PLANILLA_FINANDINA'
+  | 'PLANILLA_BANCAMIA';
+
+/**
+ * Qué recibe la inmobiliaria para un banco (Nico, 22-09: «el archivo plano
+ * para TODOS los bancos de Colombia»):
+ *   · `ARCHIVO_OFICIAL`: el archivo del portal, armado con un documento que
+ *     publicó el mismo banco.
+ *   · `ARCHIVO_DE_TERCERO`: el archivo del portal, con una estructura que NO
+ *     publicó el banco (una copia de su instructivo que subió un tercero) o
+ *     un instructivo del banco tan viejo que no se sabe si su portal de hoy
+ *     lo recibe. Sin verificar.
+ *   · `PLANILLA`: no hay estructura publicada; una planilla con los datos de
+ *     cada pago para cargarlos a mano. NO se sube al banco.
+ */
+export type EntregaDelFormato = 'ARCHIVO_OFICIAL' | 'ARCHIVO_DE_TERCERO' | 'PLANILLA';
+
+/** Ahorros o corriente: la cuenta de la inmobiliaria desde la que se gira. */
+export type TipoDeCuentaDeOrigen = 'AHORROS' | 'CORRIENTE';
+
+/** El instructivo del banco del que sale cada posición del archivo. */
+export interface FuenteDelFormato {
+  url: string;
+  documento: string;
+  version: string;
+  consultado: string;
+}
+
+/**
+ * Desde qué banco y cuenta sale la plata de un lote (`origenes_de_lote`), como
+ * la muestra la pantalla: la cuenta llega tapada (`•••• 8901`).
+ */
+export interface OrigenDelLote {
+  /** Id del banco (`BANCOLOMBIA`, `BANCO_BOGOTA`…). */
+  banco: string;
+  nombreDelBanco: string;
+  formato: FormatoArchivoDePagos;
+  tipoDeCuenta: TipoDeCuentaDeOrigen;
+  cuenta: string;
+}
+
+/** Un banco de la pregunta «¿desde qué banco vas a dispersar?». */
+export interface BancoDeOrigen {
+  id: string;
+  nombre: string;
+  /** `null` = no se puede elegir todavía (falta una migración); `porQueNo` lo dice. */
+  formato: FormatoArchivoDePagos | null;
+  nombreDelFormato: string | null;
+  /** Qué se le entrega a la inmobiliaria para ESTE banco. Opcional: back anterior al 22-09 noche. */
+  entrega?: EntregaDelFormato;
+  extension?: string;
+  /** El documento del banco (o del tercero) del que sale el archivo. `null` en la planilla. */
+  fuente: FuenteDelFormato | null;
+  otrasFuentes?: FuenteDelFormato[];
+  /** Qué hay que revisar antes de subirlo (o, en la planilla, qué es). */
+  pendienteDeConfirmar?: string[];
+  /** Por qué no hay archivo propio (planilla) o qué migración falta. */
+  porQueNo: string | null;
+  /** De dónde sale, corto: «Oficial · manual OVE V12 (2026)». Back anterior: ausente. */
+  etiquetaDeLaFuente?: string;
+  /** Lo que hay que decir antes de subirlo (una contradicción del manual, un 2.º formato). */
+  avisoAntesDeSubir?: string | null;
+  /** De un banco sin estructura pública, lo que sí sabemos (a quién pedirla). */
+  loQueSabemos?: string | null;
+}
+
+/** Una cuenta que la inmobiliaria ya registró en Medios de pago. */
+export interface CuentaRegistrada {
+  medioDePagoId: string;
+  nombre: string;
+  /** El banco reconocido, o `null` si no es ninguno de la lista. */
+  banco: string | null;
+  bancoEscrito: string | null;
+  tipoDeCuenta: TipoDeCuentaDeOrigen | null;
+  /** Sólo dígitos. */
+  numeroDeCuenta: string;
+}
+
+/** `GET /inmobiliaria/lotes-de-dispersion/bancos`. */
+export interface BancosParaGirar {
+  /** `false` = falta la migración: el lote se arma sin preguntar el banco. */
+  disponible: boolean;
+  motivo: string | null;
+  bancos: BancoDeOrigen[];
+  cuentas: CuentaRegistrada[];
+  /** Lo que eligió la agencia la última vez. */
+  ultima: { banco: string; tipoDeCuenta: TipoDeCuentaDeOrigen; numeroDeCuenta: string } | null;
+}
+
+/**
+ * `GET /inmobiliaria/dispersiones/origen-del-giro`: lo que «Marcar como
+ * girada» necesita para preguntar desde qué banco salió la plata (Nico, 23-09).
+ * Sin formatos —un giro suelto no genera archivo—; `ultima` es la última
+ * cuenta de origen de la agencia, de un lote o de un giro suelto.
+ */
+export interface OpcionesDelOrigenDelGiro {
+  /** `false` = falta la migración: se marca girada sin preguntar. */
+  disponible: boolean;
+  motivo: string | null;
+  bancos: Array<{ id: string; nombre: string }>;
+  cuentas: CuentaRegistrada[];
+  ultima: { banco: string; tipoDeCuenta: TipoDeCuentaDeOrigen; numeroDeCuenta: string } | null;
+}
+
+/** «Desde»: la cuenta de la inmobiliaria de la que salió un giro, tapada. */
+export interface OrigenDelGiroEnPantalla {
+  banco: string;
+  nombreDelBanco: string;
+  tipoDeCuenta: string;
+  /** `•••• 8901`. */
+  cuenta: string;
+  /** El giro suelto («Marcar como girada») o el lote que lo pagó. */
+  de: 'GIRO' | 'LOTE';
+}
+
+/** Lo que se manda al armar: el banco, el tipo y el número de la cuenta. */
+export interface OrigenPedido {
+  banco: string;
+  tipoDeCuenta: TipoDeCuentaDeOrigen;
+  numeroDeCuenta: string;
+}
 
 /** Una fila de la lista. Sin ítems: son ~300 por lote. */
 export interface LoteResumen {
@@ -157,6 +301,12 @@ export interface FilaExcluida {
 
 export interface VistaDelLote {
   lote: LoteDeDispersion;
+  /**
+   * Desde qué banco se gira y, por lo tanto, en qué formato sale el archivo.
+   * `null` = el lote se armó sin preguntarlo (su archivo no sale).
+   * Opcional: back anterior al 2026-09-22.
+   */
+  origen?: OrigenDelLote | null;
   excluidos: FilaExcluida[];
   /** Las que se cierran en $0 por deducciones. Opcional: back anterior al 2026-09-16. */
   compensados?: FilaCompensada[];
@@ -177,6 +327,8 @@ export interface LoteArmado {
    * que no se puede es que el número no se vea antes de mandarlo a aprobación.
    */
   descubiertoCop: number;
+  /** El banco elegido. `null` sin la migración. */
+  origen?: OrigenDelLote | null;
 }
 
 /**
@@ -224,6 +376,12 @@ export interface CandidatoDeDispersion {
   seCompensa?: boolean;
   /** Lo que pasa a su siguiente liquidación si se cierra en $0. */
   saldoEnContraCop?: number;
+  /**
+   * Por qué Wompi no la pagó la última vez, en español (la causal del banco).
+   * Informativo: no la excluye —la cuenta pudo corregirse—. `null` o ausente =
+   * nunca la rechazó.
+   */
+  rechazoDeWompi?: string | null;
 }
 
 export interface CandidatosDeDispersion {
@@ -243,6 +401,8 @@ export interface QueMeterEnElLote {
   dispersionIds?: string[];
   orden?: OrdenDeCandidatos;
   topeCop?: number;
+  /** Desde qué banco y cuenta se gira. Sin la migración no se manda. */
+  origen?: OrigenPedido;
 }
 
 /**
@@ -274,12 +434,22 @@ export interface ArchivoGenerado {
   totalCop: number;
   excluidos: FilaExcluida[];
   advertencias: string[];
+  /** Qué se descargó: el archivo del banco o la planilla para cargar a mano. */
+  entrega?: EntregaDelFormato;
   /** 🔴 `false` hasta que alguien coteje el layout contra un archivo real. */
   layoutVerificado: boolean;
   /** Qué del layout falta confirmar contra el banco. */
   pendienteDeConfirmar: string[];
+  /** El instructivo del banco. `null` en la planilla; ausente en un back anterior al 2026-09-22. */
+  fuente?: FuenteDelFormato | null;
+  origen?: OrigenDelLote;
   /** `true` cuando el lote ya estaba en ARCHIVO_GENERADO y se volvió a entregar el mismo. */
   reenvio: boolean;
+  /**
+   * Su fila en el centro de procesos (22-09): el archivo queda guardado ahí y
+   * se baja desde el centro. `null`/ausente = back sin la migración del centro.
+   */
+  procesoId?: string | null;
 }
 
 export interface FiltrosDeLotes {

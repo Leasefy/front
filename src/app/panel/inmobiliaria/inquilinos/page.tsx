@@ -203,7 +203,7 @@ function ContenidoDeInquilinos() {
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
   const [creando, setCreando] = useState(false);
 
-  const { inquilinos, cargando, error, refrescar } = useInquilinos({ buscar, estado });
+  const { inquilinos, cargando, error, refrescar, conteos } = useInquilinos({ buscar, estado });
 
   /*
    * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que
@@ -384,6 +384,7 @@ function ContenidoDeInquilinos() {
               onBuscar={setBuscar}
               estado={estado}
               onEstado={setEstado}
+              conteos={conteos}
             />
           )}
 

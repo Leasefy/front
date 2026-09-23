@@ -525,9 +525,13 @@ function CuentaDelArriendo({
   );
 
   const volverAca = `/panel/inmobiliaria/contratos/${contract.id}`;
+  // 🔴 QA 22-09: desde el contrato se abre SÓLO este contrato (regla del CEO,
+  // 16-09); el consolidado del inquilino va en su ficha de tercero.
+  const soloEste =
+    cuenta.estado === 'listo' ? `&contrato=${encodeURIComponent(cuenta.contrato.numero)}` : '';
   const enlace =
     cuenta.estado === 'listo' || cuenta.estado === 'sin-cuotas'
-      ? `${rutaDelEstadoDeCuenta('inquilino', cuenta.tenantRef)}?volver=${encodeURIComponent(volverAca)}`
+      ? `${rutaDelEstadoDeCuenta('inquilino', cuenta.tenantRef)}?volver=${encodeURIComponent(volverAca)}${soloEste}`
       : null;
 
   return (

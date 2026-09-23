@@ -26,7 +26,7 @@ export default function CobranzaAnaliticaPage() {
   // ── Loading skeleton (first load, no data yet) ─────────────────────────────
   if (isLoading && !data) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
@@ -47,14 +47,14 @@ export default function CobranzaAnaliticaPage() {
             />
           ))}
         </div>
-      </main>
+      </div>
     )
   }
 
   // ── Error banner (non-loading error) ──────────────────────────────────────
   if (error && !isLoading) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
@@ -68,7 +68,7 @@ export default function CobranzaAnaliticaPage() {
           queEs="la analítica de cobranza"
           onReintentar={refetch}
         />
-      </main>
+      </div>
     )
   }
 
@@ -84,7 +84,7 @@ export default function CobranzaAnaliticaPage() {
   // surface the "truly empty" EmptyState (vs NoDataYetBadge "below threshold" branch).
   if (!isLoading && agencyGate?.populated && agencyGate?.calls_30d === 0) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
@@ -96,13 +96,13 @@ export default function CobranzaAnaliticaPage() {
           description={t('inmobiliaria.ai.cobranza.analitica.empty.description')}
           primaryCta={{ label: t('inmobiliaria.ai.cobranza.analitica.empty.cta.label'), href: '/panel/inmobiliaria/pagos/cobranza/deudores' }}
         />
-      </main>
+      </div>
     )
   }
 
   if (isAgencyGateClosed) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <header className="mb-6">
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
@@ -114,7 +114,7 @@ export default function CobranzaAnaliticaPage() {
           cta={t('inmobiliaria.ai.cobranza.analitica.agencyGate.ctaLabel')}
           ctaHref="/panel/inmobiliaria/pagos/cobranza"
         />
-      </main>
+      </div>
     )
   }
 
@@ -124,7 +124,7 @@ export default function CobranzaAnaliticaPage() {
   const heatmapMaxCount = Math.max(1, ...heatmapCells.map((c) => c.call_count))
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
       <header>
         <h1 className="text-h2 text-fg">
@@ -210,6 +210,6 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
       </div>
-    </main>
+    </div>
   )
 }

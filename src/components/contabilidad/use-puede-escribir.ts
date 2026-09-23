@@ -147,3 +147,48 @@ export function usePuedeReabrir(): PuedeEscribir {
   }
   return { puede: false, motivo: MOTIVO_SIN_REAPERTURA, usuarioId };
 }
+
+/**
+ * El texto del 403 `SIN_PERMISO_PUNTUAL` de `cambiar_fecha_egreso`, palabra por
+ * palabra (`PERMISOS_PUNTUALES` del back). La pantalla lo dice ANTES del
+ * intento con las mismas palabras que el back usaría DESPUÉS.
+ */
+export const MOTIVO_SIN_CAMBIO_DE_EGRESO =
+  'No tienes el permiso «Cambiar la fecha de un egreso». Por defecto lo tiene sólo el administrador, que puede dárselo a otro rol desde Configuración → Permisos.';
+
+/**
+ * ¿Puede cambiar la fecha, la referencia o la nota de un egreso ya registrado?
+ *
+ * 🔴 Nico, 22-09: «que sólo lo pueda hacer alguien con permisos». No es la
+ * escritura contable: es el permiso puntual `cambiar_fecha_egreso`
+ * (`reportes`), que por defecto tiene SÓLO el administrador y que la
+ * inmobiliaria otorga a otro rol desde «Permisos por rol». Un contador sin él
+ * sigue asentando, pagando y anulando; lo que no hace es mover un egreso de día.
+ *
+ * Mismo criterio que los otros dos: sólo deshabilita y explica; el back es la
+ * autoridad y su 403 llega igual si esto se equivoca hacia el «sí».
+ */
+export function usePuedeCambiarEgresos(): PuedeEscribir {
+  const permisos = usePermissionsContextSafe();
+  const auth = useContext(AuthContext);
+  const usuarioId = auth?.user?.id ?? null;
+
+  if (!permisos) {
+    return {
+      puede: false,
+      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recarga la pantalla.',
+      usuarioId,
+    };
+  }
+  if (permisos.isLoading) {
+    return {
+      puede: false,
+      motivo: 'Estamos verificando tu rol en la inmobiliaria.',
+      usuarioId,
+    };
+  }
+  if (permisos.isAdmin || permisos.canAccess('reportes', 'cambiar_fecha_egreso')) {
+    return { puede: true, motivo: null, usuarioId };
+  }
+  return { puede: false, motivo: MOTIVO_SIN_CAMBIO_DE_EGRESO, usuarioId };
+}

@@ -57,6 +57,7 @@ import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contra
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
@@ -68,6 +69,7 @@ import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaD
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso'
 import { CobrosAlArrendarDelContrato } from '@/components/inmobiliaria/mandato/CobrosAlArrendarDelContrato'
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
@@ -302,16 +304,38 @@ function ContratoDetalleContent() {
      * bien y sin contrato— cae acá también: antes era una tarjeta roja a mano,
      * sin reintentar ni a dónde volver.
      */
+    /*
+     * 🔴 20-09 · Nico, mirando esta pantalla: «esto está mal realmente, ni se
+     * entiende y no tiene navegación para recuperarse».
+     *
+     * Era una tarjeta enorme y vacía flotando en el medio de la pantalla, sin
+     * encabezado, sin migaja y sin saber en qué parte del panel estabas: el
+     * `max-w-2xl … py-16` de afuera y el `py-16` de la tarjeta sumaban una caja
+     * gigante con tres renglones chiquitos en el centro. El único camino de
+     * vuelta era un botón dentro de la tarjeta.
+     *
+     * Ahora es una pantalla del panel como las demás —el mismo respiro
+     * (`p-6 lg:p-8`), el camino de vuelta ARRIBA a la izquierda donde vive en
+     * todas, y el título que dice dónde estás— y recién debajo el cartel. Es
+     * exactamente lo que ya hacía la ficha del propietario.
+     */
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
-        <ContratoSinSenal contratoId={id}>
-          <FalloDeCarga
-            error={errorCrudo ?? error}
-            queEs="este contrato"
-            onReintentar={refetch}
-            volverA={{ label: 'Contratos', href: LISTA_DE_CONTRATOS }}
-          />
-        </ContratoSinSenal>
+      <div className="space-y-6 p-6 lg:p-8" data-testid="contrato-fallo">
+        <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
+        <h1 className="text-h2 text-fg">Contrato</h1>
+        {/* La tarjeta no ocupa el ancho de la pantalla: tres renglones
+            centrados en una caja de 1.900 px se leen como una pantalla rota.
+            El encabezado sí va a ancho completo, como en todas. */}
+        <div className="max-w-2xl">
+          <ContratoSinSenal contratoId={id}>
+            <FalloDeCarga
+              error={errorCrudo ?? error}
+              queEs="este contrato"
+              onReintentar={refetch}
+              volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
+            />
+          </ContratoSinSenal>
+        </div>
       </div>
     );
   }
@@ -662,6 +686,14 @@ function ContratoDetalleContent() {
               <BitacoraDelContrato contractId={contract.id} />
             </>
           )}
+
+          {/* 🔴 22-09: quién tocó ESTE contrato, con su rol —firmar, editar,
+              renovar, bajar el PDF, y lo que se intentó sin permiso—. No
+              reemplaza la bitácora del mandato de arriba: aquélla guarda las
+              DECISIONES con su anexo; ésta, cada movimiento de cada persona. Y
+              va fuera del bloque de «firmado» porque un contrato en firma
+              también tiene quién lo tocó. */}
+          <BitacoraDelRecurso tipo="contrato" id={contract.id} />
 
           <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">

@@ -41,15 +41,15 @@ function EditarAcuerdoGeneral() {
 
   if (isLoading && !acuerdo && !error) {
     return (
-      <main className="flex items-center justify-center p-16">
+      <div className="flex items-center justify-center p-16">
         <Spinner size="md" />
-      </main>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <main className="p-6 lg:p-8 max-w-xl space-y-3">
+      <div className="p-6 lg:p-8 max-w-xl space-y-3">
         <h1 className="text-xl font-semibold text-fg">No pudimos cargar el acuerdo</h1>
         <p className="text-sm text-fg-muted">{error}</p>
         <div className="flex gap-2">
@@ -60,13 +60,13 @@ function EditarAcuerdoGeneral() {
             <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
           </Button>
         </div>
-      </main>
+      </div>
     )
   }
 
   if (!acuerdo) {
     return (
-      <main className="p-6 lg:p-8 max-w-xl space-y-3">
+      <div className="p-6 lg:p-8 max-w-xl space-y-3">
         <h1 className="text-xl font-semibold text-fg">Ese acuerdo general ya no existe</h1>
         <p className="text-sm text-fg-muted">
           Puede que alguien lo haya borrado. Los demás siguen en Acuerdos de pago.
@@ -74,7 +74,7 @@ function EditarAcuerdoGeneral() {
         <Button asChild hideArrow>
           <Link href={VOLVER}>Volver a Acuerdos de pago</Link>
         </Button>
-      </main>
+      </div>
     )
   }
 

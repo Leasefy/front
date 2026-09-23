@@ -443,7 +443,7 @@ export function FacturasDeProveedor({
                   return (
                     <TableRow key={f.id} data-testid={`factura-${f.id}`}>
                       <TableCell className="whitespace-nowrap">
-                        <p className="font-mono text-xs text-fg">
+                        <p className="font-mono text-caption text-fg">
                           {f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}
                           {f.numeroDelProveedor}
                         </p>
@@ -564,7 +564,7 @@ export function FacturasDeProveedor({
               <TableBody>
                 {asiento.movimientos.map((m) => (
                   <TableRow key={m.id}>
-                    <TableCell className="whitespace-nowrap font-mono text-xs">
+                    <TableCell className="whitespace-nowrap font-mono text-caption">
                       {m.cuenta ? `${m.cuenta.codigo} · ${m.cuenta.nombre}` : m.cuentaId}
                     </TableCell>
                     <TableCell className="text-caption text-fg-muted">

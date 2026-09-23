@@ -78,7 +78,7 @@ export function ConceptosYLiquidacion() {
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Uno solo por concepto. El tratamiento tributario sale de las casillas
             de abajo, no del nombre.
           </p>
@@ -110,7 +110,7 @@ export function ConceptosYLiquidacion() {
             </SelectContent>
           </Select>
           {/* No es un dato de ficha: es el que decide si hay IVA. */}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             El arrendamiento de vivienda está excluido de IVA; el comercial no.
           </p>
         </div>
@@ -152,7 +152,7 @@ export function ConceptosYLiquidacion() {
           />
           {cuenta.totalAPagarCop !== cuenta.netoQueRecibeCop ? (
             // La diferencia no se pierde: la consigna a la DIAN quien paga.
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               La diferencia son retenciones: las descuenta quien paga y las
               consigna a la DIAN a nombre de quien recibe.
             </p>
@@ -160,13 +160,13 @@ export function ConceptosYLiquidacion() {
         </div>
 
         <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+          <p className="flex items-center gap-1.5 text-caption font-medium text-foreground">
             <Info className="h-3.5 w-3.5" />
             Por qué
           </p>
           <ul className="space-y-1" data-testid="motivos">
             {cuenta.motivos.map((m) => (
-              <li key={m} className="text-xs leading-relaxed text-muted-foreground">
+              <li key={m} className="text-caption leading-relaxed text-muted-foreground">
                 {m}
               </li>
             ))}

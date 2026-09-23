@@ -33,11 +33,15 @@ export default function EgresosPage() {
           </Link>
           <SectionLabel>Finanzas</SectionLabel>
           <h1 className="text-h2 text-fg">Egresos</h1>
+          {/* 🔴 LA MISMA FRASE NO SE DICE DOS VECES (Nico, 21-09). Acá estaba
+              escrito, palabra por palabra, lo mismo que la cabecera de la
+              tarjeta de abajo: la definición, el circuito del lote y la
+              distinción con el giro al propietario, dos veces y a 80 px de
+              distancia. El subtítulo se queda con lo que ES el módulo; el
+              circuito lo dice la pestaña «Lotes», que es de lo que habla, y la
+              distinción la dice la pestaña «Egresos», pegada a su tabla. */}
           <p className="max-w-2xl text-sm text-fg-muted">
-            Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados: se
-            arma el lote, lo aprueba otra persona, sale el archivo para el banco, se marca pagado y
-            ahí se numeran los comprobantes. El giro al propietario no va acá — ése baja un pasivo
-            con plata que nunca fue de la inmobiliaria, y se hace desde Dispersiones.
+            Lo que la inmobiliaria le paga a sus proveedores, abogados, técnicos y empleados.
           </p>
         </header>
         <Egresos key={parte} inicial={parte} />

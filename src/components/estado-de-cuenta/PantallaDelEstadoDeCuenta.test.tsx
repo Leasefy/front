@@ -64,7 +64,7 @@ vi.mock('@/components/ui/select', async () => {
 
 import { PantallaDelEstadoDeCuenta } from './PantallaDelEstadoDeCuenta';
 import { cuantasFilas } from './filas';
-import { contrato, estadoDeCuenta } from './ejemplo-de-prueba';
+import { contrato, contratoConImpuestos, estadoDeCuenta } from './ejemplo-de-prueba';
 import type {
   EstadoDeCuenta,
   FiltrosDelEstadoDeCuenta,
@@ -214,6 +214,23 @@ describe('PantallaDelEstadoDeCuenta', () => {
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
 
     expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"]')).toBeNull();
+  });
+
+  it('🔴 abierto desde un contrato, pide SÓLO ese contrato (QA 22-09)', async () => {
+    const c = contrato();
+    const cargar = backFalso(estadoDeCuenta({ contratos: [c, contratoConImpuestos()] }));
+    await montar(
+      <PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} filtrosIniciales={{ contrato: c.numero }} />,
+    );
+    await esperarAlBack();
+    expect(cargar.mock.calls.at(-1)![0]).toMatchObject({ contrato: c.numero });
+  });
+
+  it('un número de contrato que el documento no trae no se impone (no filtra a «nada»)', async () => {
+    const cargar = backFalso(estadoDeCuenta({ contratos: [contrato()] }));
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} filtrosIniciales={{ contrato: 'no-existe' }} />);
+    await esperarAlBack();
+    expect(cargar).toHaveBeenCalledTimes(1);
   });
 
   it('«sólo lo pendiente» se le PIDE al back y se pinta lo que devuelve', async () => {

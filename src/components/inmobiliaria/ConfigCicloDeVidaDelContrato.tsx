@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -175,7 +176,13 @@ export function ConfigCicloDeVidaDelContrato({
           <strong>Sugerido: «sí, por defecto»</strong> si tus contratos ya los pactan — deja por escrito lo que hoy ya
           pasa («sin elegir» se comporta igual que «sí»), y a partir de ahí un contrato puede decir «no» y se respeta.
         </p>
-        <div className="flex flex-wrap gap-3">
+        {/* Radios del sistema de diseño (21-09): el del navegador mide 13 px
+            —«eso ni se ve»— y no trae los estados de foco de la casa. */}
+        <RadioGroup
+          className="flex flex-wrap gap-x-5 gap-y-2"
+          value={gastos}
+          onValueChange={(v) => setGastos(v as typeof gastos)}
+        >
           {(
             [
               ['SI', 'Sí, por defecto'],
@@ -183,18 +190,15 @@ export function ConfigCicloDeVidaDelContrato({
               ['SIN_ELEGIR', 'Sin elegir (se cobran como hoy)'],
             ] as const
           ).map(([valor, etiqueta]) => (
-            <label key={valor} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="gastos-pactados"
-                checked={gastos === valor}
-                onChange={() => setGastos(valor)}
-                data-testid={`gastos-${valor}`}
-              />
-              {etiqueta}
+            <label
+              key={valor}
+              className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            >
+              <RadioGroupItem value={valor} data-testid={`gastos-${valor}`} />
+              <span>{etiqueta}</span>
             </label>
           ))}
-        </div>
+        </RadioGroup>
       </fieldset>
 
       <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
@@ -203,7 +207,11 @@ export function ConfigCicloDeVidaDelContrato({
           Es plata del inquilino para las facturas de servicios que llegan después de entregar: se pagan con ella y se
           le devuelve el resto. Su valor es el promedio de las últimas facturas del inmueble.
         </p>
-        <div className="flex flex-wrap gap-3">
+        <RadioGroup
+          className="flex flex-wrap gap-x-5 gap-y-2"
+          value={momento}
+          onValueChange={(v) => setMomento(v as typeof momento)}
+        >
           {(
             [
               ['', 'No se exige'],
@@ -211,43 +219,43 @@ export function ConfigCicloDeVidaDelContrato({
               ['ENTREGA', 'A la entrega (antes de recibir el inmueble)'],
             ] as const
           ).map(([valor, etiqueta]) => (
-            <label key={valor || 'no'} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="garantia-momento"
-                checked={momento === valor}
-                onChange={() => setMomento(valor)}
+            <label
+              key={valor || 'no'}
+              className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            >
+              <RadioGroupItem
+                value={valor}
                 data-testid={`garantia-momento-${valor || 'NO'}`}
               />
-              {etiqueta}
+              <span>{etiqueta}</span>
             </label>
           ))}
-        </div>
+        </RadioGroup>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block" htmlFor="garantia-tope-periodos">
-            Tope, en períodos de facturación
+          <div className="space-y-1.5">
+            <Label htmlFor="garantia-tope-periodos">Tope, en períodos de facturación</Label>
             <Input
               id="garantia-tope-periodos"
               inputMode="numeric"
               value={periodos}
               onChange={(e) => setPeriodos(e.target.value)}
               placeholder="2"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="garantia-tope-periodos"
             />
-          </label>
-          <label className="block" htmlFor="garantia-tope">
-            Tope en pesos (además del anterior)
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="garantia-tope">Tope en pesos (además del anterior)</Label>
             <Input
               id="garantia-tope"
               inputMode="numeric"
               value={tope}
               onChange={(e) => setTope(e.target.value)}
               placeholder="Sin tope en pesos"
-              className="mt-1 w-40"
+              className="w-40"
               data-testid="garantia-tope"
             />
-          </label>
+          </div>
         </div>
         <p className="text-muted-foreground">
           El valor sugerido es el promedio mensual de los últimos 6 meses del inmueble. Con 2 períodos, la garantía no
@@ -267,18 +275,18 @@ export function ConfigCicloDeVidaDelContrato({
           Cuántos días le vale al solicitante el estudio aprobado para postularse a cualquier inmueble tuyo sin volver
           a pagarlo. Vacío = 60 días.
         </p>
-        <label className="block" htmlFor="vigencia-estudio">
-          Vigencia del estudio (días)
+        <div className="space-y-1.5">
+          <Label htmlFor="vigencia-estudio">Vigencia del estudio (días)</Label>
           <Input
             id="vigencia-estudio"
             inputMode="numeric"
             value={vigencia}
             onChange={(e) => setVigencia(e.target.value)}
             placeholder="60"
-            className="mt-1 w-24"
+            className="w-24"
             data-testid="vigencia-estudio"
           />
-        </label>
+        </div>
       </fieldset>
 
       <fieldset className="space-y-2 text-xs" disabled={deshabilitado}>
@@ -289,30 +297,30 @@ export function ConfigCicloDeVidaDelContrato({
           hoy.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block" htmlFor="seguro-pct-basico">
-            Plan básico (% del canon)
+          <div className="space-y-1.5">
+            <Label htmlFor="seguro-pct-basico">Plan básico (% del canon)</Label>
             <Input
               id="seguro-pct-basico"
               inputMode="decimal"
               value={pctBasico}
               onChange={(e) => setPctBasico(e.target.value)}
               placeholder="1.5"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="seguro-pct-BASIC"
             />
-          </label>
-          <label className="block" htmlFor="seguro-pct-premium">
-            Plan premium (% del canon)
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="seguro-pct-premium">Plan premium (% del canon)</Label>
             <Input
               id="seguro-pct-premium"
               inputMode="decimal"
               value={pctPremium}
               onChange={(e) => setPctPremium(e.target.value)}
               placeholder="3"
-              className="mt-1 w-24"
+              className="w-24"
               data-testid="seguro-pct-PREMIUM"
             />
-          </label>
+          </div>
         </div>
       </fieldset>
 

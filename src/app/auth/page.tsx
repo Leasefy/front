@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { X } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
@@ -12,54 +11,7 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { TestimoniosFlotantes } from '@/components/auth/TestimoniosFlotantes';
-
-/**
- * La obra de marca del panel izquierdo: un video corto en bucle.
- *
- * Nico (2026-09-03): en vez de la imagen, el video, «comprimido sin que
- * pierda calidad y con un loop suave». Está codificado con el último segundo
- * fundido sobre el primero (`xfade` en ffmpeg), así que cuando `loop` lo
- * reinicia no hay corte: el cuadro final ES el cuadro inicial. WebM (VP9,
- * 2 MB) para quien lo soporte y MP4 (H.264 CRF 18, 4 MB) de respaldo; el
- * póster es el primer cuadro, para que no haya un rectángulo vacío mientras
- * baja. Sin sonido y `playsInline`: es lo que permite el autoplay en todos
- * los navegadores. Con `prefers-reduced-motion` el video se esconde y queda
- * el póster.
- */
-const POSTER = '/brand/login-poster.jpg';
-
-
-function VideoDeMarca() {
-  return (
-    <>
-      <Image
-        src={POSTER}
-        alt=""
-        aria-hidden="true"
-        fill
-        priority
-        quality={90}
-        sizes="100vw"
-        className="object-cover object-center"
-      />
-      <video
-        className="absolute inset-0 h-full w-full object-cover object-center motion-reduce:hidden"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster={POSTER}
-        aria-hidden="true"
-        tabIndex={-1}
-        data-testid="auth-video"
-      >
-        <source src="/brand/login-loop.webm" type="video/webm" />
-        <source src="/brand/login-loop.mp4" type="video/mp4" />
-      </video>
-    </>
-  );
-}
+import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 
 function AuthFormFallback() {
   return (
@@ -103,24 +55,7 @@ export default function AuthPage() {
           ensucia. El fondo es el tono del propio video, así que mientras carga
           no hay un rectángulo fuera de tono.
         */}
-        <div className="fixed inset-0 hidden overflow-hidden bg-[#0c1a2b] lg:block" aria-hidden="true">
-          <VideoDeMarca />
-          {/*
-            Dos veladuras oscuras, apenas, en las esquinas de la izquierda: una
-            arriba para el logotipo y otra abajo para los testimonios. El video
-            es claro —la toma de la cortina es casi blanca— y sin esto el logo
-            blanco desaparece según qué cuadro quede debajo (Nico, 2026-09-03:
-            «hay veces el logo se pierde»). El centro y la derecha quedan
-            limpios.
-          */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to bottom, rgba(20,19,15,0.55) 0%, rgba(20,19,15,0) 26%), radial-gradient(90% 75% at 0% 100%, rgba(20,19,15,0.72) 0%, rgba(20,19,15,0.35) 40%, rgba(20,19,15,0) 70%)',
-            }}
-          />
-        </div>
+        <FondoDeMarca />
 
         {/* ── Logo arriba y testimonios abajo, sobre el video (escritorio) ── */}
         {/*

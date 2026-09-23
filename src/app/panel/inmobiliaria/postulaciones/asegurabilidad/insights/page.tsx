@@ -36,7 +36,7 @@ export default function CotizadorInsightsPage() {
   if (isLoading && approvalRateMonthly.length === 0) return <PageSkeleton variant="dashboard" />
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <header className="space-y-1.5">
         <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
@@ -105,6 +105,6 @@ export default function CotizadorInsightsPage() {
           </section>
         </div>
       )}
-    </main>
+    </div>
   )
 }

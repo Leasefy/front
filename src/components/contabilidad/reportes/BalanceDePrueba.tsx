@@ -41,6 +41,7 @@ import { contabilidadApi, type BalanceDePrueba as Balance } from '@/lib/api/cont
 import { hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
+import { FranjaDeInforme, TarjetaDeInforme } from '../piezas';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 
@@ -48,21 +49,26 @@ const COLUMNAS = 6;
 
 // ── La tabla, pura ──────────────────────────────────────────────────────────
 
-export function TablaDeBalance({ balance }: { balance: Balance }) {
+export function TablaDeBalance({
+  balance,
+  sinMarco = false,
+}: {
+  balance: Balance;
+  /** Dentro de `TarjetaDeInforme` la tabla no lleva borde propio. */
+  sinMarco?: boolean;
+}) {
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(balance.filas, {
       resetKey: `${balance.desde ?? ''}|${balance.hasta ?? ''}|${balance.filas.length}`,
     });
 
   return (
-    <div className="space-y-4" data-testid="tabla-de-balance">
-      <div
-        className={cn(
-          'flex flex-wrap items-center gap-3 rounded-md border border-border p-3',
-          balance.cuadra ? 'bg-success-soft' : 'bg-danger-soft',
-        )}
-        role={balance.cuadra ? 'status' : 'alert'}
-        data-testid="veredicto-del-balance"
+    <div className={cn(!sinMarco && 'space-y-4')} data-testid="tabla-de-balance">
+      <FranjaDeInforme
+        tono={balance.cuadra ? 'bien' : 'mal'}
+        papel={balance.cuadra ? 'status' : 'alert'}
+        testId="veredicto-del-balance"
+        className={cn(!sinMarco && 'rounded-md border border-border')}
       >
         {balance.cuadra ? (
           <CheckCircle className="h-5 w-5 flex-shrink-0 text-success" aria-hidden="true" />
@@ -80,9 +86,14 @@ export function TablaDeBalance({ balance }: { balance: Balance }) {
             </p>
           )}
         </div>
-      </div>
+      </FranjaDeInforme>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      <div
+        className={cn(
+          'overflow-x-clip bg-surface',
+          !sinMarco && 'rounded-lg border border-border',
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -151,7 +162,7 @@ export function TablaDeBalance({ balance }: { balance: Balance }) {
             />
           </div>
         ) : null}
-      </section>
+      </div>
     </div>
   );
 }
@@ -193,23 +204,30 @@ export function BalanceDePrueba() {
   const vacio = useMemo(() => balance !== null && balance.filas.length === 0, [balance]);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end gap-6 rounded-lg border border-border bg-surface p-4">
-        <div className="w-full max-w-md">
-          <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
-        </div>
-        <div className="flex items-center gap-2 pb-2">
-          <Checkbox
-            id="balance-solo-con-movimiento"
-            checked={soloConMovimiento}
-            onCheckedChange={(v) => setSoloConMovimiento(v === true)}
-          />
-          <Label htmlFor="balance-solo-con-movimiento" className="font-normal">
-            Sólo cuentas con movimiento o saldo
-          </Label>
-        </div>
-      </div>
-
+    /* 🔴 20-09 · Antes eran DOS tarjetas: el rango de fechas y la casilla en
+       una, la tabla en otra, separadas por 20 px. Nico lo dijo de Facturación
+       —«porque esto no está pegado a la tabla»— y valía igual acá: un filtro
+       es el encabezado de su tabla, no otra cosa. Ahora es UNA tarjeta. */
+    <TarjetaDeInforme
+      testId="informe-balance-de-prueba"
+      filtros={
+        <>
+          <div className="w-full max-w-md">
+            <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+          </div>
+          <div className="flex items-center gap-2 pb-2">
+            <Checkbox
+              id="balance-solo-con-movimiento"
+              checked={soloConMovimiento}
+              onCheckedChange={(v) => setSoloConMovimiento(v === true)}
+            />
+            <Label htmlFor="balance-solo-con-movimiento" className="font-normal">
+              Sólo cuentas con movimiento o saldo
+            </Label>
+          </div>
+        </>
+      }
+    >
       <EstadoDeDatos
         cargando={cargando && balance === null}
         error={error}
@@ -222,7 +240,7 @@ export function BalanceDePrueba() {
           </div>
         }
         cuandoVacio={
-          <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <div className="overflow-x-clip">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -264,15 +282,15 @@ export function BalanceDePrueba() {
                 </TableRow>
               </TableBody>
             </Table>
-          </section>
+          </div>
         }
       >
         {balance ? (
           <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
-            <TablaDeBalance balance={balance} />
+            <TablaDeBalance balance={balance} sinMarco />
           </div>
         ) : null}
       </EstadoDeDatos>
-    </div>
+    </TarjetaDeInforme>
   );
 }

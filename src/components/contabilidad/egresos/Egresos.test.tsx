@@ -27,7 +27,7 @@ import type { Egreso, LoteDeEgreso } from '@/lib/api/gastos.service';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { gastos, escrituraMock, toastMock } = vi.hoisted(() => ({
+const { gastos, escrituraMock, cambioMock, toastMock } = vi.hoisted(() => ({
   gastos: {
     egresos: {
       listar: vi.fn(),
@@ -35,6 +35,8 @@ const { gastos, escrituraMock, toastMock } = vi.hoisted(() => ({
       anular: vi.fn(),
       conciliar: vi.fn(),
       comprobante: vi.fn(),
+      historial: vi.fn(),
+      cambiar: vi.fn(),
     },
     lotes: {
       listar: vi.fn(),
@@ -46,6 +48,8 @@ const { gastos, escrituraMock, toastMock } = vi.hoisted(() => ({
     },
   },
   escrituraMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
+  // El permiso PUNTUAL de corregir un egreso (22-09), aparte de la escritura.
+  cambioMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
@@ -59,7 +63,11 @@ vi.mock('../use-puede-escribir', async () => {
   const actual = await vi.importActual<typeof import('../use-puede-escribir')>(
     '../use-puede-escribir',
   );
-  return { ...actual, usePuedeEscribir: () => escrituraMock };
+  return {
+    ...actual,
+    usePuedeEscribir: () => escrituraMock,
+    usePuedeCambiarEgresos: () => cambioMock,
+  };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
@@ -68,6 +76,7 @@ vi.mock('@/lib/i18n', () => ({
 
 import { Egresos, parteDeEgresos } from './Egresos';
 import { ApiError } from '@/lib/api/client';
+import { MOTIVO_SIN_CAMBIO_DE_EGRESO } from '../use-puede-escribir';
 
 const egreso = (extra: Partial<Egreso> = {}): Egreso => ({
   id: 'e1',
@@ -133,9 +142,19 @@ beforeEach(() => {
   gastos.lotes.aprobar.mockReset().mockResolvedValue(lote({ estado: 'APROBADO' }));
   gastos.lotes.crear.mockReset().mockResolvedValue(lote());
   gastos.lotes.pagado.mockReset();
+  gastos.egresos.historial.mockReset().mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    referencia: 'PAB-88231',
+    nota: null,
+    cambios: [],
+  });
+  gastos.egresos.cambiar.mockReset();
   escrituraMock.puede = true;
   escrituraMock.motivo = null;
   escrituraMock.usuarioId = 'u-yo';
+  cambioMock.puede = true;
+  cambioMock.motivo = null;
 });
 
 afterEach(() => {
@@ -181,7 +200,12 @@ describe('<Egresos>', () => {
 
     await pintar();
 
-    expect(q('egresos-sin-migracion')!.textContent).toContain('lotes_de_egreso');
+    /* 🔴 El identificador va al `title`, no al texto: el cliente no puede
+       aplicar una migración y no sabe qué es. */
+    expect(q('egresos-sin-migracion')!.textContent).not.toContain('lotes_de_egreso');
+    expect(
+      q('egresos-sin-migracion')!.querySelector('[title]')?.getAttribute('title'),
+    ).toContain('lotes_de_egreso');
     expect(q('egresos-sin-migracion')!.textContent).toContain('sigue siendo manual');
     expect(q('egresos')).toBeNull();
   });
@@ -491,5 +515,248 @@ describe('sin permiso de escritura', () => {
     expect((q('aprobar-l1') as HTMLButtonElement).disabled).toBe(true);
     expect(q('aprobar-l1-motivo')!.textContent).toContain('el contador');
     expect((q('anular-lote-l1') as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+/**
+ * 🔴 EL MOLDE (Nico, 21-09): «switch tab afuera… deberían estar junto a la
+ * tabla, revisa todas por favor, a eso me refería también con vómito, todo
+ * súper separado». Eran tres bloques por pestaña: las pestañas flotando, un
+ * bloque de título con su explicación, y la tarjeta de la tabla.
+ */
+describe('Egresos · una sola cosa', () => {
+  it('🔴 las pestañas son la cabecera de la tarjeta, no un bloque suelto', async () => {
+    await pintar('egresos');
+    const pestana = q('parte-egresos')!;
+    const tarjeta = pestana.closest('section.rounded-lg');
+    expect(tarjeta).not.toBeNull();
+    // La tabla vive en la MISMA tarjeta que las pestañas.
+    expect(tarjeta!.querySelector('table')).not.toBeNull();
+    // Y la explicación de la pestaña activa está en esa cabecera, no aparte.
+    expect(pestana.closest('div')!.parentElement!.textContent).toContain(
+      'No es el giro al propietario',
+    );
+  });
+});
+
+/*
+ * 🔴 22-09 · Nico: «deberíamos dar la posibilidad de poder entrar para
+ * modificar los egresos y cambiar la fecha de egreso, porque justamente puede
+ * pasar que si lo envío al banco y no llega o lo rechaza, en contabilidad no
+ * entró ese día». La fila abre el cajón; cambiar la fecha mueve el asiento.
+ */
+describe('🔴 el cajón del egreso', () => {
+  const PAGADO = egreso({
+    estado: 'PAGADO',
+    numero: 87,
+    fechaDelEgreso: '2026-09-15T00:00:00.000Z',
+    asientoId: 'a415',
+    loteId: 'l1',
+  });
+
+  /** El `value` de un input controlado por React, como lo haría el teclado. */
+  function escribir(el: HTMLInputElement | HTMLTextAreaElement, valor: string) {
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement;
+    Object.getOwnPropertyDescriptor(proto.prototype, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  async function abrir(e: Egreso = PAGADO) {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [e],
+    });
+    await pintar();
+    await act(async () => {
+      (q(`egreso-${e.id}`) as HTMLElement).click();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('la fila abre el cajón con la fecha y la referencia vigentes', async () => {
+    await abrir();
+    expect(q('cajon-del-egreso')).not.toBeNull();
+    expect(gastos.egresos.historial).toHaveBeenCalledWith('e1');
+    expect((q('egreso-fecha') as HTMLInputElement).value).toBe('2026-09-15');
+    expect((q('egreso-referencia') as HTMLInputElement).value).toBe('PAB-88231');
+    expect(q('historial-vacio')).not.toBeNull();
+  });
+
+  it('marcar para el lote NO abre el cajón', async () => {
+    await pintar();
+    await act(async () => {
+      (q('marcar-e1') as HTMLElement).click();
+    });
+    expect(q('cajon-del-egreso')).toBeNull();
+  });
+
+  it('🔴 cambiar la fecha exige motivo, manda SÓLO fecha y motivo, y anuncia los tres asientos', async () => {
+    gastos.egresos.cambiar.mockResolvedValue({
+      egreso: { ...PAGADO, fechaDelEgreso: '2026-09-18T00:00:00.000Z', asientoId: 'a502' },
+      asientos: {
+        reversado: { id: 'a415', numero: 415 },
+        reversa: { id: 'a501', numero: 501 },
+        nuevo: { id: 'a502', numero: 502 },
+      },
+      disponible: true,
+      motivo: null,
+      referencia: 'PAB-88231',
+      nota: null,
+      cambios: [],
+    });
+    await abrir();
+
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-18');
+    });
+    // Sin motivo, el botón no guarda.
+    expect((q('guardar-cambio-del-egreso') as HTMLButtonElement).disabled).toBe(true);
+    // Y el cajón avisa ANTES que esto mueve el asiento… cuando ya se puede guardar.
+    await act(async () => {
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'El banco rechazó el giro');
+    });
+    expect(q('aviso-mueve-el-asiento')!.textContent).toContain('se reversa');
+    const boton = q('guardar-cambio-del-egreso') as HTMLButtonElement;
+    expect(boton.disabled).toBe(false);
+
+    await act(async () => {
+      boton.click();
+    });
+
+    expect(gastos.egresos.cambiar).toHaveBeenCalledWith('e1', {
+      fecha: '2026-09-18',
+      motivo: 'El banco rechazó el giro',
+    });
+    expect(toastMock.success.mock.calls[0][0]).toContain('N.º 415');
+    expect(toastMock.success.mock.calls[0][0]).toContain('N.º 502');
+  });
+
+  it('una fecha futura no se deja guardar', async () => {
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2999-01-01');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'x');
+    });
+    expect((q('guardar-cambio-del-egreso') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('🔴 el 409 del back se muestra con SUS palabras: dice qué punta del período está cerrada', async () => {
+    gastos.egresos.cambiar.mockRejectedValue(
+      new ApiError(
+        409,
+        'La contabilidad está cerrada hasta el 2026-09-15: el egreso no se puede llevar al 2026-09-10.',
+        'PERIODO_CERRADO',
+      ),
+    );
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-10');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'Rechazo');
+    });
+    await act(async () => {
+      (q('guardar-cambio-del-egreso') as HTMLButtonElement).click();
+    });
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'La contabilidad está cerrada hasta el 2026-09-15: el egreso no se puede llevar al 2026-09-10.',
+    );
+  });
+
+  /**
+   * 🔴 22-09 · «que sólo lo pueda hacer alguien con permisos». Corregir un
+   * egreso ya no es la escritura contable: es el permiso puntual
+   * `cambiar_fecha_egreso`. Un contador —que SÍ escribe en el libro— sin ese
+   * permiso ve los campos apagados, con la frase que dice quién lo tiene y
+   * dónde se otorga.
+   */
+  it('🔴 con escritura pero SIN el permiso de corregir egresos, los campos llegan apagados con el porqué', async () => {
+    escrituraMock.puede = true;
+    cambioMock.puede = false;
+    cambioMock.motivo = MOTIVO_SIN_CAMBIO_DE_EGRESO;
+    await abrir();
+    expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
+    expect((q('egreso-referencia') as HTMLInputElement).disabled).toBe(true);
+    expect((q('egreso-nota') as HTMLTextAreaElement).disabled).toBe(true);
+    expect(q('egreso-fecha-motivo')!.textContent).toContain('Cambiar la fecha de un egreso');
+    expect(q('egreso-fecha-motivo')!.textContent).toContain('Permisos');
+    expect(q('guardar-cambio-del-egreso')).toBeNull();
+  });
+
+  it('con el permiso otorgado, aunque el rol no escriba en el libro, los campos se pueden tocar', async () => {
+    escrituraMock.puede = false;
+    escrituraMock.motivo = 'Sólo el administrador o el contador pueden mover la contabilidad.';
+    cambioMock.puede = true;
+    await abrir();
+    expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(false);
+    expect((q('egreso-nota') as HTMLTextAreaElement).disabled).toBe(false);
+  });
+
+  it('🔴 si igual llega el 403 del back, se dice con la frase del permiso, no «el administrador o el contador»', async () => {
+    gastos.egresos.cambiar.mockRejectedValue(
+      new ApiError(403, 'No tienes el permiso…', 'SIN_PERMISO_PUNTUAL'),
+    );
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-10');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'Rechazo');
+    });
+    await act(async () => {
+      (q('guardar-cambio-del-egreso') as HTMLButtonElement).click();
+    });
+    expect(toastMock.error).toHaveBeenCalledWith(MOTIVO_SIN_CAMBIO_DE_EGRESO);
+  });
+
+  it('un egreso sin pagar no deja cambiar la fecha, pero sí la nota', async () => {
+    await abrir(egreso());
+    expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
+    expect(q('egreso-fecha-motivo')!.textContent).toContain('pago del lote');
+    expect((q('egreso-nota') as HTMLTextAreaElement).disabled).toBe(false);
+  });
+
+  it('muestra el historial: qué, de qué a qué, por qué y quién', async () => {
+    gastos.egresos.historial.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      referencia: 'PAB-88231',
+      nota: null,
+      cambios: [
+        {
+          id: 'c1',
+          campo: 'FECHA',
+          valorAnterior: '2026-09-15',
+          valorNuevo: '2026-09-18',
+          motivo: 'El banco rechazó el giro',
+          asientoReversadoId: 'a415',
+          asientoReversaId: 'a501',
+          asientoNuevoId: 'a502',
+          cambiadoPorUserId: 'u-jc',
+          cambiadoPorNombre: 'Juan Camilo',
+          createdAt: '2026-09-18T15:00:00.000Z',
+        },
+      ],
+    });
+    await abrir();
+    const fila = q('cambio-c1')!.textContent!;
+    expect(fila).toContain('Fecha');
+    expect(fila).toContain('El banco rechazó el giro');
+    expect(fila).toContain('Juan Camilo');
+  });
+
+  it('sin la migración de los cambios no se deja corregir, y el nombre de la migración no va al texto', async () => {
+    gastos.egresos.historial.mockResolvedValue({
+      disponible: false,
+      motivo: 'Falta la migración 20260922150000_cambios_de_egreso.',
+      referencia: null,
+      nota: null,
+      cambios: [],
+    });
+    await abrir();
+    expect(q('cambios-sin-migracion')!.textContent).not.toContain('20260922150000');
+    expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
+    expect(q('guardar-cambio-del-egreso')).toBeNull();
   });
 });

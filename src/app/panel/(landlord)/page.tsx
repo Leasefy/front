@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -20,6 +20,10 @@ import { useI18n } from '@/lib/i18n';
 import { PlanDetailSheet, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { SetupDashboard } from '@/components/panel/SetupDashboard';
 import { LandlordDashboardEmpty } from '@/components/panel/LandlordDashboardEmpty';
+import {
+  ContratosConLaInmobiliaria,
+  useContratosAdministrados,
+} from '@/components/landlord/ContratosConLaInmobiliaria';
 import type { LandlordProperty } from '@/lib/types/landlord';
 import type { DashboardUrgentAction, DashboardUpcomingEvent, DashboardData } from '@/lib/api/landlord.types';
 
@@ -120,6 +124,8 @@ export default function PanelPage() {
   // ALL hooks must be called before any conditional returns (React rules of hooks)
   const { properties: apiProperties, isLoading: propertiesLoading } = useLandlordProperties();
   const { dashboard, isLoading: dashboardLoading } = useLandlordDashboard();
+  // Propietario de una inmobiliaria: sus contratos no salen por `landlordId`.
+  const administrados = useContratosAdministrados();
 
   // Check if coming from onboarding or if user hasn't completed onboarding
   const isSetupMode = searchParams.get('setup') === 'true';
@@ -172,6 +178,39 @@ export default function PanelPage() {
   // While loading, always show the dashboard layout with skeletons (never the empty state).
   const apiFinished = !propertiesLoading;
   const hasNoProperties = apiFinished && properties.length === 0;
+
+  /*
+   * 🔴 QA 22-09: a un propietario invitado por su inmobiliaria, con cuatro
+   * contratos en su estado de cuenta, el inicio le decía «No tienes propiedades
+   * publicadas · Tu potencial mensual $0 · Publicar propiedad». No publica: se
+   * los administra la inmobiliaria. Se le dice eso, con sus contratos.
+   */
+  if (hasNoProperties && administrados.doc) {
+    return (
+      <div className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+          <header>
+            <span className="inline-flex items-center gap-2 mb-2">
+              <BrandDot />
+              <MonoLabel className="text-[11px] font-medium text-primary">{greeting}</MonoLabel>
+            </span>
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
+              {t('dashboard.hello', { name: firstName })}
+            </h1>
+          </header>
+          <ContratosConLaInmobiliaria doc={administrados.doc} />
+        </div>
+      </div>
+    );
+  }
+
+  if (hasNoProperties && administrados.cargando) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Skeleton className="h-40 w-full max-w-3xl rounded-lg" />
+      </div>
+    );
+  }
 
   if (hasNoProperties) {
     // Empty state only when we're sure there are no properties
@@ -429,11 +468,10 @@ export default function PanelPage() {
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
-                                <Image
-                                  src={property.thumbnailUrl}
+                                <PortadaDelInmueble
+                                  property={property}
                                   alt={property.title}
-                                  fill
-                                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                  className="group-hover:scale-105 transition-transform duration-500"
                                 />
                                 {/* Status badge on image */}
                                 <div className="absolute top-3 left-3">

@@ -488,6 +488,40 @@ describe('propietariosApi.create — maps front bank fields to the wire contract
     expect(body.accountHolderDocumentType).toBeUndefined();
   });
 
+  it('🔴 «Del propietario» (22-09) manda la respuesta y NINGÚN dato del titular: el back lo limpia', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      titularDeLaCuenta: 'PROPIETARIO',
+      accountHolder: '',
+      accountHolderDocumentType: '',
+      accountHolderDocument: '',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.titularDeLaCuenta).toBe('PROPIETARIO');
+    expect(body).not.toHaveProperty('bankAccountHolder');
+    expect(body).not.toHaveProperty('bankAccountHolderDocument');
+    expect(body).not.toHaveProperty('bankAccountHolderDocumentType');
+  });
+
+  it('🔴 «De otra persona» (22-09) manda la respuesta con nombre, tipo y documento', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      titularDeLaCuenta: 'TERCERO',
+      accountHolder: 'Carlos Restrepo',
+      accountHolderDocumentType: 'CE',
+      accountHolderDocument: '8001234',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toMatchObject({
+      titularDeLaCuenta: 'TERCERO',
+      bankAccountHolder: 'Carlos Restrepo',
+      bankAccountHolderDocumentType: 'CE',
+      bankAccountHolderDocument: '8001234',
+    });
+  });
+
   it('un tipo de documento del titular sin documento no se manda (no significa nada)', async () => {
     const fetchMock = mockFetchOnce({ id: 'prop-1' });
     await propietariosApi.create({ ...BASE_PROPIETARIO, accountHolderDocumentType: 'CC', accountHolderDocument: '' });

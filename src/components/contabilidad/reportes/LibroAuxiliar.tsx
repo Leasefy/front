@@ -40,6 +40,7 @@ import { diaLegible, hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabil
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
+import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
@@ -86,8 +87,13 @@ export function LibroAuxiliar() {
   const vacio = !sinCuenta && libro !== null && libro.renglones.length === 0;
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(280px,420px)]">
+    /* 🔴 20-09 · UNA tarjeta: elegir la cuenta y el rango es el encabezado de
+       este libro, no una tarjeta aparte. */
+    <TarjetaDeInforme
+      testId="libro-auxiliar"
+      filtrosClassName="grid gap-4 lg:grid-cols-[minmax(280px,1fr)_minmax(280px,420px)]"
+      filtros={
+        <>
         <div className="space-y-1.5">
           <Label>Cuenta</Label>
           <SelectorDeCuenta
@@ -99,7 +105,7 @@ export function LibroAuxiliar() {
             className="w-full"
           />
           {errorDeCuentas ? (
-            <p className="text-xs text-danger" role="alert">
+            <p className="text-caption text-danger" role="alert">
               No se pudo cargar el plan de cuentas.{' '}
               <button type="button" className="underline" onClick={() => void recargar()}>
                 Reintentar
@@ -114,9 +120,9 @@ export function LibroAuxiliar() {
           ) : null}
         </div>
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
-      </div>
-
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        </>
+      }
+    >
         <EstadoDeDatos
           cargando={cargando && libro === null}
           error={error}
@@ -254,7 +260,6 @@ export function LibroAuxiliar() {
             </div>
           ) : null}
         </EstadoDeDatos>
-      </section>
-    </div>
+    </TarjetaDeInforme>
   );
 }

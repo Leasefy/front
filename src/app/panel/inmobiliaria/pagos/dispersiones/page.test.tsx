@@ -313,7 +313,8 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     });
     const vacio = q('sin-datos') as HTMLElement;
     expect(vacio.getAttribute('data-caso')).toBe('filtros');
-    expect(vacio.textContent).toContain('Ningún resultado coincide');
+    // 20-09: `SinDatos` dejó de usar artículo con género (ver su prueba).
+    expect(vacio.textContent).toContain('que coincidan con lo que buscaste');
   });
 });
 

@@ -59,14 +59,21 @@ describe('conceptos de la cartera', () => {
         contratos: [{ contractId: 'd', contrato: '#94', inmueble: 'Casa en Laureles' }],
       }),
     ]
-    expect(filtrarInquilinos(lista, 'nicolas', false).map((i) => i.clave)).toEqual(['a'])
-    expect(filtrarInquilinos(lista, '43111', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, '#94', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, 'LAURELES', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, '', false)).toHaveLength(2)
+    expect(filtrarInquilinos(lista, 'nicolas').map((i) => i.clave)).toEqual(['a'])
+    expect(filtrarInquilinos(lista, '43111').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '#94').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, 'LAURELES').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '')).toHaveLength(2)
   })
 
-  it('«sólo cartera» deja afuera a quien sólo tiene cuotas por vencer', () => {
+  /*
+   * 🔴 ACTUALIZADO EL 21-09: el interruptor «Sólo cartera» se volvió un cajón
+   * de cuatro. Nico: «¿para qué es ese toggle de sólo cartera jaja». Un
+   * interruptor sólo puede expresar dos estados de cuatro, y la deuda pasa por
+   * tres momentos que no son sinónimos. Lo que la prueba cuida es lo mismo:
+   * quien está dentro de su plazo NO es cartera.
+   */
+  it('el cajón CARTERA deja afuera a quien sólo tiene cuotas por vencer', () => {
     const lista = [
       inquilino({ clave: 'a' }),
       inquilino({
@@ -74,7 +81,52 @@ describe('conceptos de la cartera', () => {
         totales: { ...inquilino({}).totales, enMoraCop: 100, porVencerCop: 0 },
       }),
     ]
-    expect(filtrarInquilinos(lista, '', true).map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '', 'CARTERA').map((i) => i.clave)).toEqual(['b'])
+  })
+
+  it('cada cajón mira su propia cifra, y son tres momentos distintos', () => {
+    const base = inquilino({}).totales
+    const lista = [
+      inquilino({
+        clave: 'futura',
+        totales: { ...base, porVencerCop: 500, vencidaEnPlazoCop: 0, enMoraCop: 0 },
+      }),
+      inquilino({
+        clave: 'en-plazo',
+        totales: { ...base, porVencerCop: 0, vencidaEnPlazoCop: 500, enMoraCop: 0 },
+      }),
+      inquilino({
+        clave: 'cartera',
+        totales: { ...base, porVencerCop: 0, vencidaEnPlazoCop: 0, enMoraCop: 500 },
+      }),
+    ]
+
+    expect(filtrarInquilinos(lista, '', 'POR_VENCER').map((i) => i.clave)).toEqual(['futura'])
+    expect(filtrarInquilinos(lista, '', 'VENCIDA_EN_PLAZO').map((i) => i.clave)).toEqual([
+      'en-plazo',
+    ])
+    expect(filtrarInquilinos(lista, '', 'CARTERA').map((i) => i.clave)).toEqual(['cartera'])
+    expect(filtrarInquilinos(lista, '', 'TODAS')).toHaveLength(3)
+  })
+
+  /* El cajón y el texto se aplican los DOS: filtrar por cartera y buscar un
+     nombre no puede devolver a alguien que no está en cartera. */
+  it('el cajón y la búsqueda se aplican juntos', () => {
+    const base = inquilino({}).totales
+    const lista = [
+      inquilino({
+        clave: 'a',
+        nombre: 'Marta Gómez',
+        totales: { ...base, porVencerCop: 0, enMoraCop: 100 },
+      }),
+      inquilino({
+        clave: 'b',
+        nombre: 'Marta Ochoa',
+        totales: { ...base, porVencerCop: 100, enMoraCop: 0 },
+      }),
+    ]
+
+    expect(filtrarInquilinos(lista, 'marta', 'CARTERA').map((i) => i.clave)).toEqual(['a'])
   })
 
   it('las columnas de una fila tienen que explicar su saldo', () => {

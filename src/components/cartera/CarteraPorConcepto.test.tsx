@@ -273,15 +273,24 @@ afterEach(() => {
 })
 
 describe('CarteraPorConcepto', () => {
-  it('una fila por inquilino con su total por concepto, y la franja de toda la cartera', () => {
+  /*
+   * 🔴 ACTUALIZADO EL 21-09: la franja de cuatro tarjetas es ahora una FRASE
+   * (el total) más las PESTAÑAS que filtran la tabla (los tres momentos). Nico:
+   * «hay filtros arriba que no se sabe a qué le aplican… hay más vómito ahí
+   * también». Los cuatro números siguen todos en pantalla y ninguno se sumó con
+   * otro; lo que cambió es cuál es resumen y cuál es filtro.
+   */
+  it('una fila por inquilino con su total por concepto, y el resumen de toda la cartera', () => {
     conCartera(cartera())
     montar()
 
     const resumen = $('[data-testid="resumen-por-concepto"]').textContent ?? ''
     expect(resumen).toContain(formatCurrency(8_678_200))
-    expect(resumen).toContain(formatCurrency(6_778_200))
-    expect(resumen).toContain(formatCurrency(1_900_000))
     expect(resumen).toContain('4 cuotas')
+    // Lo de cada momento vive en su pestaña, que además filtra la tabla.
+    const cajones = $('[data-testid="cajones-de-la-cartera"]').textContent ?? ''
+    expect(cajones).toContain(formatCurrency(6_778_200))
+    expect(cajones).toContain(formatCurrency(1_900_000))
 
     const filas = todos('[data-testid="fila-inquilino"]')
     expect(filas).toHaveLength(2)
@@ -402,7 +411,7 @@ describe('CarteraPorConcepto', () => {
     expect(pesos[pesos.length - 1]).toBe(8_678_200)
   })
 
-  it('el buscador y «sólo en mora» achican la tabla, y el pie sigue a lo filtrado', () => {
+  it('el buscador y la pestaña de cartera achican la tabla, y el pie sigue a lo filtrado', () => {
     conCartera(cartera())
     montar()
 
@@ -415,7 +424,8 @@ describe('CarteraPorConcepto', () => {
     )
 
     escribir($('[data-testid="buscar-por-concepto"]') as HTMLInputElement, '')
-    clic($('[data-testid="solo-en-mora"]'))
+    // El interruptor «Sólo cartera» se volvió la pestaña «Cartera» (21-09).
+    clic($('[data-testid="cajon-cartera"]'))
     expect(todos('[data-testid="fila-inquilino"]')).toHaveLength(1)
     pie = pesosDe($('[data-testid="totales-por-concepto"]'))
     expect(pie[pie.length - 1]).toBe(6_778_200)
@@ -528,20 +538,33 @@ describe('CarteraPorConcepto — los tres números que no se pueden mezclar', ()
     montar()
 
     expect($('[data-testid="total-deuda"]').textContent).toBe(formatCurrency(7_690_000))
-    expect($('[data-testid="total-por-vencer"]').textContent).toBe(formatCurrency(7_000_000))
-    expect($('[data-testid="total-vencido-en-plazo"]').textContent).toBe(formatCurrency(90_000))
-    expect($('[data-testid="total-cartera"]').textContent).toBe(formatCurrency(600_000))
+    expect($('[data-testid="cajon-por-vencer"]').textContent).toContain(
+      formatCurrency(7_000_000),
+    )
+    expect($('[data-testid="cajon-vencido-en-plazo"]').textContent).toContain(
+      formatCurrency(90_000),
+    )
+    expect($('[data-testid="cajon-cartera"]').textContent).toContain(formatCurrency(600_000))
   })
 
+  /*
+   * 🔴 La partición tiene que cuadrar A OJO en la pantalla. Es la prueba que
+   * impide que alguien «arregle» una de las cuatro cifras por su cuenta: si los
+   * tres momentos no suman el total, uno de los cuatro está mal y la pantalla
+   * no lo diría.
+   */
   it('🔴 los tres cajones SUMAN la deuda total: son una partición', () => {
     conCartera(conLosTresCajones())
     montar()
 
-    const leer = (id: string) =>
-      Number(($(`[data-testid="${id}"]`).textContent ?? '').replace(/[^\d]/g, ''))
-    expect(leer('total-por-vencer') + leer('total-vencido-en-plazo') + leer('total-cartera')).toBe(
-      leer('total-deuda'),
-    )
+    const pesos = (texto: string) => Number(texto.replace(/[^\d]/g, ''))
+    const deLaPestana = (id: string) =>
+      pesos(($(`[data-testid="${id}"]`).textContent ?? '').replace(/^[^$]*/, ''))
+    expect(
+      deLaPestana('cajon-por-vencer') +
+        deLaPestana('cajon-vencido-en-plazo') +
+        deLaPestana('cajon-cartera'),
+    ).toBe(pesos($('[data-testid="total-deuda"]').textContent ?? ''))
   })
 
   it('🔴 «vencida dentro del plazo» NO se pinta como mora', () => {
@@ -572,7 +595,7 @@ describe('CarteraPorConcepto — los tres números que no se pueden mezclar', ()
     expect(textos.size).toBe(3)
   })
 
-  it('«sólo cartera» deja afuera a quien debe pero está dentro del plazo', () => {
+  it('la pestaña «Cartera» deja afuera a quien debe pero está dentro del plazo', () => {
     const soloEnPlazo: InquilinoEnCartera = {
       ...MARTA,
       clave: 'documento:2',
@@ -582,7 +605,7 @@ describe('CarteraPorConcepto — los tres números que no se pueden mezclar', ()
     conCartera(cartera({ inquilinos: [NICOLAS, soloEnPlazo] }))
     montar()
 
-    clic($('[data-testid="solo-en-mora"]'))
+    clic($('[data-testid="cajon-cartera"]'))
     const filas = todos('[data-testid="fila-inquilino"]')
     expect(filas).toHaveLength(1)
     expect(filas[0]!.textContent).toContain('Nicolás Rojas')
@@ -611,32 +634,77 @@ describe('CarteraPorConcepto — los tres números que no se pueden mezclar', ()
   })
 })
 
-describe('🔴 la puerta al estado de cuenta (Nico, 2026-09-16)', () => {
-  // «Todo funciona alrededor del estado de cuenta del contrato.» La pantalla
-  // existía desde el 13-09 y sólo las fichas llevaban a ella, no la cartera.
+/*
+ * 🔴 ACTUALIZADO EL 21-09: la puerta al estado de cuenta se mudó al KEBAB.
+ *
+ * Nico: «¿por qué no usas al lado derecho el kebab menu para agregar acciones?»
+ * y «cuando se dé clic que me muestre todo en un drawer». Era un enlace azul
+ * suelto debajo del nombre, donde la segunda acción no tiene dónde ponerse.
+ *
+ * Lo que estas pruebas cuidan NO cambió: con qué se identifica al inquilino, y
+ * que sin cuenta ni documento la puerta no se ofrezca. Lo que cambió es dónde
+ * está, así que hay que abrir el menú — Radix lo monta recién al abrirse, en un
+ * PORTAL sobre `document.body`, y abre con `pointerdown`, no con `click`.
+ */
+describe('🔴 la puerta al estado de cuenta (Nico, 2026-09-16 · movida el 21-09)', () => {
+  function abrirElKebab(indice = 0): Element | null {
+    const kebab = todos('[data-testid="inquilino-kebab"]')[indice] as HTMLButtonElement
+    act(() => {
+      kebab.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          pointerId: 1,
+        }),
+      )
+    })
+    return document.body.querySelector('[data-testid="inquilino-estado-de-cuenta"]')
+  }
+
   it('cada inquilino abre SU estado de cuenta, con el regreso a esta lectura', () => {
     conCartera(cartera())
     montar()
-    const enlace = todos('[data-testid="fila-inquilino"]')[0]!.querySelector(
-      '[data-testid="inquilino-estado-de-cuenta"]',
-    )
-    expect(enlace?.getAttribute('href')).toBe(
+
+    expect(abrirElKebab()?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/estado-de-cuenta/inquilino/70814637?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fconceptos',
     )
-  })
-
-  it('el enlace NO vive dentro del botón que abre la fila: serían dos controles anidados', () => {
-    conCartera(cartera())
-    montar()
-    const fila = todos('[data-testid="fila-inquilino"]')[0]!
-    expect(fila.querySelector('button [data-testid="inquilino-estado-de-cuenta"]')).toBeNull()
-    expect(fila.querySelector('[data-testid="inquilino-estado-de-cuenta"]')).not.toBeNull()
   })
 
   it('agrupado por CONTRATO (sin cuenta ni documento) no ofrece la puerta', () => {
     conCartera(cartera({ inquilinos: [{ ...NICOLAS, clave: 'contrato:ct-1', documento: null }] }))
     montar()
-    expect(host.querySelector('[data-testid="inquilino-estado-de-cuenta"]')).toBeNull()
+
+    expect(abrirElKebab()).toBeNull()
+  })
+
+  /*
+   * 🔴 Los TRES blancos de la fila hacen tres cosas distintas, y ninguno pisa
+   * al otro. Si el caret propagara, abrir los meses abriría además el cajón: dos
+   * cosas de un clic, y ninguna pedida.
+   */
+  it('el caret abre los meses en la tabla y NO abre el cajón', () => {
+    conCartera(cartera())
+    montar()
+
+    clic(todos('[data-testid="fila-inquilino"]')[0]!.querySelector('button')!)
+
+    expect(todos('[data-testid="fila-mes"]').length).toBeGreaterThan(0)
+    expect(document.body.querySelector('[data-testid="cajon-del-deudor"]')).toBeNull()
+  })
+
+  it('la fila abre el cajón con todo lo que debe', () => {
+    conCartera(cartera())
+    montar()
+
+    clic(todos('[data-testid="fila-inquilino"]')[0]!)
+
+    const cajon = document.body.querySelector('[data-testid="cajon-del-deudor"]')
+    expect(cajon).not.toBeNull()
+    expect(cajon?.textContent).toContain('Nicolás Rojas')
+    // Sus tres meses, cada uno con su bloque: en la tabla eran renglones de 8
+    // columnas.
+    expect(cajon?.querySelectorAll('[data-testid="cajon-mes"]').length).toBe(3)
   })
 })
 

@@ -184,6 +184,42 @@ export interface CuentaBancaria {
   bankAccountHolder: string | null;
   bankAccountHolderDocument: string | null;
   bankAccountHolderDocumentType: string | null;
+  /**
+   * 🔴 22-09: el reparto entre varias cuentas que va con el cambio. Los campos de
+   * arriba son la cuenta PRINCIPAL (la de mayor porcentaje). Ausente = back sin
+   * la migración del reparto; `[]` = una sola cuenta; 2 o más = el reparto.
+   */
+  reparto?: CuentaDelReparto[];
+}
+
+/** Una cuenta del reparto, con su porcentaje (entero, suman 100). */
+export interface CuentaDelReparto {
+  bankName: string | null;
+  bankAccountType: string | null;
+  bankAccountNumber: string | null;
+  bankAccountHolder: string | null;
+  bankAccountHolderDocument: string | null;
+  bankAccountHolderDocumentType: string | null;
+  porcentaje: number;
+  /**
+   * 🔴 23-09: la certificación de ESTA cuenta, en un cambio con reparto.
+   * Objeto = la cuenta era nueva y ésta es la suya (se baja con
+   * `archivoDelCambio(…, i)`); `null` = ya estaba vigente, no pidió; ausente =
+   * solicitud anterior, con una sola certificación para todo el reparto.
+   */
+  certificacion?: { nombre: string; tipo: string } | null;
+}
+
+/** Una cuenta del reparto como la manda el formulario. */
+export interface CuentaDelRepartoPedida {
+  bankCode: string;
+  bankAccountType: 'AHORROS' | 'CORRIENTE';
+  bankAccountNumber: string;
+  titularDeLaCuenta: 'PROPIETARIO' | 'TERCERO';
+  bankAccountHolder?: string;
+  bankAccountHolderDocument?: string;
+  bankAccountHolderDocumentType?: string;
+  porcentaje: number;
 }
 
 export interface CambioDeCuenta {
@@ -214,17 +250,37 @@ export interface CambiosDeCuentaDelPropietario {
   disponible: boolean;
   motivo: string | null;
   cambios: CambioDeCuenta[];
+  /**
+   * 🔴 22-09: las cuentas VIGENTES con su porcentaje (sin reparto, la de la
+   * ficha al 100 %). Ausentes = back anterior al reparto.
+   */
+  cuentasVigentes?: CuentaDelReparto[];
+  /** ¿Se puede pedir un reparto? `false` sin la migración, con el motivo. */
+  repartoDisponible?: boolean;
+  motivoDelReparto?: string | null;
 }
 
 export interface SolicitudDeCambioDeCuenta {
   bankCode?: string;
   bankName?: string;
-  bankAccountType: 'AHORROS' | 'CORRIENTE';
-  bankAccountNumber: string;
+  /** Obligatorios con una sola cuenta; con `reparto` cada cuenta trae los suyos. */
+  bankAccountType?: 'AHORROS' | 'CORRIENTE';
+  bankAccountNumber?: string;
+  /** 🔴 22-09: el reparto entre varias cuentas (viaja como JSON en el formulario). */
+  reparto?: CuentaDelRepartoPedida[];
+  /** «¿A quién pertenece la cuenta?» (22-09). Con `TERCERO`, los tres de abajo son obligatorios. */
+  titularDeLaCuenta?: 'PROPIETARIO' | 'TERCERO';
   bankAccountHolder?: string;
   bankAccountHolderDocument?: string;
   bankAccountHolderDocumentType?: string;
-  certificacion: File;
+  /** Una sola cuenta: la certificación de siempre. */
+  certificacion?: File;
+  /**
+   * 🔴 23-09: con reparto, la certificación de cada cuenta NUEVA en SU
+   * posición (`null` = ya estaba vigente). Viaja en `certificacion_<i>`: el
+   * back empareja por el nombre del campo, no por el orden.
+   */
+  certificacionesPorCuenta?: (File | null)[];
 }
 
 export interface CambioDeCuentaPublico {
@@ -234,6 +290,23 @@ export interface CambioDeCuentaPublico {
   banco: string | null;
   tipoDeCuenta: string | null;
   cuentaEnmascarada: string;
+  /**
+   * 🔴 A nombre de quién queda la cuenta nueva si es de OTRA persona (22-09):
+   * «Carlos Restrepo · CC 80012345». `null` = es del propietario. Ausente = back
+   * anterior al cambio.
+   */
+  titularDeOtraPersona?: string | null;
+  /**
+   * 🔴 22-09: si el cambio reparte la plata entre varias cuentas, todas con su
+   * porcentaje. `null`/ausente = una sola cuenta (la de arriba).
+   */
+  reparto?: Array<{
+    porcentaje: number;
+    banco: string | null;
+    tipoDeCuenta: string | null;
+    cuentaEnmascarada: string;
+    titularDeOtraPersona: string | null;
+  }> | null;
   expiraAt: string;
   vencido: boolean;
 }
@@ -393,14 +466,22 @@ export const mandatoApi = {
 
   solicitarCambioDeCuenta: (propietarioId: string, s: SolicitudDeCambioDeCuenta) => {
     const f = new FormData();
+    if (s.reparto) {
+      // Multipart: un arreglo no viaja como campos; va como texto JSON.
+      f.append('reparto', JSON.stringify(s.reparto));
+    }
     if (s.bankCode) f.append('bankCode', s.bankCode);
     if (s.bankName) f.append('bankName', s.bankName);
-    f.append('bankAccountType', s.bankAccountType);
-    f.append('bankAccountNumber', s.bankAccountNumber);
+    if (s.bankAccountType) f.append('bankAccountType', s.bankAccountType);
+    if (s.bankAccountNumber) f.append('bankAccountNumber', s.bankAccountNumber);
+    if (s.titularDeLaCuenta) f.append('titularDeLaCuenta', s.titularDeLaCuenta);
     if (s.bankAccountHolder) f.append('bankAccountHolder', s.bankAccountHolder);
     if (s.bankAccountHolderDocument) f.append('bankAccountHolderDocument', s.bankAccountHolderDocument);
     if (s.bankAccountHolderDocumentType) f.append('bankAccountHolderDocumentType', s.bankAccountHolderDocumentType);
-    f.append('certificacion', s.certificacion);
+    if (s.certificacion) f.append('certificacion', s.certificacion);
+    s.certificacionesPorCuenta?.forEach((archivo, i) => {
+      if (archivo) f.append(`certificacion_${i}`, archivo);
+    });
     return enviarFormulario<{ cambio: CambioDeCuenta; enlaceDePrueba?: string }>(
       `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta`,
       f,
@@ -430,9 +511,12 @@ export const mandatoApi = {
       { motivo },
     ),
 
-  archivoDelCambio: (propietarioId: string, cambioId: string, cual: 'certificacion' | 'aprobacion') =>
+  /** Un número = la certificación de esa cuenta del reparto (desde 0). */
+  archivoDelCambio: (propietarioId: string, cambioId: string, cual: 'certificacion' | 'aprobacion' | number) =>
     apiClient.get<{ url: string; nombre: string }>(
-      `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta/${cambioId}/${cual}`,
+      `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta/${cambioId}/${
+        typeof cual === 'number' ? `certificacion-${cual}` : cual
+      }`,
     ),
 
   /*

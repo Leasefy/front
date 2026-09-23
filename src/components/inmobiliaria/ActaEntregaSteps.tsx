@@ -8,7 +8,6 @@ import {
   Key,
   Plus,
   Trash,
-  Camera,
   CheckCircle,
   Warning,
   User,
@@ -469,15 +468,12 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-1">
-                    <IconButton
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled
-                      title={t('inmobiliaria.acta.addPhotoSoon')}
-                      aria-label={t('inmobiliaria.acta.addPhotoSoon')}
-                      icon={<Camera className="w-4 h-4" />}
-                    />
+                    {/* 🔴 Acá había una cámara DESHABILITADA con «Agregar
+                        foto (próximamente)». No es que falte construirla: las
+                        fotos del acta van por ESPACIO —`fotosPorEspacio`, y son
+                        obligatorias para cerrarla (I-03)— no por ítem del
+                        inventario. El icono prometía una granularidad que el
+                        modelo no tiene y que nadie pidió. */}
                     <IconButton
                       type="button"
                       variant="ghost"

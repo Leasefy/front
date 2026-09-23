@@ -7,7 +7,6 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { toast } from '@/components/ui/toast';
 import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -86,10 +85,25 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
     }
   };
 
-  const handleRenewal = () => {
-    toast.info('Renovación de contrato', {
-      description: 'Próximamente podrás renovar contratos desde aquí',
-    });
+  /**
+   * 🔴 Acá había un aviso de «Próximamente podrás renovar contratos desde
+   * aquí», en el botón PRIMARIO de la tarjeta y justo en el momento en que al
+   * propietario más le importa (faltando 60 días o menos). Era falso de dos
+   * maneras:
+   *
+   *   · el propietario NO renueva. La renovación y el reajuste los prepara la
+   *     inmobiliaria — el back lo tiene en `inmobiliaria/renovaciones`, con su
+   *     corrida automática y sus cartas de incremento— y las rutas de
+   *     `leases/:id/renovacion/{accept,request}` son del INQUILINO
+   *     (`@Roles(Role.TENANT)`), no del dueño; y
+   *   · lo que el propietario sí puede hacer existe y andaba: pedirle algo a su
+   *     inmobiliaria, incluido «no renovar», que es uno de los tipos de
+   *     solicitud (`REQUEST_TYPE_OPTIONS`).
+   *
+   * Así que el botón lleva al único lugar donde su opinión llega a alguien.
+   */
+  const hablarDeLaRenovacion = () => {
+    router.push('/panel/solicitudes/nueva');
   };
 
   const daysRemaining = Math.ceil(
@@ -224,8 +238,23 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 </a>
               </div>
 
+              {isEndingSoon && (
+                <p
+                  className="text-xs text-fg-muted pt-4 border-t border-border-faint leading-snug"
+                  data-testid="quien-renueva"
+                >
+                  La renovación y el reajuste del canon los prepara tu inmobiliaria. Si no
+                  quieres renovar, avísale antes de que venza.
+                </p>
+              )}
+
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-border-faint">
+              <div
+                className={cn(
+                  'flex flex-wrap gap-2 pt-4',
+                  !isEndingSoon && 'border-t border-border-faint',
+                )}
+              >
                 <Button
                   variant="outline"
                   size="sm"
@@ -248,10 +277,10 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                   <Button
                     size="sm"
                     className="gap-2"
-                    onClick={handleRenewal}
+                    onClick={hablarDeLaRenovacion}
                   >
                     <ArrowsClockwise className="w-4 h-4" />
-                    Renovar
+                    Hablar de la renovación
                   </Button>
                 )}
               </div>

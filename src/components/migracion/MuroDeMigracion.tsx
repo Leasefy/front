@@ -1025,7 +1025,7 @@ function BarraDePasos({
               <span
                 data-testid={`muro-barra-${paso.id}`}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-caption font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
                   hecho
                     ? "border-2 border-primary bg-primary text-primary-fg"
                     : habilitado
@@ -1059,7 +1059,7 @@ function BarraDePasos({
             <div className="mt-2.5 hidden min-w-0 pr-3 text-left sm:block">
               <p
                 className={cn(
-                  "truncate text-xs font-medium",
+                  "truncate text-caption font-medium",
                   elegido
                     ? "text-primary"
                     : hecho || habilitado
@@ -1217,7 +1217,7 @@ function PasoEnFoco({
         </p>
         {hecho ? (
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs tabular-nums text-success"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-caption tabular-nums text-success"
             data-testid="muro-paso-listo"
           >
             <Check className="h-3.5 w-3.5" weight="bold" />
@@ -1242,7 +1242,7 @@ function PasoEnFoco({
            * que todo lo que sigue es un faltante.
            */
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-caption tabular-nums text-warning"
             data-testid="muro-paso-falta"
           >
             {t("migracion.muro.falta", { detalle: paso.detalle })}
@@ -1440,7 +1440,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
             {conteos.map((c) => (
               <li
                 key={c}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-xs tabular-nums text-fg-muted"
+                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted"
               >
                 {c}
               </li>

@@ -22,14 +22,21 @@
  * `TablePagination`, como en Solicitudes): sin filas nunca se pintaría.
  */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Info, Receipt } from '@phosphor-icons/react';
+import { CalendarBlank, Info, Receipt } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -134,6 +141,15 @@ function FacturacionContent() {
   const [mes, setMes] = useState(mesActual());
   const meses = mesesParaElegir();
 
+  /*
+   * 🔴 «Cargar la resolución» desde «Nueva factura» abre el cajón de carga, no
+   * sólo la pestaña: mandar a una pantalla donde todavía hay que buscar el
+   * botón es la mitad del camino (Nico, 21-09: «eso debería ser un CTA que
+   * saque toda la información y ya funcione desde ahí»).
+   */
+  const [abrirCargaDeResolucion, setAbrirCargaDeResolucion] = useState(false);
+  const bajarLaBandera = useCallback(() => setAbrirCargaDeResolucion(false), []);
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-2">
@@ -219,13 +235,21 @@ function FacturacionContent() {
             <div className="p-4">
               {/* La pestaña es estado local: sin el callback, «Cargar la
                   resolución» sería un texto que dice a dónde ir sin llevar. */}
-              <NuevaFactura onIrAResolucion={() => setActive('resolucion')} />
+              <NuevaFactura
+                onIrAResolucion={() => {
+                  setActive('resolucion');
+                  setAbrirCargaDeResolucion(true);
+                }}
+              />
             </div>
           </TabsContent>
 
           <TabsContent value="resolucion" className="mt-0">
             <div className="p-4">
-              <ResolucionDeFacturacion />
+              <ResolucionDeFacturacion
+                abrirCarga={abrirCargaDeResolucion}
+                onCargaAbierta={bajarLaBandera}
+              />
             </div>
           </TabsContent>
 
@@ -265,29 +289,46 @@ function FacturacionContent() {
               motor DIAN. */}
           {(['ventas', 'notas'] as const).map((clave) => (
             <TabsContent key={clave} value={clave} className="mt-0">
-              <div className="space-y-4 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label
-                    htmlFor="facturacion-mes-emitidas"
-                    className="text-caption text-fg-muted"
-                  >
-                    Mes
-                  </label>
-                  <select
-                    id="facturacion-mes-emitidas"
-                    className="h-9 rounded-md border border-border bg-surface px-3 text-sm"
-                    value={mes}
-                    onChange={(e) => setMes(e.target.value)}
-                    data-testid="facturacion-mes-emitidas"
-                  >
-                    {meses.map((m) => (
-                      <option key={m} value={m}>
-                        {mesLegible(m)}
-                      </option>
-                    ))}
-                  </select>
+              {/* 🔴 El mes es del DS y dice a qué lista gobierna, pegado a
+                  ella (Nico, 21-09: «no estás usando los componentes de
+                  cadence» y «el mes y la tabla deberían ser una sola cosa»).
+                  Era un `<select>` crudo de 36 px con una etiqueta «Mes»
+                  suelta encima de la tabla. */}
+              <div className="space-y-0">
+                <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-caption text-fg-muted">
+                    {clave === 'ventas'
+                      ? 'Las facturas que emitiste en el mes.'
+                      : 'Las notas crédito con las que anulaste facturas del mes.'}
+                  </p>
+                  <Select value={mes} onValueChange={setMes}>
+                    <SelectTrigger
+                      className="w-56 gap-2"
+                      aria-label={
+                        clave === 'ventas'
+                          ? 'Mes de las facturas emitidas'
+                          : 'Mes de las notas crédito'
+                      }
+                      data-testid="facturacion-mes-emitidas"
+                    >
+                      <CalendarBlank
+                        className="h-4 w-4 shrink-0 text-fg-muted"
+                        aria-hidden="true"
+                      />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meses.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {mesLegible(m)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <FacturasEmitidas mes={mes} vista={clave} />
+                <div className="p-4">
+                  <FacturasEmitidas mes={mes} vista={clave} />
+                </div>
               </div>
             </TabsContent>
           ))}

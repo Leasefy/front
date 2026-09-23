@@ -24,6 +24,14 @@ import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
+
+/*
+ * ⏱️ 60 s: este guardián lee el repo entero y compite con las demás pruebas de
+ * la suite. Ver `el-producto-tutea.test.ts` para el caso en que 30 s no
+ * alcanzaron — medir un guardián aislado no lo mide dentro de la suite.
+ */
+const TIEMPO_DE_RECORRER_EL_REPO = 60_000
+
 const RAIZ = join(process.cwd(), 'src')
 
 /**
@@ -62,7 +70,7 @@ const TODOS = archivosDeCodigo(RAIZ)
 describe('el panel confirma con el sistema de diseño, no con el navegador', () => {
   it('encuentra el código (si no, el recorrido se rompió y el test no prueba nada)', () => {
     expect(TODOS.length).toBeGreaterThan(500)
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('nadie llama window.confirm / alert / prompt fuera del backoffice', () => {
     const infractores: string[] = []
@@ -96,5 +104,5 @@ describe('el panel confirma con el sistema de diseño, no con el navegador', () 
         'no se puede probar y algunos navegadores lo suprimen, con lo que la ' +
         'acción destructiva pasa sin confirmación.',
     ).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })

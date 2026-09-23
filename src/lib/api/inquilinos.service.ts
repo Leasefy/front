@@ -30,6 +30,20 @@ export type EstadoDeArriendo = 'ACTIVE' | 'ENDING_SOON' | 'ENDED' | 'TERMINATED'
  */
 export type FiltroDeEstado = 'activos' | 'terminados' | 'todos';
 
+/**
+ * Cuántas personas hay detrás de cada pestaña.
+ *
+ * 🔴 `activos + terminados` puede ser MAYOR que `todos`, y está bien: una
+ * persona con un contrato vivo y otro terminado sale en las dos listas, así
+ * que sale en los dos números. Lo que sí se cumple es que el número de una
+ * pestaña es cuántas filas se ven al clickearla.
+ */
+export interface ConteosDeInquilinos {
+  activos: number;
+  terminados: number;
+  todos: number;
+}
+
 /** Un arriendo de la persona con ESTA inmobiliaria. */
 export interface ArriendoDeInquilino {
   /**
@@ -124,6 +138,23 @@ export const inquilinosApi = {
     if (filtros.estado) q.set('estado', filtros.estado);
     const qs = q.toString();
     return apiClient.get<Inquilino[]>(`/inmobiliaria/inquilinos${qs ? `?${qs}` : ''}`);
+  },
+
+  /**
+   * Los números de las pestañas, con la misma búsqueda que la lista.
+   *
+   * Va aparte de `listar` porque la lista trae UNA pestaña y los números son
+   * de las tres: meterlos en la misma respuesta obligaría a recalcular los
+   * tres agrupados en cada página de la lista.
+   */
+  async conteos(filtros: { buscar?: string } = {}): Promise<ConteosDeInquilinos> {
+    const q = new URLSearchParams();
+    const buscar = filtros.buscar?.trim();
+    if (buscar) q.set('buscar', buscar);
+    const qs = q.toString();
+    return apiClient.get<ConteosDeInquilinos>(
+      `/inmobiliaria/inquilinos/conteos${qs ? `?${qs}` : ''}`,
+    );
   },
 
   /**

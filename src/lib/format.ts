@@ -4,6 +4,8 @@
  * These utilities are for non-component contexts (PDF generation, data processing, etc.)
  */
 
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+
 type SupportedLocale = 'es-CO' | 'en-US';
 
 function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
@@ -56,9 +58,18 @@ export function formatArea(area: number | null | undefined): string {
 /**
  * Formats a date string for display
  * @example formatDate('2026-01-18T14:30:00Z') → "18 ene 2026"
+ *
+ * 🔴 QA 22-09: «Mis contratos» del inquilino decía «Inicio 30 de jun de 2025»
+ * de un contrato que empieza el 1 de julio. El back manda las columnas `date`
+ * como `2025-07-01T00:00:00.000Z` y `new Date(...)` en Bogotá (UTC-5) lo corre
+ * a las 19:00 del día anterior. Se arregla ACÁ, en el origen, porque la usan 13
+ * archivos (contrato, auditoría, lotes, extractos): una fecha-calendario
+ * (`YYYY-MM-DD` o medianoche UTC exacta) se lee como DÍA con
+ * `fechaDeVigencia`, la misma regla del `formatDate` de i18n. Un ISO con otra
+ * hora sigue siendo un instante y se convierte como siempre.
  */
 export function formatDate(dateString: string, locale?: 'es' | 'en'): string {
-  const date = new Date(dateString);
+  const date = fechaDeVigencia(dateString) ?? new Date(dateString);
   return date.toLocaleDateString(getLocaleString(locale), {
     day: 'numeric',
     month: 'short',
@@ -83,7 +94,18 @@ export function formatDateTime(dateString: string, locale?: 'es' | 'en'): string
 }
 
 /**
- * Formats a relative time (e.g., "hace 2 dias" / "2 days ago")
+ * Formats a relative time (e.g., "hace 2 días" / "2 days ago").
+ *
+ * 🔴 20-09 · Decía «dias» y «dia», sin acento, en las cinco pantallas que la
+ * usan. Lo encontré comparando dos edades de la MISMA decisión en el Piloto:
+ * el resumen del Gerente decía «lleva 19 días esperando» y la tarjeta de al
+ * lado «hace 20d» — y de paso se vio que acá faltaba la tilde.
+ *
+ * Y la regla de la edad: **siempre hacia abajo** (`Math.floor`). Una decisión
+ * que lleva 19 días y 22 horas lleva 19 días, no 20: redondear hacia arriba
+ * hace que la pantalla envejezca un caso antes de que pase. Es lo que hacía
+ * `pagos/page.tsx` con `Math.round(h / 24)`, y por eso los dos números no
+ * cuadraban.
  */
 export function formatRelativeTime(dateString: string, locale?: 'es' | 'en'): string {
   const date = new Date(dateString);
@@ -109,7 +131,7 @@ export function formatRelativeTime(dateString: string, locale?: 'es' | 'en'): st
   }
   if (diffDays < 7) {
     return isEs
-      ? `hace ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`
+      ? `hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`
       : `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
   }
   if (diffDays < 30) {

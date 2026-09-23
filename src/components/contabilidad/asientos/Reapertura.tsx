@@ -34,7 +34,7 @@
  */
 
 import { useCallback, useEffect, useId, useState } from 'react';
-import { ArrowUUpLeft, ClockCounterClockwise } from '@phosphor-icons/react';
+import { ArrowUUpLeft, ClockCounterClockwise, Info } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 
 import {
@@ -50,6 +50,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { ApiError } from '@/lib/api/client';
@@ -67,7 +68,7 @@ import {
   primerDiaDelMesDe,
   problemaDeReapertura,
 } from '@/lib/contabilidad/reapertura';
-import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { FaltaLaMigracion, Nota } from '../piezas';
 import { MOTIVO_SIN_REAPERTURA, usePuedeReabrir } from '../use-puede-escribir';
 
 export interface ReaperturaProps {
@@ -75,6 +76,15 @@ export interface ReaperturaProps {
   cerradaHasta: string | null;
   /** Para que el libro y la portada se refresquen con la frontera nueva. */
   onReabierto?: (r: ResultadoDeReapertura) => void;
+  /**
+   * La frontera todavía no llegó. 🔴 Sin esto, mientras la tarjeta cargaba,
+   * `cerradaHasta: null` se leía como «nada cerrado» y el botón explicaba
+   * «Con todo abierto no hay nada que reabrir» sobre un dato que nadie había
+   * leído todavía — lo encontró la prueba del esqueleto de carga (22-09).
+   */
+  cargando?: boolean;
+  /** La consulta de la frontera falló: `null` NO es «nada cerrado». */
+  fallo?: boolean;
 }
 
 /**
@@ -87,11 +97,18 @@ function mensajeDeReapertura(e: unknown): string {
   return mensajeDeContabilidad(e, 'No se pudo reabrir el período.');
 }
 
-export function Reapertura({ cerradaHasta, onReabierto }: ReaperturaProps) {
+export function Reapertura({
+  cerradaHasta,
+  onReabierto,
+  cargando = false,
+  fallo = false,
+}: ReaperturaProps) {
   const id = useId();
   const permiso = usePuedeReabrir();
 
   const [bitacora, setBitacora] = useState<BitacoraDeReaperturas | null>(null);
+  const [cargandoBitacora, setCargandoBitacora] = useState(true);
+  const [bitacoraAbierta, setBitacoraAbierta] = useState(false);
   const [abierto, setAbierto] = useState(false);
   const [todo, setTodo] = useState(false);
   const [hasta, setHasta] = useState('');
@@ -103,7 +120,9 @@ export function Reapertura({ cerradaHasta, onReabierto }: ReaperturaProps) {
   const cargarBitacora = useCallback(async () => {
     try {
       setBitacora(await contabilidadApi.asientos.reaperturas());
+      setCargandoBitacora(false);
     } catch {
+      setCargandoBitacora(false);
       /*
        * Sin bitácora la tarjeta sigue sirviendo: reabrir es lo que importa y
        * el back guarda la fila igual. No se pinta una lista vacía —eso diría
@@ -155,26 +174,23 @@ export function Reapertura({ cerradaHasta, onReabierto }: ReaperturaProps) {
 
   const sinMigracion = bitacora !== null && !bitacora.disponible;
 
+  const puede = !cargando && !fallo && permiso.puede && cerradaHasta !== null;
+  /*
+   * «Con todo abierto…» y no «La contabilidad no tiene ninguna fecha cerrada»:
+   * la tarjeta ya lo dice arriba, en su frase. Acá sólo va la consecuencia.
+   */
+  const porQueNo =
+    permiso.motivo ??
+    (fallo
+      ? 'Sin saber hasta dónde está cerrado no se puede elegir qué reabrir.'
+      : 'Con todo abierto no hay nada que reabrir.');
+
   return (
     <section
-      className="space-y-4 border-t border-border pt-4"
+      className="space-y-3 border-t border-border pt-4"
       aria-labelledby={`${id}-titulo`}
       data-testid="reapertura"
     >
-      <div className="space-y-1">
-        <h3
-          id={`${id}-titulo`}
-          className="flex items-center gap-2 text-sm font-semibold text-fg"
-        >
-          <ArrowUUpLeft className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-          Reabrir un mes cerrado
-        </h3>
-        <p className="max-w-xl text-caption text-fg-muted">
-          Mueve la frontera del cierre hacia atrás, con motivo y bitácora. Los asientos que ya
-          estaban marcados como cerrados no se desmarcan: corregir sigue siendo por reversa.
-        </p>
-      </div>
-
       {sinMigracion ? (
         <FaltaLaMigracion
           motivo={bitacora?.motivo ?? null}
@@ -183,17 +199,49 @@ export function Reapertura({ cerradaHasta, onReabierto }: ReaperturaProps) {
           testId="reapertura-sin-migracion"
         />
       ) : (
-        <AccionConMotivo
-          puede={permiso.puede && cerradaHasta !== null}
-          motivo={
-            permiso.motivo ??
-            'La contabilidad no tiene ninguna fecha cerrada: no hay nada que reabrir.'
-          }
-          onClick={abrirDialogo}
-          testId="abrir-reapertura"
-        >
-          Reabrir…
-        </AccionConMotivo>
+        <div className="space-y-1.5">
+          {/* 🔴 22-09 · Una fila: qué es a la izquierda, el botón a la derecha.
+              Antes eran un título, un párrafo de tres renglones con la
+              explicación entera y un botón gris suelto debajo. La explicación
+              se fue a «Cómo funciona» de la tarjeta; el porqué del botón
+              apagado se queda, visible, pegado a él. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 space-y-0.5">
+              <h3
+                id={`${id}-titulo`}
+                className="flex items-center gap-2 text-sm font-medium text-fg"
+              >
+                <ArrowUUpLeft className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+                Reabrir un mes cerrado
+              </h3>
+              <p className="text-caption text-fg-muted">
+                Sólo el administrador, con motivo y bitácora.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={abrirDialogo}
+              disabled={!puede}
+              title={puede || cargando ? undefined : porQueNo}
+              aria-describedby={puede || cargando ? undefined : `${id}-por-que-no`}
+              data-testid="abrir-reapertura"
+            >
+              Reabrir…
+            </Button>
+          </div>
+          {!puede && !cargando ? (
+            <p
+              id={`${id}-por-que-no`}
+              className="flex items-start gap-1.5 text-caption text-fg-muted"
+              data-testid="abrir-reapertura-motivo"
+            >
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{porQueNo}</span>
+            </p>
+          ) : null}
+        </div>
       )}
 
       {aviso ? (
@@ -203,44 +251,84 @@ export function Reapertura({ cerradaHasta, onReabierto }: ReaperturaProps) {
       ) : null}
 
       {/* ── La bitácora ───────────────────────────────────────────────── */}
+      {/* 🔴 22-09 · VACÍA, ES UNA LÍNEA. Era un subtítulo con icono y abajo
+          «Nadie reabrió un período todavía»: dos renglones y un encabezado
+          para decir «nada». Con filas, se ve la última entera (el motivo
+          completo es lo que hace que la bitácora sirva) y el resto se abre. */}
+      {bitacora === null && cargandoBitacora ? (
+        <Skeleton
+          className="h-4 w-64 max-w-full rounded-sm bg-surface-muted"
+          data-testid="bitacora-cargando"
+        />
+      ) : null}
       {bitacora?.disponible ? (
-        <div className="space-y-2" data-testid="bitacora-de-reaperturas">
-          <p className="flex items-center gap-2 text-caption font-medium text-fg">
-            <ClockCounterClockwise className="h-3.5 w-3.5 text-fg-muted" aria-hidden="true" />
-            Bitácora de reaperturas
+        bitacora.reaperturas.length === 0 ? (
+          <p
+            className="flex items-center gap-1.5 text-caption text-fg-muted"
+            data-testid="bitacora-vacia"
+          >
+            <ClockCounterClockwise className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="text-fg">Bitácora de reaperturas:</span> nadie reabrió un período
+              todavía.
+            </span>
           </p>
-          {bitacora.reaperturas.length === 0 ? (
-            <p className="text-caption text-fg-muted" data-testid="bitacora-vacia">
-              Nadie reabrió un período todavía.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {bitacora.reaperturas.map((r) => (
-                <li
-                  key={r.id}
-                  className="rounded-lg border border-border bg-surface-muted p-3 text-caption text-fg-muted"
-                  data-testid="fila-de-reapertura"
+        ) : (
+          <div className="space-y-2" data-testid="bitacora-de-reaperturas">
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-1.5 text-caption font-medium text-fg">
+                <ClockCounterClockwise className="h-3.5 w-3.5 text-fg-muted" aria-hidden="true" />
+                Bitácora de reaperturas
+                <span className="font-mono tabular-nums text-fg-muted">
+                  · {bitacora.reaperturas.length.toLocaleString('es-CO')}
+                </span>
+              </p>
+              {bitacora.reaperturas.length > 1 ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
+                  className="h-auto p-0 text-caption"
+                  onClick={() => setBitacoraAbierta((a) => !a)}
+                  aria-expanded={bitacoraAbierta}
+                  data-testid="bitacora-ver-todas"
                 >
-                  <p className="text-fg">
-                    {movimientoDeLaFrontera(r.fronteraAnterior, r.fronteraNueva)}
-                  </p>
-                  <p>
-                    {new Date(r.reabiertoAt).toLocaleString('es-CO')} ·{' '}
-                    {r.reabiertoPorUserId === null ? (
-                      'sin usuario registrado'
-                    ) : r.reabiertoPorUserId === permiso.usuarioId ? (
-                      'vos'
-                    ) : (
-                      <span className="font-mono">{r.reabiertoPorUserId}</span>
-                    )}
-                  </p>
-                  {/* El motivo COMPLETO: es lo que hace que la bitácora sirva. */}
-                  <p className="whitespace-pre-wrap text-fg">{r.motivo}</p>
-                </li>
-              ))}
+                  {bitacoraAbierta ? 'Ver sólo la última' : 'Ver todas'}
+                </Button>
+              ) : null}
+            </div>
+            <ul className="space-y-2">
+              {(bitacoraAbierta ? bitacora.reaperturas : bitacora.reaperturas.slice(0, 1)).map(
+                (r) => (
+                  <li
+                    key={r.id}
+                    className="space-y-0.5 rounded-md border border-border-faint bg-surface-muted px-3 py-2.5 text-caption text-fg-muted"
+                    data-testid="fila-de-reapertura"
+                  >
+                    <p className="text-fg">
+                      {movimientoDeLaFrontera(r.fronteraAnterior, r.fronteraNueva)}
+                    </p>
+                    {/* El motivo COMPLETO: es lo que hace que la bitácora sirva. */}
+                    <p className="whitespace-pre-wrap text-fg">{r.motivo}</p>
+                    <p>
+                      <span className="font-mono tabular-nums">
+                        {new Date(r.reabiertoAt).toLocaleString('es-CO')}
+                      </span>{' '}
+                      ·{' '}
+                      {r.reabiertoPorUserId === null ? (
+                        'sin usuario registrado'
+                      ) : r.reabiertoPorUserId === permiso.usuarioId ? (
+                        'tú'
+                      ) : (
+                        <span className="font-mono">{r.reabiertoPorUserId}</span>
+                      )}
+                    </p>
+                  </li>
+                ),
+              )}
             </ul>
-          )}
-        </div>
+          </div>
+        )
       ) : null}
 
       {/* ── El diálogo ────────────────────────────────────────────────── */}

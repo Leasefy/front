@@ -96,7 +96,7 @@ export function ProgresoDeLote({
               />
             )}
           </div>
-          <p className="text-xs tabular-nums text-muted-foreground">
+          <p className="text-caption tabular-nums text-muted-foreground">
             {procesadas > 0
               ? `${procesadas} / ${total} filas procesadas`
               : `Preparando ${total} filas — el conteo aparece cuando termine.`}

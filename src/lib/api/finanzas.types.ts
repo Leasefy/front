@@ -76,10 +76,25 @@ export interface RecaudoDelTablero {
   variacionPct: number | null;
 }
 
+/**
+ * Un tramo de edad de la cartera, como lo manda el tablero.
+ *
+ * 🔴 NO tiene `desdeDias` ni `hastaDias`, y este espejo los declaraba. El back
+ * manda `{ tramo, nombre, carteraCop, cuotas }` (`TramoDelTablero`); los dos
+ * campos de días son del tramo de DETERIORO, que es otra cosa. La tarjeta
+ * armaba su definición con ellos y en pantalla salía «undefined-undefined días
+ * de mora» en las cuatro tarjetas de «Cartera por edades» — un tipo que promete
+ * un campo que nunca llega no falla al compilar, falla a la vista.
+ *
+ * El rango ya viene escrito en `nombre` («0-30 días», «+90 días»): es el mismo
+ * corte de `reports/informe-de-cartera.ts`, para que el tablero y el informe no
+ * partan las edades distinto.
+ */
 export interface TramoDeCartera {
+  /** La clave del corte: `'0-30' | '31-60' | '61-90' | '90+'`. */
+  tramo: string;
+  /** Ya escrito para leer: «0-30 días», «+90 días». */
   nombre: string;
-  desdeDias: number;
-  hastaDias: number | null;
   carteraCop: number;
   cuotas: number;
 }

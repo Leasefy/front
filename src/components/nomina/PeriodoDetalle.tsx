@@ -79,11 +79,11 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
           <h2 className="text-base font-semibold text-fg">
             {etiquetaDelPeriodo(datos.mes, datos.quincena)}
           </h2>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {datos.desde.slice(0, 10)} al {datos.hasta.slice(0, 10)} ·{' '}
             {datos.personas} persona{datos.personas === 1 ? '' : 's'}
           </p>
-          <p className="mt-1 text-xs text-fg-muted">
+          <p className="mt-1 text-caption text-fg-muted">
             {datos.asientoId ? 'Asentado en contabilidad' : 'Todavía sin asiento'}
             {datos.loteDeEgresosId
               ? ' · pagado con lote de egresos'
@@ -92,7 +92,7 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
                 : ''}
           </p>
           {datos.motivoAnulacion ? (
-            <p className="mt-1 text-xs text-danger" data-testid="motivo-de-anulacion">
+            <p className="mt-1 text-caption text-danger" data-testid="motivo-de-anulacion">
               Anulado: {datos.motivoAnulacion}
             </p>
           ) : null}
@@ -182,14 +182,14 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
                     </Link>
                     {l.requiereValidacionContador ? (
                       <span
-                        className="ml-1.5 text-xs text-warning"
+                        className="ml-1.5 text-caption text-warning"
                         data-testid={`marcada-${l.id}`}
                       >
                         · revisar
                       </span>
                     ) : null}
                     {l.esDefinitiva ? (
-                      <span className="ml-1.5 text-xs text-warning">
+                      <span className="ml-1.5 text-caption text-warning">
                         · liquidación definitiva
                       </span>
                     ) : null}
@@ -214,7 +214,7 @@ function Contenido({ datos }: { datos: PeriodoConLiquidaciones }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
-                      className="text-xs text-brand underline"
+                      className="text-caption text-brand underline"
                       href={`${PANEL}/desprendible/${l.id}`}
                     >
                       Ver desprendible

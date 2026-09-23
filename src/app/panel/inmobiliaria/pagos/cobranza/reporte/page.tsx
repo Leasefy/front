@@ -122,7 +122,7 @@ function ReporteViewerContent() {
 
   if (!isLoading && !data && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <EmptyState
           icon={CalendarBlank}
           title={t('inmobiliaria.ai.cobranza.reporte.empty.title')}
@@ -132,7 +132,7 @@ function ReporteViewerContent() {
             href: '/panel/inmobiliaria/pagos/cobranza/reporte/suscripcion',
           }}
         />
-      </main>
+      </div>
     )
   }
 

@@ -33,6 +33,7 @@ import {
 import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 
 // ── El cartel del módulo no habilitado ──────────────────────────────────────
 
@@ -100,11 +101,17 @@ export function SinLaMigracion({
       />
       <div className="space-y-1.5">
         <p className="font-medium">Todavía no se puede {queSeEspera}.</p>
-        <p className="text-fg-muted">
-          {motivo ?? 'Falta la migración de esta pieza en la base de datos.'}
+        {/* 🔴 20-09 · Igual que en `contabilidad/piezas`: el motivo del back
+            está escrito para quien despliega —trae el identificador de la
+            migración y el nombre de quien la aplica— y acá lo lee una
+            inmobiliaria. `enCristiano` lo traduce; el original queda en el
+            `title` para quien tenga que diagnosticar. */}
+        <p className="text-fg-muted" title={motivo ?? undefined}>
+          {motivoEnCristiano(motivo) ??
+            'Esta función todavía no está disponible.'}
         </p>
         <p className="text-fg-muted">
-          La aplica Víctor. Hasta entonces esta pantalla te muestra lo que ya se
+          Nuestro equipo la está habilitando. Hasta entonces esta pantalla te muestra lo que ya se
           puede leer y no guarda nada — no se pierde trabajo, simplemente todavía
           no hay dónde escribirlo.
         </p>
@@ -160,7 +167,7 @@ export function FaltanLasCifrasDelAnio({
             inventa: cárgalos con el documento a la vista.
           </p>
           {referencia ? (
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Para referencia, en {referencia.anio} fueron{' '}
               {referencia.salarioMinimoCop != null
                 ? formatCurrency(referencia.salarioMinimoCop)
@@ -254,7 +261,7 @@ export function ParaValidar({
 }) {
   return (
     <span
-      className="inline-flex items-start gap-1.5 text-xs leading-relaxed text-warning"
+      className="inline-flex items-start gap-1.5 text-caption leading-relaxed text-warning"
       data-testid={testId}
       title={motivo}
     >
@@ -306,7 +313,7 @@ export function Cifra({
       >
         {medido ? formatCurrency(valor as number) : SIN_MEDIR}
       </p>
-      <p className="text-xs leading-relaxed text-fg-muted">
+      <p className="text-caption leading-relaxed text-fg-muted">
         {medido ? definicion : (sinMedir ?? definicion)}
       </p>
     </section>
@@ -327,7 +334,7 @@ export function TituloDeBloque({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-        <p className="max-w-2xl text-xs leading-relaxed text-fg-muted">
+        <p className="max-w-2xl text-caption leading-relaxed text-fg-muted">
           {explicacion}
         </p>
       </div>
@@ -357,7 +364,7 @@ export function EstadoDelPeriodo({ estado }: { estado: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-medium',
         TONO_DEL_ESTADO[estado] ?? TONO_DEL_ESTADO.BORRADOR,
       )}
       data-testid={`estado-${estado}`}
@@ -372,7 +379,7 @@ export function EstadoDelPeriodo({ estado }: { estado: string }) {
 export function LeyendaDeEstados() {
   return (
     <dl
-      className="grid gap-2 rounded-lg border border-border bg-surface p-4 text-xs text-fg-muted sm:grid-cols-2"
+      className="grid gap-2 rounded-lg border border-border bg-surface p-4 text-caption text-fg-muted sm:grid-cols-2"
       data-testid="leyenda-de-estados"
     >
       {Object.entries(QUE_SIGNIFICA).map(([estado, texto]) => (

@@ -29,7 +29,7 @@ export default function CotizadorConfiguracionPage() {
   const { data, isLoading, error, busy, setModo, refetch } = useAgentAutonomia('cotizador')
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <header className="space-y-1.5">
         <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
@@ -50,6 +50,6 @@ export default function CotizadorConfiguracionPage() {
         puedeCambiar={isAdmin}
         busy={busy}
       />
-    </main>
+    </div>
   )
 }

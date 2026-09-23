@@ -1,162 +1,79 @@
 /**
- * Lease Documents API service — CONTRACT ONLY (no backend today)
+ * Paz y salvo y certificado de estar al día, desde el portal del inquilino.
  *
- * Typed api-client for two tenant lease certificates that are generated and
- * CERTIFIED SERVER-SIDE:
+ * 🔴 ESTE ARCHIVO ERA UN CONTRATO SIN BACK. Durante meses declaró
+ * `POST /lease-documents/paz-y-salvo` + `GET /lease-documents/:id/status`, con
+ * tipos, manejo de errores y pantalla — y el back nunca implementó ninguno de
+ * los dos. Lo decía en su encabezado («CONTRACT ONLY, no backend today»), pero
+ * nadie lee encabezados cuando está buscando si algo existe, así que el
+ * producto parecía tener paz y salvo. El 21-09-2026 se construyó el back
+ * (`back-erp/src/inmobiliaria/documentos/certificados/`) y este archivo pasó a
+ * hablarle a rutas que existen.
  *
- *   1. **Paz y salvo** — a LEGAL "no outstanding debt" clearance. It is a legal
- *      assertion the backend must certify against the single source of truth
- *      (the ledger). The frontend NEVER renders a "sin deuda" / "paz y salvo"
- *      status of its own.
- *   2. **Certificado de retención en la fuente (3.5%)** — a FISCAL (DIAN)
- *      withholding certificate. The withholding number is computed and certified
- *      SERVER-SIDE; the frontend NEVER computes or displays the 3.5% amount.
+ * Lo que cambió, y por qué:
  *
- * Neither endpoint exists yet. This module is the contract only, modeled 1:1 on
- * the avalúo async flow (`src/lib/api/avaluo.service.ts` + `src/lib/types/avaluo.ts`):
- *
- *     request-generation  →  { id }                       (POST)
- *     poll status         →  { status, downloadUrl? }     (GET /:id/status)
- *
- * The presigned `downloadUrl` appears ONLY when the backend reports the document
- * ready. Until the backend is live, every method degrades to an "unavailable"
- * posture so the UI can show an honest "Próximamente" empty-state (DESIGN.md §11).
- * We deliberately do NOT fabricate a fake `id` or a fake `downloadUrl` — a missing
- * endpoint (403/404, or offline) is surfaced honestly, never faked.
+ *   · **El flujo ya no es asíncrono.** El contrato viejo lo modelaba como el
+ *     avalúo (pedir → sondear → URL firmada) porque no sabía cuánto iba a
+ *     tardar. El certificado se arma de una lectura del estado de cuenta y un
+ *     HTML: sale en la misma petición. Sondear algo que ya está listo es
+ *     inventar una espera.
+ *   · **Son DOS documentos y el cliente no elige cuál.** Lo decide el estado
+ *     del contrato: terminado ⇒ paz y salvo, vigente ⇒ certificado de estar al
+ *     día. Dejarlo elegir sería dejarlo pedir el equivocado y después
+ *     explicarle por qué se lo negaron.
+ *   · **Un «no se puede» viene con motivos.** El back devuelve, por contrato,
+ *     si se puede emitir y TODO lo que falta si no — para que la pantalla lo
+ *     diga antes y no después de un botón.
  */
 
-import { apiClient, ApiError } from './client';
+import { apiClient } from './client';
 
-// ---------------------------------------------------------------------------
-// Types — modeled on the avalúo async flow (IntakeResponse + AvaluoStatusResponse)
-// ---------------------------------------------------------------------------
+/** Los dos certificados. El código es el de la plantilla legal del back. */
+export type TipoDeCertificado = 'PAZ_Y_SALVO' | 'CERTIFICADO_ESTAR_AL_DIA';
 
-/** Lifecycle status of a server-generated lease certificate. */
-export type LeaseDocStatus = 'pending' | 'processing' | 'ready' | 'unavailable';
-
-/** Response of a request-generation POST — mirrors avalúo `IntakeResponse`. */
-export interface LeaseDocRequestResponse {
-  /** Server-assigned identifier for the generation request. */
-  id: string;
+/** Por qué no se puede emitir. `code` es lo que la pantalla puede mirar. */
+export interface ImpedimentoDelCertificado {
+  code: string;
+  mensaje: string;
 }
 
-/**
- * Response of the status poll — mirrors avalúo `AvaluoStatusResponse`.
- *
- * `downloadUrl` is a presigned URL that the backend sets ONLY when `status` is
- * `'ready'`. It is never fabricated client-side.
- */
-export interface LeaseDocStatusResponse {
-  status: LeaseDocStatus;
-  /** Presigned download URL — present only when the backend reports it ready. */
-  downloadUrl?: string;
-  /** ISO-8601 expiry of the presigned `downloadUrl`, when present. */
-  expiresAt?: string;
+/** Un contrato del inquilino y qué certificado le corresponde. */
+export interface CertificadoDisponible {
+  contractId: string;
+  /** El número que el cliente reconoce (el de su sistema anterior si lo hay). */
+  numero: string;
+  inmueble: string;
+  agencia: { id: string; nombre: string };
+  /** `null` cuando el contrato todavía no ha empezado. */
+  tipo: TipoDeCertificado | null;
+  puedeEmitirse: boolean;
+  impedimentos: ImpedimentoDelCertificado[];
 }
 
-// ---------------------------------------------------------------------------
-// Endpoint-not-live detection
-// ---------------------------------------------------------------------------
-
-/**
- * True when the failure means "endpoint not live yet" rather than a genuine
- * error: 404 (route absent), 403 (not wired for this tenant), or 0 (backend
- * unreachable / offline — `ApiError(0)` from the api-client). These degrade the
- * UI to the honest "Próximamente" empty-state instead of a crash.
- */
-function isEndpointUnavailable(err: unknown): boolean {
-  return (
-    err instanceof ApiError &&
-    (err.status === 404 || err.status === 403 || err.status === 0)
-  );
+export interface CertificadoEmitido {
+  documentoId: string;
+  tipo: TipoDeCertificado;
 }
-
-/**
- * Thrown by the request-generation methods when the backend endpoint is not
- * live. Callers catch this to keep the UI on "Próximamente" — never to invent a
- * fake request id.
- */
-export class LeaseDocumentUnavailableError extends Error {
-  constructor(public document: 'paz-y-salvo' | 'cert-retencion') {
-    super(`lease_document_unavailable:${document}`);
-    this.name = 'LeaseDocumentUnavailableError';
-  }
-}
-
-// ---------------------------------------------------------------------------
-// leaseDocumentsApi — the contract
-// ---------------------------------------------------------------------------
 
 export const leaseDocumentsApi = {
-  /**
-   * Requests server-side generation of the tenant's **paz y salvo** (legal
-   * clearance). Returns the request id to poll with `getStatus`.
-   *
-   * The clearance is certified by the backend against the ledger — the frontend
-   * never asserts "sin deuda". On a not-live endpoint (403/404/offline) this
-   * rethrows `LeaseDocumentUnavailableError` so the UI stays on "Próximamente";
-   * it never fabricates an id.
-   */
-  async requestPazYSalvo(leaseId: string): Promise<LeaseDocRequestResponse> {
-    try {
-      return await apiClient.post<LeaseDocRequestResponse>(
-        '/lease-documents/paz-y-salvo',
-        { leaseId },
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        throw new LeaseDocumentUnavailableError('paz-y-salvo');
-      }
-      throw err;
-    }
+  /** Mis contratos con el veredicto puesto. */
+  async disponibles(): Promise<CertificadoDisponible[]> {
+    const r = await apiClient.get<{ contratos: CertificadoDisponible[] }>(
+      '/portal/certificados',
+    );
+    return r.contratos ?? [];
   },
 
   /**
-   * Requests server-side generation of the tenant's **certificado de retención
-   * en la fuente (3.5%)** for a given fiscal `year`. Returns the request id to
-   * poll with `getStatus`.
-   *
-   * The 3.5% withholding amount is computed and certified SERVER-SIDE (DIAN) —
-   * the frontend never computes or displays it. On a not-live endpoint
-   * (403/404/offline) this rethrows `LeaseDocumentUnavailableError`; it never
-   * fabricates an id.
+   * Emite el certificado de un contrato. El tipo no viaja: lo decide el back
+   * con el estado del contrato, que es el único que lo sabe de verdad.
    */
-  async requestCertRetencion(
-    leaseId: string,
-    year: number,
-  ): Promise<LeaseDocRequestResponse> {
-    try {
-      return await apiClient.post<LeaseDocRequestResponse>(
-        '/lease-documents/cert-retencion',
-        { leaseId, year },
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        throw new LeaseDocumentUnavailableError('cert-retencion');
-      }
-      throw err;
-    }
+  async emitir(contractId: string): Promise<CertificadoEmitido> {
+    return apiClient.post<CertificadoEmitido>(`/portal/certificados/${contractId}`);
   },
 
-  /**
-   * Polls the generation status for a request id. Returns
-   * `{ status, downloadUrl? }` — the presigned `downloadUrl` is set by the
-   * backend only when `status === 'ready'`.
-   *
-   * On a not-live endpoint (403/404/offline) this resolves to
-   * `{ status: 'unavailable' }` so the UI degrades to "Próximamente" — never a
-   * fabricated `downloadUrl`.
-   */
-  async getStatus(id: string): Promise<LeaseDocStatusResponse> {
-    try {
-      return await apiClient.get<LeaseDocStatusResponse>(
-        `/lease-documents/${id}/status`,
-      );
-    } catch (err) {
-      if (isEndpointUnavailable(err)) {
-        return { status: 'unavailable' };
-      }
-      throw err;
-    }
+  /** El PDF del certificado ya emitido. */
+  async pdf(documentoId: string): Promise<Blob> {
+    return apiClient.getBlob(`/portal/certificados/${documentoId}/pdf`);
   },
 };

@@ -183,8 +183,8 @@ function Contenido({
 
         {resumen.disponible && resumen.porSede.length > 1 ? (
           <div className="rounded-lg border border-border bg-surface p-4">
-            <p className="mb-2 text-xs font-medium text-fg">Por centro de costo (sede)</p>
-            <ul className="space-y-1 text-xs text-fg-muted">
+            <p className="mb-2 text-caption font-medium text-fg">Por centro de costo (sede)</p>
+            <ul className="space-y-1 text-caption text-fg-muted">
               {resumen.porSede.map((s) => (
                 <li key={s.sedeId ?? 'sin-sede'} className="flex justify-between gap-4">
                   <span>{s.sedeId ?? 'Sin sede asignada'}</span>
@@ -214,7 +214,7 @@ function Contenido({
               data-testid={`puerta-${p.key}`}
             >
               <p className="text-sm font-medium text-fg">{p.titulo}</p>
-              <p className="text-xs leading-relaxed text-fg-muted">{p.que}</p>
+              <p className="text-caption leading-relaxed text-fg-muted">{p.que}</p>
             </Link>
           ))}
         </div>

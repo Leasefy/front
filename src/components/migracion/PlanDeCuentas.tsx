@@ -385,7 +385,7 @@ export function PlanDeCuentas({
         />
       ) : null}
 
-      {hayCuentas ? (
+      {hayCuentas && !sinPaso5 ? (
         /*
          * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
          * PUC, porque es lo que le falta al plan para que el motor asiente:
@@ -395,6 +395,19 @@ export function PlanDeCuentas({
          * Va ANTES del árbol de cuentas: es lo que decide si el paso está
          * hecho, y debajo de 99 cuentas nadie lo encontraba — Nico se quedó
          * en el paso 5 sin saber por qué no avanzaba (2026-09-02 12:42).
+         *
+         * 🔴 20-09 · `!sinPaso5`: SÓLO dentro de la migración. Abriendo
+         * `/contabilidad/puc` en el navegador apareció la pantalla de
+         * `/contabilidad/mapeo` ENTERA incrustada acá —los mismos nueve
+         * eventos, los mismos selectores que escriben— y esa pantalla tiene su
+         * propia tarjeta en el hub. Dos lugares para hacer lo mismo, con la
+         * misma tabla editable, y nadie sabe cuál manda: es el mismo defecto
+         * que tenía la portada con sus dos navegaciones.
+         *
+         * Dentro de la migración SÍ va junto, porque ahí es una secuencia:
+         * cargas el plan y, sin cambiar de pantalla, dices a qué cuenta va
+         * cada asiento. Fuera de ella son dos tareas distintas y basta con el
+         * enlace de abajo.
          */
         <section
           ref={mapeoRef}
@@ -413,6 +426,21 @@ export function PlanDeCuentas({
           </div>
           <MapeoContable onEstado={setMapeo} />
         </section>
+      ) : null}
+
+      {hayCuentas && sinPaso5 ? (
+        /* Fuera de la migración, el mapeo es su propia pantalla: acá va el
+           camino, no la tabla. */
+        <p className="text-sm text-fg-muted" data-testid="ir-al-mapeo-desde-el-puc">
+          A qué cuenta va cada asiento automático se decide en{' '}
+          <Link
+            href="/panel/inmobiliaria/contabilidad/mapeo"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            Contabilidad → Mapeo contable
+          </Link>
+          . Sin ese mapeo el plan existe pero nada se asienta solo.
+        </p>
       ) : null}
 
       {hayCuentas ? (
@@ -690,11 +718,11 @@ function PendientesDelContador({
                   <span className="font-mono tabular-nums">{p.codigo}</span> · {p.nombre}
                 </p>
                 {p.nota ? <p className="mt-0.5 text-sm text-fg-muted">{p.nota}</p> : null}
-                {p.uso ? <p className="mt-0.5 text-xs text-fg-subtle">{p.uso}</p> : null}
+                {p.uso ? <p className="mt-0.5 text-caption text-fg-subtle">{p.uso}</p> : null}
                 {!cargada ? (
-                  <p className="mt-1 text-xs text-fg-subtle">No está en tu plan.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">No está en tu plan.</p>
                 ) : !cargada.activa ? (
-                  <p className="mt-1 text-xs text-fg-subtle">Desactivada.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">Desactivada.</p>
                 ) : null}
               </div>
               {cargada && cargada.activa ? (
@@ -965,7 +993,7 @@ function FormularioDeCuenta({
             aria-describedby="puc-codigo-ayuda"
             data-testid="puc-codigo"
           />
-          <p id="puc-codigo-ayuda" className="text-xs text-fg-subtle">
+          <p id="puc-codigo-ayuda" className="text-caption text-fg-subtle">
             {fueraDelArbol
               ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
               : sugerido
@@ -988,7 +1016,7 @@ function FormularioDeCuenta({
             aria-invalid={nombre.length > 0 && !nombreValido}
             data-testid="puc-nombre"
           />
-          <p className="text-xs text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
+          <p className="text-caption text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
         </div>
 
         <div className="space-y-1">
@@ -1024,7 +1052,7 @@ function FormularioDeCuenta({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas.
             </p>
           </div>
@@ -1040,7 +1068,7 @@ function FormularioDeCuenta({
           />
           <span>
             Recibe movimientos
-            <span className="block text-xs text-fg-subtle">
+            <span className="block text-caption text-fg-subtle">
               Las cuentas con subcuentas no: los movimientos van en la subcuenta.
             </span>
           </span>
@@ -1050,7 +1078,7 @@ function FormularioDeCuenta({
             <Checkbox checked={activa} onCheckedChange={(c) => setActiva(c === true)} />
             <span>
               Activa
-              <span className="block text-xs text-fg-subtle">
+              <span className="block text-caption text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
               </span>
             </span>
@@ -1068,7 +1096,7 @@ function FormularioDeCuenta({
             />
             <span>
               {frasesNoDeducible.titulo}
-              <span className="block max-w-prose text-xs text-fg-subtle">
+              <span className="block max-w-prose text-caption text-fg-subtle">
                 {frasesNoDeducible.explicacion}
               </span>
             </span>

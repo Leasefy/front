@@ -37,8 +37,12 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
 }))
 
 /** La matriz editable, reducida a una marca que el test puede buscar. */
+let propsDeLaMatriz: { permissions: Record<string, { role: string; permissions: { module: string; actions: string[] }[] }>; onSave: (m: unknown) => Promise<void> } | null = null
 vi.mock('@/components/inmobiliaria', () => ({
-  ConfigPermisos: () => <div data-testid="matriz-editable" />,
+  ConfigPermisos: (props: never) => {
+    propsDeLaMatriz = props
+    return <div data-testid="matriz-editable" />
+  },
 }))
 
 import { SeccionPermisos } from './SeccionPermisos'
@@ -109,5 +113,30 @@ describe('sección Permisos', () => {
     })
     expect(getRolePermissions).toHaveBeenCalledTimes(2)
     expect(matriz()).not.toBeNull()
+  })
+})
+
+describe('guardar sólo lo tocado (22-09 noche)', () => {
+  it('🔴 tocar UN rol manda sólo ese rol; los demás no viajan y el back no los resetea', async () => {
+    getRolePermissions.mockResolvedValue({
+      roles: {
+        ...MATRIZ_DEL_SERVIDOR.roles,
+        COORDINADOR: { pipeline: ['view'] },
+        AUXILIAR_CARTERA: { cobros: ['view', 'create'] },
+        ABOGADO_EXTERNO: {},
+      },
+    })
+    updateRolePermissions.mockResolvedValue({ roles: MATRIZ_DEL_SERVIDOR.roles })
+    await render()
+    expect(Object.keys(propsDeLaMatriz!.permissions)).toHaveLength(7)
+
+    const editado = JSON.parse(JSON.stringify(propsDeLaMatriz!.permissions))
+    editado.agente.permissions.push({ module: 'bitacora', actions: ['view'] })
+    await act(async () => {
+      await propsDeLaMatriz!.onSave(editado)
+    })
+
+    expect(updateRolePermissions).toHaveBeenCalledTimes(1)
+    expect(Object.keys(updateRolePermissions.mock.calls[0][0])).toEqual(['AGENTE'])
   })
 })

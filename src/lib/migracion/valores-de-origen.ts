@@ -154,6 +154,26 @@ export function listaDePersonas(v: unknown): PersonaDeOrigen[] {
 
   const marcadores = [...texto.matchAll(/\[(\d+)\]/g)];
   if (marcadores.length === 0) {
+    /*
+     * 🔴 La barra también separa personas (QA 22-09). El archivo de
+     * inmuebles trae los copropietarios así: «43605789 - MARTA LUCIA ARIAS
+     * ARCILA | 10011753 - JONNY ALEXANDER GARCIA MARIN». Sin esto quedaba UN
+     * dueño con el nombre «MARTA LUCIA ARIAS ARCILA | 10011753 - JONNY…», el
+     * segundo no existía y el canon entero se le liquidaba a ella. Sólo se
+     * parte si CADA trozo trae su propio documento: una barra suelta dentro
+     * de un nombre no inventa una segunda persona.
+     */
+    const trozos = texto
+      .split('|')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (trozos.length > 1) {
+      const personas = trozos.map((t, i) => ({
+        ...documentoYNombre(t),
+        orden: i + 1,
+      }));
+      if (personas.every((p) => p.documento)) return personas;
+    }
     const una = documentoYNombre(texto);
     return una.documento || una.nombre ? [una] : [];
   }

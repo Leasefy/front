@@ -118,7 +118,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-fg-muted" />
-          Ocupacion por zona
+          Ocupación por zona
         </h3>
         <div className="space-y-3">
           {byZone.map((zone) => {
@@ -158,7 +158,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
-          Tendencia de ocupacion (12 meses)
+          Tendencia de ocupación (12 meses)
         </h3>
         {/* Doce ceros al lado de un encabezado que dice 83 % son la misma
             pantalla afirmando dos cosas incompatibles. La serie se deriva de

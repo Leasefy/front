@@ -20,6 +20,7 @@ import type {
   DeudaDelPropietario as DeudaDelPropietarioTipo,
   ListadoDeDeducciones,
 } from '@/lib/types/deducciones';
+import { sinEdades } from '@/lib/cartera/edades-de-la-deuda';
 
 type DeudaDelPropietario = DeudaDelPropietarioTipo;
 
@@ -89,6 +90,7 @@ function sinDeuda(): DeudaDelPropietario {
     sinCuentaDeCobroCop: 0,
     cuentasDeCobro: [],
     cuentaDeCobroDisponible: true,
+    porEdades: sinEdades(),
   };
 }
 
@@ -462,6 +464,7 @@ describe('<DeduccionesDelPropietario> — lo que le debe a la inmobiliaria', () 
           fecha: '2026-09-05',
           mesDesde: '2026-10',
           tieneSoporte: false,
+          dias: 16,
         },
       ],
       ...extra,
@@ -511,6 +514,34 @@ describe('<DeduccionesDelPropietario> — lo que le debe a la inmobiliaria', () 
 
     expect(porTestId('deuda-total').textContent).toContain('300.000');
     expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
+  });
+
+  /**
+   * 🔴 21-09: cada renglón de la deuda dice lo VIEJO que es, con el mismo
+   * `dias` que el back usa para meterlo en su tramo de la cartera. Sin eso, la
+   * ficha decía «Saldo en contra: $300.000» sin distinguir lo de este mes de
+   * lo de hace dos años.
+   */
+  it('cada renglón de la deuda dice hace cuánto es', async () => {
+    api.listar.mockResolvedValue(vacio);
+    api.deuda.mockResolvedValue(debe());
+
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+
+    expect(porTestId('edad-del-renglon').textContent).toBe('hace 16 días');
+  });
+
+  it('un renglón de un día no dice «hace 1 días»', async () => {
+    api.listar.mockResolvedValue(vacio);
+    const uno = debe();
+    api.deuda.mockResolvedValue({
+      ...uno,
+      renglones: [{ ...uno.renglones[0]!, dias: 1 }],
+    });
+
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+
+    expect(porTestId('edad-del-renglon').textContent).toBe('hace 1 día');
   });
 
   it('sin la migración de la cuenta de cobro lo dice y no ofrece generarla', async () => {

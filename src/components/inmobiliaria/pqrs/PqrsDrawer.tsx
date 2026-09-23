@@ -88,7 +88,7 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
     ]
   }, [agentes, pqrs?.asignadoAUserId, pqrs?.asignadoANombre])
 
-  const siguientes = pqrs ? estadosSiguientes(pqrs.estado) : []
+  const siguientes = pqrs ? estadosSiguientes(pqrs.estado, pqrs.tipo) : []
   const sla = pqrs ? textoSla(pqrs.slaVenceAt, pqrs.estado) : null
   const fecha = (iso: string) => formatDate(iso, { day: 'numeric', month: 'short', year: 'numeric' })
 

@@ -99,12 +99,68 @@ export function CuadreDeTercerosPanel() {
   );
 }
 
+/**
+ * Los avisos que el veredicto NO dijo ya.
+ *
+ * 🔴 Nico, 21-09: «esto también parece un vómito, hay que mejorar muchísimo
+ * esta pantalla también». Lo primero que se veía eran DOS cajas amarillas
+ * pegadas diciendo lo mismo: el veredicto («No se pudo cuadrar: no hay extracto
+ * bancario cargado hasta el 2026-09-21… Cárgalo en Conciliación») y, debajo, el
+ * aviso del back («No hay extracto bancario cargado hasta esta fecha: el saldo
+ * de la cuenta de recaudo es desconocido y el cuadre NO se puede hacer. Carga
+ * el extracto en Conciliación»). Y una tercera vez en el `sinMedir` de la
+ * tarjeta del saldo.
+ *
+ * Y no era sólo el caso sin extracto: con extracto cargado y descuadre pasa lo
+ * mismo —el veredicto dice «Falta plata de terceros: $1.604.900» y el aviso del
+ * back dice lo mismo con el mismo número, dos cajas seguidas.
+ *
+ * Los dos bloques tienen trabajos distintos —el veredicto dice si se le puede
+ * creer a la pantalla, los avisos dicen qué NO cuentan estos números— y en los
+ * dos estados de alarma acaban siendo la misma frase. Manda el veredicto: está
+ * arriba, tiene el color y trae el enlace.
+ *
+ * 🔴 El aviso gemelo se reconoce por el NÚMERO, no por las palabras: el monto
+ * de la diferencia es un dato, la redacción del back es suya y puede cambiar
+ * mañana. Lo que NO se puede perder es un aviso que diga otra cosa.
+ */
+export function avisosQueElVeredictoNoDijo(datos: {
+  haySaldoDelBanco: boolean;
+  cuadra: boolean;
+  diferenciaCop: number | null;
+  avisos: readonly string[];
+}): string[] {
+  // Sin extracto: el veredicto ES «no hay extracto». Se cae el aviso gemelo.
+  if (!datos.haySaldoDelBanco) {
+    return datos.avisos.filter((a) => !a.toLowerCase().includes('extracto'));
+  }
+  /*
+   * Con extracto y descuadre: el veredicto ya dio el titular CON el número
+   * («Falta plata de terceros: $1.604.900»), y el back manda un aviso que dice
+   * lo mismo con el mismo número. Se reconoce POR EL NÚMERO, no por las
+   * palabras: el monto de la diferencia es un dato, la redacción del back es
+   * suya y puede cambiar mañana.
+   *
+   * Los demás avisos pasan: «2 partidas por identificar ($2.101.235)» es otro
+   * hecho, y es lo único que dice que hay plata sin dueño en esa cuenta.
+   */
+  if (!datos.cuadra && datos.diferenciaCop !== null && datos.diferenciaCop !== 0) {
+    const monto = formatCurrency(Math.abs(datos.diferenciaCop));
+    // Sin el «$» y sin espacios: el back puede escribirlo con otro formato.
+    const digitos = monto.replace(/[^\d.]/g, '');
+    return datos.avisos.filter(
+      (a) => !a.includes(monto) && !(digitos.length > 0 && a.includes(digitos)),
+    );
+  }
+  return [...datos.avisos];
+}
+
 function Cuadre({ datos }: { datos: Respuesta }) {
   return (
     <div className="space-y-6">
       <Veredicto datos={datos} />
 
-      <Avisos avisos={datos.avisos} testId="cuadre-avisos" />
+      <Avisos avisos={avisosQueElVeredictoNoDijo(datos)} testId="cuadre-avisos" />
 
       <section className="space-y-4">
         <TituloDeBloque

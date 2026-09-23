@@ -119,8 +119,14 @@ async function montar() {
   });
 }
 
+/**
+ * 🔴 Todo lo del formulario se busca en `document`, no en `host`: desde el
+ * 21-09 «Cargar una resolución» vive en el cajón de la casa, que Radix monta
+ * en un PORTAL colgado de `document.body`. Buscando sólo dentro de `host` los
+ * campos «no existen» y la prueba pasaría por la razón errada.
+ */
 function escribir(testid: string, valor: string) {
-  const input = host.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement;
+  const input = document.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement;
   const setter = Object.getOwnPropertyDescriptor(
     window.HTMLInputElement.prototype,
     'value',
@@ -142,7 +148,35 @@ afterEach(() => {
   host.remove();
 });
 
-const q = (s: string) => host.querySelector(s);
+const q = (s: string) => document.querySelector(s);
+
+/**
+ * 🔴 «Anular» vive en el kebab de la fila desde el 21-09: escrito al lado del
+ * estado, la tabla no cabía y la pantalla avisaba «se corre a los lados».
+ * El disparador de Radix abre con `pointerdown`, NO con `click`, y el menú se
+ * monta en un portal colgado de `document.body`.
+ */
+async function abrirAcciones(id: string) {
+  const kebab = q(`[data-testid="acciones-${id}"]`) as HTMLButtonElement;
+  await act(async () => {
+    kebab.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        pointerId: 1,
+      }),
+    );
+  });
+}
+
+/** El formulario ya no está puesto en la pantalla: lo abre su CTA. */
+async function abrirCarga() {
+  const boton = q('[data-testid="resolucion-abrir-carga"]') as HTMLButtonElement;
+  await act(async () => {
+    boton.click();
+  });
+}
 
 describe('ResolucionDeFacturacion', () => {
   it('lo primero que dice es si hoy se puede facturar y con qué número sigue', async () => {
@@ -191,6 +225,7 @@ describe('ResolucionDeFacturacion', () => {
 
   it('🔴 el botón no deja mandar una resolución a medias', async () => {
     await montar();
+    await abrirCarga();
     const boton = q('[data-testid="resolucion-guardar"]') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
 
@@ -212,6 +247,7 @@ describe('ResolucionDeFacturacion', () => {
 
   it('el prefijo puede ir vacío: hay resoluciones sin prefijo', async () => {
     await montar();
+    await abrirCarga();
     escribir('resolucion-campo-numero', '999');
     escribir('resolucion-campo-fecha', '2026-01-15');
     escribir('resolucion-campo-desde', '1');
@@ -254,8 +290,9 @@ describe('ResolucionDeFacturacion', () => {
     }
 
     async function abrirDialogo() {
+      await abrirAcciones('res-1');
       await act(async () => {
-        (q('[data-testid="anular-res-1"]') as HTMLButtonElement).click();
+        (q('[data-testid="anular-res-1"]') as HTMLElement).click();
       });
     }
 
@@ -347,9 +384,38 @@ describe('ResolucionDeFacturacion', () => {
     });
   });
 
+  /**
+   * 🔴 Nico, 21-09: «no entiendo esos filtros por allá abajo. Eso de carga
+   * resolución ni se entiende, creo que eso debería ser un CTA». Este guardián
+   * no deja que el formulario vuelva a quedar puesto en la pantalla: nueve
+   * campos con fechas y rangos debajo de una tabla SE LEEN como sus filtros.
+   */
+  it('🔴 el formulario no está puesto en la pantalla: lo saca un CTA', async () => {
+    await montar();
+    expect(q('[data-testid="resolucion-campo-numero"]')).toBeNull();
+    expect(q('[data-testid="resolucion-guardar"]')).toBeNull();
+    // Y el vacío no manda «abajo», que era donde estaba.
+    expect(q('[data-testid="resolucion-abrir-carga"]')).not.toBeNull();
+
+    await abrirCarga();
+    expect(q('[data-testid="resolucion-campo-numero"]')).not.toBeNull();
+    expect(q('[data-testid="resolucion-guardar"]')).not.toBeNull();
+  });
+
+  it('🔴 «Nueva factura» manda acá con el cajón ya abierto, no a buscar el botón', async () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<ResolucionDeFacturacion abrirCarga onCargaAbierta={() => {}} />);
+    });
+    expect(q('[data-testid="resolucion-campo-numero"]')).not.toBeNull();
+  });
+
   it('un fallo al cargar se dice y no se pinta como éxito', async () => {
     crearMock.mockRejectedValue(new Error('Esa resolución ya está cargada.'));
     await montar();
+    await abrirCarga();
     escribir('resolucion-campo-numero', '999');
     escribir('resolucion-campo-fecha', '2026-01-15');
     escribir('resolucion-campo-desde', '1');
@@ -372,6 +438,7 @@ describe('ResolucionDeFacturacion', () => {
 describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () => {
   async function llenar(over: Record<string, string> = {}) {
     await montar();
+    await abrirCarga();
     const valores: Record<string, string> = {
       'resolucion-campo-numero': '18764003394379',
       'resolucion-campo-fecha': '2026-01-15',
@@ -382,7 +449,7 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
       ...over,
     };
     for (const [testid, valor] of Object.entries(valores)) {
-      if (host.querySelector(`[data-testid="${testid}"]`)) {
+      if (document.querySelector(`[data-testid="${testid}"]`)) {
         await act(async () => escribir(testid, valor));
       }
     }

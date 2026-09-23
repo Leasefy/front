@@ -137,7 +137,7 @@ export function ConceptosDeNominaPanel() {
               />
 
               <div
-                className="rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+                className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
                 data-testid="por-que-dos-marcas"
               >
                 <p className="font-medium text-fg">
@@ -177,32 +177,32 @@ export function ConceptosDeNominaPanel() {
                         <TableBody>
                           {lista.map((c) => (
                             <TableRow key={c.id} data-testid={`concepto-${c.codigo}`}>
-                              <TableCell className="font-mono text-xs">
+                              <TableCell className="font-mono text-caption">
                                 {c.codigo}
                               </TableCell>
                               <TableCell>
                                 <span className="text-fg">{c.nombre}</span>
                                 {c.notas ? (
-                                  <p className="text-xs leading-relaxed text-fg-muted">
+                                  <p className="text-caption leading-relaxed text-fg-muted">
                                     {c.notas}
                                   </p>
                                 ) : null}
                               </TableCell>
                               <TableCell
-                                className="text-xs"
+                                className="text-caption"
                                 data-testid={`salarial-${c.codigo}`}
                               >
                                 {c.constitutivoSalario ? 'Sí' : 'No'}
                               </TableCell>
                               <TableCell
-                                className="text-xs"
+                                className="text-caption"
                                 data-testid={`prestacional-${c.codigo}`}
                               >
                                 {c.basePrestacional ? 'Sí' : 'No'}
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  className="w-28 font-mono text-xs"
+                                  className="w-28 font-mono text-caption"
                                   defaultValue={c.cuentaPuc ?? ''}
                                   placeholder="sin mapear"
                                   onChange={(e) =>
@@ -225,7 +225,7 @@ export function ConceptosDeNominaPanel() {
                                 clase === 'PROVISION' ||
                                 c.codigo === 'SUELDO' ? (
                                   <Input
-                                    className="w-28 font-mono text-xs"
+                                    className="w-28 font-mono text-caption"
                                     defaultValue={c.cuentaPucContra ?? ''}
                                     placeholder="sin mapear"
                                     onChange={(e) =>
@@ -250,7 +250,7 @@ export function ConceptosDeNominaPanel() {
                                     data-testid={`contra-${c.codigo}`}
                                   />
                                 ) : (
-                                  <span className="text-xs text-fg-muted">—</span>
+                                  <span className="text-caption text-fg-muted">—</span>
                                 )}
                               </TableCell>
                             </TableRow>

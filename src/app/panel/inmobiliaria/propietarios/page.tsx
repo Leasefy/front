@@ -54,6 +54,7 @@ import {
 } from '@/lib/propietarios/errores-del-propietario';
 import {
   FILTROS_INICIALES,
+  conteosDePropietarios,
   filtrarPropietarios,
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
@@ -278,6 +279,11 @@ function PropietariosContent() {
   const [filtros, setFiltros] = useState<FiltrosDePropietarios>(FILTROS_INICIALES);
   const propietariosFiltrados = useMemo(
     () => filtrarPropietarios(propietarios, filtros),
+    [propietarios, filtros],
+  );
+  /* Los números de los chips salen de la lista COMPLETA, no de la página. */
+  const conteos = useMemo(
+    () => conteosDePropietarios(propietarios, filtros),
     [propietarios, filtros],
   );
 
@@ -757,6 +763,7 @@ function PropietariosContent() {
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
                 filtros={filtros}
+                conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
                   // Filtrar desde la página 3 dejaba la tabla en blanco.

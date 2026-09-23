@@ -281,7 +281,7 @@ describe('<HistorialDeProcesos>', () => {
     expect(procesosApi.listar).toHaveBeenCalledWith({ limite: 30 })
   })
 
-  it('el administrador ve lo del equipo y puede filtrar por persona', async () => {
+  it('quien ve lo del equipo (administrador o contador: `veTodos` del back) puede filtrar por persona', async () => {
     vi.mocked(procesosApi.listar).mockResolvedValue(lista([proceso(), FALLIDO], { veTodos: true }))
     await montar(<HistorialDeProcesos />)
     expect(q('historial-frase')?.textContent).toContain('Los procesos de todo el equipo')

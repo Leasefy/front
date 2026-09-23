@@ -9,8 +9,9 @@
  * header (`FilaDeProceso`), no una tabla aparte: un proceso se lee igual en
  * los dos lugares.
  *
- * «Persona» sólo aparece para el administrador —el único que ve lo de todo el
- * equipo— y sus opciones salen de lo que ya llegó en la lista: no se le pide
+ * «Persona» sólo aparece para quien ve lo de todo el equipo —administrador y
+ * contador desde el 22-09 noche; la regla es del back y llega como `veTodos`,
+ * acá no se repite— y sus opciones salen de lo que ya llegó en la lista: no se le pide
  * al back una lista de miembros para filtrar.
  */
 
@@ -80,7 +81,7 @@ export function HistorialDeProcesos() {
     return [...primeros, ...anteriores.filter((p) => !vistos.has(p.id))]
   }, [data, anteriores])
 
-  /** Las personas que aparecen en lo cargado, para el filtro del administrador. */
+  /** Las personas que aparecen en lo cargado, para el filtro «por persona». */
   const personas = useMemo(() => {
     const mapa = new Map<string, string>()
     for (const p of lista) {

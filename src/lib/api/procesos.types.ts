@@ -52,7 +52,7 @@ export interface ListaDeProcesos {
   procesos: Proceso[]
   /** Cuántos de los que ves siguen en cola o corriendo. */
   activos: number
-  /** Si ves los de todo el equipo (administrador). */
+  /** Si ves los de todo el equipo (administrador o contador; lo decide el back). */
   veTodos: boolean
 }
 

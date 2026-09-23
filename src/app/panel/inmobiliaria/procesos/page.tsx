@@ -8,8 +8,9 @@
  * de la barra de arriba muestra lo último; acá está todo, con filtros.
  *
  * Sin `module`: todo miembro ve LO SUYO (lo que lanzó ya pasó por el permiso
- * de su módulo) y el administrador, lo de todo el equipo. Esa regla la aplica
- * el back (`ProcesosService.listar`), no esta pantalla.
+ * de su módulo); el administrador y el contador, lo de todo el equipo. Esa
+ * regla la aplica el back (`quien-ve-los-procesos.ts`) y llega como `veTodos`;
+ * esta pantalla no la repite.
  *
  * ⚠️ No confundir con `/piloto/procesos`: ésos son los procesos del PILOTO
  * (depósitos, llamadas, WhatsApp). Éstos son los que lanza una persona.

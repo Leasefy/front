@@ -6,9 +6,14 @@
  * con él según su estado.
  *
  * Es LA pieza del centro de procesos (Nico, 22-09-2026): la misma fila se
- * pinta en el panel del header, en la página del historial, en el detalle del
- * lote y en la línea de avance de Facturación. Una espera que se dibuja igual
- * en todas partes es una espera que se aprende una vez.
+ * pinta en el panel del header, en la página del historial y en el detalle del
+ * lote. Una espera que se dibuja igual en todas partes es una espera que se
+ * aprende una vez.
+ *
+ * 🔴 23-09 (Nico: «¿para qué muestras la carga también en la tabla? Ya tenemos
+ * centro de procesos»): el AVANCE de un proceso se pinta sólo en el centro. Ya
+ * no hay «línea de avance» en Facturación; su «Detener» —que corre en el
+ * navegador, entre tandas— llega a esta fila por `detener-en-el-navegador.ts`.
  *
  * 22-09, segunda vuelta («¿sí sabes qué es un centro de procesos?»): la fila
  * dejó de ser un rótulo con una píldora. Ícono por tipo con el estado encima,
@@ -46,6 +51,7 @@ import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service'
 import type { Proceso } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
 import { descargarArchivoDelProceso, type Navegar } from './descargar-archivo-del-proceso'
+import { useDetenerEnElNavegador } from './detener-en-el-navegador'
 import { DetalleDelProceso } from './DetalleDelProceso'
 import {
   NOMBRE_DEL_ESTADO,
@@ -96,18 +102,10 @@ export interface FilaDeProcesoProps {
   resaltado?: boolean
   /** Tras cancelar o reintentar: quien pinta la lista la vuelve a pedir. */
   onCambio?: () => void
-  /**
-   * Un «Detener» que no es del back: la corrida de Facturación se detiene en
-   * el navegador, entre tandas.
-   */
-  onDetener?: () => void
-  deteniendo?: boolean
   /** Para las pruebas: cómo se «navega» a la URL firmada. */
   navegar?: Navegar
   /** Para las pruebas: el reloj. */
   ahora?: number
-  /** Sin acciones de navegación (la línea de Facturación ya está en su pantalla). */
-  sinVerResultado?: boolean
   as?: 'li' | 'div'
   /**
    * Quién abre el cajón de «Ver detalle». El panel del header lo abre FUERA
@@ -122,16 +120,19 @@ export function FilaDeProceso({
   compacta = false,
   resaltado = false,
   onCambio,
-  onDetener,
-  deteniendo = false,
   navegar,
   ahora,
-  sinVerResultado = false,
   as: Contenedor = 'li',
   onVerDetalle,
 }: FilaDeProcesoProps) {
   const [detalleAbierto, setDetalleAbierto] = useState(false)
-  const esLocal = p.id === 'corrida-local'
+  /*
+   * El «Detener» de una corrida que manda el NAVEGADOR (la emisión de
+   * facturas, tanda por tanda): el back no la cancela, la pantalla que la
+   * corre sí. Sólo existe mientras esa corrida vive en esta pestaña.
+   */
+  const enElNavegador = useDetenerEnElNavegador(p.id)
+  const deteniendo = enElNavegador?.deteniendo ?? false
   const verDetalle = () => (onVerDetalle ? onVerDetalle(p) : setDetalleAbierto(true))
   const [bajando, setBajando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
@@ -142,7 +143,7 @@ export function FilaDeProceso({
   const cuando = haceCuanto(p.terminadoAt ?? p.createdAt, ahora)
   const tiempo = tiempoDelProceso(p, ahora)
   const tamano = p.archivo ? tamanoDelArchivo(p.archivo.bytes) : null
-  const resultado = sinVerResultado ? null : resultadoDe(p)
+  const resultado = resultadoDe(p)
   const reintentar = p.estado === 'FALLO' ? reintentoDirecto(p) : null
   const IconoTipo = ICONO_DEL_TIPO[p.tipo] ?? (p.archivo?.tipo === 'application/zip' ? FileZip : FileArrowDown)
 
@@ -196,13 +197,7 @@ export function FilaDeProceso({
     }
   }
 
-  const hayAcciones =
-    !esLocal ||
-    (p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO') ||
-    resultado ||
-    p.sePuedeCancelar ||
-    (onDetener && activo) ||
-    p.estado === 'FALLO'
+  const sePuedeDetener = activo && (p.sePuedeCancelar || enElNavegador !== null)
 
   return (
     <Contenedor
@@ -313,67 +308,63 @@ export function FilaDeProceso({
           </p>
         )}
 
-        {hayAcciones && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            {p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO' && (
-              <button
-                type="button"
-                onClick={() => void descargar()}
-                disabled={bajando}
-                className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-caption font-medium text-primary-fg transition-opacity hover:opacity-90 disabled:opacity-60"
-                data-testid="descargar-proceso"
-                title={p.archivo.nombre}
-              >
-                <DownloadSimple weight="bold" className="h-3.5 w-3.5" aria-hidden="true" />
-                {bajando ? 'Descargando…' : 'Descargar'}
-                {tamano && <span className="font-mono tabular-nums opacity-80">{tamano}</span>}
-              </button>
-            )}
-            {p.estado === 'FALLO' &&
-              (reintentar ? (
-                <AccionSuave
-                  onClick={() => void volverALanzar()}
-                  disabled={reintentando}
-                  testId="reintentar-proceso"
-                  icono={ArrowClockwise}
-                >
-                  {reintentando ? 'Reintentando…' : 'Reintentar'}
-                </AccionSuave>
-              ) : resultado ? (
-                <Link
-                  href={resultado.href}
-                  className={CLASE_ACCION_SUAVE}
-                  data-testid="reintentar-proceso"
-                >
-                  <ArrowClockwise className="h-3.5 w-3.5" aria-hidden="true" />
-                  Reintentar
-                </Link>
-              ) : null)}
-            {resultado && (
-              <Link href={resultado.href} className={CLASE_ACCION_SUAVE} data-testid="ver-resultado-proceso">
-                {resultado.texto}
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
-              </Link>
-            )}
-            {(p.sePuedeCancelar || (onDetener && activo)) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {p.archivo && !p.archivo.vencido && p.estado === 'TERMINADO' && (
+            <button
+              type="button"
+              onClick={() => void descargar()}
+              disabled={bajando}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-caption font-medium text-primary-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+              data-testid="descargar-proceso"
+              title={p.archivo.nombre}
+            >
+              <DownloadSimple weight="bold" className="h-3.5 w-3.5" aria-hidden="true" />
+              {bajando ? 'Descargando…' : 'Descargar'}
+              {tamano && <span className="font-mono tabular-nums opacity-80">{tamano}</span>}
+            </button>
+          )}
+          {p.estado === 'FALLO' &&
+            (reintentar ? (
               <AccionSuave
-                onClick={() => (onDetener ? onDetener() : void cancelar())}
-                disabled={cancelando || deteniendo}
-                testId="cancelar-proceso"
-                icono={Stop}
+                onClick={() => void volverALanzar()}
+                disabled={reintentando}
+                testId="reintentar-proceso"
+                icono={ArrowClockwise}
               >
-                {cancelando || deteniendo ? 'Deteniendo…' : 'Detener'}
+                {reintentando ? 'Reintentando…' : 'Reintentar'}
               </AccionSuave>
-            )}
-            {!esLocal && (
-              <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
-                Ver detalle
-              </AccionSuave>
-            )}
-          </div>
-        )}
+            ) : resultado ? (
+              <Link
+                href={resultado.href}
+                className={CLASE_ACCION_SUAVE}
+                data-testid="reintentar-proceso"
+              >
+                <ArrowClockwise className="h-3.5 w-3.5" aria-hidden="true" />
+                Reintentar
+              </Link>
+            ) : null)}
+          {resultado && (
+            <Link href={resultado.href} className={CLASE_ACCION_SUAVE} data-testid="ver-resultado-proceso">
+              {resultado.texto}
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          )}
+          {sePuedeDetener && (
+            <AccionSuave
+              onClick={() => (enElNavegador ? enElNavegador.detener() : void cancelar())}
+              disabled={cancelando || deteniendo}
+              testId="cancelar-proceso"
+              icono={Stop}
+            >
+              {cancelando || deteniendo ? 'Deteniendo…' : 'Detener'}
+            </AccionSuave>
+          )}
+          <AccionSuave onClick={verDetalle} testId="ver-detalle-proceso" icono={ListBullets}>
+            Ver detalle
+          </AccionSuave>
+        </div>
       </div>
-      {!onVerDetalle && !esLocal && (
+      {!onVerDetalle && (
         <DetalleDelProceso proceso={detalleAbierto ? p : null} onCerrar={() => setDetalleAbierto(false)} />
       )}
     </Contenedor>

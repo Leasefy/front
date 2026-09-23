@@ -22,6 +22,7 @@ import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
+import { BotonDelCentroDeProcesos } from '@/components/procesos/BotonDelCentroDeProcesos';
 import { TourDelPanel } from '@/components/tour/TourDelPanel';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
 import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
@@ -303,10 +304,20 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* La píldora del Piloto («Piloto · Copiloto») va en `actions`, a la
               izquierda de la campana: en cada pantalla se ve en qué modo está
               la flota y se cambia con un clic (Nico, 2026-09-02). */}
+          {/* 🔴 El CENTRO DE PROCESOS va a la IZQUIERDA de la píldora del
+              Piloto (Nico, 22-09-2026: «colócala arriba al lado izquierdo de
+              Piloto»): las cargas, descargas y procesos largos —reprocesar
+              asientos, el archivo del lote, la emisión del mes, la
+              migración— se ven y se bajan desde ahí, en cualquier pantalla. */}
           <PlanHeader
             showMagnifyingGlass={false}
             leftSlot={<AgentHeaderBreadcrumb />}
-            actions={<PilotoModoHeader />}
+            actions={
+              <>
+                <BotonDelCentroDeProcesos />
+                <PilotoModoHeader />
+              </>
+            }
           />
           {/* Las dos capas de navegación debajo del header, montadas UNA vez y
               auto-ocultas fuera de su contexto, cada una con su cara:

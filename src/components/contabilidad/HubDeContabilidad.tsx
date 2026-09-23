@@ -113,6 +113,7 @@ import {
   type Cierre,
 } from '@/lib/api/contabilidad.service';
 import { gastosApi } from '@/lib/api/gastos.service';
+import { procesosApi } from '@/lib/api/procesos.service';
 import { exogenaApi } from '@/lib/api/exogena.service';
 import {
   alertasDeContabilidad,
@@ -584,6 +585,30 @@ function ParaElContador() {
 
   const invertido = rangoInvertido(rango.desde, rango.hasta);
 
+  /*
+   * El centro de procesos (22-09): el mismo libro, armado en segundo plano.
+   * Con un año entero no hay por qué quedarse mirando el cajón: se lanza, se
+   * sigue trabajando y el archivo aparece en el botón de procesos de arriba.
+   */
+  const [lanzando, setLanzando] = useState(false);
+  const enSegundoPlano = async () => {
+    setLanzando(true);
+    try {
+      await procesosApi.exportarLibro({
+        desde: rango.desde || undefined,
+        hasta: rango.hasta || undefined,
+      });
+      toast.success('Estamos armando el libro.', {
+        description: 'Cuando esté, lo bajas desde el centro de procesos, arriba a la derecha.',
+      });
+      setPidiendoRango(false);
+    } catch (e) {
+      toast.error(mensajeDeContabilidad(e, 'No se pudo lanzar la exportación.'));
+    } finally {
+      setLanzando(false);
+    }
+  };
+
   const descargar = async () => {
     setBajando(true);
     try {
@@ -696,9 +721,19 @@ function ParaElContador() {
             Cancelar
           </Button>
           <Button
+            variant="outline"
+            hideArrow
+            onClick={() => void enSegundoPlano()}
+            disabled={bajando || lanzando || invertido}
+            isLoading={lanzando}
+            data-testid="cajon-del-libro-segundo-plano"
+          >
+            En segundo plano
+          </Button>
+          <Button
             hideArrow
             onClick={() => void descargar()}
-            disabled={bajando || invertido}
+            disabled={bajando || lanzando || invertido}
             data-testid="cajon-del-libro-descargar"
           >
             <DownloadSimple className="h-4 w-4" aria-hidden="true" />

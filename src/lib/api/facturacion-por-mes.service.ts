@@ -39,6 +39,7 @@
  */
 
 import { apiClient } from './client'
+import { anunciarProceso } from './procesos.service'
 import type {
   AvisoDeLaResolucion,
   EstadoDeLaCorreccion,
@@ -536,11 +537,14 @@ export const facturacionPorMesService = {
    * Emite las elegidas. Sin `claves` —o con la lista vacía— el back emite
    * todas las del mes que estén por emitir.
    */
-  generar: (mes: string, claves?: string[]) =>
-    apiClient.post<ResultadoDeGeneracion>(
+  generar: (mes: string, claves?: string[]) => {
+    // La emisión vive en el centro de procesos (22-09): «300 de 800».
+    anunciarProceso()
+    return apiClient.post<ResultadoDeGeneracion>(
       `${BASE}/generar`,
       claves && claves.length > 0 ? { mes, claves } : { mes },
-    ),
+    )
+  },
 
   /**
    * 🔴 El PDF de UNA factura emitida (Nico, 22-09: «dónde puedo descargar […]

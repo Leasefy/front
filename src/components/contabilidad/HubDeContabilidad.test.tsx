@@ -19,7 +19,7 @@ import { ApiError } from '@/lib/api/client';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, gastos, exogena, toastMock } = vi.hoisted(() => ({
+const { api, gastos, exogena, procesos, toastMock } = vi.hoisted(() => ({
   api: {
     puc: { listar: vi.fn() },
     asientos: {
@@ -39,6 +39,7 @@ const { api, gastos, exogena, toastMock } = vi.hoisted(() => ({
    */
   gastos: { facturas: { listar: vi.fn() }, lotes: { listar: vi.fn() } },
   exogena: { resumen: vi.fn() },
+  procesos: { exportarLibro: vi.fn() },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
@@ -53,6 +54,10 @@ vi.mock('@/lib/api/gastos.service', async (importOriginal) => ({
 vi.mock('@/lib/api/exogena.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/exogena.service')>()),
   exogenaApi: exogena,
+}));
+vi.mock('@/lib/api/procesos.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/procesos.service')>()),
+  procesosApi: procesos,
 }));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
@@ -555,6 +560,20 @@ describe('HubDeContabilidad · el resumen es una frase y el rango se pide despu�
     expect(cajon).not.toBeNull();
     expect(cajon.querySelector('[data-testid="rango-de-fechas"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="cajon-del-libro-descargar"]')).not.toBeNull();
+  });
+
+  it('«En segundo plano» lanza el libro en el centro de procesos con el rango, y cierra el cajón', async () => {
+    procesos.exportarLibro.mockResolvedValue({ procesoId: 'proc-libro' });
+    await montar();
+    await clic($('[data-testid="descargar-csv"]'));
+    await clic(document.querySelector('[data-testid="cajon-del-libro-segundo-plano"]') as HTMLElement);
+
+    expect(procesos.exportarLibro).toHaveBeenCalledWith({
+      desde: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      hasta: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+    expect(toastMock.success).toHaveBeenCalledWith('Estamos armando el libro.', expect.anything());
+    expect(document.querySelector('[data-testid="cajon-del-libro"]')).toBeNull();
   });
 });
 

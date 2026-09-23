@@ -191,11 +191,12 @@ function renderConProps(
 const q = (testid: string) => container.querySelector(`[data-testid="${testid}"]`);
 
 describe('<DispersionDetail> D3 — la agencia aprueba por lote', () => {
-  it('pendiente: no hay «Aprobar»; hay «Ir a Lotes» y la razón', () => {
+  it('pendiente: no hay «Aprobar»; hay «Ir a Lotes» —al mes de ESTA dispersión— y la razón', () => {
     renderConProps(BASE_DISPERSION, { apruebaPorLote: true, onApprove: vi.fn() });
     expect(q('dispersion-aprobar')).toBeNull();
+    // 22-09: sin el mes, Lotes abría en el de hoy y no en el de la dispersión.
     expect(q('dispersion-ir-a-lotes')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/pagos/dispersiones/lotes',
+      `/panel/inmobiliaria/pagos/dispersiones/lotes?mes=${BASE_DISPERSION.month}`,
     );
     expect(q('dispersion-por-lote')?.textContent).toContain('por lote');
   });

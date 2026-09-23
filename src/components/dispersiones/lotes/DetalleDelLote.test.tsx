@@ -386,18 +386,32 @@ describe('<DetalleDelLote> — el archivo', () => {
     reenvio: false,
   };
 
-  it('sólo Bancolombia PAB se puede elegir; SAP y OnePay dicen por qué no', async () => {
-    await render(vista(lote({ estado: 'APROBADO' })));
+  const DESDE_BOGOTA = {
+    banco: 'BANCO_BOGOTA',
+    nombreDelBanco: 'Banco de Bogotá',
+    formato: 'BANCO_DE_BOGOTA' as const,
+    tipoDeCuenta: 'AHORROS' as const,
+    cuenta: '•••• 6789',
+  };
+
+  it('🔴 el formato NO se elige al final: sale el del banco elegido al armar, y lo dice', async () => {
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: DESDE_BOGOTA }));
     await clic('Generar archivo');
 
-    const pab = document.body.querySelector('[data-testid="formato-BANCOLOMBIA_PAB"]') as HTMLButtonElement;
-    const sap = document.body.querySelector('[data-testid="formato-BANCOLOMBIA_SAP"]') as HTMLButtonElement;
-    const onepay = document.body.querySelector('[data-testid="formato-ONEPAY"]') as HTMLButtonElement;
-    expect(pab.disabled).toBe(false);
-    expect(pab.getAttribute('aria-checked')).toBe('true');
-    expect(sap.disabled).toBe(true);
-    expect(onepay.disabled).toBe(true);
-    expect(sap.textContent).toContain('Pendiente del archivo de ejemplo del banco.');
+    // Ya no hay selector de formato.
+    expect(document.body.querySelector('[role="radiogroup"][aria-label="Formato del archivo"]')).toBeNull();
+    const texto = document.body.querySelector('[data-testid="archivo-del-banco"]')?.textContent ?? '';
+    expect(texto).toContain('Banco de Bogotá');
+    expect(texto).toContain('•••• 6789');
+  });
+
+  it('un lote armado sin banco no ofrece generar: dice qué hacer', async () => {
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: null }));
+    await clic('Generar archivo');
+
+    expect(cuerpo()).toContain('Este lote no dice desde qué banco sale la plata');
+    const generar = botones('Generar').find((b) => b.closest('[data-testid="dialogo-archivo"]'));
+    expect(generar?.disabled).toBe(true);
   });
 
   it('🔴 generar muestra el aviso SIN-VERIFICAR, los excluidos y qué falta confirmar ANTES de guardar', async () => {
@@ -409,7 +423,8 @@ describe('<DetalleDelLote> — el archivo', () => {
     await clic('Generar archivo');
     await clicEnDialogo('dialogo-archivo', 'Generar');
 
-    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID, 'BANCOLOMBIA_PAB');
+    // Sin formato: el back usa el del banco elegido al armar.
+    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID);
     const listo = document.body.querySelector('[data-testid="archivo-listo"]')?.textContent ?? '';
     expect(listo).toContain('no se verificó contra un archivo real del banco');
     expect(listo).toContain('Si el monto lleva dos decimales implícitos.');
@@ -431,8 +446,7 @@ describe('<DetalleDelLote> — el archivo', () => {
 
     await clic('Descargar archivo');
 
-    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID, undefined);
-    expect(document.body.querySelector('[data-testid="formato-BANCOLOMBIA_PAB"]')).toBeNull();
+    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID);
     expect(cuerpo()).toContain('no se verificó contra un archivo real del banco');
   });
 

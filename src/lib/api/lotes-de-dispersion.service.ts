@@ -19,6 +19,7 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   ArchivoGenerado,
+  BancosParaGirar,
   CandidatosDeDispersion,
   FiltrosDeLotes,
   FormatoArchivoDePagos,
@@ -57,6 +58,13 @@ export const lotesDeDispersionApi = {
     if (que.dispersionIds?.length) cuerpo.dispersionIds = que.dispersionIds;
     if (que.orden) cuerpo.orden = que.orden;
     if (que.topeCop !== undefined) cuerpo.topeCop = que.topeCop;
+    if (que.origen) {
+      cuerpo.origen = {
+        banco: que.origen.banco,
+        tipoDeCuenta: que.origen.tipoDeCuenta,
+        numeroDeCuenta: que.origen.numeroDeCuenta,
+      };
+    }
     const res = await apiClient.post<LoteArmado>(BASE_DE_LOTES, cuerpo);
     invalidar('dispersiones');
     return res;
@@ -84,6 +92,14 @@ export const lotesDeDispersionApi = {
     return apiClient.get<CandidatosDeDispersion>(
       `${BASE_DE_LOTES}/candidatos${qs ? `?${qs}` : ''}`,
     );
+  },
+
+  /**
+   * «¿Desde qué banco vas a dispersar?»: los bancos (con su formato o el motivo
+   * de por qué todavía no), las cuentas ya registradas y la última elección.
+   */
+  async bancos(): Promise<BancosParaGirar> {
+    return apiClient.get<BancosParaGirar>(`${BASE_DE_LOTES}/bancos`);
   },
 
   async listar(filtros?: FiltrosDeLotes): Promise<LoteResumen[]> {
@@ -129,7 +145,8 @@ export const lotesDeDispersionApi = {
    * Genera el archivo plano (desde APROBADO) o vuelve a entregar el MISMO
    * (desde ARCHIVO_GENERADO, `reenvio: true`, cotejando el hash).
    *
-   * Sin `formato` se usa el que el lote ya tiene o el de la inmobiliaria.
+   * El formato es el del banco elegido al armar el lote; `formato` queda por
+   * compatibilidad y el back responde 400 si no coincide.
    */
   async generarArchivo(id: string, formato?: FormatoArchivoDePagos): Promise<ArchivoGenerado> {
     const cuerpo: Record<string, unknown> = {};
@@ -186,7 +203,14 @@ export const lotesDeDispersionApi = {
 
 export type {
   ArchivoGenerado,
+  BancoDeOrigen,
+  BancosParaGirar,
   CandidatoDeDispersion,
+  CuentaRegistrada,
+  FuenteDelFormato,
+  OrigenDelLote,
+  OrigenPedido,
+  TipoDeCuentaDeOrigen,
   CandidatosDeDispersion,
   EstadoDelLote,
   ExtractosDeLosCompensados,

@@ -98,6 +98,7 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { NuevaFactura } from './NuevaFactura';
+import { alEventoDelCentro, type EventoDelCentro } from '@/lib/api/procesos.service';
 
 function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {
@@ -876,11 +877,12 @@ describe('NuevaFactura', () => {
 
       expect(generarMock).toHaveBeenCalledTimes(3);
       expect(generarMock.mock.calls.map((c) => (c[1] as string[]).length)).toEqual([200, 200, 50]);
-      const informe = q('[data-testid="facturacion-informe"]')!;
-      expect(informe.getAttribute('data-corte')).toBe('completa');
-      expect(informe.textContent).toContain('Se emitieron 450 facturas');
-      // Sin pendientes no hay nada que reintentar: no se lo pide.
-      expect(q('[data-testid="facturacion-informe-que-hacer"]')).toBeNull();
+      // 🔴 22-09: el resultado entero va al CENTRO DE PROCESOS, no a la página
+      // (Nico: «no creo que sea el lugar para mostrar eso ya cargado»). Sin
+      // pendientes no queda nada en la página: un toast con «Ver en el centro».
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+      expect(String(toastOk.mock.calls[0]?.[0])).toContain('450 facturas emitidas');
+      expect(toastOk.mock.calls[0]?.[1]).toMatchObject({ action: { label: 'Ver en el centro' } });
     });
 
     it('🔴 F3: dice en qué va y «Detener» corta al cerrar la tanda en curso', async () => {
@@ -896,10 +898,13 @@ describe('NuevaFactura', () => {
       await apretarGenerar();
 
       expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitiendo 0 de 450');
-      expect(q('[data-testid="facturacion-progreso"]')).not.toBeNull();
+      // La corrida se pinta con la MISMA fila del centro de procesos.
+      const enCurso = q('[data-testid="facturacion-en-curso"]')!;
+      expect(enCurso.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull();
+      expect(enCurso.querySelector('[data-testid="avance-del-proceso"]')!.textContent).toBe('0 de 450');
 
       await act(async () => {
-        (q('[data-testid="facturacion-detener"]') as HTMLButtonElement).click();
+        (enCurso.querySelector('[data-testid="cancelar-proceso"]') as HTMLButtonElement).click();
       });
       await act(async () => {
         soltar();
@@ -940,8 +945,8 @@ describe('NuevaFactura', () => {
       expect(porGenerarMock).toHaveBeenCalledTimes(2);
     });
 
-    it('el informe se cierra', async () => {
-      generarMock.mockImplementation(sale);
+    it('el informe (sólo cuando algo no salió) se cierra', async () => {
+      generarMock.mockImplementationOnce(sale).mockRejectedValueOnce(new Error('504 Gateway Timeout'));
       await montar();
       await apretarGenerar();
       await soltarTareas();
@@ -1615,60 +1620,37 @@ describe('🔴 el documento de la factura emitida (22-09)', () => {
     expect(cajon.querySelector('[data-testid="cajon-documento"]')).toBeNull();
   });
 
-  it('🔴 el aviso «Se emitió 1 factura» baja ESA factura', async () => {
-    generarMock.mockResolvedValue({
-      mes: '2026-09',
-      emitidas: 1,
-      yaEstaban: 0,
-      sinNumero: 0,
-      motivo: null,
-      totalCop: 1_879_608,
-      facturas: [
-        { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_879_608, facturaId: 'fac-3' },
-      ],
-    });
-    await montar();
-    await clic('[data-testid="facturacion-generar"]');
-    await soltarTareas();
+  it('🔴 emitir ABRE el centro de procesos, y el toast del resultado lleva «Ver en el centro»', async () => {
+    const eventos: EventoDelCentro[] = [];
+    const dejar = alEventoDelCentro((e) => eventos.push(e));
+    try {
+      generarMock.mockResolvedValue({
+        mes: '2026-09',
+        emitidas: 1,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 1_879_608,
+        facturas: [
+          { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_879_608, facturaId: 'fac-3' },
+        ],
+        procesoId: 'proc-9',
+        zipEnElCentro: true,
+      });
+      await montar();
+      await clic('[data-testid="facturacion-generar"]');
+      await soltarTareas();
 
-    const boton = q('[data-testid="facturacion-informe-descargar"]') as HTMLButtonElement;
-    expect(boton.textContent).toContain('Descargar la factura');
-    await act(async () => {
-      boton.click();
-    });
-    await soltarTareas();
-    expect(pdfMock).toHaveBeenCalledWith('fac-3');
-    expect(zipMock).not.toHaveBeenCalled();
-  });
-
-  it('🔴 varias → el ZIP de las de ESTA corrida', async () => {
-    porGenerarMock.mockResolvedValue(
-      respuesta({
-        inquilinos: [factura(), factura({ clave: 'ct-2|2026-09|INQUILINO', contractId: 'ct-2' })],
-        propietarios: [],
-      }),
-    );
-    generarMock.mockResolvedValue({
-      mes: '2026-09',
-      emitidas: 2,
-      yaEstaban: 0,
-      sinNumero: 0,
-      motivo: null,
-      totalCop: 3_600_000,
-      facturas: [
-        { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_800_000, facturaId: 'fac-3' },
-        { clave: 'ct-2|2026-09|INQUILINO', numero: 5, numeroDian: 'PRU-4', totalCop: 1_800_000, facturaId: 'fac-4' },
-      ],
-    });
-    await montar();
-    await clic('[data-testid="facturacion-generar"]');
-    await soltarTareas();
-    await act(async () => {
-      (q('[data-testid="facturacion-informe-descargar"]') as HTMLButtonElement).click();
-    });
-    await soltarTareas();
-    expect(zipMock).toHaveBeenCalledWith(['fac-3', 'fac-4']);
-    expect(descargarBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'facturas-2026-09-2.zip');
+      expect(eventos[0]).toMatchObject({ tipo: 'anuncio', titulo: 'Emitiendo 1 factura' });
+      // El resultado no se queda pegado en la página.
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+      const [texto, opciones] = toastOk.mock.calls[0] as [string, { action: { onClick: () => void } }];
+      expect(texto).toContain('1 factura emitida');
+      opciones.action.onClick();
+      expect(eventos.at(-1)).toEqual({ tipo: 'abrir', procesoId: 'proc-9' });
+    } finally {
+      dejar();
+    }
   });
 
   it('un error de la descarga se dice, con las palabras del back', async () => {

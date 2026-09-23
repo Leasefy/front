@@ -88,3 +88,60 @@ export function tamanoDelArchivo(bytes: number | null): string | null {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toLocaleString('es-CO', { maximumFractionDigits: 0 })} KB`
   return `${(bytes / (1024 * 1024)).toLocaleString('es-CO', { maximumFractionDigits: 1 })} MB`
 }
+
+// ══ Etapa, resultado y reintento (22-09) ═════════════════════════════════════
+
+const PREFIJO_DE_ETAPA = 'Etapa: '
+
+/**
+ * La etapa viaja al comienzo del mensaje («Etapa: Armando el ZIP. 1 factura
+ * emitida.») mientras el back no tenga columna. Acá se separa.
+ */
+export function etapaYMensaje(p: Pick<Proceso, 'mensaje'>): { etapa: string | null; mensaje: string | null } {
+  const m = p.mensaje
+  if (!m || !m.startsWith(PREFIJO_DE_ETAPA)) return { etapa: null, mensaje: m }
+  const resto = m.slice(PREFIJO_DE_ETAPA.length)
+  const punto = resto.indexOf('. ')
+  if (punto < 0) return { etapa: resto.replace(/\.$/, ''), mensaje: null }
+  return { etapa: resto.slice(0, punto), mensaje: resto.slice(punto + 2) || null }
+}
+
+/** A qué pantalla lleva «Ver resultado», o `null` si no hay una. */
+export function resultadoDe(p: Pick<Proceso, 'tipo' | 'recurso'>): { href: string; texto: string } | null {
+  switch (p.tipo) {
+    case 'EMISION_DE_FACTURAS':
+      return { href: '/panel/inmobiliaria/facturacion', texto: 'Ver en Facturación' }
+    case 'ARCHIVO_DEL_LOTE':
+      return p.recurso?.id
+        ? { href: `/panel/inmobiliaria/pagos/dispersiones/lotes/${p.recurso.id}`, texto: 'Ver el lote' }
+        : null
+    case 'REPROCESAR_ASIENTOS':
+      return { href: '/panel/inmobiliaria/contabilidad/asientos', texto: 'Ver el libro' }
+    case 'MIGRACION_CONTRATOS':
+      return { href: '/panel/inmobiliaria/contratos/migrar', texto: 'Ver la migración' }
+    case 'MIGRACION_INMUEBLES':
+      return { href: '/panel/inmobiliaria/inmuebles/importar', texto: 'Ver la importación' }
+    default:
+      return null
+  }
+}
+
+/** Duración si terminó («tardó 12 s»), o lo que falta si corre («faltan ~2 min»). */
+export function tiempoDelProceso(
+  p: Pick<Proceso, 'estado' | 'hechos' | 'total' | 'iniciadoAt' | 'createdAt' | 'terminadoAt'>,
+  ahora: number = Date.now(),
+): string | null {
+  const inicio = new Date(p.iniciadoAt ?? p.createdAt).getTime()
+  const enPalabras = (ms: number) => {
+    const s = Math.max(1, Math.round(ms / 1000))
+    if (s < 60) return `${s} s`
+    const m = Math.round(s / 60)
+    return m < 60 ? `${m} min` : `${Math.round(m / 60)} h`
+  }
+  if (p.terminadoAt) return `tardó ${enPalabras(new Date(p.terminadoAt).getTime() - inicio)}`
+  if (p.estado === 'CORRIENDO' && p.total && p.hechos > 0 && p.hechos < p.total) {
+    const falta = ((ahora - inicio) / p.hechos) * (p.total - p.hechos)
+    return `faltan ~${enPalabras(falta)}`
+  }
+  return null
+}

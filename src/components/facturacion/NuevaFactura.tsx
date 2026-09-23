@@ -90,13 +90,49 @@ import {
   SealWarning,
   Warning,
 } from '@phosphor-icons/react'
-import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
 import {
   generarPorTandas,
+  quedaronPendientes,
   type ProgresoDeFacturas,
   type ResultadoDeLaCorrida,
 } from './facturasPorTandas'
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
+import { FilaDeProceso } from '@/components/procesos/FilaDeProceso'
+import { abrirCentroDeProcesos, anunciarProceso } from '@/lib/api/procesos.service'
+import type { Proceso } from '@/lib/api/procesos.types'
+
+/**
+ * La corrida de «Generar» como un proceso más, para pintarla con la fila del
+ * centro. Es LOCAL: la corrida la parte el navegador en tandas (cada tanda es
+ * un proceso del back); ésta es la suma que ve quien espera en la pantalla.
+ */
+export function procesoDeLaCorrida(mes: string, p: ProgresoDeFacturas): Proceso {
+  const ahora = new Date().toISOString()
+  return {
+    id: 'corrida-local',
+    tipo: 'EMISION_DE_FACTURAS',
+    titulo: `Facturas · ${mesLegible(mes).toLowerCase().replace(' de ', ' ')}`,
+    estado: 'CORRIENDO',
+    hechos: p.hechas,
+    total: p.total,
+    porcentaje: p.total > 0 ? Math.round((p.hechas / p.total) * 100) : null,
+    mensaje:
+      p.tandas > 1
+        ? `Etapa: Emitiendo, tanda ${p.tanda} de ${p.tandas}. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.`
+        : 'Etapa: Emitiendo. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.',
+    lanzadoPor: null,
+    esMio: true,
+    recurso: null,
+    archivo: null,
+    sePuedeCancelar: false,
+    cancelacionPedida: false,
+    interrumpido: false,
+    createdAt: ahora,
+    iniciadoAt: null,
+    terminadoAt: null,
+    actualizadoAt: ahora,
+  }
+}
 import { CajonDeLaFactura } from './CajonDeLaFactura'
 import { useDescargarFacturas } from './useDescargarFacturas'
 
@@ -872,8 +908,12 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
      un rango al revés, y el back lo rechaza. */
   const topes = useMemo(() => topesParaElegir(mes), [mes])
 
-  const cargar = useCallback(async (elMes: string, elTope: string) => {
-    setCargando(true)
+  const cargar = useCallback(async (elMes: string, elTope: string, silencioso = false) => {
+    // 🔴 Después de emitir se relee EN SILENCIO (22-09, visto en vivo): con el
+    // spinner de carga, la tabla desaparecía y el spinner se quedaba girando
+    // debajo mientras el back volvía a armar el mes (730 contratos tardan). La
+    // tabla que ya se ve se queda hasta que llega la nueva.
+    if (!silencioso) setCargando(true)
     setError(null)
     try {
       const r = await facturacionPorMesService.porGenerar({
@@ -1067,6 +1107,11 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     setDeteniendo(false)
     setProgreso({ hechas: 0, total: claves.length, tanda: 0, tandas: 0 })
     try {
+      // 🔴 El centro de procesos se hace presente (Nico, 22-09: «mandé a
+      // emitir y el centro ni se abrió»): se abre solo con esta emisión.
+      anunciarProceso({
+        titulo: `Emitiendo ${claves.length} ${claves.length === 1 ? 'factura' : 'facturas'}`,
+      })
       const resultado = await generarPorTandas(
         mes,
         claves,
@@ -1075,7 +1120,14 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         { debeParar: () => detenerRef.current },
       )
       const { informe, corte } = resultado
-      setCorridaHecha(resultado)
+      /*
+       * 🔴 El resultado va al CENTRO DE PROCESOS, no a la página (Nico, 22-09:
+       * «no creo que sea el lugar para mostrar eso ya cargado»). La fila
+       * terminada tiene su resumen y «Descargar»; acá, un toast breve con
+       * «Ver en el centro». En la página sólo queda el informe cuando algo
+       * NO salió y hay que decir qué hacer.
+       */
+      setCorridaHecha(quedaronPendientes(informe) ? resultado : null)
 
       if (informe.emitidas > 0 || informe.yaEstaban > 0) {
         const partes = [
@@ -1083,7 +1135,13 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           formatCurrency(informe.totalCop),
         ]
         if (informe.yaEstaban > 0) partes.push(`${informe.yaEstaban} ya estaban emitidas`)
-        toast.success(partes.join(' · '))
+        const ultimo = informe.procesosConZip.at(-1) ?? null
+        toast.success(partes.join(' · '), {
+          action: {
+            label: 'Ver en el centro',
+            onClick: () => abrirCentroDeProcesos({ procesoId: ultimo }),
+          },
+        })
       }
       // El rango de la resolución no alcanzó para todas: se emitió lo que cabía
       // y lo demás NO se numeró. Es un aviso aparte, no un renglón del éxito.
@@ -1092,7 +1150,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
 
       // Lo que salió tiene que verse como emitido, también después de un
       // corte: y lo que quedó por emitir vuelve seleccionado para reintentar.
-      await cargar(mes, hasta)
+      await cargar(mes, hasta, true)
     } finally {
       setGenerando(false)
       setProgreso(null)
@@ -1463,24 +1521,20 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </div>
       </div>
 
-      {/* F3: la ranura viva de la corrida — en qué va, cuánto falta y cómo
-          salir. Un spinner sin número sobre 3.824 facturas eran minutos sin
-          saber si seguía. */}
+      {/* F3: la corrida en curso, con la MISMA fila del centro de procesos
+          (22-09: «no dos diseños para lo mismo»): misma barra, mismo
+          «Detener». Una línea, no una tarjeta: el detalle vive en el centro. */}
       {generando && progreso && (
         <div
-          className="rounded-lg border border-border bg-surface px-5 py-4"
+          className="overflow-hidden rounded-lg border border-border bg-surface"
           data-testid="facturacion-en-curso"
         >
-          <BarraDeTrabajo
-            testid="facturacion"
-            titulo="Emitiendo las facturas"
-            hechas={progreso.hechas}
-            total={progreso.total}
+          <FilaDeProceso
+            as="div"
+            sinVerResultado
+            proceso={procesoDeLaCorrida(mes, progreso)}
             onDetener={detenerCorrida}
             deteniendo={deteniendo}
-            nota={`${
-              progreso.tandas > 1 ? `Tanda ${progreso.tanda} de ${progreso.tandas}. ` : ''
-            }Si detienes, termina la tanda en curso; volver a apretar «Generar» no duplica las que ya salieron.`}
           />
         </div>
       )}

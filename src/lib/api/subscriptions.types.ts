@@ -111,15 +111,6 @@ export interface SubscriptionPseCheckoutResponse {
 }
 
 // ============================================================================
-// PSE Bank (GET /pse-mock/banks)
-// ============================================================================
-
-export interface PSEBank {
-  code: string;
-  name: string;
-}
-
-// ============================================================================
 // Backend Coupon Validation (from POST /coupons/validate)
 // ============================================================================
 

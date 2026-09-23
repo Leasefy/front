@@ -13,7 +13,6 @@ import type {
   DisplaySubscription,
   SubscriptionPseCheckoutDto,
   SubscriptionPseCheckoutResponse,
-  PSEBank,
 } from './subscriptions.types';
 import type { PlanId, BillingCycle, SubscriptionStatus } from '@/lib/types/subscription';
 import type { Coupon, CouponValidationResult, CouponDiscount } from '@/lib/types/coupon';
@@ -178,14 +177,6 @@ export const subscriptionsApi = {
     dto: SubscriptionPseCheckoutDto,
   ): Promise<SubscriptionPseCheckoutResponse> {
     return apiClient.post<SubscriptionPseCheckoutResponse>('/subscriptions/pse/checkout', dto);
-  },
-
-  /**
-   * Get available PSE banks for the mock.
-   * GET /pse-mock/banks — public, no auth required
-   */
-  async getPSEBanks(): Promise<PSEBank[]> {
-    return apiClient.get<PSEBank[]>('/pse-mock/banks');
   },
 
   /**

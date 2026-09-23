@@ -81,7 +81,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
  */
 // 23-09: 2762 al borrar `/pse-mock` y las marcas «Visa/Mastercard» del checkout
 // del propietario (que sólo paga por PSE).
-const CUANTOS_HABIA = 2762;
+// 23-09: 2755 al pasar la compra de créditos al PSE real (el formulario nuevo
+// pinta rótulos y avisos en 14).
+const CUANTOS_HABIA = 2755;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

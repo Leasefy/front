@@ -669,7 +669,7 @@
     "PATCH /visits/properties/:propertyId/availability/:availabilityId",
     "POST /admin/coupons",
     "POST /admin/notification-templates",
-    "POST /agent-credits/purchase",
+    "POST /agent-credits/pse/checkout",
     "POST /agent/matching/casos/:id/enviar",
     "POST /ai/analyze/:applicationId",
     "POST /ai/analyze/document/:documentId",

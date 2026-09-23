@@ -25,7 +25,10 @@ function montar() {
   c = document.createElement('div');
   document.body.appendChild(c);
   root = createRoot(c);
-  act(() => root!.render(<ArrendarPage params={{ id: 'p-1' }} />));
+  // Next 15: `params` es una promesa. Una ya marcada como cumplida (protocolo
+  // de thenables de React) la lee `use()` sin suspender el render síncrono.
+  const params = Object.assign(Promise.resolve({ id: 'p-1' }), { status: 'fulfilled', value: { id: 'p-1' } });
+  act(() => root!.render(<ArrendarPage params={params} />));
 }
 
 describe('/arrendar/[id] — paso 1 cumplido', () => {

@@ -8,7 +8,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
-import { act } from 'react-dom/test-utils'
+import { act } from 'react'
 
 import { ResultadoAprobacion } from './ResultadoAprobacion'
 import type { PreApprovalResult } from '@/lib/api/funnel.service'

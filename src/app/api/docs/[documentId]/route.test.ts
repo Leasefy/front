@@ -24,7 +24,7 @@ function pedir(documentId: string, app: string | null, { auth = true } = {}) {
   const req = new NextRequest(`http://localhost/api/docs/${documentId}${q}`, {
     headers: auth ? { authorization: 'Bearer jwt' } : {},
   });
-  return GET(req, { params: { documentId } });
+  return GET(req, { params: Promise.resolve({ documentId }) });
 }
 
 function backYArchivo(url: string, contentType: string) {

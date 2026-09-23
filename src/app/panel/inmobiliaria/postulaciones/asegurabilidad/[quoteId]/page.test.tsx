@@ -157,10 +157,19 @@ afterEach(() => {
   container.remove()
 })
 
+// Desde Next 15 `params` es una promesa y la página la lee con `use()`. Una
+// promesa recién creada suspende el primer render, y estas pruebas montan con
+// un `act` síncrono: le pasamos una ya marcada como cumplida (el protocolo de
+// thenables de React), que `use()` lee sin suspender —como la que entrega Next
+// en una navegación de cliente—.
+function paramsYaResueltos<T>(valor: T): Promise<T> {
+  return Object.assign(Promise.resolve(valor), { status: 'fulfilled', value: valor })
+}
+
 function mount() {
   act(() => {
     root.render(
-      React.createElement(QuoteDetailPage, { params: { quoteId: TEST_QUOTE_ID } }),
+      React.createElement(QuoteDetailPage, { params: paramsYaResueltos({ quoteId: TEST_QUOTE_ID }) }),
     )
   })
 }

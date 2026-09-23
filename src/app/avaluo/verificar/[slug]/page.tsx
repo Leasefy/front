@@ -12,10 +12,11 @@
 import { redirect } from 'next/navigation'
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
-export default function VerificarCertificadoPage({ params }: Props) {
+export default async function VerificarCertificadoPage(props: Props) {
+  const params = await props.params
   const { slug } = params
   const base = process.env.NEXT_PUBLIC_AVALUO_API_URL ?? ''
   redirect(`${base}/verify/${slug}`)

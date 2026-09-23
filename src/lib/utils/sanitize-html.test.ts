@@ -49,8 +49,7 @@ describe('next.config.mjs', () => {
   // `isomorphic-dompurify` de los externos del servidor, webpack vuelve a
   // empaquetar jsdom y la ficha del contrato vuelve a dar 500 al recargar.
   it('deja `isomorphic-dompurify` fuera del bundle de servidor', () => {
-    expect(nextConfig.experimental?.serverComponentsExternalPackages).toContain(
-      'isomorphic-dompurify'
-    );
+    // Next 15 renombró la clave: `serverExternalPackages`, en la raíz.
+    expect(nextConfig.serverExternalPackages).toContain('isomorphic-dompurify');
   });
 });

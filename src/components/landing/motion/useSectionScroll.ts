@@ -17,7 +17,7 @@ interface SectionScroll {
  * Reduced-motion users get a frozen MotionValue pinned at the section's
  * final state (1) instead of a live scroll-driven value.
  */
-export function useSectionScroll(target: RefObject<HTMLElement>): SectionScroll {
+export function useSectionScroll(target: RefObject<HTMLElement | null>): SectionScroll {
   const prefersReducedMotion = useReducedMotion()
   const frozenProgress = useMotionValue(1)
   const { scrollYProgress } = useScroll({

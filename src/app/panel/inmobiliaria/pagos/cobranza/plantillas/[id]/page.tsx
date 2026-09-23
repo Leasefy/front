@@ -27,7 +27,7 @@
  * All strings: t('inmobiliaria.ai.templates.*') (D-36-12, XR-05).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, use } from 'react'
 import {
   Clock,
   CheckCircle,
@@ -657,11 +657,8 @@ function TemplateEditorContent({
 // Page component — receives params from Next.js router
 // =============================================================================
 
-export default function TemplatePage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function TemplatePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params)
   const { t } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? ''

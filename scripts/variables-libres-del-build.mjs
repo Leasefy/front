@@ -98,6 +98,12 @@ const PERMITIDOS_DE_LIBRERIAS = {
   val: 'xlsx: referencia dentro de un eval de su generador de código',
   value: 'librería de terceros (45356): typeof value en detección',
   Transform: 'librería de streams: typeof Transform',
+  // Aparecieron con la subida a Next 15 / React 19 / MapLibre 6 (23-09):
+  navigation: 'React 19: Navigation API del navegador (window.navigation), con typeof navigation',
+  FontFace: 'MapLibre 6: CSS Font Loading API, con typeof FontFace',
+  ResizeObserverEntry: 'MapLibre 6: instanceof ResizeObserverEntry (global del navegador)',
+  __nccwpck_require__: 'runtime de Next 15: paquete compilado con ncc, con typeof __nccwpck_require__',
+  _N_E_STYLE_LOAD: 'runtime de Next 15: gancho opcional de carga de estilos (typeof _N_E_STYLE_LOAD)',
 };
 
 const PERMITIDOS = new Set([

@@ -40,17 +40,17 @@ beforeEach(() => {
 })
 
 describe('ReporteAvaluoRedirectPage', () => {
-  it('redirects (307, via next/navigation redirect) to the target the pure builder returns, token intact', () => {
+  it('redirects (307, via next/navigation redirect) to the target the pure builder returns, token intact', async () => {
     vi.mocked(avaluoReportRedirectTarget).mockReturnValue(
       'https://avaluos.leasefy.co/avaluo/reporte/slug-1?token=cap-token',
     )
 
-    expect(() =>
+    await expect(
       ReporteAvaluoRedirectPage({
-        params: { slug: 'slug-1' },
-        searchParams: { token: 'cap-token' },
+        params: Promise.resolve({ slug: 'slug-1' }),
+        searchParams: Promise.resolve({ token: 'cap-token' }),
       }),
-    ).toThrow('NEXT_REDIRECT:https://avaluos.leasefy.co/avaluo/reporte/slug-1?token=cap-token')
+    ).rejects.toThrow('NEXT_REDIRECT:https://avaluos.leasefy.co/avaluo/reporte/slug-1?token=cap-token')
 
     expect(avaluoReportRedirectTarget).toHaveBeenCalledWith('slug-1', 'cap-token')
     expect(redirectMock).toHaveBeenCalledWith(
@@ -59,40 +59,40 @@ describe('ReporteAvaluoRedirectPage', () => {
     expect(notFoundMock).not.toHaveBeenCalled()
   })
 
-  it('passes null when no ?token= is present, rather than the string "undefined"', () => {
+  it('passes null when no ?token= is present, rather than the string "undefined"', async () => {
     vi.mocked(avaluoReportRedirectTarget).mockReturnValue(
       'https://avaluos.leasefy.co/avaluo/reporte/slug-1',
     )
 
-    expect(() =>
-      ReporteAvaluoRedirectPage({ params: { slug: 'slug-1' }, searchParams: {} }),
-    ).toThrow('NEXT_REDIRECT:')
+    await expect(
+      ReporteAvaluoRedirectPage({ params: Promise.resolve({ slug: 'slug-1' }), searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow('NEXT_REDIRECT:')
 
     expect(avaluoReportRedirectTarget).toHaveBeenCalledWith('slug-1', null)
   })
 
-  it('takes the first value when ?token= is duplicated', () => {
+  it('takes the first value when ?token= is duplicated', async () => {
     vi.mocked(avaluoReportRedirectTarget).mockReturnValue('https://avaluos.leasefy.co/x')
 
-    expect(() =>
+    await expect(
       ReporteAvaluoRedirectPage({
-        params: { slug: 'slug-1' },
-        searchParams: { token: ['first', 'second'] },
+        params: Promise.resolve({ slug: 'slug-1' }),
+        searchParams: Promise.resolve({ token: ['first', 'second'] }),
       }),
-    ).toThrow()
+    ).rejects.toThrow()
 
     expect(avaluoReportRedirectTarget).toHaveBeenCalledWith('slug-1', 'first')
   })
 
-  it('answers notFound(), never a malformed redirect, when the micro base is unset', () => {
+  it('answers notFound(), never a malformed redirect, when the micro base is unset', async () => {
     vi.mocked(avaluoReportRedirectTarget).mockReturnValue(null)
 
-    expect(() =>
+    await expect(
       ReporteAvaluoRedirectPage({
-        params: { slug: 'slug-1' },
-        searchParams: { token: 'cap-token' },
+        params: Promise.resolve({ slug: 'slug-1' }),
+        searchParams: Promise.resolve({ token: 'cap-token' }),
       }),
-    ).toThrow('NEXT_NOT_FOUND')
+    ).rejects.toThrow('NEXT_NOT_FOUND')
 
     expect(notFoundMock).toHaveBeenCalledTimes(1)
     expect(redirectMock).not.toHaveBeenCalled()

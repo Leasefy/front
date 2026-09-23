@@ -23,7 +23,7 @@ function readPersistedSpeed(): PlaybackSpeed {
 }
 
 export interface UseAudioPlayerResult {
-  audioRef: React.RefObject<HTMLAudioElement>
+  audioRef: React.RefObject<HTMLAudioElement | null>
   currentTime: number
   duration: number
   isPlaying: boolean
@@ -34,7 +34,7 @@ export interface UseAudioPlayerResult {
 }
 
 export function useAudioPlayer(
-  externalRef?: React.RefObject<HTMLAudioElement>,
+  externalRef?: React.RefObject<HTMLAudioElement | null>,
   /**
    * Testigo que cambia cuando el `<audio>` aparece o se reemplaza — en la
    * práctica, el object URL del blob.

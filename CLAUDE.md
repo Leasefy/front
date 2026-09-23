@@ -1,7 +1,7 @@
 # Leasify — Frontend (front/)
 
 Frontend único de Leasify, plataforma de arriendos inmobiliarios en Colombia.
-Next.js 14 App Router. Corre en :3001 (el :3000 es del back).
+Next.js 15 App Router (React 19). Corre en :3001 (el :3000 es del back).
 
 > Conocimiento profundo del micro. Para contratos con otros servicios ver `../SYSTEM-MAP.md`.
 > Para historial y decisiones: `mem_search(project: "front")`.
@@ -30,11 +30,15 @@ activity feed, execution panel).
 
 ## Stack
 
-- Next.js 14.2 App Router + React 18 + TypeScript 5. Package manager: **pnpm**.
+- Next.js 15.5 App Router + React 19 + TypeScript 5. Package manager: **pnpm**. (Subido desde
+  14.2 el 23-09 por seguridad: `params`/`searchParams`/`cookies()` son promesas; en páginas
+  cliente se leen con `use()`.)
 - Tailwind 3.4 + tokens via CSS vars `hsl(var(--...))` + Radix UI/shadcn + Framer Motion.
 - Formularios: react-hook-form + zod. Toasts: sonner. Iconos: Phosphor + Lucide.
 - Estado: React Context + hooks custom (`src/lib/context/`, `src/lib/hooks/`). SIN Zustand/Redux.
-- Mapas: mapbox-gl/maplibre + supercluster. Gráficas: recharts. Scroll: lenis.
+- Mapas: maplibre 6 (react-map-gl 8) + supercluster. El worker de MapLibre se sirve desde
+  `public/maplibre/<versión>/` (lo copia el `postinstall`); todo `<Map>` importa
+  `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
 
 ## Estructura

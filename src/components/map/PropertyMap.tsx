@@ -3,6 +3,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import Map, { FullscreenControl, MapRef, Marker, NavigationControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import './trabajador-de-maplibre';
 import type { Property } from '@/lib/types/property';
 import { INITIAL_VIEW_STATE, MAP_STYLE, ZOOM_LEVELS } from '@/lib/constants/map';
 import { useSupercluster } from '@/lib/hooks/useSupercluster';
@@ -148,7 +149,7 @@ export function PropertyMap({
         mapStyle={MAP_STYLE}
         onLoad={handleMapLoad}
         onMoveEnd={updateMapState}
-        attributionControl={true}
+        // Sin prop: desde MapLibre 5 la atribución sale por defecto y `true` ya no es un valor válido.
         locale={LOCALE_MAPA}
         reuseMaps
       >

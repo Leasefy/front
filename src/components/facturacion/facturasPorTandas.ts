@@ -71,6 +71,13 @@ export interface InformeDeFacturas {
   totalCop: number
   /** Los motivos del back, sin repetir. */
   motivos: string[]
+  /**
+   * 🔴 Las facturas que salieron EN ESTA corrida, con su id y su número (Nico,
+   * 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote»). Es lo
+   * que baja el botón «Descargar» del informe. Las que el back no devolvió con
+   * id (un back viejo) no entran: sin id no hay PDF que pedir.
+   */
+  documentos: { facturaId: string; numero: string | null }[]
 }
 
 /** Por qué terminó la corrida. */
@@ -128,6 +135,7 @@ export async function generarPorTandas(
     sinEnviar: 0,
     totalCop: 0,
     motivos: [],
+    documentos: [],
   }
   let corte: CorteDeLaCorrida = 'completa'
   let error: unknown = null
@@ -155,6 +163,9 @@ export async function generarPorTandas(
       parte.length - r.emitidas - r.yaEstaban - r.sinNumero,
     )
     if (r.motivo && !informe.motivos.includes(r.motivo)) informe.motivos.push(r.motivo)
+    for (const f of r.facturas ?? []) {
+      if (f.facturaId) informe.documentos.push({ facturaId: f.facturaId, numero: f.numeroDian })
+    }
 
     onProgreso?.({ hechas: enviadas, total: claves.length, tanda: i + 1, tandas: partes.length })
 

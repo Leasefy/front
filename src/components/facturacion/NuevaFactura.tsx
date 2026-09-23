@@ -82,7 +82,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Info, MagnifyingGlass, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
+import {
+  DownloadSimple,
+  Info,
+  MagnifyingGlass,
+  Receipt,
+  SealWarning,
+  Warning,
+} from '@phosphor-icons/react'
 import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
 import {
   generarPorTandas,
@@ -91,8 +98,10 @@ import {
 } from './facturasPorTandas'
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
 import { CajonDeLaFactura } from './CajonDeLaFactura'
+import { useDescargarFacturas } from './useDescargarFacturas'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -246,6 +255,15 @@ interface TablaProps {
    * objetos, y el mes con el que se filtra la tabla no es otro objeto.
    */
   sinMarco?: boolean
+  /**
+   * 🔴 Bajar el PDF de una fila EMITIDA desde la columna de estado (Nico, 22-09:
+   * «dónde puedo descargar […] esa factura en sí […] y también ahí donde dice
+   * estado»). Sin esto la fila emitida mostraba «PRU-3 · interna N° 4» como
+   * texto, sin nada que abrir ni bajar.
+   */
+  onDescargarPdf?: (factura: FacturaDelMes) => void
+  /** El `facturaId` que se está bajando, para no dejar apretar dos veces. */
+  descargando?: string | null
 }
 
 /**
@@ -289,6 +307,8 @@ function TablaDeFacturas({
   onAbrirDetalle,
   accionesMasivas,
   sinMarco = false,
+  onDescargarPdf,
+  descargando = null,
 }: TablaProps) {
   /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
@@ -717,17 +737,41 @@ function TablaDeFacturas({
                       onClick={(e) => e.stopPropagation()}
                     >
                       {emitida ? (
-                        <span className="text-caption text-fg-muted">
+                        /* 🔴 El estado dice que se EMITIÓ y con qué número, y al
+                           lado baja su PDF (Nico, 22-09). La fila sigue
+                           abriendo el cajón; esta celda frena la propagación,
+                           así que el botón baja y no abre. */
+                        <div className="flex flex-col items-start gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="success" data-testid={`emitida-${factura.clave}`}>
+                              Emitida · {factura.numeroDian ?? `N° ${factura.numero}`}
+                            </Badge>
+                            {factura.facturaId && onDescargarPdf && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                hideArrow
+                                className="h-8 w-8"
+                                disabled={descargando !== null}
+                                isLoading={descargando === factura.facturaId}
+                                aria-label={`Descargar el PDF de la factura ${factura.numeroDian ?? factura.numero ?? ''}`.trim()}
+                                title="Descargar el PDF"
+                                onClick={() => onDescargarPdf(factura)}
+                                data-testid={`descargar-pdf-${factura.clave}`}
+                              >
+                                <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            )}
+                          </div>
                           {/* El número que vale ante la DIAN es el autorizado
                               por la resolución; el consecutivo interno queda
                               debajo, para poder cruzarlo. */}
-                          {factura.numeroDian ?? `N° ${factura.numero}`}
                           {factura.numeroDian && (
-                            <span className="block">
+                            <span className="font-mono text-caption tabular-nums text-fg-muted">
                               interna N° {factura.numero}
                             </span>
                           )}
-                        </span>
+                        </div>
                       ) : bloqueada ? (
                         /* 🔴 MOSTRAR NO ES EMITIR. El motivo va en el `title` con
                            las palabras del back: «Diciembre de 2026 todavía no
@@ -994,6 +1038,14 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [corridaHecha, setCorridaHecha] = useState<ResultadoDeLaCorrida | null>(null)
   /** La fila abierta en el cajón. Es la MISMA que pinta la tabla. */
   const [detalle, setDetalle] = useState<FacturaDelMes | null>(null)
+  /** La misma descarga para la fila, el cajón y el informe de la corrida. */
+  const { descargarUna, descargando } = useDescargarFacturas()
+  const descargarPdf = useCallback(
+    (f: FacturaDelMes) => {
+      if (f.facturaId) void descargarUna(f.facturaId, f.numeroDian)
+    },
+    [descargarUna],
+  )
 
   useEffect(() => {
     // El informe es de UN mes: con otro mes elegido se leería como de éste.
@@ -1522,6 +1574,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               onAbrirDetalle={setDetalle}
               accionesMasivas={pieDeAccionesMasivas}
               sinMarco
+              onDescargarPdf={descargarPdf}
+              descargando={descargando}
             />
 
             {/* 🔴 El cajón lee la MISMA fila que la tabla: no le pide nada al
@@ -1533,6 +1587,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               onGenerarUna={(clave) => void generar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
               ocupado={generando}
+              onDescargarPdf={descargarPdf}
+              descargando={descargando}
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,

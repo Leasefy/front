@@ -18,6 +18,7 @@
  *   «Cómo se activa» (`ParaEntenderMas`).
  */
 
+import { useHidratado } from '@/lib/hooks/use-hidratado';
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, Copy, Plugs, WarningCircle } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
@@ -362,9 +363,14 @@ function FormularioDeLlaves({
   };
 
   const deshabilitado = !puedeEditar || guardando;
+  const hidratado = useHidratado();
 
   return (
+    // 🔴 POST y botón apagado hasta hidratar: sin eso, un clic antes de que
+    // React hidrate lo envía el navegador solo, por GET, y las llaves de Wompi
+    // quedan en la URL (el mismo defecto que tuvo el login el 16-09).
     <form
+      method="post"
       className="space-y-4 rounded-md border border-border p-4"
       onSubmit={(e) => {
         e.preventDefault();
@@ -448,7 +454,7 @@ function FormularioDeLlaves({
           type="submit"
           hideArrow
           isLoading={guardando}
-          disabled={!puedeEditar}
+          disabled={!puedeEditar || !hidratado}
           title={porQueNo ?? undefined}
         >
           Guardar y probar

@@ -133,6 +133,25 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(tarjeta.className).not.toContain('overflow-hidden');
   });
 
+  /*
+   * 🔴 23-09 · «Cómo se factura» era un botón fantasma solo a la derecha DENTRO
+   * de la tarjeta: una fila entera vacía a su izquierda que empujaba el mes y
+   * la tabla. Nico: «déjalo arriba donde iría el botón, y así secondary».
+   */
+  it('🔴 «Cómo se factura» va en el encabezado, fuera de la tarjeta, y abre la explicación', async () => {
+    const lugar = q('[data-testid="facturacion-como-funciona"]')!;
+    expect(lugar).not.toBeNull();
+    expect(lugar.closest('header')).not.toBeNull();
+    expect(q('[data-testid="facturacion-tarjeta"]')!.contains(lugar)).toBe(false);
+    const boton = lugar.querySelector('button')!;
+    expect(boton.textContent).toContain('Cómo se factura');
+    await act(async () => {
+      boton.click();
+    });
+    expect(document.body.textContent).toContain('se factura SIN impuestos');
+    expect(document.body.textContent).toContain('todavía no se transmite');
+  });
+
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
     /*
      * 🔴 En «Compras», que desde el 17-09 es la ÚNICA que sigue dibujando la
@@ -243,7 +262,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(8);
     // En «Ventas» el único botón que no es pestaña es el selector de mes del
     // DS —cuyo disparador ES un `<button role="combobox">`—, y ése sí hace
-    // algo: cambia el mes del listado. Ningún botón decorativo.
+    // algo: cambia el mes del listado. El otro es «Cómo se factura» del
+    // encabezado, que abre la explicación. Ningún botón decorativo.
     expect(
       botones
         .filter(
@@ -252,7 +272,7 @@ describe('/panel/inmobiliaria/facturacion', () => {
             b.getAttribute('role') !== 'combobox',
         )
         .map((b) => b.getAttribute('data-testid')),
-    ).toEqual([]);
+    ).toEqual(['para-entender-mas']);
     expect(q('[data-testid="facturacion-mes-emitidas"]')!.getAttribute('role')).toBe(
       'combobox',
     );

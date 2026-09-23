@@ -51,6 +51,12 @@ export interface ParaEntenderMasProps {
   descripcion?: string;
   /** Más ancho para lo que de verdad lo necesita (un mapa de once pasos). */
   ancho?: 'normal' | 'ancho';
+  /**
+   * `fantasma` (por defecto) para cuando vive dentro de un bloque; `secundario`
+   * para cuando va en el encabezado de la pantalla, donde iría su botón de
+   * acción (Nico, 23-09: el fantasma suelto a la derecha dejaba una fila vacía).
+   */
+  variante?: 'fantasma' | 'secundario';
   children: ReactNode;
   className?: string;
 }
@@ -60,6 +66,7 @@ export function ParaEntenderMas({
   titulo,
   descripcion,
   ancho = 'normal',
+  variante = 'fantasma',
   children,
   className,
 }: ParaEntenderMasProps) {
@@ -69,7 +76,7 @@ export function ParaEntenderMas({
     <>
       <Button
         type="button"
-        variant="ghost"
+        variant={variante === 'secundario' ? 'secondary' : 'ghost'}
         size="sm"
         hideArrow
         className={className}

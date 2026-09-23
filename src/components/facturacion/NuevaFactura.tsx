@@ -81,7 +81,6 @@
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
-import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   DownloadSimple,
@@ -1394,24 +1393,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </div>
       )}
 
-      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar —
-          pero detrás de un botón (regla del molde, Nico 22-09: el párrafo gris
-          encima de la tabla «se ve tirado»): se lee una vez, no empuja la
-          tabla hacia abajo cada vez que se entra. */}
-      <div className="flex justify-end" data-testid="facturacion-como-funciona">
-        <ParaEntenderMas etiqueta="Cómo se factura">
-          <p>
-            Cada factura sale de la cuota del contrato: el mismo canon, el mismo
-            prorrateo y los mismos impuestos que el cliente ve en su estado de
-            cuenta. Una cuota que se generó sin escenario tributario confirmado se
-            factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
-            impuesto que nadie confirmó. La factura se numera con la resolución
-            vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
-            CUFE ni validación): eso necesita el proveedor tecnológico de la
-            inmobiliaria.
-          </p>
-        </ParaEntenderMas>
-      </div>
 
       {/* 🔴 UNA sola tarjeta: el mes, la resolución, las pestañas, la tabla y
           el pie de acciones masivas. Nico, 20-09, viendo los tres bloques

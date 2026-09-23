@@ -608,20 +608,10 @@ describe('NuevaFactura', () => {
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
-  it('🔴 dice que un escenario sin confirmar se factura SIN impuestos', async () => {
+  it('la explicación de cómo se factura ya no ocupa una fila dentro de la pestaña', async () => {
+    // Subió al encabezado de la pantalla (Nico, 23-09): ver page.test.tsx.
     await montar();
-    // La explicación vive detrás de «Cómo se factura» (no sobre la tabla):
-    // se abre y se lee en el diálogo, que se monta en el body.
-    const boton = Array.from(host.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Cómo se factura'),
-    );
-    expect(boton).toBeTruthy();
-    await act(async () => {
-      boton!.click();
-    });
-    expect(document.body.textContent).toContain('se factura SIN impuestos');
-    // Y que numerar no es transmitir: la factura electrónica no está.
-    expect(document.body.textContent).toContain('todavía no se transmite');
+    expect(q('[data-testid="facturacion-como-funciona"]')).toBeNull();
   });
 
   /**

@@ -89,6 +89,10 @@ export function filasDelSidebar(
         ai: m.ia,
         hint: m.hintKey ? t(m.hintKey) : undefined,
         dataTourTarget: m.dataTourTarget,
+        // Un grupo sin cabecera (el pie: Reportes) no es parte de la sección
+        // de arriba: con secciones plegables se habría escondido adentro de
+        // «Directorio» (`secciones-del-menu.ts`).
+        ...(g.labelKey ? {} : { suelta: true }),
         badge: m.key === 'postulaciones' ? badges.postulaciones : m.key === 'contratos' ? badges.contratos : undefined,
       });
     }

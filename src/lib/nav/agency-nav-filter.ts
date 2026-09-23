@@ -148,6 +148,7 @@ export function filterAgencyNav(
   return filtered.filter((item, idx) => {
     if (item.kind !== 'section') return true;
     const next = filtered[idx + 1];
-    return next != null && next.kind !== 'section';
+    // Una fila `suelta` (el pie) no es de esta sección aunque venga después.
+    return next != null && next.kind !== 'section' && !next.suelta;
   });
 }

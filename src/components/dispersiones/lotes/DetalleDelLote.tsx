@@ -1203,13 +1203,20 @@ function ArchivoDialog({
     }
   };
 
-  const sinVerificar = archivo ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
+  const esPlanilla = archivo?.entrega === 'PLANILLA';
+  const deTercero = archivo?.entrega === 'ARCHIVO_DE_TERCERO';
+  const sinVerificar =
+    archivo && !esPlanilla ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
         <DialogHeader>
-          <DialogTitle>Generar el archivo plano</DialogTitle>
+          <DialogTitle>
+            {origen?.formato === 'PLANILLA_MANUAL'
+              ? 'Generar la planilla para cargar a mano'
+              : 'Generar el archivo plano'}
+          </DialogTitle>
           <DialogDescription>
             Lote de {nombreDelMes(lote.month)} · {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'} por{' '}
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
@@ -1217,12 +1224,22 @@ function ArchivoDialog({
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4 text-sm">
-          {!archivo && origen && (
+          {!archivo && origen && origen.formato !== 'PLANILLA_MANUAL' && (
             <p className="text-fg" data-testid="archivo-del-banco">
               Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
               {NOMBRE_DEL_FORMATO[origen.formato] ?? origen.formato}), girando desde la cuenta{' '}
               {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
               <span className="font-mono">{origen.cuenta}</span>. Es el banco que se eligió al armar el lote.
+            </p>
+          )}
+
+          {!archivo && origen?.formato === 'PLANILLA_MANUAL' && (
+            <p className="text-fg" data-testid="archivo-del-banco">
+              Sale la <span className="font-medium">planilla para cargar a mano</span> en{' '}
+              <span className="font-medium">{origen.nombreDelBanco}</span>, girando desde la cuenta{' '}
+              {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
+              <span className="font-mono">{origen.cuenta}</span>. No es un archivo para subir al banco: trae los
+              datos de cada pago para digitarlos en su portal.
             </p>
           )}
 
@@ -1235,10 +1252,30 @@ function ArchivoDialog({
 
           {archivo && (
             <div className="space-y-3" data-testid="archivo-listo">
-              {sinVerificar ? (
+              {esPlanilla ? (
+                <div data-testid="es-planilla">
+                  <Banner variant="info" title="Es una planilla para cargar a mano, no el archivo del banco">
+                    {archivo.pendienteDeConfirmar.join(' ')}
+                  </Banner>
+                </div>
+              ) : sinVerificar ? (
                 <div className="space-y-2">
                   <Banner variant="warning" title="Este layout no se verificó contra un archivo real del banco">
-                    {archivo.fuente ? (
+                    {deTercero && archivo.fuente ? (
+                      <>
+                        Formato tomado de{' '}
+                        <a
+                          href={archivo.fuente.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {archivo.fuente.documento}
+                        </a>
+                        , no de un documento del banco. Sube primero un archivo de prueba al portal y revisa que lo
+                        valide sin errores antes de autorizar el pago.
+                      </>
+                    ) : archivo.fuente ? (
                       <>
                         Está armado campo por campo con{' '}
                         <a

@@ -9,7 +9,8 @@
  * - el mes se elige con `SelectorDeMes` (en español), no con un
  *   `<input type="month">` que pinta el mes en el idioma del navegador;
  * - «Ir a Lotes» desde una dispersión abre en SU mes (`?mes=`);
- * - se pregunta desde qué banco se gira, y un banco sin formato no deja armar;
+ * - se pregunta desde qué banco se gira; cada banco dice qué recibe (archivo
+ *   oficial o planilla para cargar a mano) y uno sin migración no deja armar;
  * - los pasos del lote se leen en una línea.
  */
 
@@ -107,15 +108,27 @@ function lista(): BancosParaGirar {
           version: 'PDF del 27-05-2026',
           consultado: '2026-09-22',
         },
+        entrega: 'ARCHIVO_OFICIAL',
         porQueNo: null,
       },
       {
         id: 'DAVIVIENDA',
         nombre: 'Davivienda',
-        formato: null,
-        nombreDelFormato: null,
+        formato: 'PLANILLA_MANUAL',
+        nombreDelFormato: 'Planilla para cargar a mano',
+        entrega: 'PLANILLA',
         fuente: null,
-        porQueNo: 'Davivienda no publica la estructura del archivo de pagos. Envíanoslo.',
+        porQueNo: 'Davivienda le entrega el diseño del archivo a cada empresa dentro de su portal.',
+      },
+      {
+        id: 'BANCO_AV_VILLAS',
+        nombre: 'Banco AV Villas',
+        formato: null,
+        nombreDelFormato: 'AV Villas — pagos a terceros ACH',
+        entrega: 'ARCHIVO_OFICIAL',
+        fuente: null,
+        porQueNo:
+          'Lo de Banco AV Villas está listo pero falta aplicar la migración 20260922230000_formatos_de_todos_los_bancos en esta base.',
       },
     ],
     cuentas: [],
@@ -210,7 +223,7 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
 
     const pasos = document.body.querySelector('[aria-label="Cómo sale un pago"]')?.textContent ?? '';
     expect(pasos).toContain('otra persona lo aprueba con un código');
-    expect(pasos).toContain('descargas el archivo de ese banco');
+    expect(pasos).toContain('descargas el archivo de ese banco (o su planilla)');
     expect(pasos).toContain('lo subes al portal del banco');
     expect(pasos).toContain('marcas el lote pagado');
   });
@@ -249,16 +262,60 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     );
   });
 
-  it('🔴 un banco sin formato aparece, dice por qué y NO deja armar', async () => {
+  it('los bancos salen agrupados por lo que reciben', async () => {
     await abrirArmar();
 
-    const davivienda = document.body.querySelector('[data-testid="banco-DAVIVIENDA"]');
-    expect(davivienda?.textContent).toContain('formato no disponible todavía');
-    await clicEn(davivienda);
+    const oficial = document.body.querySelector('[data-testid="grupo-ARCHIVO_OFICIAL"]')?.textContent ?? '';
+    const planilla = document.body.querySelector('[data-testid="grupo-PLANILLA"]')?.textContent ?? '';
+    expect(oficial).toContain('Archivo del banco — oficial');
+    expect(oficial).toContain('Bancolombia');
+    expect(planilla).toContain('Planilla para cargar a mano');
+    expect(planilla).toContain('Davivienda');
+    expect(planilla).not.toContain('Bancolombia');
+  });
+
+  it('🔴 un banco sin estructura publicada recibe la PLANILLA, lo dice antes de armar y sí deja armar', async () => {
+    armar.mockResolvedValue({
+      lote: { id: 'lote-1', cantidad: 314, totalCop: 794_000_000 },
+      excluidos: [],
+      descubiertoCop: 0,
+    });
+    await abrirArmar();
+
+    await clicEn(document.body.querySelector('[data-testid="banco-DAVIVIENDA"]'));
+
+    const aviso = document.body.querySelector('[data-testid="banco-con-planilla"]')?.textContent ?? '';
+    expect(aviso).toContain('Para Davivienda te damos una planilla para cargar a mano');
+    expect(aviso).toContain('dentro de su portal');
+    expect(aviso).toContain('envíanoslo');
+    // No hay instructivo que citar: no se promete un archivo del banco.
+    expect(document.body.querySelector('[data-testid="fuente-del-formato"]')).toBeNull();
+
+    const numero = document.body.querySelector<HTMLInputElement>('#numero-de-cuenta-origen');
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      set.call(numero, '0550123456');
+      numero!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+
+    expect(armar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origen: { banco: 'DAVIVIENDA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '0550123456' },
+      }),
+    );
+  });
+
+  it('🔴 un banco cuyo formato espera una migración aparece, dice cuál y NO deja armar', async () => {
+    await abrirArmar();
+
+    const avVillas = document.body.querySelector('[data-testid="banco-BANCO_AV_VILLAS"]');
+    expect(avVillas?.textContent).toContain('no disponible todavía');
+    await clicEn(avVillas);
 
     const aviso = document.body.querySelector('[data-testid="banco-sin-formato"]')?.textContent ?? '';
-    expect(aviso).toContain('Todavía no generamos el archivo de Davivienda');
-    expect(aviso).toContain('Envíanoslo');
+    expect(aviso).toContain('Todavía no se puede girar desde Banco AV Villas');
+    expect(aviso).toContain('20260922230000_formatos_de_todos_los_bancos');
     expect(botonQueDice('Armar lote con el mes entero')?.disabled).toBe(true);
   });
 

@@ -210,6 +210,7 @@ export type {
   BancosParaGirar,
   CandidatoDeDispersion,
   CuentaRegistrada,
+  EntregaDelFormato,
   FuenteDelFormato,
   OrigenDelLote,
   OrigenPedido,

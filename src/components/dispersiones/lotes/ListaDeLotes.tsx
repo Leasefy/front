@@ -96,7 +96,7 @@ interface PendientesDelMes {
 export const PASOS_DEL_LOTE = [
   'Armas el lote eligiendo el banco',
   'otra persona lo aprueba con un código',
-  'descargas el archivo de ese banco',
+  'descargas el archivo de ese banco (o su planilla)',
   'lo subes al portal del banco',
   'marcas el lote pagado',
 ] as const;

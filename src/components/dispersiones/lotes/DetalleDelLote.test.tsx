@@ -565,6 +565,61 @@ describe('<DetalleDelLote> — el archivo', () => {
     expect(cuerpo()).not.toContain('no se verificó contra un archivo real del banco');
   });
 
+  it('🔴 la PLANILLA no se presenta como archivo del banco: ni «verificado» ni «SIN-VERIFICAR»', async () => {
+    const DESDE_DAVIVIENDA = {
+      banco: 'DAVIVIENDA',
+      nombreDelBanco: 'Davivienda',
+      formato: 'PLANILLA_MANUAL' as const,
+      tipoDeCuenta: 'AHORROS' as const,
+      cuenta: '•••• 3456',
+    };
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: DESDE_DAVIVIENDA }));
+    await clic('Generar archivo');
+
+    expect(document.body.querySelector('[data-testid="archivo-del-banco"]')?.textContent).toContain(
+      'planilla para cargar a mano',
+    );
+
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
+      ...ARCHIVO_SIN_VERIFICAR,
+      nombreArchivo: `lote-2026-08-planilla-para-cargar-a-mano-davivienda-${ID.slice(0, 8)}.csv`,
+      formato: 'PLANILLA_MANUAL',
+      entrega: 'PLANILLA',
+      fuente: null,
+      layoutVerificado: true,
+      pendienteDeConfirmar: ['Esta planilla NO se sube al banco.'],
+    });
+    await clicEnDialogo('dialogo-archivo', 'Generar');
+
+    const aviso = document.body.querySelector('[data-testid="es-planilla"]')?.textContent ?? '';
+    expect(aviso).toContain('Es una planilla para cargar a mano, no el archivo del banco');
+    expect(aviso).toContain('Esta planilla NO se sube al banco.');
+    expect(cuerpo()).not.toContain('Layout verificado contra un archivo real del banco');
+    expect(cuerpo()).not.toContain('no se verificó contra un archivo real del banco');
+  });
+
+  it('un archivo de TERCERO dice de dónde salió y pide subir primero uno de prueba', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
+      ...ARCHIVO_SIN_VERIFICAR,
+      entrega: 'ARCHIVO_DE_TERCERO',
+      fuente: {
+        url: 'https://ejemplo.co/estructura.pdf',
+        documento: 'Manual de pagos de un software contable',
+        version: '2025',
+        consultado: '2026-09-22',
+      },
+    });
+
+    await clic('Generar archivo');
+    await clicEnDialogo('dialogo-archivo', 'Generar');
+
+    const listo = document.body.querySelector('[data-testid="archivo-listo"]')?.textContent ?? '';
+    expect(listo).toContain('Formato tomado de');
+    expect(listo).toContain('Manual de pagos de un software contable');
+    expect(listo).toContain('Sube primero un archivo de prueba al portal');
+  });
+
   it('el error del back al generar llega tal cual', async () => {
     await render(vista(lote({ estado: 'APROBADO' })));
     vi.mocked(lotesDeDispersionApi.generarArchivo).mockRejectedValue(

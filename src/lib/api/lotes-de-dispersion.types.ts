@@ -27,7 +27,24 @@ export type FormatoArchivoDePagos =
   | 'BANCOLOMBIA_PAB'
   | 'BANCOLOMBIA_SAP'
   | 'ONEPAY'
-  | 'BANCO_DE_BOGOTA';
+  | 'BANCO_DE_BOGOTA'
+  | 'BANCO_AGRARIO'
+  | 'BANCO_AV_VILLAS'
+  | 'BANCO_CAJA_SOCIAL'
+  /** No es un archivo del banco: la planilla para cargar a mano. */
+  | 'PLANILLA_MANUAL';
+
+/**
+ * Qué recibe la inmobiliaria para un banco (Nico, 22-09: «el archivo plano
+ * para TODOS los bancos de Colombia»):
+ *   · `ARCHIVO_OFICIAL`: el archivo del portal, armado con un documento que
+ *     publicó el mismo banco.
+ *   · `ARCHIVO_DE_TERCERO`: el archivo del portal, con la estructura de un
+ *     tercero (software contable, código abierto). Sin verificar.
+ *   · `PLANILLA`: no hay estructura publicada; una planilla con los datos de
+ *     cada pago para cargarlos a mano. NO se sube al banco.
+ */
+export type EntregaDelFormato = 'ARCHIVO_OFICIAL' | 'ARCHIVO_DE_TERCERO' | 'PLANILLA';
 
 /** Ahorros o corriente: la cuenta de la inmobiliaria desde la que se gira. */
 export type TipoDeCuentaDeOrigen = 'AHORROS' | 'CORRIENTE';
@@ -57,10 +74,18 @@ export interface OrigenDelLote {
 export interface BancoDeOrigen {
   id: string;
   nombre: string;
-  /** `null` = todavía no generamos su archivo; `porQueNo` dice por qué. */
+  /** `null` = no se puede elegir todavía (falta una migración); `porQueNo` lo dice. */
   formato: FormatoArchivoDePagos | null;
   nombreDelFormato: string | null;
+  /** Qué se le entrega a la inmobiliaria para ESTE banco. Opcional: back anterior al 22-09 noche. */
+  entrega?: EntregaDelFormato;
+  extension?: string;
+  /** El documento del banco (o del tercero) del que sale el archivo. `null` en la planilla. */
   fuente: FuenteDelFormato | null;
+  otrasFuentes?: FuenteDelFormato[];
+  /** Qué hay que revisar antes de subirlo (o, en la planilla, qué es). */
+  pendienteDeConfirmar?: string[];
+  /** Por qué no hay archivo propio (planilla) o qué migración falta. */
   porQueNo: string | null;
 }
 
@@ -355,12 +380,14 @@ export interface ArchivoGenerado {
   totalCop: number;
   excluidos: FilaExcluida[];
   advertencias: string[];
+  /** Qué se descargó: el archivo del banco o la planilla para cargar a mano. */
+  entrega?: EntregaDelFormato;
   /** 🔴 `false` hasta que alguien coteje el layout contra un archivo real. */
   layoutVerificado: boolean;
   /** Qué del layout falta confirmar contra el banco. */
   pendienteDeConfirmar: string[];
-  /** El instructivo oficial del banco. Opcional: back anterior al 2026-09-22. */
-  fuente?: FuenteDelFormato;
+  /** El instructivo del banco. `null` en la planilla; ausente en un back anterior al 2026-09-22. */
+  fuente?: FuenteDelFormato | null;
   origen?: OrigenDelLote;
   /** `true` cuando el lote ya estaba en ARCHIVO_GENERADO y se volvió a entregar el mismo. */
   reenvio: boolean;

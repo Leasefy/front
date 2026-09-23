@@ -192,6 +192,29 @@ async function renovarTokenVencido(usado: string | null): Promise<string | null>
   return esperarUnTokenDistinto(usado)
 }
 
+/**
+ * `fetch` a una ruta PROPIA del front (`/api/**`) con la sesión puesta.
+ *
+ * Las rutas que bajan URLs de afuera (`/api/inmuebles/desde-enlace`,
+ * `/api/inmuebles/imagen-remota`) exigen sesión desde la auditoría de seguridad
+ * del 23-09 —antes cualquiera en internet las usaba de proxy—. Un import largo
+ * cruza renovaciones del token (dura una hora), así que un 401 con el token que
+ * acaba de vencer se reintenta UNA vez con el nuevo, igual que `apiClient`.
+ */
+export async function fetchConSesion(input: string, init: RequestInit = {}): Promise<Response> {
+  await esperarRespuestaDeSesion()
+  const conToken = (token: string | null): RequestInit => {
+    const headers = new Headers(init.headers)
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+    return { ...init, headers }
+  }
+  const usado = _accessToken
+  const res = await fetch(input, conToken(usado))
+  if (res.status !== 401 || !usado) return res
+  const nuevo = await renovarTokenVencido(usado)
+  return nuevo ? fetch(input, conToken(nuevo)) : res
+}
+
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   _onUnauthorized = handler
 }

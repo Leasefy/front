@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   deriveCategoryFromTemplateCode,
   mapRealtimeRowToBackendNotification,
+  mapToLandlordNotification,
+  mapToTenantNotification,
+  type BackendNotification,
 } from './notifications.types';
 
 // ============================================================================
@@ -112,5 +115,51 @@ describe('mapRealtimeRowToBackendNotification', () => {
       user_id: 'user-1',
     };
     expect(mapRealtimeRowToBackendNotification(row).message).toBe('');
+  });
+});
+
+// ============================================================================
+// actionUrl — auditoría de seguridad 23-09
+// ============================================================================
+// Las tres bandejas hacen `router.push(notification.actionUrl)`, y el back
+// acepta `actionUrl` del micro de agentes tal cual. Un `javascript:` corría
+// código en nuestro origen con la sesión de quien hacía clic.
+
+describe('actionUrl de una notificación', () => {
+  const base = (actionUrl: string | undefined): BackendNotification => ({
+    id: 'n1',
+    type: 'AGENT_GENERIC',
+    category: 'general',
+    title: 't',
+    message: 'm',
+    read: false,
+    createdAt: '2026-09-23T00:00:00.000Z',
+    actionUrl,
+  });
+
+  it.each([
+    ['javascript:alert(document.cookie)'],
+    ['JavaScript:alert(1)'],
+    ['data:text/html,<script>alert(1)</script>'],
+    ['//evil.example/panel'],
+    ['/\\evil.example'],
+    ['java\tscript:alert(1)'],
+  ])('descarta %s en las dos bandejas', (url) => {
+    expect(mapToLandlordNotification(base(url)).actionUrl).toBeUndefined();
+    expect(mapToTenantNotification(base(url)).actionUrl).toBeUndefined();
+  });
+
+  it.each([
+    ['/panel/inmobiliaria/cobros?highlight=abc'],
+    ['/inquilino/pagos'],
+    ['https://leasefy.co/estado-de-cuenta/tok123'],
+    ['http://localhost:3011/estado-de-cuenta/tok123'],
+  ])('conserva lo que el back manda hoy: %s', (url) => {
+    expect(mapToLandlordNotification(base(url)).actionUrl).toBe(url);
+    expect(mapToTenantNotification(base(url)).actionUrl).toBe(url);
+  });
+
+  it('sin actionUrl sigue sin actionUrl', () => {
+    expect(mapToTenantNotification(base(undefined)).actionUrl).toBeUndefined();
   });
 });

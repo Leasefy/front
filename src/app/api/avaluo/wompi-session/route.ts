@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
+import { esIdentificadorSeguro } from '@/lib/utils/identificador-seguro'
 
 export const runtime = 'nodejs'
 
@@ -21,6 +22,11 @@ export async function POST(req: Request) {
 
   if (!submissionId) {
     return NextResponse.json({ error: 'submissionId required' }, { status: 400 })
+  }
+  // La referencia firmada es `avaluo-<submissionId>`: sin esto, cualquiera
+  // obtenía una firma válida para una referencia con el texto que quisiera.
+  if (!esIdentificadorSeguro(submissionId)) {
+    return NextResponse.json({ error: 'invalid_submissionId' }, { status: 400 })
   }
 
   // --- Server-only env vars (no NEXT_PUBLIC_ prefix) ---

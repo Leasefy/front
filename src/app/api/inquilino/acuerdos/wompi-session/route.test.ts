@@ -185,4 +185,18 @@ describe('POST /api/inquilino/acuerdos/wompi-session — auth / config / validat
     const res = await POST(makeReq({ planId: 'plan-1', cuotaNumber: 1 }))
     expect(res.status).toBe(502)
   })
+
+  // Auditoría de seguridad 23-09: planId iba tal cual en la ruta del back.
+  it.each([
+    [{ planId: '../../leases/x/payment-info?' }],
+    [{ planId: 'plan-1/../../x' }],
+    [{ planId: 'plan-1', cuotaNumber: 1.5 }],
+    [{ planId: 'plan-1', cuotaNumber: 0 }],
+  ])('rejects %j without calling the backend', async (body) => {
+    const f = vi.fn()
+    globalThis.fetch = f
+    const res = await POST(makeReq(body))
+    expect(res.status).toBe(400)
+    expect(f).not.toHaveBeenCalled()
+  })
 })

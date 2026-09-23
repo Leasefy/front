@@ -9,6 +9,7 @@
 
 import type { InmuebleDesdeEnlace } from './leer-enlace';
 import type { ImportProperty } from '@/components/inmobiliaria/import/lib/importTypes';
+import { fetchConSesion } from '@/lib/api/client';
 
 export interface EnlaceLeido {
   url: string;
@@ -87,7 +88,7 @@ export async function leerEnlaces(
     const parcial = await Promise.all(
       tanda.map(async (url): Promise<ResultadoDeEnlace> => {
         try {
-          const res = await fetch('/api/inmuebles/desde-enlace', {
+          const res = await fetchConSesion('/api/inmuebles/desde-enlace', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url }),
@@ -131,7 +132,7 @@ export const MAX_FOTOS_POR_INMUEBLE = 40;
  */
 export async function traerFotoComoArchivo(url: string, nombre: string): Promise<File | null> {
   try {
-    const res = await fetch(`/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`);
+    const res = await fetchConSesion(`/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`);
     if (!res.ok) return null;
     const blob = await res.blob();
     if (blob.size === 0) return null;

@@ -23,6 +23,7 @@ import {
   ArrowClockwise,
   ArrowRight,
   ListBullets,
+  PaperPlaneTilt,
   Books,
   CheckCircle,
   Clock,
@@ -61,6 +62,7 @@ import {
 const ICONO_DEL_TIPO: Record<string, Icon> = {
   EMISION_DE_FACTURAS: Receipt,
   ARCHIVO_DEL_LOTE: Bank,
+  ENVIO_A_WOMPI: PaperPlaneTilt,
   REPROCESAR_ASIENTOS: Books,
   MIGRACION_CONTRATOS: UploadSimple,
   MIGRACION_INMUEBLES: UploadSimple,

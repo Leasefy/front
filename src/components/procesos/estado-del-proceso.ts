@@ -112,6 +112,7 @@ export function resultadoDe(p: Pick<Proceso, 'tipo' | 'recurso'>): { href: strin
     case 'EMISION_DE_FACTURAS':
       return { href: '/panel/inmobiliaria/facturacion', texto: 'Ver en Facturación' }
     case 'ARCHIVO_DEL_LOTE':
+    case 'ENVIO_A_WOMPI':
       return p.recurso?.id
         ? { href: `/panel/inmobiliaria/pagos/dispersiones/lotes/${p.recurso.id}`, texto: 'Ver el lote' }
         : null

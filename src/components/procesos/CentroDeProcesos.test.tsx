@@ -449,3 +449,27 @@ describe('«Ver detalle» (23-09): el registro de pasos y los errores legibles',
     expect(registro?.querySelector('[data-tono="error"]')).not.toBeNull()
   })
 })
+
+describe('Wompi en el centro (23-09)', () => {
+  it('«Lote en Wompi»: la etapa y «37 de 120», y «Ver el lote» lleva al lote', async () => {
+    await montar(
+      <ul>
+        <FilaDeProceso
+          proceso={proceso({
+            tipo: 'ENVIO_A_WOMPI',
+            titulo: 'Lote de Septiembre de 2026 en Wompi',
+            hechos: 37,
+            total: 120,
+            porcentaje: 31,
+            recurso: { tipo: 'LOTE_DE_DISPERSION', id: 'lote-7' },
+            mensaje: 'Etapa: Pagando en Wompi. 37 de 120 pagados. Wompi está pagando.',
+          })}
+          ahora={AHORA}
+        />
+      </ul>,
+    )
+    expect(container.textContent).toContain('Pagando en Wompi')
+    expect(q('avance-del-proceso')?.textContent).toBe('37 de 120')
+    expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-7')
+  })
+})

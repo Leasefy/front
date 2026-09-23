@@ -13,10 +13,13 @@
  *
  * · TODOS los bancos aparecen y todos se pueden elegir (Nico, 22-09: «el
  *   archivo plano para TODOS los bancos de Colombia»), AGRUPADOS por lo que
- *   reciben: «Archivo del banco — oficial», «— de tercero, sin verificar» o
+ *   reciben: «Archivo del banco — oficial», «— copia sin verificar» o
  *   «Planilla para cargar a mano». La planilla es para los bancos que no
  *   publican cómo se arma su archivo: se dice sin rodeos, con el porqué, y se
- *   pide el instructivo del banco.
+ *   pide el instructivo del banco. Cada banco muestra además DE DÓNDE sale lo
+ *   suyo («Oficial · manual OVE V12 (2026)», «Copia del instructivo del banco
+ *   · sin verificar»), y de los que no publican nada, lo que sí sabemos (a
+ *   quién pedirle la estructura).
  * · Propone lo último que eligió la agencia (lo guarda el back con cada lote).
  * · Si la inmobiliaria ya registró la cuenta en Medios de pago, se ofrece con
  *   un clic: nadie tiene que escribir de memoria una cuenta que ya está.
@@ -43,7 +46,7 @@ import {
 import { cn } from '@/lib/utils';
 import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
 
-import { entregaDe, ETIQUETA_DE_LA_ENTREGA, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
+import { entregaDe, ETIQUETA_DE_LA_ENTREGA, fuenteCorta, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
 
 /** Lo que la pantalla de armar necesita saber para habilitar el botón. */
 export interface EleccionDelBanco {
@@ -200,6 +203,11 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
                       )}
                     >
                       {b.nombre}
+                      {b.formato && fuenteCorta(b) && (
+                        <span className="ml-1.5 text-caption text-fg-muted" data-testid={`fuente-corta-${b.id}`}>
+                          · {fuenteCorta(b)}
+                        </span>
+                      )}
                       {!b.formato && <span className="ml-1.5 text-caption text-fg-muted">· no disponible todavía</span>}
                     </button>
                   );
@@ -221,18 +229,62 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
       {elegido?.formato && entregaDe(elegido) === 'PLANILLA' && (
         <div data-testid="banco-con-planilla">
           <Banner variant="info" title={`Para ${elegido.nombre} te damos una planilla para cargar a mano`}>
-            {elegido.porQueNo} La planilla trae, por pago, el titular, su documento, el banco y su código, el tipo y
-            el número de cuenta y el valor, para digitarlos en el portal o pegarlos en la plantilla que te dé tu
-            banco. Si tu ejecutivo te da el instructivo del archivo plano, envíanoslo y generamos el archivo.
+            {elegido.porQueNo}{' '}
+            {elegido.formato === 'PLANILLA_MANUAL' ? (
+              <>
+                La planilla trae, por pago, el titular, su documento, el banco y su código, el tipo y el número de
+                cuenta y el valor, para digitarlos en el portal o pegarlos en la plantilla que te dé tu banco. Si tu
+                ejecutivo te da el instructivo del archivo plano, envíanoslo y generamos el archivo.
+              </>
+            ) : (
+              elegido.fuente && (
+                <>
+                  Las columnas salen de{' '}
+                  <a
+                    href={elegido.fuente.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-0.5 text-primary underline-offset-4 hover:underline"
+                  >
+                    {elegido.fuente.documento}
+                    <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
+                  </a>{' '}
+                  ({elegido.fuente.version}).
+                </>
+              )
+            )}
           </Banner>
+          {elegido.loQueSabemos && (
+            <p className="mt-2 text-caption text-fg-muted" data-testid="lo-que-sabemos">
+              {elegido.loQueSabemos}
+            </p>
+          )}
         </div>
       )}
 
       {elegido?.formato && entregaDe(elegido) === 'ARCHIVO_DE_TERCERO' && elegido.fuente && (
         <div data-testid="banco-de-tercero">
-          <Banner variant="warning" title="Formato de un tercero, sin verificar">
-            Formato tomado de {elegido.fuente.documento}; sube primero un archivo de prueba al portal y revisa que
-            lo valide sin errores antes de autorizar.
+          <Banner variant="warning" title="Formato sin verificar">
+            Formato tomado de{' '}
+            <a
+              href={elegido.fuente.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-0.5 text-primary underline-offset-4 hover:underline"
+            >
+              {elegido.fuente.documento}
+              <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
+            </a>{' '}
+            ({elegido.fuente.version}); sube primero un archivo de prueba al portal y revisa que lo valide sin errores
+            antes de autorizar.
+          </Banner>
+        </div>
+      )}
+
+      {elegido?.formato && elegido.avisoAntesDeSubir && (
+        <div data-testid="aviso-antes-de-subir">
+          <Banner variant="warning" title="Antes de subirlo">
+            {elegido.avisoAntesDeSubir}
           </Banner>
         </div>
       )}

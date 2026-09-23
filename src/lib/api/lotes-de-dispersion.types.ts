@@ -18,10 +18,9 @@ export type EstadoDelLote =
   | 'ANULADO';
 
 /**
- * Formatos de archivo plano: el enum `FormatoArchivoDePagos` del back. Tienen
- * generador `BANCOLOMBIA_PAB` y `BANCO_DE_BOGOTA` (cada uno sacado del
- * instructivo oficial de su banco); los otros dos existen en el enum y no se
- * generan. El formato NO se elige al final: es el del banco elegido al armar.
+ * Formatos de archivo plano: el enum `FormatoArchivoDePagos` del back
+ * (`BANCOLOMBIA_SAP` y `ONEPAY` existen en el enum y no se generan). El
+ * formato NO se elige al final: es el del banco elegido al armar.
  */
 export type FormatoArchivoDePagos =
   | 'BANCOLOMBIA_PAB'
@@ -31,16 +30,27 @@ export type FormatoArchivoDePagos =
   | 'BANCO_AGRARIO'
   | 'BANCO_AV_VILLAS'
   | 'BANCO_CAJA_SOCIAL'
+  | 'BANCOOMEVA'
+  /** Los de una copia del instructivo del banco, sin verificar (22-09 noche). */
+  | 'BANCO_DAVIVIENDA'
+  | 'BANCO_DAVIBANK'
+  | 'BANCO_BBVA'
+  | 'BANCO_DE_OCCIDENTE'
   /** No es un archivo del banco: la planilla para cargar a mano. */
-  | 'PLANILLA_MANUAL';
+  | 'PLANILLA_MANUAL'
+  /** Planillas con las columnas EXACTAS de la macro del banco. */
+  | 'PLANILLA_FINANDINA'
+  | 'PLANILLA_BANCAMIA';
 
 /**
  * Qué recibe la inmobiliaria para un banco (Nico, 22-09: «el archivo plano
  * para TODOS los bancos de Colombia»):
  *   · `ARCHIVO_OFICIAL`: el archivo del portal, armado con un documento que
  *     publicó el mismo banco.
- *   · `ARCHIVO_DE_TERCERO`: el archivo del portal, con la estructura de un
- *     tercero (software contable, código abierto). Sin verificar.
+ *   · `ARCHIVO_DE_TERCERO`: el archivo del portal, con una estructura que NO
+ *     publicó el banco (una copia de su instructivo que subió un tercero) o
+ *     un instructivo del banco tan viejo que no se sabe si su portal de hoy
+ *     lo recibe. Sin verificar.
  *   · `PLANILLA`: no hay estructura publicada; una planilla con los datos de
  *     cada pago para cargarlos a mano. NO se sube al banco.
  */
@@ -87,6 +97,12 @@ export interface BancoDeOrigen {
   pendienteDeConfirmar?: string[];
   /** Por qué no hay archivo propio (planilla) o qué migración falta. */
   porQueNo: string | null;
+  /** De dónde sale, corto: «Oficial · manual OVE V12 (2026)». Back anterior: ausente. */
+  etiquetaDeLaFuente?: string;
+  /** Lo que hay que decir antes de subirlo (una contradicción del manual, un 2.º formato). */
+  avisoAntesDeSubir?: string | null;
+  /** De un banco sin estructura pública, lo que sí sabemos (a quién pedirla). */
+  loQueSabemos?: string | null;
 }
 
 /** Una cuenta que la inmobiliaria ya registró en Medios de pago. */

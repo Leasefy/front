@@ -27,6 +27,10 @@ vi.mock('@/lib/api/recaudo.service', () => ({
 
 vi.mock('@/lib/api/refresco-de-datos', () => ({
   alCambiar: () => () => {},
+  compartirGet: (_clave: string, hacer: () => unknown) => hacer(),
+  invalidar: () => {},
+  recursoDe: (path: string) => path,
+  descartarEnVuelo: () => {},
 }));
 
 vi.mock('next/link', () => ({

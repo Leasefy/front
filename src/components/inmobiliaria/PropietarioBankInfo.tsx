@@ -15,9 +15,15 @@ import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { PropietarioBankAccount } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
+import { titularInicial } from '@/lib/propietarios/titular-de-la-cuenta';
 
 interface PropietarioBankInfoProps {
   bankAccount: PropietarioBankAccount;
+  /**
+   * Nombre y documento del propietario (22-09): con ellos la ficha dice si la
+   * cuenta es suya o de OTRA persona, en vez de mostrar un nombre suelto.
+   */
+  propietario?: { nombre: string; documento: string };
   onEdit?: () => void;
   showFullDetails?: boolean;
   className?: string;
@@ -29,6 +35,7 @@ interface PropietarioBankInfoProps {
  */
 export function PropietarioBankInfo({
   bankAccount,
+  propietario,
   onEdit,
   showFullDetails = false,
   className,
@@ -182,12 +189,29 @@ export function PropietarioBankInfo({
           </div>
         </div>
 
-        {/* Account Holder */}
-        <div className="flex items-center justify-between py-2">
+        {/* Titular: el propietario u OTRA persona (22-09). */}
+        <div className="flex items-center justify-between gap-3 py-2" data-testid="bank-info-titular">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.holder')}</span>
-          <span className="font-medium text-fg">
-            {bankAccount.accountHolder}
-          </span>
+          {propietario &&
+          titularInicial({
+            nombreDelPropietario: propietario.nombre,
+            documentoDelPropietario: propietario.documento,
+            nombreDelTitular: bankAccount.accountHolder,
+            documentoDelTitular: bankAccount.accountHolderDocument,
+          }) === 'TERCERO' ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-medium text-fg" title={bankAccount.accountHolder}>
+                {bankAccount.accountHolder || '—'}
+              </span>
+              <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-caption text-warning">
+                {t('inmobiliaria.propietario.bankInfo.titularOtraPersona')}
+              </span>
+            </span>
+          ) : propietario ? (
+            <span className="font-medium text-fg">{t('inmobiliaria.propietario.bankInfo.titularElPropietario')}</span>
+          ) : (
+            <span className="font-medium text-fg">{bankAccount.accountHolder}</span>
+          )}
         </div>
 
         {/* Documento del titular: sólo existe cuando la cuenta es de otra persona. */}

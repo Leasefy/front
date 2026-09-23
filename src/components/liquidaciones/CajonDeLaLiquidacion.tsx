@@ -17,6 +17,7 @@ import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
+import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
 
 type Propietario = VistaPreviaDeDispersiones['propietarios'][number];
 
@@ -142,6 +143,12 @@ export function CajonDeLaLiquidacion({
                   ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
                   : 'Sin cuenta bancaria: no se le puede girar hasta que la cargues en su ficha.'}
               </p>
+              {/* 🔴 22-09: la cuenta puede ser de otra persona; se dice de quién. */}
+              {p.propietarioBankAccount && p.titularDeLaCuenta && !p.titularDeLaCuenta.esElPropietario ? (
+                <p className="text-sm text-fg" data-testid="cajon-liquidacion-titular">
+                  A nombre de {titularEnUnaLinea(p.titularDeLaCuenta) || 'otra persona, sin datos'} (otra persona)
+                </p>
+              ) : null}
             </section>
           </CajonCuerpo>
         </>

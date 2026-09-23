@@ -221,6 +221,8 @@ export interface SolicitudDeCambioDeCuenta {
   bankName?: string;
   bankAccountType: 'AHORROS' | 'CORRIENTE';
   bankAccountNumber: string;
+  /** «¿A quién pertenece la cuenta?» (22-09). Con `TERCERO`, los tres de abajo son obligatorios. */
+  titularDeLaCuenta?: 'PROPIETARIO' | 'TERCERO';
   bankAccountHolder?: string;
   bankAccountHolderDocument?: string;
   bankAccountHolderDocumentType?: string;
@@ -234,6 +236,12 @@ export interface CambioDeCuentaPublico {
   banco: string | null;
   tipoDeCuenta: string | null;
   cuentaEnmascarada: string;
+  /**
+   * 🔴 A nombre de quién queda la cuenta nueva si es de OTRA persona (22-09):
+   * «Carlos Restrepo · CC 80012345». `null` = es del propietario. Ausente = back
+   * anterior al cambio.
+   */
+  titularDeOtraPersona?: string | null;
   expiraAt: string;
   vencido: boolean;
 }
@@ -397,6 +405,7 @@ export const mandatoApi = {
     if (s.bankName) f.append('bankName', s.bankName);
     f.append('bankAccountType', s.bankAccountType);
     f.append('bankAccountNumber', s.bankAccountNumber);
+    if (s.titularDeLaCuenta) f.append('titularDeLaCuenta', s.titularDeLaCuenta);
     if (s.bankAccountHolder) f.append('bankAccountHolder', s.bankAccountHolder);
     if (s.bankAccountHolderDocument) f.append('bankAccountHolderDocument', s.bankAccountHolderDocument);
     if (s.bankAccountHolderDocumentType) f.append('bankAccountHolderDocumentType', s.bankAccountHolderDocumentType);

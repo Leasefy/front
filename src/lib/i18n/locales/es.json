@@ -2526,7 +2526,9 @@
         "downloading": "Descargando...",
         "copyTooltip": "Copiar",
         "call": "Llamar",
-        "email": "Email"
+        "email": "Email",
+        "titularDeLaFichaHoy": "Tomado de la ficha de hoy: esta dispersión es anterior a la copia del titular.",
+        "titularOtraPersona": "otra persona"
       },
       "resumen": {
         "summaryMonth": "Resumen {{month}}",
@@ -4921,15 +4923,11 @@
         "checking": "Corriente",
         "accountNumber": "Número de cuenta",
         "hintDigitsOnly": "Solo dígitos, sin puntos ni guiones",
-        "accountHolder": "Titular de la cuenta",
-        "hintMatchBank": "Debe coincidir con el nombre registrado en el banco",
         "department": "Departamento",
         "selectDepartment": "Seleccionar departamento…",
         "noDepartment": "Sin departamento",
         "holderDocumentType": "Tipo de documento del titular",
         "holderDocumentTypePlaceholder": "Tipo",
-        "holderDocument": "Documento del titular",
-        "hintHolderDocument": "Solo si la cuenta está a nombre de otra persona. Bancolombia lo pide en el archivo de dispersión.",
         "errHolderDocTypeRequired": "Elige el tipo de documento del titular",
         "internalNotes": "Notas internas",
         "hintTeamOnly": "Solo visible para el equipo",
@@ -4950,7 +4948,22 @@
         "errAccountTypeRequired": "Selecciona tipo de cuenta",
         "errAccountNumRequired": "Número de cuenta requerido",
         "errAccountNumInvalid": "Número de cuenta inválido (10-20 dígitos)",
-        "errHolderRequired": "Nombre del titular requerido"
+        "titularPregunta": "¿A quién pertenece la cuenta?",
+        "titularDelPropietario": "Del propietario",
+        "titularDeOtraPersona": "De otra persona",
+        "titularEsElPropietario": "La cuenta queda a nombre de {{name}}, con su documento.",
+        "titularAvisoOtraPersona": "Primero, la persona dueña de la cuenta: el banco revisa el giro contra su documento, no contra el del propietario.",
+        "titularNombre": "Nombre completo del titular",
+        "titularNombreHint": "Como aparece en el banco",
+        "titularNumero": "Número de documento del titular",
+        "titularErrNombre": "Escribe el nombre completo de la persona dueña de la cuenta",
+        "titularErrVacio": "Escribe el número de documento del titular",
+        "titularErrSoloNumeros": "Este documento lleva sólo números",
+        "titularErrLargo": "Debe tener entre {{min}} y {{max}} dígitos",
+        "titularErrPasaporte": "El pasaporte lleva sólo letras y números, entre 5 y 20",
+        "titularErrNit": "Escribe el NIT así: 900123456-7 (el dígito de verificación es opcional)",
+        "titularErrDv": "El dígito de verificación no corresponde: es {{dv}}",
+        "titularErrEsElPropietario": "Ese es el documento del propietario: si la cuenta es suya, elige «Del propietario»"
       },
       "stats": {
         "properties": "Propiedades",
@@ -5032,7 +5045,9 @@
         "show": "Mostrar",
         "copy": "Copiar",
         "verified": "Datos verificados",
-        "sinCuenta": "Sin cuenta bancaria: sin esto no se le puede girar. Cárgala con el lápiz."
+        "sinCuenta": "Sin cuenta bancaria: sin esto no se le puede girar. Cárgala con el lápiz.",
+        "titularOtraPersona": "Otra persona",
+        "titularElPropietario": "El propietario"
       },
       "selector": {
         "searchPlaceholder": "Buscar propietario por nombre, email o documento...",

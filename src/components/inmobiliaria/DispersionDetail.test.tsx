@@ -302,3 +302,70 @@ describe('DispersionDetail — la cuenta bancaria no se inventa', () => {
     expect(texto).toContain('—');
   });
 });
+
+/**
+ * 🔴 22-09: la cuenta de un giro puede ser de OTRA persona (Nico). El cajón
+ * decía «Titular —»; ahora dice «Titular: Nombre · CC 123» con el titular que
+ * se copió al generar la dispersión, y avisa cuando es otra persona.
+ */
+describe('DispersionDetail — el titular del giro', () => {
+  const conCuenta = (titularDeLaCuenta: Dispersion['titularDeLaCuenta']): Dispersion => ({
+    ...BASE_DISPERSION,
+    propietarioBankAccount: {
+      bank: 'bancolombia',
+      accountType: 'savings',
+      accountNumber: '0011223344',
+      accountHolder: titularDeLaCuenta?.nombre ?? '',
+    },
+    titularDeLaCuenta,
+  });
+
+  it('de otra persona: nombre, documento y el aviso', () => {
+    renderConProps(
+      conCuenta({
+        esElPropietario: false,
+        tipoDocumento: 'CC',
+        numeroDocumento: '80012345',
+        nombre: 'Carlos Restrepo',
+        copiadoAlGenerar: true,
+      }),
+      {},
+    );
+    const celda = q('dispersion-titular')?.textContent ?? '';
+    expect(celda).toContain('Carlos Restrepo · CC 80012345');
+    expect(celda).toContain('inmobiliaria.dispersiones.detailView.titularOtraPersona');
+    expect(celda).not.toContain('titularDeLaFichaHoy');
+  });
+
+  it('del propietario: su nombre y su documento, sin aviso', () => {
+    renderConProps(
+      conCuenta({
+        esElPropietario: true,
+        tipoDocumento: 'CC',
+        numeroDocumento: '123456',
+        nombre: 'Maria Perez',
+        copiadoAlGenerar: true,
+      }),
+      {},
+    );
+    const celda = q('dispersion-titular')?.textContent ?? '';
+    expect(celda).toContain('Maria Perez · CC 123456');
+    expect(celda).not.toContain('titularOtraPersona');
+  });
+
+  it('una dispersión vieja (sin copia) dice que es el titular de la ficha de hoy', () => {
+    renderConProps(
+      conCuenta({
+        esElPropietario: true,
+        tipoDocumento: 'CC',
+        numeroDocumento: '123456',
+        nombre: 'Maria Perez',
+        copiadoAlGenerar: false,
+      }),
+      {},
+    );
+    expect(q('dispersion-titular')?.textContent).toContain(
+      'inmobiliaria.dispersiones.detailView.titularDeLaFichaHoy',
+    );
+  });
+});

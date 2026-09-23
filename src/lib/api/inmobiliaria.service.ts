@@ -303,7 +303,15 @@ function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   if (department !== undefined) {
     payload.department = department.trim() || null;
   }
-  if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
+  /*
+   * 🔴 Con «¿A quién pertenece la cuenta?» contestada (22-09) manda la respuesta
+   * y, si es otra persona, sus tres datos; si es del propietario, NINGUNO: el
+   * back limpia el titular. Sin respuesta, el camino de antes.
+   */
+  const conRespuesta = rest.titularDeLaCuenta !== undefined;
+  if (conRespuesta && rest.titularDeLaCuenta === 'PROPIETARIO') {
+    // Nada del titular: lo resuelve el back.
+  } else if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
     const documento = (accountHolderDocument ?? '').trim();
     payload.bankAccountHolderDocument = documento || null;
     payload.bankAccountHolderDocumentType = documento && accountHolderDocumentType ? accountHolderDocumentType : null;
@@ -318,7 +326,7 @@ function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   if (accountNumber !== undefined) {
     payload.bankAccountNumber = accountNumber;
   }
-  if (accountHolder !== undefined) {
+  if (accountHolder !== undefined && !(conRespuesta && rest.titularDeLaCuenta === 'PROPIETARIO')) {
     payload.bankAccountHolder = accountHolder;
   }
 

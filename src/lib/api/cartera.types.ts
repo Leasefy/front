@@ -296,6 +296,13 @@ export interface MesDelPropietario {
   month: string;
   recaudadoCop: number;
   comisionCop: number;
+  /**
+   * 🔴 22-09 · El IVA de la comisión, APARTE de `conceptosACargoCop` (antes iba
+   * escondido ahí). Opcional: un back anterior no lo manda.
+   */
+  ivaComisionCop?: number;
+  /** Lo que el propietario le retuvo a la comisión: le suma. */
+  retencionesComisionCop?: number;
   conceptosAFavorCop: number;
   conceptosACargoCop: number;
   /** Lo que hay que girarle por el mes. */

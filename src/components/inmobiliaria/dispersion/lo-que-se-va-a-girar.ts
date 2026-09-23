@@ -128,6 +128,8 @@ export interface ElTotalDeLaCorrida {
   propietarios: number;
   canonCop: number;
   comisionesCop: number;
+  /** 🔴 22-09 · El IVA de las comisiones, aparte. 0 con un back anterior. */
+  ivaComisionesCop: number;
   /** Lo que sale del banco: cada propietario entero o nada. */
   aGirarCop: number;
   /**
@@ -163,6 +165,7 @@ export function elTotalDeLaCorrida({
       propietarios: porGenerar.length,
       canonCop: porGenerar.reduce((s, p) => s + p.totalCollected, 0),
       comisionesCop: delBack.totalComisiones,
+      ivaComisionesCop: porGenerar.reduce((s, p) => s + (p.totalIvaComision ?? 0), 0),
       aGirarCop: delBack.totalAGirar,
       exacto: true,
     };
@@ -176,6 +179,7 @@ export function elTotalDeLaCorrida({
     propietarios: dentro.length,
     canonCop: renglones.reduce((s, i) => s + i.rentCollected, 0),
     comisionesCop: renglones.reduce((s, i) => s + i.commissionAmount, 0),
+    ivaComisionesCop: renglones.reduce((s, i) => s + (i.ivaComisionAmount ?? 0), 0),
     aGirarCop: renglones.reduce((s, i) => s + i.netAmount, 0),
     exacto: false,
   };
@@ -201,6 +205,8 @@ export function elTotalDelPropietario({
 }): {
   canonCop: number;
   comisionCop: number;
+  /** 🔴 22-09 · El IVA de la comisión, aparte. 0 con un back anterior. */
+  ivaComisionCop: number;
   /** Lo que se gira: con deducciones, `aGirarCop` (entero o $0), nunca negativo. */
   netoCop: number;
   /** Lo descontado este mes; 0 sin deducciones. */
@@ -236,6 +242,7 @@ export function elTotalDelPropietario({
     return {
       canonCop: delBack.totalCollected,
       comisionCop: delBack.totalCommission,
+      ivaComisionCop: delBack.totalIvaComision ?? 0,
       ...conSusDeducciones(delBack),
       exacto: true,
     };
@@ -244,6 +251,7 @@ export function elTotalDelPropietario({
     return {
       canonCop: p.totalCollected,
       comisionCop: p.totalCommission,
+      ivaComisionCop: p.totalIvaComision ?? 0,
       ...conSusDeducciones(p),
       exacto: true,
     };
@@ -252,6 +260,7 @@ export function elTotalDelPropietario({
   return {
     canonCop: renglones.reduce((s, i) => s + i.rentCollected, 0),
     comisionCop: renglones.reduce((s, i) => s + i.commissionAmount, 0),
+    ivaComisionCop: renglones.reduce((s, i) => s + (i.ivaComisionAmount ?? 0), 0),
     netoCop: renglones.reduce((s, i) => s + i.netAmount, 0),
     deduccionesCop: 0,
     enContraCop: 0,

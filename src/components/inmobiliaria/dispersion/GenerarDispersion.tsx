@@ -593,6 +593,15 @@ export function GenerarDispersion({
                 valor={formatCurrency(total.comisionesCop)}
                 testId="total-comisiones"
               />
+              {/* 🔴 22-09: el IVA de la comisión, entre la comisión y lo que
+                  se gira. Sin él, «Comisiones» y «Total a girar» no cuadran. */}
+              {total.ivaComisionesCop > 0 && (
+                <Cifra
+                  rotulo="IVA de las comisiones"
+                  valor={formatCurrency(total.ivaComisionesCop)}
+                  testId="total-iva-comisiones"
+                />
+              )}
               <Cifra
                 rotulo="Total a girar"
                 valor={formatCurrency(total.aGirarCop)}
@@ -816,6 +825,9 @@ function FilaDelPropietario({
           <p className="font-mono text-sm text-fg-muted tabular-nums">
             {ROTULO_DEL_CANON[base]} {formatCurrency(numeros.canonCop)} · comisión{' '}
             {formatCurrency(numeros.comisionCop)}
+            {numeros.ivaComisionCop > 0 && (
+              <span data-testid="iva-del-propietario"> · IVA {formatCurrency(numeros.ivaComisionCop)}</span>
+            )}
           </p>
           {numeros.deduccionesCop > 0 && (
             <p className="font-mono text-sm text-fg-muted tabular-nums" data-testid="deducciones-del-propietario">

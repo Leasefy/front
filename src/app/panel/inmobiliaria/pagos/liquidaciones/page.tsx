@@ -183,7 +183,15 @@ function TesoreriaContent() {
   }, [propietarios, busqueda]);
   const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
   const suma = (campo: keyof Propietario) =>
-    propietarios.reduce((s, p) => s + (p[campo] as number), 0);
+    propietarios.reduce((s, p) => s + ((p[campo] as number | undefined) ?? 0), 0);
+  /*
+   * 🔴 22-09 (Nico: «no estás teniendo en cuenta el IVA en la comisión»): el
+   * IVA de la comisión y lo que el propietario le retiene a la comisión tienen
+   * su propia línea entre la comisión y el neto. El back dejó de esconderlos en
+   * los conceptos, así que sin estas líneas la cuenta no cerraría a la vista.
+   */
+  const ivaDelMes = suma('totalIvaComision');
+  const retenidoDelMes = suma('totalRetencionesComision');
 
   // La fórmula, sobre la plata de VERDAD del mes. Las cuatro filas cierran
   // contra el neto por construcción: el back lo calcula igual.
@@ -195,6 +203,12 @@ function TesoreriaContent() {
       tone: 'text-fg',
     },
     { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
+    ...(ivaDelMes > 0
+      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-danger' }]
+      : []),
+    ...(retenidoDelMes > 0
+      ? [{ labelKey: 'fRetencionesComision', value: retenidoDelMes, sign: '+', tone: 'text-fg' }]
+      : []),
     { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
@@ -318,7 +332,14 @@ function TesoreriaContent() {
                 {/* En una fila cuando hay ancho: son los pasos de UNA cuenta
                     (canon − comisión + a favor − a cargo = neto), y en columna
                     ocupaban media pantalla de alto. */}
-                <div className="space-y-2.5 lg:grid lg:grid-cols-4 lg:gap-x-8 lg:gap-y-2 lg:space-y-0">
+                <div
+                  className={cn(
+                    'space-y-2.5 lg:grid lg:gap-x-8 lg:gap-y-2 lg:space-y-0',
+                    // Con el IVA de la comisión (y lo retenido) la cuenta tiene
+                    // más pasos: siguen en UNA fila.
+                    resumen.length <= 4 ? 'lg:grid-cols-4' : resumen.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-6',
+                  )}
+                >
                   {resumen.map((row, i) => (
                     <div key={row.labelKey}>
                       <div className="flex items-center justify-between text-sm">
@@ -341,7 +362,7 @@ function TesoreriaContent() {
                       )}
                     </div>
                   ))}
-                  <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-4">
+                  <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-full">
                     <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
                       <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
                       {t(k('fNeto'))}
@@ -489,7 +510,21 @@ function TesoreriaContent() {
                         >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
-                          <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-danger">
+                            −{formatCurrency(p.totalCommission)}
+                            {/* El IVA de la comisión debajo, no en una columna
+                                más: la tabla ya no cabía a lo ancho (21-09). */}
+                            {(p.totalIvaComision ?? 0) > 0 && (
+                              <span className="block text-caption" data-testid="tesoreria-iva-fila">
+                                {t(k('colIva'))} −{formatCurrency(p.totalIvaComision ?? 0)}
+                              </span>
+                            )}
+                            {(p.totalRetencionesComision ?? 0) > 0 && (
+                              <span className="block text-caption text-fg-muted">
+                                {t(k('fRetencionesComision'))} +{formatCurrency(p.totalRetencionesComision ?? 0)}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
                           <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
                           <TableCell className="font-mono tabular-nums text-danger" data-testid="tesoreria-deducciones-fila">

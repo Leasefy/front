@@ -720,6 +720,14 @@ export interface DispersionItem {
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
+  /**
+   * 🔴 22-09 · El IVA que la inmobiliaria cobra sobre su comisión, a cargo del
+   * propietario. Va APARTE de `conceptosACargo` (antes iba escondido ahí) y ya
+   * está restado de `netAmount`. Ausente = back anterior o dispersión vieja.
+   */
+  ivaComisionAmount?: number;
+  /** Lo que el propietario le retuvo a la comisión: le suma. Aparte de los conceptos. */
+  retencionesComisionAmount?: number;
   netAmount: number;
   /** Conceptos del contrato que suman a favor del propietario. */
   conceptosAFavor: number;
@@ -790,6 +798,18 @@ export interface Dispersion {
   /** Canon liquidado del mes, sin administración (causado o recaudado según `baseDelCanon`). */
   totalCollected: number;
   totalCommission: number;
+  /**
+   * 🔴 22-09 · El IVA de la comisión, línea propia. 0 en una dispersión vieja;
+   * ausente sólo en datos armados a mano (el adaptador siempre lo pone).
+   */
+  totalIvaComision?: number;
+  /** Lo que el propietario le retuvo a la comisión: le suma. */
+  totalRetencionesComision?: number;
+  /**
+   * La dispersión se generó SIN el IVA de la comisión (antes del 22-09) y sus
+   * cuotas quedaron con esa cuenta: el back lo dice con el número que falta.
+   */
+  avisoDelIvaDeLaComision?: string | null;
   totalConceptosAFavor: number;
   totalConceptosACargo: number;
   totalDeTerceros: number;
@@ -900,6 +920,10 @@ export interface VistaPreviaDeDispersiones {
     yaExiste: boolean;
     totalCollected: number;
     totalCommission: number;
+    /** 🔴 22-09 · El IVA de la comisión, línea propia. Ausente = back anterior. */
+    totalIvaComision?: number;
+    /** Lo que el propietario le retuvo a la comisión: le suma. */
+    totalRetencionesComision?: number;
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
@@ -1137,6 +1161,13 @@ export interface ExtractoPropietario {
     status: string;
     commissionPercent: number;
     commissionAmount: number;
+    /**
+     * 🔴 22-09 · El IVA de la comisión y lo que el propietario le retuvo, APARTE
+     * de los conceptos. Opcionales: una línea vieja (por cobro) o un back
+     * anterior no los separan.
+     */
+    ivaComisionAmount?: number;
+    retencionesComisionAmount?: number;
     /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
     /**
@@ -1191,6 +1222,9 @@ export interface ExtractoPropietario {
     totalAdmin: number;
     totalPaid: number;
     totalCommission: number;
+    /** 🔴 22-09 · Opcionales: un back anterior no los manda. */
+    totalIvaComision?: number;
+    totalRetencionesComision?: number;
     totalNet: number;
     totalConceptosAFavor: number;
     totalConceptosACargo: number;

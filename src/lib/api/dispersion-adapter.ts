@@ -65,6 +65,10 @@ export interface DispersionDelBack {
   interesesCop?: number;
   totalCollected: number;
   totalCommission: number;
+  /** 🔴 22-09 · Ausentes = back anterior: se leen como 0. */
+  totalIvaComision?: number;
+  totalRetencionesComision?: number;
+  avisoDelIvaDeLaComision?: string | null;
   totalConceptosAFavor?: number;
   totalConceptosACargo?: number;
   totalDeTerceros?: number;
@@ -87,6 +91,8 @@ export interface DispersionDelBack {
       rentCollected: number;
       commissionPercent: number;
       commissionAmount: number;
+      ivaComisionAmount?: number;
+      retencionesComisionAmount?: number;
       netAmount: number;
       conceptosAFavor?: number;
       conceptosACargo?: number;
@@ -169,6 +175,8 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
       rentCollected: i.rentCollected,
       commissionPercent: i.commissionPercent,
       commissionAmount: i.commissionAmount,
+      ivaComisionAmount: i.ivaComisionAmount ?? 0,
+      retencionesComisionAmount: i.retencionesComisionAmount ?? 0,
       netAmount: i.netAmount,
       conceptosAFavor: i.conceptosAFavor ?? 0,
       conceptosACargo: i.conceptosACargo ?? 0,
@@ -189,6 +197,9 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     baseDelCanon: baseDeLaDispersion(d),
     totalCollected: d.totalCollected,
     totalCommission: d.totalCommission,
+    totalIvaComision: d.totalIvaComision ?? 0,
+    totalRetencionesComision: d.totalRetencionesComision ?? 0,
+    avisoDelIvaDeLaComision: d.avisoDelIvaDeLaComision ?? null,
     totalConceptosAFavor: d.totalConceptosAFavor ?? 0,
     totalConceptosACargo: d.totalConceptosACargo ?? 0,
     totalDeTerceros: d.totalDeTerceros ?? 0,

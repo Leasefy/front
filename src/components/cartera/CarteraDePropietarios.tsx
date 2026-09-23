@@ -362,7 +362,7 @@ function FilasDelPropietario({
  * El mes a mes de un propietario: de qué está hecho su neto.
  *
  * Va como tabla anidada y no como más columnas de la de arriba porque son
- * siete cifras por mes; metidas en la tabla principal, el propietario —que es
+ * ocho cifras por mes; metidas en la tabla principal, el propietario —que es
  * lo que se busca— quedaría empujado fuera de la pantalla.
  */
 function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
@@ -374,6 +374,7 @@ function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
           <TableHead className="whitespace-nowrap">Mes</TableHead>
           <TableHead className="whitespace-nowrap text-right">{t('cartera.porPagar.canonCausado')}</TableHead>
           <TableHead className="whitespace-nowrap text-right">Comisión</TableHead>
+          <TableHead className="whitespace-nowrap text-right">IVA comisión</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su favor</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su cargo</TableHead>
           <TableHead className="whitespace-nowrap text-right">Neto</TableHead>
@@ -392,8 +393,15 @@ function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
             <TableCell className="text-right text-fg-muted">
               <Peso valor={-mes.comisionCop} />
             </TableCell>
+            {/* 🔴 22-09: el IVA de la comisión en su columna; el back dejó de
+                esconderlo en «a su cargo». */}
+            <TableCell className="text-right text-fg-muted" data-testid="detalle-iva-comision">
+              <Peso valor={-(mes.ivaComisionCop ?? 0)} />
+            </TableCell>
+            {/* Lo que el dueño le retuvo a la comisión le SUMA: va con lo que
+                es a su favor, para que la fila siga cerrando contra el neto. */}
             <TableCell className="text-right text-fg-muted">
-              <Peso valor={mes.conceptosAFavorCop} />
+              <Peso valor={mes.conceptosAFavorCop + (mes.retencionesComisionCop ?? 0)} />
             </TableCell>
             <TableCell className="text-right text-fg-muted">
               <Peso valor={-mes.conceptosACargoCop} />

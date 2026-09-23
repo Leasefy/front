@@ -415,3 +415,61 @@ describe('las frases', () => {
     )
   })
 })
+
+describe('«Ver detalle» (23-09): el registro de pasos y los errores legibles', () => {
+  it('registroDelProceso: lanzado, lo que salió en verde, lo que NO salió en rojo, el archivo y el cierre', async () => {
+    const { registroDelProceso } = await import('./DetalleDelProceso')
+    const pasos = registroDelProceso(
+      proceso({
+        estado: 'TERMINADO',
+        terminadoAt: '2026-09-22T20:00:00.000Z',
+        mensaje: '447 facturas emitidas · $120.000.000. 3 quedaron sin número: la resolución agotó su rango.',
+        archivo: { nombre: 'facturas-2026-09-447.zip', tipo: 'application/zip', bytes: 2048, venceAt: null, vencido: false },
+      }),
+    )
+    expect(pasos.map((p) => [p.tono, p.texto])).toEqual([
+      ['neutro', 'Lo lanzó Ana Pérez · contador.'],
+      ['ok', '447 facturas emitidas · $120.000.000.'],
+      ['error', '3 quedaron sin número: la resolución agotó su rango.'],
+      ['ok', 'Dejó facturas-2026-09-447.zip (2 KB).'],
+      ['ok', 'Listo · tardó 3 min.'],
+    ])
+  })
+
+  it('desde el panel, «Ver detalle» cierra el popover y abre el cajón con el registro', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista([FALLIDO]))
+    await montar(<BotonDelCentroDeProcesos />)
+    await act(async () => {
+      ;(q('ver-detalle-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(q('popover-raiz')?.getAttribute('data-open')).toBe('0')
+    const registro = document.body.querySelector('[data-testid="registro-del-proceso"]')
+    expect(registro?.textContent).toContain('Falta mapear la cuenta del canon.')
+    expect(registro?.querySelector('[data-tono="error"]')).not.toBeNull()
+  })
+})
+
+describe('Wompi en el centro (23-09)', () => {
+  it('«Lote en Wompi»: la etapa y «37 de 120», y «Ver el lote» lleva al lote', async () => {
+    await montar(
+      <ul>
+        <FilaDeProceso
+          proceso={proceso({
+            tipo: 'ENVIO_A_WOMPI',
+            titulo: 'Lote de Septiembre de 2026 en Wompi',
+            hechos: 37,
+            total: 120,
+            porcentaje: 31,
+            recurso: { tipo: 'LOTE_DE_DISPERSION', id: 'lote-7' },
+            mensaje: 'Etapa: Pagando en Wompi. 37 de 120 pagados. Wompi está pagando.',
+          })}
+          ahora={AHORA}
+        />
+      </ul>,
+    )
+    expect(container.textContent).toContain('Pagando en Wompi')
+    expect(q('avance-del-proceso')?.textContent).toBe('37 de 120')
+    expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-7')
+  })
+})

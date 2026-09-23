@@ -38,7 +38,7 @@
  * emitida acá es lo que le entra.
  */
 
-import { apiClient } from './client'
+import { apiClient, ApiError } from './client'
 import { anunciarProceso, RECURSO_DE_PROCESOS } from './procesos.service'
 import { invalidar } from './refresco-de-datos'
 import type {
@@ -378,6 +378,21 @@ export interface ResultadoDeGeneracion {
   procesoId?: string | null
   /** `true` = el ZIP con los PDF de ESTA tanda se está armando en ese proceso. */
   zipEnElCentro?: boolean
+  /** `true` = este back junta las tandas de una corrida en UN proceso (23-09). */
+  corridaAgrupable?: boolean
+}
+
+/**
+ * Lo que una tanda le dice al back para sumar al proceso de su corrida
+ * (23-09: «una emisión = UN proceso»).
+ */
+export interface TandaDeLaCorrida {
+  procesoId?: string
+  yaEnviadas: number
+  totalDeLaCorrida: number
+  ultimaTanda: boolean
+  /** Sólo en la última: los ids de todas las facturas, para el único ZIP. */
+  idsDeLaCorrida?: string[]
 }
 
 /** Una resolución cargada, con su estado ya resuelto por el back. */
@@ -542,15 +557,27 @@ export const facturacionPorMesService = {
    * Emite las elegidas. Sin `claves` —o con la lista vacía— el back emite
    * todas las del mes que estén por emitir.
    */
-  generar: (mes: string, claves?: string[]) => {
+  generar: async (mes: string, claves?: string[], corrida?: TandaDeLaCorrida) => {
     // La emisión vive en el centro de procesos (22-09): «300 de 800». Sólo
     // se le avisa al centro que relea: el anuncio (que ABRE el panel) lo hace
     // la pantalla una vez por corrida, no una vez por tanda.
     invalidar(RECURSO_DE_PROCESOS)
-    return apiClient.post<ResultadoDeGeneracion>(
-      `${BASE}/generar`,
-      claves && claves.length > 0 ? { mes, claves } : { mes },
-    )
+    const cuerpo = claves && claves.length > 0 ? { mes, claves } : { mes }
+    if (!corrida) return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
+    try {
+      return await apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, { ...cuerpo, ...corrida })
+    } catch (e) {
+      /*
+       * Un back anterior a la corrida agrupada rechaza las claves nuevas
+       * (`forbidNonWhitelisted` → 400 «should not exist»). Se reintenta sin
+       * ellas: cada tanda es su proceso, como antes. No se emite dos veces:
+       * el 400 llega antes de tocar nada.
+       */
+      if (e instanceof ApiError && e.status === 400 && /should not exist/i.test(e.message)) {
+        return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
+      }
+      throw e
+    }
   },
 
   /**

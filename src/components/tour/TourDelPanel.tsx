@@ -81,6 +81,8 @@ const MIN_INTENTOS = 4;
 const INTENTOS = 20;
 /** Ancho de la tarjeta anclada; también su tope en pantallas chicas. */
 const ANCHO = 340;
+/** Hasta dónde llega la columna del sidebar (240 px + aire): lo que termina antes, se señala desde el costado. */
+const COLUMNA_LATERAL = 320;
 /** Ancho de la bienvenida y el cierre, que no anclan a nada. */
 const ANCHO_CENTRADO = 420;
 /**
@@ -116,13 +118,40 @@ function medir(selector: string): Recuadro | null {
   return { top: r.top, left: r.left, width: r.width, height: r.height };
 }
 
+/**
+ * Si el objetivo vive dentro de una sección PLEGADA del sidebar (secciones
+ * plegables, 22-09), la abre con su propio botón antes de medir: cerrada, la
+ * caja mide 0 de alto y el anillo rodearía una fila invisible. Devuelve true
+ * si tuvo que abrir, para que quien llama vuelva a medir cuando termine la
+ * animación de altura. Se aprieta el botón (y no se toca el estado por fuera)
+ * para que la sección quede abierta como si la persona la hubiera abierto:
+ * también se guarda así.
+ */
+export function abrirSuSeccion(selector: string): boolean {
+  if (typeof document === 'undefined') return false;
+  const el = document.querySelector(selector);
+  const caja = el?.closest<HTMLElement>('[data-abierta="false"]');
+  if (!caja?.id) return false;
+  const boton = document.querySelector<HTMLButtonElement>(`button[aria-controls="${caja.id}"]`);
+  if (!boton) return false;
+  boton.click();
+  return true;
+}
+
+/** Lo que dura la animación de altura de una sección, con un poco de margen. */
+const APERTURA_DE_SECCION = 260;
+
 /** Trae el elemento a la vista antes de señalarlo (el sidebar puede scrollear). */
 function acercar(selector: string, suave: boolean): void {
   if (typeof document === 'undefined') return;
   const el = document.querySelector(selector);
   if (!el || typeof (el as HTMLElement).scrollIntoView !== 'function') return;
   try {
-    (el as HTMLElement).scrollIntoView({ block: 'nearest', behavior: suave ? 'smooth' : 'auto' });
+    // `center` y no `nearest`: con `nearest` el ítem de abajo del menú
+    // (Reportes, paso 7) quedaba pegado al borde del área que scrollea, medio
+    // tapado por la tarjeta «Invita a tu equipo» del pie, y el anillo se veía
+    // cortado encima de ella (Nico, 22-09).
+    (el as HTMLElement).scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' });
   } catch {
     // Un navegador sin opciones de scroll no puede tumbar el recorrido.
   }
@@ -148,6 +177,23 @@ export function ubicarTarjeta(
       left: MARGEN,
       ancho: Math.max(0, ventana.width - MARGEN * 2),
     };
+  }
+
+  // 🔴 Lo que vive en la columna de la izquierda (el sidebar: 240 px, o 64 el
+  // riel) se señala con la tarjeta AL LADO, a la derecha. Nico (22-09) vio los
+  // pasos 6 y 7 con la tarjeta debajo/encima del ítem, montada SOBRE el
+  // sidebar: tapaba justo lo que se estaba mostrando y las filas vecinas. A la
+  // derecha no tapa nada del menú; se centra en el alto del ítem y no sale de
+  // la ventana. Si no cabe al lado, vale lo de siempre (debajo, o encima).
+  const derecha = recuadro.left + recuadro.width + MARGEN * 2;
+  const esDeLaColumnaLateral = recuadro.left + recuadro.width <= COLUMNA_LATERAL;
+  if (esDeLaColumnaLateral && derecha + ANCHO + MARGEN <= ventana.width) {
+    const centradoEnAlto = recuadro.top + recuadro.height / 2 - alto / 2;
+    const top = Math.min(
+      Math.max(MARGEN, centradoEnAlto),
+      Math.max(MARGEN, ventana.height - alto - MARGEN),
+    );
+    return { top, left: derecha, ancho: ANCHO };
   }
 
   const debajo = recuadro.top + recuadro.height + MARGEN * 2;
@@ -272,6 +318,7 @@ export function TourDelPanel() {
       setRecuadro(null);
       return;
     }
+    const abrio = abrirSuSeccion(selectorActual);
     acercar(selectorActual, !reducirMovimiento);
     const medida = medir(selectorActual);
     if (!medida) {
@@ -292,7 +339,16 @@ export function TourDelPanel() {
     };
     window.addEventListener('scroll', remedir, true);
     window.addEventListener('resize', remedir);
+    // Recién abierta, la sección todavía está creciendo: se vuelve a acercar
+    // y a medir cuando termina (ni `scroll` ni `resize` avisan de eso).
+    const trasAbrir = abrio
+      ? setTimeout(() => {
+          acercar(selectorActual, false);
+          remedir();
+        }, APERTURA_DE_SECCION)
+      : undefined;
     return () => {
+      if (trasAbrir) clearTimeout(trasAbrir);
       window.removeEventListener('scroll', remedir, true);
       window.removeEventListener('resize', remedir);
     };
@@ -423,7 +479,14 @@ export function TourDelPanel() {
           el propio recorte con su `box-shadow`, y ponerlo dos veces oscurecería
           el doble. Sin `onClick`: se cierra por la ✕, «Omitir» o Esc. */}
       {anclada && recuadro ? (
+        // 🔴 Las dos ramas llevan `key` DISTINTA. Sin ella React reusaba el
+        // mismo nodo (las dos son `motion.div` en la misma posición) al pasar
+        // de un paso al cierre: el velo heredaba el `top/left/width/height` en
+        // línea que framer le había escrito al recorte y quedaba como un
+        // rectángulo gris sobre «Buscar», con el resto de la pantalla sin
+        // oscurecer (Nico, 22-09, «Eso es todo»).
         <motion.div
+          key="tour-foco"
           aria-hidden
           data-testid="tour-foco"
           className="pointer-events-none absolute rounded-lg"
@@ -454,7 +517,9 @@ export function TourDelPanel() {
         </motion.div>
       ) : (
         <motion.div
+          key="tour-velo"
           aria-hidden
+          data-testid="tour-velo"
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

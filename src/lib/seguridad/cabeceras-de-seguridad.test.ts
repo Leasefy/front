@@ -32,10 +32,41 @@ describe('cabeceras de seguridad', () => {
     expect(hsts).not.toMatch(/includeSubDomains|preload/i)
   })
 
-  it('ninguna página se deja enmarcar (clickjacking en pantallas que mueven plata)', async () => {
+  it('ninguna página se deja enmarcar desde AFUERA (clickjacking), coherente con la CSP', async () => {
     const cs = await cabecerasEn('production')
-    expect(valor(cs, 'X-Frame-Options')).toBe('DENY')
-    expect(valor(cs, 'Content-Security-Policy-Report-Only')).toContain("frame-ancestors 'none'")
+    // SAMEORIGIN = `frame-ancestors 'self'` de la CSP del middleware.
+    expect(valor(cs, 'X-Frame-Options')).toBe('SAMEORIGIN')
+  })
+
+  it('la CSP ya no es una cabecera fija: la pone el middleware con nonce', async () => {
+    const cs = await cabecerasEn('production')
+    expect(valor(cs, 'Content-Security-Policy-Report-Only')).toBeUndefined()
+    expect(valor(cs, 'Content-Security-Policy')).toBeUndefined()
+  })
+
+  it('el micrófono queda para nosotros: el dictado del chat y la captura por voz lo usan', async () => {
+    // Antes `microphone=()`: el navegador negaba el permiso sin preguntar y el
+    // botón de dictado de `ChatInput` / `PropertyIACapture` fallaba mudo.
+    const pp = valor(await cabecerasEn('production'), 'Permissions-Policy')!
+    expect(pp).toContain('microphone=(self)')
+    expect(pp).toContain('camera=()')
+    expect(pp).toContain('geolocation=()')
+    expect(pp).toContain('payment=()')
+  })
+
+  it('aísla la ventana de las que abre otro sitio sin cortar nuestros popups (Wompi)', async () => {
+    const cs = await cabecerasEn('production')
+    expect(valor(cs, 'Cross-Origin-Opener-Policy')).toBe('same-origin-allow-popups')
+  })
+
+  it('las rutas propias de /api no se dejan incrustar desde otro origen', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.resetModules()
+    const config = (await import('../../../next.config.mjs')).default as {
+      headers: () => Promise<{ source: string; headers: Cabecera[] }[]>
+    }
+    const api = (await config.headers()).find((r) => r.source === '/api/:path*')?.headers ?? []
+    expect(valor(api, 'Cross-Origin-Resource-Policy')).toBe('same-origin')
   })
 
   it('el Referer que sale a otro sitio no lleva la ruta (tokens de enlaces públicos)', async () => {

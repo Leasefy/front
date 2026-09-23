@@ -25,7 +25,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getAccessToken } from '@/lib/api/client'
-import { revokeSession } from '@/lib/api/session.service'
+import { revocarSesion } from '@/lib/auth/revocar-sesion'
 import { terminarSesion } from '@/lib/auth/session-terminal'
 import {
   evaluarInactividad,
@@ -96,10 +96,10 @@ export function IdleSessionGuard() {
     const token = getAccessToken() ?? undefined
     if (token) {
       await Promise.race([
-        revokeSession(token).catch(() => {
-          // Un backend caído no puede dejar al usuario adentro. Se pierde la
-          // invalidación del token, no la salida.
-        }),
+        // Back y Supabase (el refresh token): ver `revocar-sesion.ts`. Nunca
+        // tira — un backend caído no puede dejar al usuario adentro; se pierde
+        // la invalidación, no la salida.
+        revocarSesion(token),
         new Promise((resolve) => setTimeout(resolve, TOPE_DE_REVOCACION_MS)),
       ])
     }

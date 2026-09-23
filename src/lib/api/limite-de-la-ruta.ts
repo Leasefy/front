@@ -48,6 +48,13 @@ export const POLITICAS_DE_LAS_RUTAS = {
    * importación. Generoso; la ruta ya exige sesión.
    */
   imagenRemota: { nombre: 'imagen-remota', maximo: 900, ventanaSegundos: 60 },
+  /**
+   * Reportes de violación de la CSP (`/api/csp-reporte`). Es pública (el
+   * navegador los manda solo, sin sesión), así que sin techo cualquiera la
+   * usaría para llenarnos el log. Una página con un problema real manda unos
+   * pocos por carga; 60 por minuto por IP sobra para verlo.
+   */
+  reporteCsp: { nombre: 'reporte-csp', maximo: 60, ventanaSegundos: 60 },
 } as const satisfies Record<string, PoliticaDeLaRuta>;
 
 const MAX_CLAVES = 10_000;

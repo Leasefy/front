@@ -96,19 +96,48 @@ const nextConfig = {
   },
   async headers() {
     const securityHeaders = [
-      { key: "X-Frame-Options", value: "DENY" },
+      // `SAMEORIGIN` y no `DENY` (23-09): coherente con `frame-ancestors 'self'`
+      // de la CSP (que es la que mandan los navegadores modernos; ésta queda
+      // para los viejos). Nadie de AFUERA nos enmarca; los visores de PDF son
+      // iframes de `blob:`/URLs firmadas que crean nuestras propias páginas.
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+        // 🔴 `microphone=(self)`, no `()`: el dictado del chat (`ChatInput`) y
+        // la captura por voz del inmueble (`PropertyIACapture`) usan el
+        // micrófono. Con `microphone=()` el navegador negaba el permiso sin
+        // preguntar y los dos botones fallaban en silencio. Lo demás, apagado:
+        // nadie de adentro lo usa y un iframe de terceros no lo necesita.
+        value: [
+          "camera=()",
+          "microphone=(self)",
+          "geolocation=()",
+          "browsing-topics=()",
+          "payment=()",
+          "usb=()",
+          "serial=()",
+          "bluetooth=()",
+          "hid=()",
+          "midi=()",
+          "display-capture=()",
+          "magnetometer=()",
+          "gyroscope=()",
+          "accelerometer=()",
+        ].join(", "),
       },
+      // Aísla la ventana de las que abre otro sitio: una página ajena que nos
+      // abra con `window.open` no conserva una referencia a la nuestra (tab-
+      // nabbing, fugas por `window.opener`). `-allow-popups` porque NOSOTROS sí
+      // abrimos el checkout de Wompi y los PDFs en pestaña nueva y seguimos
+      // hablándole a esa pestaña (`aprobacion`, `avaluos`).
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
     ];
 
-    // Report-only CSP in production. NOT enforcing: the app relies on Next.js
-    // inline hydration, JsonLd inline scripts, and signing pages — a strict
-    // enforcing CSP would break them. Report-only lets us observe violations
-    // before tightening to an enforced policy later.
+    // La CSP ya NO vive acá: la pone `src/middleware.ts` con un nonce nuevo
+    // por petición (ver `src/lib/seguridad/politica-de-contenido.ts`). Una
+    // cabecera fija de next.config no puede llevar un nonce.
     if (process.env.NODE_ENV === "production") {
       // HSTS (auditoría de seguridad 23-09): sin esto, la primera visita que
       // alguien escribe como `leasefy.co` a secas sale por http y, en una red
@@ -122,26 +151,21 @@ const nextConfig = {
         key: "Strict-Transport-Security",
         value: "max-age=63072000",
       });
-      securityHeaders.push({
-        key: "Content-Security-Policy-Report-Only",
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-          "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob: https:",
-          "font-src 'self' data:",
-          "connect-src 'self' https:",
-          "frame-ancestors 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-        ].join("; "),
-      });
     }
 
     return [
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // Las rutas propias (`/api/docs/*` sirve documentos de postulaciones
+        // desde nuestro origen) no se dejan incrustar desde otro sitio como
+        // `<img>`/`<script>`: `same-origin`. Las imágenes y archivos de
+        // `public/` quedan sin esta cabecera a propósito: los correos y los
+        // portales cargan el logo desde otro origen.
+        source: "/api/:path*",
+        headers: [{ key: "Cross-Origin-Resource-Policy", value: "same-origin" }],
       },
     ];
   },

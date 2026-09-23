@@ -255,7 +255,7 @@ describe('un turno que falla (B1·B2·B3)', () => {
 
   it.each([
     [new ApiError(402, 'Your credit balance is too low'), 'sin créditos de IA'],
-    [new ApiError(429, 'Too many requests'), 'Demasiadas consultas'],
+    [new ApiError(429, 'Too many requests'), 'demasiadas solicitudes seguidas. Espera un momento'],
     [new ApiError(503, 'Service unavailable'), 'No pude conectarme con el asistente'],
     [new TypeError('Failed to fetch'), 'No pude conectarme con el asistente'],
     [Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' }), 'tardó demasiado'],
@@ -263,6 +263,15 @@ describe('un turno que falla (B1·B2·B3)', () => {
     const texto = mensajeDeFalloDelChat(error);
     expect(texto).toContain(esperado);
     expect(texto).not.toContain((error as Error).message);
+  });
+
+  it('un 429 con plazo dice cuánto esperar, con la misma frase que el back', () => {
+    const error = new ApiError(429, 'Too many requests', 'DEMASIADAS_SOLICITUDES', {
+      reintentarEnSegundos: 90,
+    });
+    expect(mensajeDeFalloDelChat(error)).toBe(
+      'Hiciste demasiadas solicitudes seguidas. Espera 2 minutos y vuelve a intentar.',
+    );
   });
 
   it('un 402 deja la burbuja en `error` con el motivo en palabras y la UI desbloqueada', async () => {

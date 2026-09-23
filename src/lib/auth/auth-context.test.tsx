@@ -23,12 +23,13 @@ void React // jsx-preserve
 
 type AuthEventCallback = (event: string, session: unknown) => Promise<void> | void
 
-const { getMock, postMock, supabaseSignOutMock, authCallbacks } = vi.hoisted(() => ({
+const { getMock, postMock, supabaseSignOutMock, supabaseAdminSignOutMock, authCallbacks } = vi.hoisted(() => ({
   getMock: vi.fn(),
   // Resolves so the single-session claim (POST /auth/session/claim) in the
   // bootstrap path returns a promise (its .catch/await must not throw).
   postMock: vi.fn().mockResolvedValue({ superseded: false }),
   supabaseSignOutMock: vi.fn().mockResolvedValue({ error: null }),
+  supabaseAdminSignOutMock: vi.fn().mockResolvedValue({ data: null, error: null }),
   authCallbacks: [] as AuthEventCallback[],
 }))
 
@@ -40,6 +41,7 @@ vi.mock('@/lib/supabase/client', () => ({
         return { data: { subscription: { unsubscribe: () => {} } } }
       },
       signOut: supabaseSignOutMock,
+      admin: { signOut: supabaseAdminSignOutMock },
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: null }),
       },
@@ -529,6 +531,29 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
     // Y el id del navegador sobrevive al cierre: es lo que el próximo claim
     // tiene que volver a mandar para que sea «el mismo dispositivo».
     expect(localStorage.getItem('leasefy:device-id')).toMatch(/^[A-Za-z0-9_-]{8,64}$/)
+  })
+
+  it('cerrar sesión revoca también el REFRESH TOKEN en Supabase, con el token vivo y antes de borrar las cookies', async () => {
+    // Antes el `signOut({ scope: 'local' })` de Supabase corría DESPUÉS de
+    // `purgarSesionLocal()`: auth-js ya no encontraba la sesión en las cookies
+    // y no llamaba a /logout. El refresh token quedaba vivo: una cookie
+    // copiada seguía sirviendo después de «Cerrar sesión».
+    getMock.mockResolvedValue(usuario)
+    await renderProviderAndEmitInitialSession()
+    supabaseAdminSignOutMock.mockClear()
+    document.cookie = 'sb-proyecto-auth-token=algo; path=/'
+    let habiaCookieAlRevocar: boolean | null = null
+    supabaseAdminSignOutMock.mockImplementation(async () => {
+      habiaCookieAlRevocar = document.cookie.includes('sb-proyecto-auth-token=algo')
+      return { data: null, error: null }
+    })
+
+    await act(async () => {
+      await captured!.signOut()
+    })
+
+    expect(supabaseAdminSignOutMock).toHaveBeenCalledWith('jwt-token', 'local')
+    expect(habiaCookieAlRevocar).toBe(true)
   })
 
   it('si la sesión ya fue desplazada, el revoke del cierre (401 SESSION_SUPERSEDED) NO encadena otro cierre', async () => {

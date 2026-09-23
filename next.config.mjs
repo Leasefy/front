@@ -1,6 +1,6 @@
 import path from "path";
 // Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
-// Node with no TypeScript loader on Next.js 14.2. See
+// Node with no TypeScript loader (was Next.js 14.2; still .mjs on 15). See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-vida.data.mjs";
@@ -46,11 +46,9 @@ const nextConfig = {
   // `isomorphic-dompurify` SÍ es dependencia directa (resuelve desde la raíz), así
   // que marcarlo como externo del servidor pasa el chequeo y jsdom nunca entra al
   // bundle: en el servidor se carga por `require` normal desde node_modules.
-  // En Next 14 la clave es `experimental.serverComponentsExternalPackages`; al
-  // subir a Next 15 se llama `serverExternalPackages` (nivel raíz).
-  experimental: {
-    serverComponentsExternalPackages: ['isomorphic-dompurify'],
-  },
+  // En Next 14 la clave era `experimental.serverComponentsExternalPackages`; desde
+  // Next 15 (subida del 23-09) se llama `serverExternalPackages` y va en la raíz.
+  serverExternalPackages: ['isomorphic-dompurify'],
   // TEMPORARY (stg-demo integration): the redesign depends on @leasefy/cadence, linked
   // locally via `file:../cadence` (no real pnpm workspace, no published tarball yet).
   // That linkage still surfaces type errors and some lint noise. We let `next build`

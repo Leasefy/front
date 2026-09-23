@@ -22,6 +22,7 @@
 import { useMemo } from 'react';
 import Map, { AttributionControl, Marker, NavigationControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import './trabajador-de-maplibre';
 import { useTheme } from 'next-themes';
 import { ArrowSquareOut, MapPin, NavigationArrow } from '@phosphor-icons/react';
 import { MAP_STYLES, ZOOM_LEVELS } from '@/lib/constants/map';

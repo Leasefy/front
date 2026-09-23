@@ -653,9 +653,7 @@ export function ImportWizard({
              */}
             <div
               data-testid="paso-congelado"
-              {...(congelado
-                ? ({ inert: "" } as unknown as Record<string, string>)
-                : {})}
+              inert={congelado}
               className={congelado ? "cursor-progress" : undefined}
             >
               <AnimatePresence mode="wait">

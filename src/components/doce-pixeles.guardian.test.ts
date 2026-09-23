@@ -79,7 +79,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
  * se queda; en un `<p>`, en una celda o en un `role="alert"` pasa a
  * `text-caption`. No sirve un reemplazo a ciegas sobre los 2783 restantes.
  */
-const CUANTOS_HABIA = 2774;
+// 23-09: 2762 al borrar `/pse-mock` y las marcas «Visa/Mastercard» del checkout
+// del propietario (que sólo paga por PSE).
+const CUANTOS_HABIA = 2762;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

@@ -101,11 +101,11 @@ function buildProperty(p: NonNullable<BackendApplication['property']>): Property
 // ============================================================================
 
 interface CompletarPageProps {
-  params: Promise<{ applicationId: string }> | { applicationId: string };
+  params: Promise<{ applicationId: string }>;
 }
 
 export default function CompletarPage({ params }: CompletarPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const resolvedParams = use(params);
   const { applicationId } = resolvedParams;
 
   const [application, setApplication] = useState<Application | null>(null);

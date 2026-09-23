@@ -10351,9 +10351,30 @@
       "planNotFound": "The selected plan was not found. Go back to the plans list.",
       "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
-      "securePayment": "Secure payment processed by Stripe",
+      "securePayment": "Secure PSE payment, processed by Wompi",
       "cancelAnytime": "Cancel anytime. No commitments.",
-      "paymentSuccess": "Payment successful! {{name}} plan activated."
+      "paymentSuccess": "Payment successful! {{name}} plan activated.",
+      "pseTitle": "PSE payment details",
+      "pseHint": "We take you to your bank to approve the payment. The plan is activated once the bank confirms it.",
+      "bank": "Bank",
+      "bankPlaceholder": "Choose your bank",
+      "banksError": "We couldn't load the list of banks. Reload the page to try again.",
+      "personType": "Person type",
+      "personNatural": "Individual",
+      "personJuridica": "Company",
+      "documentType": "Document type",
+      "documentTypes": {
+        "CC": "Citizen ID (CC)",
+        "CE": "Foreigner ID (CE)",
+        "NIT": "NIT",
+        "PP": "Passport"
+      },
+      "documentNumber": "Document number",
+      "fullName": "Account holder name",
+      "email": "Email",
+      "completePayerData": "Complete the payment details: bank, document (6 to 15 digits), name and email.",
+      "bankLinkMissing": "Your bank hasn't returned the payment link yet. Try again in a few minutes.",
+      "paymentStartError": "We couldn't start the payment. Try again."
     },
     "upgrade": {
       "unlockPotential": "Unlock the full potential",

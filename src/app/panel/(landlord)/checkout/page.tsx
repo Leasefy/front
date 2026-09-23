@@ -1,27 +1,43 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui';
+import { Input, Spinner } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { CouponInput, PriceSummary } from '@/components/pricing';
 import { getPlanById } from '@/lib/constants/subscription-plans';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
+import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
+import type { PseFinancialInstitution } from '@/lib/api/pse-checkout.types';
+import type { PSEDocumentType } from '@/lib/api/subscriptions.types';
+import { useAuth } from '@/lib/auth';
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { useI18n } from '@/lib/i18n';
+
+const TIPOS_DE_DOCUMENTO: PSEDocumentType[] = ['CC', 'CE', 'NIT', 'PP'];
+
+/** La misma regla que el back (`PseSubscriptionCheckoutDto.legalId`). */
+const DOCUMENTO_VALIDO = /^\d{6,15}$/;
 
 /**
  * Inner checkout component that uses search params
  */
 function CheckoutContent() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // Get plan from URL or default to pro
   const planId = (searchParams.get('plan') || 'pro') as PlanId;
@@ -35,6 +51,29 @@ function CheckoutContent() {
   const [backendPlanId, setBackendPlanId] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [planError, setPlanError] = useState<string | null>(null);
+
+  // Datos del pagador para el PSE real (Wompi). Antes esto se pedía en
+  // `/pse-mock`, una página pública que simulaba el banco; se borró el 23-09.
+  const [bancos, setBancos] = useState<PseFinancialInstitution[]>([]);
+  const [bancosError, setBancosError] = useState(false);
+  const [banco, setBanco] = useState('');
+  const [tipoDePersona, setTipoDePersona] = useState<'NATURAL' | 'JURIDICA'>('NATURAL');
+  const [tipoDeDocumento, setTipoDeDocumento] = useState<PSEDocumentType>('CC');
+  const [documento, setDocumento] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [pagoError, setPagoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.email) setCorreo((actual) => actual || user.email);
+  }, [user?.email]);
+
+  useEffect(() => {
+    pseCheckoutApi
+      .getFinancialInstitutions()
+      .then(setBancos)
+      .catch(() => setBancosError(true));
+  }, []);
 
   // Get price based on billing cycle
   const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
@@ -54,17 +93,42 @@ function CheckoutContent() {
       .finally(() => setLoadingPlan(false));
   }, [planId, t]);
 
-  const handleSubmit = () => {
-    if (!backendPlanId) return;
+  const datosCompletos =
+    !!banco &&
+    DOCUMENTO_VALIDO.test(documento.trim()) &&
+    nombre.trim().length > 0 &&
+    /.+@.+\..+/.test(correo.trim());
+
+  // El pago real: el back crea la suscripción pendiente y la transacción PSE
+  // en Wompi, y nos devuelve la URL del banco. El monto NO sale de acá: lo
+  // calcula el back con el plan, el ciclo y el cupón. (Antes se mandaba a
+  // `/pse-mock?amount=…`, que simulaba el banco; en producción el back rechaza
+  // ese riel, así que el propietario nunca lograba pagar.)
+  const handleSubmit = async () => {
+    if (!backendPlanId || !datosCompletos) return;
     setIsProcessing(true);
-    const params = new URLSearchParams({
-      planId: backendPlanId,
-      planName: plan.name,
-      amount: String(price),
-      cycle: billingCycle === 'yearly' ? 'ANNUAL' : 'MONTHLY',
-      returnUrl: '/panel',
-    });
-    router.push(`/pse-mock?${params.toString()}`);
+    setPagoError(null);
+    try {
+      const res = await subscriptionsApi.startPseCheckout({
+        planId: backendPlanId,
+        cycle: billingCycle === 'yearly' ? 'ANNUAL' : 'MONTHLY',
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+        userType: tipoDePersona,
+        legalIdType: tipoDeDocumento,
+        legalId: documento.trim(),
+        financialInstitutionCode: banco,
+        email: correo.trim(),
+        fullName: nombre.trim(),
+      });
+      if (res.asyncPaymentUrl) {
+        window.location.assign(res.asyncPaymentUrl);
+        return;
+      }
+      setPagoError(t('landlord.checkout.bankLinkMissing'));
+    } catch (err) {
+      setPagoError(err instanceof Error ? err.message : t('landlord.checkout.paymentStartError'));
+    }
+    setIsProcessing(false);
   };
 
   // Plan features to display
@@ -180,6 +244,114 @@ function CheckoutContent() {
                 onApplyCoupon={setAppliedCoupon}
               />
             </div>
+
+            {/* Datos del pago por PSE (Wompi) */}
+            <div className="bg-card rounded-sm border border-border p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-medium text-foreground">
+                  {t('landlord.checkout.pseTitle')}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {t('landlord.checkout.pseHint')}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="pse-banco" className="text-sm font-medium text-foreground mb-1 block">
+                  {t('landlord.checkout.bank')}
+                </label>
+                <Select value={banco} onValueChange={setBanco} disabled={bancosError || bancos.length === 0}>
+                  <SelectTrigger id="pse-banco">
+                    <SelectValue placeholder={t('landlord.checkout.bankPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bancos.map((b) => (
+                      <SelectItem key={b.financial_institution_code} value={b.financial_institution_code}>
+                        {b.financial_institution_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {bancosError && (
+                  <p className="text-sm text-destructive mt-1">{t('landlord.checkout.banksError')}</p>
+                )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="pse-persona" className="text-sm font-medium text-foreground mb-1 block">
+                    {t('landlord.checkout.personType')}
+                  </label>
+                  <Select value={tipoDePersona} onValueChange={(v) => setTipoDePersona(v as 'NATURAL' | 'JURIDICA')}>
+                    <SelectTrigger id="pse-persona">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NATURAL">{t('landlord.checkout.personNatural')}</SelectItem>
+                      <SelectItem value="JURIDICA">{t('landlord.checkout.personJuridica')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label htmlFor="pse-tipo-doc" className="text-sm font-medium text-foreground mb-1 block">
+                    {t('landlord.checkout.documentType')}
+                  </label>
+                  <Select value={tipoDeDocumento} onValueChange={(v) => setTipoDeDocumento(v as PSEDocumentType)}>
+                    <SelectTrigger id="pse-tipo-doc">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIPOS_DE_DOCUMENTO.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>
+                          {t(`landlord.checkout.documentTypes.${tipo}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="pse-documento" className="text-sm font-medium text-foreground mb-1 block">
+                    {t('landlord.checkout.documentNumber')}
+                  </label>
+                  <Input
+                    id="pse-documento"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className="font-mono"
+                    value={documento}
+                    onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pse-nombre" className="text-sm font-medium text-foreground mb-1 block">
+                    {t('landlord.checkout.fullName')}
+                  </label>
+                  <Input
+                    id="pse-nombre"
+                    autoComplete="name"
+                    maxLength={200}
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="pse-correo" className="text-sm font-medium text-foreground mb-1 block">
+                  {t('landlord.checkout.email')}
+                </label>
+                <Input
+                  id="pse-correo"
+                  type="email"
+                  autoComplete="email"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Summary column */}
@@ -201,12 +373,20 @@ function CheckoutContent() {
                 </div>
               )}
 
+              {pagoError && (
+                <div role="alert" className="flex items-center gap-2 rounded-sm bg-destructive/10 p-3 text-sm text-destructive">
+                  <WarningCircle className="w-4 h-4 shrink-0" />
+                  <span>{pagoError}</span>
+                </div>
+              )}
+
               {/* Payment button */}
               <Button
                 className="w-full"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isProcessing || loadingPlan || !backendPlanId}
+                disabled={isProcessing || loadingPlan || !backendPlanId || !datosCompletos}
+                title={!datosCompletos ? t('landlord.checkout.completePayerData') : undefined}
               >
                 {isProcessing ? (
                   <>
@@ -227,12 +407,6 @@ function CheckoutContent() {
                 <span>{t('landlord.checkout.securePayment')}</span>
               </div>
 
-              {/* Trust badges */}
-              <div className="flex items-center justify-center gap-4 pt-4 border-t border-border">
-                <span className="text-xs text-muted-foreground">Visa</span>
-                <span className="text-xs text-muted-foreground">Mastercard</span>
-                <span className="text-xs text-muted-foreground">PSE</span>
-              </div>
             </div>
           </div>
         </div>

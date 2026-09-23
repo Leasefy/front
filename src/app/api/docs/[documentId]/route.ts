@@ -47,10 +47,8 @@ function esUrlDeAlmacenamiento(cruda: string): boolean {
   return url.hostname.endsWith('.supabase.co');
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { documentId: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ documentId: string }> }) {
+  const params = await props.params;
   const { documentId } = params;
   const applicationId = req.nextUrl.searchParams.get('app');
 

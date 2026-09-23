@@ -479,14 +479,14 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
       {/* La altura se anima con `grid-template-rows` 0fr↔1fr: no hay que
           medir nada y funciona con cualquier cantidad de filas. Cerrada, la
           caja es `inert`: sus enlaces salen del orden del Tab y del árbol de
-          accesibilidad (atributo crudo — React 18 no lo tipa; ver
-          MuroDeMigracion). */}
+          accesibilidad (prop booleana desde React 19; el string vacío de
+          React 18 ahí se lee como falso — ver MuroDeMigracion). */}
       <div
         id={idFilas}
         data-abierta={abierta ? 'true' : 'false'}
         className="grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: abierta ? '1fr' : '0fr', opacity: abierta ? 1 : 0 }}
-        {...(abierta ? {} : ({ inert: '' } as unknown as Record<string, string>))}
+        inert={!abierta}
       >
         <div className="min-h-0 overflow-hidden">
           <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-0.5')}>

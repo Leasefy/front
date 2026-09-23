@@ -19,6 +19,7 @@ import {
   ClipboardText,
   Clock,
   ClockCounterClockwise,
+  IdentificationBadge,
 } from '@phosphor-icons/react';
 
 /**
@@ -70,6 +71,7 @@ export type SeccionId =
   | 'sla-de-pqrs'
   | 'bitacora'
   | 'movimientos'
+  | 'proteccion-de-datos'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -87,6 +89,8 @@ export type GrupoDeConfiguracion = 'inmobiliaria' | 'equipo' | 'dinero' | 'siste
 export type GateDeSeccion =
   | { tipo: 'admin' }
   | { tipo: 'modulo'; module: string }
+  /** Por ROL de la agencia (el ADMIN siempre pasa): lo que el back cuida con un guard por rol. */
+  | { tipo: 'roles'; roles: readonly string[] }
   | { tipo: 'todos' };
 
 export interface SeccionDeConfiguracion {
@@ -312,6 +316,24 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     gate: { tipo: 'modulo', module: 'bitacora' },
   },
   {
+    /**
+     * 🔴 Protección de datos (23-09-2026, Ley 1581): las solicitudes de habeas
+     * data de los titulares —consulta, rectificación, supresión, revocatoria—
+     * con su plazo en días hábiles, la exportación de lo que la inmobiliaria
+     * sabe de la persona y la constancia de la respuesta. ADMIN y CONTADOR
+     * (Nico), que es exactamente lo que el back exige (`HabeasDataGuard`): no
+     * cuelga de un módulo porque ninguno significa «protección de datos» y
+     * `reportes` se lo abriría al VIEWER.
+     */
+    id: 'proteccion-de-datos',
+    grupo: 'sistema',
+    slug: 'proteccion-de-datos',
+    labelKey: 'inmobiliaria.config.tabs.proteccionDeDatos',
+    descKey: 'inmobiliaria.config.tabs.proteccionDeDatosDesc',
+    icon: IdentificationBadge,
+    gate: { tipo: 'roles', roles: ['ADMIN', 'CONTADOR'] },
+  },
+  {
     id: 'seguridad',
     grupo: 'sistema',
     slug: 'seguridad',
@@ -394,12 +416,17 @@ export function destinoDeParametrosViejos(params: { get(clave: string): string |
 export interface ContextoDePermisos {
   isAdmin: boolean;
   canAccess: (module: string, action: string) => boolean;
+  /** El rol en la agencia; sin él, una sección por rol no se muestra. */
+  agencyRole?: string | null;
 }
 
 export function puedeVerSeccion(seccion: SeccionDeConfiguracion, ctx: ContextoDePermisos): boolean {
   if (seccion.gate.tipo === 'todos') return true;
   if (ctx.isAdmin) return true;
   if (seccion.gate.tipo === 'admin') return false;
+  if (seccion.gate.tipo === 'roles') {
+    return !!ctx.agencyRole && seccion.gate.roles.includes(ctx.agencyRole);
+  }
   return ctx.canAccess(seccion.gate.module, 'view');
 }
 

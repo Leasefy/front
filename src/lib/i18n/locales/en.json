@@ -1412,6 +1412,8 @@
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
         "movimientos": "Activity log",
         "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
+        "proteccionDeDatos": "Data protection",
+        "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },

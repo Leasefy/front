@@ -12,6 +12,8 @@ import { SeccionAvisos } from './SeccionAvisos';
 import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
 import { SeccionBitacora } from './SeccionBitacora';
 import { SeccionMovimientos } from './SeccionMovimientos';
+import { SeccionProteccionDeDatos } from './SeccionProteccionDeDatos';
+import type { AgencyRole } from '@/lib/auth/agency-roles';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -65,6 +67,9 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
     // 🔴 22-09-2026: quién hizo qué en TODO el panel, con su rol.
     case 'movimientos':
       return <SeccionMovimientos />;
+    // 🔴 23-09-2026: las solicitudes de habeas data de los titulares (Ley 1581).
+    case 'proteccion-de-datos':
+      return <SeccionProteccionDeDatos />;
     case 'avisos':
       return <SeccionAvisos />;
     case 'sla-de-pqrs':
@@ -87,6 +92,7 @@ export function GuardaDeSeccion({ id, children }: { id: SeccionId; children: Rea
   const { gate } = seccionPorId(id);
   if (gate.tipo === 'todos') return <>{children}</>;
   if (gate.tipo === 'admin') return <PageGuard adminOnly>{children}</PageGuard>;
+  if (gate.tipo === 'roles') return <PageGuard roles={gate.roles as AgencyRole[]}>{children}</PageGuard>;
   return <PageGuard module={gate.module}>{children}</PageGuard>;
 }
 

@@ -27,11 +27,11 @@ import { esFichaDeMiembro, hrefDeSeccion, menuDeConfiguracion, seccionDeLaRuta }
 export default function ConfiguracionLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const { t } = useI18n();
-  const { isAdmin, canAccess, isLoading } = usePermissions();
+  const { isAdmin, canAccess, isLoading, agencyRole } = usePermissions();
 
   const menu = useMemo(
     () =>
-      menuDeConfiguracion({ isAdmin, canAccess }).map(({ grupo, secciones }) => ({
+      menuDeConfiguracion({ isAdmin, canAccess, agencyRole }).map(({ grupo, secciones }) => ({
         id: grupo.id,
         label: t(grupo.labelKey),
         entradas: secciones.map((s) => ({
@@ -42,7 +42,7 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
           icon: s.icon,
         })),
       })),
-    [isAdmin, canAccess, t],
+    [isAdmin, canAccess, agencyRole, t],
   );
 
   if (esFichaDeMiembro(pathname)) return <>{children}</>;

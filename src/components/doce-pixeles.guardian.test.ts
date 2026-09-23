@@ -83,7 +83,8 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // del propietario (que sólo paga por PSE).
 // 23-09: 2755 al pasar la compra de créditos al PSE real (el formulario nuevo
 // pinta rótulos y avisos en 14).
-const CUANTOS_HABIA = 2755;
+// 23-09 noche: 2753 al unir la tercera ronda de seguridad.
+const CUANTOS_HABIA = 2753;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

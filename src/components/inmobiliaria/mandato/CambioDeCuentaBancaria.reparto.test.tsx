@@ -22,6 +22,7 @@ void React;
 const h = vi.hoisted(() => ({
   cambiosDeCuenta: vi.fn(),
   solicitarCambioDeCuenta: vi.fn(),
+  archivoDelCambio: vi.fn(),
 }));
 
 vi.mock('@/lib/api/mandato.service', () => ({ mandatoApi: h }));
@@ -105,9 +106,10 @@ async function escribir(el: HTMLInputElement | HTMLSelectElement | null, valor: 
   });
 }
 
-async function adjuntar() {
-  const input = document.body.querySelector<HTMLInputElement>('[data-testid="archivo-certificacion"]')!;
-  const archivo = new File(['%PDF'], 'certificaciones.pdf', { type: 'application/pdf' });
+async function adjuntar(testId = 'archivo-certificacion', nombre = 'certificaciones.pdf') {
+  const input = document.body.querySelector<HTMLInputElement>(`[data-testid="${testId}"]`);
+  if (!input) throw new Error(`no existe ${testId}`);
+  const archivo = new File(['%PDF'], nombre, { type: 'application/pdf' });
   await act(async () => {
     Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
     input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -138,7 +140,7 @@ describe('repartir en varias cuentas', () => {
     await escribir(campo('reparto-1-banco'), 'nu');
     await escribir(campo('reparto-1-numero'), '77001234');
     await escribir(campo('reparto-1-porcentaje'), '20');
-    await adjuntar();
+    await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
 
     expect(porTestId('suma-del-reparto')?.textContent).toBe('Los porcentajes suman 70 %: falta repartir 30 %.');
     expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
@@ -149,6 +151,9 @@ describe('repartir en varias cuentas', () => {
     await escribir(campo('reparto-2-porcentaje'), '30');
 
     expect(porTestId('suma-del-reparto')?.textContent).toBe('Suman 100 %.');
+    // 🔴 23-09: suma 100, pero a Occidente le falta SU certificación.
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    await adjuntar('certificacion-cuenta-2', 'occidente.pdf');
     expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(false);
 
     await clic(porTestId('enviar-cambio'));
@@ -200,5 +205,158 @@ describe('repartir en varias cuentas', () => {
     expect(campo<HTMLInputElement>('reparto-0-porcentaje')?.value).toBe('60');
     expect(campo<HTMLSelectElement>('reparto-1-banco')?.value).toBe('occidente');
     expect(porTestId('suma-del-reparto')?.textContent).toBe('Suman 100 %.');
+  });
+});
+
+/**
+ * 🔴 23-09, Nico: «que el reparto pida una certificación por cada cuenta
+ * nueva». Antes había UN campo de archivo para todo el reparto («en un solo
+ * archivo»), y un banco certifica UNA cuenta.
+ */
+describe('una certificación por cada cuenta nueva', () => {
+  const SIN_CAMBIOS = {
+    disponible: true,
+    motivo: null,
+    cambios: [],
+    cuentasVigentes: [{ ...FICHA, porcentaje: 100 }],
+    repartoDisponible: true,
+    motivoDelReparto: null,
+  };
+
+  async function repartoDeTres() {
+    h.cambiosDeCuenta.mockResolvedValue(SIN_CAMBIOS);
+    await pintar();
+    await clic(porTestId('pedir-cambio-de-cuenta'));
+    await clic(porTestId('modo-varias-cuentas'));
+    await escribir(campo('reparto-0-porcentaje'), '50');
+    await escribir(campo('reparto-1-banco'), 'nu');
+    await escribir(campo('reparto-1-numero'), '77001234');
+    await escribir(campo('reparto-1-porcentaje'), '20');
+    await clic(porTestId('agregar-cuenta-al-reparto'));
+    await escribir(campo('reparto-2-banco'), 'occidente');
+    await escribir(campo('reparto-2-numero'), '990001234');
+    await escribir(campo('reparto-2-porcentaje'), '30');
+  }
+
+  it('la cuenta que ya recibe dice «ya certificada»; cada nueva pide la suya y el botón dice cuáles faltan', async () => {
+    await repartoDeTres();
+    expect(porTestId('archivo-certificacion')).toBeNull();
+    expect(porTestId('cuenta-ya-certificada-0')?.textContent).toContain('Ya certificada');
+    expect(porTestId('certificacion-cuenta-0')).toBeNull();
+    expect(porTestId('certificacion-cuenta-1')).not.toBeNull();
+    expect(porTestId('certificacion-cuenta-2')).not.toBeNull();
+
+    expect((porTestId('enviar-cambio') as HTMLButtonElement).disabled).toBe(true);
+    expect(porTestId('faltan-certificaciones')?.textContent).toBe(
+      'Falta la certificación de la cuenta 2, la cuenta 3: cada banco certifica una cuenta.',
+    );
+    await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
+    expect(porTestId('faltan-certificaciones')?.textContent).toBe(
+      'Falta la certificación de la cuenta 3: cada banco certifica una cuenta.',
+    );
+    await adjuntar('certificacion-cuenta-2', 'occidente.pdf');
+    expect(porTestId('faltan-certificaciones')).toBeNull();
+
+    await clic(porTestId('enviar-cambio'));
+    const [, solicitud] = h.solicitarCambioDeCuenta.mock.calls[0];
+    expect(solicitud.certificacion).toBeUndefined();
+    expect((solicitud.certificacionesPorCuenta as (File | null)[]).map((a) => a?.name ?? null)).toEqual([
+      null,
+      'nubank.pdf',
+      'occidente.pdf',
+    ]);
+  });
+
+  it('quitar una cuenta no le pasa su certificación a la siguiente', async () => {
+    await repartoDeTres();
+    await adjuntar('certificacion-cuenta-1', 'nubank.pdf');
+    await adjuntar('certificacion-cuenta-2', 'occidente.pdf');
+    // Quita Nubank: Occidente pasa a ser la cuenta 2, CON su archivo.
+    await clic(document.body.querySelector<HTMLElement>('[aria-label="Quitar la cuenta 2"]'));
+    await escribir(campo('reparto-0-porcentaje'), '70');
+    await clic(porTestId('enviar-cambio'));
+    const [, solicitud] = h.solicitarCambioDeCuenta.mock.calls[0];
+    expect(solicitud.reparto.map((c: { bankCode: string }) => c.bankCode)).toEqual(['BANCOLOMBIA', 'BANCO_OCCIDENTE']);
+    expect((solicitud.certificacionesPorCuenta as (File | null)[]).map((a) => a?.name ?? null)).toEqual([
+      null,
+      'occidente.pdf',
+    ]);
+  });
+
+  const CUENTA_NUEVA = {
+    ...FICHA,
+    bankAccountNumber: '0012344521',
+    reparto: [
+      { ...FICHA, porcentaje: 50, certificacion: null },
+      {
+        ...FICHA,
+        bankName: 'Nu Colombia',
+        bankAccountNumber: '77001234',
+        porcentaje: 50,
+        certificacion: { nombre: 'nubank.pdf', tipo: 'application/pdf' },
+      },
+    ],
+  };
+  const CAMBIO = {
+    id: 'c1',
+    propietarioId: 'p1',
+    estado: 'CONFIRMADO',
+    cuentaAnterior: { ...FICHA, reparto: [] },
+    cuentaNueva: CUENTA_NUEVA,
+    certificacionNombre: 'nubank.pdf',
+    canal: 'CORREO',
+    destinoEnmascarado: null,
+    envioEstado: 'SIMULADO',
+    expiraAt: '2026-09-26T00:00:00.000Z',
+    intentos: 0,
+    confirmadoAt: '2026-09-23T00:00:00.000Z',
+    confirmadoPor: 'CODIGO',
+    aprobadoAt: null,
+    aprobadoPorUserId: null,
+    tieneSoporteDeAprobacion: false,
+    cerradoAt: null,
+    motivoDeCierre: null,
+    solicitadoPorUserId: null,
+    createdAt: '2026-09-23T00:00:00.000Z',
+    retieneElGiro: true,
+  };
+
+  it('el cambio y la aprobación dejan bajar la certificación de CADA cuenta', async () => {
+    const abrir = vi.spyOn(window, 'open').mockImplementation(() => null);
+    h.archivoDelCambio.mockResolvedValue({ url: 'https://firmado.test/nubank.pdf', nombre: 'nubank.pdf' });
+    h.cambiosDeCuenta.mockResolvedValue({ ...SIN_CAMBIOS, cambios: [CAMBIO] });
+    await pintar();
+
+    // Sin el botón único: cada certificación va al lado de su cuenta.
+    expect(porTestId('abrir-certificacion')).toBeNull();
+    expect(porTestId('ya-certificada-0')?.textContent).toBe('ya certificada');
+    await clic(porTestId('abrir-certificacion-1'));
+    expect(h.archivoDelCambio).toHaveBeenCalledWith('p1', 'c1', 1);
+    expect(abrir).toHaveBeenCalledWith('https://firmado.test/nubank.pdf', '_blank', 'noopener');
+
+    await clic(porTestId('aprobar-cambio-de-cuenta'));
+    const aRevisar = porTestId('certificaciones-a-revisar');
+    expect(aRevisar?.textContent).toContain('Certificaciones del reparto');
+    await clic(aRevisar!.querySelector<HTMLElement>('[data-testid="abrir-certificacion-1"]'));
+    expect(h.archivoDelCambio).toHaveBeenCalledTimes(2);
+    abrir.mockRestore();
+  });
+
+  it('una solicitud vieja (una certificación para todo el reparto) sigue con su botón único', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      ...SIN_CAMBIOS,
+      cambios: [
+        {
+          ...CAMBIO,
+          cuentaNueva: {
+            ...CUENTA_NUEVA,
+            reparto: CUENTA_NUEVA.reparto.map(({ certificacion: _c, ...c }) => c),
+          },
+        },
+      ],
+    });
+    await pintar();
+    expect(porTestId('abrir-certificacion')).not.toBeNull();
+    expect(porTestId('abrir-certificacion-1')).toBeNull();
   });
 });

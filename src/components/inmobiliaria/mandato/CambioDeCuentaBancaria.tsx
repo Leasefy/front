@@ -66,6 +66,7 @@ import {
 } from '@/components/inmobiliaria/mandato/RepartoDeCuentasCampos';
 import {
   cuentaDelRepartoEnUnaLinea,
+  esCuentaVigente,
   porcentajeEntero,
   problemaDelReparto,
 } from '@/lib/propietarios/reparto-de-cuentas';
@@ -76,16 +77,54 @@ function cuentaCorta(c: { bankName: string | null; bankAccountType: string | nul
 }
 
 /**
+ * ¿El cambio guarda la certificación de CADA cuenta del reparto? (23-09) Las
+ * solicitudes de antes traen una sola para todo: esas se siguen abriendo con
+ * el botón «Certificación» de siempre.
+ */
+function certificacionesPorCuenta(cuenta: CuentaBancaria): boolean {
+  return !!cuenta.reparto && cuenta.reparto.length > 1 && cuenta.reparto.some((c) => 'certificacion' in c);
+}
+
+/**
  * La cuenta de un cambio en pantalla: una línea, o una por cuenta cuando el
  * cambio reparte la plata (22-09: «50 % · Bancolombia · Ahorros · •••• 4521»).
+ * 23-09: con `onAbrirCertificacion`, cada cuenta nueva trae el botón de SU
+ * certificación y las que ya estaban vigentes dicen «ya certificada».
  */
-function CuentasDelCambio({ cuenta }: { cuenta: CuentaBancaria }) {
+function CuentasDelCambio({
+  cuenta,
+  onAbrirCertificacion,
+}: {
+  cuenta: CuentaBancaria;
+  onAbrirCertificacion?: (indice: number) => void;
+}) {
+  const { t } = useI18n();
   if (cuenta.reparto && cuenta.reparto.length > 1) {
+    const conCertificaciones = !!onAbrirCertificacion && certificacionesPorCuenta(cuenta);
     return (
-      <ul className="space-y-0.5" data-testid="reparto-del-cambio">
+      <ul className="space-y-1" data-testid="reparto-del-cambio">
         {cuenta.reparto.map((c, i) => (
-          <li key={i} className="font-mono">
-            {cuentaDelRepartoEnUnaLinea(c)}
+          <li key={i} className="flex flex-wrap items-center gap-x-2">
+            <span className="font-mono">{cuentaDelRepartoEnUnaLinea(c)}</span>
+            {conCertificaciones && c.certificacion ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
+                onClick={() => onAbrirCertificacion(i)}
+                aria-label={t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuentaN', { n: i + 1 })}
+                title={c.certificacion.nombre}
+                data-testid={`abrir-certificacion-${i}`}
+              >
+                <Paperclip className="w-4 h-4 mr-1" aria-hidden="true" />
+                {t('inmobiliaria.propietario.cambioDeCuenta.certificacionUnica')}
+              </Button>
+            ) : null}
+            {conCertificaciones && c.certificacion === null ? (
+              <span className="text-sm text-muted-foreground" data-testid={`ya-certificada-${i}`}>
+                {t('inmobiliaria.propietario.cambioDeCuenta.sinCertificacionNueva')}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -236,7 +275,7 @@ export function CambioDeCuentaBancaria({
     }
   }
 
-  async function abrirArchivo(c: CambioDeCuenta, cual: 'certificacion' | 'aprobacion') {
+  async function abrirArchivo(c: CambioDeCuenta, cual: 'certificacion' | 'aprobacion' | number) {
     try {
       const { url } = await mandatoApi.archivoDelCambio(propietarioId, c.id, cual);
       window.open(url, '_blank', 'noopener');
@@ -297,7 +336,10 @@ export function CambioDeCuentaBancaria({
               {ultimo.cuentaNueva.reparto && ultimo.cuentaNueva.reparto.length > 1 ? 'Reparto nuevo' : 'Cuenta nueva'}
             </dt>
             <dd>
-              <CuentasDelCambio cuenta={ultimo.cuentaNueva} />
+              <CuentasDelCambio
+                cuenta={ultimo.cuentaNueva}
+                onAbrirCertificacion={(i) => abrirArchivo(ultimo, i)}
+              />
             </dd>
             <dt className="text-muted-foreground">A nombre de</dt>
             <dd data-testid="titular-del-cambio">{titularCorto(ultimo.cuentaNueva, propietario)}</dd>
@@ -323,10 +365,19 @@ export function CambioDeCuentaBancaria({
             ) : null}
           </dl>
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" hideArrow onClick={() => abrirArchivo(ultimo, 'certificacion')}>
-              <Paperclip className="w-4 h-4 mr-1" aria-hidden="true" />
-              Certificación
-            </Button>
+            {/* Con una certificación por cuenta, cada una va al lado de su cuenta. */}
+            {certificacionesPorCuenta(ultimo.cuentaNueva) ? null : (
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
+                onClick={() => abrirArchivo(ultimo, 'certificacion')}
+                data-testid="abrir-certificacion"
+              >
+                <Paperclip className="w-4 h-4 mr-1" aria-hidden="true" />
+                Certificación
+              </Button>
+            )}
             {ultimo.tieneSoporteDeAprobacion ? (
               <Button variant="ghost" size="sm" hideArrow onClick={() => abrirArchivo(ultimo, 'aprobacion')}>
                 <Paperclip className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -402,6 +453,7 @@ export function CambioDeCuentaBancaria({
           propietarioId={propietarioId}
           propietario={propietario}
           cambio={aprobando}
+          onAbrirCertificacion={(i) => abrirArchivo(aprobando, i)}
           onCerrar={() => setAprobando(null)}
           onAprobado={async () => {
             setAprobando(null);
@@ -471,17 +523,31 @@ function PedirCambioDeCuenta({
   const [titular, setTitular] = useState<ValorDelTitular>({ titular: 'PROPIETARIO', nombre: '', tipo: '', numero: '' });
   const [erroresTitular, setErroresTitular] = useState<ErroresDelTitular>({});
   const [archivo, setArchivo] = useState<File | null>(null);
+  /*
+   * 🔴 23-09 (Nico: «que el reparto pida una certificación por cada cuenta
+   * nueva»): un banco certifica UNA cuenta. Cada cuenta nueva del reparto
+   * lleva SU archivo, junto a ella; las que ya reciben hoy (mismo banco,
+   * número y titular) dicen «ya certificada» y no piden nada. Por la llave
+   * estable de la cuenta, no por la posición: quitar la cuenta 2 no le pasa
+   * su archivo a la 3.
+   */
+  const [certificaciones, setCertificaciones] = useState<Record<string, File | null>>({});
+  const vigentesDelFormulario = cuentasVigentes.map((c) => cuentaDelFormularioDe(c, propietario, false));
+  const esNueva = (c: CuentaDelFormulario) => !esCuentaVigente(c, vigentesDelFormulario);
+  const sinCertificacion = cuentas
+    .map((c, i) => (esNueva(c) && !certificaciones[c.llave] ? i : null))
+    .filter((i): i is number => i !== null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
   const listo =
-    !!archivo &&
     !guardando &&
-    (modo === 'UNA' ? !!banco && numero.length >= 4 : problema === null);
+    (modo === 'UNA'
+      ? !!archivo && !!banco && numero.length >= 4
+      : problema === null && sinCertificacion.length === 0);
 
   async function pedirReparto() {
-    if (!archivo) return;
     const errores: ErroresDeLaCuenta[] = cuentas.map((c) => {
       const e: ErroresDeLaCuenta = {};
       const delTitular = erroresDelTitular(t, c.titular, (tipoDoc, numeroDoc) =>
@@ -494,7 +560,7 @@ function PedirCambioDeCuenta({
       return e;
     });
     setErroresDelReparto(errores);
-    if (errores.some((e) => Object.keys(e).length > 0) || problema) return;
+    if (errores.some((e) => Object.keys(e).length > 0) || problema || sinCertificacion.length > 0) return;
     setGuardando(true);
     setError(null);
     try {
@@ -516,7 +582,8 @@ function PedirCambioDeCuenta({
             porcentaje: porcentajeEntero(c.porcentaje) ?? 0,
           };
         }),
-        certificacion: archivo,
+        // En la posición de cada cuenta: el back empareja por `certificacion_<i>`.
+        certificacionesPorCuenta: cuentas.map((c) => (esNueva(c) ? (certificaciones[c.llave] ?? null) : null)),
       });
       toast.success('Reparto pedido.', {
         description:
@@ -631,6 +698,30 @@ function PedirCambioDeCuenta({
               }}
               errores={erroresDelReparto}
               nombreDelPropietario={propietario?.nombre ?? ''}
+              pieDeCuenta={(c, i) =>
+                esNueva(c) ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`reparto-${i}-certificacion`}>
+                      {t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
+                    </Label>
+                    <Input
+                      id={`reparto-${i}-certificacion`}
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const elegido = e.target.files?.[0] ?? null;
+                        setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
+                      }}
+                      data-testid={`certificacion-cuenta-${i}`}
+                    />
+                  </div>
+                ) : (
+                  <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
+                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                    {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
+                  </p>
+                )
+              }
             />
           ) : (
           <>
@@ -687,20 +778,27 @@ function PedirCambioDeCuenta({
           </div>
           </>
           )}
-          <div className="space-y-1.5">
-            <Label htmlFor="certificacion">
-              {modo === 'VARIAS'
-                ? 'Certificaciones bancarias de las cuentas nuevas, en un solo archivo (obligatorio)'
-                : 'Certificación bancaria (PDF o foto, obligatoria)'}
-            </Label>
-            <Input
-              id="certificacion"
-              type="file"
-              accept="application/pdf,image/jpeg,image/png,image/webp"
-              onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-              data-testid="archivo-certificacion"
-            />
-          </div>
+          {modo === 'UNA' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
+              <Input
+                id="certificacion"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                data-testid="archivo-certificacion"
+              />
+            </div>
+          ) : problema === null && sinCertificacion.length > 0 ? (
+            // El botón apagado dice por qué.
+            <p className="text-sm text-muted-foreground" data-testid="faltan-certificaciones">
+              {t('inmobiliaria.propietario.cambioDeCuenta.faltanCertificaciones', {
+                cuentas: sinCertificacion
+                  .map((i) => t('inmobiliaria.propietario.cambioDeCuenta.cuentaN', { n: i + 1 }))
+                  .join(', '),
+              })}
+            </p>
+          ) : null}
           {error ? (
             <p className="text-sm text-danger flex gap-2" role="alert">
               <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -725,15 +823,19 @@ function AprobarCambio({
   propietarioId,
   propietario,
   cambio,
+  onAbrirCertificacion,
   onCerrar,
   onAprobado,
 }: {
   propietarioId: string;
   propietario?: { nombre: string; documento: string };
   cambio: CambioDeCuenta;
+  /** 23-09: bajar la certificación de la cuenta i del reparto. */
+  onAbrirCertificacion: (indice: number) => void;
   onCerrar: () => void;
   onAprobado: () => void;
 }) {
+  const { t } = useI18n();
   const [soporte, setSoporte] = useState<File | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -763,10 +865,21 @@ function AprobarCambio({
             {cambio.cuentaNueva.reparto && cambio.cuentaNueva.reparto.length > 1
               ? `Reparto en ${cambio.cuentaNueva.reparto.length} cuentas: ${cambio.cuentaNueva.reparto
                   .map(cuentaDelRepartoEnUnaLinea)
-                  .join('; ')}. Revisa las certificaciones antes de aprobar: desde este momento los giros se reparten así.`
+                  .join('; ')}.${
+                  certificacionesPorCuenta(cambio.cuentaNueva) ? '' : ' Revisa las certificaciones antes de aprobar.'
+                } Desde este momento los giros se reparten así.`
               : `${cuentaCorta(cambio.cuentaNueva)}, a nombre de ${titularCorto(cambio.cuentaNueva, propietario)}. Revisa la certificación antes de aprobar: desde este momento los giros salen a esta cuenta.`}
           </DialogDescription>
         </DialogHeader>
+        {certificacionesPorCuenta(cambio.cuentaNueva) ? (
+          <div className="space-y-1.5 text-sm" data-testid="certificaciones-a-revisar">
+            <p className="font-medium text-foreground">
+              {t('inmobiliaria.propietario.cambioDeCuenta.certificacionesDelReparto')}
+            </p>
+            <p className="text-muted-foreground">{t('inmobiliaria.propietario.cambioDeCuenta.revisarCertificaciones')}</p>
+            <CuentasDelCambio cuenta={cambio.cuentaNueva} onAbrirCertificacion={onAbrirCertificacion} />
+          </div>
+        ) : null}
         <div className="space-y-1.5">
           <Label htmlFor="soporte-aprobacion">Soporte de la aprobación (opcional)</Label>
           <Input

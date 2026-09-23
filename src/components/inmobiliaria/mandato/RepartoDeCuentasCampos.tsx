@@ -17,6 +17,7 @@
  * del propietario y aprobación de un administrador.
  */
 
+import type { ReactNode } from 'react';
 import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { Plus, Trash } from '@phosphor-icons/react';
 
@@ -74,12 +75,19 @@ export function RepartoDeCuentasCampos({
   onCambiar,
   errores,
   nombreDelPropietario,
+  pieDeCuenta,
 }: {
   cuentas: CuentaDelFormulario[];
   onCambiar: (cuentas: CuentaDelFormulario[]) => void;
   /** Por posición. */
   errores: ErroresDeLaCuenta[];
   nombreDelPropietario: string;
+  /**
+   * Lo que va al final de cada cuenta. 23-09: la certificación de ESA cuenta
+   * (o «ya certificada»), junto a la cuenta que certifica y no en un campo
+   * suelto abajo del formulario.
+   */
+  pieDeCuenta?: (cuenta: CuentaDelFormulario, indice: number) => ReactNode;
 }) {
   const suma = sumaDePorcentajes(cuentas);
   const cambiar = (i: number, parcial: Partial<CuentaDelFormulario>) =>
@@ -198,6 +206,7 @@ export function RepartoDeCuentasCampos({
                 </p>
               ) : null}
             </div>
+            {pieDeCuenta ? pieDeCuenta(c, i) : null}
           </fieldset>
         );
       })}

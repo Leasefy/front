@@ -5040,6 +5040,17 @@
         "noRegistered": "No registered owners",
         "addNewOwner": "Add new owner",
         "ownerSelected": "Owner selected"
+      },
+      "cambioDeCuenta": {
+        "certificacionDeLaCuenta": "Bank certificate for this account (PDF or photo, required)",
+        "yaCertificada": "Already certified: this account already receives payouts, only its percentage changes.",
+        "faltanCertificaciones": "Missing the certificate for {{cuentas}}: each bank certifies one account.",
+        "certificacionesDelReparto": "Certificates of the split",
+        "certificacionDeLaCuentaN": "Certificate for account {{n}}",
+        "cuentaN": "account {{n}}",
+        "sinCertificacionNueva": "already certified",
+        "certificacionUnica": "Certificate",
+        "revisarCertificaciones": "Check the certificate of each new account before approving."
       }
     },
     "finance": {

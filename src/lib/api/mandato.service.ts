@@ -201,6 +201,13 @@ export interface CuentaDelReparto {
   bankAccountHolderDocument: string | null;
   bankAccountHolderDocumentType: string | null;
   porcentaje: number;
+  /**
+   * 🔴 23-09: la certificación de ESTA cuenta, en un cambio con reparto.
+   * Objeto = la cuenta era nueva y ésta es la suya (se baja con
+   * `archivoDelCambio(…, i)`); `null` = ya estaba vigente, no pidió; ausente =
+   * solicitud anterior, con una sola certificación para todo el reparto.
+   */
+  certificacion?: { nombre: string; tipo: string } | null;
 }
 
 /** Una cuenta del reparto como la manda el formulario. */
@@ -266,7 +273,14 @@ export interface SolicitudDeCambioDeCuenta {
   bankAccountHolder?: string;
   bankAccountHolderDocument?: string;
   bankAccountHolderDocumentType?: string;
-  certificacion: File;
+  /** Una sola cuenta: la certificación de siempre. */
+  certificacion?: File;
+  /**
+   * 🔴 23-09: con reparto, la certificación de cada cuenta NUEVA en SU
+   * posición (`null` = ya estaba vigente). Viaja en `certificacion_<i>`: el
+   * back empareja por el nombre del campo, no por el orden.
+   */
+  certificacionesPorCuenta?: (File | null)[];
 }
 
 export interface CambioDeCuentaPublico {
@@ -464,7 +478,10 @@ export const mandatoApi = {
     if (s.bankAccountHolder) f.append('bankAccountHolder', s.bankAccountHolder);
     if (s.bankAccountHolderDocument) f.append('bankAccountHolderDocument', s.bankAccountHolderDocument);
     if (s.bankAccountHolderDocumentType) f.append('bankAccountHolderDocumentType', s.bankAccountHolderDocumentType);
-    f.append('certificacion', s.certificacion);
+    if (s.certificacion) f.append('certificacion', s.certificacion);
+    s.certificacionesPorCuenta?.forEach((archivo, i) => {
+      if (archivo) f.append(`certificacion_${i}`, archivo);
+    });
     return enviarFormulario<{ cambio: CambioDeCuenta; enlaceDePrueba?: string }>(
       `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta`,
       f,
@@ -494,9 +511,12 @@ export const mandatoApi = {
       { motivo },
     ),
 
-  archivoDelCambio: (propietarioId: string, cambioId: string, cual: 'certificacion' | 'aprobacion') =>
+  /** Un número = la certificación de esa cuenta del reparto (desde 0). */
+  archivoDelCambio: (propietarioId: string, cambioId: string, cual: 'certificacion' | 'aprobacion' | number) =>
     apiClient.get<{ url: string; nombre: string }>(
-      `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta/${cambioId}/${cual}`,
+      `/inmobiliaria/propietarios/${propietarioId}/cambios-de-cuenta/${cambioId}/${
+        typeof cual === 'number' ? `certificacion-${cual}` : cual
+      }`,
     ),
 
   /*

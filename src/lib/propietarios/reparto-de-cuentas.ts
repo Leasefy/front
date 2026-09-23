@@ -98,3 +98,36 @@ export function cuentaDelRepartoEnUnaLinea(c: {
   const numero = c.bankAccountNumber ? `•••• ${c.bankAccountNumber.replace(/\s+/g, '').slice(-4)}` : null;
   return [`${c.porcentaje} %`, c.bankName, c.bankAccountType, numero].filter(Boolean).join(' · ');
 }
+
+/** Lo que identifica una cuenta del formulario: banco, número y titular. */
+export interface CuentaParaComparar {
+  /** El código del banco del formulario (`bancolombia`, `nu`…). */
+  banco: string;
+  numero: string;
+  titular: { titular: 'PROPIETARIO' | 'TERCERO'; numero: string };
+}
+
+function llaveParaComparar(c: CuentaParaComparar): string {
+  const titular =
+    c.titular.titular === 'TERCERO'
+      ? `DOC|${c.titular.numero.toUpperCase().replace(/[^A-Z0-9]/g, '')}`
+      : 'PROPIETARIO';
+  return `${c.banco}|${c.numero.replace(/\D/g, '')}|${titular}`;
+}
+
+/**
+ * 🔴 23-09 (Nico: «que el reparto pida una certificación por cada cuenta
+ * nueva»): ¿esta cuenta del reparto ya está VIGENTE — mismo banco, número y
+ * titular —? Entonces sólo le cambia el porcentaje y no pide certificación;
+ * si no, es nueva y pide la suya: un banco certifica UNA cuenta.
+ *
+ * ESPEJO de `cuentasNuevasDelReparto` del back (`mandato/cambio-de-cuenta.ts`),
+ * que decide de verdad: acá sólo sirve para poner el campo del archivo al lado
+ * de las cuentas que lo necesitan. Si discrepan, el back responde con la cuenta
+ * que falta («Falta la certificación de la cuenta 2 (…)»).
+ */
+export function esCuentaVigente(c: CuentaParaComparar, vigentes: readonly CuentaParaComparar[]): boolean {
+  if (!c.banco || !c.numero.replace(/\D/g, '')) return false;
+  const llave = llaveParaComparar(c);
+  return vigentes.some((v) => llaveParaComparar(v) === llave);
+}

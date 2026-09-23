@@ -5074,6 +5074,17 @@
         "noRegistered": "No hay propietarios registrados",
         "addNewOwner": "Agregar nuevo propietario",
         "ownerSelected": "Propietario seleccionado"
+      },
+      "cambioDeCuenta": {
+        "certificacionDeLaCuenta": "Certificación bancaria de esta cuenta (PDF o foto, obligatoria)",
+        "yaCertificada": "Ya certificada: esta cuenta ya recibe hoy, sólo le cambia el porcentaje.",
+        "faltanCertificaciones": "Falta la certificación de {{cuentas}}: cada banco certifica una cuenta.",
+        "certificacionesDelReparto": "Certificaciones del reparto",
+        "certificacionDeLaCuentaN": "Certificación de la cuenta {{n}}",
+        "cuentaN": "la cuenta {{n}}",
+        "sinCertificacionNueva": "ya certificada",
+        "certificacionUnica": "Certificación",
+        "revisarCertificaciones": "Revisa la certificación de cada cuenta nueva antes de aprobar."
       }
     },
     "finance": {

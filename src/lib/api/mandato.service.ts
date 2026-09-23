@@ -184,6 +184,35 @@ export interface CuentaBancaria {
   bankAccountHolder: string | null;
   bankAccountHolderDocument: string | null;
   bankAccountHolderDocumentType: string | null;
+  /**
+   * 🔴 22-09: el reparto entre varias cuentas que va con el cambio. Los campos de
+   * arriba son la cuenta PRINCIPAL (la de mayor porcentaje). Ausente = back sin
+   * la migración del reparto; `[]` = una sola cuenta; 2 o más = el reparto.
+   */
+  reparto?: CuentaDelReparto[];
+}
+
+/** Una cuenta del reparto, con su porcentaje (entero, suman 100). */
+export interface CuentaDelReparto {
+  bankName: string | null;
+  bankAccountType: string | null;
+  bankAccountNumber: string | null;
+  bankAccountHolder: string | null;
+  bankAccountHolderDocument: string | null;
+  bankAccountHolderDocumentType: string | null;
+  porcentaje: number;
+}
+
+/** Una cuenta del reparto como la manda el formulario. */
+export interface CuentaDelRepartoPedida {
+  bankCode: string;
+  bankAccountType: 'AHORROS' | 'CORRIENTE';
+  bankAccountNumber: string;
+  titularDeLaCuenta: 'PROPIETARIO' | 'TERCERO';
+  bankAccountHolder?: string;
+  bankAccountHolderDocument?: string;
+  bankAccountHolderDocumentType?: string;
+  porcentaje: number;
 }
 
 export interface CambioDeCuenta {
@@ -214,13 +243,24 @@ export interface CambiosDeCuentaDelPropietario {
   disponible: boolean;
   motivo: string | null;
   cambios: CambioDeCuenta[];
+  /**
+   * 🔴 22-09: las cuentas VIGENTES con su porcentaje (sin reparto, la de la
+   * ficha al 100 %). Ausentes = back anterior al reparto.
+   */
+  cuentasVigentes?: CuentaDelReparto[];
+  /** ¿Se puede pedir un reparto? `false` sin la migración, con el motivo. */
+  repartoDisponible?: boolean;
+  motivoDelReparto?: string | null;
 }
 
 export interface SolicitudDeCambioDeCuenta {
   bankCode?: string;
   bankName?: string;
-  bankAccountType: 'AHORROS' | 'CORRIENTE';
-  bankAccountNumber: string;
+  /** Obligatorios con una sola cuenta; con `reparto` cada cuenta trae los suyos. */
+  bankAccountType?: 'AHORROS' | 'CORRIENTE';
+  bankAccountNumber?: string;
+  /** 🔴 22-09: el reparto entre varias cuentas (viaja como JSON en el formulario). */
+  reparto?: CuentaDelRepartoPedida[];
   /** «¿A quién pertenece la cuenta?» (22-09). Con `TERCERO`, los tres de abajo son obligatorios. */
   titularDeLaCuenta?: 'PROPIETARIO' | 'TERCERO';
   bankAccountHolder?: string;
@@ -242,6 +282,17 @@ export interface CambioDeCuentaPublico {
    * anterior al cambio.
    */
   titularDeOtraPersona?: string | null;
+  /**
+   * 🔴 22-09: si el cambio reparte la plata entre varias cuentas, todas con su
+   * porcentaje. `null`/ausente = una sola cuenta (la de arriba).
+   */
+  reparto?: Array<{
+    porcentaje: number;
+    banco: string | null;
+    tipoDeCuenta: string | null;
+    cuentaEnmascarada: string;
+    titularDeOtraPersona: string | null;
+  }> | null;
   expiraAt: string;
   vencido: boolean;
 }
@@ -401,10 +452,14 @@ export const mandatoApi = {
 
   solicitarCambioDeCuenta: (propietarioId: string, s: SolicitudDeCambioDeCuenta) => {
     const f = new FormData();
+    if (s.reparto) {
+      // Multipart: un arreglo no viaja como campos; va como texto JSON.
+      f.append('reparto', JSON.stringify(s.reparto));
+    }
     if (s.bankCode) f.append('bankCode', s.bankCode);
     if (s.bankName) f.append('bankName', s.bankName);
-    f.append('bankAccountType', s.bankAccountType);
-    f.append('bankAccountNumber', s.bankAccountNumber);
+    if (s.bankAccountType) f.append('bankAccountType', s.bankAccountType);
+    if (s.bankAccountNumber) f.append('bankAccountNumber', s.bankAccountNumber);
     if (s.titularDeLaCuenta) f.append('titularDeLaCuenta', s.titularDeLaCuenta);
     if (s.bankAccountHolder) f.append('bankAccountHolder', s.bankAccountHolder);
     if (s.bankAccountHolderDocument) f.append('bankAccountHolderDocument', s.bankAccountHolderDocument);

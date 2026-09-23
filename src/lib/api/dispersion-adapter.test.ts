@@ -94,6 +94,16 @@ describe('adaptarDispersion', () => {
       expect(d.titularDeLaCuenta?.esElPropietario).toBe(false)
     })
 
+    it('🔴 el reparto entre varias cuentas (22-09) llega a la pantalla tal cual', () => {
+      const reparto = [
+        { porcentaje: 60, banco: 'Bancolombia', tipoDeCuenta: 'Ahorros', cuenta: '····4521', titularDeOtraPersona: null, valorCop: 600_001, enUnaLinea: '60 % · Bancolombia ····4521 · $600.001' },
+        { porcentaje: 40, banco: 'Banco de Occidente', tipoDeCuenta: 'Corriente', cuenta: '····1234', titularDeOtraPersona: null, valorCop: 400_000, enUnaLinea: '40 % · Banco de Occidente ····1234 · $400.000' },
+      ]
+      expect(adaptarDispersion({ ...DEL_BACK, repartoDeLaCuenta: reparto }).repartoDeLaCuenta).toEqual(reparto)
+      // Una sola cuenta: no hay reparto que mostrar.
+      expect(adaptarDispersion({ ...DEL_BACK, repartoDeLaCuenta: null }).repartoDeLaCuenta).toBeUndefined()
+    })
+
     it('el tipo, si el back lo manda, se entiende en español o en inglés', () => {
       expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'Ahorros' })?.accountType).toBe('savings')
       expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'CORRIENTE' })?.accountType).toBe('checking')

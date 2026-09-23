@@ -158,6 +158,7 @@ const BANK_CODE_TO_WIRE: Record<BankCode, string> = {
   avvillas: 'BANCO_AV_VILLAS',
   bancoomeva: 'BANCOOMEVA',
   pichincha: 'BANCO_PICHINCHA',
+  nu: 'NU_COLOMBIA',
 };
 
 /** contract.md §3.3 (T-0014) — front account type -> backend enum. */

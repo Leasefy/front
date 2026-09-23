@@ -67,10 +67,32 @@ export default function ConfirmarCuentaBancariaPage() {
             <div className="space-y-1">
               <h1 className="text-h2">Confirma el cambio de tu cuenta bancaria</h1>
               <p className="text-body-sm text-fg-muted">
-                Hola {cambio.propietario}, {cambio.inmobiliaria} recibió una solicitud para girarte tus
-                arriendos a esta cuenta:
+                {cambio.reparto && cambio.reparto.length > 1
+                  ? `Hola ${cambio.propietario}, ${cambio.inmobiliaria} recibió una solicitud para repartir tus arriendos entre ${cambio.reparto.length} cuentas:`
+                  : `Hola ${cambio.propietario}, ${cambio.inmobiliaria} recibió una solicitud para girarte tus arriendos a esta cuenta:`}
               </p>
             </div>
+            {/* 🔴 22-09: con reparto, el propietario autoriza TODAS las cuentas,
+                no sólo la principal: se le muestran todas, con su porcentaje. */}
+            {cambio.reparto && cambio.reparto.length > 1 ? (
+              <ul className="space-y-2" data-testid="reparto-a-confirmar">
+                {cambio.reparto.map((c, i) => (
+                  <li key={i} className="rounded-md bg-surface-muted px-4 py-3">
+                    <p className="text-body font-medium">
+                      <span className="font-mono">{c.porcentaje} %</span> · {c.banco ?? 'Banco'}
+                    </p>
+                    <p className="text-body-sm text-fg-muted">
+                      {c.tipoDeCuenta ?? ''} · <span className="font-mono">{c.cuentaEnmascarada}</span>
+                    </p>
+                    {c.titularDeOtraPersona ? (
+                      <p className="mt-1 text-body-sm text-fg">
+                        A nombre de <strong>{c.titularDeOtraPersona}</strong>, no tuyo.
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
             <div className="rounded-md bg-surface-muted px-4 py-3">
               <p className="text-body font-medium">{cambio.banco ?? 'Banco'}</p>
               <p className="text-body-sm text-fg-muted">
@@ -84,6 +106,7 @@ export default function ConfirmarCuentaBancariaPage() {
                 </p>
               ) : null}
             </div>
+            )}
 
             {cambio.estado === 'PENDIENTE_CONFIRMACION' && !cambio.vencido ? (
               <>

@@ -26,7 +26,8 @@ import type {
 // Propietario (Property Owner/Client)
 // ============================================================================
 
-export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
+/** `PPT` = Permiso por Protección Temporal (22-09, «agrega la PPT»). */
+export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT' | 'PPT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;
@@ -777,6 +778,22 @@ export interface DispersionItem {
 /** D1: con qué base se le gira al propietario. */
 export type ModalidadDelMandato = 'GARANTIZADO' | 'SOBRE_RECAUDO';
 
+/**
+ * 🔴 22-09: el reparto del neto entre varias cuentas, copiado con el giro, en
+ * pesos (la suma es el neto; el residuo, a la cuenta de mayor porcentaje).
+ * `null` = una sola cuenta.
+ */
+export interface ParteDelReparto {
+  porcentaje: number;
+  banco: string | null;
+  tipoDeCuenta: string | null;
+  /** Sólo los últimos cuatro: `····4521`. */
+  cuenta: string;
+  titularDeOtraPersona: string | null;
+  valorCop: number;
+  enUnaLinea: string;
+}
+
 export interface Dispersion {
   id: string;
   propietarioId: string;
@@ -793,6 +810,8 @@ export interface Dispersion {
    * `lib/propietarios/titular-de-la-cuenta.ts`.
    */
   titularDeLaCuenta?: import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro | null;
+  /** 🔴 22-09: el reparto entre varias cuentas. `null`/ausente = una sola. */
+  repartoDeLaCuenta?: ParteDelReparto[] | null;
 
   month: string; // '2026-02'
   items: DispersionItem[];

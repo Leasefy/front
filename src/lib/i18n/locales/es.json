@@ -2539,6 +2539,8 @@
         "call": "Llamar",
         "email": "Email",
         "titularDeLaFichaHoy": "Tomado de la ficha de hoy: esta dispersión es anterior a la copia del titular.",
+        "repartoTitulo": "Repartido en {{n}} cuentas",
+        "repartoANombreDe": "A nombre de {{titular}}",
         "titularOtraPersona": "otra persona"
       },
       "resumen": {
@@ -4919,6 +4921,7 @@
         "docNIT": "NIT (Empresas)",
         "docPassport": "Pasaporte",
         "docTI": "Tarjeta de Identidad",
+        "docPPT": "Permiso por Protección Temporal (PPT)",
         "fullName": "Nombre completo",
         "businessName": "Razón social",
         "phone": "Teléfono",
@@ -10761,6 +10764,7 @@
         "docNIT": "NIT (Empresas)",
         "docPassport": "Pasaporte",
         "docTI": "Tarjeta de Identidad",
+        "docPPT": "Permiso por Protección Temporal (PPT)",
         "fullName": "Nombre completo",
         "businessName": "Razón social",
         "phone": "Teléfono",

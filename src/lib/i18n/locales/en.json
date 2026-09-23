@@ -2505,6 +2505,8 @@
         "call": "Call",
         "email": "Email",
         "titularDeLaFichaHoy": "Taken from today's profile: this disbursement predates the holder copy.",
+        "repartoTitulo": "Split across {{n}} accounts",
+        "repartoANombreDe": "In the name of {{titular}}",
         "titularOtraPersona": "someone else"
       },
       "resumen": {
@@ -4885,6 +4887,7 @@
         "docNIT": "Tax ID (Companies)",
         "docPassport": "Passport",
         "docTI": "Identity Card",
+        "docPPT": "Temporary Protection Permit (PPT)",
         "fullName": "Full name",
         "businessName": "Business name",
         "phone": "Phone",
@@ -10727,6 +10730,7 @@
         "docNIT": "Tax ID (Companies)",
         "docPassport": "Passport",
         "docTI": "Identity Card",
+        "docPPT": "Temporary Protection Permit (PPT)",
         "fullName": "Full name",
         "businessName": "Business name",
         "phone": "Phone",

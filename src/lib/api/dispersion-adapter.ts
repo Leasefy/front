@@ -30,6 +30,7 @@ import type {
   Dispersion,
   DispersionItem,
   DispersionStatus,
+  ParteDelReparto,
   PropietarioBankAccount,
 } from '@/lib/types/inmobiliaria';
 import { baseDeLaDispersion } from '@/lib/propietarios/base-del-canon';
@@ -56,6 +57,8 @@ export interface DispersionDelBack {
    * `null` = no se pudo leer; ausente = back anterior.
    */
   titularDeLaCuenta?: TitularDelGiro | null;
+  /** 🔴 22-09: el reparto entre varias cuentas, en pesos. `null` = una sola. */
+  repartoDeLaCuenta?: ParteDelReparto[] | null;
   month: string;
   /**
    * Con qué base salió el canon. La manda `GET /inmobiliaria/dispersiones` (y
@@ -204,6 +207,7 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     propietarioBankAccount: cuentaDelPropietario(d),
     // Tal cual: ausente = back anterior; la pantalla dice «—».
     ...(d.titularDeLaCuenta !== undefined ? { titularDeLaCuenta: d.titularDeLaCuenta } : {}),
+    ...(d.repartoDeLaCuenta ? { repartoDeLaCuenta: d.repartoDeLaCuenta } : {}),
     month: d.month,
     items: (d.items ?? []).map((i) => ({
       cobroId: i.cobroId,

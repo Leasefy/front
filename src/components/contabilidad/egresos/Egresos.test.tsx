@@ -70,9 +70,12 @@ vi.mock('../use-puede-escribir', async () => {
   };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
-vi.mock('@/lib/i18n', () => ({
-  useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
-}));
+vi.mock('@/lib/i18n', async () => {
+  const { t } = await import('@/lib/i18n/i18n-test-stub');
+  return {
+    useI18n: () => ({ t, formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
+  };
+});
 
 import { Egresos, parteDeEgresos } from './Egresos';
 import { ApiError } from '@/lib/api/client';
@@ -458,6 +461,21 @@ describe('conciliación y comprobante', () => {
     const boton = q('conciliar-e1') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
     expect(q('conciliar-e1-motivo')!.textContent).toContain('no hay salida en el extracto');
+  });
+
+  it('🔴 un egreso PAGADO no ofrece «Anular», y el motivo dice por qué (23-09)', async () => {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [egreso({ id: 'e1', estado: 'PAGADO', numero: 87, movimientoBancarioId: null })],
+    });
+
+    await pintar();
+
+    const boton = q('anular-egreso-e1') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(q('anular-egreso-e1-motivo')!.textContent).toContain('Un egreso pagado no se anula');
   });
 
   it('un egreso pagado dice si quedó conciliado o no', async () => {

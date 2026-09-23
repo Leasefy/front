@@ -15,6 +15,8 @@
  *     título del inmueble va en el mensaje, sin id)
  *   - `APROBAR_POR_LOTE` → `dispersiones.service.ts` (409, aprobar y girar)
  *   - `APROBADOR_Y_EJECUTOR_IGUALES` → `dispersiones.service.ts` (409, girar)
+ *   - `DISPERSION_EN_UN_LOTE` → `dispersiones.service.ts` (409, aprobar y
+ *     girar una liquidación que ya está en un lote vivo; trae `loteId`)
  */
 
 import { ApiError } from '@/lib/api/client';
@@ -112,6 +114,21 @@ export function leerLiquidacionFrenada(error: unknown): LiquidacionFrenada | nul
 /** El 409 de una agencia que aprueba y gira por lote, con código. */
 export function esAprobarPorLote(error: unknown): error is ApiError {
   return error instanceof ApiError && error.code === 'APROBAR_POR_LOTE';
+}
+
+/**
+ * 🔴 El 409 `DISPERSION_EN_UN_LOTE` (back, 23-09-2026): la liquidación ya está
+ * en un lote vivo y aprobarla o girarla suelta le pagaría dos veces al
+ * propietario. Devuelve el enlace al lote que la tiene (o a la lista de lotes,
+ * si el cuerpo no trae el id); `null` para cualquier otro error.
+ */
+export function loteQueTieneLaDispersion(error: unknown): { href: string; mensaje: string } | null {
+  if (!(error instanceof ApiError) || error.code !== 'DISPERSION_EN_UN_LOTE') return null;
+  const loteId = texto(delCuerpo(error, 'loteId'));
+  return {
+    href: loteId ? `${RUTA_LOTES}/${encodeURIComponent(loteId)}` : RUTA_LOTES,
+    mensaje: error.message,
+  };
 }
 
 /** El 409 de quien aprobó intentando anotar el giro. */

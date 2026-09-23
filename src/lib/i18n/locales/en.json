@@ -2600,6 +2600,33 @@
         "errorAlCargar": "The bank list could not be loaded.",
         "desde": "From {{banco}} · {{tipo}}",
         "teProponemosLaUltima": "We suggest the last account you transferred from."
+      },
+      "lote": {
+        "archivoAnulado": {
+          "titulo": "{{n}} payments in this batch already went out in the file of a cancelled batch",
+          "tituloUno": "1 payment in this batch already went out in the file of a cancelled batch",
+          "texto": "That file was generated and may have been uploaded to the bank. Before sending this batch for approval, check in the bank portal that those payments were NOT processed: if they were, paying them again pays the owner twice.",
+          "fila": "went out in the file of {{generado}}; that batch was cancelled on {{anulado}}",
+          "motivo": "Cancellation reason: {{motivo}}",
+          "alArmar": "Check the batch warning: {{n}} of these payments already went out in the file of a cancelled batch."
+        },
+        "anular": {
+          "confirmaArchivo": "I confirm I checked in the bank portal that this file was NOT processed. If it reached the bank, cancelling this batch makes its payments go out twice.",
+          "avisoArchivo": "This batch file was already generated and may have been uploaded to the bank.",
+          "faltaConfirmar": "Tick the confirmation: this batch file was already generated."
+        }
+      },
+      "enUnLote": {
+        "titulo": "This settlement is already in a batch",
+        "irAlLote": "Open the batch"
+      },
+      "giroDevuelto": {
+        "soporte": "Bank support (required)",
+        "soporteAyuda": "The bank statement or receipt of the return, as PDF or image, up to 10 MB. It is stored with the transfer: a return pays the owner again, and without the bank document it is not recorded.",
+        "faltaSoporte": "Attach the bank support to mark the transfer as returned.",
+        "verSoporte": "View support",
+        "soporteNoAbre": "The bank support could not be opened.",
+        "noApruebasLoQueDevolviste": "You recorded the return of a transfer in this batch: someone else approves it. It is the second pair of eyes on a payment made twice."
       }
     },
     "operaciones": {
@@ -10110,6 +10137,11 @@
       "elInmueble": "the property",
       "elContrato": "the contract",
       "viendoCopia": "You are without signal. You are seeing the copy saved on {{cuando}}; whatever you fill in uploads when the signal returns."
+    },
+    "egresos": {
+      "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
+      "anularAnulado": "This disbursement is already cancelled.",
+      "anulado": "Disbursement cancelled. It is unpaid again."
     }
   },
   "validation": {

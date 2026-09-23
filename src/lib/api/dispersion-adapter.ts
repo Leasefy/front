@@ -96,6 +96,8 @@ export interface DispersionDelBack {
   approvedBy?: string | null;
   /** 🔴 23-09: el nombre de quien aprobó. Ausente = back anterior. */
   aprobadoPorNombre?: string | null;
+  /** Quién registró la devolución abierta de este giro (23-09). */
+  devolucionRegistradaPor?: string | null;
   approvedAt?: string | null;
   processedAt?: string | null;
   transferReference?: string | null;
@@ -263,6 +265,7 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     status: estadoDeDispersion(d.status),
     approvedBy: d.approvedBy ?? undefined,
     ...(d.aprobadoPorNombre ? { approvedByName: d.aprobadoPorNombre } : {}),
+    ...(d.devolucionRegistradaPor ? { devolucionRegistradaPor: d.devolucionRegistradaPor } : {}),
     approvedAt: d.approvedAt ?? undefined,
     processedAt: d.processedAt ?? undefined,
     transferReference: d.transferReference ?? undefined,

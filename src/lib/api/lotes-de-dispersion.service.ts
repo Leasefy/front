@@ -194,10 +194,23 @@ export const lotesDeDispersionApi = {
     return res;
   },
 
-  /** Anula el lote. El motivo es obligatorio (5 a 300 caracteres, lo exige el back). */
-  async anular(id: string, motivo: string): Promise<LoteDeDispersion> {
+  /**
+   * Anula el lote. El motivo es obligatorio (5 a 300 caracteres, lo exige el back).
+   *
+   * 🔴 `confirmoQueElArchivoPudoLlegarAlBanco`: el back lo EXIGE en `true` para
+   * anular un lote en ARCHIVO_GENERADO (409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin él), porque ese archivo
+   * pudo subirse al banco y anular libera sus pagos para otro lote. Sólo viaja
+   * cuando es `true`.
+   */
+  async anular(
+    id: string,
+    motivo: string,
+    confirmoQueElArchivoPudoLlegarAlBanco = false,
+  ): Promise<LoteDeDispersion> {
     const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/anular`, {
       motivo: motivo.trim(),
+      ...(confirmoQueElArchivoPudoLlegarAlBanco ? { confirmoQueElArchivoPudoLlegarAlBanco: true } : {}),
     });
     invalidar('dispersiones');
     return res;
@@ -213,6 +226,7 @@ export type {
   EntregaDelFormato,
   FuenteDelFormato,
   OrigenDelLote,
+  SalioEnUnArchivoAnulado,
   OrigenDelGiroEnPantalla,
   OpcionesDelOrigenDelGiro,
   OrigenPedido,

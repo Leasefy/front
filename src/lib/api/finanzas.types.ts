@@ -477,6 +477,8 @@ export interface GiroDevuelto {
   valorCop?: number | null;
   propietarioId?: string | null;
   nombreTitular?: string | null;
+  /** Si el soporte del banco quedó guardado (desde el 23-09). Opcional: back anterior. */
+  tieneSoporte?: boolean;
   /** La dispersión con la que se volvió a girar. `null` = todavía por girar. */
   dispersionNuevaId?: string | null;
   /** `YYYY-MM-DD` del giro que sí salió. */
@@ -510,6 +512,8 @@ export interface NuevaDevolucion {
   codigoDelBanco?: string;
   /** `YYYY-MM-DD`. */
   fechaDeLaDevolucion: string;
+  /** 🔴 Obligatorio (23-09): el extracto o comprobante del banco. */
+  soporte: File;
 }
 
 export interface Regiro {

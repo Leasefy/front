@@ -333,3 +333,23 @@ describe('lotesDeDispersionApi.anular', () => {
     );
   });
 });
+
+describe('lotesDeDispersionApi.anular — el archivo que pudo llegar al banco (23-09)', () => {
+  it('🔴 con la confirmación, el cuerpo lleva `confirmoQueElArchivoPudoLlegarAlBanco: true`', async () => {
+    const f = mockFetch();
+    await lotesDeDispersionApi.anular(ID, '  El banco rechazó el archivo ', true);
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE}/${ID}/anular`);
+    expect(init.method).toBe('POST');
+    expect(cuerpoDe(f)).toEqual({
+      motivo: 'El banco rechazó el archivo',
+      confirmoQueElArchivoPudoLlegarAlBanco: true,
+    });
+  });
+
+  it('sin confirmación el cuerpo es el de siempre: sólo el motivo', async () => {
+    const f = mockFetch();
+    await lotesDeDispersionApi.anular(ID, 'Mes equivocado');
+    expect(cuerpoDe(f)).toEqual({ motivo: 'Mes equivocado' });
+  });
+});

@@ -68,7 +68,11 @@ import type {
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
-import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
+import {
+  adaptarDispersion,
+  estadoParaElBack,
+  type DispersionDelBack,
+} from './dispersion-adapter';
 import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
@@ -635,7 +639,7 @@ export const consignacionesApi = {
   }): Promise<Consignacion[]> {
     const query = new URLSearchParams();
     if (params?.propertyId) query.set('propertyId', params.propertyId);
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propertyType) query.set('propertyType', params.propertyType);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     if (params?.agenteId) query.set('agenteId', params.agenteId);
@@ -1122,7 +1126,7 @@ export const cobrosApi = {
     const query = new URLSearchParams();
     if (params?.anulados) query.set('anulados', 'true');
     if (params?.month) query.set('month', params.month);
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
@@ -1395,7 +1399,8 @@ export const dispersionesApi = {
   async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Dispersion[]> {
     const query = new URLSearchParams();
     if (params?.month) query.set('month', params.month);
-    if (params?.status) query.set('status', params.status);
+    // El nombre del ENUM, no el de la vista: `pending` era un 500 (500-1844).
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
     /*
@@ -1548,7 +1553,7 @@ export const dispersionesApi = {
 export const mantenimientoApi = {
   async getAll(params?: { status?: string; consignacionId?: string }): Promise<SolicitudMantenimiento[]> {
     const query = new URLSearchParams();
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
     const res = await apiClient.get<{ data: SolicitudMantenimiento[] } | SolicitudMantenimiento[]>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);

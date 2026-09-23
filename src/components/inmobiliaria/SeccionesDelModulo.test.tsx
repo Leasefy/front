@@ -58,6 +58,7 @@ vi.mock('@/lib/context/PermissionsContext', () => ({
 }))
 
 import { SeccionesDelModulo } from './SeccionesDelModulo'
+import { caraDelSelector } from '@/lib/nav/arquitectura-del-panel'
 
 let contenedor: HTMLDivElement
 let root: Root
@@ -346,6 +347,50 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'dispersiones',
     ])
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
+  })
+
+  /*
+   * 🔴 22-09 (Nico): en «Pagar a propietarios», el clic en «Tablero financiero»
+   * lo llevaba a «Cobrar a inquilinos». El tablero no tiene cara y caía
+   * siempre en la primera: el selector cambiaba de grupo solo y el riel de
+   * abajo mostraba las secciones del OTRO lado de la plata.
+   */
+  it('🔴 del lado de propietarios, abrir el tablero NO te cambia a inquilinos', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones')
+    render('/panel/inmobiliaria/pagos/tablero')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
+    expect(cards().map((c) => c.label)).toEqual([
+      'tableroFinanciero',
+      'liquidaciones',
+      'dispersiones',
+    ])
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['tableroFinanciero'])
+  })
+
+  it('lo mismo desde tesorería: el tablero se queda en la cara de la que vienes', () => {
+    render('/panel/inmobiliaria/pagos/cuadre')
+    render('/panel/inmobiliaria/pagos/tablero')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['tesoreria'])
+  })
+
+  it('entrando DIRECTO al tablero, sin venir de ninguna cara, entra Inquilinos', () => {
+    render('/panel/inmobiliaria/pagos/tablero')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
+  })
+
+  it('y al volver a una sección, manda la ruta: de nuevo la cara de esa sección', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones')
+    render('/panel/inmobiliaria/pagos/tablero')
+    render('/panel/inmobiliaria/pagos/cartera')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
+  })
+
+  it('una cara recordada que esta persona no ve no se elige: entra la primera suya', () => {
+    expect(caraDelSelector(null, 'propietarios', ['inquilinos', 'tesoreria'])).toBe('inquilinos')
+    // Y la de la pantalla siempre gana sobre la recordada.
+    expect(caraDelSelector('tesoreria', 'propietarios', ['inquilinos', 'propietarios', 'tesoreria'])).toBe(
+      'tesoreria',
+    )
   })
 
   it('y también en una ficha que cuelga de una sección de esa cara', () => {

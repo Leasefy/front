@@ -1115,7 +1115,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       const resultado = await generarPorTandas(
         mes,
         claves,
-        (elMes, lote) => facturacionPorMesService.generar(elMes, lote),
+        (elMes, lote, corrida) => facturacionPorMesService.generar(elMes, lote, corrida),
         setProgreso,
         { debeParar: () => detenerRef.current },
       )

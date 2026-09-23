@@ -35,7 +35,7 @@
  *   · lo que no llegó a salir → `sinEnviar`.
  */
 
-import type { ResultadoDeGeneracion } from '@/lib/api/facturacion-por-mes.service'
+import type { ResultadoDeGeneracion, TandaDeLaCorrida } from '@/lib/api/facturacion-por-mes.service'
 
 /**
  * Cuántas claves por request. Dos transacciones del back (`FACTURAS_POR_TANDA
@@ -122,7 +122,7 @@ function trozos<T>(todo: readonly T[], tamano: number): T[][] {
 export async function generarPorTandas(
   mes: string,
   claves: readonly string[],
-  generar: (mes: string, claves: string[]) => Promise<ResultadoDeGeneracion>,
+  generar: (mes: string, claves: string[], corrida?: TandaDeLaCorrida) => Promise<ResultadoDeGeneracion>,
   onProgreso?: (p: ProgresoDeFacturas) => void,
   opciones: { debeParar?: () => boolean; tamano?: number } = {},
 ): Promise<ResultadoDeLaCorrida> {
@@ -143,6 +143,8 @@ export async function generarPorTandas(
     documentos: [],
     procesosConZip: [],
   }
+  let agrupar = partes.length > 1
+  let procesoDeLaCorrida: string | null = null
   let corte: CorteDeLaCorrida = 'completa'
   let error: unknown = null
   let enviadas = 0
@@ -150,7 +152,27 @@ export async function generarPorTandas(
   for (const [i, parte] of partes.entries()) {
     let r: ResultadoDeGeneracion
     try {
-      r = await generar(mes, parte)
+      /*
+       * 🔴 Una emisión = UN proceso del centro (23-09). Con más de una tanda,
+       * cada una le dice al back a qué proceso suma y si es la última (la que
+       * cierra y arma el único ZIP con los ids de TODA la corrida). «Detener»
+       * apretado durante la tanda anterior vuelve última a ésta.
+       */
+      const ultima = i === partes.length - 1 || opciones.debeParar?.() === true
+      const corrida: TandaDeLaCorrida | undefined = agrupar
+        ? {
+            ...(procesoDeLaCorrida ? { procesoId: procesoDeLaCorrida } : {}),
+            yaEnviadas: enviadas,
+            totalDeLaCorrida: claves.length,
+            ultimaTanda: ultima,
+            ...(ultima && informe.documentos.length > 0
+              ? { idsDeLaCorrida: informe.documentos.map((d) => d.facturaId) }
+              : {}),
+          }
+        : undefined
+      r = await generar(mes, parte, corrida)
+      if (agrupar && !r.corridaAgrupable) agrupar = false
+      procesoDeLaCorrida = r.procesoId ?? procesoDeLaCorrida
     } catch (e) {
       corte = 'fallo'
       error = e

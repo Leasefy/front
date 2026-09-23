@@ -307,7 +307,7 @@ describe('una certificación por cada cuenta nueva', () => {
           ...FICHA,
           bankName: 'Banco de Occidente',
           bankAccountNumber: '990001234',
-          bankAccountHolder: null,
+          bankAccountHolder: 'Carlos Restrepo',
           bankAccountHolderDocument: '80012345',
           bankAccountHolderDocumentType: 'CC',
           porcentaje: 40,

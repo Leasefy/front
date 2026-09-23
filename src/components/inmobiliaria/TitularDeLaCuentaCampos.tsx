@@ -228,11 +228,14 @@ export function erroresDelTitular(
 ): ErroresDelTitular {
   if (valor.titular !== 'TERCERO') return {};
   /*
-   * 🔴 23-09 (Nico): de la cuenta de otra persona son obligatorios el TIPO y
-   * el NÚMERO de documento —lo que el banco revisa— y, en el cambio de cuenta,
-   * su certificación. El nombre es opcional.
+   * 🔴 23-09 (Nico): de la cuenta de otra persona son obligatorios el nombre,
+   * el tipo y el número de documento y, en el cambio de cuenta, su
+   * certificación. El nombre lo exigen algunos bancos en el archivo de pagos.
    */
   const errores: ErroresDelTitular = {};
+  if (valor.nombre.replace(/\s+/g, ' ').trim().length < 3) {
+    errores.nombre = t('inmobiliaria.propietario.form.titularErrNombre');
+  }
   if (!valor.tipo) {
     errores.tipo = t('inmobiliaria.propietario.form.errHolderDocTypeRequired');
   } else {

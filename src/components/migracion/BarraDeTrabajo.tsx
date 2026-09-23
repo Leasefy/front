@@ -113,15 +113,26 @@ export function BarraDeTrabajo({
           </Button>
         ) : null}
       </div>
-      <Progress value={porcentaje} size="xs" />
-      <p
-        className="text-right font-mono text-xs tabular-nums text-fg-subtle dark:text-fg-muted"
-        data-testid={`${testid}-porcentaje`}
-      >
-        {porcentaje}%
-      </p>
+      {/* 🔴 Nico, 22-09: «mira eso cómo se ve pegado a los bordes, qué raro».
+          La barra corría de borde a borde de la tarjeta y el porcentaje colgaba
+          debajo, pegado a la derecha. En un monitor de 1.900 px eso es una
+          línea de 3 px de alto por 1.850 de largo: **se lee como el borde de la
+          tarjeta, no como una barra de progreso**, y los dos extremos quedan
+          metidos contra las esquinas redondeadas.
+          Ahora la barra tiene tope de ancho y el porcentaje va a su lado, en el
+          mismo renglón: la barra vuelve a tener forma de barra y sus extremos
+          quedan lejos de los bordes. */}
+      <div className="flex items-center gap-3">
+        <Progress value={porcentaje} size="sm" className="max-w-2xl flex-1" />
+        <p
+          className="w-12 shrink-0 text-right font-mono text-sm tabular-nums text-fg-muted"
+          data-testid={`${testid}-porcentaje`}
+        >
+          {porcentaje}%
+        </p>
+      </div>
       {nota ? (
-        <p className="text-xs text-fg-subtle dark:text-fg-muted">{nota}</p>
+        <p className="max-w-3xl text-caption text-fg-subtle dark:text-fg-muted">{nota}</p>
       ) : null}
     </div>
   );

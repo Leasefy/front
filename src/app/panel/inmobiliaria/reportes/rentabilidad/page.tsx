@@ -349,10 +349,16 @@ function RentabilidadContent() {
                 palabra «queda debiendo» y en rojo — nunca en verde, y nunca un
                 «−$340.000» pelado entre columnas alineadas, que se lee como un
                 número más. La regla vive en `lib/dinero/neto-del-propietario`. */}
+            {/* 🔴 21-09 · El pie «N con valor comercial» colgaba de ACÁ, del
+                neto al propietario, y no habla del neto: cuenta cuántos
+                inmuebles tienen registrado su valor comercial, que es lo que
+                hace falta para la columna «Rentabilidad». Leído bajo el neto,
+                lo que dice es que el neto se calculó con 1 de 108 inmuebles,
+                que es falso y asusta. Se mudó al encabezado de la columna que
+                sí lo usa. */}
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.netToOwners')}
               value={netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
-              delta={t('inmobiliaria.reportes.rentabilidad.stats.withValue', { count: totales.conValor })}
               compact
             />
             <Stat
@@ -409,6 +415,17 @@ function RentabilidadContent() {
                       numeric={col.numeric}
                       className="whitespace-nowrap"
                       aria-sort={activa ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      /* La rentabilidad sólo se puede calcular donde hay valor
+                         comercial registrado; el resto de la columna va en
+                         raya. Decir cuántos son, acá, explica la columna antes
+                         de que alguien la lea como un error. */
+                      {...(col.id === 'rentabilidad' && totales
+                        ? {
+                            title: t('inmobiliaria.reportes.rentabilidad.stats.withValue', {
+                              count: totales.conValor,
+                            }),
+                          }
+                        : {})}
                     >
                       <button
                         type="button"

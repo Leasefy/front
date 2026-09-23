@@ -25,9 +25,8 @@ import { ArrowsLeftRight, CheckCircle, Prohibit } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -161,25 +160,24 @@ export function TrasladoDeComisionPanel() {
         ) : null}
 
         <section className="space-y-4">
-          <TituloDeBloque
-            titulo="Qué habría que trasladar"
-            explicacion="Tu comisión del mes y los ingresos que son tuyos (intereses de mora, gastos de cobranza) están dentro de la cuenta de recaudo. Mientras no los muevas a tu cuenta, el cuadre de plata de terceros va a mostrar esa diferencia."
-            accion={
-              <div className="flex items-end gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="periodo-del-traslado">Mes</Label>
-                  <Input
-                    id="periodo-del-traslado"
-                    type="month"
-                    value={periodo}
-                    onChange={(e) => setPeriodo(e.target.value)}
-                    className="w-40"
-                    data-testid="periodo-del-traslado"
-                  />
-                </div>
-              </div>
-            }
-          />
+          {/* 🔴 Dos arreglos del 21-09, los dos por lo mismo.
+              · La explicación de este bloque decía LA MISMA FRASE que el
+                párrafo de la pantalla («mientras no los muevas… el cuadre de
+                plata de terceros va a mostrar esa diferencia»), cinco renglones
+                más abajo. El porqué se fue a un solo lugar —el botón del
+                encabezado— y acá queda el título y el mes.
+              · El mes era un `<input type="month">`, que pinta el nombre del mes
+                EN EL IDIOMA DEL NAVEGADOR: decía «August 2026» en una pantalla
+                entera en español. Ahora es `SelectorDeMes`, el de la casa, que
+                dice «Agosto de 2026» y no deja pasar de hoy. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-fg">Qué habría que trasladar</h2>
+            <SelectorDeMes
+              mes={periodo}
+              onCambiar={setPeriodo}
+              testId="periodo-del-traslado"
+            />
+          </div>
 
           {propuesta ? <Propuesta propuesta={propuesta} /> : null}
 

@@ -115,6 +115,7 @@ import {
   type ProgresoDeReconciliacion,
 } from "./reconciliarLoteCompleto";
 import { ProgresoDeLote } from "./ProgresoDeLote";
+import { FechaDeCorteDeLaMigracion } from "./FechaDeCorteDeLaMigracion";
 import { TablePagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
@@ -226,9 +227,19 @@ function duenosDe(
 export interface MigrarContratosProps {
   /** Aviso hacia el muro: `true` mientras se están ACTIVANDO los contratos. */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * El lote cambió (se cruzó, se activó, se resolvió una fila). Quien pinta
+   * un resumen propio por fuera —el veredicto de la página— lo vuelve a
+   * pedir: sin esto seguía diciendo «164 sin inmueble» después de un cruce
+   * que los encontró (QA 22-09).
+   */
+  onLoteCambio?: () => void;
 }
 
-export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
+export function MigrarContratos({
+  onOcupado,
+  onLoteCambio,
+}: MigrarContratosProps = {}) {
   /**
    * El archivo tal cual, no sólo lo que salió de leerlo. La tarjeta necesita
    * nombre y peso, y `null` es lo que distingue «todavía no hay archivo» de
@@ -247,7 +258,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    */
   const [filaDeEncabezado, setFilaDeEncabezado] = useState(0);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
-  const [invitar, setInvitar] = useState(true);
+  /*
+   * 🔴 DESMARCADA por defecto (QA 22-09). El comentario de Nico del 09-09 ya
+   * lo decía: «la decisión de mandar 600 correos no puede ser un efecto
+   * secundario de apretar Crear». La casilla venía marcada igual.
+   */
+  const [invitar, setInvitar] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lote, setLote] = useState<string | null>(null);
@@ -270,6 +286,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   } | null>(null);
   /* «Volver a cruzar con lo ya cargado»: corre por tandas y se muestra. */
   const [reconciliando, setReconciliando] = useState(false);
+  /*
+   * Cuántos cruces terminaron. Los bloques que piden su propia lista al back
+   * («Crear los N inmuebles que faltan», «inmuebles sin activar») se vuelven
+   * a pedir con cada uno: después de cruzar, lo que mostraban quedó viejo.
+   */
+  const [versionDelCruce, setVersionDelCruce] = useState(0);
   /*
    * 🔴 Lo que va pasando mientras se activan los contratos, para la barra.
    * Nico, 2026-09-12: «el activar contratos también puede tomar mucho tiempo,
@@ -500,6 +522,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    * y su porcentaje, y las que además necesitan algo lo dicen en su fila. Es
    * una sola lista en vez de dos, que es la otra mitad de lo que confundía.
    */
+  // En un ref: `refrescar` es estable a propósito (lo usan muchos efectos) y
+  // no puede cambiar de identidad cada vez que el padre re-renderiza.
+  const onLoteCambioRef = useRef(onLoteCambio);
+  onLoteCambioRef.current = onLoteCambio;
   const refrescar = useCallback(async (elLote: string, pag = 1) => {
     const [r, p] = await Promise.all([
       contractsApi.migracion.resumen(elLote),
@@ -512,6 +538,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     setFilasDelLote(p.filas);
     setTotalDelLote(p.total);
     setPagina(p.pagina);
+    onLoteCambioRef.current?.();
     // T-0033 §3.2.G4 — antes reseteaba `seleccion` acá, así que cambiar de
     // página (o refrescar tras resolver una fila) borraba la selección. La
     // única forma de aplicar algo a más de una página era repetir la masiva
@@ -687,6 +714,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     } finally {
       setReconciliando(false);
       setProgresoReconciliacion(null);
+      setVersionDelCruce((v) => v + 1);
     }
   }, [lote]);
 
@@ -1017,6 +1045,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         reconciliando={reconciliando}
         progresoReconciliacion={progresoReconciliacion}
         onReconciliar={() => void reconciliar()}
+        versionDelCruce={versionDelCruce}
         descartando={descartandoLote}
         onDescartarLote={descartarLote}
         // 🔴 `.catch` y no `void` pelado: un refresco que falla con `void`
@@ -1181,12 +1210,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               </div>
             );
           })}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Si vuelves a subir el mismo archivo, las filas se duplican.
           </p>
           {errorTarjeta ? (
             <p
-              className="text-xs text-destructive"
+              className="text-caption text-destructive"
               data-testid="error-descartar-lote-tarjeta"
             >
               {errorTarjeta}
@@ -1272,7 +1301,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                   ? "Suelta el archivo acá"
                   : "Arrastra el archivo de contratos o haz clic para elegirlo"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Excel o CSV exportado de tu sistema actual
               </p>
             </div>
@@ -1294,14 +1323,14 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               <h2 className="text-sm font-medium text-foreground">
                 Así entendimos tus columnas
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {filas.length} contratos en el archivo. Revisa el mapeo antes de
                 seguir, y corrige a mano lo que haga falta: «arrendador» es el
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
               </p>
               {filaDeEncabezado > 0 ? (
-                <p className="text-xs text-fg-muted" data-testid="fila-de-encabezado">
+                <p className="text-caption text-fg-muted" data-testid="fila-de-encabezado">
                   Los encabezados los leímos de la fila {filaDeEncabezado + 1}:
                   arriba había títulos, no datos.
                 </p>
@@ -1313,7 +1342,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               size="sm"
               hideArrow
               onClick={restablecerMapeo}
-              className="shrink-0 text-xs"
+              className="shrink-0 text-caption"
             >
               Restablecer
             </Button>
@@ -1411,7 +1440,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       <div className="flex flex-wrap items-center gap-2">
                         <span>
                           {m.isManual
@@ -1479,7 +1508,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 Qué trae el archivo, de sus {lectura.total}{" "}
                 {lectura.total === 1 ? "fila" : "filas"}
               </h3>
-              <p className="mt-0.5 text-xs text-fg-muted">
+              <p className="mt-0.5 text-caption text-fg-muted">
                 Esto es lo que se pudo LEER. A qué inmueble y a qué ficha queda
                 asociada cada fila lo decide el servidor contra tu portafolio, y
                 lo dice fila por fila en el paso siguiente.
@@ -1493,7 +1522,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                     <span className="text-fg-muted"> de {lectura.total} · </span>
                     <span className="text-fg">{r.que}</span>
                     {r.porque ? (
-                      <span className="block text-xs text-fg-muted">
+                      <span className="block text-caption text-fg-muted">
                         {r.porque}
                       </span>
                     ) : null}
@@ -1518,7 +1547,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                     ? "primera fila"
                     : `primeras ${vistaPrevia[0].valores.length} filas`}
                 </h3>
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   Todavía no se crea nada. Si algo acá está en la fila
                   equivocada, corrige el mapeo de arriba.
                 </p>
@@ -1733,6 +1762,7 @@ function ListaDeTrabajo({
   reconciliando,
   progresoReconciliacion,
   onReconciliar,
+  versionDelCruce,
   descartando,
   onDescartarLote,
   onFilaActualizada,
@@ -1770,6 +1800,8 @@ function ListaDeTrabajo({
   reconciliando: boolean;
   progresoReconciliacion: ProgresoDeReconciliacion | null;
   onReconciliar: () => void;
+  /** Sube después de cada «Volver a cruzar»: lo que se pidió antes quedó viejo. */
+  versionDelCruce: number;
   /** T-0036 §3.2.C — nunca rechaza: los errores se reflejan en `error`. */
   descartando: boolean;
   onDescartarLote: () => Promise<void>;
@@ -1812,6 +1844,14 @@ function ListaDeTrabajo({
    * —la revisión es del lote, no de la página— pero recargar sí, y está bien.
    */
   const [confirmado, setConfirmado] = useState(false);
+  /*
+   * La fecha de corte GUARDADA (no el borrador del campo). Sin ella no se
+   * activa: la tabla de cuotas no sabría qué deuda es del sistema anterior
+   * (QA 22-09). `undefined` = todavía no se leyó.
+   */
+  const [fechaDeCorte, setFechaDeCorte] = useState<string | null | undefined>(
+    undefined,
+  );
 
   /**
    * Los propietarios de la agencia, UNA vez para toda la pantalla.
@@ -1932,6 +1972,7 @@ function ListaDeTrabajo({
          * `InmueblesSinActivar`.
          */}
         <InmueblesSinActivar
+          key={`sin-activar-${versionDelCruce}`}
           contratosSinInmueble={resumen.asociacion?.sinInmueble}
         />
 
@@ -1948,7 +1989,7 @@ function ListaDeTrabajo({
             <p className="text-sm font-medium text-foreground">
               Asociando cada contrato con su propietario…
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-caption text-muted-foreground">
               Tomamos el propietario que trae cada fila del archivo y le
               consignamos su inmueble. Sin consignación no hay cobros, así que
               esto es lo que hace que la cartera exista.
@@ -1961,7 +2002,7 @@ function ListaDeTrabajo({
                 }}
               />
             </div>
-            <p className="mt-1.5 font-mono text-xs tabular-nums text-fg-subtle">
+            <p className="mt-1.5 font-mono text-caption tabular-nums text-fg-subtle">
               {asociando.hechas} de {asociando.total}
               {asociando.fallidas > 0
                 ? ` · ${asociando.fallidas} quedaron para revisar`
@@ -2000,6 +2041,41 @@ function ListaDeTrabajo({
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         {/*
+         * El re-cruce. El archivo de contratos se sube ANTES que el de
+         * inmuebles y el de terceros, así que las filas guardaron «ese
+         * inmueble no existe» aunque hoy sí exista. Sin este botón la única
+         * salida era subir el archivo otra vez.
+         *
+         * 🔴 Va ARRIBA de «Crear los N inmuebles que faltan» (QA 22-09): al
+         * volver de cargar los inmuebles, el botón destacado ofrecía crear
+         * 164 inmuebles que ya existían y éste —el bueno— quedaba después de
+         * 25 filas. Primero se cruza; lo que siga faltando se crea.
+         */}
+        {resumen.pendientes > 0 ? (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
+            data-testid="bloque-de-cruce"
+          >
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+              {progresoReconciliacion
+                ? `Cruzando… ${progresoReconciliacion.revisadas} filas miradas · ${progresoReconciliacion.inmueblesVinculados} encontraron su inmueble`
+                : "¿Cargaste inmuebles o terceros después de este archivo? Vuelve a cruzar: las filas que pedían un inmueble o un propietario que ya existe se arman solas."}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={onReconciliar}
+              disabled={reconciliando || cargando}
+              isLoading={reconciliando}
+              data-testid="volver-a-cruzar"
+            >
+              {reconciliando ? "Cruzando…" : "Volver a cruzar con lo ya cargado"}
+            </Button>
+          </div>
+        ) : null}
+        {/*
          * Las filas sin inmueble — incluidas las YA activadas — no cobran.
          * Se ofrece crearlos de a muchos desde el archivo; el componente se
          * oculta solo cuando no falta ninguno. Va acá, con el resumen, y no
@@ -2007,7 +2083,9 @@ function ListaDeTrabajo({
          * que quedó «activo» sin cobrar (Nico, 2026-09-02).
          */}
         <CrearInmueblesFaltantes
-          key={`${lote}-${resumen.activados}`}
+          // Se vuelve a pedir tras cada cruce: sin esto seguía ofreciendo
+          // crear los 164 que el cruce acababa de encontrar (QA 22-09).
+          key={`${lote}-${resumen.activados}-${versionDelCruce}`}
           lote={lote}
           onListo={() => {
             setVersionPropietarios((v) => v + 1);
@@ -2231,7 +2309,7 @@ function ListaDeTrabajo({
               variant="link"
               size="sm"
               hideArrow
-              className="text-xs"
+              className="text-caption"
               onClick={() => setVerLaListaIgual(true)}
               data-testid="ver-lista-igual"
             >
@@ -2296,14 +2374,14 @@ function ListaDeTrabajo({
                 disabled={seleccionandoTodo}
                 isLoading={seleccionandoTodo}
                 onClick={() => void seleccionarTodoElLote()}
-                className="text-xs"
+                className="text-caption"
               >
                 Seleccionar las {total} del lote
               </Button>
             ) : null}
           </div>
           {/* El total viene del back: contar lo recibido diría «hay 25». */}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {total} {total === 1 ? "fila" : "filas"} en el archivo
           </p>
         </div>
@@ -2311,7 +2389,7 @@ function ListaDeTrabajo({
 
       {notaSeleccion ? (
         <p
-          className="text-xs text-muted-foreground"
+          className="text-caption text-muted-foreground"
           data-testid="nota-seleccion"
         >
           {notaSeleccion}
@@ -2319,7 +2397,7 @@ function ListaDeTrabajo({
       ) : null}
 
       {falloPropietarios ? (
-        <p className="text-xs text-warning" data-testid="fallo-propietarios">
+        <p className="text-caption text-warning" data-testid="fallo-propietarios">
           No pudimos traer la lista de propietarios, así que los selectores
           quedaron apagados. Recarga la página — lo que ya está consignado no se
           perdió.
@@ -2375,36 +2453,6 @@ function ListaDeTrabajo({
        */}
       {resumen.activables > 0 || resumen.pendientes > 0 ? (
       <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
-        {/*
-         * El re-cruce. El archivo de contratos se sube ANTES que el de
-         * inmuebles y el de terceros, así que las filas guardaron «ese
-         * inmueble no existe» aunque hoy sí exista. Sin este botón la única
-         * salida era subir el archivo otra vez.
-         */}
-        {resumen.pendientes > 0 ? (
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
-            data-testid="bloque-de-cruce"
-          >
-            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-              {progresoReconciliacion
-                ? `Cruzando… ${progresoReconciliacion.revisadas} filas miradas · ${progresoReconciliacion.inmueblesVinculados} encontraron su inmueble`
-                : "¿Cargaste inmuebles o terceros después de este archivo? Vuelve a cruzar: las filas que pedían un inmueble o un propietario que ya existe se arman solas."}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={onReconciliar}
-              disabled={reconciliando || cargando}
-              isLoading={reconciliando}
-              data-testid="volver-a-cruzar"
-            >
-              {reconciliando ? "Cruzando…" : "Volver a cruzar con lo ya cargado"}
-            </Button>
-          </div>
-        ) : null}
         {resumen.activables > 0 ? (
           <>
             <label className="flex cursor-pointer items-start gap-3">
@@ -2418,7 +2466,7 @@ function ListaDeTrabajo({
               <span className="text-sm text-foreground">
                 Revisé estos contratos: cada uno está con su propietario y su
                 porcentaje.
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-caption text-muted-foreground">
                   Activar crea los contratos y las consignaciones de verdad.
                   Después se corrige desde cada contrato, no desde acá.
                 </span>
@@ -2427,6 +2475,7 @@ function ListaDeTrabajo({
 
             {confirmado ? (
               <>
+                <FechaDeCorteDeLaMigracion onCambio={setFechaDeCorte} />
                 <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
                   <Checkbox
                     id="invitar-inquilinos"
@@ -2436,7 +2485,7 @@ function ListaDeTrabajo({
                   />
                   <span className="text-sm text-foreground/80">
                     Invitar a los inquilinos al portal
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block text-caption text-muted-foreground">
                       Se manda por tandas, no todo de golpe.
                     </span>
                   </span>
@@ -2453,7 +2502,7 @@ function ListaDeTrabajo({
                  */}
                 {!invitar ? (
                   <p
-                    className="text-xs text-muted-foreground"
+                    className="text-caption text-muted-foreground"
                     data-testid="aviso-sin-invitar"
                   >
                     No se crea ninguna cuenta: el correo del inquilino queda
@@ -2471,7 +2520,7 @@ function ListaDeTrabajo({
                  */}
                 {resumen.activables > resumen.listos ? (
                   <p
-                    className="text-xs text-muted-foreground"
+                    className="text-caption text-muted-foreground"
                     data-testid="aviso-incompletos"
                   >
                     {resumen.activables - resumen.listos} de estos contratos
@@ -2485,11 +2534,20 @@ function ListaDeTrabajo({
                   </p>
                 ) : null}
 
+                {!fechaDeCorte ? (
+                  <p
+                    className="text-caption text-muted-foreground"
+                    data-testid="falta-fecha-de-corte"
+                  >
+                    Guarda la fecha de corte para poder activar.
+                  </p>
+                ) : null}
                 <Button
                   onClick={onActivar}
-                  disabled={cargando || reconciliando}
+                  disabled={cargando || reconciliando || !fechaDeCorte}
                   isLoading={cargando}
                   hideArrow
+                  data-testid="activar-contratos"
                 >
                   {progresoDeActivacion
                     ? `Activando… ${progresoDeActivacion.hechas} de ${progresoDeActivacion.hechas + progresoDeActivacion.restantes}`
@@ -2602,7 +2660,7 @@ function AsociacionDelLoteResumen({
       <h3 className="text-sm font-medium text-fg">
         A qué quedó pegada cada fila
       </h3>
-      <p className="mt-0.5 text-xs text-fg-muted">
+      <p className="mt-0.5 text-caption text-fg-muted">
         {conInmueble} de {total} quedaron con inmueble. El camino importa: por
         código es exacto; por dirección es un parecido.
       </p>
@@ -2614,7 +2672,7 @@ function AsociacionDelLoteResumen({
             <span className="text-fg-muted"> de {total} · </span>
             <span className="text-fg">{r.que}</span>
             {r.cuantas > 0 ? (
-              <span className="block text-xs text-fg-muted">{r.porque}</span>
+              <span className="block text-caption text-fg-muted">{r.porque}</span>
             ) : null}
           </li>
         ))}
@@ -2647,7 +2705,7 @@ function AsociacionDelLoteResumen({
             <span className="text-fg">
               vienen terminados del sistema anterior
             </span>
-            <span className="block text-xs text-fg-muted">
+            <span className="block text-caption text-fg-muted">
               Entran como historial: no ocupan el inmueble, no generan cobros y
               sirven para colgarles los comprobantes contables viejos.
             </span>
@@ -2669,7 +2727,7 @@ function Dato({
 }) {
   return (
     <div className="rounded-lg border border-border p-3">
-      <p className="text-xs text-muted-foreground">{etiqueta}</p>
+      <p className="text-caption text-muted-foreground">{etiqueta}</p>
       <p
         className={`text-xl font-semibold tabular-nums ${
           tono === "ok" && valor > 0

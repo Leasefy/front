@@ -29,6 +29,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import {
   Dialog,
@@ -211,13 +212,7 @@ export function ACargoDeDialog({
         {eleccion === 'PROPIETARIO' && (
           <div className="space-y-3 rounded-lg border border-border bg-surface-muted p-4" data-testid="emergencia">
             <label className="flex items-start gap-2 text-sm text-fg">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={esEmergencia}
-                onChange={(e) => setEsEmergencia(e.target.checked)}
-                data-testid="emergencia-marcar"
-              />
+              <Checkbox className="mt-0.5" checked={esEmergencia} onCheckedChange={(marcada: boolean) => setEsEmergencia(marcada)} data-testid="emergencia-marcar" />
               <span>
                 <span className="font-medium">{t(k('emergencia'))}</span>
                 <span className="block text-xs text-fg-muted">{t(k('emergenciaAyuda'))}</span>

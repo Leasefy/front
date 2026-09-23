@@ -33,6 +33,7 @@ import { Info, Prohibit, SealCheck, WarningOctagon } from '@phosphor-icons/react
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 
 // ── Una acción con su motivo ───────────────────────────────────────────────
 
@@ -229,15 +230,110 @@ export function FaltaLaMigracion({
       <WarningOctagon className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
       <div className="space-y-1.5">
         <p className="font-medium">Todavía no se puede {queSeEspera}.</p>
-        <p className="text-fg-muted">
-          {motivo ?? 'Falta la migración de esta pieza en la base de datos.'}
+        {/* 🔴 20-09 · El motivo pasa por `enCristiano` ACÁ, no en cada quien
+            que usa esta pieza. El 18-09 Nico preguntó por qué una pantalla le
+            mostraba «Falta aplicar la migración 20260917120000_modalidad_
+            del_mandato», y se escribió el traductor; pero aplicarlo era cosa
+            de cada pantalla, y siete no lo hacían. Con el traductor adentro,
+            la próxima nace bien sin que nadie se acuerde.
+
+            El motivo entero sigue viajando: va en el `title`, así que quien
+            tenga que diagnosticar lo tiene a un mouse de distancia. */}
+        <p className="text-fg-muted" title={motivo ?? undefined}>
+          {motivoEnCristiano(motivo) ??
+            'Esta función todavía no está disponible.'}
         </p>
         {mientrasTanto ? <p className="text-fg-muted">{mientrasTanto}</p> : null}
         <p className="text-fg-muted">
-          La aplica Víctor. Hasta entonces esta pantalla no guarda nada — no se pierde trabajo,
+          Nuestro equipo la está habilitando. Hasta entonces esta pantalla no guarda nada — no se pierde trabajo,
           simplemente todavía no hay dónde escribirlo.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ── UNA tarjeta: los filtros van PEGADOS a su tabla ────────────────────────
+
+/**
+ * 🔴 20-09 · Nico, sobre Facturación y con la captura al lado: «porque esto no
+ * está pegado a la tabla de cada uno». Lo dijo de una pantalla, pero el
+ * defecto estaba en diez: en toda la contabilidad el rango de fechas, el
+ * selector de cuenta y las casillas vivían en una tarjeta con borde propio,
+ * separada por 20 px de la tarjeta de la tabla que filtran.
+ *
+ * Dos tarjetas dicen «dos cosas». Un filtro NO es otra cosa: es el encabezado
+ * de su tabla, y leerlo aparte obliga a recordar qué rango se pidió mientras
+ * se miran los números. Peor con scroll: el filtro se va de pantalla y la
+ * tabla queda sin decir de qué fechas habla.
+ *
+ * Por eso el chasis de la casa es UNA tarjeta: filtros con `border-b`, luego
+ * el cuerpo, y el paginador adentro. El borde de adentro los separa sin
+ * volverlos dos objetos.
+ *
+ * ⚠️ `overflow-x-clip`, nunca `overflow-hidden`: recorta igual, pero no crea
+ * un contenedor de scroll, y por lo tanto no mata ningún `sticky` de adentro.
+ * Eso costó seis arreglos en un mismo día.
+ */
+export function TarjetaDeInforme({
+  filtros,
+  filtrosClassName = 'flex flex-wrap items-end gap-x-6 gap-y-3',
+  children,
+  className,
+  testId,
+}: {
+  /** Lo que filtra la tabla. Se dibuja arriba, dentro de la misma tarjeta. */
+  filtros?: ReactNode;
+  /** Cómo se acomodan los filtros: fila envuelta por defecto, o una grilla. */
+  filtrosClassName?: string;
+  children: ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <section
+      data-testid={testId}
+      className={cn('overflow-x-clip rounded-lg border border-border bg-surface', className)}
+    >
+      {filtros ? (
+        <div className={cn('border-b border-border p-4', filtrosClassName)}>{filtros}</div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Una franja dentro de la tarjeta: el veredicto de un informe, un resumen, un
+ * aviso. Va entre los filtros y la tabla, con su propio borde inferior, para
+ * que no se lea como una tarjeta suelta más.
+ */
+export function FranjaDeInforme({
+  children,
+  tono = 'neutro',
+  className,
+  testId,
+  papel,
+}: {
+  children: ReactNode;
+  tono?: 'neutro' | 'bien' | 'mal';
+  className?: string;
+  testId?: string;
+  papel?: 'status' | 'alert';
+}) {
+  return (
+    <div
+      role={papel}
+      data-testid={testId}
+      className={cn(
+        'flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 text-sm',
+        tono === 'bien' && 'bg-success-soft',
+        tono === 'mal' && 'bg-danger-soft',
+        tono === 'neutro' && 'bg-surface-muted',
+        className,
+      )}
+    >
+      {children}
     </div>
   );
 }

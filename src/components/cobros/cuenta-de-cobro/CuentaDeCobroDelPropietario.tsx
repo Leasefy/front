@@ -58,17 +58,17 @@ export function CuentaDeCobroDelPropietario({
           <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{t(k('de'))}</p>
           <p className="text-base font-semibold text-fg">{agencia?.nombre ?? '—'}</p>
           {agencia?.nit ? (
-            <p className="font-mono text-xs tabular-nums text-fg-muted">NIT {agencia.nit}</p>
+            <p className="font-mono text-caption tabular-nums text-fg-muted">NIT {agencia.nit}</p>
           ) : null}
-          {ubicacion ? <p className="text-xs text-fg-muted">{ubicacion}</p> : null}
-          {contacto ? <p className="text-xs text-fg-muted">{contacto}</p> : null}
+          {ubicacion ? <p className="text-caption text-fg-muted">{ubicacion}</p> : null}
+          {contacto ? <p className="text-caption text-fg-muted">{contacto}</p> : null}
         </div>
         <div className="shrink-0 space-y-1.5 text-right">
           <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('titulo'))}</h1>
           <p className="font-mono text-sm tabular-nums text-fg" data-testid="numero-de-la-cuenta">
             {t(k('numero'), { numero: cuenta.numero })}
           </p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {t(k('emitida'), { fecha: fechaEnPalabras(cuenta.emitidaAt, idioma) })}
           </p>
         </div>
@@ -77,14 +77,14 @@ export function CuentaDeCobroDelPropietario({
       <section className="space-y-0.5 border-b border-border py-6">
         <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{t(k('a'))}</p>
         <p className="text-sm font-medium text-fg">{cuenta.propietario.nombre}</p>
-        <p className="font-mono text-xs tabular-nums text-fg-muted">
+        <p className="font-mono text-caption tabular-nums text-fg-muted">
           {cuenta.propietario.tipoDeDocumento} {cuenta.propietario.documento}
         </p>
         {ubicacionDelPropietario ? (
-          <p className="text-xs text-fg-muted">{ubicacionDelPropietario}</p>
+          <p className="text-caption text-fg-muted">{ubicacionDelPropietario}</p>
         ) : null}
         {cuenta.propietario.correo ? (
-          <p className="text-xs text-fg-muted">{cuenta.propietario.correo}</p>
+          <p className="text-caption text-fg-muted">{cuenta.propietario.correo}</p>
         ) : null}
       </section>
 

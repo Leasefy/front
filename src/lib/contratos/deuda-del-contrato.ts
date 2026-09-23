@@ -118,10 +118,41 @@ export function deudaDelContrato(args: {
   let diasDeMora = 0;
   let diasDePlazoQueQuedan: number | null = null;
   const futuras = new Map<string, number>();
+  let hayCajonDelBack = false;
 
   for (const fila of filas) {
     if (fila.estado !== 'PENDIENTE' || fila.valorNeto <= 0) continue;
     const desdeElVencimiento = diasEntreFechas(dia(fila), hoy);
+
+    /*
+     * 🔴 QA 22-09: la ficha decía «135 días de mora» y el estado de cuenta
+     * «136» del mismo contrato. El front recontaba `hoy − vencimiento − plazo`;
+     * el back usa la regla confirmada (el día del vencimiento es el día 1 del
+     * plazo) y manda por fila su `cajon` y sus `diasDeMora`. En el borde, la
+     * ficha decía «vencido, en plazo» y el estado de cuenta ya decía cartera.
+     * Con el cajón del back, se lee el del back; sin él (back viejo), la
+     * cuenta de antes.
+     */
+    if (fila.cajon !== undefined) {
+      hayCajonDelBack = true;
+      if (fila.cajon === 'POR_VENCER' || fila.cajon === 'SIN_DEUDA') {
+        futuras.set(dia(fila), (futuras.get(dia(fila)) ?? 0) + fila.valorNeto);
+        continue;
+      }
+      vencido += fila.valorNeto;
+      if (fila.cajon === 'CARTERA') {
+        enCartera += fila.valorNeto;
+        diasDeMora = Math.max(
+          diasDeMora,
+          fila.diasDeMora ?? Math.max(0, desdeElVencimiento - (diasDePlazo ?? 0)),
+        );
+      } else if (diasDePlazo !== null) {
+        const quedan = Math.max(0, diasDePlazo - desdeElVencimiento);
+        diasDePlazoQueQuedan =
+          diasDePlazoQueQuedan === null ? quedan : Math.min(diasDePlazoQueQuedan, quedan);
+      }
+      continue;
+    }
 
     if (desdeElVencimiento <= 0) {
       futuras.set(dia(fila), (futuras.get(dia(fila)) ?? 0) + fila.valorNeto);
@@ -155,7 +186,7 @@ export function deudaDelContrato(args: {
     enCartera > 0
       ? 'EN_CARTERA'
       : vencido > 0
-        ? diasDePlazo === null
+        ? diasDePlazo === null && !hayCajonDelBack
           ? 'VENCIDO_SIN_PLAZO'
           : 'VENCIDO_EN_PLAZO'
         : 'AL_DIA';

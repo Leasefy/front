@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, Wrench } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -75,6 +75,23 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     href: '/panel/mensajes',
     icon: Chat,
     // Sin `badge`: el 3 estaba escrito a mano, no contaba nada.
+  },
+  /*
+   * 🔴 (21-09-2026) Estas dos pantallas EXISTÍAN y nadie podía llegar a ellas:
+   * `/panel/certificados` estaba construida desde el 17-09 y no figuraba en
+   * ningún menú, así que sólo la veía quien escribiera la URL. «Mis informes»
+   * es nueva (certificado anual de ingresos + historial de reparaciones con su
+   * comprobante). Las dos son reales: sin `tag: 'Pronto'`.
+   */
+  {
+    label: 'Mis informes',
+    href: '/panel/informes',
+    icon: Receipt,
+  },
+  {
+    label: 'Certificados de retención',
+    href: '/panel/certificados',
+    icon: SealCheck,
   },
   // --- Portal del Propietario (post-firma) — capa aditiva v8.0 ---
   // Shells "Pronto" hasta que cada ola (v8-02..v8-05) los llene con la vista real

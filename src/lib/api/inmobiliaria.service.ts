@@ -68,7 +68,12 @@ import type {
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
-import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
+import type { OpcionesDelOrigenDelGiro, OrigenPedido } from './lotes-de-dispersion.types';
+import {
+  adaptarDispersion,
+  estadoParaElBack,
+  type DispersionDelBack,
+} from './dispersion-adapter';
 import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
@@ -114,9 +119,17 @@ export interface MemberPermissionsResponse {
   role: string;
   isAdmin: boolean;
   permissions: Record<string, string[]> | null;
-  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]>;
+  effectivePermissions: 'FULL_ACCESS' | Record<string, string[]> | null;
   usingDefaults: boolean;
   note?: string;
+  /**
+   * 🔴 22-09 noche · Lo que la persona HEREDA de su rol en esta inmobiliaria
+   * (módulos del panel, completos). Con `effectivePermissions` dice qué se le
+   * sumó y qué se le quitó. Sólo lo trae el endpoint del miembro (no el ADMIN).
+   */
+  delRol?: Record<string, string[]>;
+  /** Si tiene permisos propios, distintos de los de su rol. */
+  tienePropios?: boolean;
   /**
    * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
    *
@@ -154,6 +167,21 @@ const BANK_CODE_TO_WIRE: Record<BankCode, string> = {
   avvillas: 'BANCO_AV_VILLAS',
   bancoomeva: 'BANCOOMEVA',
   pichincha: 'BANCO_PICHINCHA',
+  nu: 'NU_COLOMBIA',
+  // 23-09: los mismos ids que `ColombianBank` del back y `lotes/formatos/bancos.ts`.
+  agrario: 'BANCO_AGRARIO',
+  finandina: 'BANCO_FINANDINA',
+  bancamia: 'BANCAMIA',
+  gnbsudameris: 'GNB_SUDAMERIS',
+  santander: 'SANTANDER',
+  serfinanza: 'BANCO_SERFINANZA',
+  coopcentral: 'BANCO_COOPCENTRAL',
+  mundomujer: 'BANCO_MUNDO_MUJER',
+  ban100: 'BAN100',
+  btgpactual: 'BTG_PACTUAL',
+  jpmorgan: 'JP_MORGAN',
+  citibank: 'CITIBANK',
+  lulo: 'LULO_BANK',
 };
 
 /** contract.md §3.3 (T-0014) — front account type -> backend enum. */
@@ -299,7 +327,15 @@ function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   if (department !== undefined) {
     payload.department = department.trim() || null;
   }
-  if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
+  /*
+   * 🔴 Con «¿A quién pertenece la cuenta?» contestada (22-09) manda la respuesta
+   * y, si es otra persona, sus tres datos; si es del propietario, NINGUNO: el
+   * back limpia el titular. Sin respuesta, el camino de antes.
+   */
+  const conRespuesta = rest.titularDeLaCuenta !== undefined;
+  if (conRespuesta && rest.titularDeLaCuenta === 'PROPIETARIO') {
+    // Nada del titular: lo resuelve el back.
+  } else if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
     const documento = (accountHolderDocument ?? '').trim();
     payload.bankAccountHolderDocument = documento || null;
     payload.bankAccountHolderDocumentType = documento && accountHolderDocumentType ? accountHolderDocumentType : null;
@@ -314,7 +350,7 @@ function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   if (accountNumber !== undefined) {
     payload.bankAccountNumber = accountNumber;
   }
-  if (accountHolder !== undefined) {
+  if (accountHolder !== undefined && !(conRespuesta && rest.titularDeLaCuenta === 'PROPIETARIO')) {
     payload.bankAccountHolder = accountHolder;
   }
 
@@ -380,20 +416,13 @@ export const propietariosApi = {
     return apiClient.post(`${BASE}/propietarios/${id}/invitar-al-portal`, {});
   },
 
-  async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/propietarios/${id}/consignaciones`);
-    return lista(res);
-  },
-
-  async getCobros(id: string): Promise<Cobro[]> {
-    const res = await apiClient.get<{ data: Cobro[] } | Cobro[]>(`${BASE}/propietarios/${id}/cobros`);
-    return lista(res);
-  },
-
-  async getDispersiones(id: string): Promise<Dispersion[]> {
-    const res = await apiClient.get<{ data: Dispersion[] } | Dispersion[]>(`${BASE}/propietarios/${id}/dispersiones`);
-    return lista(res);
-  },
+  /**
+   * 🔴 Acá vivían `getConsignaciones`, `getCobros` y `getDispersiones`, copiadas
+   * de `agentesApi` cambiando «agentes» por «propietarios». Las tres rutas
+   * responden 404: del propietario cuelgan su extracto y sus cambios de cuenta,
+   * no las consignaciones (esas son del AGENTE que captó) ni los cobros (esos
+   * son del CONTRATO: `GET /contracts/:id/cobros`).
+   */
 
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
     const qs = month ? `?month=${month}` : '';
@@ -458,17 +487,16 @@ export const agentesApi = {
     return apiClient.get<Agente>(`${BASE}/agentes/${id}`);
   },
 
-  async create(data: AgenteFormData): Promise<Agente> {
-    return apiClient.post<Agente>(`${BASE}/agentes`, data);
-  },
-
-  async update(id: string, data: Partial<AgenteFormData>): Promise<Agente> {
-    return apiClient.patch<Agente>(`${BASE}/agentes/${id}`, data);
-  },
-
-  async delete(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/agentes/${id}`);
-  },
+  /**
+   * 🔴 Acá vivían `create`, `update` y `delete`. Las tres pedían rutas que el
+   * back NO expone —`POST /inmobiliaria/agentes`, `PATCH` y `DELETE` sobre
+   * `:id` responden 404 «Cannot …», medido contra el back vivo— y ninguna
+   * pantalla las llamaba: al equipo se entra por `inmobiliariaConfigApi`
+   * (`POST /agency/members`), que es la ruta que sí existe.
+   *
+   * De `@Controller('inmobiliaria/agentes')` sólo cuelgan lecturas y la
+   * disponibilidad. Un agente no se crea ni se borra por ahí.
+   */
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
     const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/agentes/${id}/consignaciones`);
@@ -643,7 +671,7 @@ export const consignacionesApi = {
   }): Promise<Consignacion[]> {
     const query = new URLSearchParams();
     if (params?.propertyId) query.set('propertyId', params.propertyId);
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propertyType) query.set('propertyType', params.propertyType);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     if (params?.agenteId) query.set('agenteId', params.agenteId);
@@ -1130,7 +1158,7 @@ export const cobrosApi = {
     const query = new URLSearchParams();
     if (params?.anulados) query.set('anulados', 'true');
     if (params?.month) query.set('month', params.month);
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
@@ -1403,7 +1431,8 @@ export const dispersionesApi = {
   async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Dispersion[]> {
     const query = new URLSearchParams();
     if (params?.month) query.set('month', params.month);
-    if (params?.status) query.set('status', params.status);
+    // El nombre del ENUM, no el de la vista: `pending` era un 500 (500-1844).
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
     /*
@@ -1442,6 +1471,13 @@ export const dispersionesApi = {
      * alguien no lo excluía de nada.
      */
     propietarioIds?: string[],
+    /**
+     * De los inmuebles de esos propietarios, a cuáles. Sin la lista, todos.
+     *
+     * 🔴 Lo que queda afuera se POSTERGA, no se perdona: su cuota sigue sin
+     * marcar y el mes siguiente aparece como cuota que llegó tarde.
+     */
+    propertyIds?: string[],
   ): Promise<{
     month: string;
     totalPropietarios: number;
@@ -1458,6 +1494,7 @@ export const dispersionesApi = {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
       ...(propietarioIds ? { propietarioIds } : {}),
+      ...(propertyIds ? { propertyIds } : {}),
     });
   },
 
@@ -1484,13 +1521,41 @@ export const dispersionesApi = {
    * exactamente lo que pasaba antes mientras la pantalla festejaba «Transferencia
    * enviada».
    */
-  async process(id: string, transferReference: string): Promise<Dispersion> {
+  async process(
+    id: string,
+    transferReference: string,
+    /**
+     * Desde qué cuenta de la inmobiliaria salió (Nico, 23-09). Con la
+     * migración `origenes_de_giro` el back lo exige (400
+     * `FALTA_EL_ORIGEN_DEL_GIRO`); sin ella no se manda. El cuerpo se arma
+     * clave por clave: `forbidNonWhitelisted`.
+     */
+    origen?: OrigenPedido | null,
+  ): Promise<Dispersion> {
     return adaptarDispersion(
       await apiClient.put<DispersionDelBack>(
         `${BASE}/dispersiones/${id}/process`,
-        { transferReference },
+        origen
+          ? {
+              transferReference,
+              origen: {
+                banco: origen.banco,
+                tipoDeCuenta: origen.tipoDeCuenta,
+                numeroDeCuenta: origen.numeroDeCuenta,
+              },
+            }
+          : { transferReference },
       ),
     );
+  },
+
+  /**
+   * Lo que «Marcar como girada» necesita para preguntar el banco de origen:
+   * los bancos, las cuentas de Medios de pago y la última cuenta usada por la
+   * agencia (de un lote o de un giro suelto), que es la que se propone.
+   */
+  async origenDelGiro(): Promise<OpcionesDelOrigenDelGiro> {
+    return apiClient.get<OpcionesDelOrigenDelGiro>(`${BASE}/dispersiones/origen-del-giro`);
   },
 
   /**
@@ -1503,6 +1568,35 @@ export const dispersionesApi = {
   async preview(month: string): Promise<VistaPreviaDeDispersiones> {
     return apiClient.get<VistaPreviaDeDispersiones>(
       `${BASE}/dispersiones/preview?month=${month}`,
+    );
+  },
+
+  /**
+   * Lo que se giraría con ESTA selección — a quiénes y a qué inmuebles—,
+   * calculado por el back y sin escribir nada.
+   *
+   * 🔴 Por qué no se suma en el navegador: el canon y la comisión sí serían la
+   * suma de los renglones, pero el NETO no. Las deducciones del propietario se
+   * aplican sobre la base que queda, así que destildar un inmueble cambia el
+   * descuento, y esa regla vive en el back. Sumar acá daría una pantalla que
+   * promete un número y un botón que guarda otro.
+   *
+   * Es POST porque la selección no cabe en una URL: la agencia migrada tiene
+   * 518 propietarios y 747 inmuebles.
+   */
+  async previewDeLaSeleccion(
+    month: string,
+    seleccion: { propietarioIds?: string[]; propertyIds?: string[] },
+  ): Promise<VistaPreviaDeDispersiones> {
+    return apiClient.post<VistaPreviaDeDispersiones>(
+      `${BASE}/dispersiones/preview`,
+      {
+        month,
+        ...(seleccion.propietarioIds
+          ? { propietarioIds: seleccion.propietarioIds }
+          : {}),
+        ...(seleccion.propertyIds ? { propertyIds: seleccion.propertyIds } : {}),
+      },
     );
   },
 
@@ -1519,7 +1613,7 @@ export const dispersionesApi = {
 export const mantenimientoApi = {
   async getAll(params?: { status?: string; consignacionId?: string }): Promise<SolicitudMantenimiento[]> {
     const query = new URLSearchParams();
-    if (params?.status) query.set('status', params.status);
+    if (params?.status) query.set('status', estadoParaElBack(params.status));
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
     const res = await apiClient.get<{ data: SolicitudMantenimiento[] } | SolicitudMantenimiento[]>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
@@ -1537,9 +1631,15 @@ export const mantenimientoApi = {
     );
   },
 
+  /**
+   * 🔴 22-09: era un `patch` y el back sólo expone `@Put(':id')`; respondía 404
+   * «Cannot PATCH». No rompía ninguna pantalla porque las que editan una
+   * solicitud usan `updateStatus` (`PUT :id/status`), pero quedaba puesta la
+   * trampa para la primera que quisiera guardar el resto de la solicitud.
+   */
   async update(id: string, data: Partial<SolicitudMantenimiento>): Promise<SolicitudMantenimiento> {
     return mantenimientoDelBack(
-      await apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
+      await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
     );
   },
 
@@ -1638,10 +1738,14 @@ export const mantenimientoApi = {
     return mantenimientoDelBack(respuesta);
   },
 
-  async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
-    const columnas = await apiClient.get<Record<string, SolicitudMantenimiento[]>>(`${BASE}/mantenimiento/kanban`);
-    return Object.fromEntries(Object.entries(columnas).map(([k, filas]) => [k, (filas ?? []).map(mantenimientoDelBack)]));
-  },
+  /**
+   * 🔴 Acá vivía `getKanban`, un `GET /inmobiliaria/mantenimiento/kanban` que
+   * el back no expone. Y era de los engañosos: `kanban` entra por
+   * `@Get(':id')`, así que la petición NO daba «Cannot GET» —daba 401, y con
+   * sesión buena habría dado un 400 por un id que no es un UUID—. Nadie la
+   * llamaba. El tablero de mantenimiento, cuando se haga, se arma con
+   * `getAll()` y se agrupa en el front.
+   */
 };
 
 // ============================================================================
@@ -1780,10 +1884,13 @@ export const renovacionesApi = {
 // ============================================================================
 
 export const reportesApi = {
-  async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] } | ReportDefinition[]>(`${BASE}/reports/definitions`);
-    return lista(res);
-  },
+  /**
+   * 🔴 Acá vivía `getDefinitions`, que pedía un CATÁLOGO de informes en
+   * `GET /inmobiliaria/reports/definitions`. Esa ruta no existe (404): el back
+   * expone los nueve informes como rutas fijas —cartera, comisiones, ocupación,
+   * vencimientos, flujo de caja, rentabilidad, rendimiento de agentes, extracto
+   * y export—, no una lista que se pueda recorrer.
+   */
 
   async getCartera(params?: { startDate?: string; endDate?: string }): Promise<CarteraReport> {
     const query = new URLSearchParams();
@@ -1908,14 +2015,25 @@ export const analyticsApi = {
     return apiClient.get<AnalyticsData>(`${BASE}/analytics/charts${qs}`);
   },
 
-  async getTrends(metricId?: string): Promise<TrendAnalysis[]> {
-    const qs = metricId ? `?metricId=${metricId}` : '';
-    return apiClient.get<TrendAnalysis[]>(`${BASE}/analytics/trends${qs}`);
+  /**
+   * 🔴 22-09: estas dos mandaban la métrica por la CADENA DE CONSULTA
+   * (`/analytics/trends?metricId=x`) y el back la pide en la RUTA
+   * (`@Get('trends/:metricId')`). Con métrica o sin ella, las dos respondían
+   * 404 — medido contra el back vivo. Y el parámetro era opcional, que es lo
+   * que escondía el defecto: sin métrica la llamada se veía razonable.
+   *
+   * Ahora la métrica es obligatoria, porque sin ella no hay ruta que llamar.
+   */
+  async getTrends(metricId: string): Promise<TrendAnalysis[]> {
+    return apiClient.get<TrendAnalysis[]>(
+      `${BASE}/analytics/trends/${encodeURIComponent(metricId)}`,
+    );
   },
 
-  async getForecasts(metricId?: string): Promise<ForecastData[]> {
-    const qs = metricId ? `?metricId=${metricId}` : '';
-    return apiClient.get<ForecastData[]>(`${BASE}/analytics/forecast${qs}`);
+  async getForecasts(metricId: string): Promise<ForecastData[]> {
+    return apiClient.get<ForecastData[]>(
+      `${BASE}/analytics/forecast/${encodeURIComponent(metricId)}`,
+    );
   },
 };
 
@@ -1961,13 +2079,25 @@ export const actasApi = {
     return apiClient.post<ActaEntrega>(`${BASE}/actas`, data);
   },
 
+  /**
+   * 🔴 22-09: esto era un `patch` y el back sólo expone `@Put(':id')`. Medido
+   * contra el back vivo: `PATCH /inmobiliaria/actas/:id` responde 404 «Cannot
+   * PATCH». Nadie lo llamaba todavía, así que no rompía una pantalla — pero el
+   * día que alguien cableara «Guardar el acta» habría enviado los cambios al
+   * vacío.
+   */
   async update(id: string, data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.patch<ActaEntrega>(`${BASE}/actas/${id}`, data);
+    return apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data);
   },
 
-  async complete(id: string): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/complete`, {});
-  },
+  /**
+   * 🔴 Acá vivía `complete()`, un `POST :id/complete` que el back NO expone
+   * (404 «Cannot POST», medido). Era el cierre del diseño viejo, y el cierre de
+   * verdad son los dos de abajo: `sign` cuando el inquilino firma y
+   * `cerrarSinFirma` cuando no. Se borró en vez de arreglarse porque no hay ruta
+   * que arreglar: dejarlo era dejar puesta la trampa de cablear «Completar el
+   * acta» a un 404.
+   */
 
   /**
    * 🔴 I-03: el inquilino no firma. El asesor la cierra con fotos y un TESTIGO,
@@ -2025,9 +2155,14 @@ export const inmobiliariaConfigApi = {
     return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members`, payload);
   },
 
-  async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
-    return apiClient.patch<AgencyUser>(`${BASE}/agency/members/${id}`, data);
-  },
+  /**
+   * 🔴 Acá vivía `updateUser`, un `PATCH /agency/members/:id` que prometía
+   * cambiarle CUALQUIER campo a un miembro. Esa ruta no existe (404) y el
+   * parecido con la que sí existe es engañoso: `PATCH members/:id/profile` sólo
+   * toca cargo, zona, especialización y comisión — ni el nombre, ni el rol, ni
+   * el estado. Cada una de esas tres tiene su ruta y su método más abajo:
+   * `actualizarPerfilDelMiembro`, `cambiarRol` y `cambiarEstado`.
+   */
 
   async deleteUser(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/agency/members/${id}`);
@@ -2273,8 +2408,18 @@ export const permissionsApi = {
 // Role Permissions (per-agency role templates)
 // ============================================================================
 
-/** The 5 granular actions a role can hold on a module. */
-export type AgencyAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+/**
+ * Las cinco acciones de la matriz y las PUNTUALES (22-09: `cambiar_fecha_egreso`,
+ * que viaja dentro de `reportes`; ver `PERMISOS_PUNTUALES` en
+ * `lib/types/inmobiliaria.ts`).
+ */
+export type AgencyAction =
+  | 'view'
+  | 'create'
+  | 'edit'
+  | 'delete'
+  | 'export'
+  | 'cambiar_fecha_egreso';
 
 /** module key → allowed actions (an absent module means no access). */
 export type PermMap = Record<string, AgencyAction[]>;
@@ -2290,14 +2435,29 @@ export interface RoleMatrices {
     AGENTE: PermMap;
     CONTADOR: PermMap;
     VIEWER: PermMap;
+    /**
+     * Los tres de O-05. Opcionales en el tipo para que un back anterior al
+     * 22-09 noche, que no los manda, no rompa la pantalla.
+     */
+    COORDINADOR?: PermMap;
+    AUXILIAR_CARTERA?: PermMap;
+    ABOGADO_EXTERNO?: PermMap;
   };
 }
 
-/** Body for the PUT — only the editable roles; ADMIN is never sent. */
+/**
+ * Body for the PUT — ADMIN is never sent.
+ *
+ * 🔴 Sólo van los roles que la persona TOCÓ (`rolesQueCambiaron`): el back
+ * deja como están los que no vienen.
+ */
 export interface UpdateRolePermissionsBody {
   AGENTE?: PermMap;
   CONTADOR?: PermMap;
   VIEWER?: PermMap;
+  COORDINADOR?: PermMap;
+  AUXILIAR_CARTERA?: PermMap;
+  ABOGADO_EXTERNO?: PermMap;
 }
 
 export const rolePermissionsApi = {

@@ -294,7 +294,7 @@ export function AdministracionDelContrato({
         {discrepan ? (
           <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">
             <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
-            <p className="text-xs text-foreground">
+            <p className="text-caption text-foreground">
               El contrato dice <strong>{delContrato}%</strong> y la consignación{' '}
               <strong>{deConsignacion}%</strong>. Al propietario se le descuenta la
               de la consignación. Corrige acá para dejar las dos iguales.
@@ -356,7 +356,7 @@ export function AdministracionDelContrato({
         ) : (
           <div className="flex items-start justify-between gap-3 text-sm">
             <span className="text-muted-foreground">Propietario</span>
-            <span className="text-right text-xs text-muted-foreground">
+            <span className="text-right text-caption text-muted-foreground">
               Sin consignación: el dueño y su naturaleza tributaria salen del mandato del
               inmueble.
             </span>
@@ -367,7 +367,7 @@ export function AdministracionDelContrato({
         (regimen.inquilinoRetenedorRenta.valor == null ||
           regimen.inquilinoRetenedorIva.valor == null ||
           regimen.inquilinoRetenedorIca.valor == null) ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Lo que no aparece no se descuenta en el cobro. Se corrige acá y sale en el
             próximo.
           </p>
@@ -395,7 +395,7 @@ export function AdministracionDelContrato({
                 Cobro
               </legend>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Uso del inmueble</label>
+                <label className="text-caption text-muted-foreground">Uso del inmueble</label>
                 <Select value={uso} onValueChange={(v) => setUso(v as Uso)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sin definir" />
@@ -408,13 +408,13 @@ export function AdministracionDelContrato({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Vivienda está excluida de IVA; comercial no.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Periodicidad de cobro</label>
+                <label className="text-caption text-muted-foreground">Periodicidad de cobro</label>
                 <Select
                   value={periodicidad}
                   onValueChange={(v) => setPeriodicidad(v as Periodicidad)}
@@ -433,7 +433,7 @@ export function AdministracionDelContrato({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Comisión de administración (%)</label>
+                <label className="text-caption text-muted-foreground">Comisión de administración (%)</label>
                 <Input
                   type="number"
                   step="0.01"
@@ -442,14 +442,14 @@ export function AdministracionDelContrato({
                   value={comision}
                   onChange={(e) => setComision(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Se guarda también en la consignación: es de donde sale lo que
                   se le descuenta al propietario.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
+                <label className="text-caption text-muted-foreground">
                   Días de plazo antes de la mora
                 </label>
                 <Input
@@ -462,7 +462,7 @@ export function AdministracionDelContrato({
                   placeholder="Los de la inmobiliaria"
                   data-testid="dias-de-plazo"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   El día del vencimiento cuenta como el primero: con 3, del 1 al 3
                   está en plazo y desde el 4 corre la mora. Vacío = los días de la
                   inmobiliaria.
@@ -470,7 +470,7 @@ export function AdministracionDelContrato({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground" htmlFor="penalidad-canones">
+                <label className="text-caption text-muted-foreground" htmlFor="penalidad-canones">
                   Penalidad por terminación anticipada (cánones)
                 </label>
                 <Input
@@ -481,14 +481,14 @@ export function AdministracionDelContrato({
                   placeholder="La de la inmobiliaria"
                   data-testid="penalidad-canones"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   Se le cobra al inquilino si termina antes; al propietario le llega
                   menos la comisión. Vacío = la de la inmobiliaria.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
+                <label className="text-caption text-muted-foreground">
                   Referencia de recaudo
                 </label>
                 <Input
@@ -502,7 +502,7 @@ export function AdministracionDelContrato({
                   }
                   data-testid="referencia-de-recaudo"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   El número con el que el inquilino paga y que viene escrito en
                   el extracto: es lo que deja que la conciliación reconozca el
                   pago sola. Vacío = se usa el consecutivo del contrato.
@@ -518,7 +518,7 @@ export function AdministracionDelContrato({
                 />
                 <span>
                   {PREGUNTA_DEL_PRORRATEO}
-                  <span className="block text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                  <span className="block text-caption text-muted-foreground" data-testid="explicacion-del-prorrateo">
                     {prorratear ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
                   </span>
                 </span>
@@ -540,7 +540,7 @@ export function AdministracionDelContrato({
               />
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">El inquilino es</label>
+                <label className="text-caption text-muted-foreground">El inquilino es</label>
                 <Select
                   value={tipoPersona}
                   onValueChange={(v) => setTipoPersona(v as TipoPersona)}
@@ -694,7 +694,7 @@ function NaturalezaDeLaParte({
         {tipoPersona === null && tiene.length === 0 ? (
           /* Una fila vacía se lee como «no tiene ninguna responsabilidad», que
              es una afirmación que nadie hizo. */
-          <span className="text-xs text-muted-foreground">Sin datos tributarios</span>
+          <span className="text-caption text-muted-foreground">Sin datos tributarios</span>
         ) : null}
       </div>
     </div>
@@ -717,10 +717,10 @@ function Chip({
       data-estado={estado}
       className={
         estado === 'si'
-          ? 'rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary'
+          ? 'rounded-full bg-primary-soft px-2 py-0.5 text-caption font-medium text-primary'
           : estado === 'no'
-            ? 'rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground'
-            : 'rounded-full border border-dashed border-warning/60 px-2 py-0.5 text-xs text-warning'
+            ? 'rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground'
+            : 'rounded-full border border-dashed border-warning/60 px-2 py-0.5 text-caption text-warning'
       }
     >
       {texto}
@@ -795,7 +795,7 @@ function SelectorTernario({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs text-muted-foreground">{etiqueta}</label>
+      <label className="text-caption text-muted-foreground">{etiqueta}</label>
       <Select value={valor} onValueChange={(v) => onChange(v as Ternario)}>
         <SelectTrigger data-testid={testId}>
           <SelectValue placeholder="No se sabe" />
@@ -805,7 +805,7 @@ function SelectorTernario({
           <SelectItem value="no">{no}</SelectItem>
         </SelectContent>
       </Select>
-      <p className="text-xs text-muted-foreground">{ayuda}</p>
+      <p className="text-caption text-muted-foreground">{ayuda}</p>
     </div>
   )
 }
@@ -827,7 +827,7 @@ function Fila({
       ) : (
         /* Un guión diría "no aplica". Lo que pasa es que no se sabe, y la
            consecuencia de no saberlo es distinta en cada campo. */
-        <span className="max-w-[60%] text-right text-xs text-muted-foreground">
+        <span className="max-w-[60%] text-right text-caption text-muted-foreground">
           {ausente}
         </span>
       )}

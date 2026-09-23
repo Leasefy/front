@@ -77,6 +77,21 @@ describe('documentoYNombre', () => {
 });
 
 describe('listaDePersonas', () => {
+  it('🔴 QA 22-09: la barra separa copropietarios cuando cada uno trae su documento', () => {
+    expect(
+      listaDePersonas(
+        '43605789 - MARTA LUCIA ARIAS ARCILA | 10011753 - JONNY ALEXANDER GARCIA MARIN',
+      ),
+    ).toEqual([
+      { documento: '43605789', nombre: 'MARTA LUCIA ARIAS ARCILA', orden: 1 },
+      { documento: '10011753', nombre: 'JONNY ALEXANDER GARCIA MARIN', orden: 2 },
+    ]);
+  });
+
+  it('una barra que no separa dos personas con documento no inventa una segunda', () => {
+    expect(listaDePersonas('43605789 - TIENDA A | B')).toHaveLength(1);
+  });
+
   it('lee los dos copropietarios en orden', () => {
     expect(
       listaDePersonas('[1] 43090971 - LUZ ADRIANA PEREZ, [2] 42979803 - MARIA VICTORIA PEREZ'),

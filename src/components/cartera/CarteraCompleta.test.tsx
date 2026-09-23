@@ -669,4 +669,113 @@ describe('CarteraCompleta', () => {
       '/panel/inmobiliaria/pagos/cartera/cobros?cobro=cob-9',
     )
   })
+
+  /**
+   * 🔴 LOS TRAMOS QUE NO PUEDEN LLENARSE (21-09-2026).
+   *
+   * Abriendo esta pantalla con la agencia migrada: «31 a 60», «61 a 90» y
+   * «Más de 90 días» en $0, con 788 casos de 259 días de mora al lado. No es
+   * un error de la cuenta — con el siniestro a los 30 días, toda la cartera de
+   * más de 30 sale de los tramos— pero tres ceros permanentes sin explicación
+   * se leen como «no hay mora vieja», que es lo contrario de la verdad.
+   */
+  describe('los tramos que la configuración deja vacíos', () => {
+    it('con el siniestro a los 30 días, dice cuáles no se pueden llenar', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] },
+        }),
+      )
+      montar()
+      const aviso = $('[data-testid="tramos-que-no-se-llenan"]').textContent ?? ''
+      expect(aviso).toContain('30 días')
+      expect(aviso).toContain('31 a 60 días')
+      expect(aviso).toContain('61 a 90 días')
+      expect(aviso).toContain('Más de 90 días')
+      expect(aviso).not.toContain('0 a 30 días')
+    })
+
+    it('con el siniestro a los 90 días, sólo el último queda fuera', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 90, items: [] },
+        }),
+      )
+      montar()
+      const aviso = $('[data-testid="tramos-que-no-se-llenan"]').textContent ?? ''
+      expect(aviso).toContain('Más de 90 días')
+      expect(aviso).not.toContain('61 a 90 días')
+    })
+
+    it('con el siniestro muy lejos, los cuatro tramos sirven y no hay aviso', () => {
+      conReporte(
+        reporte({
+          siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 3650, items: [] },
+        }),
+      )
+      montar()
+      expect(host.querySelector('[data-testid="tramos-que-no-se-llenan"]')).toBeNull()
+    })
+  })
+
+  /**
+   * 🔴 LA CARTERA CASTIGADA (21-09-2026). Nico, 17-09: «sale del informe de
+   * cartera activa y queda en un listado de castigada». Por eso la cifra
+   * ENLAZA a su pantalla en vez de filtrar acá: filtrar la volvería a poner
+   * en la lista de a quién llamar.
+   */
+  describe('la cartera castigada', () => {
+    const CON_CASTIGADA = () =>
+      reporte({
+        summary: {
+          ...reporte().summary,
+          carteraVivaCop: 4_250_000,
+          castigadaCop: 1_000_000,
+          cuotasCastigadas: 1,
+        },
+        castigada: {
+          cantidad: 1,
+          totalCop: 1_000_000,
+          interesCop: 120_000,
+          items: [deuda({ cuotaId: 'cg-1', pendingAmount: 1_000_000 })],
+        },
+      })
+
+    it('sale como una cifra más, y enlaza a su pantalla', () => {
+      conReporte(CON_CASTIGADA())
+      montar()
+      const tarjeta = $('[data-testid="resumen-castigada"]')
+      expect(tarjeta.textContent).toContain('1.000.000')
+      expect(tarjeta.textContent).toContain('ya no se persigue')
+      expect(tarjeta.getAttribute('href')).toBe(
+        '/panel/inmobiliaria/pagos/cartera/castigada',
+      )
+    })
+
+    it('🔴 cartera viva + siniestro + castigada = cartera', () => {
+      const r = CON_CASTIGADA()
+      expect(
+        r.summary.carteraVivaCop +
+          r.summary.enSiniestroCop +
+          (r.summary.castigadaCop ?? 0),
+      ).toBe(r.summary.carteraCop)
+    })
+
+    it('un back sin la migración no la manda, y la franja sale como siempre', () => {
+      conReporte(reporte())
+      montar()
+      expect(host.querySelector('[data-testid="resumen-castigada"]')).toBeNull()
+      expect($('[data-testid="resumen-en-siniestro"]')).toBeTruthy()
+    })
+
+    it('en cero también se ve: es lo que hace que el total cuadre con sus partes', () => {
+      conReporte(
+        reporte({
+          castigada: { cantidad: 0, totalCop: 0, interesCop: 0, items: [] },
+        }),
+      )
+      montar()
+      expect($('[data-testid="resumen-castigada"]').textContent).toContain('Ninguna')
+    })
+  })
 })

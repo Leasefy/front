@@ -241,59 +241,65 @@ export function filtrarCuotas(
 }
 
 /**
- * Una cifra del resumen del mes: rótulo chico, número grande, en un renglón.
+ * Una cifra del resumen del mes, DENTRO de una frase.
  *
- * 🔴 Es un BOTÓN, y deja la tabla en las filas que la componen. Nico, 19-09:
- * «yo debería de poder dar clic a cada una de ellas si es que quiero ampliar
- * información de cada una». Tenía razón y era el mismo defecto que ya había
- * señalado un renglón más abajo: los cajones también eran fichas de sólo
- * lectura con el filtro en otro control. Un número en pantalla que no se puede
- * abrir obliga a creerle; poder abrirlo es poder verificarlo.
+ * ── Por qué es una frase y no tres fichas (Nico, 21-09) ────────────────────
+ *
+ * «Mira arriba hay como filtros, y no se ve a qué hacen parte, debajo hay KPIs
+ * y no sé, todo en esta pantalla está como suelto, nada realmente se sabe que
+ * es de qué… y abajo más KPIs, eso parece un vómito.»
+ *
+ * El defecto no era que faltara información: era que el resumen del mes (tres
+ * cifras) y el filtro de la tabla (cinco pestañas) estaban pintados IGUAL
+ * —rótulo en versalitas, número grande en mono, conteo debajo, cada uno en su
+ * cajita—, así que la pantalla mostraba ocho números del mismo peso y ninguno
+ * decía qué era. Peor: «Falta por pagar» y «Todo lo que falta» son el MISMO
+ * número, y puestos uno encima del otro se leen como dos hechos distintos.
+ *
+ * Ahora el resumen es UNA frase en prosa —«De los $364.795.650 que se deben en
+ * septiembre ya entraron $8.200.000 y faltan $356.595.650»— que además dice la
+ * relación entre los tres números, que es justo lo que no se sabía. Las únicas
+ * cajitas que quedan son las pestañas, y por eso ahora se leen como el filtro
+ * que son.
+ *
+ * 🔴 Sigue siendo un BOTÓN. Nico, 19-09: «yo debería de poder dar clic a cada
+ * una de ellas si es que quiero ampliar información de cada una». Un número en
+ * pantalla que no se puede abrir obliga a creerle; poder abrirlo es poder
+ * verificarlo. El subrayado punteado es lo que dice que se puede tocar: en una
+ * frase, un número sin marca se lee como texto.
  */
-function CifraDelMes({
-  label,
+function CifraEnLaFrase({
   valor,
   testId,
   tono,
-  fuerte,
   activa,
   onClick,
-  extra,
+  queMuestra,
 }: {
-  label: string
   valor: string
   testId: string
   tono?: 'success' | 'danger'
-  /** La cifra principal del mes se lee más grande que sus dos vecinas. */
-  fuerte?: boolean
   activa: boolean
   onClick: () => void
-  extra?: ReactNode
+  /** Qué queda en la tabla al tocarla. Va al `title`: un clic no se adivina. */
+  queMuestra: string
 }) {
   return (
     <button
       type="button"
       aria-pressed={activa}
       onClick={onClick}
+      title={queMuestra}
       data-testid={`abrir-${testId}`}
       className={cn(
-        'min-w-0 rounded-md px-2 py-1 text-left transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        activa ? 'bg-surface ring-1 ring-border' : 'hover:bg-surface',
+        'font-mono font-semibold tabular-nums decoration-dotted underline-offset-4',
+        'rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        activa ? 'underline' : 'hover:underline',
+        tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
       )}
+      data-activa={activa ? 'si' : 'no'}
     >
-      <span className="block text-caption uppercase tracking-wide text-fg-subtle">{label}</span>
-      <span
-        className={cn(
-          'block font-mono font-semibold tabular-nums',
-          fuerte ? 'text-xl' : 'text-base',
-          tono === 'success' ? 'text-success' : tono === 'danger' ? 'text-danger' : 'text-fg',
-        )}
-        data-testid={testId}
-      >
-        {valor}
-      </span>
-      {extra}
+      <span data-testid={testId}>{valor}</span>
     </button>
   )
 }
@@ -501,69 +507,61 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           onReintentar={recargar}
           esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
         >
-          {/* 2 · El mes en un renglón: lo pactado, lo que entró y lo que falta. */}
-          <div
-            className="flex flex-wrap items-start gap-x-6 gap-y-2 border-b border-border bg-surface-muted/40 px-2 py-2"
+          {/* 2 · El mes en UNA FRASE, que dice la relación entre los tres
+                 números. Eran tres fichas idénticas a las pestañas de abajo, y
+                 por eso «no se sabía qué era de qué». Las tres cifras siguen
+                 abriendo la tabla en sus filas. */}
+          <p
+            className="border-b border-border bg-surface-muted/40 px-4 py-3 text-sm leading-relaxed text-fg-muted"
             data-testid="resumen-del-mes"
           >
-            <CifraDelMes
+            De los{' '}
+            <CifraEnLaFrase
               testId="mes-se-debe"
-              label={`Se debe en ${titulo}`}
               valor={formatCurrency(t?.totalCop ?? 0)}
-              fuerte
               activa={cajon === 'MES'}
               onClick={() => setCajon('MES')}
-              extra={
-                <span className="block text-caption text-fg-muted">
-                  {numberFormatter.format(t?.cuotas ?? 0)}{' '}
-                  {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} ·{' '}
-                  {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
-                  {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}
-                </span>
-              }
-            />
-            <CifraDelMes
+              queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
+            />{' '}
+            que se deben en {titulo} —{numberFormatter.format(t?.cuotas ?? 0)}{' '}
+            {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} de{' '}
+            {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
+            {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}— ya entraron{' '}
+            <CifraEnLaFrase
               testId="mes-pagado"
-              label="Pagado"
               valor={formatCurrency(t?.pagadoCop ?? 0)}
               tono="success"
               activa={cajon === 'PAGADO'}
               onClick={() => setCajon('PAGADO')}
-              extra={
-                <span className="block text-caption text-fg-muted">
-                  Lo que ya entró de estas cuotas.
-                </span>
-              }
-            />
+              queMuestra="Ver en la tabla las cuotas que ya pagaron algo"
+            />{' '}
+            y faltan{' '}
             {/* «Falta por pagar» y la pestaña «Todo lo que falta» son el MISMO
                 número, así que son el mismo filtro: al tocar cualquiera de los
-                dos se encienden los dos, y de paso se ve que son lo mismo. */}
-            <CifraDelMes
+                dos se encienden los dos. */}
+            <CifraEnLaFrase
               testId="mes-falta"
-              label="Falta por pagar"
               valor={formatCurrency(t?.pendienteCop ?? 0)}
               activa={cajon === 'TODAS'}
               onClick={() => setCajon('TODAS')}
-              extra={
-                interesDelMes > 0 ? (
-                  <span
-                    className="block font-mono text-caption tabular-nums text-fg-muted"
-                    data-testid="mes-falta-con-intereses"
-                  >
-                    {traducir(CLAVE_DE_MORA.conIntereses, {
-                      monto: formatCurrency(
-                        t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
-                      ),
-                    })}
-                  </span>
-                ) : (
-                  <span className="block text-caption text-fg-muted">
-                    Se reparte en las pestañas de abajo.
-                  </span>
-                )
-              }
+              queMuestra="Ver en la tabla todo lo que falta por pagar"
             />
-          </div>
+            {/* El interés va DENTRO de la misma oración, entre paréntesis.
+                Suelto después del punto se leía como un fragmento —«$366.919.750
+                con intereses.»— sin verbo ni sujeto. */}
+            {interesDelMes > 0 ? (
+              <span className="text-fg-muted" data-testid="mes-falta-con-intereses">
+                {' ('}
+                {traducir(CLAVE_DE_MORA.conIntereses, {
+                  monto: formatCurrency(
+                    t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                  ),
+                })}
+                {')'}
+              </span>
+            ) : null}
+            .
+          </p>
 
           {/* 🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
               amortización no es un contrato sin deuda: es una deuda que todavía
@@ -601,11 +599,19 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                  de «Cartera por concepto». */}
           <div
             role="tablist"
-            aria-label="Dónde está lo que falta por pagar"
+            aria-label="Qué cuotas ver en la tabla"
             data-testid="cajones-del-mes"
             data-lenis-prevent
-            className="flex divide-x divide-border overflow-x-auto border-b border-border bg-surface-muted/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex items-stretch divide-x divide-border overflow-x-auto border-b border-border bg-surface-muted/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
+            {/* 🔴 «Ver en la tabla» es la palabra que faltaba. Nico, 21-09:
+                «arriba hay como filtros, y no se ve a qué hacen parte». Las
+                pestañas ya filtraban la tabla desde el 18-09, pero nada en
+                pantalla lo DECÍA: se leían como cinco indicadores más. Un
+                control que cambia una lista tiene que nombrar la lista. */}
+            <span className="flex shrink-0 items-center whitespace-nowrap px-4 text-caption uppercase tracking-wide text-fg-subtle">
+              Ver en la tabla
+            </span>
             {/* 🔴 Los conteos de las CUATRO pestañas salen de la misma fuente
                 —las filas—, para que la franja cuadre consigo misma: «todo lo
                 que falta» es, por definición, la suma de los tres momentos que

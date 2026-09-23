@@ -220,8 +220,17 @@ export function DeterioroDeCarteraPanel() {
   }
 
   return (
-    <div className="space-y-5" data-testid="deterioro-de-cartera">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    /* 🔴 20-09 · Nico, sobre esta pantalla: «no tiene la tabla como la usamos
+       nosotros». Eran cinco bloques sueltos flotando en el aire —el mes, los
+       avisos, las cuatro cifras, la tabla y los tres botones—, cada uno con su
+       propio borde o sin ninguno. Ahora es UNA tarjeta, el chasis de la casa:
+       el mes y el estado arriba con `border-b`, el resumen, la tabla, y las
+       acciones en el pie. Los bordes separan; el aire no. */
+    <section
+      className="overflow-x-clip rounded-lg border border-border bg-surface"
+      data-testid="deterioro-de-cartera"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
         <SelectorDeMes mes={mes} onCambiar={setMes} />
         {provision ? (
           <Badge variant={TONO_DEL_ESTADO[provision.estado]} data-testid="estado-de-la-provision">
@@ -236,7 +245,7 @@ export function DeterioroDeCarteraPanel() {
 
       {mismoAprobador ? (
         <p
-          className="rounded-md border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-fg"
+          className="border-b border-border bg-warning-soft px-4 py-3 text-sm text-fg"
           data-testid="mismo-aprobador"
           role="status"
         >
@@ -254,7 +263,7 @@ export function DeterioroDeCarteraPanel() {
         conservarContenido={Boolean(datos)}
       >
         {datos ? (
-          <div className="space-y-6">
+          <div className="space-y-6 p-4">
             {!datos.disponible ? (
               <SinLaMigracion motivo={datos.motivo} queSeEspera="guardar la provisión del mes" />
             ) : null}
@@ -391,15 +400,17 @@ export function DeterioroDeCarteraPanel() {
                 </p>
               ) : null}
 
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 En siniestro: {formatCurrency(datos.calculo.enSiniestroCop)} en{' '}
                 {NUMERO.format(datos.calculo.cuotasEnSiniestro)} cuotas, fuera de esta provisión. Su
                 deterioro depende de la póliza, no de la edad de la cuota.
               </p>
             </section>
 
-            {/* ── Las tres acciones ─────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* ── Las tres acciones, en el PIE de la tarjeta ──────────────
+                No flotando debajo: son las acciones de ESTA provisión, no de
+                la pantalla, y separadas por aire se leían como otra cosa. */}
+            <div className="-mx-4 -mb-4 flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
               <Button
                 hideArrow
                 disabled={!disponible || aprobada || fuera.length > 0}
@@ -430,7 +441,7 @@ export function DeterioroDeCarteraPanel() {
                 Anular
               </Button>
               {cambiado ? (
-                <span className="text-xs text-warning" data-testid="hay-cambios-sin-guardar">
+                <span className="text-caption text-warning" data-testid="hay-cambios-sin-guardar">
                   Cambiaste porcentajes y todavía no los propusiste: lo que se ve acá no es lo que
                   está guardado.
                 </span>
@@ -505,6 +516,6 @@ export function DeterioroDeCarteraPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   );
 }

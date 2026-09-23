@@ -81,17 +81,64 @@
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Info, MagnifyingGlass, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
-import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
+import {
+  DownloadSimple,
+  Info,
+  MagnifyingGlass,
+  Receipt,
+  SealWarning,
+  Warning,
+} from '@phosphor-icons/react'
 import {
   generarPorTandas,
+  quedaronPendientes,
   type ProgresoDeFacturas,
   type ResultadoDeLaCorrida,
 } from './facturasPorTandas'
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
+import { FilaDeProceso } from '@/components/procesos/FilaDeProceso'
+import { abrirCentroDeProcesos, anunciarProceso } from '@/lib/api/procesos.service'
+import type { Proceso } from '@/lib/api/procesos.types'
+
+/**
+ * La corrida de «Generar» como un proceso más, para pintarla con la fila del
+ * centro. Es LOCAL: la corrida la parte el navegador en tandas (cada tanda es
+ * un proceso del back); ésta es la suma que ve quien espera en la pantalla.
+ */
+export function procesoDeLaCorrida(mes: string, p: ProgresoDeFacturas): Proceso {
+  const ahora = new Date().toISOString()
+  return {
+    id: 'corrida-local',
+    tipo: 'EMISION_DE_FACTURAS',
+    titulo: `Facturas · ${mesLegible(mes).toLowerCase().replace(' de ', ' ')}`,
+    estado: 'CORRIENDO',
+    hechos: p.hechas,
+    total: p.total,
+    porcentaje: p.total > 0 ? Math.round((p.hechas / p.total) * 100) : null,
+    mensaje:
+      p.tandas > 1
+        ? `Etapa: Emitiendo, tanda ${p.tanda} de ${p.tandas}. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.`
+        : 'Etapa: Emitiendo. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.',
+    lanzadoPor: null,
+    esMio: true,
+    recurso: null,
+    archivo: null,
+    sePuedeCancelar: false,
+    cancelacionPedida: false,
+    interrumpido: false,
+    createdAt: ahora,
+    iniciadoAt: null,
+    terminadoAt: null,
+    actualizadoAt: ahora,
+  }
+}
+import { CajonDeLaFactura } from './CajonDeLaFactura'
+import { useDescargarFacturas } from './useDescargarFacturas'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -127,6 +174,7 @@ import {
   mesActual,
   mesLegible,
   mesesParaElegir,
+  topesParaElegir,
   type DestinatarioDeFactura,
   type FacturaDelMes,
   type FacturasPorGenerar,
@@ -222,6 +270,13 @@ interface TablaProps {
   /** Por qué no se puede emitir hoy (sin resolución de la DIAN). `null` = se puede. */
   motivoParaNoEmitir: string | null
   /**
+   * 🔴 La fila abre el cajón con TODO (Nico, 22-09: «al dar clic se debería
+   * abrir detalle de ese en un drawer y ahí quizás ver y accionar más cosas»).
+   * La tabla tiene once columnas y recorta el tercero, el inmueble y el
+   * concepto con «…»; el cajón no recorta nada.
+   */
+  onAbrirDetalle: (factura: FacturaDelMes) => void
+  /**
    * 🔴 El pie de acciones masivas va DENTRO de la tabla, no debajo de ella
    * (Nico, 19-09: «cuando hay acciones masivas deben quedar también en la
    * tabla»). Se recibe armado porque quien sabe qué se hace con lo marcado es
@@ -236,6 +291,15 @@ interface TablaProps {
    * objetos, y el mes con el que se filtra la tabla no es otro objeto.
    */
   sinMarco?: boolean
+  /**
+   * 🔴 Bajar el PDF de una fila EMITIDA desde la columna de estado (Nico, 22-09:
+   * «dónde puedo descargar […] esa factura en sí […] y también ahí donde dice
+   * estado»). Sin esto la fila emitida mostraba «PRU-3 · interna N° 4» como
+   * texto, sin nada que abrir ni bajar.
+   */
+  onDescargarPdf?: (factura: FacturaDelMes) => void
+  /** El `facturaId` que se está bajando, para no dejar apretar dos veces. */
+  descargando?: string | null
 }
 
 /**
@@ -276,8 +340,11 @@ function TablaDeFacturas({
   testid,
   onGenerarUna,
   motivoParaNoEmitir,
+  onAbrirDetalle,
   accionesMasivas,
   sinMarco = false,
+  onDescargarPdf,
+  descargando = null,
 }: TablaProps) {
   /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
@@ -287,14 +354,31 @@ function TablaDeFacturas({
    * peor que no tener buscador.
    */
   const [busqueda, setBusqueda] = useState('')
+  /*
+   * 🔴 QA de Nico, 22-09 («acá tampoco están teniendo en cuenta el IVA, ¡ojo
+   * con eso!»): las facturas cuyo contrato NO tiene el escenario tributario
+   * confirmado salen sin impuestos. La marca por fila existía, pero en 730
+   * filas nadie la ve antes de emitir. Se cuentan ARRIBA de la tabla, con la
+   * frase entera, y se pueden aislar para revisarlas una por una. Las ya
+   * emitidas no cuentan: ésas ya salieron.
+   */
+  const sinEscenario = useMemo(
+    () => filas.filter((f) => f.impuestosSinConfirmar && f.estado !== 'EMITIDA'),
+    [filas],
+  )
+  const [soloSinEscenario, setSoloSinEscenario] = useState(false)
+  const verSoloSinEscenario = soloSinEscenario && sinEscenario.length > 0
   const visibles = useMemo(() => {
+    const base = verSoloSinEscenario ? sinEscenario : filas
     const q = normalizar(busqueda)
-    if (q === '') return filas
-    return filas.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
-  }, [filas, busqueda])
+    if (q === '') return base
+    return base.filter((f) => normalizar(textoBuscableDe(f)).includes(q))
+  }, [filas, sinEscenario, verSoloSinEscenario, busqueda])
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(visibles, { resetKey: `${testid}|${filas.length}|${busqueda}` })
+    useTablePagination(visibles, {
+      resetKey: `${testid}|${filas.length}|${busqueda}|${verSoloSinEscenario}`,
+    })
 
   /*
    * 🔴 Sólo lo que HOY se puede emitir entra a la selección. Una fila de un mes
@@ -379,6 +463,40 @@ function TablaDeFacturas({
           )}
         </div>
       </div>
+
+      {sinEscenario.length > 0 && (
+        <div
+          className="flex flex-col gap-2 border-b border-border bg-warning-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid={`facturacion-${testid}-sin-escenario`}
+        >
+          <p className="flex items-start gap-2 text-sm text-fg">
+            <SealWarning
+              className="mt-0.5 h-4 w-4 shrink-0 text-warning"
+              weight="fill"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-mono tabular-nums">
+                {sinEscenario.length.toLocaleString('es-CO')}
+              </span>{' '}
+              {sinEscenario.length === 1
+                ? 'factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.'
+                : 'facturas del mes saldrían sin impuestos porque su contrato no tiene el escenario tributario confirmado.'}{' '}
+              Ábrela para ir al contrato y confirmarlo antes de emitir.
+            </span>
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setSoloSinEscenario((v) => !v)}
+            aria-pressed={verSoloSinEscenario}
+            data-testid={`facturacion-${testid}-ver-sin-escenario`}
+          >
+            {verSoloSinEscenario ? 'Ver todas' : 'Ver sólo esas'}
+          </Button>
+        </div>
+      )}
 
       {/* 🔴 El buscador, DENTRO de la tabla (Nico, 18-09). A su lado, cuántas
           filas quedaron a la vista: las cifras de arriba siguen siendo las del
@@ -493,12 +611,29 @@ function TablaDeFacturas({
                 const emitida = factura.estado === 'EMITIDA'
                 const bloqueada = !emitida && !factura.emitible
                 return (
+                  /* 🔴 La fila tiene DOS blancos: la casilla marca (y el botón
+                     del final emite), y todo el resto abre el cajón. Los dos
+                     controles frenan la propagación, o marcar una casilla
+                     abriría el cajón encima. */
                   <TableRow
                     key={factura.clave}
                     data-testid={`factura-${factura.clave}`}
-                    className={emitida || bloqueada ? 'opacity-70' : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ver el detalle de la factura de ${factura.terceroNombre}`}
+                    onClick={() => onAbrirDetalle(factura)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onAbrirDetalle(factura)
+                      }
+                    }}
+                    className={cn(
+                      'cursor-pointer transition hover:bg-surface-muted/60',
+                      (emitida || bloqueada) && 'opacity-70',
+                    )}
                   >
-                    <TableCell className="w-10">
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={
                           !emitida && factura.emitible && seleccion.has(factura.clave)
@@ -633,19 +768,46 @@ function TablaDeFacturas({
                           </p>
                         )}
                     </TableCell>
-                    <TableCell className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface">
+                    <TableCell
+                      className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {emitida ? (
-                        <span className="text-caption text-fg-muted">
+                        /* 🔴 El estado dice que se EMITIÓ y con qué número, y al
+                           lado baja su PDF (Nico, 22-09). La fila sigue
+                           abriendo el cajón; esta celda frena la propagación,
+                           así que el botón baja y no abre. */
+                        <div className="flex flex-col items-start gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="success" data-testid={`emitida-${factura.clave}`}>
+                              Emitida · {factura.numeroDian ?? `N° ${factura.numero}`}
+                            </Badge>
+                            {factura.facturaId && onDescargarPdf && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                hideArrow
+                                className="h-8 w-8"
+                                disabled={descargando !== null}
+                                isLoading={descargando === factura.facturaId}
+                                aria-label={`Descargar el PDF de la factura ${factura.numeroDian ?? factura.numero ?? ''}`.trim()}
+                                title="Descargar el PDF"
+                                onClick={() => onDescargarPdf(factura)}
+                                data-testid={`descargar-pdf-${factura.clave}`}
+                              >
+                                <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            )}
+                          </div>
                           {/* El número que vale ante la DIAN es el autorizado
                               por la resolución; el consecutivo interno queda
                               debajo, para poder cruzarlo. */}
-                          {factura.numeroDian ?? `N° ${factura.numero}`}
                           {factura.numeroDian && (
-                            <span className="block">
+                            <span className="font-mono text-caption tabular-nums text-fg-muted">
                               interna N° {factura.numero}
                             </span>
                           )}
-                        </span>
+                        </div>
                       ) : bloqueada ? (
                         /* 🔴 MOSTRAR NO ES EMITIR. El motivo va en el `title` con
                            las palabras del back: «Diciembre de 2026 todavía no
@@ -742,9 +904,16 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [generando, setGenerando] = useState(false)
 
   const meses = useMemo(() => mesesParaElegir(), [])
+  /* Los topes se recalculan con el mes elegido: un tope anterior al mes sería
+     un rango al revés, y el back lo rechaza. */
+  const topes = useMemo(() => topesParaElegir(mes), [mes])
 
-  const cargar = useCallback(async (elMes: string, elTope: string) => {
-    setCargando(true)
+  const cargar = useCallback(async (elMes: string, elTope: string, silencioso = false) => {
+    // 🔴 Después de emitir se relee EN SILENCIO (22-09, visto en vivo): con el
+    // spinner de carga, la tabla desaparecía y el spinner se quedaba girando
+    // debajo mientras el back volvía a armar el mes (730 contratos tardan). La
+    // tabla que ya se ve se queda hasta que llega la nueva.
+    if (!silencioso) setCargando(true)
     setError(null)
     try {
       const r = await facturacionPorMesService.porGenerar({
@@ -907,6 +1076,16 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   const [deteniendo, setDeteniendo] = useState(false)
   const detenerRef = useRef(false)
   const [corridaHecha, setCorridaHecha] = useState<ResultadoDeLaCorrida | null>(null)
+  /** La fila abierta en el cajón. Es la MISMA que pinta la tabla. */
+  const [detalle, setDetalle] = useState<FacturaDelMes | null>(null)
+  /** La misma descarga para la fila, el cajón y el informe de la corrida. */
+  const { descargarUna, descargando } = useDescargarFacturas()
+  const descargarPdf = useCallback(
+    (f: FacturaDelMes) => {
+      if (f.facturaId) void descargarUna(f.facturaId, f.numeroDian)
+    },
+    [descargarUna],
+  )
 
   useEffect(() => {
     // El informe es de UN mes: con otro mes elegido se leería como de éste.
@@ -928,15 +1107,27 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     setDeteniendo(false)
     setProgreso({ hechas: 0, total: claves.length, tanda: 0, tandas: 0 })
     try {
+      // 🔴 El centro de procesos se hace presente (Nico, 22-09: «mandé a
+      // emitir y el centro ni se abrió»): se abre solo con esta emisión.
+      anunciarProceso({
+        titulo: `Emitiendo ${claves.length} ${claves.length === 1 ? 'factura' : 'facturas'}`,
+      })
       const resultado = await generarPorTandas(
         mes,
         claves,
-        (elMes, lote) => facturacionPorMesService.generar(elMes, lote),
+        (elMes, lote, corrida) => facturacionPorMesService.generar(elMes, lote, corrida),
         setProgreso,
         { debeParar: () => detenerRef.current },
       )
       const { informe, corte } = resultado
-      setCorridaHecha(resultado)
+      /*
+       * 🔴 El resultado va al CENTRO DE PROCESOS, no a la página (Nico, 22-09:
+       * «no creo que sea el lugar para mostrar eso ya cargado»). La fila
+       * terminada tiene su resumen y «Descargar»; acá, un toast breve con
+       * «Ver en el centro». En la página sólo queda el informe cuando algo
+       * NO salió y hay que decir qué hacer.
+       */
+      setCorridaHecha(quedaronPendientes(informe) ? resultado : null)
 
       if (informe.emitidas > 0 || informe.yaEstaban > 0) {
         const partes = [
@@ -944,7 +1135,13 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           formatCurrency(informe.totalCop),
         ]
         if (informe.yaEstaban > 0) partes.push(`${informe.yaEstaban} ya estaban emitidas`)
-        toast.success(partes.join(' · '))
+        const ultimo = informe.procesosConZip.at(-1) ?? null
+        toast.success(partes.join(' · '), {
+          action: {
+            label: 'Ver en el centro',
+            onClick: () => abrirCentroDeProcesos({ procesoId: ultimo }),
+          },
+        })
       }
       // El rango de la resolución no alcanzó para todas: se emitió lo que cabía
       // y lo demás NO se numeró. Es un aviso aparte, no un renglón del éxito.
@@ -953,7 +1150,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
 
       // Lo que salió tiene que verse como emitido, también después de un
       // corte: y lo que quedó por emitir vuelve seleccionado para reintentar.
-      await cargar(mes, hasta)
+      await cargar(mes, hasta, true)
     } finally {
       setGenerando(false)
       setProgreso(null)
@@ -1197,19 +1394,23 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </div>
       )}
 
-      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar. */}
-      <div className="rounded-lg bg-surface-muted border border-border p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="fill" />
-        <p className="text-caption text-fg-muted">
-          Cada factura sale de la cuota del contrato: el mismo canon, el mismo
-          prorrateo y los mismos impuestos que el cliente ve en su estado de
-          cuenta. Una cuota que se generó sin escenario tributario confirmado se
-          factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
-          impuesto que nadie confirmó. La factura se numera con la resolución
-          vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
-          CUFE ni validación): eso necesita el proveedor tecnológico de la
-          inmobiliaria.
-        </p>
+      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar —
+          pero detrás de un botón (regla del molde, Nico 22-09: el párrafo gris
+          encima de la tabla «se ve tirado»): se lee una vez, no empuja la
+          tabla hacia abajo cada vez que se entra. */}
+      <div className="flex justify-end" data-testid="facturacion-como-funciona">
+        <ParaEntenderMas etiqueta="Cómo se factura">
+          <p>
+            Cada factura sale de la cuota del contrato: el mismo canon, el mismo
+            prorrateo y los mismos impuestos que el cliente ve en su estado de
+            cuenta. Una cuota que se generó sin escenario tributario confirmado se
+            factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
+            impuesto que nadie confirmó. La factura se numera con la resolución
+            vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
+            CUFE ni validación): eso necesita el proveedor tecnológico de la
+            inmobiliaria.
+          </p>
+        </ParaEntenderMas>
       </div>
 
       {/* 🔴 UNA sola tarjeta: el mes, la resolución, las pestañas, la tabla y
@@ -1219,15 +1420,19 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           había pedido para Pagos el 18 —«esto tiene que hacer parte de la
           tabla»—: el control con el que se filtra una tabla no es otro objeto
           que la tabla. */}
-      <section className="overflow-x-clip rounded-lg border border-border bg-surface">
-      <div className="border-b border-border p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      {/* 🔴 23-09 (Nico: «tarjeta dentro de tarjeta dentro de tarjeta»): esto
+          YA vive dentro de la tarjeta de pestañas de Facturación; un segundo
+          borde acá era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
+          tarjeta: acá sólo hay separadores. */}
+      <section className="overflow-x-clip" data-testid="facturacion-por-facturar">
+      <div className="border-b border-border px-4 py-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-mes"
-              className="text-caption font-medium text-fg"
+              className="text-caption font-medium text-fg-muted"
             >
-              Mes de facturación
+              Filtrar por mes
             </label>
             <Select
               value={mes}
@@ -1259,38 +1464,38 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               mirar qué facturas tengo por generar hasta el 31 de diciembre…
               Lo que NO se puede es enviarlas [antes de tiempo].» Por eso
               estira la consulta y no toca ni las casillas ni el botón. */}
+          {/* 🔴 Un SELECT del design system, no el campo nativo de mes (Nico,
+              21-09: «no estás usando los componentes de cadence, eso de hasta
+              diciembre no se entiende como un filtro»).
+              El `<input type="month">` pintaba el nombre EN EL IDIOMA DEL
+              NAVEGADOR —«September 2026» en una pantalla entera en español— y
+              abría el calendario del sistema, que no se parece a nada del
+              producto. Y «Hasta diciembre» era un botón al lado, que se lee
+              como una acción; ahora diciembre es una opción más de la misma
+              lista, que es lo que siempre fue. */}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-hasta"
-              className="text-caption font-medium text-fg"
+              className="text-caption font-medium text-fg-muted"
             >
-              Ver hasta
+              Ver hasta (sólo mirar)
             </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
+            <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
+              <SelectTrigger
                 id="facturacion-hasta"
-                type="month"
-                /* 🔴 `w-40` (160 px) cortaba el año: el campo nativo de mes
-                   pinta «September 2026» más el icono del calendario, y se
-                   leía «September 202(» — visto en la captura de Nico del
-                   20-09 y también en móvil. El ancho se mide por el contenido
-                   más largo, no por lo que quepa cómodo en la maqueta. */
-                className="w-full min-w-[11.5rem] tabular-nums sm:w-48"
-                min={mes}
-                value={hasta}
-                onChange={(e) => setHasta(e.target.value || mes)}
+                className="w-56"
                 data-testid="facturacion-hasta"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => setHasta(finDeAnio().slice(0, 7))}
-                data-testid="facturacion-hasta-fin-de-anio"
               >
-                Hasta diciembre
-              </Button>
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {topes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {mesLegible(t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -1299,48 +1504,45 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             —Inquilinos y Propietarios— que comparten una sola selección, y
             desde arriba quedaba fuera de la pantalla justo cuando se estaba
             marcando (Nico, 19-09). */}
-        <div className="flex flex-col items-start gap-1.5 lg:items-end">
-          {datos && (
-            <p className="text-caption text-fg-muted tabular-nums">
-              {datos.totales.contratos}{' '}
-              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'} ·{' '}
-              {datos.totales.meses === 1
-                ? mesLegible(mes)
-                : `${datos.totales.meses} meses hasta ${mesLegible(datos.hasta)}`}
-            </p>
-          )}
-          {datos?.resolucion.puedeNumerar && (
-            <p
-              className="text-caption text-fg-muted tabular-nums"
-              data-testid="facturacion-siguiente-numero"
-            >
-              Resolución {datos.resolucion.numero} · sigue el{' '}
-              {datos.resolucion.siguiente} · {datos.resolucion.disponibles}{' '}
-              números disponibles hasta el{' '}
-              {fechaLegible(datos.resolucion.vigenteHasta)}
-            </p>
-          )}
-        </div>
+        {/* El resumen es UNA frase, debajo de los filtros y en su lugar de
+            lectura —no dos líneas grises sueltas a la derecha—, y la
+            numeración se dice como un dato: con qué resolución, cuál sigue y
+            cuántos quedan. */}
+        {datos && (
+          <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
+            <span className="font-medium text-fg tabular-nums">
+              {datos.totales.contratos.toLocaleString('es-CO')}{' '}
+              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}
+            </span>{' '}
+            {datos.totales.meses === 1
+              ? `con cuotas de ${mesLegible(mes)}`
+              : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
+            .
+            {datos.resolucion.puedeNumerar && (
+              <span data-testid="facturacion-siguiente-numero">
+                {' '}Se numeran con la resolución{' '}
+                <span className="font-mono text-fg">{datos.resolucion.numero}</span>: sigue la{' '}
+                <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> y quedan{' '}
+                <span className="font-mono text-fg tabular-nums">{datos.resolucion.disponibles}</span>{' '}
+                {datos.resolucion.disponibles === 1 ? 'número' : 'números'} hasta el{' '}
+                {fechaLegible(datos.resolucion.vigenteHasta)}.
+              </span>
+            )}
+          </p>
+        )}
       </div>
 
-      {/* F3: la ranura viva de la corrida — en qué va, cuánto falta y cómo
-          salir. Un spinner sin número sobre 3.824 facturas eran minutos sin
-          saber si seguía. */}
+      {/* F3: la corrida en curso, con la MISMA fila del centro de procesos
+          (22-09: «no dos diseños para lo mismo»): misma barra, mismo
+          «Detener». Una línea, no una tarjeta: el detalle vive en el centro. */}
       {generando && progreso && (
-        <div
-          className="rounded-lg border border-border bg-surface p-4"
-          data-testid="facturacion-en-curso"
-        >
-          <BarraDeTrabajo
-            testid="facturacion"
-            titulo="Emitiendo las facturas"
-            hechas={progreso.hechas}
-            total={progreso.total}
+        <div className="border-b border-border" data-testid="facturacion-en-curso">
+          <FilaDeProceso
+            as="div"
+            sinVerResultado
+            proceso={procesoDeLaCorrida(mes, progreso)}
             onDetener={detenerCorrida}
             deteniendo={deteniendo}
-            nota={`${
-              progreso.tandas > 1 ? `Tanda ${progreso.tanda} de ${progreso.tandas}. ` : ''
-            }Si detienes, termina la tanda en curso; volver a apretar «Generar» no duplica las que ya salieron.`}
           />
         </div>
       )}
@@ -1431,8 +1633,24 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               testid={aQuien === 'INQUILINO' ? 'inquilinos' : 'propietarios'}
               onGenerarUna={(clave) => void generar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
+              onAbrirDetalle={setDetalle}
               accionesMasivas={pieDeAccionesMasivas}
               sinMarco
+              onDescargarPdf={descargarPdf}
+              descargando={descargando}
+            />
+
+            {/* 🔴 El cajón lee la MISMA fila que la tabla: no le pide nada al
+                back, así que no puede decir algo distinto de lo que se acaba
+                de ver ni dejar a nadie esperando. */}
+            <CajonDeLaFactura
+              factura={detalle}
+              onCerrar={() => setDetalle(null)}
+              onGenerarUna={(clave) => void generar([clave])}
+              motivoParaNoEmitir={motivoParaNoEmitir}
+              ocupado={generando}
+              onDescargarPdf={descargarPdf}
+              descargando={descargando}
             />
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,

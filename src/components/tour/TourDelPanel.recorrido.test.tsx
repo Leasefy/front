@@ -166,6 +166,22 @@ describe('el recorrido, de punta a punta', () => {
     expect(q('[data-testid="tour-atras"]')).toBeNull()
   })
 
+  it('🔴 del último paso al cierre, el velo cubre TODA la pantalla (Nico, 22-09: quedaba un rectángulo sobre «Buscar»)', () => {
+    plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
+    pintar()
+    for (let i = 0; i <= PASOS_DEL_TOUR.length; i++) clic('[data-testid="tour-siguiente"]')
+    expect(q('[data-testid="tour-del-panel"]')?.getAttribute('data-pantalla')).toBe('cierre')
+    expect(q('[data-testid="tour-foco"]')).toBeNull()
+    const velo = q('[data-testid="tour-velo"]') as HTMLElement | null
+    expect(velo).toBeTruthy()
+    // Nada heredado del recorte: ni posición ni tamaño en línea. OJO: en
+    // happy-dom framer no escribe esos estilos, así que esta línea NO caza el
+    // defecto original (verificado revirtiendo la `key`); el defecto se midió
+    // y se cerró en el navegador (velo 0,0,1440×900 en el cierre). Queda para
+    // que el velo del cierre siga siendo su propio nodo, con su testid.
+    for (const prop of ['top', 'left', 'width', 'height'] as const) expect(velo!.style[prop]).toBe('')
+  })
+
   it('bienvenida → pasos → cierre, con el número contando sólo los pasos', () => {
     plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
     pintar()

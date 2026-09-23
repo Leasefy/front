@@ -69,6 +69,8 @@ import {
 } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
@@ -289,32 +291,20 @@ function DialogoDeCuenta({
           )}
         </div>
 
-        {/* 🔴 Lo que haría falta el día que se conecte de verdad, plegado.
-            Hoy no se pide nada de esto —esta pantalla es una libreta, Leasefy
-            todavía no publica en ningún portal de afuera— pero saberlo cambia
-            a quién se llama: en Ciencuadras la contraseña la genera la propia
-            inmobiliaria en 30 segundos; en Metrocuadrado hay que pedirle
-            cuatro datos al asesor; en Mercado Libre hay que pagar un paquete
-            o el aviso no se crea. Callarlo es dejar que lo descubran a mitad
-            de camino. */}
-        <details className="rounded-lg border border-border" data-testid="que-pide-este-portal">
-          <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-fg">
-            Qué pide {portal.nombre} para conectarse de verdad
-          </summary>
-          <div className="space-y-2 border-t border-border px-3 py-2.5">
-            <ul className="space-y-1.5 text-sm text-fg-muted">
-              {conexion.paraConectarloDeVerdad.map((linea) => (
-                <li key={linea}>· {linea}</li>
-              ))}
-            </ul>
-            <p className="text-xs text-fg-subtle">
-              Hoy Leasefy no publica solo en este portal: lo que guardas acá es
-              a nombre de quién está la cuenta, para saber con qué usuario
-              cargar el archivo. Verificado el 19-09-2026 — {conexion.fuente}
-            </p>
-          </div>
-        </details>
+        {/* 🔴 21-09: acá vivía «Qué pide {portal} para conectarse de verdad»,
+            en un `<details>` DENTRO de este formulario. Se mudó a la tarjeta
+            del portal (`TarjetaDePortal` → `ParaEntenderMas`) por dos razones:
 
+              · la explicación estaba a DOS clics —abrir el diálogo de la
+                cuenta y después desplegarla— cuando sirve justo antes de
+                decidir si conectar ese portal, o sea en la tarjeta;
+              · y un modal encima de un modal no funciona, así que acá dentro
+                no se podía aplicar la regla nueva (la explicación va detrás de
+                un botón que abre un modal, no plegada dentro de la pantalla).
+
+            Lo que sí quedó acá es `conexion.cuidado`, arriba, junto al campo
+            que lo necesita: eso no es explicación, es una advertencia sobre el
+            dato que la persona está escribiendo en este instante. */}
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-notas">Notas</Label>
           <Textarea
@@ -328,11 +318,12 @@ function DialogoDeCuenta({
         </div>
 
         <label className="flex items-start gap-2.5 rounded-lg border border-border p-3">
-          <input
-            type="checkbox"
+          {/* Casilla del sistema de diseño (21-09): la del navegador mide 13 px
+              con `h-4 w-4` puesto encima y no trae el foco de la casa. */}
+          <Checkbox
             checked={activa}
-            onChange={(e) => setActiva(e.target.checked)}
-            className="mt-0.5 h-4 w-4"
+            onCheckedChange={(v) => setActiva(v === true)}
+            className="mt-0.5"
             data-testid="cuenta-activa"
           />
           <span className="text-sm">
@@ -593,13 +584,12 @@ function DialogoDePublicar({
                       key={p.portal}
                       className="flex items-start gap-2.5 rounded-lg border border-border p-3"
                     >
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 h-4 w-4"
+                      <Checkbox
+                        className="mt-0.5"
                         checked={marcados.includes(p.portal)}
-                        onChange={(e) =>
+                        onCheckedChange={(v) =>
                           setMarcados((antes) =>
-                            e.target.checked
+                            v === true
                               ? [...antes, p.portal]
                               : antes.filter((x) => x !== p.portal),
                           )
@@ -668,6 +658,7 @@ function TarjetaDePortal({
   onAnotar: () => void
 }) {
   const { iniciales, logo } = marcaDelPortal(p.portal, p.nombre)
+  const conexion = comoSeConecta(p.portal)
   const esNuestro = p.portal === EL_CATALOGO_DE_LEASEFY
   const alDia = p.cuenta?.activa === true
   const enPausa = Boolean(p.cuenta) && !alDia
@@ -731,20 +722,20 @@ function TarjetaDePortal({
               se identifica ESTE portal, que es lo primero que cambia entre uno y
               otro.
             */}
-            Para publicar aquí necesitamos tu{' '}
+            {/* 🔴 UNA línea, no un párrafo (21-09, segunda vuelta). Lo que
+                distingue a este portal de los otros cinco es el DATO que pide
+                —eso se quedó—; la advertencia sobre ese dato es larga y se
+                necesita en dos momentos distintos: al configurar (está junto al
+                campo, en el diálogo) y antes de decidir (está en «Qué pide este
+                portal»). En la tarjeta hacía tres renglones de prosa por
+                tarjeta, seis veces. */}
+            Necesita tu{' '}
             <span className="font-medium text-fg">
               {/* Sin `toLowerCase()`: son nombres propios y los rompía
                   («mercado libre», «proppit», «ciencuadras»). */}
-              {comoSeConecta(p.portal).rotuloDelIdentificador}
+              {conexion.rotuloDelIdentificador}
             </span>
-            {comoSeConecta(p.portal).cuidado ? (
-              <>
-                {'. '}
-                {comoSeConecta(p.portal).cuidado}
-              </>
-            ) : (
-              ' — la cuenta que tu inmobiliaria ya paga.'
-            )}
+            .
           </>
         ) : p.cuenta.modoEfectivo === 'API' ? (
           'Los avisos se publican y se bajan automático.'
@@ -784,6 +775,53 @@ function TarjetaDePortal({
             {p.cuenta ? 'Editar' : 'Configurar'}
           </Button>
         ) : null}
+
+        {/* Qué haría falta el día que Leasefy publique solo en ESTE portal.
+            No se muestra para nuestro propio catálogo: ahí la respuesta es
+            «nada», y un botón que abre un modal para decir «nada» es ruido.
+            En los otros cinco cambia mucho —en Ciencuadras la contraseña la
+            genera la inmobiliaria en 30 segundos; en Metrocuadrado hay que
+            pedirle cuatro datos al asesor; en Mercado Libre hay que pagar un
+            paquete o el aviso no se crea—, y saberlo cambia a quién se llama. */}
+        {!esNuestro ? (
+          <ParaEntenderMas
+            /* «Qué pide este portal» y no «Qué pide Metrocuadrado»: la tarjeta
+               ya dice de qué portal es, y el nombre repetido hacía que la
+               etiqueta más larga no cupiera y envolviera a un segundo renglón
+               —una tarjeta distinta de las otras cinco—. El nombre completo
+               sigue en el título del modal, donde no hay tarjeta que lo diga.
+               Es la misma lección del mapa del recorrido: la etiqueta repetida
+               no agrega, y de paso estorba. */
+            etiqueta="Qué pide este portal"
+            titulo={`Qué pide ${p.nombre} para conectarse de verdad`}
+            descripcion="Hoy esta pantalla es una libreta: Leasefy todavía no publica solo en ningún portal de afuera. Esto es lo que haría falta el día que lo haga."
+            /* 🔴 SIN `ml-auto`, y visto en el navegador: con él, el botón se
+               iba al borde derecho de la tarjeta y en «Metrocuadrado» —cuyo
+               nombre es el más largo— no cabía en la fila, así que caía solo a
+               un segundo renglón alineado a la derecha. Seis tarjetas iguales
+               con una distinta se lee como un error, y lo era. Los dos botones
+               son del mismo grupo: van juntos y envuelven juntos. */
+          >
+            <div className="space-y-3" data-testid="que-pide-este-portal">
+              {/* La advertencia del portal va PRIMERO: es lo que evita el error
+                  más común de ése, y quien abre esto todavía no fue a pedir
+                  nada. (También está junto al campo, al configurar.) */}
+              {conexion.cuidado ? (
+                <p className="text-sm text-warning" data-testid="cuidado-en-el-modal">
+                  {conexion.cuidado}
+                </p>
+              ) : null}
+              <ul className="space-y-1.5 text-sm text-fg-muted">
+                {conexion.paraConectarloDeVerdad.map((linea) => (
+                  <li key={linea}>· {linea}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-fg-subtle">
+                Verificado el 19-09-2026 — {conexion.fuente}
+              </p>
+            </div>
+          </ParaEntenderMas>
+        ) : null}
       </div>
     </div>
   )
@@ -816,16 +854,21 @@ const PASOS: { que: string; como: string }[] = [
   },
 ]
 
+/**
+ * 🔴 21-09, segunda vuelta: esto era una SECCIÓN de la pantalla —los cuatro
+ * pasos y un párrafo de cinco líneas— puesta encima de las seis tarjetas, que
+ * es lo que la persona vino a hacer. Nico, mirándola: «este también tiene
+ * información por ahí tirada que se puede abrir de otra manera».
+ *
+ * Se lee una vez en la vida del producto y después estorba todos los días, así
+ * que se abre desde un botón. Lo único que se quedó en la pantalla es la frase
+ * que NO es explicación sino una advertencia sobre lo que la herramienta hace y
+ * no hace: que los avisos los sube una persona.
+ */
 function ComoFunciona() {
   return (
-    <section
-      className="rounded-lg border border-border bg-surface p-5"
-      data-testid="como-funciona"
-    >
-      <h2 className="mb-4 text-sm font-medium text-fg">
-        Cómo se publica un inmueble
-      </h2>
-      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div data-testid="como-funciona">
+      <ol className="grid gap-4 sm:grid-cols-2">
         {PASOS.map((p, i) => (
           <li key={p.que} className="flex gap-3">
             <span
@@ -843,7 +886,7 @@ function ComoFunciona() {
       </ol>
       <p
         className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-fg-muted"
-        data-testid="aviso-sin-api"
+        data-testid="aviso-sin-api-detalle"
       >
         Los pasos 3 y 4 los hace una persona porque{' '}
         <span className="font-medium text-fg">
@@ -855,7 +898,7 @@ function ComoFunciona() {
         exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
         Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
       </p>
-    </section>
+    </div>
   )
 }
 
@@ -950,15 +993,34 @@ export function PortalesClient() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
-        <p className="text-sm text-fg-muted">
-          Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
-          cuenta, y mira en un solo lugar cuáles están publicados y dónde.
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Publicación en portales</h1>
+          <p className="text-sm text-fg-muted">
+            Publica tus inmuebles en los portales donde tu inmobiliaria ya tiene
+            cuenta, y mira en un solo lugar cuáles están publicados y dónde.
+          </p>
+          {/* 🔴 Esto NO se fue al modal a propósito: no es «cómo se usa», es qué
+              hace y qué no hace la herramienta. Escondido, alguien esperaría que
+              el aviso saliera solo. Una línea en vez de cinco. */}
+          <p className="text-sm text-fg-muted" data-testid="aviso-sin-api">
+            Hoy el aviso lo subes tú al portal:{' '}
+            <span className="font-medium text-fg">
+              todavía no publicamos solos en ninguno
+            </span>
+            .
+          </p>
+        </div>
+        <ParaEntenderMas
+          etiqueta="Cómo se publica un inmueble"
+          titulo="Cómo se publica un inmueble"
+          descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
+          ancho="ancho"
+          className="shrink-0"
+        >
+          <ComoFunciona />
+        </ParaEntenderMas>
       </header>
-
-      <ComoFunciona />
 
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>

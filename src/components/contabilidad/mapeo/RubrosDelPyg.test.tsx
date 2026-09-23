@@ -138,8 +138,15 @@ describe('<RubrosDelPyg>', () => {
     await pintar();
 
     const cartel = q('rubros-sin-migracion')!;
-    expect(cartel.textContent).toContain('mapeos_de_rubro');
-    expect(cartel.textContent).toContain('La aplica Víctor');
+      /* 🔴 20-09 · Acá se exigía que el cartel dijera el identificador de la
+         migración y el nombre de quien la aplica. Nico lo reportó dos veces:
+         el 18-09 por el identificador y el 20-09 por «La aplica Víctor». Son
+         el mensaje del OPERADOR mandado al usuario final: quien administra
+         inmuebles no puede aplicar nada y no sabe quién es Víctor.
+         El original sigue en el `title` para quien deba diagnosticar. */
+      expect(cartel.textContent).not.toContain('mapeos_de_rubro');
+    expect(cartel.textContent).not.toContain('Víctor');
+    expect(cartel.textContent).toContain('todavía no está disponible');
     // Nada editable: cada PUT sería un 503.
     expect(q('rubro-servicios')).toBeNull();
     expect(q('sembrar-preset-de-rubros')).toBeNull();

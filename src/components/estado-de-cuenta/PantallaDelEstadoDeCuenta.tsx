@@ -99,6 +99,13 @@ export interface PantallaProps {
    * descuenta mes a mes). Sólo el panel: lo lee un endpoint de la inmobiliaria.
    */
   conAnticipoDelContrato?: boolean;
+  /**
+   * 🔴 Con qué filtro abre (QA 22-09). «Ver estado de cuenta» desde un
+   * CONTRATO abría el consolidado de todos los contratos del inquilino, y la
+   * regla del CEO (16-09) es «desde el contrato = sólo ese contrato; el
+   * consolidado va en el tercero». La ficha del contrato pasa su número.
+   */
+  filtrosIniciales?: Partial<FiltrosDelEstadoDeCuenta>;
   className?: string;
 }
 
@@ -110,6 +117,7 @@ export function PantallaDelEstadoDeCuenta({
   sinFiltros = false,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
+  filtrosIniciales,
   className,
 }: PantallaProps) {
   const t = useTextoDelEstado();
@@ -132,7 +140,12 @@ export function PantallaDelEstadoDeCuenta({
   const [cargando, setCargando] = React.useState(true);
   /** Hay un filtro en camino. La tabla anterior se queda: no se parpadea. */
   const [recargando, setRecargando] = React.useState(false);
-  const [filtros, setFiltros] = React.useState<FiltrosDelEstadoDeCuenta>(SIN_FILTROS);
+  const contratoInicial = filtrosIniciales?.contrato ?? '';
+  const inicial = React.useMemo<FiltrosDelEstadoDeCuenta>(
+    () => ({ ...SIN_FILTROS, contrato: contratoInicial }),
+    [contratoInicial],
+  );
+  const [filtros, setFiltros] = React.useState<FiltrosDelEstadoDeCuenta>(inicial);
   /**
    * Al imprimir se apaga la paginación de las tablas. Sin esto la hoja sale con
    * las doce filas de la página en la que quedó la pantalla y el total del
@@ -148,13 +161,17 @@ export function PantallaDelEstadoDeCuenta({
       const d = await cargar();
       setEntero(d);
       setVista(d);
-      setFiltros(SIN_FILTROS);
+      // Un número de contrato que el documento no trae no se impone: sería
+      // filtrar a «nada» y pintar un documento vacío.
+      setFiltros(
+        inicial.contrato && d.contratos.some((c) => c.numero === inicial.contrato) ? inicial : SIN_FILTROS,
+      );
     } catch (e) {
       setError(e);
     } finally {
       setCargando(false);
     }
-  }, [cargar]);
+  }, [cargar, inicial]);
 
   React.useEffect(() => {
     void pedir();

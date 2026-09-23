@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Heart, MagnifyingGlass, TrashSimple, MapPin, CaretRight, House, Plus, Check } from '@phosphor-icons/react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { motion } from 'framer-motion';
 import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
@@ -192,12 +192,11 @@ export default function GuardadosPage() {
                     onClick={() => handleViewProperty(property)}
                     className="block relative aspect-[16/10] overflow-hidden w-full"
                   >
-                    <Image
-                      src={property.thumbnailUrl || property.images?.[0] || ''}
+                    <PortadaDelInmueble
+                      property={property}
                       alt={property.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="group-hover:scale-105 transition-transform duration-500"
                     />
 
                     {/* Status badge */}

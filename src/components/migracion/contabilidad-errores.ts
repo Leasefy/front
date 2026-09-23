@@ -41,12 +41,12 @@ const MENSAJES: Record<string, string> = {
   NO_ES_UNA_REAPERTURA:
     'Esa fecha no mueve la frontera hacia atrás. Para cerrar MÁS se usa el cierre, no la reapertura.',
   REAPERTURA_SIN_MIGRAR:
-    'Todavía no se puede reabrir un mes cerrado: falta la migración en la base. La aplica Víctor.',
+    'Todavía no se puede reabrir un mes cerrado: esta función aún no está disponible. Nuestro equipo la está habilitando.',
   // puc.service.ts / exogena.service.ts (19-09)
   NO_DEDUCIBLE_SIN_MIGRAR:
-    'Todavía no se puede marcar una cuenta como no deducible: falta la migración en la base, y la aplica Víctor. Mientras tanto todo el gasto se declara deducible en el 1001.',
+    'Todavía no se puede marcar una cuenta como no deducible: esta función todavía no está disponible y nuestro equipo la está habilitando. Mientras tanto todo el gasto se declara deducible en el 1001.',
   CONFIGURACION_DE_EXOGENA_SIN_MIGRAR:
-    'Todavía no se puede guardar la configuración de exógena: falta la migración en la base, y la aplica Víctor. Mientras tanto rigen los valores por defecto.',
+    'Todavía no se puede guardar la configuración de exógena: esta función todavía no está disponible y nuestro equipo la está habilitando. Mientras tanto rigen los valores por defecto.',
   // migracion-contable.service.ts
   LOTE_DEMASIADO_GRANDE: 'El lote es demasiado grande: parte el archivo en tandas de 5.000 asientos.',
 };

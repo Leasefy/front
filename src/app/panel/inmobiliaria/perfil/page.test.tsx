@@ -92,7 +92,8 @@ vi.mock('@/components/ui', () => ({
 }))
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
-import InmobiliariaPerfilPage, { datosDelUsuario, oNulo } from './page'
+import InmobiliariaPerfilPage from './page'
+import { datosDelUsuario, oNulo } from './datos-del-perfil'
 
 const USUARIO = {
   id: 'u-1',

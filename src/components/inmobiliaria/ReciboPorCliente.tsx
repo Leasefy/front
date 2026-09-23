@@ -193,7 +193,8 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
   const k = (s: string) => `recibos.form.cliente.${s}`;
 
   const [clientes, setClientes] = React.useState<Inquilino[] | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  /** 🔴 El error ENTERO: un string pierde el `status` y el `code`. */
+  const [error, setError] = React.useState<unknown>(null);
 
   const cargar = React.useCallback(async () => {
     setError(null);
@@ -203,7 +204,22 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
       setClientes(clientesParaRecibo(lista));
     } catch (e) {
       setClientes([]);
-      setError(e instanceof Error && e.message ? e.message : '');
+      /*
+       * 🔴 21-09-2026 · EL ERROR ENTERO, NO SU MENSAJE.
+       *
+       * Acá se guardaba `e.message` y ese string se le pasaba a
+       * `FalloDeCarga`. Un string no tiene `status` ni `code`, así que el
+       * clasificador lo mandaba al cajón «servidor»: «Fue un problema
+       * nuestro, no tuyo… Referencia: SER-0721», con un botón de reintentar
+       * que no podía arreglar nada.
+       *
+       * Lo que de verdad pasaba era un **403 `SEGUNDO_FACTOR_REQUERIDO`**: el
+       * back ya mandaba el motivo exacto —activarlo en Configuración →
+       * Seguridad— y esta línea lo tiraba. Con el error entero,
+       * `lib/errores/clasificar.ts` lo reconoce y la pantalla dice qué hacer
+       * en vez de echarse la culpa.
+       */
+      setError(e);
     }
   }, []);
 
@@ -648,7 +664,8 @@ export function useCarteraDelCliente(
   const [cartera, setCartera] = React.useState<CarteraDelCliente | null>(null);
   const [cargando, setCargando] = React.useState(false);
   const [recalculando, setRecalculando] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  /** 🔴 El error ENTERO: un string pierde el `status` y el `code`. */
+  const [error, setError] = React.useState<unknown>(null);
   const [errorDeLaFecha, setErrorDeLaFecha] = React.useState<ErrorDeLaFecha | null>(null);
   const [fechaDeLaCartera, setFechaDeLaCartera] = React.useState<string | null>(null);
   const [cargaDeLaPersona, setCargaDeLaPersona] = React.useState(0);
@@ -712,7 +729,8 @@ export function useCarteraDelCliente(
           hayCartera.current = false;
           setCartera(null);
           setFechaDeLaCartera(null);
-          setError(e instanceof Error && e.message ? e.message : '');
+          // El error ENTERO, por lo mismo que arriba.
+          setError(e);
         }
       } finally {
         if (mia === peticion.current) {

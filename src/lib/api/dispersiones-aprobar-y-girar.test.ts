@@ -95,3 +95,39 @@ describe('girar — el segundo par de ojos', () => {
     );
   });
 });
+
+/**
+ * Desde qué cuenta salió (Nico, 23-09): con la migración del back el origen es
+ * obligatorio. Va en el cuerpo con EXACTAMENTE las tres claves que declara
+ * `ProcessDispersionDto.origen` (`forbidNonWhitelisted`), y la ruta que lo
+ * propone existe en el back (el guardián de rutas lo verifica contra
+ * `rutas-del-back.json`).
+ */
+describe('girar — con el banco de origen', () => {
+  it('manda el origen clave por clave junto a la referencia', async () => {
+    await dispersionesApi.process(ID, 'TRF-9', {
+      banco: 'BANCOLOMBIA',
+      tipoDeCuenta: 'AHORROS',
+      numeroDeCuenta: '12345674321',
+      // Una clave de más en el objeto de la pantalla no llega al back.
+      ...({ nombreDelBanco: 'Bancolombia' } as object),
+    });
+
+    const [, body] = putMock.mock.calls[0];
+    expect(body).toEqual({
+      transferReference: 'TRF-9',
+      origen: { banco: 'BANCOLOMBIA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '12345674321' },
+    });
+  });
+
+  it('sin origen (base sin la migración) el cuerpo sigue siendo sólo la referencia', async () => {
+    await dispersionesApi.process(ID, 'TRF-9', null);
+    expect(putMock.mock.calls[0][1]).toEqual({ transferReference: 'TRF-9' });
+  });
+
+  it('la cuenta que se propone sale de GET /dispersiones/origen-del-giro', async () => {
+    getMock.mockResolvedValue({ disponible: true, motivo: null, bancos: [], cuentas: [], ultima: null });
+    await dispersionesApi.origenDelGiro();
+    expect(getMock).toHaveBeenCalledWith('/inmobiliaria/dispersiones/origen-del-giro');
+  });
+});

@@ -82,7 +82,7 @@ export function ContratoSinSenal({ contratoId, children }: Props) {
             <p className="font-medium text-fg">
               Del contrato no tenemos nada guardado; del inmueble sí.
             </p>
-            <p className="text-xs text-fg-muted mt-0.5">
+            <p className="text-caption text-fg-muted mt-0.5">
               {copia.titulo} · {copia.direccion} · guardado el {cuando(copia.guardadoEn)}. Lo que
               cargues en el inventario se sube cuando vuelva la señal.
             </p>

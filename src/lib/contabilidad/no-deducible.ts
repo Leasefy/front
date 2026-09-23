@@ -84,6 +84,6 @@ export function frasesDeLoNoDeducible(soporta: boolean): {
     : {
         titulo: 'No deducible',
         explicacion:
-          'Todavía no se puede marcar: falta la migración que crea la columna, y la aplica Víctor. Mientras tanto todo el gasto se declara deducible en el 1001, que es el valor por defecto.',
+          'Todavía no se puede marcar: esta función todavía no está disponible y nuestro equipo la está habilitando. Mientras tanto todo el gasto se declara deducible en el 1001, que es el valor por defecto.',
       };
 }

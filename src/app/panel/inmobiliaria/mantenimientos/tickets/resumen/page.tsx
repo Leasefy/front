@@ -29,7 +29,7 @@ export default function MantenimientoOverviewPage() {
     : null
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -66,6 +66,6 @@ export default function MantenimientoOverviewPage() {
 
       {/* KPI Strip — 7 health + 2 anti-gaming */}
       <MantenimientoKpiStrip kpis={data?.kpis ?? null} isLoading={isLoading} />
-    </main>
+    </div>
   )
 }

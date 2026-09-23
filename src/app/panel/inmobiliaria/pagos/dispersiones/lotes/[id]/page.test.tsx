@@ -53,6 +53,10 @@ describe('lotes/[id]', () => {
     expect(host.querySelector('[data-testid="reintentar"]')).toBeNull();
     const volver = fallo?.querySelector('a');
     expect(volver?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes');
-    expect(volver?.textContent).toContain('Volver a Lotes');
+    /*
+     * «Lotes», no «Volver a Lotes»: el botón ya lleva la flecha, igual que en
+     * el resto del panel (`← Contratos`, `← Inmuebles`). 20-09.
+     */
+    expect(volver?.textContent).toContain('Lotes');
   });
 });

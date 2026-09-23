@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import {
   formatCurrency,
   formatNumber,
@@ -122,6 +122,33 @@ describe('formatArea', () => {
 // formatDate
 // ---------------------------------------------------------------------------
 describe('formatDate', () => {
+  /*
+   * 🔴 QA 22-09: una fecha-calendario se corría un día en Bogotá. Se fija la
+   * zona a UTC-5 para que la prueba vea lo que ve el inquilino (con TZ=UTC el
+   * defecto no se reproduce).
+   */
+  describe('fechas-calendario no se corren un día en Bogotá', () => {
+    const tzOriginal = process.env.TZ;
+    beforeAll(() => {
+      process.env.TZ = 'America/Bogota';
+    });
+    afterAll(() => {
+      process.env.TZ = tzOriginal;
+    });
+
+    it('medianoche UTC de una columna `date` es ESE día, no el anterior', () => {
+      expect(formatDate('2025-07-01T00:00:00.000Z')).toMatch(/^1 de jul/);
+    });
+
+    it('un `YYYY-MM-DD` pelado también', () => {
+      expect(formatDate('2026-06-01')).toMatch(/^1 de jun/);
+    });
+
+    it('un instante con hora se sigue convirtiendo (las 02:00 UTC son el día anterior en Bogotá)', () => {
+      expect(formatDate('2026-06-01T02:00:00Z')).toMatch(/^31 de may/);
+    });
+  });
+
   // Using a fixed ISO date. toLocaleDateString output depends on Node ICU data,
   // so month names are validated with toContain rather than exact match.
   const isoDate = '2026-01-18T14:30:00Z';
@@ -285,21 +312,39 @@ describe('formatRelativeTime', () => {
     });
   });
 
-  // ---- days range (1-6 days) ----
+  /*
+   * ---- days range (1-6 days) ----
+   *
+   * 🔴 20-09 · Estas tres pruebas EXIGÍAN la falta de ortografía: pedían
+   * «hace 1 dia» y «hace 3 dias», sin tilde, en las cinco pantallas que usan
+   * esta función. Lo encontré comparando dos edades de la misma decisión en el
+   * Piloto. Reescritas para pedir lo correcto — «día» y «días» llevan tilde.
+   */
   describe('days range', () => {
-    it('returns singular "dia" / "day"', () => {
-      expect(formatRelativeTime(pastDate(1 * DAY))).toBe('hace 1 dia');
+    it('returns singular "día" / "day"', () => {
+      expect(formatRelativeTime(pastDate(1 * DAY))).toBe('hace 1 día');
       expect(formatRelativeTime(pastDate(1 * DAY), 'en')).toBe('1 day ago');
     });
 
-    it('returns plural "dias" / "days"', () => {
-      expect(formatRelativeTime(pastDate(3 * DAY))).toBe('hace 3 dias');
+    it('returns plural "días" / "days"', () => {
+      expect(formatRelativeTime(pastDate(3 * DAY))).toBe('hace 3 días');
       expect(formatRelativeTime(pastDate(3 * DAY), 'en')).toBe('3 days ago');
     });
 
     it('handles upper boundary (6 days)', () => {
-      expect(formatRelativeTime(pastDate(6 * DAY))).toBe('hace 6 dias');
+      expect(formatRelativeTime(pastDate(6 * DAY))).toBe('hace 6 días');
       expect(formatRelativeTime(pastDate(6 * DAY), 'en')).toBe('6 days ago');
+    });
+
+    it('🔴 la edad va hacia ABAJO: 6 días y 22 horas son 6 días, no 7', () => {
+      /*
+       * La otra mitad del hallazgo del Piloto: una decisión de 19 días y 22
+       * horas se leía «lleva 19 días esperando» en el resumen y «hace 20d» en
+       * la tarjeta de al lado. Redondear hacia arriba envejece el caso antes de
+       * que pase; en cobranza los días cuentan.
+       */
+      expect(formatRelativeTime(pastDate(6 * DAY + 22 * HOUR))).toBe('hace 6 días');
+      expect(formatRelativeTime(pastDate(23 * HOUR + 59 * MINUTE))).toBe('hace 23 horas');
     });
   });
 

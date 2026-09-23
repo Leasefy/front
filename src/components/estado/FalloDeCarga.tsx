@@ -26,6 +26,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { clasificarFallo, type Contexto, type TipoDeFallo } from '@/lib/errores/clasificar'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { cn } from '@/lib/utils'
 
 const ICONO: Record<TipoDeFallo, Icon> = {
@@ -47,6 +48,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // T-0099: ya está pasando, no hace falta ninguna llave nueva — el mismo
   // escudo que usa /auth/mfa-verify, no el candado del «hay que activarlo».
   segundoFactorPendiente: ShieldCheck,
+  // Una base atrasada es un despliegue a medias, no una falla: el mismo reloj
+  // de «esperá a que pase algo», no la octógono de alarma.
+  baseAtrasada: Timer,
 }
 
 export interface FalloDeCargaProps {
@@ -96,7 +100,17 @@ export function FalloDeCarga({
   enmarcado = true,
   className,
 }: FalloDeCargaProps) {
-  const fallo = clasificarFallo(error, { queEs })
+  /*
+   * Lo que el FRONT cree de tus permisos, para que el cartel pueda notar el
+   * desacuerdo con lo que respondió el servidor. `…Safe` porque este cartel
+   * también se usa fuera del panel de la inmobiliaria, donde no hay proveedor
+   * de permisos y no hay nada que comparar.
+   */
+  const permisos = usePermissionsContextSafe()
+  const fallo = clasificarFallo(error, {
+    queEs,
+    creoQueTengoAcceso: permisos?.isAdmin === true,
+  })
   const Icono = ICONO[fallo.tipo]
   // Para volver a donde estaba después de entrar de nuevo.
   const rutaActual =
@@ -233,10 +247,19 @@ export function FalloDeCarga({
         </div>
       )}
 
-      {/* El mensaje del backend sirve para diagnosticar, no para leer: queda en
-          el DOM pero no en pantalla. */}
+      {/*
+        El mensaje del backend sirve para diagnosticar, no para leer: queda en
+        el DOM pero no en pantalla.
+
+        🔴 20-09 · `aria-hidden`. Estaba sólo con `sr-only`, que es justamente
+        la clase que lo esconde de la VISTA y se lo deja al lector de pantalla:
+        adentro de un `role="alert"`, quien navega con lector oía «Contract not
+        found», en inglés y en jerga, después del mensaje en cristiano. La
+        intención del comentario era la contraria. Con `aria-hidden` sigue en
+        el DOM para soporte y para las pruebas, y fuera del árbol accesible.
+      */}
       {fallo.mensajeOriginal && (
-        <span className="sr-only" data-testid="fallo-detalle-tecnico">
+        <span className="sr-only" aria-hidden="true" data-testid="fallo-detalle-tecnico">
           {fallo.mensajeOriginal}
         </span>
       )}

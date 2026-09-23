@@ -71,7 +71,7 @@ export function RenovarContratoVencido({
         sigue adentro. No se prorroga: elige cómo renovarlo, o termínalo.
       </p>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs" htmlFor="fecha-de-entrega">
+        <label className="text-caption" htmlFor="fecha-de-entrega">
           Día en que entrega
           <Input
             id="fecha-de-entrega"
@@ -90,7 +90,7 @@ export function RenovarContratoVencido({
           Renovar por los días ocupados
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Los días de más se cobran con la regla del contrato: prorrateados sobre un mes de 30, o fecha a fecha.
       </p>
       {vencido.renovarPorTerminoInicialHasta && (

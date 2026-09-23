@@ -748,9 +748,25 @@
     @apply text-sm tracking-normal leading-relaxed;
   }
 
-  /* Caption - Labels, metadata */
+  /*
+   * Caption — el escalón de 13 px.
+   *
+   * 🔴 22-09 · Acá decía `@apply text-xs`, que son 12 px. Medido en el
+   * navegador: `.text-caption` se pintaba en 12, no en 13.
+   *
+   * O sea que la escala del producto NO tenía 13: saltaba de 11 (`.text-label`)
+   * a 12 y de ahí a 14 (`.text-body-sm`). Y cambiar un `text-xs` por
+   * `text-caption` —que es lo que veníamos haciendo para sacar contenido de los
+   * 12 px— no cambiaba NADA de tamaño: sólo el interlineado y el tracking.
+   *
+   * Los 13 px son lo que dicen las DOS fuentes: `docs/DESIGN.md` («13 / 19») y
+   * el preset de `@leasefy/cadence` (`caption: ['13px', { lineHeight: '1.46' }]`).
+   * Este archivo se cargaba después y le ganaba al sistema de diseño. Se alinea
+   * con cadence, que es de donde sale el contrato.
+   */
   .text-caption {
-    @apply text-xs tracking-tight leading-normal;
+    font-size: 13px;
+    line-height: 1.46;
   }
 
   /* Overline - Section labels, categories (DM Mono) */

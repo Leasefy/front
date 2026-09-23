@@ -94,15 +94,21 @@ export const ESTADOS_TERMINALES: readonly PqrsEstado[] = ['RESUELTA', 'CERRADA']
 /**
  * A qué estados se puede mover desde cada uno. «Asignada» no se elige a mano:
  * la pone el back al asignar. «Cerrada» es el final: de ahí no se sale.
+ *
+ * 🔴 QA 22-09: a una QUEJA se le ofrecía «En cotización». Cotizar es para una
+ * reparación o un trámite sobre el inmueble —el tipo SOLICITUD—; una queja,
+ * una petición o un reclamo no se cotizan. Sin `tipo` (llamadas viejas) se
+ * ofrece como antes.
  */
-export function estadosSiguientes(estado: PqrsEstado): PqrsEstado[] {
+export function estadosSiguientes(estado: PqrsEstado, tipo?: PqrsTipo): PqrsEstado[] {
+  const cotizable = tipo === undefined || tipo === 'SOLICITUD'
   switch (estado) {
     case 'RECIBIDA':
     case 'ASIGNADA':
     case 'EN_PROCESO':
     case 'EN_COTIZACION':
       return (['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'] as PqrsEstado[]).filter(
-        (e) => e !== estado,
+        (e) => e !== estado && (e !== 'EN_COTIZACION' || cotizable),
       )
     case 'RESUELTA':
       return ['CERRADA']

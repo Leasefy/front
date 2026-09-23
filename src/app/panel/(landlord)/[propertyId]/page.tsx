@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { useRouter } from 'next/navigation';
 import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileText, PaperPlaneTilt, Warning, Info, TrendUp, CalendarBlank, Buildings, Chat, X, Download, Shield, CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -829,11 +829,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <header className="relative rounded-lg overflow-hidden mb-8">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0">
-            <Image
-              src={property.thumbnailUrl}
+            <PortadaDelInmueble
+              property={property}
               alt={property.title}
-              fill
-              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
           </div>
@@ -843,11 +841,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               {/* Property Image Thumbnail */}
               <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/20">
-                <Image
-                  src={property.thumbnailUrl}
+                <PortadaDelInmueble
+                  property={property}
                   alt={property.title}
-                  fill
-                  className="object-cover"
+                  compacta
                 />
               </div>
 

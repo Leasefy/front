@@ -34,7 +34,6 @@ import {
   ArrowLineUp,
   HandCoins,
   IdentificationBadge,
-  CloudArrowUp,
   Files,
   CalendarCheck,
   Signature,
@@ -384,12 +383,12 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // G-02 (18-09-2026): qué se le manda a cada lead y a quién le calza
           // un inmueble que se libera. Cuelga del pipeline porque la entrada es
           // un LEAD, no un inquilino con preferencias guardadas.
-          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/calce'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.calceDeLeads', href: r('/pipeline/que-ofrecer'), icon: GitMerge, module: 'pipeline', scope: 'comercial' },
           // E-03 y D-02: las visitas con lo que les falta (asesor y aviso al
           // inquilino). Va acá y no en Agenda porque lo que se hace en esta
           // pantalla es trabajo COMERCIAL sobre prospectos; la agenda sigue
           // siendo el calendario.
-          { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
+          { labelKey: 'inmobiliaria.nav.visitasDelPipeline', href: r('/pipeline/preparar-visitas'), icon: CalendarCheck, module: 'pipeline', scope: 'comercial' },
         ],
       },
       // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
@@ -424,7 +423,18 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // `SeccionesDelModulo` no dibuja el riel con una sola card (decisión del
       // 2026-09-16), así que una única sub-pantalla quedaría inalcanzable desde
       // el menú. Mismo `module` y mismo `scope`: no abre ni cierra puertas.
-      { key: 'portales', labelKey: 'inmobiliaria.nav.portalesDePublicacion', href: r('/inmuebles/portales'), icon: CloudArrowUp, module: 'portafolio', scope: 'comercial' },
+      // 🔴 22-09 · PORTALES SALE DEL MENÚ (Nico): «para qué es eso si no
+      // tenemos integración directa». Tiene razón: la pantalla registra en qué
+      // portal quedó cada inmueble, pero el aviso lo sube una persona a mano —
+      // la propia pantalla lo dice («todavía no publicamos solos en ninguno»).
+      // Un módulo en el menú promete que el producto hace ese trabajo.
+      //
+      // 🔴 La RUTA se queda viva a propósito: `/inmuebles/portales` responde
+      // igual que antes, para no dejar un 404 a quien la tenga guardada. Lo
+      // que se retira es la promesa del menú.
+      //
+      // Qué hay construido y qué haría falta para prenderla:
+      // `docs/portales-de-publicacion.md`.
       {
         key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: 'portafolio', scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
         // Matching y Asegurabilidad se mudaron a «Agentes IA» (2026-09-16).
@@ -766,6 +776,41 @@ export function moduloDeLaRuta(pathname: string): ModuloDelPanel | null {
   const candidatos = modulosDelPanel().filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`));
   if (candidatos.length === 0) return null;
   return candidatos.sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+}
+
+/**
+ * La cara de la plata que DICE la ruta, o `null` si la pantalla no tiene una
+ * (el tablero financiero, que mira las tres) o no es de un módulo con caras.
+ */
+export function caraDeLaRuta(pathname: string): CaraDeLaPlata | null {
+  return pantallaDeLaRuta(pathname)?.pantalla.cara ?? null;
+}
+
+/**
+ * Qué cara queda elegida en el selector.
+ *
+ *   1. La de la pantalla, si tiene: estás en Dispersiones ⇒ estás en
+ *      Propietarios.
+ *   2. En una pantalla que mira TODAS (el tablero financiero), la ÚLTIMA cara
+ *      en la que estabas, si esta persona la puede ver.
+ *   3. Si no, la primera presente —Inquilinos—, donde se opera todos los días.
+ *
+ * 🔴 El paso 2 existe por un defecto que Nico encontró el 22-09: parado en
+ * «Pagar a propietarios · la plata que sale», un clic en «Tablero financiero»
+ * lo tiraba a «Cobrar a inquilinos». El tablero no tiene cara, así que caía
+ * siempre en la primera: el selector de arriba cambiaba de grupo sin que nadie
+ * lo pidiera y el riel de abajo mostraba las secciones de OTRO lado de la
+ * plata. Una pantalla compartida no puede elegir por ti de qué lado estás.
+ */
+export function caraDelSelector(
+  deLaPantalla: CaraDeLaPlata | null | undefined,
+  recordada: CaraDeLaPlata | null | undefined,
+  presentes: readonly CaraDeLaPlata[],
+): CaraDeLaPlata | null {
+  if (presentes.length === 0) return null;
+  if (deLaPantalla) return deLaPantalla;
+  if (recordada && presentes.includes(recordada)) return recordada;
+  return presentes[0] ?? null;
 }
 
 /** El grupo del sidebar al que pertenece un módulo (null si no está en el árbol). */

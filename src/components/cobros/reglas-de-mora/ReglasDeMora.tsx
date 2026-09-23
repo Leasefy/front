@@ -208,7 +208,7 @@ export function ReglasDeMora() {
 
   return (
     <div className="space-y-5">
-      <p className="flex items-start gap-2 text-xs text-fg-muted" data-testid="aviso-motor" data-motor={String(motorPrendido)}>
+      <p className="flex items-start gap-2 text-caption text-fg-muted" data-testid="aviso-motor" data-motor={String(motorPrendido)}>
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         {motorPrendido === true ? (
           <span>
@@ -270,7 +270,7 @@ export function ReglasDeMora() {
           <div className="space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   <span className="font-mono tabular-nums">{total}</span>{' '}
                   {t(total === 1 ? 'reglasDeMora.conteo.una' : 'reglasDeMora.conteo.varias')}
                 </p>
@@ -387,7 +387,7 @@ function FilaDeRegla({
       )}
     >
       <TableCell className="p-4 align-middle">
-        <span className="font-mono text-xs tabular-nums text-fg-muted">#{regla.orden}</span>
+        <span className="font-mono text-caption tabular-nums text-fg-muted">#{regla.orden}</span>
       </TableCell>
 
       <TableCell className="p-4 align-middle">
@@ -405,14 +405,14 @@ function FilaDeRegla({
       <TableCell className="p-4 align-middle">
         <div className="min-w-0">
           <p className="text-sm text-fg">{capitalizar(describirDisparador(regla))}</p>
-          <p className="text-xs text-fg-subtle">{NOMBRE_DEL_DISPARADOR[regla.disparador]}</p>
+          <p className="text-caption text-fg-subtle">{NOMBRE_DEL_DISPARADOR[regla.disparador]}</p>
         </div>
       </TableCell>
 
       <TableCell className="p-4 align-middle">
         <div className="min-w-0">
           <p className="text-sm text-fg">{capitalizar(describirFormula(regla))}</p>
-          <p className="text-xs text-fg-subtle">{NOMBRE_DE_LA_FORMULA[regla.formula]}</p>
+          <p className="text-caption text-fg-subtle">{NOMBRE_DE_LA_FORMULA[regla.formula]}</p>
         </div>
       </TableCell>
 
@@ -425,7 +425,7 @@ function FilaDeRegla({
       {/* El switch y «Editar» son acciones propias: no deben disparar el clic
           de la fila, que abre el editor. */}
       <TableCell className="p-4 align-middle" onClick={(e) => e.stopPropagation()}>
-        <label className="flex items-center gap-2 text-xs text-fg-muted">
+        <label className="flex items-center gap-2 text-caption text-fg-muted">
           <Switch
             checked={regla.activa}
             onCheckedChange={onCambiarActiva}
@@ -480,7 +480,7 @@ function Sugerencias({
         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" weight="duotone" aria-hidden="true" />
         <div className="space-y-0.5">
           <h2 className="text-sm font-semibold text-fg">{titulo}</h2>
-          <p className="max-w-2xl text-xs text-fg-muted">{descripcion}</p>
+          <p className="max-w-2xl text-caption text-fg-muted">{descripcion}</p>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -530,7 +530,7 @@ function TarjetaDePlantilla({
         </div>
       </div>
       <p className="text-sm text-fg-muted">{plantilla.explicacion}</p>
-      <p className="text-xs text-fg-subtle">
+      <p className="text-caption text-fg-subtle">
         {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
       </p>
       <div>

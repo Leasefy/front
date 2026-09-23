@@ -220,14 +220,14 @@ export function PeriodosDeNominaPanel() {
             {armando ? 'Armando…' : 'Armar borrador'}
           </Button>
         </div>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           🔴 <strong>Aprobar le manda a cada persona su desprendible en PDF por
           correo</strong>, con constancia de a qué dirección salió. Si un correo
           falla, el período queda aprobado igual y se puede reenviar desde el
           desprendible: deshacer una aprobación borraría provisiones ya
           contabilizadas.
         </p>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           La contabilidad siempre cierra el mes completo: las dos quincenas de un
           mes comparten su asiento del gasto, y la retención se calcula sobre el
           mes — la segunda quincena ajusta lo que retuvo la primera.
@@ -294,7 +294,7 @@ export function PeriodosDeNominaPanel() {
                         <TableCell className="text-right font-mono tabular-nums">
                           {formatCurrency(p.totalAportesCop)}
                         </TableCell>
-                        <TableCell className="text-xs text-fg-muted">
+                        <TableCell className="text-caption text-fg-muted">
                           {p.asientoId ? 'Asentado' : 'Sin asiento'}
                           {p.loteDeEgresosId ? ' · con lote de egresos' : ''}
                         </TableCell>

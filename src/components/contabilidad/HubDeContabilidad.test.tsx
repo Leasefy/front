@@ -19,7 +19,7 @@ import { ApiError } from '@/lib/api/client';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, gastos, exogena, toastMock } = vi.hoisted(() => ({
+const { api, gastos, exogena, procesos, toastMock } = vi.hoisted(() => ({
   api: {
     puc: { listar: vi.fn() },
     asientos: {
@@ -39,6 +39,7 @@ const { api, gastos, exogena, toastMock } = vi.hoisted(() => ({
    */
   gastos: { facturas: { listar: vi.fn() }, lotes: { listar: vi.fn() } },
   exogena: { resumen: vi.fn() },
+  procesos: { exportarLibro: vi.fn() },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
@@ -54,6 +55,10 @@ vi.mock('@/lib/api/exogena.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/exogena.service')>()),
   exogenaApi: exogena,
 }));
+vi.mock('@/lib/api/procesos.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/procesos.service')>()),
+  procesosApi: procesos,
+}));
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$ ${n}` }),
@@ -61,7 +66,11 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('./Monto', () => ({
   Monto: ({ valor }: { valor: number }) => <span>{valor}</span>,
 }));
-vi.mock('./RangoDeFechas', () => ({ RangoDeFechas: () => <div /> }));
+// El rango sale con su marca, para poder afirmar DÓNDE vive (en el cajón, no
+// en la portada) sin montar los dos `<input type="date">` de verdad.
+vi.mock('./RangoDeFechas', () => ({
+  RangoDeFechas: () => <div data-testid="rango-de-fechas" />,
+}));
 vi.mock('./asientos/CierreDePeriodo', () => ({
   CierreDePeriodo: ({ fallo }: { fallo?: boolean }) => (
     <div data-testid="cierre" data-fallo={String(Boolean(fallo))} />
@@ -288,7 +297,74 @@ describe('HubDeContabilidad — la contabilidad completa del 18-09', () => {
     expect($('[data-testid="ir-al-balance-general"]')).not.toBeNull();
     expect($('[data-testid="ir-al-mayor"]')).not.toBeNull();
     expect($('[data-testid="ir-a-terceros"]')).not.toBeNull();
-    expect($('[data-testid="ir-a-la-exogena"]')).not.toBeNull();
+  });
+
+  /**
+   * 🔴 20-09 · EL DEFECTO QUE SÓLO SE VIO ABRIENDO LA PORTADA.
+   *
+   * La página tenía DOS navegaciones: los renglones de «Para el contador» y la
+   * grilla de tarjetas de abajo. Y se pisaban a medias: «Deterioro de cartera»,
+   * «Certificados de retención» y «Exógena» estaban en las dos, con el mismo
+   * nombre y el mismo destino, mientras «Presupuesto» estaba sólo en la lista y
+   * no tenía tarjeta. Dos listas con solape parcial son peores que una lista
+   * larga: nadie sabe cuál manda, y quien no encuentra algo en una no sabe si
+   * mirar la otra.
+   *
+   * La separación es por NATURALEZA del destino, no por gusto:
+   *   · «Para el contador» = INFORMES (una pestaña dentro de una pantalla),
+   *   · la grilla = PANTALLAS.
+   * Esta prueba es lo que impide que vuelvan a mezclarse, y de paso obliga a
+   * que una pantalla nueva de contabilidad entre a la grilla.
+   */
+  it('ningún destino aparece dos veces en la portada', async () => {
+    await montar();
+    // ⚠️ Dos trampas acá, las dos pagadas.
+    //
+    // 1) Escrito como `document.querySelectorAll('main a…')` pasa SIEMPRE: el
+    //    test monta el componente suelto, no la página, así que no hay ningún
+    //    `<main>` y el guardián mide cero enlaces. Va contra `host`.
+    // 2) Comparar TODOS los enlaces de la portada es demasiado ancho y marca
+    //    un falso: «Ver el libro», el «ver más» de la lista de últimos
+    //    asientos, apunta a `/asientos`, igual que su tarjeta. Eso no es
+    //    navegación duplicada, es el remate de un resumen.
+    //
+    // Lo que se prohíbe es que un mismo destino esté en las DOS listas de
+    // navegación: los informes y la grilla de pantallas.
+    const hrefs = (sel: string) =>
+      [...host.querySelectorAll<HTMLAnchorElement>(`${sel} a`)].map(
+        (a) => a.getAttribute('href') ?? '',
+      );
+    const informes = hrefs('[data-testid="informes-del-contador"]');
+    const pantallas = new Set(hrefs('nav[aria-label="Secciones de contabilidad"]'));
+
+    expect(informes.length).toBeGreaterThan(0);
+    expect(pantallas.size).toBeGreaterThan(0);
+    expect(informes.filter((h) => pantallas.has(h))).toEqual([]);
+  });
+
+  it('las once pantallas de contabilidad tienen su tarjeta en la grilla', async () => {
+    await montar();
+    const enGrilla = new Set(
+      [...host.querySelectorAll('nav[aria-label="Secciones de contabilidad"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
+    );
+    for (const ruta of [
+      'puc',
+      'asientos',
+      'reportes',
+      'mapeo',
+      'deterioro',
+      'certificados',
+      'estados-financieros',
+      'gastos',
+      'egresos',
+      'exogena',
+      'presupuesto',
+      'copropiedades',
+    ]) {
+      expect(enGrilla).toContain(`/panel/inmobiliaria/contabilidad/${ruta}`);
+    }
   });
 
   it('con todo en orden no aparece ninguna de las cuatro alertas', async () => {
@@ -451,5 +527,158 @@ describe('HubDeContabilidad — la contabilidad completa del 18-09', () => {
     expect(caidas).toContain('esperando aprobación');
     expect($('[data-testid="no-cargo-lotes"]')).not.toBeNull();
     expect($('[data-testid="reintentar-lotes"]')).not.toBeNull();
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09, sobre esta portada: «esto también parece un vómito y tiene
+ * cosas por un lado y por el otro que se podrían hacer de otra manera o hasta
+ * con un CTA que luego pida el resto de información».
+ */
+describe('HubDeContabilidad · el resumen es una frase y el rango se pide después', () => {
+  it('🔴 arriba va UNA frase, no tres fichas del mismo peso', async () => {
+    await montar();
+    const resumen = host.querySelector('[aria-label="Resumen del libro"]')!;
+    const frase = resumen.querySelector('[data-testid="el-libro-en-una-frase"]')!;
+    expect(frase).not.toBeNull();
+    // Dice la RELACIÓN, no tres números sueltos.
+    expect(frase.textContent).toMatch(/plan de|asiento/i);
+    // Y ya no hay una rejilla de tres columnas de cifras.
+    expect(resumen.querySelectorAll('dd')).toHaveLength(0);
+  });
+
+  it('🔴 el rango de fechas NO está puesto en la portada: lo pide el cajón', async () => {
+    await montar();
+    // Cerrado: el rango no está en ninguna parte de la portada.
+    expect(document.querySelector('[data-testid="rango-de-fechas"]')).toBeNull();
+    expect(document.querySelector('[data-testid="cajon-del-libro"]')).toBeNull();
+
+    await clic($('[data-testid="descargar-csv"]'));
+
+    // El cajón vive en un portal: se busca en el documento.
+    const cajon = document.querySelector('[data-testid="cajon-del-libro"]')!;
+    expect(cajon).not.toBeNull();
+    expect(cajon.querySelector('[data-testid="rango-de-fechas"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="cajon-del-libro-descargar"]')).not.toBeNull();
+  });
+
+  it('«En segundo plano» lanza el libro en el centro de procesos con el rango, y cierra el cajón', async () => {
+    procesos.exportarLibro.mockResolvedValue({ procesoId: 'proc-libro' });
+    await montar();
+    await clic($('[data-testid="descargar-csv"]'));
+    await clic(document.querySelector('[data-testid="cajon-del-libro-segundo-plano"]') as HTMLElement);
+
+    expect(procesos.exportarLibro).toHaveBeenCalledWith({
+      desde: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      hasta: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+    expect(toastMock.success).toHaveBeenCalledWith('Estamos armando el libro.', expect.anything());
+    expect(document.querySelector('[data-testid="cajon-del-libro"]')).toBeNull();
+  });
+});
+
+/**
+ * 🔴 22-09 · EL GLOW-UP. Nico, con dos capturas de la portada:
+ *   · «no le hiciste el glow up y eso se ve por ahí tirado todo»;
+ *   · de la misma pantalla cargando: «ese diseño de carga es horrible» — una
+ *     tarjeta enorme vacía con una barrita gris y un spinner solitario en
+ *     «Últimos asientos».
+ *
+ * Lo que se puede medir sin navegador: que la carga tenga la FORMA de lo que
+ * llega (y no un spinner), que el período vaya antes que lo demás en el orden
+ * de lectura, que los informes sean una lista con qué es cada uno, que la fila
+ * de un asiento abra su cajón sin pedir nada, y que cada bloque diga qué es.
+ */
+describe('HubDeContabilidad · el glow-up del 22-09', () => {
+  it('🔴 cargando: «Últimos asientos» tiene cinco renglones con fecha, glosa y monto, no un spinner', async () => {
+    // Nada responde: la portada se queda en su primera pintura.
+    const nunca = () => new Promise<never>(() => {});
+    api.puc.listar.mockImplementation(nunca);
+    api.asientos.listar.mockImplementation(nunca);
+    api.asientos.cierre.mockImplementation(nunca);
+    api.asientos.faltantes.mockImplementation(nunca);
+    api.reportes.balanceDePrueba.mockImplementation(nunca);
+    await montar();
+
+    const ultimos = $('[data-testid="ultimos-asientos"]')!;
+    expect(ultimos.getAttribute('aria-busy')).toBe('true');
+    expect(ultimos.querySelector('[role="status"], .animate-spin')).toBeNull();
+    const renglones = ultimos.querySelectorAll('[data-testid="ultimos-asientos-cargando"] > li');
+    expect(renglones).toHaveLength(5);
+    for (const r of renglones) {
+      expect(r.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3);
+    }
+    // El resumen: dos renglones con la forma de la frase, no una barra suelta.
+    expect(
+      $('[data-testid="resumen-cargando"]')!.querySelectorAll('[data-slot="skeleton"]'),
+    ).toHaveLength(2);
+    // La cabecera de la tarjeta ya está: nada salta cuando llegan los datos.
+    expect(ultimos.textContent).toContain('Últimos asientos');
+    expect(ultimos.textContent).toContain('Ver el libro');
+  });
+
+  it('🔴 el período va ANTES que «Últimos asientos» en el orden de lectura (en el teléfono, primero)', async () => {
+    await montar();
+    const cierre = $('[data-testid="cierre"]')!;
+    const ultimos = $('[data-testid="ultimos-asientos"]')!;
+    expect(cierre.compareDocumentPosition(ultimos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('🔴 los informes son una lista: cada uno con su nombre y qué es, en un renglón que se toca entero', async () => {
+    await montar();
+    const enlaces = host.querySelectorAll<HTMLAnchorElement>('[data-testid="informes-del-contador"] a');
+    expect(enlaces.length).toBe(7);
+    for (const a of enlaces) {
+      const [nombre, que] = a.querySelectorAll('span > span');
+      expect(nombre.textContent!.length).toBeGreaterThan(0);
+      // «Qué es» es una frase, no el nombre repetido.
+      expect(que.textContent!.length).toBeGreaterThan(20);
+      expect(que.textContent).not.toBe(nombre.textContent);
+    }
+    // Y los grupos dicen qué son.
+    const grupos = [...host.querySelectorAll('[data-testid="informes-del-contador"] h3')].map(
+      (h) => h.textContent,
+    );
+    expect(grupos).toEqual(['El libro', 'Lo que se firma']);
+  });
+
+  it('«Descargar el libro en CSV» vive en la cabecera de su tarjeta', async () => {
+    await montar();
+    const boton = $('[data-testid="descargar-csv"]')!;
+    expect(boton.closest('header')?.textContent).toContain('Para el contador');
+  });
+
+  it('la grilla de pantallas dice qué es', async () => {
+    await montar();
+    const nav = host.querySelector('nav[aria-label="Secciones de contabilidad"]')!;
+    const seccion = nav.closest('section')!;
+    expect(seccion.querySelector('h2')!.textContent).toBe('Todas las pantallas de contabilidad');
+  });
+
+  it('🔴 la fila de un asiento abre su cajón, con lo que ya vino: no pide nada más', async () => {
+    const asiento = {
+      id: 'as-1',
+      numero: 17,
+      fecha: '2026-09-15',
+      descripcion: 'Recaudo del canon de septiembre',
+      origen: 'MANUAL',
+      reversaDeId: null,
+      reversadoPorId: null,
+      cerrado: false,
+      movimientos: [
+        { id: 'm1', cuentaCodigo: '1105', cuentaNombre: 'Caja', debitoCop: 1000, creditoCop: 0 },
+        { id: 'm2', cuentaCodigo: '2815', cuentaNombre: 'Terceros', debitoCop: 0, creditoCop: 1000 },
+      ],
+    };
+    api.asientos.listar.mockResolvedValue({ asientos: [asiento], total: 1 });
+    await montar();
+    const pedidosAntes = api.asientos.listar.mock.calls.length;
+
+    await clic($('[data-testid="ultimo-asiento-as-1"]'));
+
+    const cajon = document.querySelector('[role="dialog"]');
+    expect(cajon).not.toBeNull();
+    expect(cajon!.textContent).toContain('Recaudo del canon de septiembre');
+    expect(api.asientos.listar.mock.calls.length).toBe(pedidosAntes);
   });
 });

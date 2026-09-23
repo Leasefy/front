@@ -1,12 +1,11 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { motion } from 'framer-motion';
-import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui';
 import {
   CaretLeft,
@@ -26,6 +25,8 @@ import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArr
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
+import { EditarPerfilDelAsesor } from '@/components/inmobiliaria/EditarPerfilDelAsesor';
+import { AsignarInmuebleAlAsesor } from '@/components/inmobiliaria/AsignarInmuebleAlAsesor';
 
 /**
  * Agente Detail Page
@@ -37,22 +38,17 @@ function AgenteDetailContent() {
   const agenteId = params.id as string;
 
   // Fetch data
-  const { agente } = useAgente(agenteId);
-  const { consignaciones } = useAgenteConsignaciones(agenteId);
+  const { agente, refetch: recargarAgente } = useAgente(agenteId);
+  const { consignaciones, refetch: recargarConsignaciones } =
+    useAgenteConsignaciones(agenteId);
   const { pipelineItems } = useAgentePipeline(agenteId);
 
-  // Handlers
-  const handleEdit = useCallback(() => {
-    toast.info(t('inmobiliaria.agentes.detail.editComingSoon'), {
-      description: t('inmobiliaria.agentes.detail.editComingSoonDesc'),
-    });
-  }, [t]);
-
-  const handleAssignProperty = useCallback(() => {
-    toast.info(t('inmobiliaria.agentes.detail.assignComingSoon'), {
-      description: t('inmobiliaria.agentes.detail.assignComingSoonDesc'),
-    });
-  }, [t]);
+  /* 🔴 Acá había dos avisos de «próximamente» sobre dos rutas que el back ya
+     publicaba —`PATCH /inmobiliaria/agency/members/:memberId/profile` y
+     `PUT /inmobiliaria/consignaciones/:id/assign-agent`— y con el servicio del
+     front ya escrito para las dos. Lo que faltaba eran los diálogos. */
+  const [editando, setEditando] = useState(false);
+  const [asignando, setAsignando] = useState(false);
 
   // 404 if not found
   if (!agente) {
@@ -115,7 +111,7 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <AgenteProfile agente={agente} onEdit={handleEdit} />
+            <AgenteProfile agente={agente} onEdit={() => setEditando(true)} />
           </motion.div>
 
           {/* Metrics Section */}
@@ -136,7 +132,7 @@ function AgenteDetailContent() {
           >
             <AgentePropertyList
               consignaciones={consignaciones}
-              onAssignProperty={handleAssignProperty}
+              onAssignProperty={() => setAsignando(true)}
             />
           </motion.div>
 
@@ -175,6 +171,20 @@ function AgenteDetailContent() {
           </motion.div>
         </div>
       </div>
+
+      <EditarPerfilDelAsesor
+        abierto={editando}
+        onCerrar={() => setEditando(false)}
+        agente={agente}
+        onGuardado={recargarAgente}
+      />
+      <AsignarInmuebleAlAsesor
+        abierto={asignando}
+        onCerrar={() => setAsignando(false)}
+        agenteUserId={agente.userId}
+        agenteNombre={agente.name}
+        onAsignado={recargarConsignaciones}
+      />
     </div>
   );
 }

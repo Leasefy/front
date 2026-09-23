@@ -115,7 +115,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
   if (nadaQueHacer) {
     return (
       <p
-        className="flex items-start gap-2 rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground"
+        className="flex items-start gap-2 rounded-lg border border-border bg-card px-4 py-3 text-caption text-muted-foreground"
         data-testid="bandeja-de-cartas-vacia"
       >
         <EnvelopeSimple className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
@@ -141,18 +141,18 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
         </div>
         <Link
           href={RUTA_DE_LAS_CARTAS}
-          className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+          className="text-caption font-medium text-primary underline-offset-4 hover:underline"
           data-testid="abrir-cola-de-cartas"
         >
           Abrir la cola →
         </Link>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Cada carta aparece sola {datos.diasAntes} días antes del aniversario. El canon sube igual en la fecha; la carta
         es transparencia.
       </p>
       {!datos.disponible && (
-        <p className="text-xs text-plan-status-yellow">
+        <p className="text-caption text-plan-status-yellow">
           Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
         </p>
       )}
@@ -206,7 +206,7 @@ function Loseta({
         urgente && cuantas > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-border'
       }`}
     >
-      <p className="text-xs text-muted-foreground">{rotulo}</p>
+      <p className="text-caption text-muted-foreground">{rotulo}</p>
       <p
         className={`font-mono text-2xl font-semibold tabular-nums ${
           urgente && cuantas > 0 ? 'text-destructive' : 'text-foreground'
@@ -267,9 +267,9 @@ export function Fila({
           {fechaCorta(carta.desde)}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">{carta.inmueble}</p>
+      <p className="text-caption text-muted-foreground">{carta.inmueble}</p>
       {carta.alertaRoja ? (
-        <p className="flex items-start gap-1.5 text-xs font-medium text-destructive">
+        <p className="flex items-start gap-1.5 text-caption font-medium text-destructive">
           {/* 🔴 Acá había un emoji 🔴 literal, el mismo que uso en los
               comentarios del código: se filtró a la cara del usuario. El panel
               marca las alertas con iconos, no con emojis. */}
@@ -277,18 +277,18 @@ export function Fila({
           <span>Llegó el aniversario ({fechaCorta(carta.desde)}) sin constancia de la carta.</span>
         </p>
       ) : carta.estado === 'ENVIADA' ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Enviada el {fechaCorta(carta.enviadaAt)}
           {carta.medio ? ` (${carta.medio.toLowerCase()})` : ''}.
         </p>
       ) : (
-        <p className="text-xs text-plan-status-yellow">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
+        <p className="text-caption text-plan-status-yellow">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
       )}
       {carta.ultimoIntento && carta.estado !== 'ENVIADA' && (
-        <p className="text-xs text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>
+        <p className="text-caption text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>
       )}
       {!carta.correoDelInquilino && carta.estado !== 'ENVIADA' && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Sin correo del inquilino: entrégala por otro medio y registra la constancia en el contrato.
         </p>
       )}

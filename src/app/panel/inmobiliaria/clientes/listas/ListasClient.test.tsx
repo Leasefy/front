@@ -158,22 +158,52 @@ describe('ListasClient', () => {
     )
   })
 
-  it('🔴 una COINCIDENCIA sí bloquea, y lo dice con las listas', async () => {
+  it('🔴 una COINCIDENCIA sí bloquea, y CON QUÉ coincide se lee en su cajón', async () => {
     api.listas = vi.fn(() => Promise.resolve(CON_COINCIDENCIA))
     await pintar()
-    const fila = $('[data-testid="consulta-c-2"]')?.textContent ?? ''
-    expect(fila).toContain('Bloqueado')
-    expect(fila).toContain('OFAC')
+    const fila = $('[data-testid="consulta-c-2"]') as HTMLElement
+    // La fila dice el veredicto…
+    expect(fila.textContent).toContain('Bloqueado')
     // Y sin nada en la bandeja, la bandeja no se muestra.
     expect($('[data-testid="bandeja-sin-verificar"]')).toBeNull()
+
+    /*
+     * 🔴 22-09 · Con qué coincide dejó de estar escrito en la fila y pasó al
+     * cajón, junto con la DECISIÓN. Antes la fila prometía «un administrador
+     * la revisa» y no había dónde revisarla: `revisarConsulta` estaba en el
+     * cliente y no la llamaba nadie.
+     */
+    await act(async () => {
+      fila.click()
+    })
+    const cajon = document.querySelector('[data-testid="cajon-de-la-consulta"]')!
+    expect(cajon).not.toBeNull()
+    expect(cajon.textContent).toContain('OFAC')
+    // Y las dos salidas existen, que es lo que faltaba.
+    expect(document.querySelector('[data-testid="liberar-consulta"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="confirmar-en-lista"]')).not.toBeNull()
   })
 
-  it('sin lista cargada el vacío explica que nada se compara', async () => {
+  it('🔴 sin lista cargada lo dice ARRIBA: no se está comprobando a nadie', async () => {
     await pintar()
-    expect(contenedor.textContent).toContain(
-      'Todavía no hay ninguna lista cargada',
-    )
-    expect(contenedor.textContent).toContain('quedan «sin verificar»')
+    // La frase del encabezado es la que tiene que decirlo: antes esto vivía
+    // dentro del vacío de la segunda tarjeta, 800 px más abajo.
+    const estado = $('[data-testid="estado-de-las-listas"]')!
+    expect(estado.textContent).toContain('no se está comprobando a nadie')
+    expect(estado.textContent).toContain('sin verificar')
+  })
+
+  it('🔴 «cargar una lista» existe: la pantalla lo pedía y no había dónde', async () => {
+    await pintar()
+    expect($('[data-testid="abrir-cargar-lista"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="cajon-de-la-lista"]')).toBeNull()
+
+    await act(async () => {
+      ($('[data-testid="abrir-cargar-lista"]') as HTMLElement).click()
+    })
+    const cajon = document.querySelector('[data-testid="cajon-de-la-lista"]')!
+    expect(cajon).not.toBeNull()
+    expect(cajon.querySelector('[data-testid="lista-archivo"]')).not.toBeNull()
   })
 
   it('sin permiso de edición no ofrece revisar', async () => {

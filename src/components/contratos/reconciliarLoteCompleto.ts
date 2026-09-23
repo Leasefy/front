@@ -44,11 +44,16 @@ const MAX_LLAMADAS = 1_000;
 
 export async function reconciliarLoteCompleto(
   lote: string,
-  reconciliar: (lote: string, desdeFila: number) => Promise<ResultadoReconciliacion>,
+  reconciliar: (lote: string, desdeFila?: number) => Promise<ResultadoReconciliacion>,
   onProgreso?: (progreso: ProgresoDeReconciliacion) => void,
   opciones: { debeParar?: () => boolean } = {},
 ): Promise<ResultadoReconciliacionCompleta> {
-  let desdeFila = 0;
+  /*
+   * 🔴 Sin cursor en la primera vuelta (QA 22-09): las filas de contratos se
+   * numeran desde 0 y el back mira `fila > desdeFila`, así que mandar 0 se
+   * saltaba la primera fila del lote en cada cruce.
+   */
+  let desdeFila: number | undefined = undefined;
   const acumulado: ProgresoDeReconciliacion = {
     revisadas: 0,
     inmueblesVinculados: 0,
@@ -80,7 +85,10 @@ export async function reconciliarLoteCompleto(
 
     if (opciones.debeParar?.() === true) return cerrar({ detenidoPorPersona: true });
     if (r.terminado === true || r.revisadas === 0) return cerrar({});
-    if (typeof r.ultimaFila !== 'number' || r.ultimaFila <= desdeFila) {
+    if (
+      typeof r.ultimaFila !== 'number' ||
+      (desdeFila !== undefined && r.ultimaFila <= desdeFila)
+    ) {
       return cerrar({ detenidoSinAvance: true });
     }
     desdeFila = r.ultimaFila;

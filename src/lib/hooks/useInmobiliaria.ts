@@ -645,15 +645,13 @@ export function useAnalyticsData(period?: string) {
   return { analyticsData: data, ...rest };
 }
 
-export function useTrendAnalysis() {
-  const { data, ...rest } = useApiData(() => analyticsApi.getTrends(), []);
-  return { trends: data ?? (SIN_DATOS as never[]), ...rest };
-}
-
-export function useForecastData() {
-  const { data, ...rest } = useApiData(() => analyticsApi.getForecasts(), []);
-  return { forecasts: data ?? (SIN_DATOS as never[]), ...rest };
-}
+/**
+ * 🔴 Acá vivían `useTrendAnalysis` y `useForecastData`. Ninguna pantalla los
+ * usaba, y los dos llamaban a `getTrends()` / `getForecasts()` SIN métrica
+ * contra una ruta que la exige en el camino: cualquiera que los hubiera
+ * enganchado habría pintado una tarjeta vacía sin saber por qué. Cuando exista
+ * la pantalla de analítica, el hook nace con su `metricId`.
+ */
 
 export function useAiMetrics(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData<AiMetricsResponse>(

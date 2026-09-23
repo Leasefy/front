@@ -21,6 +21,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
 import { ConfigIntegraciones } from '@/components/inmobiliaria';
 import { useAgencyIntegrations, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
+import { ConexionWompiPagos } from '@/components/integraciones/ConexionWompiPagos';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 
 export function SeccionIntegraciones() {
@@ -44,22 +45,27 @@ export function SeccionIntegraciones() {
   };
 
   return (
-    <EstadoDeDatos
-      cargando={isLoading}
-      error={errorCrudo}
-      vacio={integrations.length === 0}
-      queEs="las integraciones"
-      onReintentar={refetch}
-      esqueleto={<EsqueletoDeSeccion filas={4} />}
-      cuandoVacio={
-        <VacioDeSeccion
-          icono={Plugs}
-          titulo="Todavía no hay integraciones disponibles"
-          ayuda="Cuando conectemos un portal o un contable con tu cuenta, aparece acá para prenderlo o apagarlo."
-        />
-      }
-    >
-      <ConfigIntegraciones integrations={integrations} onToggle={alternar} />
-    </EstadoDeDatos>
+    <div className="space-y-6">
+      {/* Wompi · Pagos a terceros (23-09): las llaves de la inmobiliaria para
+          que los lotes de giros salgan sin subir el archivo al banco. */}
+      <ConexionWompiPagos />
+      <EstadoDeDatos
+        cargando={isLoading}
+        error={errorCrudo}
+        vacio={integrations.length === 0}
+        queEs="las integraciones"
+        onReintentar={refetch}
+        esqueleto={<EsqueletoDeSeccion filas={4} />}
+        cuandoVacio={
+          <VacioDeSeccion
+            icono={Plugs}
+            titulo="Todavía no hay más integraciones para prender"
+            ayuda="Cuando conectemos un portal o un contable con tu cuenta, aparece acá para prenderlo o apagarlo."
+          />
+        }
+      >
+        <ConfigIntegraciones integrations={integrations} onToggle={alternar} />
+      </EstadoDeDatos>
+    </div>
   );
 }

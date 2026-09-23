@@ -26,7 +26,7 @@ vi.mock('@/lib/api/finanzas.service', () => ({
   codigoSinMigrar: () => null,
 }));
 
-import { TableroFinancieroPanel, rangoDelTramo, textoDeLaVariacion } from './TableroFinanciero';
+import { TableroFinancieroPanel, definicionDelTramo, textoDeLaVariacion } from './TableroFinanciero';
 
 function tablero(extra: Partial<TableroFinanciero> = {}): TableroFinanciero {
   return {
@@ -49,11 +49,19 @@ function tablero(extra: Partial<TableroFinanciero> = {}): TableroFinanciero {
     },
     cartera: {
       totalCop: 655_100_000,
+      /*
+       * 🔴 LA FORMA REAL DEL BACK, campo por campo (`TramoDelTablero`).
+       *
+       * Este fixture inventaba `desdeDias` y `hastaDias`, que el back NO manda,
+       * y por eso la prueba pasaba mientras la pantalla mostraba
+       * «undefined-undefined días de mora» en las cuatro tarjetas. Un doble que
+       * fabrica un campo que no existe no prueba la pantalla: la bendice.
+       */
       tramos: [
-        { nombre: '1 a 30 días', desdeDias: 1, hastaDias: 30, carteraCop: 300_000_000, cuotas: 120 },
-        { nombre: '31 a 60 días', desdeDias: 31, hastaDias: 60, carteraCop: 200_000_000, cuotas: 60 },
-        { nombre: '61 a 90 días', desdeDias: 61, hastaDias: 90, carteraCop: 100_000_000, cuotas: 30 },
-        { nombre: 'Más de 90 días', desdeDias: 91, hastaDias: null, carteraCop: 55_100_000, cuotas: 11 },
+        { tramo: '0-30', nombre: '0-30 días', carteraCop: 300_000_000, cuotas: 120 },
+        { tramo: '31-60', nombre: '31-60 días', carteraCop: 200_000_000, cuotas: 60 },
+        { tramo: '61-90', nombre: '61-90 días', carteraCop: 100_000_000, cuotas: 30 },
+        { tramo: '90+', nombre: '+90 días', carteraCop: 55_100_000, cuotas: 11 },
       ],
       enSiniestroCop: 12_000_000,
       deudores: [
@@ -198,12 +206,43 @@ describe('tablero financiero', () => {
     await pintar();
     expect(container.textContent).toContain('Nadie tiene cartera vencida en este corte');
   });
+
+  /*
+   * 🔴 GUARDIÁN: en el tablero no se imprime «undefined», nunca.
+   *
+   * El 21-09 las cuatro tarjetas de «Cartera por edades» decían
+   * «undefined-undefined días de mora» en la pantalla real, y las pruebas
+   * pasaban porque el doble fabricaba los dos campos que faltaban. Este
+   * guardián cuesta una línea y mira TODAS las tarjetas a la vez: es lo único
+   * que hace que el próximo campo que el back deje de mandar se note acá y no
+   * en la pantalla de alguien.
+   */
+  it('🔴 ninguna cifra imprime «undefined» ni «NaN»', async () => {
+    h.tablero.mockResolvedValue(tablero());
+    await pintar();
+
+    expect(container.textContent).not.toContain('undefined');
+    expect(container.textContent).not.toContain('NaN');
+  });
+
+  it('cada tramo de edad dice su rango una sola vez, y cuántas cuotas son', async () => {
+    h.tablero.mockResolvedValue(tablero());
+    await pintar();
+
+    const primero = container.querySelector('[data-testid="tramo-0-30"]')
+      ?.closest('div')?.parentElement;
+    expect(container.textContent).toContain('0-30 días');
+    expect(container.textContent).toContain('120 cuotas en mora');
+    void primero;
+  });
 });
 
 describe('piezas puras del tablero', () => {
-  it('el rango del tramo se escribe con y sin tope', () => {
-    expect(rangoDelTramo({ desdeDias: 1, hastaDias: 30 })).toBe('1-30 días de mora');
-    expect(rangoDelTramo({ desdeDias: 91, hastaDias: null })).toBe('91+ días de mora');
+  it('la tarjeta del tramo dice cuántas cuotas son y desde dónde se cuentan', () => {
+    expect(definicionDelTramo({ cuotas: 120 })).toBe(
+      '120 cuotas en mora. Los días se cuentan DESPUÉS del plazo del contrato.',
+    );
+    expect(definicionDelTramo({ cuotas: 1 })).toContain('1 cuota en mora');
   });
 
   it('la variación lleva signo, y `null` es una raya', () => {

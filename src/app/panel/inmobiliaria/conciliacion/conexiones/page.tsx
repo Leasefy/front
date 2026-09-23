@@ -51,6 +51,7 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
   Select,
@@ -118,9 +119,22 @@ function fmtDateTime(iso: string | null): string {
 
 // ── Register form ──────────────────────────────────────────────────────────
 
+/**
+ * 🔴 EL CTA, NO EL FORMULARIO PUESTO (Nico, 22-09: «así hay muchas cosas… que
+ * deberían ser mejor un CTA que saque toda la información y ya funcione desde
+ * ahí»).
+ *
+ * Registrar una conexión se hace una vez por banco o pasarela — dos o tres
+ * veces en la vida de la inmobiliaria. Cuatro campos permanentes encima de la
+ * tabla de conexiones ocupan media pantalla todos los días y, como en la
+ * resolución de la DIAN y en el documento soporte, **tienen la forma de los
+ * filtros de esa tabla**.
+ */
 function RegistrarConexion({
   onCreate,
   disabled,
+  abierto,
+  onOpenChange,
 }: {
   onCreate: (input: {
     sourceType: ConnectionSourceType
@@ -129,6 +143,8 @@ function RegistrarConexion({
     configRef?: string
   }) => Promise<{ ok: boolean; error?: string }>
   disabled: boolean
+  abierto: boolean
+  onOpenChange: (abierto: boolean) => void
 }) {
   const [sourceType, setSourceType] = useState<ConnectionSourceType>('banco')
   const [provider, setProvider] = useState('')
@@ -164,24 +180,26 @@ function RegistrarConexion({
     setDisplayName('')
     setConfigRef('')
     setSourceType('banco')
+    onOpenChange(false)
   }
 
   return (
-    <section
-      className="rounded-lg border border-border bg-surface p-5 space-y-5"
-      aria-labelledby="seccion-registrar"
+    <Cajon
+      abierto={abierto}
+      onOpenChange={(v) => {
+        // Mientras la orden viaja no se cierra: cerrar a mitad dejaría sin
+        // saber si la conexión quedó registrada.
+        if (!v && busy) return
+        onOpenChange(v)
+      }}
+      ancho="sm:max-w-xl"
       data-testid="conexiones-registrar"
     >
-      <div className="space-y-1">
-        <h2 id="seccion-registrar" className="text-base font-semibold text-fg">
-          Registrar una conexión
-        </h2>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          Conecta una fuente de movimientos para que la conciliación los atribuya a un origen con
-          nombre. No pedimos credenciales: solo una referencia segura a dónde están guardadas.
-        </p>
-      </div>
-
+      <CajonCabecera
+        titulo="Registrar una conexión"
+        descripcion="Conecta una fuente de movimientos para que la conciliación los atribuya a un origen con nombre. No pedimos credenciales: solo una referencia segura a dónde están guardadas."
+      />
+      <CajonCuerpo className="space-y-5">
       {/* Tipo de fuente — selector excluyente (SegmentedControl, no botones azules) */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-fg">Tipo de fuente</Label>
@@ -244,8 +262,23 @@ function RegistrarConexion({
         </p>
       </div>
 
-      {/* CTA principal — única acción default de la sección */}
-      <div className="flex items-center justify-end gap-3 pt-1">
+      </CajonCuerpo>
+      <CajonPie
+        ayuda={
+          disabled
+            ? 'El servicio de conexiones todavía no está activo en tu cuenta.'
+            : 'Nunca escribas acá la contraseña, el token ni la API key reales.'
+        }
+      >
+        <Button
+          variant="outline"
+          hideArrow
+          disabled={busy}
+          onClick={() => onOpenChange(false)}
+          data-testid="conexiones-registrar-cancelar"
+        >
+          Cancelar
+        </Button>
         <Button
           hideArrow
           disabled={!canSubmit}
@@ -256,8 +289,8 @@ function RegistrarConexion({
           <Plus className="size-4" aria-hidden="true" />
           Registrar conexión
         </Button>
-      </div>
-    </section>
+      </CajonPie>
+    </Cajon>
   )
 }
 
@@ -336,6 +369,8 @@ const COLUMNAS = ['Conexión', 'Tipo', 'Última sincronización', 'Estado', 'Cam
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 function ConciliacionConexiones() {
+  /** El cajón de registrar: se hace dos o tres veces en la vida de la agencia. */
+  const [registrando, setRegistrando] = useState(false)
   const { t } = useI18n()
 
   const {
@@ -404,20 +439,41 @@ function ConciliacionConexiones() {
           titulo="Las conexiones bancarias no están disponibles en tu cuenta todavía"
           data-testid="conexiones-backend-warning"
         >
-          Puedes ver el formulario, pero no se puede registrar ni actualizar una conexión hasta que el
-          servicio esté activo. Mientras tanto, carga el extracto del banco a mano desde Cobros.
+          Puedes abrir el formulario, pero no se puede registrar ni actualizar una conexión hasta que
+          el servicio esté activo. Mientras tanto, carga el extracto del banco a mano desde Cobros.
         </AlertaAccionable>
       )}
 
-      {/* Registrar conexión */}
-      <RegistrarConexion onCreate={createConnection} disabled={backendUnavailable} />
+      <RegistrarConexion
+        onCreate={createConnection}
+        disabled={backendUnavailable}
+        abierto={registrando}
+        onOpenChange={setRegistrando}
+      />
 
-      {/* Conexiones registradas — la tabla sola dentro de la tarjeta, sin
-          título encima (así se leen todas las listas del panel). */}
+      {/* Conexiones registradas — la tabla dentro de la tarjeta, con su CTA en
+          la cabecera: es donde vive lo que se puede hacer con esta tabla. */}
       <section
         className="rounded-lg border border-border bg-surface overflow-hidden"
         data-testid="conexiones-lista"
       >
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-body font-semibold text-fg">Conexiones registradas</h2>
+            <p className="text-caption text-fg-muted">
+              De acá salen los movimientos que la conciliación atribuye a un origen.
+            </p>
+          </div>
+          <Button
+            hideArrow
+            className="shrink-0"
+            onClick={() => setRegistrando(true)}
+            data-testid="conexiones-abrir-registro"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Registrar una conexión
+          </Button>
+        </div>
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}
           error={error}

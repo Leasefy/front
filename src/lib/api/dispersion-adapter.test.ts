@@ -69,7 +69,44 @@ describe('adaptarDispersion', () => {
       const cuenta = cuentaDelPropietario(DEL_BACK)
 
       expect(cuenta?.accountNumber).toBe('123456789')
-      expect(cuenta?.accountHolder).toBe('Jorge Restrepo')
+    })
+
+    it('🔴 no supone que el titular es el propietario (QA 22-09: «la cuenta es de la esposa»)', () => {
+      expect(cuentaDelPropietario(DEL_BACK)?.accountHolder).toBe('')
+      expect(
+        cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountHolder: 'Hernán Botero Ochoa' })?.accountHolder,
+      ).toBe('Hernán Botero Ochoa')
+    })
+
+    it('🔴 el titular del GIRO (22-09) gana: nombre y documento de la otra persona', () => {
+      const d = adaptarDispersion({
+        ...DEL_BACK,
+        titularDeLaCuenta: {
+          esElPropietario: false,
+          tipoDocumento: 'CC',
+          numeroDocumento: '80012345',
+          nombre: 'Carlos Restrepo',
+          copiadoAlGenerar: true,
+        },
+      })
+      expect(d.propietarioBankAccount?.accountHolder).toBe('Carlos Restrepo')
+      expect(d.propietarioBankAccount?.accountHolderDocument).toBe('80012345')
+      expect(d.titularDeLaCuenta?.esElPropietario).toBe(false)
+    })
+
+    it('🔴 el reparto entre varias cuentas (22-09) llega a la pantalla tal cual', () => {
+      const reparto = [
+        { porcentaje: 60, banco: 'Bancolombia', tipoDeCuenta: 'Ahorros', cuenta: '····4521', titularDeOtraPersona: null, valorCop: 600_001, enUnaLinea: '60 % · Bancolombia ····4521 · $600.001' },
+        { porcentaje: 40, banco: 'Banco de Occidente', tipoDeCuenta: 'Corriente', cuenta: '····1234', titularDeOtraPersona: null, valorCop: 400_000, enUnaLinea: '40 % · Banco de Occidente ····1234 · $400.000' },
+      ]
+      expect(adaptarDispersion({ ...DEL_BACK, repartoDeLaCuenta: reparto }).repartoDeLaCuenta).toEqual(reparto)
+      // Una sola cuenta: no hay reparto que mostrar.
+      expect(adaptarDispersion({ ...DEL_BACK, repartoDeLaCuenta: null }).repartoDeLaCuenta).toBeUndefined()
+    })
+
+    it('el tipo, si el back lo manda, se entiende en español o en inglés', () => {
+      expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'Ahorros' })?.accountType).toBe('savings')
+      expect(cuentaDelPropietario({ ...DEL_BACK, propietarioBankAccountType: 'CORRIENTE' })?.accountType).toBe('checking')
     })
 
     it('sin cuenta registrada devuelve null, no un objeto vacío', () => {
@@ -161,5 +198,57 @@ describe('las deducciones de la liquidación', () => {
   it('un back anterior sin el bloque no inventa uno', () => {
     expect(adaptarDispersion(DEL_BACK).conDeducciones).toBeUndefined()
     expect(adaptarDispersion({ ...DEL_BACK, conDeducciones: null }).conDeducciones).toBeUndefined()
+  })
+})
+
+/*
+ * 🔴 22-09 · El IVA de la comisión (Nico: «no estás teniendo en cuenta el IVA
+ * en la comisión»). El back lo manda aparte —total y por renglón— y el aviso
+ * de una dispersión que se generó sin él. Si el adaptador lo tirara, el cajón
+ * volvería a decir «Comisión · Neto» con una resta que no cierra.
+ */
+describe('el IVA de la comisión', () => {
+  const CON_IVA: DispersionDelBack = {
+    ...DEL_BACK,
+    totalCollected: 2_054_037,
+    totalCommission: 205_404,
+    totalIvaComision: 39_027,
+    totalRetencionesComision: 0,
+    totalConceptosACargo: 0,
+    netToPropietario: 1_809_606,
+    items: [
+      {
+        cobroId: null,
+        cuotaId: 'cuota-1',
+        propertyTitle: 'Apto 301',
+        rentCollected: 2_054_037,
+        commissionPercent: 10,
+        commissionAmount: 205_404,
+        ivaComisionAmount: 39_027,
+        netAmount: 1_809_606,
+      },
+    ],
+  }
+
+  it('pasa el total y el del renglón tal cual', () => {
+    const d = adaptarDispersion(CON_IVA)
+    expect(d.totalIvaComision).toBe(39_027)
+    expect(d.items[0].ivaComisionAmount).toBe(39_027)
+    expect(d.totalCollected - d.totalCommission - (d.totalIvaComision ?? 0)).toBe(d.netToPropietario)
+  })
+
+  it('un back anterior lo lee como cero, sin aviso', () => {
+    const d = adaptarDispersion(DEL_BACK)
+    expect(d.totalIvaComision).toBe(0)
+    expect(d.totalRetencionesComision).toBe(0)
+    expect(d.avisoDelIvaDeLaComision).toBeNull()
+  })
+
+  it('el aviso de una dispersión generada sin IVA llega a la pantalla', () => {
+    const d = adaptarDispersion({
+      ...DEL_BACK,
+      avisoDelIvaDeLaComision: 'Esta liquidación se generó sin el IVA de la comisión',
+    })
+    expect(d.avisoDelIvaDeLaComision).toContain('sin el IVA')
   })
 })

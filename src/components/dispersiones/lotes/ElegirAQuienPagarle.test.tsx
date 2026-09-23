@@ -164,10 +164,23 @@ describe('elegir a quién le pago', () => {
   it('destildar resta', async () => {
     await montar();
     await tildar('d-b');
-    await tildar('d-b');
+    await tildar('d-c');
+    await tildar('d-c');
 
     const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]');
-    expect(pie?.textContent).toContain('$0');
+    expect(pie?.textContent).toContain('$500.000');
+    expect(pie?.textContent).toContain('1 propietario');
+  });
+
+  it('🔴 sin nada tildado el resumen es el MES ENTERO, no «$0 a 0» (QA 22-09)', async () => {
+    // Con la lista vacía el back arma el mes entero («Armar lote con el mes
+    // entero»): el resumen tiene que decir eso, no que no se gira nada.
+    await montar();
+    const pie = contenedor.querySelector('[data-testid="resumen-de-lo-elegido"]')!.textContent ?? '';
+    expect(pie).toContain('mes entero');
+    expect(pie).toContain('$5.000.000');
+    expect(pie).toContain('3 propietarios');
+    expect(pie).not.toContain('$0 a 0');
   });
 
   it('avisa a quién le falta la cuenta y no lo deja tildar', async () => {

@@ -160,6 +160,19 @@ function MantenimientosContent() {
    */
   const { canAccess } = usePermissions();
   const puedeEditar = canAccess('operaciones', 'edit');
+  /*
+   * 🔴 Crear una solicitud pide DOS permisos (QA 22-09): `operaciones:create`
+   * para la solicitud y `portafolio:view` para elegir el inmueble (el
+   * formulario lee las consignaciones). Un CONTADOR tenía el botón vivo, abría
+   * el formulario y chocaba con «No tienes acceso a Portafolio» sin forma de
+   * terminar. Sin alguno de los dos, el botón se apaga y dice por qué.
+   */
+  const motivoParaNoCrear = !canAccess('operaciones', 'create')
+    ? 'Tu rol no puede crear solicitudes de mantenimiento.'
+    : !canAccess('portafolio', 'view')
+      ? 'Tu rol no puede ver los inmuebles, y la solicitud necesita uno.'
+      : null;
+  const puedeCrear = motivoParaNoCrear === null;
 
   // API Hooks
   // `errorCrudo` y no `error`: el string es sólo el mensaje, y sin el status
@@ -515,10 +528,23 @@ function MantenimientosContent() {
             páginas (Inmuebles, Contratos…). Antes estaba metida en la barra de
             pestañas de la tabla: «raro» (Nico, 2026-09-03). */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button hideArrow onClick={handleNewMantenimiento} data-testid="nueva-solicitud">
-            <Plus className="w-4 h-4" />
-            {t('inmobiliaria.operaciones.maintenance.new')}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              hideArrow
+              onClick={handleNewMantenimiento}
+              disabled={!puedeCrear}
+              title={motivoParaNoCrear ?? undefined}
+              data-testid="nueva-solicitud"
+            >
+              <Plus className="w-4 h-4" />
+              {t('inmobiliaria.operaciones.maintenance.new')}
+            </Button>
+            {motivoParaNoCrear && (
+              <p className="max-w-xs text-right text-caption text-fg-muted" data-testid="nueva-solicitud-motivo">
+                {motivoParaNoCrear}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -673,7 +699,7 @@ function MantenimientosContent() {
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
-                  onCrear={handleNewMantenimiento}
+                  onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                 />
               </motion.div>
             ) : (
@@ -693,7 +719,7 @@ function MantenimientosContent() {
                   onAddQuote={puedeEditar ? (s) => handleRequestQuote(s.id) : undefined}
                   onComplete={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'completed') : undefined}
                   onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
-                  onCrear={handleNewMantenimiento}
+                  onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                   minimal
                 />
               </motion.div>

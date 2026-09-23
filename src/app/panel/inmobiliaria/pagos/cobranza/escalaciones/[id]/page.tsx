@@ -28,6 +28,7 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Badge } from '@/components/ui'
 import { MonoLabel } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -72,11 +73,20 @@ function EscalationDetailContent() {
    */
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton
+          href="/panel/inmobiliaria/pagos/cobranza/escalaciones"
+          label="Escalaciones"
+        />
+        <h1 className="text-h2 text-fg">Escalación</h1>
         <FalloDeCarga
           error={error}
           queEs="esta escalación"
-            onReintentar={refetch}
+          onReintentar={refetch}
           volverA={{ label: 'Escalaciones', href: '/panel/inmobiliaria/pagos/cobranza/escalaciones' }}
         />
       </div>

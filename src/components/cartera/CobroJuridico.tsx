@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Gavel } from '@phosphor-icons/react';
 
 import {
@@ -508,13 +509,7 @@ export function CobroJuridico() {
               />
               <p className="text-caption text-fg-muted">Entre 5 y 500 caracteres.</p>
               <label className="flex items-start gap-2 text-body-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={sinCobro}
-                  onChange={(e) => setSinCobro(e.target.checked)}
-                  data-testid="cerrar-sin-cobro"
-                />
+                <Checkbox className="mt-1" checked={sinCobro} onCheckedChange={(marcada: boolean) => setSinCobro(marcada)} data-testid="cerrar-sin-cobro" />
                 <span>
                   <strong>Se cerró SIN COBRO.</strong> Los honorarios salen del estado de cuenta del inquilino (se
                   anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o

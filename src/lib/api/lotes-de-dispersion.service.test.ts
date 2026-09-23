@@ -95,6 +95,30 @@ describe('lotesDeDispersionApi.armar', () => {
   });
 });
 
+describe('lotesDeDispersionApi — el banco desde el que se gira', () => {
+  it('armar manda el banco y la cuenta de origen, clave por clave', async () => {
+    const fetchMock = mockFetch({ lote: LOTE, excluidos: [] });
+
+    await lotesDeDispersionApi.armar({
+      month: '2026-09',
+      origen: { banco: 'BANCO_BOGOTA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '123-45678-9' },
+    });
+
+    expect(cuerpoDe(fetchMock)).toEqual({
+      month: '2026-09',
+      origen: { banco: 'BANCO_BOGOTA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '123-45678-9' },
+    });
+  });
+
+  it('GET a `/bancos`, una ruta que el back SÍ tiene', async () => {
+    const fetchMock = mockFetch({ disponible: true, motivo: null, bancos: [], cuentas: [], ultima: null });
+
+    await lotesDeDispersionApi.bancos();
+
+    expect(fetchMock).toHaveBeenCalledWith(`${BASE}/bancos`, expect.anything());
+  });
+});
+
 describe('lotesDeDispersionApi.candidatos', () => {
   it('GET a `/candidatos` con el orden y el tope en la query', async () => {
     const fetchMock = mockFetch({

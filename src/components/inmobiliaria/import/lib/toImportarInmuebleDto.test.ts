@@ -111,6 +111,15 @@ describe('toImportarInmuebleDto — listingType branch (C13, no premature valida
     expect('monthlyRent' in dto).toBe(false);
   });
 
+  it('🔴 QA 22-09: con los DOS precios en el archivo, viajan los dos (antes la venta se perdía)', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({ listingType: 'Arriendo', monthlyRent: 3_700_000, salePrice: 580_000_000 }),
+    );
+    expect(dto.listingType).toBe('RENT');
+    expect(dto.monthlyRent).toBe(3_700_000);
+    expect(dto.salePrice).toBe(580_000_000);
+  });
+
   it('a SALE row with no salePrice yet omits it entirely — the back reports precio_venta as faltante, not a fabricated 0', () => {
     const dto = toImportarInmuebleDto(inmueble({ listingType: 'Venta' }));
     expect(dto.listingType).toBe('SALE');

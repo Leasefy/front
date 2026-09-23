@@ -212,7 +212,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   if (isLoading && !data) return <CobranzaDeudorDetailSkeleton />
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
+    <div className="p-4 lg:p-8 pb-8">
       {/* Header */}
       <header className="mb-5">
         <VolverALaLista
@@ -409,6 +409,6 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
         debtorName={debtorName}
         onClose={() => setRevealModal(null)}
       />
-    </main>
+    </div>
   )
 }

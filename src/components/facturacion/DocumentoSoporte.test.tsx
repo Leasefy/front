@@ -95,7 +95,21 @@ afterEach(() => {
   host.remove();
 });
 
-const q = (s: string) => host.querySelector(s);
+/**
+ * 🔴 En `document` y no en `host`: desde el 22-09 «Emitir un documento soporte»
+ * vive en el cajón de la casa, que Radix monta en un PORTAL colgado de
+ * `document.body`. Es el mismo cambio que en «Resolución», y por la misma
+ * razón: cuatro campos debajo de una tabla se leen como sus filtros.
+ */
+const q = (s: string) => document.querySelector(s);
+
+/** El formulario ya no está puesto en la pantalla: lo saca su CTA. */
+async function abrirEmision() {
+  const boton = q('[data-testid="ds-abrir"]') as HTMLButtonElement;
+  await act(async () => {
+    boton.click();
+  });
+}
 
 async function escribir(sel: string, valor: string) {
   const el = q(sel) as HTMLInputElement;
@@ -138,6 +152,7 @@ const CON_PROVEEDOR = {
 describe('DocumentoSoporte', () => {
   it('marca en la lista el proveedor al que le falta su perfil tributario', async () => {
     await pintar(VACIO, CON_PROVEEDOR);
+    await abrirEmision();
     expect(q('[data-testid="ds-proveedor"]')!.textContent).toContain(
       'falta su perfil',
     );
@@ -145,6 +160,7 @@ describe('DocumentoSoporte', () => {
 
   it('🔴 no deja emitir sin ver primero la liquidación', async () => {
     await pintar(VACIO, CON_PROVEEDOR);
+    await abrirEmision();
     await elegirProveedor();
     await escribir('[data-testid="ds-fecha"]', '2026-09-17');
     await escribir('[data-testid="ds-concepto"]', 'Cambio de la llave');
@@ -159,6 +175,7 @@ describe('DocumentoSoporte', () => {
 
   it('🔴 la vista previa dice qué quedó SIN CONFIRMAR y por qué', async () => {
     await pintar(VACIO, CON_PROVEEDOR);
+    await abrirEmision();
     await elegirProveedor();
     await escribir('[data-testid="ds-fecha"]', '2026-09-17');
     await escribir('[data-testid="ds-concepto"]', 'Cambio de la llave');
@@ -195,6 +212,7 @@ describe('DocumentoSoporte', () => {
 
   it('🔴 cambiar el formulario invalida la vista previa: nunca se emite contra otra cuenta', async () => {
     await pintar(VACIO, CON_PROVEEDOR);
+    await abrirEmision();
     await elegirProveedor();
     await escribir('[data-testid="ds-fecha"]', '2026-09-17');
     await escribir('[data-testid="ds-concepto"]', 'Cambio de la llave');
@@ -288,5 +306,24 @@ describe('DocumentoSoporte', () => {
       q('[data-testid="documento-soporte-sin-migracion"]')!.textContent,
     ).toContain('20260918003000');
     expect(q('[data-testid="documento-soporte-formulario"]')).toBeNull();
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09: «así hay muchas cosas no sólo en estas tablas dentro de
+ * facturación que deberían ser mejor un CTA que saque toda la información y ya
+ * funcione desde ahí». Este guardián no deja que el formulario vuelva a quedar
+ * puesto debajo de la tabla, que es donde se leía como sus filtros.
+ */
+describe('DocumentoSoporte · el formulario lo saca un CTA', () => {
+  it('🔴 no está puesto en la pantalla: primero está el botón', async () => {
+    await pintar(VACIO, CON_PROVEEDOR);
+    expect(q('[data-testid="ds-proveedor"]')).toBeNull();
+    expect(q('[data-testid="ds-emitir"]')).toBeNull();
+    expect(q('[data-testid="ds-abrir"]')).not.toBeNull();
+
+    await abrirEmision();
+    expect(q('[data-testid="ds-proveedor"]')).not.toBeNull();
+    expect(q('[data-testid="ds-emitir"]')).not.toBeNull();
   });
 });

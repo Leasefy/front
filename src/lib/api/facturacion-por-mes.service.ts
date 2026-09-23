@@ -38,7 +38,9 @@
  * emitida acá es lo que le entra.
  */
 
-import { apiClient } from './client'
+import { apiClient, ApiError } from './client'
+import { anunciarProceso, RECURSO_DE_PROCESOS } from './procesos.service'
+import { invalidar } from './refresco-de-datos'
 import type {
   AvisoDeLaResolucion,
   EstadoDeLaCorreccion,
@@ -47,6 +49,13 @@ import type {
 } from './facturacion-electronica.service'
 
 const BASE = '/inmobiliaria/facturacion'
+
+/**
+ * El tope de la descarga directa en ZIP. Es el MISMO número del back
+ * (`DocumentoDeLaFacturaService.MAXIMO_POR_ZIP`): con más, el botón se apaga
+ * diciendo por qué en vez de esperar un 400.
+ */
+export const MAXIMO_FACTURAS_POR_ZIP = 50
 
 // ══ Vocabulario del back ════════════════════════════════════════════════════
 
@@ -165,6 +174,12 @@ export interface FacturaDelMes {
   numero: number | null
   /** El número autorizado por la resolución de la DIAN («FE-1042»). */
   numeroDian: string | null
+  /**
+   * El id de la factura cuando ya existe (22-09). Con él se baja el PDF de la
+   * fila emitida. Opcional: un back anterior no lo manda, y entonces no se
+   * ofrece la descarga en vez de pedir `/facturacion/undefined/pdf`.
+   */
+  facturaId?: string | null
   diasFacturados: number
   diasDelMes: number
   /** Lo que el propietario paga y NO se factura: va a deducción del egreso. */
@@ -356,7 +371,28 @@ export interface ResultadoDeGeneracion {
     numero: number
     numeroDian: string
     totalCop: number
+    /** El id de la factura emitida. `null` si el back no pudo leerlo de vuelta. */
+    facturaId?: string | null
   }[]
+  /** Su fila en el centro de procesos (22-09). Ausente en un back sin centro. */
+  procesoId?: string | null
+  /** `true` = el ZIP con los PDF de ESTA tanda se está armando en ese proceso. */
+  zipEnElCentro?: boolean
+  /** `true` = este back junta las tandas de una corrida en UN proceso (23-09). */
+  corridaAgrupable?: boolean
+}
+
+/**
+ * Lo que una tanda le dice al back para sumar al proceso de su corrida
+ * (23-09: «una emisión = UN proceso»).
+ */
+export interface TandaDeLaCorrida {
+  procesoId?: string
+  yaEnviadas: number
+  totalDeLaCorrida: number
+  ultimaTanda: boolean
+  /** Sólo en la última: los ids de todas las facturas, para el único ZIP. */
+  idsDeLaCorrida?: string[]
 }
 
 /** Una resolución cargada, con su estado ya resuelto por el back. */
@@ -521,10 +557,56 @@ export const facturacionPorMesService = {
    * Emite las elegidas. Sin `claves` —o con la lista vacía— el back emite
    * todas las del mes que estén por emitir.
    */
-  generar: (mes: string, claves?: string[]) =>
-    apiClient.post<ResultadoDeGeneracion>(
-      `${BASE}/generar`,
-      claves && claves.length > 0 ? { mes, claves } : { mes },
+  generar: async (mes: string, claves?: string[], corrida?: TandaDeLaCorrida) => {
+    // La emisión vive en el centro de procesos (22-09): «300 de 800». Sólo
+    // se le avisa al centro que relea: el anuncio (que ABRE el panel) lo hace
+    // la pantalla una vez por corrida, no una vez por tanda.
+    invalidar(RECURSO_DE_PROCESOS)
+    const cuerpo = claves && claves.length > 0 ? { mes, claves } : { mes }
+    if (!corrida) return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
+    try {
+      return await apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, { ...cuerpo, ...corrida })
+    } catch (e) {
+      /*
+       * Un back anterior a la corrida agrupada rechaza las claves nuevas
+       * (`forbidNonWhitelisted` → 400 «should not exist»). Se reintenta sin
+       * ellas: cada tanda es su proceso, como antes. No se emite dos veces:
+       * el 400 llega antes de tocar nada.
+       */
+      if (e instanceof ApiError && e.status === 400 && /should not exist/i.test(e.message)) {
+        return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
+      }
+      throw e
+    }
+  },
+
+  /**
+   * 🔴 El PDF de UNA factura emitida (Nico, 22-09: «dónde puedo descargar […]
+   * esa factura en sí»). Por `getBlob` y no un `<a href>`: la ruta pide el
+   * token de la sesión. Pide lo mismo que ver facturación (`cobros:view`).
+   */
+  pdfDeLaFactura: (facturaId: string) =>
+    apiClient.getBlob(`${BASE}/${encodeURIComponent(facturaId)}/pdf`),
+
+  /**
+   * Los PDFs de varias facturas emitidas, en un ZIP. El back arma la descarga
+   * directa hasta `MAXIMO_FACTURAS_POR_ZIP`; más que eso responde 400 con el
+   * porqué (un lote de cientos tiene que ir a una tarea en segundo plano).
+   */
+  /**
+   * El ZIP de muchas facturas —sin el tope de la descarga directa— armado en
+   * el centro de procesos: responde el id del proceso y el archivo aparece ahí.
+   */
+  zipEnSegundoPlano: (facturaIds: readonly string[]) => {
+    anunciarProceso()
+    return apiClient.post<{ procesoId: string }>(`${BASE}/documentos.zip/en-segundo-plano`, {
+      ids: [...facturaIds],
+    })
+  },
+
+  zipDeFacturas: (facturaIds: readonly string[]) =>
+    apiClient.getBlob(
+      `${BASE}/documentos.zip?ids=${facturaIds.map(encodeURIComponent).join(',')}`,
     ),
 
   /** Las resoluciones de la agencia. Sólo ADMIN o CONTADOR. */
@@ -601,6 +683,34 @@ export function mesActual(hoy: Date = new Date()): string {
  * meses: los contratos van de 2019 a hoy y ofrecer siete años de opciones no
  * ayuda a nadie.
  */
+/**
+ * Los meses que se pueden poner como TOPE de «Ver hasta»: del mes elegido en
+ * adelante, hasta diciembre del año siguiente.
+ *
+ * 🔴 Reemplaza a un `<input type="month">` (Nico, 21-09: «no estás usando los
+ * componentes de cadence, eso de hasta diciembre no se entiende como un
+ * filtro»). El campo nativo pinta el nombre del mes EN EL IDIOMA DEL NAVEGADOR
+ * —decía «September 2026» en una pantalla entera en español— y abría el
+ * calendario del sistema, que no se parece a nada del producto. Y al lado tenía
+ * un botón «Hasta diciembre» que se leía como una acción y no como lo que era:
+ * un atajo de ese mismo filtro.
+ *
+ * Con una lista, el atajo deja de ser un botón aparte: diciembre es una opción
+ * más.
+ */
+export function topesParaElegir(desde: string): string[] {
+  const [a, m] = desde.split('-').map(Number);
+  if (!a || !m) return [desde];
+  const topes: string[] = [];
+  // Hasta diciembre del año SIGUIENTE: cubre «quiero ver lo que viene» sin
+  // ofrecer un horizonte infinito que el back tendría que recorrer.
+  const fin = new Date(a + 1, 11, 1);
+  for (let d = new Date(a, m - 1, 1); d <= fin; d.setMonth(d.getMonth() + 1)) {
+    topes.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  return topes;
+}
+
 export function mesesParaElegir(cuantos = 13, hoy: Date = new Date()): string[] {
   const meses: string[] = []
   for (let i = 0; i < cuantos; i += 1) {

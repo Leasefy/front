@@ -100,13 +100,13 @@ export function InterruptorDeWhatsapp({
           <WhatsappLogo className="h-4 w-4 text-success" weight="fill" aria-hidden />
           <span className="text-sm font-medium text-foreground">Mensajes por WhatsApp</span>
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-caption text-muted-foreground">
           {canal.aceptaWhatsapp
             ? `Lo que le escribas en el chat también le llega a su WhatsApp${canal.telefono ? ` ${canal.telefono}` : ''}.`
             : 'Autoriza que lo que le escribas en el chat también le llegue por WhatsApp.'}
         </p>
         {advertencia && (
-          <p className="mt-1 text-xs text-warning">{advertencia}</p>
+          <p className="mt-1 text-caption text-warning">{advertencia}</p>
         )}
       </div>
       <Switch

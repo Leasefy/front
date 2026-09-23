@@ -26,6 +26,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
+import { contar } from '@/lib/texto/plural';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   useInmobiliariaDashboard,
@@ -315,7 +316,7 @@ function SinAcceso({ que }: { que: string }) {
 }
 
 function ResumenDelNegocio() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { canAccess, isLoading: permLoading } = usePermissions();
 
   const {
@@ -363,13 +364,41 @@ function ResumenDelNegocio() {
   const miles = (n: number) => n.toLocaleString('es-CO');
 
   /*
-   * La tendencia es un % contra el mes anterior, y ese mes anterior no viaja.
-   * Pero se deduce: el back devuelve 0 sólo si el mes previo fue 0 (si hubiera
-   * sido > 0 con el actual en 0, la variación sería −100). Valor 0 y variación
-   * 0 ⇒ no hay contra qué comparar ⇒ no se pinta flecha.
+   * 🔴 «1 disponibles» (21-09-2026). El subtítulo salía de una clave de i18n
+   * con el plural clavado, así que con un solo inmueble disponible la tarjeta
+   * decía «5 arrendadas · 1 disponibles». La frase se arma acá con `contar`,
+   * que es el mismo primitivo que el back ya tenía (`contar(n, 'cuota')`).
+   * La clave de i18n se queda para el inglés, que no tiene este problema.
    */
-  const hayConQueComparar = (valor: number, variacion: number) =>
-    !(valor === 0 && variacion === 0);
+  const arrendadasYDisponibles =
+    locale === 'es'
+      ? `${contar(kpis.propertiesRented, 'arrendada')} · ${contar(kpis.propertiesAvailable, 'disponible')}`
+      : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', {
+          rented: miles(kpis.propertiesRented),
+          available: miles(kpis.propertiesAvailable),
+        });
+
+  /*
+   * 🔴 SIN MES ANTERIOR NO HAY FLECHA (21-09-2026).
+   *
+   * Desde hoy el back manda `null` cuando el mes anterior fue cero, que es lo
+   * que de verdad pasa: pasar de nada a algo no tiene porcentaje. Antes mandaba
+   * `100`, y esta pantalla decía «$8.200.000 · +100% vs mes anterior» en una
+   * inmobiliaria que el mes pasado no recaudó nada — se leía como que el
+   * recaudo se duplicó.
+   *
+   * La heurística vieja (valor 0 y variación 0) se queda como RESPALDO: una
+   * respuesta vieja en caché todavía trae un número, y un `0` contra `0` sigue
+   * significando «no hay con qué comparar».
+   */
+  const hayConQueComparar = (valor: number, variacion: number | null) =>
+    variacion !== null && !(valor === 0 && variacion === 0);
+
+  /** La variación, sólo cuando de verdad la hay. */
+  const laVariacion = (valor: number, variacion: number | null) =>
+    hayConQueComparar(valor, variacion)
+      ? { value: Math.abs(variacion!), isPositive: variacion! >= 0 }
+      : undefined;
 
   // Etiqueta del mes en curso (es-CO) para el resumen financiero.
   // Sólo la inicial en mayúscula: con `capitalize` de CSS salía «Septiembre De 2026».
@@ -460,11 +489,7 @@ function ResumenDelNegocio() {
             rate: textoDeTasa(tasaDeRecaudo),
             rotulo: rotuloDeLaTasa,
           })}
-          trend={
-            hayConQueComparar(kpis.collectedRevenue, kpis.collectionTrend)
-              ? { value: Math.abs(kpis.collectionTrend), isPositive: kpis.collectionTrend >= 0 }
-              : undefined
-          }
+          trend={laVariacion(kpis.collectedRevenue, kpis.collectionTrend)}
           icon={CurrencyDollar}
           href="/panel/inmobiliaria/pagos/cartera/cobros"
           brandHero
@@ -480,8 +505,8 @@ function ResumenDelNegocio() {
              * parece un error de cuentas.
              */
             fueraDelCatalogo > 0
-              ? `${t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
-              : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })
+              ? `${arrendadasYDisponibles} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+              : arrendadasYDisponibles
           }
           icon={Buildings}
           href="/panel/inmobiliaria/inmuebles"
@@ -490,11 +515,7 @@ function ResumenDelNegocio() {
           title={t('inmobiliaria.dashboard.kpi.commissions')}
           value={formatCurrency(kpis.totalCommissions)}
           subtitle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
-          trend={
-            hayConQueComparar(kpis.totalCommissions, kpis.commissionsTrend)
-              ? { value: Math.abs(kpis.commissionsTrend), isPositive: kpis.commissionsTrend >= 0 }
-              : undefined
-          }
+          trend={laVariacion(kpis.totalCommissions, kpis.commissionsTrend)}
           icon={Wallet}
         />
         <KPICard

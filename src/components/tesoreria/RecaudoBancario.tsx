@@ -21,14 +21,32 @@
  *    banco manda otro) y un parser acá sería una segunda definición del mismo
  *    formato: el día que se separen, la previa mostraría una cosa y se
  *    importaría otra. Acá sólo se lee el texto del archivo.
+ *
+ * ── 🔴 21-09: LA PANTALLA MANDABA A HACER ALGO QUE NO SE PODÍA HACER ────────
+ *
+ * Nico: «no se entiende nada qué tiene que hacer el usuario ni qué ver».
+ *
+ * Sin convenios, la pantalla eran cuatro párrafos de prosa, DOS cajas de texto
+ * que decían casi lo mismo —«No hay convenios configurados todavía» y «Todavía
+ * no tienes ningún convenio de recaudo activo. Configúralo…»— y **ni un solo
+ * botón**. El back tenía `POST /convenios` desde siempre y el cliente del front
+ * tenía `crearConvenio` escrito, sin un solo llamador: la pantalla mandaba a
+ * configurar algo que no existía en ninguna parte del producto.
+ *
+ * Ahora el vacío es UNA frase y UNA acción («Configurar el convenio»), que abre
+ * `ConvenioDeRecaudoCajon`; con convenios guardados, cada uno se puede editar y
+ * hay botón para agregar otro. Y la explicación de cómo funciona el recaudo por
+ * convenio se fue detrás de un botón (`ParaEntenderMas`), que es la regla de la
+ * casa: puesta sobre la pantalla, empuja lo que la persona vino a hacer.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
+import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
+import { ConvenioDeRecaudoCajon } from './ConvenioDeRecaudoCajon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,6 +102,9 @@ export function RecaudoBancarioPanel() {
 
 function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () => void }) {
   const activos = datos.convenios.filter((c) => c.activo);
+  /** `null` = cerrado · `'nuevo'` = crear · un convenio = editarlo. */
+  const [enElCajon, setEnElCajon] = useState<null | 'nuevo' | Convenio>(null);
+
   return (
     <div className="space-y-8">
       {!datos.disponible ? (
@@ -94,38 +115,109 @@ function Contenido({ datos, onCambio }: { datos: ListaDeConvenios; onCambio: () 
         />
       ) : null}
 
-      <ConveniosGuardados convenios={datos.convenios} />
+      {/* 🔴 UN vacío y UNA acción. Eran dos cajas de texto que decían casi lo
+          mismo y ningún botón, mandando a configurar algo que no se podía
+          configurar. */}
+      {datos.convenios.length === 0 ? (
+        <section
+          className="rounded-lg border border-dashed border-border bg-surface p-10 text-center"
+          data-testid="sin-convenio"
+        >
+          <Bank className="mx-auto mb-4 h-10 w-10 text-fg-muted" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-fg">
+            Todavía no recaudas por convenio con un banco
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-fg-muted">
+            Con un convenio, cada contrato paga con su referencia única y el archivo del
+            banco entra acá en un lote que una persona aprueba. Necesitas el diseño de
+            registro que te entregó tu banco al firmarlo.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <Button
+              hideArrow
+              disabled={!datos.disponible}
+              onClick={() => setEnElCajon('nuevo')}
+              data-testid="configurar-convenio"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Configurar el convenio
+            </Button>
+          </div>
+          {/* La salida que ya existe hoy, dicha sin competir con la acción. */}
+          <p className="mt-4 text-xs text-fg-muted">
+            Mientras no lo tengas, la plata se sigue aplicando cargando el extracto en{' '}
+            <Link
+              href="/panel/inmobiliaria/pagos/recaudo"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Conciliación
+            </Link>
+            .
+          </p>
+        </section>
+      ) : (
+        <ConveniosGuardados
+          convenios={datos.convenios}
+          onEditar={setEnElCajon}
+          onNuevo={() => setEnElCajon('nuevo')}
+          sePuedeGuardar={datos.disponible}
+        />
+      )}
 
       {activos.length > 0 && datos.disponible ? (
         <ImportarArchivo convenios={activos} onImportado={onCambio} />
-      ) : datos.disponible ? (
+      ) : datos.convenios.length > 0 && datos.disponible ? (
+        /* Hay convenios pero ninguno activo: es otro estado y otra frase. */
         <p
           className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted"
-          data-testid="sin-convenio"
+          data-testid="sin-convenio-activo"
         >
-          Todavía no tienes ningún convenio de recaudo activo. Configúralo con el diseño de
-          registro que te entregó tu banco y después podrás importar su archivo acá. Mientras
-          tanto el camino sigue siendo cargar el extracto en{' '}
-          <Link
-            href="/panel/inmobiliaria/pagos/recaudo"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Conciliación
-          </Link>
-          .
+          Ninguno de tus convenios está activo, así que todavía no se puede importar un
+          archivo. Actívalo desde su tarjeta.
         </p>
       ) : null}
+
+      <ConvenioDeRecaudoCajon
+        abierto={enElCajon}
+        catalogo={datos}
+        onCerrar={() => setEnElCajon(null)}
+        onGuardado={onCambio}
+      />
     </div>
   );
 }
 
-function ConveniosGuardados({ convenios }: { convenios: Convenio[] }) {
+function ConveniosGuardados({
+  convenios,
+  onEditar,
+  onNuevo,
+  sePuedeGuardar,
+}: {
+  convenios: Convenio[];
+  onEditar: (c: Convenio) => void;
+  onNuevo: () => void;
+  sePuedeGuardar: boolean;
+}) {
   return (
     <section className="space-y-4">
-      <TituloDeBloque
-        titulo="Tus convenios de recaudo"
-        explicacion="Con qué bancos recaudas y cómo se lee el archivo de cada uno. El formato es un dato y no código: ningún banco manda el mismo archivo, y el tuyo viene en el diseño de registro que firmaste con ellos."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-fg">Tus convenios de recaudo</h2>
+          <p className="mt-1 max-w-2xl text-sm text-fg-muted">
+            Con qué bancos recaudas y cómo se lee el archivo de cada uno.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          hideArrow
+          disabled={!sePuedeGuardar}
+          onClick={onNuevo}
+          data-testid="nuevo-convenio"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Otro convenio
+        </Button>
+      </div>
       {convenios.length === 0 ? (
         <p className="rounded-lg border border-border bg-surface p-5 text-sm text-fg-muted">
           No hay convenios configurados todavía.
@@ -190,6 +282,18 @@ function ConveniosGuardados({ convenios }: { convenios: Convenio[] }) {
                 el volante que te dio el banco antes de imprimirla en los recibos.
               </p>
               <Avisos avisos={c.avisos} testId={`avisos-convenio-${c.id}`} />
+              {/* Se puede cambiar: un formato copiado del papel del banco casi
+                  nunca queda bien la primera vez, y hasta hoy no había cómo. */}
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                disabled={!sePuedeGuardar}
+                onClick={() => onEditar(c)}
+                data-testid={`editar-convenio-${c.id}`}
+              >
+                Cambiar el formato
+              </Button>
             </li>
           ))}
         </ul>

@@ -77,10 +77,23 @@ export interface NuevaSolicitudInput {
  * an honest empty history; NEVER a fabricated row. Any other error is rethrown.
  */
 async function listMine(): Promise<SolicitudPqrs[]> {
+  return (await listMineConDisponibilidad()).items;
+}
+
+/**
+ * Lo mismo que `listMine`, pero diciendo si la ruta EXISTE.
+ *
+ * 🔴 QA 22-09: el inquilino llenaba la solicitud entera —asunto, descripción,
+ * fotos— y sólo al enviar se enteraba de que «estamos habilitando las
+ * solicitudes». `listMine` degrada a `[]` y con eso la pantalla no podía
+ * distinguir «no has radicado nada» de «todavía no se puede radicar». Con
+ * `disponible: false` el botón se apaga ANTES de que la persona escriba.
+ */
+async function listMineConDisponibilidad(): Promise<{ items: SolicitudPqrs[]; disponible: boolean }> {
   try {
-    return await apiClient.get<SolicitudPqrs[]>('/pqrs/mine');
+    return { items: await apiClient.get<SolicitudPqrs[]>('/pqrs/mine'), disponible: true };
   } catch (err) {
-    if (isEndpointUnavailable(err)) return [];
+    if (isEndpointUnavailable(err)) return { items: [], disponible: false };
     throw err;
   }
 }
@@ -130,4 +143,4 @@ async function approveCotizacion(id: string): Promise<SolicitudPqrs> {
   }
 }
 
-export const pqrsApi = { listMine, getMine, create, approveCotizacion };
+export const pqrsApi = { listMine, listMineConDisponibilidad, getMine, create, approveCotizacion };

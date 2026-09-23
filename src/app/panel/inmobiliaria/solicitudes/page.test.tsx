@@ -10,7 +10,7 @@
  */
 
 import * as React from 'react'
-import { filtrarPqrs, FILTROS_DE_PQRS_VACIOS } from './page'
+import { filtrarPqrs, FILTROS_DE_PQRS_VACIOS } from './filtrar-pqrs'
 import type { Pqrs } from '@/lib/api/pqrs-agencia.types'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
@@ -139,7 +139,8 @@ describe('solicitudes — el gate de la página es el mismo que el del sidebar',
     permisos.canAccess = () => false
     try {
       await montar()
-      expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+      // QA 22-09: negada ya no redirige callada — pinta «No tienes acceso».
+    expect(container.querySelector('[data-testid="pantalla-negada"]')).not.toBeNull()
       expect(container.textContent).not.toContain('inmobiliaria.pqrs.title')
     } finally {
       permisos.canAccess = antes

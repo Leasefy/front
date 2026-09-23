@@ -57,6 +57,23 @@ export function texto(
 }
 
 /**
+ * La clave del rótulo según el LADO del documento.
+ *
+ * 🔴 QA 22-09: el estado de cuenta del PROPIETARIO decía «Resta por pagar ·
+ * En mora · 260 días» en rojo — las palabras del inquilino—. Para el
+ * propietario ese número es lo que la inmobiliaria le tiene que girar
+ * (definición del CEO: «estado de cuenta a favor del propietario, que es lo que
+ * yo le debo pagar»); leído con el rótulo del inquilino, el moroso parecía él.
+ * Si la clave tiene su versión en el bloque delPropietario, el lado
+ * PROPIETARIO la usa; si no, se queda con la común.
+ */
+export function claveDelLado(clave: string, rol: 'INQUILINO' | 'PROPIETARIO' | null | undefined): string {
+  if (rol !== 'PROPIETARIO') return clave;
+  const propia = clave.replace(/^estadoDeCuenta\./, 'estadoDeCuenta.delPropietario.');
+  return TEXTO[propia] ? propia : clave;
+}
+
+/**
  * 🔴 Este documento NO pasa por `useI18n`, y es a propósito.
  *
  * Se monta en SEIS lugares: la pantalla del panel, la ficha del contrato, la

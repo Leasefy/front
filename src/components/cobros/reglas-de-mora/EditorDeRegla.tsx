@@ -312,7 +312,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                     {unidadDelValor && (
                       <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-fg-muted"
+                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-caption text-fg-muted"
                       >
                         {unidadDelValor}
                       </span>
@@ -417,7 +417,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
               {vistaPrevia}
             </Banner>
           ) : (
-            <p className="text-xs text-fg-muted">Completa los campos para ver cómo queda la regla.</p>
+            <p className="text-caption text-fg-muted">Completa los campos para ver cómo queda la regla.</p>
           )}
 
           {errorDelBack && (
@@ -461,11 +461,11 @@ function Campo({
       </Label>
       {children}
       {error ? (
-        <p className="text-xs text-danger" role="alert" data-testid={`error-${id}`}>
+        <p className="text-caption text-danger" role="alert" data-testid={`error-${id}`}>
           {error}
         </p>
       ) : ayuda ? (
-        <p className="text-xs text-fg-muted">{ayuda}</p>
+        <p className="text-caption text-fg-muted">{ayuda}</p>
       ) : null}
     </div>
   );
@@ -483,14 +483,14 @@ function LecturaDeLaTasaDiaria({
   const { aviso } = lectura;
   return (
     <div className="space-y-0.5" data-testid="lectura-de-la-tasa" aria-live="polite">
-      <p className="text-xs text-fg-muted">{lectura.equivalencia}</p>
+      <p className="text-caption text-fg-muted">{lectura.equivalencia}</p>
       {aviso && (
         <p
           data-testid="aviso-de-usura"
           data-tono={aviso.tono}
           role={aviso.tono === 'peligro' ? 'alert' : undefined}
           className={cn(
-            'text-xs',
+            'text-caption',
             aviso.tono === 'peligro'
               ? 'text-danger'
               : aviso.tono === 'atencion'

@@ -116,7 +116,7 @@ function SiniestrosContent() {
   // ── Skeleton ──────────────────────────────────────────────────────────────
   if (isLoading && !data) {
     return (
-      <main className="p-4 lg:p-8 max-w-7xl mx-auto" aria-busy="true">
+      <div className="p-4 lg:p-8" aria-busy="true">
         <header className="mb-5">
           <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
           <div className="h-4 w-64 bg-surface-muted rounded animate-pulse mt-2" />
@@ -136,25 +136,25 @@ function SiniestrosContent() {
             </TableBody>
           </Table>
         </Card>
-      </main>
+      </div>
     )
   }
 
   // ── Global empty state (no filters, no data) ──────────────────────────────
   if (!isLoading && !hasFilters && claims.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <EmptyState
           icon={Siren}
           title={t('inmobiliaria.ai.cobranza.siniestros.list.empty.title')}
           description={t('inmobiliaria.ai.cobranza.siniestros.list.empty.description')}
         />
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="space-y-1">
@@ -373,7 +373,7 @@ function SiniestrosContent() {
           </div>
         )}
       </Card>
-    </main>
+    </div>
   )
 }
 

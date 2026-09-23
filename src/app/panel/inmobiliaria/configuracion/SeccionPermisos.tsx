@@ -3,10 +3,11 @@
 /**
  * Permisos por rol: qué puede hacer cada rol de la agencia.
  *
- * La matriz completa (ADMIN/AGENTE/CONTADOR/VIEWER) viene y va en UNA sola
- * petición (`GET|PUT|DELETE /inmobiliaria/agency/role-permissions`). Guardar
- * también limpia los permisos propios de cada miembro activo de los roles
- * tocados, así que después se refrescan los del que está mirando.
+ * La matriz de los SIETE roles viene en UNA petición
+ * (`GET|PUT|DELETE /inmobiliaria/agency/role-permissions`). Guardar manda
+ * SÓLO los roles que se tocaron; el back rebasa los permisos propios de cada
+ * persona de esos roles (no los borra), así que después se refrescan los del
+ * que está mirando.
  */
 
 import { useEffect, useState } from 'react';
@@ -17,49 +18,17 @@ import { useI18n } from '@/lib/i18n';
 import { ConfigPermisos } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
-import type { PermMap, RoleMatrices, UpdateRolePermissionsBody } from '@/lib/api/inmobiliaria.service';
-import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
+import { DEFAULT_ROLE_PERMISSIONS, type RolDeLaMatriz, type RolePermissions } from '@/lib/types/inmobiliaria';
+import { cuerpoConLoQueCambio, matricesToUiMatrix } from '@/lib/permisos/matriz-de-roles';
 import { EsqueletoDeSeccion } from './piezas';
-import type {
-  AgencyRole,
-  PermissionAction,
-  PermissionModule,
-  RolePermissions,
-} from '@/lib/types/inmobiliaria';
 
-/** PermMap del back (módulo → acciones) → RolePermissions de la UI. */
-function permMapToRolePermissions(role: AgencyRole, map: PermMap): RolePermissions {
-  return {
-    role,
-    permissions: Object.entries(map)
-      .filter(([, actions]) => actions.length > 0)
-      .map(([module, actions]) => ({
-        module: module as PermissionModule,
-        actions: [...actions] as PermissionAction[],
-      })),
-  };
-}
-
-function matricesToUiMatrix(matrices: RoleMatrices): Record<AgencyRole, RolePermissions> {
-  return {
-    admin: permMapToRolePermissions('admin', matrices.roles.ADMIN),
-    agente: permMapToRolePermissions('agente', matrices.roles.AGENTE),
-    contador: permMapToRolePermissions('contador', matrices.roles.CONTADOR),
-    viewer: permMapToRolePermissions('viewer', matrices.roles.VIEWER),
-  };
-}
-
-function rolePermissionsToPermMap(rp: RolePermissions): PermMap {
-  const map: PermMap = {};
-  for (const p of rp.permissions) map[p.module] = [...p.actions];
-  return map;
-}
+type Matrices = Partial<Record<RolDeLaMatriz, RolePermissions>>;
 
 export function SeccionPermisos() {
   const { t } = useI18n();
   const { refetch: refetchMyPermissions } = usePermissions();
 
-  const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(DEFAULT_ROLE_PERMISSIONS);
+  const [permissions, setPermissions] = useState<Matrices>(DEFAULT_ROLE_PERMISSIONS);
   // Sube en cada sincronización con el servidor y hace de `key`: el componente
   // se vuelve a montar con la matriz fresca (y sus contadores y su «hay
   // cambios sin guardar» vuelven a cero).
@@ -101,15 +70,14 @@ export function SeccionPermisos() {
     };
   }, [intento]);
 
-  const guardar = async (nuevos: Record<AgencyRole, RolePermissions>) => {
+  const guardar = async (nuevos: Matrices) => {
+    // 🔴 22-09 noche: SÓLO los roles que cambiaron. Antes iban los tres de
+    // siempre con lo que la pantalla creyera, y el back reescribía el objeto
+    // entero: un rol que no venía volvía a fábrica. ADMIN nunca se manda.
+    const body = cuerpoConLoQueCambio(permissions, nuevos);
+    if (Object.keys(body).length === 0) return;
     setGuardando(true);
     try {
-      // ADMIN nunca se manda: es acceso total y de sólo lectura en el back.
-      const body: UpdateRolePermissionsBody = {
-        AGENTE: rolePermissionsToPermMap(nuevos.agente),
-        CONTADOR: rolePermissionsToPermMap(nuevos.contador),
-        VIEWER: rolePermissionsToPermMap(nuevos.viewer),
-      };
       const matrices = await rolePermissionsApi.updateRolePermissions(body);
       setPermissions(matricesToUiMatrix(matrices));
       setVersion((v) => v + 1);
@@ -118,7 +86,12 @@ export function SeccionPermisos() {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
     } catch (error) {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos', {
+      // 🔴 Acá había `t(...) || 'Error al guardar permisos'`. Ese `||` NUNCA
+      // corre: `t()` de una clave que falta devuelve LA CLAVE, y una clave es
+      // un texto con contenido. Lo que salía en el toast era
+      // «inmobiliaria.config.toasts.error». La clave ya existe en los dos
+      // idiomas; el mensaje concreto va en la descripción.
+      toast.error(t('inmobiliaria.config.toasts.error'), {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {
@@ -138,7 +111,7 @@ export function SeccionPermisos() {
         description: t('inmobiliaria.config.toasts.permissionsResetDesc'),
       });
     } catch (error) {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al restablecer permisos', {
+      toast.error(t('inmobiliaria.config.toasts.error'), {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {

@@ -139,16 +139,37 @@ export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: 
   },
 }
 
+/**
+ * Cuánto lleva esperando algo, en la unidad que corresponda.
+ *
+ * ── 🔴 20-09 · Redondeaba hacia arriba y envejecía todo un día ──────────────
+ *
+ * Lo encontré en el Piloto, con la pantalla abierta. Una decisión creada el 1
+ * de septiembre a las 00:29 salía dos veces en la MISMA pantalla con dos
+ * edades distintas: el resumen del Gerente decía «lleva 19 días esperando» y
+ * la tarjeta de la bandeja, justo debajo, «hace 20d». Eran 19 días y 22 horas.
+ *
+ * `Math.round` en los cuatro tramos, y además compuesto: 23 h 40 min subía a
+ * 24 h, pasaba el corte de las horas, y se leía «hace 1d» cuando no había
+ * pasado el día. Esta función la usan 30 pantallas —matching, estudio,
+ * asegurabilidad, conciliación, cotizador, y los deudores de cobranza—, así
+ * que el día de más estaba en todas.
+ *
+ * La regla del producto, la misma de `formatRelativeTime`: **hacia abajo**. Lo
+ * que lleva 19 días y 22 horas lleva 19 días. En cobranza esto no es estética:
+ * los días de mora y las cadencias de contacto de la Ley 2300 se cuentan, y un
+ * día inventado corre una fecha que tiene consecuencias.
+ */
 export function relativeTime(iso: string, t: TranslateFn): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
-  const deltaSec = Math.max(0, Math.round((Date.now() - then) / 1000))
+  const deltaSec = Math.max(0, Math.floor((Date.now() - then) / 1000))
   if (deltaSec < 60) return t(`${WORKSPACE_NS}.tiempo.s`, { n: deltaSec })
-  const deltaMin = Math.round(deltaSec / 60)
+  const deltaMin = Math.floor(deltaSec / 60)
   if (deltaMin < 60) return t(`${WORKSPACE_NS}.tiempo.m`, { n: deltaMin })
-  const deltaHr = Math.round(deltaMin / 60)
+  const deltaHr = Math.floor(deltaMin / 60)
   if (deltaHr < 24) return t(`${WORKSPACE_NS}.tiempo.h`, { n: deltaHr })
-  return t(`${WORKSPACE_NS}.tiempo.d`, { n: Math.round(deltaHr / 24) })
+  return t(`${WORKSPACE_NS}.tiempo.d`, { n: Math.floor(deltaHr / 24) })
 }
 
 /** Maps a work-item action kind to the Cadence Button variant. */

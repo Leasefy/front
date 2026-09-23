@@ -311,6 +311,22 @@ describe('M4 — «Nueva solicitud» cuando los inmuebles no llegaron', () => {
     expect(h.consignaciones.refetch).toHaveBeenCalledTimes(1)
   })
 
+  it('🔴 sin portafolio:view (CONTADOR) el botón está apagado y dice por qué (QA 22-09)', async () => {
+    h.canAccess.mockImplementation((m: string) => m !== 'portafolio')
+    await render()
+    const boton = document.body.querySelector<HTMLButtonElement>('[data-testid="nueva-solicitud"]')!
+    expect(boton.disabled).toBe(true)
+    expect(document.body.querySelector('[data-testid="nueva-solicitud-motivo"]')?.textContent).toContain(
+      'no puede ver los inmuebles',
+    )
+  })
+
+  it('sin operaciones:create también se apaga', async () => {
+    h.canAccess.mockImplementation((_m: string, accion: string) => accion !== 'create')
+    await render()
+    expect(document.body.querySelector<HTMLButtonElement>('[data-testid="nueva-solicitud"]')!.disabled).toBe(true)
+  })
+
   it('con los inmuebles cargados, el cajón es el formulario de siempre', async () => {
     await render()
     await abrirNuevaSolicitud()

@@ -34,15 +34,29 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
+
+/*
+ * ⏱️ 60 s: este guardián lee el repo entero y compite con las demás pruebas de
+ * la suite. Ver `el-producto-tutea.test.ts` para el caso en que 30 s no
+ * alcanzaron — medir un guardián aislado no lo mide dentro de la suite.
+ */
+const TIEMPO_DE_RECORRER_EL_REPO = 60_000
+
 const RAIZ = join(process.cwd(), 'src')
 
 /**
- * El techo de hoy: 171 verbos sin un solo consumidor, de 774.
+ * El techo de hoy: 146 verbos sin un solo consumidor, de 774.
+ *
+ * 🔴 20-09 · Bajó de 171 a 146 sin que nadie conectara nada: el medidor
+ * buscaba el literal `api.verbo` con `includes`, así que contaba como muertos
+ * a los 25 verbos que se llaman con el punto en la línea siguiente —la forma
+ * normal de encadenar `.then().catch()`—. La lista que este test imprime es la
+ * lista de trabajo, y tenía 25 entradas equivocadas.
  *
  * Baja este número cada vez que conectes uno. Subirlo es una decisión, no un
  * accidente: escribe acá por qué.
  */
-const TECHO = 171
+const TECHO = 146
 
 function archivos(dir: string, acc: string[] = []): string[] {
   for (const nombre of readdirSync(dir)) {
@@ -94,7 +108,20 @@ describe('lo que el back ofrece y nadie usa', () => {
   const huerfanos: { api: string; verbo: string }[] = []
   for (const [api, verbos] of apis) {
     for (const verbo of verbos) {
-      if (!resto.includes(`${api}.${verbo}`)) huerfanos.push({ api, verbo })
+      /*
+       * 🔴 20-09 · Con `includes('api.verbo')` esto contaba como huérfano a
+       * cualquier verbo llamado con el punto en otra línea —
+       *
+       *     inquilinosApi
+       *       .conteos({ buscar })
+       *
+       * que es exactamente cómo queda una cadena `.then().catch()`, la forma
+       * más común de llamar a estos clientes. Acusaba de muerto a un verbo
+       * vivo, y el arreglo obvio («ponelo en una línea») deforma el código
+       * para conformar al medidor.
+       */
+      const llamado = new RegExp(`\\b${api}\\s*\\.\\s*${verbo}\\b`)
+      if (!llamado.test(resto)) huerfanos.push({ api, verbo })
     }
   }
 
@@ -102,7 +129,7 @@ describe('lo que el back ofrece y nadie usa', () => {
     expect(apis.size).toBeGreaterThan(20)
     const verbos = [...apis.values()].reduce((n, v) => n + v.length, 0)
     expect(verbos).toBeGreaterThan(500)
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('🔴 la lista de verbos sin consumidor NO crece', () => {
     // Al fallar, esto imprime cuáles son: la lista es la lista de trabajo.
@@ -115,7 +142,7 @@ describe('lo que el back ofrece y nadie usa', () => {
       // Jest no, Vitest sí acepta el mensaje — y acá vale la pena:
       `Verbos sin un solo consumidor: ${huerfanos.length} (techo ${TECHO}).\n${detalle}`,
     ).toBeLessThanOrEqual(TECHO)
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 
   it('los que ya conectamos hoy siguen conectados', () => {
     // Los seis que estaban muertos y se conectaron el 18-09 de noche. Si
@@ -131,5 +158,5 @@ describe('lo que el back ofrece y nadie usa', () => {
     ]
     const sueltos = conectados.filter((c) => !resto.includes(c))
     expect(sueltos).toEqual([])
-  })
+  }, TIEMPO_DE_RECORRER_EL_REPO)
 })

@@ -68,21 +68,50 @@ export function haySinDesglose(filas: readonly FilaDeCarteraDelInquilino[]): boo
 }
 
 /**
- * Filtra inquilinos por lo que se escribió: nombre, documento, inmueble o
- * número de contrato. Sin texto, todos.
+ * En qué momento de su vida está la deuda que se quiere ver.
  *
- * `soloEnMora` mira `enMoraCop`, que desde el 2026-09-15 es LA CARTERA: lo
- * vencido más allá de los días de plazo del contrato. Quien debe y está dentro
- * de su plazo NO entra — es justo lo que la cobranza no puede perseguir.
+ * 🔴 Reemplaza al booleano `soloEnMora` (21-09). Nico, mirando el interruptor
+ * «Sólo cartera»: «¿para qué es ese toggle de sólo cartera jaja». El problema
+ * no era el rótulo: **un interruptor sólo puede expresar dos estados de
+ * cuatro**. La deuda pasa por tres momentos que no son sinónimos —por vencer,
+ * vencido en plazo, cartera— y el interruptor obligaba a elegir entre «todo» y
+ * «lo último», sin manera de ver los otros dos. Es el mismo arreglo que ya se
+ * hizo en «Deuda del mes» el 18-09, y a propósito con las mismas palabras: el
+ * mismo hecho tiene que llamarse igual en las dos pantallas.
+ */
+export type CajonDeLaCartera =
+  | 'TODAS'
+  | 'POR_VENCER'
+  | 'VENCIDA_EN_PLAZO'
+  | 'CARTERA';
+
+/** Lo que cada cajón mira de los totales del inquilino. */
+const LO_QUE_MIRA_EL_CAJON: Record<
+  Exclude<CajonDeLaCartera, 'TODAS'>,
+  (t: InquilinoEnCartera['totales']) => number
+> = {
+  POR_VENCER: (t) => t.porVencerCop,
+  VENCIDA_EN_PLAZO: (t) => t.vencidaEnPlazoCop ?? 0,
+  // `enMoraCop` es LA CARTERA desde el 2026-09-15: lo vencido más allá de los
+  // días de plazo del contrato. Quien debe y está dentro de su plazo NO entra
+  // — es justo lo que la cobranza no puede perseguir.
+  CARTERA: (t) => t.enMoraCop,
+};
+
+/**
+ * Filtra inquilinos por el cajón elegido y por lo que se escribió: nombre,
+ * documento, inmueble o número de contrato. Sin texto y con `TODAS`, todos.
  */
 export function filtrarInquilinos(
   inquilinos: readonly InquilinoEnCartera[],
   busqueda: string,
-  soloEnMora: boolean,
+  cajon: CajonDeLaCartera = 'TODAS',
 ): InquilinoEnCartera[] {
   const texto = normalizar(busqueda);
   return inquilinos.filter((i) => {
-    if (soloEnMora && i.totales.enMoraCop <= 0) return false;
+    if (cajon !== 'TODAS' && LO_QUE_MIRA_EL_CAJON[cajon](i.totales) <= 0) {
+      return false;
+    }
     if (!texto) return true;
     const campos = [
       i.nombre,

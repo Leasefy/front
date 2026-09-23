@@ -52,6 +52,12 @@ describe('validarPqrs', () => {
 })
 
 describe('estadosSiguientes', () => {
+  it('🔴 «En cotización» sólo para el tipo SOLICITUD (QA 22-09: se le ofrecía a una queja)', () => {
+    expect(estadosSiguientes('EN_PROCESO', 'QUEJA')).not.toContain('EN_COTIZACION')
+    expect(estadosSiguientes('RECIBIDA', 'PETICION')).not.toContain('EN_COTIZACION')
+    expect(estadosSiguientes('EN_PROCESO', 'SOLICITUD')).toContain('EN_COTIZACION')
+  })
+
   it('desde los estados abiertos se puede ir a proceso, cotización, resuelta o cerrada (menos a sí mismo)', () => {
     expect(estadosSiguientes('RECIBIDA')).toEqual(['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'])
     expect(estadosSiguientes('ASIGNADA')).toEqual(['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'])

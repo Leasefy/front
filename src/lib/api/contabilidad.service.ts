@@ -49,6 +49,7 @@
  */
 
 import { apiClient } from './client';
+import { anunciarProceso } from './procesos.service';
 
 const BASE = '/inmobiliaria/contabilidad';
 
@@ -968,7 +969,7 @@ export interface HistoriaDeComprobantes {
 
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
-/** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
+/** `EventoContable` en `schema.prisma`: los movimientos que el sistema asienta solo. */
 export type EventoDeRecaudoOGiro =
   | 'CARTERA_INQUILINOS'
   | 'RECIBO_BANCOS'
@@ -980,7 +981,15 @@ export type EventoDeRecaudoOGiro =
   | 'IVA_GENERADO'
   | 'GIRO_PROPIETARIO_BANCOS'
   /** Opcional (2026-09-16): sin cuenta propia, el ajuste va a «otros recaudos». */
-  | 'AJUSTE_AL_PESO';
+  | 'AJUSTE_AL_PESO'
+  /**
+   * 🔴 22-09 · Lo que el propietario agente retenedor le retiene a la comisión
+   * (135515 / 135517 / 135518, al DEBE). Opcionales en la pantalla; el back no
+   * los manda mientras la base no tenga su migración.
+   */
+  | 'RETENCION_RENTA_COMISION'
+  | 'RETENCION_IVA_COMISION'
+  | 'RETENCION_ICA_COMISION';
 
 /**
  * Los SIETE eventos de gasto (contrato del 18-09 §2): los que necesita la
@@ -1028,6 +1037,9 @@ export const EVENTOS_CONTABLES: readonly EventoDeRecaudoOGiro[] = [
   'IVA_GENERADO',
   'GIRO_PROPIETARIO_BANCOS',
   'AJUSTE_AL_PESO',
+  'RETENCION_RENTA_COMISION',
+  'RETENCION_IVA_COMISION',
+  'RETENCION_ICA_COMISION',
 ];
 
 export const EVENTOS_DE_GASTO: readonly EventoDeGasto[] = [
@@ -1066,6 +1078,8 @@ export interface ResultadoDeReproceso {
   asentados: number;
   sinResolver: number;
   motivos: string[];
+  /** Su fila en el centro de procesos; `null` sin la migración del back. */
+  procesoId?: string | null;
 }
 
 export type LadoDelEvento = 'DEBE' | 'HABER';
@@ -1152,7 +1166,16 @@ export const EVENTO_DESCONOCIDO = 'EVENTO_DESCONOCIDO';
 export interface ResultadoDeSemillaDeMapeo {
   asignados: EventoContable[];
   yaEstaban: EventoContable[];
-  sinCuenta: { evento: EventoContable; codigo: string }[];
+  /**
+   * Los eventos OBLIGATORIOS que no se asignaron solos, con el motivo (QA
+   * 22-09). `motivo` ausente = un back anterior: se lee como «no existe».
+   */
+  sinCuenta: {
+    evento: EventoContable;
+    codigo: string;
+    motivo?: 'NO_EXISTE' | 'NO_IMPUTABLE' | 'INACTIVA' | 'OTRO_NOMBRE';
+    nombreEnTuPlan?: string;
+  }[];
   mapeo: MapeoContable;
 }
 
@@ -1241,7 +1264,7 @@ export interface MapeoDeRubroNuevo {
   cuentaIds: string[];
 }
 
-/** Respuesta de `POST /mapeo/rubros/sembrar`. No pisa lo ya asignado. */
+/** Respuesta de `POST /mapeo/rubros/semilla`. No pisa lo ya asignado. */
 export interface ResultadoDeSembrarRubros {
   asignados: string[];
   yaEstaban: string[];
@@ -1365,6 +1388,9 @@ export const contabilidadApi = {
 
     /** Vuelve a asentar lo que quedó afuera. Idempotente por documento. */
     async reprocesar(): Promise<ResultadoDeReproceso> {
+      // Vive en el centro de procesos (22-09): el anillo del header aparece
+      // mientras corre, no cuando ya terminó.
+      anunciarProceso();
       return apiClient.post<ResultadoDeReproceso>(`${BASE}/asientos/reprocesar`, {});
     },
 
@@ -1522,9 +1548,17 @@ export const contabilidadApi = {
       );
     },
 
-    /** Asigna el preset a los rubros vacíos; no pisa lo asignado. */
+    /**
+     * Asigna el preset a los rubros vacíos; no pisa lo asignado.
+     *
+     * 🔴 22-09: la ruta decía `rubros/sembrar` y el back expone
+     * `@Post('rubros/semilla')`. Las otras dos semillas de este mismo archivo
+     * —`/mapeo/semilla` y `/mapeo/gastos/semilla`— sí estaban bien; se coló en
+     * una de tres. El botón «Sembrar el preset» de Mapeo contable recibía un
+     * 404 cada vez que alguien lo apretaba.
+     */
     async sembrarRubros(): Promise<ResultadoDeSembrarRubros> {
-      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/sembrar`, {});
+      return apiClient.post<ResultadoDeSembrarRubros>(`${BASE}/mapeo/rubros/semilla`, {});
     },
 
     /** 204. Saca el rubro del mapeo, con sus cuentas. */

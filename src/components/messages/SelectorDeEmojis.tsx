@@ -77,7 +77,7 @@ export function SelectorDeEmojis({ locale, onElegir, className }: Props) {
         >
           {GRUPOS_DE_EMOJIS.map((grupo) => (
             <div key={grupo.id} className="mb-3 last:mb-0">
-              <p className="mb-1.5 text-xs font-medium text-fg-muted">
+              <p className="mb-1.5 text-caption font-medium text-fg-muted">
                 {es ? grupo.etiquetaEs : grupo.etiquetaEn}
               </p>
               <div className="grid grid-cols-8 gap-0.5">

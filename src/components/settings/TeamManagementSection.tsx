@@ -172,7 +172,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
           )}
           {!cargandoEquipo && !errorEquipo && teamMembersList.length === 0 && (
             <div className="px-6 py-8 text-center">
-              <p className="text-sm text-fg-subtle">{t('landlordSettings.team.noMembers') || 'No hay miembros en el equipo'}</p>
+              <p className="text-sm text-fg-subtle">{t('landlordSettings.team.noMembers')}</p>
             </div>
           )}
         </div>

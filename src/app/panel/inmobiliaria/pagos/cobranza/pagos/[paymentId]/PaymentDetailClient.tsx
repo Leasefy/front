@@ -142,7 +142,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   // Fail-soft fallback: no payment (404 / unmigrated / no backend) → EmptyState.
   if (!data) {
     return (
-      <main className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
         <h1 className="text-h2 text-fg">Detalle de pago</h1>
         <EmptyState
@@ -151,7 +151,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
           description="No encontramos el detalle de este pago. Puede que aún no esté disponible en este entorno."
           primaryCta={{ label: 'Volver a pagos', href: BACK_HREF }}
         />
-      </main>
+      </div>
     )
   }
 
@@ -163,7 +163,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   }
 
   return (
-    <main className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
       <BackLink />
 
       <div className="flex items-start justify-between gap-4">
@@ -254,6 +254,6 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
           </Field>
         )}
       </div>
-    </main>
+    </div>
   )
 }

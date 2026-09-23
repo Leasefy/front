@@ -1,8 +1,14 @@
 /**
  * @vitest-environment happy-dom
  *
- * CB1 (13-09): con el panorama de cartera caído, la pantalla pintaba la
- * cartera entera en 0 y un banner al final, sin reintento.
+ * Dos cosas del panorama de cartera, las dos vistas en pantalla y no deducidas:
+ *
+ * CB1 (13-09): con el panorama caído, la pantalla pintaba la cartera entera en
+ * 0 y un banner al final, sin reintento.
+ *
+ * «Cómo funciona» (21-09): contenido de aprendizaje que estaba clavado en mitad
+ * del tablero. Vive acá porque las dos preguntas son sobre ESTA pantalla y el
+ * andamio de mocks es el mismo.
  */
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -119,5 +125,55 @@ describe('/cobros/cobranza con el panorama caído (CB1)', () => {
 
     await act(async () => aviso!.querySelector('button')!.click());
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * 🔴 «Cómo funciona» tiene dos modos a propósito, y es una decisión de
+ * producto que alguien podría "simplificar" sin darse cuenta de lo que pierde:
+ *
+ *   · con cartera en mora hay trabajo en la pantalla, así que la explicación se
+ *     pide (un modal, que devuelve el tablero intacto al cerrarse);
+ *   · sin cartera todavía no hay nada que empujar y los cuatro pasos son lo
+ *     único que la pantalla ofrece: ahí quedan puestos, sin pedir un clic.
+ */
+describe('«Cómo funciona» de la cobranza', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  const sinMora = {
+    ...DATOS,
+    // S0 es «al día»: queda fuera de la mora. Con todo en S0, enMora = 0.
+    stages: DATOS.stages.map((s) => ({ ...s, count: s.stage === 'S0' ? 4 : 0 })),
+  };
+
+  it('con cartera en mora, los cuatro pasos NO están puestos sobre el tablero', async () => {
+    estado.valor = { data: DATOS, isLoading: false, error: null, refetch: () => Promise.resolve() };
+    await act(async () => root.render(<CobranzaOverviewPage />));
+
+    // El contenido del modal no se monta hasta que se abre.
+    expect(container.querySelector('[data-testid="cobranza-como-funciona"]')).toBeNull();
+    // Pero hay por dónde pedirlo.
+    expect(container.querySelector('[data-testid="para-entender-mas"]')).toBeTruthy();
+  });
+
+  it('sin cartera todavía, los cuatro pasos están puestos: es lo único que la pantalla ofrece', async () => {
+    estado.valor = { data: sinMora, isLoading: false, error: null, refetch: () => Promise.resolve() };
+    await act(async () => root.render(<CobranzaOverviewPage />));
+
+    expect(container.querySelector('[data-testid="cobranza-como-funciona"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="para-entender-mas"]')).toBeNull();
   });
 });

@@ -201,9 +201,11 @@ vi.mock('@/components/ui/sheet', () => {
         children,
       )
     },
-    SheetContent: passthrough('div'),
+    SheetContent: ({ children, ...resto }: { children?: React.ReactNode; 'data-testid'?: string }) =>
+      React.createElement('div', { 'data-testid': resto['data-testid'] }, children),
     SheetHeader: passthrough('div'),
     SheetTitle: passthrough('h2'),
+    SheetDescription: passthrough('p'),
   }
 })
 
@@ -269,11 +271,24 @@ const SIN_ACTAS = {
   refetch: vi.fn(),
 }
 
-/** El permiso tal como lo resuelve `AGENCY_ROLE_DEFAULTS` para cada rol. */
+/**
+ * El permiso tal como lo resuelve `AGENCY_ROLE_DEFAULTS` para cada rol.
+ *
+ * 🔴 ADMIN no tiene matriz: en el back `AgencyPermissionGuard` lo salta entero y
+ * en el front `canAccess` devuelve true por `permissions.isAdmin`. Tenerlo acá
+ * con una lista corta hacía que un botón que el ADMIN SÍ ve —editar una
+ * plantilla, que pide `documentos:edit`— se probara como si no lo viera.
+ *
+ * Y el resto son los defaults de verdad: el AGENTE tiene `edit` pero NO
+ * `delete`, que es justo la diferencia que decide qué botones se dibujan.
+ */
 function permisosDe(rol: 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER') {
+  if (rol === 'ADMIN') return () => true
   const matriz: Record<string, Record<string, string[]>> = {
-    ADMIN: { documentos: ['view', 'create'], portafolio: ['view', 'create'] },
-    AGENTE: { documentos: ['view', 'create'], portafolio: ['view', 'create'] },
+    AGENTE: {
+      documentos: ['view', 'create', 'edit'],
+      portafolio: ['view', 'create', 'edit'],
+    },
     CONTADOR: { documentos: ['view'], portafolio: [] },
     VIEWER: { documentos: ['view'], portafolio: ['view'] },
   }
@@ -557,5 +572,165 @@ describe('Documentos — contadores, errores del acta y consignaciones caídas (
 
     expect(container.querySelector('[data-testid="acta-sin-arrendados"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="acta-form-guardar"]')).toBeNull()
+  })
+})
+
+/**
+ * Las plantillas: las del SISTEMA no se editan ni se borran, y por qué.
+ *
+ * 🔴 El documento legal se genera del texto que vive en el CÓDIGO del back, no
+ * de la fila: guardar un cambio sobre una plantilla del sistema cambiaría sólo
+ * la vista previa, y el back responde 400 `PLANTILLA_DEL_SISTEMA`. Un botón que
+ * dibuja esa promesa es peor que no tenerlo, así que la fila ofrece «Duplicar» —
+ * la copia es de la inmobiliaria y esa sí se edita.
+ */
+describe('Documentos — escribir plantillas propias', () => {
+  const DEL_SISTEMA = {
+    id: 'p-sistema',
+    name: 'Contrato de vivienda urbana',
+    category: 'CONTRATO' as const,
+    version: '1.0',
+    variables: ['ciudad'],
+    codigo: 'CONTRATO_VIVIENDA' as const,
+    isActive: true,
+    updatedAt: '2026-09-01T00:00:00Z',
+    content: '<p>{{ciudad}}</p>',
+  }
+
+  const PROPIA = {
+    ...DEL_SISTEMA,
+    id: 'p-propia',
+    name: 'Carta de bienvenida',
+    category: 'CARTA' as const,
+    codigo: null,
+    content: '<p>Hola {{arrendatarioNombre}}</p>',
+    variables: ['arrendatarioNombre'],
+  }
+
+  function filaDe(id: string) {
+    const filas = [...container.querySelectorAll('[data-testid="plantilla-fila"]')]
+    const fila = filas.find((f) => f.textContent?.includes(id === 'p-sistema' ? 'vivienda urbana' : 'bienvenida'))
+    expect(fila).toBeTruthy()
+    return fila as HTMLElement
+  }
+
+  it('la del sistema ofrece duplicar, no editar ni archivar', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({
+      ...SIN_DOCUMENTOS,
+      plantillas: [DEL_SISTEMA, PROPIA],
+    })
+    await renderPage()
+    abrirPestana('plantillas')
+
+    const sistema = filaDe('p-sistema')
+    expect(sistema.querySelector('[data-testid="plantilla-duplicar"]')).not.toBeNull()
+    expect(sistema.querySelector('[data-testid="plantilla-editar"]')).toBeNull()
+    expect(sistema.querySelector('[data-testid="plantilla-borrar"]')).toBeNull()
+  })
+
+  it('la propia sí se edita y se archiva', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({
+      ...SIN_DOCUMENTOS,
+      plantillas: [DEL_SISTEMA, PROPIA],
+    })
+    await renderPage()
+    abrirPestana('plantillas')
+
+    const propia = filaDe('p-propia')
+    expect(propia.querySelector('[data-testid="plantilla-editar"]')).not.toBeNull()
+    expect(propia.querySelector('[data-testid="plantilla-borrar"]')).not.toBeNull()
+  })
+
+  it('un ASESOR puede editar pero NO archivar: son dos permisos distintos', async () => {
+    // `documentos: ['view','create','edit']` — sin `delete`. El back responde
+    // 403 al borrar, así que el botón no se dibuja.
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })
+    await renderPage()
+    abrirPestana('plantillas')
+
+    const propia = filaDe('p-propia')
+    expect(propia.querySelector('[data-testid="plantilla-editar"]')).not.toBeNull()
+    expect(propia.querySelector('[data-testid="plantilla-borrar"]')).toBeNull()
+  })
+
+  it('«Nueva plantilla» vive en SU pestaña, no en la de documentos', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="plantilla-nueva"]')).toBeNull()
+    abrirPestana('plantillas')
+    expect(container.querySelector('[data-testid="plantilla-nueva"]')).not.toBeNull()
+  })
+
+  it('un VIEWER no ve ninguno de los botones de escribir', async () => {
+    canAccessMock.mockImplementation(permisosDe('VIEWER'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PROPIA] })
+    await renderPage()
+    abrirPestana('plantillas')
+
+    expect(container.querySelector('[data-testid="plantilla-nueva"]')).toBeNull()
+    expect(container.querySelector('[data-testid="plantilla-editar"]')).toBeNull()
+    expect(container.querySelector('[data-testid="plantilla-duplicar"]')).toBeNull()
+    expect(container.querySelector('[data-testid="plantilla-borrar"]')).toBeNull()
+    // Ver, sí: `documentos:view` es lo que abre la pantalla.
+    expect(container.querySelector('[data-testid="plantilla-ver"]')).not.toBeNull()
+  })
+})
+
+/*
+ * 🔴 EL MOLDE (regla 5): la fila abre cajón. En Plantillas la fila hace lo mismo
+ * que «Ver plantilla»; en Documentos abre un cajón con sus datos y sus dos
+ * acciones. Los botones de la fila siguen actuando sin abrir el cajón.
+ */
+describe('Documentos — la fila abre su cajón', () => {
+  const DOC = {
+    id: 'd-1',
+    name: 'Paz y salvo — Calle 36D',
+    status: 'GENERADO',
+    createdAt: '2026-09-20T15:00:00Z',
+    updatedAt: '2026-09-20T15:00:00Z',
+    signatures: [],
+    template: { id: 't-1', name: 'Paz y salvo', category: 'CERTIFICADO', codigo: null },
+    consignacion: null,
+    contract: null,
+  }
+  const PLANTILLA = {
+    id: 'p-propia',
+    name: 'Carta de bienvenida',
+    category: 'CARTA' as const,
+    version: '1.0',
+    variables: ['arrendatarioNombre'],
+    codigo: null,
+    isActive: true,
+    updatedAt: '2026-09-01T00:00:00Z',
+    content: '<p>Hola</p>',
+  }
+
+  it('clic en la fila de un documento abre su cajón', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, documentos: [DOC] })
+    await renderPage()
+    const fila = container.querySelector<HTMLElement>('[data-testid="documento-fila"]')!
+    await act(async () => {
+      fila.click()
+    })
+    const cajon = document.body.querySelector('[data-testid="cajon-documento"]')
+    expect(cajon?.textContent).toContain('Paz y salvo — Calle 36D')
+    expect(document.body.querySelector('[data-testid="cajon-documento-ver"]')).not.toBeNull()
+  })
+
+  it('en Plantillas, la fila hace lo mismo que «Ver plantilla»', async () => {
+    canAccessMock.mockImplementation(permisosDe('ADMIN'))
+    useDocumentosLegalesMock.mockReturnValue({ ...SIN_DOCUMENTOS, plantillas: [PLANTILLA] })
+    await renderPage()
+    abrirPestana('plantillas')
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="plantilla-fila"]')!.click()
+    })
+    expect(document.body.querySelector('iframe[title="Carta de bienvenida"]')).not.toBeNull()
   })
 })

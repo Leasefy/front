@@ -508,9 +508,12 @@ export function ExtractoPropietario({
                         {formatCurrency(prop.commissionAmount)}
                       </TableCell>
                       <TableCell className="text-right text-sm">
+                        {/* El IVA de la comisión va con lo que se le cobra y
+                            lo retenido con lo que le suma: así la fila cierra
+                            contra el neto. El resumen los nombra aparte. */}
                         <ConceptosDeLaLinea
-                          aFavor={prop.conceptosAFavor}
-                          aCargo={prop.conceptosACargo}
+                          aFavor={prop.conceptosAFavor + (prop.retencionesComisionAmount ?? 0)}
+                          aCargo={prop.conceptosACargo + (prop.ivaComisionAmount ?? 0)}
                         />
                       </TableCell>
                       <TableCell className="text-right text-sm font-semibold text-success">
@@ -526,7 +529,14 @@ export function ExtractoPropietario({
                     {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
                   </TableCell>
                   <TableCell className="text-right text-foreground">
-                    {formatCurrency(extracto.totals.totalNet + extracto.totals.totalCommission + extracto.totals.totalConceptosACargo - extracto.totals.totalConceptosAFavor)}
+                    {formatCurrency(
+                      extracto.totals.totalNet +
+                        extracto.totals.totalCommission +
+                        (extracto.totals.totalIvaComision ?? 0) -
+                        (extracto.totals.totalRetencionesComision ?? 0) +
+                        extracto.totals.totalConceptosACargo -
+                        extracto.totals.totalConceptosAFavor,
+                    )}
                   </TableCell>
                   <TableCell />
                   <TableCell />
@@ -535,8 +545,8 @@ export function ExtractoPropietario({
                   </TableCell>
                   <TableCell className="text-right">
                     <ConceptosDeLaLinea
-                      aFavor={extracto.totals.totalConceptosAFavor}
-                      aCargo={extracto.totals.totalConceptosACargo}
+                      aFavor={extracto.totals.totalConceptosAFavor + (extracto.totals.totalRetencionesComision ?? 0)}
+                      aCargo={extracto.totals.totalConceptosACargo + (extracto.totals.totalIvaComision ?? 0)}
                     />
                   </TableCell>
                   <TableCell className="text-right text-success">
@@ -608,6 +618,23 @@ export function ExtractoPropietario({
                   -{formatCurrency(extracto.totals.totalCommission)}
                 </span>
               </div>
+              {/* 🔴 22-09: el IVA de la comisión, entre la comisión y el neto. */}
+              {(extracto.totals.totalIvaComision ?? 0) > 0 && (
+                <div className="flex items-center justify-between" data-testid="extracto-iva-comision">
+                  <span className="text-sm text-muted-foreground">IVA de la comisión</span>
+                  <span className="text-sm font-medium font-mono tabular-nums text-primary">
+                    -{formatCurrency(extracto.totals.totalIvaComision ?? 0)}
+                  </span>
+                </div>
+              )}
+              {(extracto.totals.totalRetencionesComision ?? 0) > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Retenido sobre la comisión</span>
+                  <span className="text-sm font-medium font-mono tabular-nums text-foreground">
+                    {formatCurrency(extracto.totals.totalRetencionesComision ?? 0)}
+                  </span>
+                </div>
+              )}
               {extracto.totals.totalConceptosAFavor > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Conceptos a su favor</span>

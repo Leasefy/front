@@ -160,8 +160,18 @@ export interface SugerenciaDeMedio {
   directa: boolean;
 }
 
-export function sugerencias(agencia?: { name?: string | null; razonSocial?: string | null; nit?: string | null } | null): SugerenciaDeMedio[] {
-  return [
+/**
+ * 🔴 QA 22-09: la pantalla sugería crear «Efectivo en la oficina» de un clic a
+ * una inmobiliaria cuya regla es «sólo transferencia y pasarela» (el preset de
+ * Portofino apaga efectivo y cheque). El efectivo se sugiere SÓLO si se sabe
+ * que la inmobiliaria lo tiene prendido; si no se sabe, no se sugiere — es una
+ * sugerencia, no hace falta arriesgarla.
+ */
+export function sugerencias(
+  agencia?: { name?: string | null; razonSocial?: string | null; nit?: string | null } | null,
+  { efectivoHabilitado = false }: { efectivoHabilitado?: boolean } = {},
+): SugerenciaDeMedio[] {
+  const todas: SugerenciaDeMedio[] = [
     {
       id: 'transferencia',
       titulo: 'Transferencia a la cuenta de la inmobiliaria',
@@ -184,4 +194,5 @@ export function sugerencias(agencia?: { name?: string | null; razonSocial?: stri
       directa: true,
     },
   ];
+  return efectivoHabilitado ? todas : todas.filter((s) => s.id !== 'efectivo');
 }

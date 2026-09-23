@@ -190,7 +190,7 @@ const LOTE_EJEMPLO: { agente: string; trabajo: string; estado: string; resultado
 
 function EquipoCobranzaContent() {
   return (
-    <main className="p-6 lg:p-8 space-y-8">
+    <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="space-y-2">
         <h1 className="text-h2 text-fg">Equipo IA de cobranza</h1>
@@ -280,7 +280,7 @@ function EquipoCobranzaContent() {
           </div>
         </Card>
       </section>
-    </main>
+    </div>
   )
 }
 

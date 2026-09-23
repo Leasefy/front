@@ -67,7 +67,8 @@ function contiene(valor: string | null | undefined, aguja: string): boolean {
   return (valor ?? '').toLowerCase().includes(aguja);
 }
 
-export function filtrarPropietarios(
+/** Filtrar sin ordenar. Los conteos de los chips no necesitan el orden. */
+function soloFiltrar(
   propietarios: readonly Propietario[],
   filtros: FiltrosDePropietarios,
 ): Propietario[] {
@@ -96,6 +97,15 @@ export function filtrarPropietarios(
     resultado = resultado.filter((p) => p.documentType === 'NIT');
   }
 
+  return resultado;
+}
+
+export function filtrarPropietarios(
+  propietarios: readonly Propietario[],
+  filtros: FiltrosDePropietarios,
+): Propietario[] {
+  const resultado = soloFiltrar(propietarios, filtros);
+
   resultado.sort((a, b) => {
     let aVal: string | number = a[filtros.campo] ?? '';
     let bVal: string | number = b[filtros.campo] ?? '';
@@ -111,4 +121,56 @@ export function filtrarPropietarios(
   });
 
   return resultado;
+}
+
+/**
+ * Cuántos propietarios hay detrás de cada chip.
+ *
+ * ── 🔴 20-09 · Por qué los chips llevan número ──────────────────────────────
+ *
+ * «Todos · Persona · Empresa» y «Con saldo pendiente» no decían cuántos. Para
+ * saber si hay empresas entre los 1.733 propietarios había que clickear y leer
+ * el «N de 1.733» del otro extremo de la barra — y si la respuesta era cero,
+ * la pantalla quedaba vacía sin explicar que ese filtro nunca tuvo nada.
+ *
+ * Es el mismo defecto que apareció seis veces el 19-09 por el otro lado: un
+ * total que no cuadra con sus partes esconde una categoría sin nombre. Con el
+ * número en el chip, las partes están a la vista y el que no suma se ve.
+ *
+ * ── La regla del número ─────────────────────────────────────────────────────
+ *
+ * Cada chip cuenta **lo que verías si lo clickearas ahora**: se respetan los
+ * otros filtros puestos (la búsqueda, y el saldo para los de tipo). Contar
+ * sobre la lista entera daría un número que no cuadra con lo que pasa al
+ * clickear, y eso es peor que no tener número.
+ */
+export interface ConteosDePropietarios {
+  todos: number;
+  persona: number;
+  empresa: number;
+  conSaldo: number;
+}
+
+export function conteosDePropietarios(
+  propietarios: readonly Propietario[],
+  filtros: FiltrosDePropietarios,
+): ConteosDePropietarios {
+  /*
+   * 🔴 22-09 · Sin un `const cuantos = (cambio) => …` que se llame cuatro veces.
+   *
+   * Así estaba, y el minificador de Next (SWC) lo INLINEA en el `useMemo` de la
+   * página: renombra `propietarios` y `filtros` en la primera copia y deja las
+   * otras tres con los nombres originales, que ya no existen. En `next dev` no
+   * pasa nada; en el build de producción la lista de Propietarios se caía con
+   * `ReferenceError: propietarios is not defined`. Cuatro llamadas escritas a
+   * mano no le dan nada que inlinear.
+   */
+  return {
+    todos: soloFiltrar(propietarios, { ...filtros, tipo: 'all' }).length,
+    persona: soloFiltrar(propietarios, { ...filtros, tipo: 'person' }).length,
+    empresa: soloFiltrar(propietarios, { ...filtros, tipo: 'company' }).length,
+    // El chip del saldo no depende de sí mismo: cuenta los que TIENEN saldo
+    // dentro del tipo y la búsqueda puestos, esté prendido o apagado.
+    conSaldo: soloFiltrar(propietarios, { ...filtros, soloConSaldo: true }).length,
+  };
 }

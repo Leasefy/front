@@ -26,6 +26,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 
@@ -106,7 +107,11 @@ export function PedirCitaModal({
   // Los arrendados NO se ofrecen: el back los rechaza con 409, y ofrecerlos
   // era invitar a llenar el formulario entero para nada. Se cuentan aparte
   // para decir por qué un inmueble conocido no aparece en el buscador.
-  const { consignaciones } = useConsignaciones();
+  const {
+    consignaciones,
+    isLoading: cargandoInmuebles,
+    errorCrudo: errorDeInmuebles,
+  } = useConsignaciones();
   const conInmueble = useMemo(() => consignaciones.filter((c) => c.propertyId), [consignaciones]);
   const opcionesInmueble = useMemo<ComboboxOption[]>(
     () =>
@@ -288,7 +293,16 @@ export function PedirCitaModal({
                   if (rechazo?.campo === 'inmueble') setRechazo(null);
                 }}
                 options={opcionesInmueble}
-                placeholder={t(k('citaSelectProperty'))}
+                placeholder={loQueDiceUnSelector({
+                  cargando: cargandoInmuebles,
+                  error: errorDeInmuebles,
+                  cuantos: opcionesInmueble.length,
+                  queSon: 'los inmuebles',
+                  pista: t(k('citaSelectProperty')),
+                  // Los arrendados no reciben visitas y se filtran aparte; por
+                  // eso el vacío no es «no tienes inmuebles».
+                  cuandoNoHay: 'Ninguno de tus inmuebles recibe visitas ahora',
+                })}
                 searchPlaceholder="Escribe #código, título o dirección"
                 contentClassName="z-[400]"
               />

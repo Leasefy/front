@@ -135,7 +135,7 @@ export function BienvenidaALeasefy({
                 initial={sinMovimiento ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 + i * 0.07 }}
-                className="rounded-full border border-border bg-surface px-3 py-1 font-mono text-xs tabular-nums text-fg-muted"
+                className="rounded-full border border-border bg-surface px-3 py-1 font-mono text-caption tabular-nums text-fg-muted"
               >
                 {p.detalle ?? `${p.conteo} ${p.id}`}
               </motion.li>

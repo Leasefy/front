@@ -17,7 +17,11 @@ import type {
   LoteResumen,
 } from '@/lib/api/lotes-de-dispersion.types';
 
-/** El camino feliz, en orden. `ANULADO` es una salida, no un paso. */
+/**
+ * El camino feliz, en orden. `ANULADO` es una salida, no un paso. `EN_WOMPI`
+ * ocupa el lugar del archivo cuando el lote sale por Wompi · Pagos a terceros
+ * (`pasoAlcanzado` lo pone ahí).
+ */
 export const CAMINO_DEL_LOTE: readonly EstadoDelLote[] = [
   'BORRADOR',
   'ESPERANDO_APROBACION',
@@ -33,6 +37,7 @@ export const NOMBRE_DEL_ESTADO: Record<EstadoDelLote, string> = {
   ARCHIVO_GENERADO: 'Archivo generado',
   PAGADO: 'Pagado',
   ANULADO: 'Anulado',
+  EN_WOMPI: 'En Wompi',
 };
 
 /** Qué significa el estado y qué sigue, para quien abre el lote. */
@@ -46,6 +51,8 @@ export const QUE_SIGUE: Record<EstadoDelLote, string> = {
     'Descarga el archivo y súbelo al banco. Cuando el banco confirme el pago, marca el lote como pagado con la referencia.',
   PAGADO: 'La plata salió. Un lote pagado no se anula: un pago hecho se corrige con una contrapartida.',
   ANULADO: 'Las dispersiones de este lote volvieron a quedar libres para entrar en otro.',
+  EN_WOMPI:
+    'El lote está en Wompi. Se cierra solo cuando Wompi confirme cada pago; lo que el banco rechace vuelve a la lista para otro lote.',
 };
 
 /** Variantes del `Badge` local (adaptador de cadence). */
@@ -58,6 +65,7 @@ export const TONO_DEL_ESTADO: Record<EstadoDelLote, TonoDeBadge> = {
   ARCHIVO_GENERADO: 'default',
   PAGADO: 'success',
   ANULADO: 'destructive',
+  EN_WOMPI: 'warning',
 };
 
 export type AccionDelLote =
@@ -103,6 +111,9 @@ export function accionesPara(estado: EstadoDelLote): AccionDelLote[] {
       return ['descargarArchivo', 'marcarPagado', 'anular'];
     case 'PAGADO':
     case 'ANULADO':
+    // 🔴 En Wompi no se baja el archivo (sería girar dos veces), no se marca
+    // pagado a mano y no se anula: se cierra solo, o vuelve a APROBADO.
+    case 'EN_WOMPI':
       return [];
   }
 }
@@ -115,6 +126,8 @@ export function accionesPara(estado: EstadoDelLote): AccionDelLote[] {
  * murió en borrador o esperando aprobación: se muestra el borrador.
  */
 export function pasoAlcanzado(lote: Pick<LoteResumen, 'estado' | 'aprobadoAt' | 'archivoGeneradoAt' | 'pagadoAt'>): number {
+  // En Wompi el lote está donde estaría el archivo: aprobado y saliendo.
+  if (lote.estado === 'EN_WOMPI') return 3;
   if (lote.estado !== 'ANULADO') return CAMINO_DEL_LOTE.indexOf(lote.estado);
   if (lote.pagadoAt) return 4;
   if (lote.archivoGeneradoAt) return 3;
@@ -131,42 +144,31 @@ export function esSinVerificar(nombreArchivo: string): boolean {
   return /SIN-VERIFICAR/i.test(nombreArchivo);
 }
 
-export interface OpcionDeFormato {
-  codigo: FormatoArchivoDePagos;
-  nombre: string;
-  descripcion: string;
-  /** `false` = el back no tiene el layout; pedirlo devuelve 400. */
-  disponible: boolean;
-  porQueNo?: string;
-}
-
 /**
- * Los formatos, tal como los declara el back (`formatos/index.ts`): sólo PAB
- * tiene generador. Los otros dos se ven —para que se sepa que existen— y no
- * se pueden elegir, con el motivo.
+ * El nombre de cada formato, para mostrar el que tiene un lote.
+ *
+ * Ya no hay que elegir formato al generar el archivo: es el del BANCO que se
+ * eligió al armar el lote (Nico, 22-09). Cuáles bancos tienen formato y por
+ * qué los demás no lo dice el back (`GET /lotes-de-dispersion/bancos`), no una
+ * lista de acá que se pueda quedar vieja.
  */
-export const FORMATOS: readonly OpcionDeFormato[] = [
-  {
-    codigo: 'BANCOLOMBIA_PAB',
-    nombre: 'Bancolombia PAB',
-    descripcion: 'El del «conversor» (formato 2003). Pagos a proveedores.',
-    disponible: true,
-  },
-  {
-    codigo: 'BANCOLOMBIA_SAP',
-    nombre: 'Bancolombia SAP',
-    descripcion: 'Nómina y proveedores por Sucursal Virtual Empresas.',
-    disponible: false,
-    porQueNo: 'Pendiente del archivo de ejemplo del banco.',
-  },
-  {
-    codigo: 'ONEPAY',
-    nombre: 'OnePay',
-    descripcion: 'Pagos masivos por OnePay.',
-    disponible: false,
-    porQueNo: 'Pendiente del archivo de ejemplo del banco.',
-  },
-];
+export const NOMBRE_DEL_FORMATO: Record<FormatoArchivoDePagos, string> = {
+  BANCOLOMBIA_PAB: 'Bancolombia — pagos PAB',
+  BANCO_DE_BOGOTA: 'Banco de Bogotá — pagos masivos',
+  BANCO_AGRARIO: 'Banco Agrario — pagos masivos',
+  BANCO_AV_VILLAS: 'AV Villas — pagos a terceros ACH',
+  BANCO_CAJA_SOCIAL: 'Banco Caja Social — pagos masivos (.csv)',
+  BANCOOMEVA: 'Bancoomeva — transferencias masivas',
+  BANCO_DAVIVIENDA: 'Davivienda — pagos masivos (sin verificar)',
+  BANCO_DAVIBANK: 'Davibank — pago empresarial (sin verificar)',
+  BANCO_BBVA: 'BBVA — Net Cash por líneas (sin verificar)',
+  BANCO_DE_OCCIDENTE: 'Banco de Occidente — pagos a terceros (sin verificar)',
+  PLANILLA_MANUAL: 'Planilla para cargar a mano',
+  PLANILLA_FINANDINA: 'Planilla para la macro de Banco Finandina',
+  PLANILLA_BANCAMIA: 'Planilla para la plantilla de Bancamía',
+  BANCOLOMBIA_SAP: 'Bancolombia SAP',
+  ONEPAY: 'OnePay',
+};
 
 /** Los 6 dígitos del código, y nada más: es lo que valida el DTO del back. */
 export function codigoValido(codigo: string): boolean {

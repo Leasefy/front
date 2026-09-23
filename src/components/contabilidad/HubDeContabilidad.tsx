@@ -73,6 +73,8 @@ import {
   ArrowsClockwise,
   Bank,
   BookOpenText,
+  Buildings,
+  CaretRight,
   ChartBar,
   ChartPieSlice,
   DownloadSimple,
@@ -82,6 +84,7 @@ import {
   Plugs,
   Receipt,
   Scales,
+  Target,
   TreeStructure,
   Warning,
   WarningCircle,
@@ -99,9 +102,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { elLibroEnUnaFrase } from '@/lib/contabilidad/el-libro-en-una-frase';
 import {
   contabilidadApi,
   type AsientoContable,
@@ -109,6 +113,7 @@ import {
   type Cierre,
 } from '@/lib/api/contabilidad.service';
 import { gastosApi } from '@/lib/api/gastos.service';
+import { procesosApi } from '@/lib/api/procesos.service';
 import { exogenaApi } from '@/lib/api/exogena.service';
 import {
   alertasDeContabilidad,
@@ -136,7 +141,9 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Monto } from './Monto';
 import { RangoDeFechas } from './RangoDeFechas';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
+import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 
 const BASE = '/panel/inmobiliaria/contabilidad';
 
@@ -399,43 +406,6 @@ interface FalloDeTarjeta {
   reintentando: boolean;
 }
 
-function Cifra({
-  etiqueta,
-  valor: v,
-  pie,
-  cargando,
-  fallo,
-}: {
-  etiqueta: string;
-  valor: number | null;
-  pie?: string;
-  cargando: boolean;
-  fallo?: FalloDeTarjeta;
-}) {
-  return (
-    <div className="space-y-1">
-      <dt className="font-mono text-label uppercase tracking-wide text-fg-muted">{etiqueta}</dt>
-      <dd className="text-2xl font-semibold tabular-nums text-fg">
-        {cargando ? (
-          <span
-            className="inline-block h-7 w-16 animate-pulse rounded-sm bg-surface-muted"
-            aria-label="cargando"
-          />
-        ) : v === null ? (
-          <span className="text-fg-subtle">—</span>
-        ) : (
-          v.toLocaleString('es-CO')
-        )}
-      </dd>
-      {!cargando && fallo ? (
-        <NoCargo {...fallo} />
-      ) : pie && !cargando ? (
-        <p className="text-caption text-fg-muted">{pie}</p>
-      ) : null}
-    </div>
-  );
-}
-
 const PINTURA: Record<AlertaDescrita['severidad'], { caja: string; icono: string; Icono: Icon }> = {
   danger: { caja: 'border-danger/40 bg-danger-soft', icono: 'text-danger', Icono: WarningCircle },
   warning: { caja: 'border-warning/40 bg-warning-soft', icono: 'text-warning', Icono: Warning },
@@ -489,52 +459,102 @@ function Alerta({
   );
 }
 
+/**
+ * 🔴 22-09 · «Ese diseño de carga es horrible» (Nico, con la captura de la
+ * portada cargando): una tarjeta grande vacía con un spinner solitario. El
+ * esqueleto ahora tiene la FORMA de lo que va a llegar —cinco renglones con su
+ * fecha, su glosa y su monto—, así que la tarjeta no cambia de alto ni de
+ * dibujo cuando llegan los datos.
+ *
+ * Y cada renglón abre el asiento (regla 4 del molde: la fila abre un cajón).
+ * El cajón es el mismo del libro y no le pide nada al back: el asiento ya vino
+ * entero, con sus movimientos, en la misma consulta.
+ */
 function UltimosAsientos({
   asientos,
   cargando,
   fallo,
+  onAbrir,
+  className,
 }: {
   asientos: AsientoContable[] | null;
   cargando: boolean;
   fallo?: FalloDeTarjeta;
+  onAbrir: (a: AsientoContable) => void;
+  className?: string;
 }) {
   return (
-    <section className="flex flex-col rounded-lg border border-border bg-surface p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold text-fg">Últimos asientos</h2>
-        <Link href={`${BASE}/asientos`} className="text-caption text-primary hover:underline">
+    <section
+      className={cn('overflow-x-clip rounded-lg border border-border bg-surface', className)}
+      aria-labelledby="ultimos-asientos-titulo"
+      aria-busy={cargando || undefined}
+      data-testid="ultimos-asientos"
+    >
+      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="min-w-0 space-y-0.5">
+          <h2 id="ultimos-asientos-titulo" className="text-sm font-semibold text-fg">
+            Últimos asientos
+          </h2>
+          <p className="text-caption text-fg-muted">Lo último que entró al libro.</p>
+        </div>
+        <Link
+          href={`${BASE}/asientos`}
+          className="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
           Ver el libro
+          <ArrowRight
+            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
         </Link>
-      </div>
+      </header>
 
       {cargando ? (
-        <div className="flex items-center justify-center py-8">
-          <Spinner />
-        </div>
+        <ul className="divide-y divide-border-faint" data-testid="ultimos-asientos-cargando">
+          {Array.from({ length: ULTIMOS }, (_, i) => (
+            <li key={i} className="grid grid-cols-[6.5rem_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3">
+              <Skeleton className="h-3.5 w-20 rounded-sm bg-surface-muted" />
+              <Skeleton
+                className="h-4 rounded-sm bg-surface-muted"
+                // Glosas de largo distinto: una columna de barras iguales se lee
+                // como una tabla vacía, no como texto por llegar.
+                style={{ width: `${[78, 55, 66, 48, 72][i % 5]}%` }}
+              />
+              <Skeleton className="h-4 w-20 rounded-sm bg-surface-muted" />
+            </li>
+          ))}
+        </ul>
       ) : fallo ? (
-        <div className="py-6">
+        <div className="px-5 py-6">
           <NoCargo {...fallo} />
         </div>
       ) : asientos === null ? (
-        <p className="py-6 text-sm text-fg-muted">No se pudo leer el libro.</p>
+        <p className="px-5 py-6 text-sm text-fg-muted">No se pudo leer el libro.</p>
       ) : asientos.length === 0 ? (
-        <p className="py-6 text-sm text-fg-muted">
+        <p className="px-5 py-6 text-sm text-fg-muted">
           Todavía no hay asientos. El primero puede ser manual, o entrar por la migración.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-border-faint">
+        <ul className="divide-y divide-border-faint">
           {asientos.map((a) => (
-            <li key={a.id} className="flex items-baseline gap-3 py-2">
-              <span className="w-[7.5rem] shrink-0 truncate text-caption tabular-nums text-fg-muted">
-                {diaLegible(a.fecha)}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-fg" title={a.descripcion}>
-                {a.descripcion}
-              </span>
-              <Monto
-                valor={a.movimientos.reduce((s, m) => s + (m.debitoCop ?? 0), 0)}
-                className="shrink-0 text-caption"
-              />
+            <li key={a.id}>
+              <button
+                type="button"
+                onClick={() => onAbrir(a)}
+                className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_auto] items-baseline gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover"
+                data-testid={`ultimo-asiento-${a.id}`}
+              >
+                <span className="truncate font-mono text-caption tabular-nums text-fg-muted">
+                  {diaLegible(a.fecha)}
+                </span>
+                <span className="truncate text-sm text-fg" title={a.descripcion}>
+                  {a.descripcion}
+                </span>
+                <Monto
+                  valor={a.movimientos.reduce((s, m) => s + (m.debitoCop ?? 0), 0)}
+                  className="text-sm text-fg"
+                />
+              </button>
             </li>
           ))}
         </ul>
@@ -543,12 +563,51 @@ function UltimosAsientos({
   );
 }
 
+/**
+ * 🔴 EL RANGO DE FECHAS SE PIDE DESPUÉS, NO ANTES (Nico, 22-09).
+ *
+ * «Tiene cosas por un lado y por el otro que se podrían hacer de otra manera o
+ * hasta con un CTA que luego pida el resto de información.»
+ *
+ * En la portada había dos campos de fecha puestos encima de un botón. Bajar el
+ * libro para el contador se hace una vez al mes; dos campos de fecha
+ * permanentes en la portada del módulo ocupan lugar todos los días y —como
+ * pasó con la resolución— **se leen como un filtro de la pantalla**, no como
+ * los parámetros de una descarga.
+ *
+ * Ahora la portada tiene el botón, y el botón abre el cajón que pide el rango.
+ */
 function ParaElContador() {
   const inicial = useMemo(() => rangoDelMesAnterior(), []);
   const [rango, setRango] = useState({ desde: inicial.desde, hasta: inicial.hasta });
   const [bajando, setBajando] = useState(false);
+  const [pidiendoRango, setPidiendoRango] = useState(false);
 
   const invertido = rangoInvertido(rango.desde, rango.hasta);
+
+  /*
+   * El centro de procesos (22-09): el mismo libro, armado en segundo plano.
+   * Con un año entero no hay por qué quedarse mirando el cajón: se lanza, se
+   * sigue trabajando y el archivo aparece en el botón de procesos de arriba.
+   */
+  const [lanzando, setLanzando] = useState(false);
+  const enSegundoPlano = async () => {
+    setLanzando(true);
+    try {
+      await procesosApi.exportarLibro({
+        desde: rango.desde || undefined,
+        hasta: rango.hasta || undefined,
+      });
+      toast.success('Estamos armando el libro.', {
+        description: 'Cuando esté, lo bajas desde el centro de procesos, arriba a la derecha.',
+      });
+      setPidiendoRango(false);
+    } catch (e) {
+      toast.error(mensajeDeContabilidad(e, 'No se pudo lanzar la exportación.'));
+    } finally {
+      setLanzando(false);
+    }
+  };
 
   const descargar = async () => {
     setBajando(true);
@@ -579,6 +638,7 @@ function ParaElContador() {
       enlace.remove();
       URL.revokeObjectURL(url);
       toast.success('El libro del rango quedó descargado.');
+      setPidiendoRango(false);
     } catch (e) {
       toast.error(mensajeDeContabilidad(e, 'No se pudo armar el archivo.'));
     } finally {
@@ -587,27 +647,100 @@ function ParaElContador() {
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-      <div className="space-y-0.5">
-        <h2 className="text-sm font-semibold text-fg">Para el contador</h2>
-        <p className="text-caption text-fg-muted">
-          El libro del rango en CSV —una línea por movimiento, con su cuenta y su lado—, más los
-          informes que va a pedir.
-        </p>
-      </div>
+    <section
+      className="overflow-x-clip rounded-lg border border-border bg-surface"
+      aria-labelledby="para-el-contador-titulo"
+    >
+      {/* 🔴 22-09 · La acción de la tarjeta va en su cabecera, a la derecha,
+          como en el resto del panel; antes era un botón del ancho entero
+          metido entre el texto y los enlaces, y los enlaces quedaban colgando
+          debajo. */}
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-border px-5 py-4">
+        <div className="min-w-0 space-y-0.5">
+          <h2 id="para-el-contador-titulo" className="text-sm font-semibold text-fg">
+            Para el contador
+          </h2>
+          <p className="text-caption text-fg-muted">
+            El libro del rango en CSV y los informes que va a pedir.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={() => setPidiendoRango(true)}
+          disabled={bajando}
+          data-testid="descargar-csv"
+        >
+          <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+          {bajando ? 'Armando el archivo…' : 'Descargar el libro en CSV'}
+        </Button>
+      </header>
 
-      <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} disabled={bajando} />
-
-      <Button
-        variant="outline"
-        hideArrow
-        onClick={() => void descargar()}
-        disabled={bajando || invertido}
-        data-testid="descargar-csv"
+      <Cajon
+        abierto={pidiendoRango}
+        onOpenChange={(v) => {
+          // Mientras el archivo se arma no se cierra: cerrar a mitad dejaría
+          // sin saber si la descarga salió.
+          if (!v && bajando) return;
+          setPidiendoRango(v);
+        }}
+        ancho="sm:max-w-lg"
+        data-testid="cajon-del-libro"
       >
-        <DownloadSimple className="mr-1.5 h-4 w-4" aria-hidden="true" />
-        {bajando ? 'Armando el archivo…' : 'Descargar el libro en CSV'}
-      </Button>
+        <CajonCabecera
+          titulo="Descargar el libro en CSV"
+          descripcion="Una línea por movimiento, con su cuenta y su lado. Es lo que el contador carga en su software."
+        />
+        <CajonCuerpo className="space-y-4">
+          <RangoDeFechas
+            desde={rango.desde}
+            hasta={rango.hasta}
+            onChange={setRango}
+            disabled={bajando}
+          />
+          <p className="text-caption text-fg-muted">
+            Viene cargado el mes pasado, que es el que se le manda al contador.
+            El archivo lo arma el servidor: con un rango largo puede tardar.
+          </p>
+        </CajonCuerpo>
+        <CajonPie
+          ayuda={
+            invertido
+              ? 'La fecha de «hasta» es anterior a la de «desde».'
+              : 'El libro sale completo: no hay tope de filas.'
+          }
+        >
+          <Button
+            variant="outline"
+            hideArrow
+            disabled={bajando}
+            onClick={() => setPidiendoRango(false)}
+            data-testid="cajon-del-libro-cancelar"
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="outline"
+            hideArrow
+            onClick={() => void enSegundoPlano()}
+            disabled={bajando || lanzando || invertido}
+            isLoading={lanzando}
+            data-testid="cajon-del-libro-segundo-plano"
+          >
+            En segundo plano
+          </Button>
+          <Button
+            hideArrow
+            onClick={() => void descargar()}
+            disabled={bajando || lanzando || invertido}
+            data-testid="cajon-del-libro-descargar"
+          >
+            <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+            {bajando ? 'Armando el archivo…' : 'Descargar'}
+          </Button>
+        </CajonPie>
+      </Cajon>
 
       {/* 🔴 20-09 · Eran ONCE enlaces azules en una fila envuelta, todos con
           el mismo peso y sin decir qué es qué: «Balance de prueba · Libro
@@ -620,23 +753,52 @@ function ParaElContador() {
           son un acento (DESIGN §1): el azul se reserva para la acción de la
           tarjeta —bajar el libro— y los informes se leen en el color del
           texto. La otra, que un contador no busca «un informe»: busca EL
-          libro, o LOS estados, o la cartera. Agrupados, son cuatro decisiones
-          de tres opciones en vez de una de once. */}
-      <div className="mt-auto grid gap-x-6 gap-y-3 border-t border-border pt-3 sm:grid-cols-2">
+          libro, o LOS estados.
+
+          🔴 20-09, segunda pasada (con la portada ABIERTA en el navegador):
+          agrupar no alcanzaba, porque la portada tenía DOS navegaciones que se
+          pisaban. «Deterioro de cartera», «Certificados de retención» y
+          «Exógena» estaban acá Y como tarjeta abajo, con el mismo nombre y el
+          mismo destino; «Presupuesto» estaba sólo acá y no tenía tarjeta. Dos
+          listas con solape parcial es peor que una lista larga: no hay forma
+          de saber cuál manda, y quien no encuentra algo en una no sabe si
+          buscarlo en la otra.
+
+          La regla que las separa, y que el guardián de abajo sostiene:
+          **acá van INFORMES —pestañas de una pantalla—, y en la grilla van
+          PANTALLAS.** Por eso cada grupo de acá es exactamente una pantalla
+          con sus pestañas: «El libro» son las cinco de `/reportes`, «Lo que se
+          firma» son las dos de `/estados-financieros`. Nada de acá vuelve a
+          aparecer abajo. */}
+      {/* 🔴 22-09 · Una LISTA navegable, no una fila de enlaces sueltos: cada
+          informe es un renglón entero que se puede tocar, con qué es en una
+          línea. Un contador que no recuerda si lo que busca es el mayor o el
+          auxiliar lo resuelve leyendo, no abriendo los dos. */}
+      <div
+        data-testid="informes-del-contador"
+        className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0"
+      >
         {INFORMES_DEL_CONTADOR.map((grupo) => (
-          <div key={grupo.titulo} className="min-w-0 space-y-1">
-            <p className="text-caption uppercase tracking-wide text-fg-subtle">
-              {grupo.titulo}
-            </p>
-            <ul className="space-y-0.5">
+          <div key={grupo.titulo} className="min-w-0 px-3 py-4">
+            <h3 className="px-2 text-overline text-fg-subtle">{grupo.titulo}</h3>
+            <ul className="mt-2 space-y-0.5">
               {grupo.informes.map((informe) => (
                 <li key={informe.href}>
                   <Link
                     href={informe.href}
-                    className="text-caption text-fg underline-offset-2 hover:text-primary hover:underline"
+                    className="group flex items-start gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-hover"
                     data-testid={informe.testid}
                   >
-                    {informe.nombre}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-fg group-hover:text-primary">
+                        {informe.nombre}
+                      </span>
+                      <span className="block text-caption text-fg-muted">{informe.que}</span>
+                    </span>
+                    <CaretRight
+                      className="mt-1 h-4 w-4 shrink-0 text-fg-subtle transition-transform group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
                   </Link>
                 </li>
               ))}
@@ -649,24 +811,47 @@ function ParaElContador() {
 }
 
 /**
- * Los informes que el contador pide por nombre, agrupados por la pregunta que
- * contesta cada grupo. El orden es el del trabajo: primero el libro, después
- * lo que se firma con él, después lo que se le debe a alguien.
+ * Los informes que el contador pide por nombre, agrupados por la PANTALLA que
+ * los sirve: cada grupo es una pantalla y cada renglón una de sus pestañas.
+ *
+ * 🔴 Invariante: ningún `href` de acá puede ser el de un `DESTINOS`. Un mismo
+ * destino en las dos listas de la portada es lo que hacía ilegible la página;
+ * la prueba «ningún destino aparece dos veces en la portada» lo sostiene.
  */
 const INFORMES_DEL_CONTADOR: ReadonlyArray<{
   titulo: string;
-  informes: ReadonlyArray<{ href: string; nombre: string; testid?: string }>;
+  informes: ReadonlyArray<{ href: string; nombre: string; que: string; testid?: string }>;
 }> = [
   {
     titulo: 'El libro',
     informes: [
-      { href: `${BASE}/reportes?informe=balance`, nombre: 'Balance de prueba' },
-      { href: `${BASE}/reportes?informe=mayor`, nombre: 'Libro mayor', testid: 'ir-al-mayor' },
-      { href: `${BASE}/reportes?informe=auxiliar`, nombre: 'Libro auxiliar por cuenta' },
+      {
+        href: `${BASE}/reportes?informe=balance`,
+        nombre: 'Balance de prueba',
+        que: 'Cada cuenta con sus débitos, créditos y saldo, y si el libro cuadra.',
+      },
+      {
+        href: `${BASE}/reportes?informe=mayor`,
+        nombre: 'Libro mayor',
+        que: 'Cada cuenta con sus movimientos partidos por mes.',
+        testid: 'ir-al-mayor',
+      },
+      {
+        href: `${BASE}/reportes?informe=auxiliar`,
+        nombre: 'Libro auxiliar por cuenta',
+        que: 'Todo lo que pasó en una cuenta, con el saldo corrido.',
+      },
       {
         href: `${BASE}/reportes?informe=terceros`,
         nombre: 'Auxiliar por tercero',
+        que: 'Los terceros con su saldo, para encontrar a quien buscas.',
         testid: 'ir-a-terceros',
+      },
+      {
+        href: `${BASE}/reportes?informe=tercero`,
+        nombre: 'Estado de cuenta de un tercero',
+        que: 'Todo lo que se movió a nombre de alguien, en todas las cuentas.',
+        testid: 'ir-al-estado-de-cuenta',
       },
     ],
   },
@@ -676,39 +861,14 @@ const INFORMES_DEL_CONTADOR: ReadonlyArray<{
       {
         href: `${BASE}/estados-financieros?informe=pyg`,
         nombre: 'Estado de resultados',
+        que: 'Ingresos, gastos y utilidad del período.',
         testid: 'ir-al-pyg',
       },
       {
         href: `${BASE}/estados-financieros?informe=balance`,
         nombre: 'Balance general',
+        que: 'Activos, pasivos y patrimonio a una fecha.',
         testid: 'ir-al-balance-general',
-      },
-    ],
-  },
-  {
-    titulo: 'Cartera y terceros',
-    informes: [
-      { href: `${BASE}/reportes?informe=tercero`, nombre: 'Estado de cuenta' },
-      {
-        href: `${BASE}/deterioro`,
-        nombre: 'Deterioro de cartera',
-        testid: 'ir-al-deterioro',
-      },
-      {
-        href: `${BASE}/certificados`,
-        nombre: 'Certificados de retención',
-        testid: 'ir-a-certificados',
-      },
-    ],
-  },
-  {
-    titulo: 'Obligaciones y control',
-    informes: [
-      { href: `${BASE}/exogena`, nombre: 'Exógena', testid: 'ir-a-la-exogena' },
-      {
-        href: `${BASE}/presupuesto`,
-        nombre: 'Presupuesto',
-        testid: 'ir-al-presupuesto',
       },
     ],
   },
@@ -791,6 +951,24 @@ const DESTINOS: Destino[] = [
     titulo: 'Exógena',
     texto: 'Los seis formatos de la DIAN, armados contra el libro.',
   },
+  // 🔴 20-09: la copropiedad como TERCERO del libro. Nació de ver que la
+  // cuenta 2815 no tenía un solo movimiento a nombre de su dueño, y que la
+  // cuota de administración no tenía a quién apuntar.
+  {
+    href: `${BASE}/copropiedades`,
+    icono: Buildings,
+    titulo: 'Copropiedades',
+    texto: 'Los conjuntos y edificios, con su NIT: el dueño de la administración.',
+  },
+  // 🔴 20-09: «Presupuesto» era la única pantalla de contabilidad sin tarjeta.
+  // Vivía sólo como renglón de «Para el contador», que es donde van los
+  // informes: quien buscaba la pantalla en el mapa de abajo no la encontraba.
+  {
+    href: `${BASE}/presupuesto`,
+    icono: Target,
+    titulo: 'Presupuesto',
+    texto: 'Lo que se planeó para el mes, contra lo que pasó y contra el año pasado.',
+  },
 ];
 
 /**
@@ -830,6 +1008,7 @@ export function HubDeContabilidad() {
   const [reprocesando, setReprocesando] = useState(false);
   const [confirmandoReproceso, setConfirmandoReproceso] = useState(false);
   const cierreRef = useRef<HTMLDivElement>(null);
+  const [asientoAbierto, setAsientoAbierto] = useState<AsientoContable | null>(null);
 
   const alertas = useMemo(
     () =>
@@ -894,39 +1073,65 @@ export function HubDeContabilidad() {
 
   // Un cero de este mes no significa un libro vacío: si el último asiento es
   // de agosto y estamos en septiembre, el 0 es correcto y engañoso a la vez.
+  // `elLibroEnUnaFrase` es la que decide cómo se dice eso.
   const ultimo = datos.ultimos?.[0];
-  const pieDelMes =
-    datos.asientosDelMes === 0 && ultimo ? `el último, el ${diaLegible(ultimo.fecha)}` : undefined;
 
   const revisionesCaidas = cargando ? [] : REVISIONES.filter((r) => r.consulta in datos.fallos);
   const faltantes = datos.faltantes;
 
   return (
     <div className="space-y-6">
-      <dl
-        className="grid gap-6 rounded-lg border border-border bg-surface p-6 sm:grid-cols-3"
+      {/* 🔴 EL RESUMEN ES UNA FRASE (regla 1 del molde, Nico 22-09: «esto
+          también parece un vómito y tiene cosas por un lado y por el otro»).
+          Eran tres fichas del mismo tamaño y el mismo peso —CUENTAS ACTIVAS
+          2.790 · ASIENTOS ESTE MES 0 · ASIENTOS EN EL LIBRO 0— y las tres
+          juntas no decían nada: un 0 al lado de un 2.790 se lee como un error,
+          no como «el plan está cargado y el libro todavía no arrancó».
+          La frase la arma `elLibroEnUnaFrase`, que está probada aparte: los
+          casos raros son varios (libro vacío, mes en cero con libro lleno, y
+          cualquiera de los tres números sin poder leerse). */}
+      <section
+        className="rounded-lg border border-border bg-surface p-5"
         aria-label="Resumen del libro"
       >
-        <Cifra
-          etiqueta="Cuentas activas"
-          valor={datos.cuentasActivas}
-          cargando={cargando}
-          fallo={falloDe('cuentas')}
-        />
-        <Cifra
-          etiqueta="Asientos este mes"
-          valor={datos.asientosDelMes}
-          pie={pieDelMes}
-          cargando={cargando}
-          fallo={falloDe('delMes')}
-        />
-        <Cifra
-          etiqueta="Asientos en el libro"
-          valor={datos.asientosEnElLibro}
-          cargando={cargando}
-          fallo={falloDe('libro')}
-        />
-      </dl>
+        {cargando ? (
+          // La forma de la frase que va a llegar —un renglón largo y uno más
+          // corto—, no una barra suelta (Nico, 22-09: «ese diseño de carga es
+          // horrible»).
+          <div className="space-y-2 py-0.5" aria-label="cargando" data-testid="resumen-cargando">
+            <Skeleton className="h-5 w-full max-w-2xl rounded-sm bg-surface-muted" />
+            <Skeleton className="h-5 w-3/5 max-w-md rounded-sm bg-surface-muted" />
+          </div>
+        ) : (
+          <p className="text-body text-fg" data-testid="el-libro-en-una-frase">
+            {elLibroEnUnaFrase({
+              cuentasActivas: datos.cuentasActivas,
+              asientosEnElLibro: datos.asientosEnElLibro,
+              asientosDelMes: datos.asientosDelMes,
+              ultimoDia: ultimo ? diaLegible(ultimo.fecha) : null,
+            }).map((trozo, i) =>
+              trozo.tipo === 'texto' ? (
+                <span key={i}>{trozo.texto}</span>
+              ) : (
+                <strong
+                  key={i}
+                  className="font-mono font-semibold tabular-nums text-fg"
+                  title={trozo.rotulo}
+                >
+                  {trozo.valor === null ? '—' : trozo.valor.toLocaleString('es-CO')}
+                </strong>
+              ),
+            )}
+          </p>
+        )}
+        {/* Cada consulta falla por separado y lo DICE: sin esto, un número que
+            no se pudo leer saldría como un guion mudo. */}
+        {!cargando &&
+          (['cuentas', 'delMes', 'libro'] as const)
+            .map((c) => falloDe(c))
+            .filter((f): f is NonNullable<typeof f> => Boolean(f))
+            .map((f, i) => <NoCargo key={i} {...f} />)}
+      </section>
 
       {/* CT1: que no aparezca ninguna alerta sólo vale si se pudo revisar. */}
       {revisionesCaidas.length > 0 ? (
@@ -967,45 +1172,86 @@ export function HubDeContabilidad() {
         </section>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <UltimosAsientos asientos={datos.ultimos} cargando={cargando} fallo={falloDe('libro')} />
-        <ParaElContador />
-      </div>
+      {/* 🔴 22-09 · LA JERARQUÍA (Nico: «no le hiciste el glow up y eso se ve
+          por ahí tirado todo»). Lo que un contador hace acá, en orden:
+            1. ¿Cómo está el libro? — la frase de arriba y las alertas.
+            2. ¿Hasta dónde está cerrado, y cierro el mes? — el período, que
+               en pantalla ancha va a la derecha de lo último que entró y en
+               el teléfono va PRIMERO (por eso es primero en el DOM).
+            3. Mandarle el libro y los informes al contador.
+            4. Ir a una pantalla puntual — la grilla, al final.
+          Antes el período era una tarjeta del ancho entero debajo de las
+          otras dos, con cinco bloques apilados de igual peso.
 
-      {/* `tabIndex={-1}`: la alerta «Cerrar el mes» trae el foco acá, y sin
-          esto un div no lo recibe. */}
-      <div ref={cierreRef} tabIndex={-1} className="space-y-2 outline-none">
-        <CierreDePeriodo
-          cierre={datos.cierre}
+          🔴 20-09 (navegador abierto, 1440): `items-start` — cada tarjeta mide
+          lo que mide su contenido, sin estirarse a la altura de la vecina.
+          🔴 22-09 (QA a 390 px): `grid-cols-1` es `minmax(0, 1fr)`; sin eso la
+          columna implícita es `auto` y la glosa más larga estiraba la página a
+          1.606 px. Las columnas de `lg` también son `minmax(0, …)` por lo
+          mismo. */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        {/* `tabIndex={-1}`: la alerta «Cerrar el mes» trae el foco acá, y sin
+            esto un div no lo recibe. */}
+        <div
+          ref={cierreRef}
+          tabIndex={-1}
+          className="space-y-2 outline-none lg:col-start-2 lg:row-start-1"
+        >
+          <CierreDePeriodo
+            cierre={datos.cierre}
+            cargando={cargando}
+            fallo={'cierre' in datos.fallos}
+            onCerrado={() => void recargar()}
+            onReabierto={() => void recargar()}
+          />
+          {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
+        </div>
+        <UltimosAsientos
+          asientos={datos.ultimos}
           cargando={cargando}
-          fallo={'cierre' in datos.fallos}
-          onCerrado={() => void recargar()}
-          onReabierto={() => void recargar()}
+          fallo={falloDe('libro')}
+          onAbrir={setAsientoAbierto}
+          className="lg:col-start-1 lg:row-start-1"
         />
-        {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
       </div>
 
-      <nav aria-label="Secciones de contabilidad" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {DESTINOS.map((d) => (
-          <Link
-            key={d.href}
-            href={d.href}
-            className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 transition-colors hover:bg-surface-muted"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-              <d.icono className="h-5 w-5 text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="text-sm font-semibold text-fg">{d.titulo}</p>
-              <p className="text-caption text-fg-muted">{d.texto}</p>
-            </div>
-            <ArrowRight
-              className="mt-1 h-4 w-4 shrink-0 text-fg-subtle transition group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </Link>
-        ))}
-      </nav>
+      <ParaElContador />
+
+      <section className="space-y-3" aria-labelledby="pantallas-de-contabilidad">
+        <h2 id="pantallas-de-contabilidad" className="text-sm font-semibold text-fg">
+          Todas las pantallas de contabilidad
+        </h2>
+        <nav aria-label="Secciones de contabilidad" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {DESTINOS.map((d) => (
+            <Link
+              key={d.href}
+              href={d.href}
+              className="group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 transition-colors hover:bg-surface-muted"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
+                <d.icono className="h-5 w-5 text-primary" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-sm font-semibold text-fg">{d.titulo}</p>
+                <p className="text-caption text-fg-muted">{d.texto}</p>
+              </div>
+              <ArrowRight
+                className="mt-1 h-4 w-4 shrink-0 text-fg-subtle transition group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          ))}
+        </nav>
+      </section>
+
+      {/* El asiento de «Últimos asientos», en el mismo cajón del libro. Si se
+          reversa desde acá, la portada se vuelve a leer: cambió el libro. */}
+      <DetalleDeAsiento
+        asiento={asientoAbierto}
+        abierto={asientoAbierto !== null}
+        onCerrar={() => setAsientoAbierto(null)}
+        onReversado={() => void recargar()}
+      />
 
       {/* CT2: reprocesar escribe en el libro. Se dice cuánto y qué antes. */}
       <AlertDialog

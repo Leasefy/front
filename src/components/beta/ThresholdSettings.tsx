@@ -261,7 +261,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
               min={1}
               max={30}
               step={1}
-              suffix="dias"
+              suffix="días"
               onChange={(v) => updateThreshold('moraTolerance', v)}
               decreaseLabel={t('beta.preferences.thresholds.decrease')}
               increaseLabel={t('beta.preferences.thresholds.increase')}

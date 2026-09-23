@@ -20,6 +20,15 @@
 import { ApiError } from '@/lib/api/client';
 
 export const RUTA_LOTES = '/panel/inmobiliaria/pagos/dispersiones/lotes';
+
+/**
+ * Lotes, abierto en el mes de la dispersión (`?mes=2026-09`). Sin mes, la
+ * pantalla abre en el de hoy — y desde una dispersión de agosto eso mostraba
+ * un mes que no era el suyo.
+ */
+export function rutaDeLotesDelMes(mes?: string | null): string {
+  return mes && /^\d{4}-\d{2}$/.test(mes) ? `${RUTA_LOTES}?mes=${mes}` : RUTA_LOTES;
+}
 export const RUTA_INMUEBLES = '/panel/inmobiliaria/inmuebles';
 
 export type CodigoDeLiquidacionFrenada =

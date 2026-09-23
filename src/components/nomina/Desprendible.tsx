@@ -99,7 +99,7 @@ function Constancia({
 
   return (
     <div
-      className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+      className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
       data-testid="constancia-del-envio"
     >
       <div className="space-y-1">
@@ -215,7 +215,7 @@ function Contenido({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-fg">{datos.nombre}</h2>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {[
                 datos.documento ? `Documento ${datos.documento}` : null,
                 datos.cargo,
@@ -232,7 +232,7 @@ function Contenido({
             <p className="text-sm font-medium text-fg">
               {etiquetaDelPeriodo(datos.periodo.mes, datos.periodo.quincena)}
             </p>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {datos.periodo.desde.slice(0, 10)} al{' '}
               {datos.periodo.hasta.slice(0, 10)} · {datos.diasLiquidados} días
             </p>
@@ -242,7 +242,7 @@ function Contenido({
           </div>
         </div>
         {datos.esDefinitiva ? (
-          <p className="text-xs font-medium text-warning" data-testid="es-definitiva">
+          <p className="text-caption font-medium text-warning" data-testid="es-definitiva">
             Liquidación DEFINITIVA por terminación del contrato
             {datos.fechaRetiro ? ` el ${datos.fechaRetiro.slice(0, 10)}` : ''}
             {datos.causalRetiro
@@ -319,12 +319,12 @@ function Contenido({
                     <TableRow key={l.id} data-testid={`linea-${l.codigo}`}>
                       <TableCell>
                         <span className="font-medium text-fg">{l.nombre}</span>
-                        <span className="ml-1.5 text-xs text-fg-muted">
+                        <span className="ml-1.5 text-caption text-fg-muted">
                           {l.codigo}
                         </span>
                         {l.constitutivoSalario ? (
                           <span
-                            className="ml-1.5 text-xs text-fg-muted"
+                            className="ml-1.5 text-caption text-fg-muted"
                             title="Entra al IBC de seguridad social y a la base de prestaciones."
                           >
                             · salarial
@@ -337,7 +337,7 @@ function Contenido({
                       <TableCell className="text-right font-mono tabular-nums">
                         {formatCurrency(l.valorCop)}
                       </TableCell>
-                      <TableCell className="max-w-md text-xs leading-relaxed text-fg-muted">
+                      <TableCell className="max-w-md text-caption leading-relaxed text-fg-muted">
                         {l.detalle}
                         {l.requiereValidacionContador && l.motivoValidacion ? (
                           <div className="mt-1">
@@ -374,7 +374,7 @@ function Contenido({
             titulo="Nómina electrónica"
             explicacion="El documento que se le informa a la DIAN. Un CUNE que empieza por «PRUEBA-» NO se informó: es del proveedor de prueba."
           />
-          <ul className="space-y-1 text-xs text-fg-muted">
+          <ul className="space-y-1 text-caption text-fg-muted">
             {datos.documentosDeNomina.map((d) => (
               <li key={d.id} data-testid={`documento-${d.id}`}>
                 {d.prefijo}-{d.numero} · {d.estado.toLowerCase()}

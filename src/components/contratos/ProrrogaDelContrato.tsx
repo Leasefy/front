@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowsClockwise, Info, WarningCircle } from '@phosphor-icons/react';
 
 import { AunNoDisponible } from './AunNoDisponible';
@@ -147,19 +148,19 @@ export function ProrrogaDelContrato({
         <div className="space-y-2 rounded-lg border border-plan-status-yellow/40 bg-plan-status-yellow/5 p-3" data-testid="prorroga-por-hacer">
           <p className="text-sm">{plan.porQue}</p>
           {plan.puenteDeRenovacion && (
-            <p className="text-xs text-muted-foreground" data-testid="puente-de-renovacion">
+            <p className="text-caption text-muted-foreground" data-testid="puente-de-renovacion">
               Es un puente mientras se firma la renovación: se prorroga mes a mes para que la deuda del inquilino no
               desaparezca. Cuando la renovación se complete, ella manda y las cuotas se rehacen.
             </p>
           )}
           {plan.tramos.length > 1 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Son {plan.tramos.length} términos seguidos: se crean de una vez las cuotas de todos. El proceso diario no
               lo hace solo.
             </p>
           )}
           {!plan.automaticaPrendida && plan.tramos.length === 1 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               La prórroga automática está apagada para tu inmobiliaria: nada la hace sola.
             </p>
           )}
@@ -198,7 +199,7 @@ export function ProrrogaDelContrato({
             </strong>{' '}
             ({plan.aviso.at.slice(0, 10)}).
           </p>
-          {plan.aviso.motivo && <p className="text-xs text-muted-foreground">Motivo: {plan.aviso.motivo}</p>}
+          {plan.aviso.motivo && <p className="text-caption text-muted-foreground">Motivo: {plan.aviso.motivo}</p>}
           {editable && plan.aviso.fuente === 'CONTRATO' && (
             <Button
               size="sm"
@@ -214,14 +215,14 @@ export function ProrrogaDelContrato({
             </Button>
           )}
           {plan.aviso.fuente === 'RENOVACION' && (
-            <p className="text-xs text-muted-foreground">Se registró en la renovación del inmueble: se retira desde ahí.</p>
+            <p className="text-caption text-muted-foreground">Se registró en la renovación del inmueble: se retira desde ahí.</p>
           )}
         </div>
       ) : (
         editable &&
         (plan.accion === 'NO_VENCIDO' || plan.accion === 'PRORROGAR') && (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Si alguna de las partes avisa que no renueva, regístralo: es lo único que frena la prórroga.
             </p>
             <Button size="sm" variant="outline" onClick={() => setDialogo(true)} data-testid="abrir-aviso">
@@ -243,21 +244,14 @@ export function ProrrogaDelContrato({
         </p>
       ) : (
       <label className="flex items-start gap-2.5 text-sm" data-testid="no-se-prorroga">
-        <input
-          type="checkbox"
-          className="mt-1 h-4 w-4"
-          checked={plan.noSeProrroga}
-          disabled={!editable}
-          onChange={(e) =>
+        <Checkbox className="mt-1" checked={plan.noSeProrroga} disabled={!editable} onCheckedChange={(marcada: boolean) =>
             void hacer(
-              () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, e.target.checked),
-              e.target.checked
+              () => cicloDeVidaApi.fijarNoSeProrroga(contract.id, marcada),
+              marcada
                 ? 'Este contrato ya no se prorroga: al vencer queda en alerta y no se generan cuotas nuevas.'
                 : 'Este contrato vuelve a prorrogarse como diga la regla.',
             )
-          }
-          data-testid="no-se-prorroga-casilla"
-        />
+          } data-testid="no-se-prorroga-casilla" />
         <span>
           <strong>Este contrato NO se prorroga al vencer.</strong> Queda en alerta y nadie genera cuotas nuevas: lo que
           siga se decide a mano (renovarlo o terminarlo con la fecha de entrega).
@@ -267,7 +261,7 @@ export function ProrrogaDelContrato({
 
       {plan.uso && !plan.noSeProrroga && plan.disponible && (
         <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs" htmlFor="meses-de-prorroga">
+          <label className="text-caption" htmlFor="meses-de-prorroga">
             {plan.uso === 'COMERCIAL'
               ? 'Prórroga pactada, en meses (vacío = mes a mes)'
               : 'Término inicial confirmado, en meses (vacío = el del contrato)'}
@@ -308,7 +302,7 @@ export function ProrrogaDelContrato({
       )}
 
       {plan.historial.length > 0 && (
-        <ul className="space-y-1 border-t border-border pt-2 text-xs text-muted-foreground" data-testid="historial-de-prorrogas">
+        <ul className="space-y-1 border-t border-border pt-2 text-caption text-muted-foreground" data-testid="historial-de-prorrogas">
           {plan.historial.map((h) => (
             <li key={`${h.finAnterior}-${h.createdAt}`}>
               {HISTORIAL[h.regla] ?? h.regla}: {h.finAnterior} → {h.finNuevo}

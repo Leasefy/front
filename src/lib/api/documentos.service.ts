@@ -41,7 +41,9 @@ export type CodigoDeDocumentoLegal =
   | 'ACTA_ENTREGA'
   | 'ACTA_DEVOLUCION'
   | 'INVENTARIO'
-  | 'CARTA_INCREMENTO';
+  | 'CARTA_INCREMENTO'
+  | 'PAZ_Y_SALVO'
+  | 'CERTIFICADO_ESTAR_AL_DIA';
 
 export interface FirmaDeDocumento {
   signerName: string;
@@ -86,6 +88,32 @@ export interface PlantillaDeLaAgencia {
   updatedAt: string;
   /** El HTML de la plantilla, con sus `{{variables}}` sin reemplazar. */
   content: string;
+}
+
+/** Un grupo del catálogo de variables, para no listar 36 en fila. */
+export type GrupoDeVariable = 'inmobiliaria' | 'partes' | 'inmueble' | 'contrato';
+
+/**
+ * Una variable que una plantilla PROPIA de la inmobiliaria puede usar.
+ *
+ * 🔴 El catálogo lo sirve el back (`GET /templates/variables`) y no se escribe
+ * acá a propósito: es la lista de lo que el sistema sabe llenar de verdad, y
+ * duplicada en los dos repos se separa a la primera variable nueva. Una
+ * variable ofrecida que el resolvedor no produce imprimiría «—» para siempre en
+ * un documento que alguien firma.
+ */
+export interface VariableDePlantilla {
+  nombre: string;
+  etiqueta: string;
+  grupo: GrupoDeVariable;
+}
+
+/** El cuerpo de crear o editar una plantilla propia. */
+export interface PlantillaPropiaBody {
+  name: string;
+  category: CategoriaDeDocumento;
+  content: string;
+  version?: string;
 }
 
 export type TipoDeCampo =
@@ -135,6 +163,26 @@ export interface RevisionDelIncremento {
   fuente: string;
 }
 
+/**
+ * El veredicto del libro para el paz y salvo y el certificado de estar al día.
+ *
+ * 🔴 Viaja en `preparar` y no sólo en el error de `generar` a propósito: la
+ * pantalla tiene que poder decir «no se puede, y por esto» ANTES de que
+ * alguien llene los campos. Descubrirlo con un 400 al final es hacerle perder
+ * el tiempo a quien tiene un cliente esperando el papel.
+ *
+ * Las cifras NO están acá y no se pintan: las pone el back en el documento.
+ * Un paz y salvo cuyo «$0» lo mostró el front es un número que el front no
+ * puede defender.
+ */
+export interface RevisionDelCertificado {
+  puedeEmitirse: boolean;
+  impedimentos: { code: string; mensaje: string }[];
+  /** `YYYY-MM-DD`: a qué día corresponde la lectura. */
+  fechaDeCorte: string;
+  hayActa: boolean;
+}
+
 export interface PreparacionDeDocumento {
   codigo: CodigoDeDocumentoLegal;
   nombre: string;
@@ -157,6 +205,8 @@ export interface PreparacionDeDocumento {
   itemsDeInventario: number;
   campos: CampoDeDocumento[];
   incremento: RevisionDelIncremento | null;
+  /** Sólo en las dos plantillas de certificado; `null` en las otras seis. */
+  certificado?: RevisionDelCertificado | null;
 }
 
 export interface GenerarDocumentoBody {
@@ -194,6 +244,65 @@ export const documentosLegalesApi = {
         `${BASE}/templates`,
       ),
     );
+  },
+
+  /** Las variables que puede usar una plantilla propia de la inmobiliaria. */
+  async variablesDePlantilla(): Promise<VariableDePlantilla[]> {
+    return lista(
+      await apiClient.get<{ data: VariableDePlantilla[] } | VariableDePlantilla[]>(
+        `${BASE}/templates/variables`,
+      ),
+    );
+  },
+
+  /**
+   * Crear una plantilla propia. El back RECHAZA una `{{variable}}` que no sabe
+   * llenar (400 `VARIABLE_DESCONOCIDA`) — el editor lo avisa antes, pero la
+   * autoridad es el back.
+   */
+  async crearPlantilla(body: PlantillaPropiaBody): Promise<PlantillaDeLaAgencia> {
+    return apiClient.post<PlantillaDeLaAgencia>(`${BASE}/templates`, body);
+  },
+
+  /** Editar una plantilla propia. Las del sistema responden 400. */
+  async editarPlantilla(
+    id: string,
+    body: Partial<PlantillaPropiaBody>,
+  ): Promise<PlantillaDeLaAgencia> {
+    return apiClient.put<PlantillaDeLaAgencia>(`${BASE}/templates/${id}`, body);
+  },
+
+  /**
+   * Copiar una plantilla —del sistema o propia— en una nueva de la agencia.
+   * Es la salida de que las del sistema no se editen: la copia sí.
+   */
+  async duplicarPlantilla(id: string, name?: string): Promise<PlantillaDeLaAgencia> {
+    return apiClient.post<PlantillaDeLaAgencia>(`${BASE}/templates/${id}/duplicar`, {
+      ...(name ? { name } : {}),
+    });
+  },
+
+  /** Archivar una plantilla propia (el back la marca inactiva, no la borra). */
+  async borrarPlantilla(id: string): Promise<void> {
+    await apiClient.delete<void>(`${BASE}/templates/${id}`);
+  },
+
+  /**
+   * Generar un documento a partir de una plantilla PROPIA.
+   *
+   * Es otra llamada que `generar()`: aquella manda `codigo` —una de las ocho
+   * legales del sistema, con sus campos escritos a mano— y ésta manda
+   * `templateId`. El back reemplaza las variables con los datos del contrato o
+   * del mandato; si la plantilla usa variables y no se elige ninguno de los
+   * dos, responde 400 `FALTA_SOBRE_QUE_GENERARLO`.
+   */
+  async generarDePlantillaPropia(body: {
+    templateId: string;
+    contractId?: string;
+    consignacionId?: string;
+    name?: string;
+  }): Promise<DocumentoGenerado> {
+    return apiClient.post<DocumentoGenerado>(`${BASE}/generate`, body);
   },
 
   /** Qué documentos sabe armar el sistema y qué pide cada uno. */

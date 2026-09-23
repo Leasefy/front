@@ -23,6 +23,7 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
 import {
   AccionDePostulacion,
@@ -316,10 +317,22 @@ function PostulacionesContenido() {
           <EmptyState
             icon={ClipboardText}
             title="Todavía no te ha llegado ninguna postulación"
-            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado. Así es el recorrido completo:"
+            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado."
           />
-          <div className="border-t border-border px-6 py-8">
-            <RecorridoMapa />
+          {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
+              la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…
+              debería estar en un botón de quiero entender más, y que al clic se
+              abra un modal». El vacío dice lo suyo en dos frases; quien quiera
+              el recorrido completo lo pide. */}
+          <div className="flex justify-center border-t border-border px-6 py-4">
+            <ParaEntenderMas
+              etiqueta="Cómo funciona una postulación"
+              titulo="El recorrido completo de una postulación"
+              descripcion="Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú."
+              ancho="ancho"
+            >
+              <RecorridoMapa />
+            </ParaEntenderMas>
           </div>
         </div>
       ) : (
@@ -482,14 +495,19 @@ function PostulacionesContenido() {
           {/* Con trabajo encima, el recorrido se pliega: sigue disponible para
               quien no sepa de dónde salió esta lista, sin robarle espacio a
               quien vino a atenderla. */}
-          <details className="group border-t border-border pt-6">
-            <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
-              Cómo funciona el recorrido
-            </summary>
-            <div className="pt-6">
+          {/* Era un `<details>`: abierto crecía DENTRO de la pantalla y
+              empujaba la lista hacia abajo, así que leerlo costaba perder el
+              lugar. El modal lo muestra encima y lo devuelve intacto. */}
+          <div className="border-t border-border pt-6">
+            <ParaEntenderMas
+              etiqueta="Cómo funciona el recorrido"
+              titulo="El recorrido completo de una postulación"
+              descripcion="Los primeros seis pasos los hace el inquilino; del séptimo en adelante, tú."
+              ancho="ancho"
+            >
               <RecorridoMapa />
-            </div>
-          </details>
+            </ParaEntenderMas>
+          </div>
         </>
       )}
 

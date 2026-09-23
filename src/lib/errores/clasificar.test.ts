@@ -350,3 +350,77 @@ describe('🔴 T-0099: un 403 del segundo factor durante la ventana pendiente no
     expect(fallo.tipo).toBe('sinSegundoFactor')
   })
 })
+
+/**
+ * 🔴 20-09 · EL ARREGLO DEL 18-09 ESTABA MUERTO EN LA MITAD DE LAS PANTALLAS.
+ *
+ * Exigía `instanceof ApiError`. Un error que cruzó un servicio que lo
+ * re-envuelve, o que llegó como objeto plano, deja de serlo aunque traiga el
+ * mismo `code`. Medido con «Deterioro de cartera» abierta: arriba salía «No
+ * tienes acceso a esto · Pídele a un administrador que te lo habilite» y
+ * ABAJO, en letra chica, el motivo de verdad. El administrador leía primero
+ * que le pidiera permiso a alguien que es él mismo.
+ *
+ * Importa hoy más que nunca: la migración que prende el segundo factor
+ * obligatorio se aplicó el 20-09, y ADMIN y CONTADOR lo exigen SIEMPRE.
+ */
+describe('el 403 por segundo factor se reconoce venga como venga', () => {
+  const CODIGO = 'SEGUNDO_FACTOR_REQUERIDO'
+
+  it('🔴 como objeto plano con `code` (el caso que se escapaba)', () => {
+    const r = clasificarFallo({ status: 403, code: CODIGO, message: 'x' })
+    expect(r.tipo).toBe('sinSegundoFactor')
+    expect(r.descripcion).not.toContain('Pídele a un administrador')
+  })
+
+  it('🔴 con el cuerpo del back pegado al error', () => {
+    const r = clasificarFallo({ status: 403, body: { code: CODIGO } })
+    expect(r.tipo).toBe('sinSegundoFactor')
+  })
+
+  it('un 403 de verdad por permisos sigue diciendo lo de siempre', () => {
+    const r = clasificarFallo({ status: 403, message: 'sin permiso' })
+    expect(r.tipo).toBe('sinPermiso')
+    expect(r.descripcion).toContain('Pídele a un administrador')
+  })
+})
+
+/**
+ * 🔴 UNA BASE ATRASADA NO ES «UN PROBLEMA NUESTRO, PRUEBA DE NUEVO» (21-09-2026).
+ *
+ * Medido en dev ese día: una sola columna sin aplicar
+ * —`consignaciones.copropiedad_id`— tumbaba toda lectura de una tabla de 2.965
+ * filas: Inmuebles, Contratos, Visitas, Matching, Mandato y Evaluaciones a la
+ * vez. Cada una mostraba el cartel genérico del 500 con una referencia
+ * distinta, así que veinte pantallas rotas por LA MISMA causa se veían como
+ * veinte problemas distintos, y todas invitaban a reintentar algo que no podía
+ * cambiar. Nico: «esto no carga y hay muchas cosas que no cargan también».
+ */
+describe('🔴 una base atrasada se dice, y no se ofrece reintentar', () => {
+  it('el 503 marcado FALTA_UNA_MIGRACION no cae en «servidor»', () => {
+    const fallo = clasificarFallo(
+      new ApiError(503, 'A esta base le falta una columna…', 'FALTA_UNA_MIGRACION'),
+      { queEs: 'los inmuebles' },
+    )
+    expect(fallo.tipo).toBe('baseAtrasada')
+    expect(fallo.titulo).toContain('los inmuebles')
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('no le echa la culpa a quien mira ni le pide que reintente', () => {
+    const fallo = clasificarFallo(
+      new ApiError(503, 'x', 'FALTA_UNA_MIGRACION'),
+      { queEs: 'los contratos' },
+    )
+    expect(fallo.descripcion).not.toMatch(/prueba de nuevo|int[ée]ntalo/i)
+    expect(fallo.descripcion).toContain('del lado nuestro')
+  })
+
+  it('y un 503 CUALQUIERA sigue siendo un fallo de servidor con reintento', () => {
+    // El control positivo: si la rama nueva se comiera todos los 503, un
+    // servidor que se cayó de verdad dejaría de ofrecer «Intentar de nuevo».
+    const fallo = clasificarFallo(new ApiError(503, 'Service Unavailable'))
+    expect(fallo.tipo).not.toBe('baseAtrasada')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+})

@@ -81,6 +81,7 @@
  */
 
 import * as React from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import {
   Bank,
@@ -128,6 +129,8 @@ import {
 } from '@/lib/recibos/forma-del-adelanto';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
+import { finanzasApi } from '@/lib/api/finanzas.service';
+import { sinLosApagados } from '@/lib/finanzas/medios';
 import {
   faltaElPagador,
   PAGA_EL_CLIENTE,
@@ -171,22 +174,52 @@ const LARGO_MAXIMO_DE_SALUDOS = 380;
 
 /**
  * Los medios configurados por la inmobiliaria (activos), como chips. Si no
- * hay ninguno, la lista fija de arriba. El valor que viaja es el NOMBRE del
- * medio, recortado al largo del DTO: es lo que la persona de caja reconoce.
+ * hay ninguno, la lista fija de arriba.
+ *
+ * 🔴 QA 22-09 (P0): el valor que viajaba era el NOMBRE del medio. «Efectivo en
+ * la oficina» llegaba al back como `EFECTIVO_EN_LA_OFICINA`, que no está en la
+ * lista de apagados, y el recibo en efectivo entraba aunque la regla de la
+ * inmobiliaria diga «sólo transferencia y pasarela». Ahora:
+ *   · lo que viaja en `medio` es el TIPO (`codigo`), que es lo que la regla
+ *     juzga; el nombre que la persona de caja reconoce va en las notas;
+ *   · los medios cuyo tipo la inmobiliaria APAGÓ no se ofrecen (`apagados`,
+ *     de `GET /inmobiliaria/finanzas/medios`). Sin esa lista —no se pudo leer—
+ *     no se filtra: el back rechaza igual lo apagado, con el motivo.
+ * `valor` es sólo la identidad del chip: dos cuentas de transferencia son dos
+ * chips con el mismo código.
  */
 export function mediosParaElegir(
   configurados: { nombre: string; tipo: keyof typeof ICONO_DEL_TIPO; activo: boolean }[] | null | undefined,
-): { valor: string; etiqueta: string | null; clave: string | null; icono: typeof Bank }[] {
+  apagados: readonly string[] = [],
+): {
+  valor: string;
+  codigo: string;
+  /** El nombre configurado, para las notas del recibo. `null` en la lista fija. */
+  nombre: string | null;
+  etiqueta: string | null;
+  clave: string | null;
+  icono: typeof Bank;
+}[] {
   const activos = (configurados ?? []).filter((m) => m.activo);
   if (activos.length === 0) {
-    return MEDIOS.map((m) => ({ valor: m.valor, etiqueta: null, clave: m.clave, icono: m.icono }));
+    return sinLosApagados(
+      MEDIOS.map((m) => ({ valor: m.valor, codigo: m.valor, nombre: null, etiqueta: null, clave: m.clave, icono: m.icono })),
+      (m) => m.codigo,
+      apagados,
+    );
   }
-  return activos.map((m) => ({
-    valor: m.nombre.trim().slice(0, LARGO_MAXIMO_DEL_MEDIO),
-    etiqueta: m.nombre,
-    clave: null,
-    icono: ICONO_DEL_TIPO[m.tipo] ?? DotsThree,
-  }));
+  return sinLosApagados(
+    activos.map((m) => ({
+      valor: `${m.tipo}|${m.nombre.trim()}`,
+      codigo: m.tipo,
+      nombre: m.nombre.trim().slice(0, LARGO_MAXIMO_DEL_MEDIO),
+      etiqueta: m.nombre,
+      clave: null,
+      icono: ICONO_DEL_TIPO[m.tipo] ?? DotsThree,
+    })),
+    (m) => m.codigo,
+    apagados,
+  );
 }
 
 /**
@@ -242,7 +275,28 @@ export function RegistrarPagoModal({
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
-  const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
+  // Qué tipos apagó la inmobiliaria. Falla ABIERTO: sin la lista (sin permiso
+  // de configuración, red caída) no se filtra y el back decide.
+  const [apagados, setApagados] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let vivo = true;
+    finanzasApi
+      .medios()
+      .then((r) => {
+        if (vivo) setApagados(r.apagados ?? []);
+      })
+      .catch(() => {
+        if (vivo) setApagados([]);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [isOpen]);
+  const opcionesDeMedio = React.useMemo(
+    () => mediosParaElegir(mediosConfigurados, apagados),
+    [mediosConfigurados, apagados],
+  );
 
   /**
    * Hoy EN BOGOTÁ, no en UTC.
@@ -267,9 +321,29 @@ export function RegistrarPagoModal({
 
   const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);
+  /**
+   * 🔴 QA 22-09: con un dedo de más el campo quedó en $7.480.366.500.000, el
+   * diálogo dijo «superan TODA la deuda… quedan a su favor» y dejó pulsar
+   * «Emitir». Pagar de más es legítimo (CEO, 15-09) y no se le pone un tope
+   * inventado; lo que no puede pasar es que ocurra sin que nadie lo decida.
+   * Guarda el monto que se confirmó: si el monto cambia, la confirmación se va.
+   */
+  const [aFavorConfirmado, setAFavorConfirmado] = React.useState<number | null>(null);
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy);
   const [saludos, setSaludos] = React.useState('');
+  const opcionElegida = opcionesDeMedio.find((m) => m.valor === medio) ?? null;
+  /*
+   * El nombre del medio configurado («Cuenta Bancolombia 1234») va a las notas:
+   * `medio` ya es el tipo, y sin esto el recibo perdería por cuál de las dos
+   * cuentas de transferencia entró la plata.
+   */
+  const prefijoDelMedio = opcionElegida?.nombre ? `Medio: ${opcionElegida.nombre}` : null;
+  // El back topa las notas en 380: lo que ocupa el nombre se le descuenta al campo.
+  const largoDeLosSaludos = LARGO_MAXIMO_DE_SALUDOS - (prefijoDelMedio ? prefijoDelMedio.length + 3 : 0);
+  const notasDelRecibo = [prefijoDelMedio, saludos.trim().slice(0, largoDeLosSaludos) || null]
+    .filter(Boolean)
+    .join(' · ');
   /** La forma del adelanto que eligió caja. Sólo viaja si se le preguntó. */
   const [forma, setForma] = React.useState<FormaDelAdelanto>('ABONAR_A_LAS_CUOTAS');
   /** 🔴 D11: quién paga. Casi siempre el cliente; a veces una aseguradora (siniestro). */
@@ -426,6 +500,7 @@ export function RegistrarPagoModal({
     (cartera.total > 0 || puedeGuardarAFavor) &&
     montoValido &&
     !seExcede &&
+    (excedente === 0 || aFavorConfirmado === monto) &&
     medio !== '' &&
     !faltaElPagador(quienPaga) &&
     problemaDeLaFecha === null &&
@@ -520,8 +595,9 @@ export function RegistrarPagoModal({
         ...(cobroId ? { cobroId } : { tenantId: tenantId! }),
         valorCop: Math.round(monto),
         fecha,
-        medio,
-        ...(saludos.trim() ? { notas: saludos.trim() } : {}),
+        // El TIPO, no el nombre: es lo que juzga la regla de medios (QA 22-09).
+        medio: opcionElegida?.codigo ?? medio,
+        ...(notasDelRecibo ? { notas: notasDelRecibo } : {}),
         idempotencyKey: llaveDeEsteRecibo(),
         // Sólo si se le preguntó a caja: si no, el back abona a las cuotas.
         // 🔴 D11: la plata de una aseguradora no queda como anticipo.
@@ -653,11 +729,12 @@ export function RegistrarPagoModal({
     llaveDeEsteRecibo,
     medio,
     monto,
+    notasDelRecibo,
+    opcionElegida,
     ofrecerForma,
     onSubmit,
     puedeEnviar,
     quienPaga,
-    saludos,
     sinConciliar,
     t,
     tenantId,
@@ -877,7 +954,11 @@ export function RegistrarPagoModal({
                   className="h-12 text-lg font-semibold"
                 />
                 <p className="text-xs text-fg-muted">
-                  {t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
+                  {/* Con anticipo habilitado NO es un máximo —se puede pagar de
+                      más y queda a favor—: llamarlo «Máximo abonable» mentía. */}
+                  {puedeGuardarAFavor && quienPaga.tipo !== 'ASEGURADORA'
+                    ? t('recibos.form.deudaTotal', { monto: formatCurrency(maximo) })
+                    : t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
                   {/* El máximo ya trae la mora adentro: se dice cuánto es. */}
                   {(cartera.interesCop ?? 0) > 0 && (
                     <span data-testid="maximo-con-intereses">
@@ -907,6 +988,22 @@ export function RegistrarPagoModal({
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
                   </p>
+                )}
+                {excedente > 0 && puedeGuardarAFavor && !seExcede && (
+                  <label className="flex items-start gap-2 text-sm text-fg" data-testid="confirmar-a-favor">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={aFavorConfirmado === monto}
+                      onCheckedChange={(v) => setAFavorConfirmado(v === true ? monto : null)}
+                      data-testid="confirmar-a-favor-casilla"
+                    />
+                    <span>
+                      {t('recibos.form.confirmarAFavor', {
+                        monto: formatCurrency(excedente),
+                        nombre: cartera?.nombre ?? 'el cliente',
+                      })}
+                    </span>
+                  </label>
                 )}
                 {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
               </div>
@@ -1084,7 +1181,7 @@ export function RegistrarPagoModal({
                 <Textarea
                   id="saludos-recibo"
                   rows={2}
-                  maxLength={LARGO_MAXIMO_DE_SALUDOS}
+                  maxLength={largoDeLosSaludos}
                   value={saludos}
                   onChange={(e) => setSaludos(e.target.value)}
                   placeholder={t('recibos.form.saludosPlaceholder')}

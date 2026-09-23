@@ -37,6 +37,7 @@ import {
 } from '@/lib/hooks/useContracts';
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { mensajeDelFallo, isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { isoToInputDate } from './iso-to-input-date';
 import {
@@ -236,7 +237,13 @@ function EditarContratoContent() {
    */
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
+        <h1 className="text-h2 text-fg">Editar el contrato</h1>
         {/*
           🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
           dejaba «Volver» como única salida — se perdía el camino y había que

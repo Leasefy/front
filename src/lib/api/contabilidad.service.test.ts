@@ -168,10 +168,22 @@ describe('mapeo de rubros', () => {
     });
   });
 
-  it('sembrarRubros hace POST a /mapeo/rubros/sembrar', async () => {
+  /**
+   * 🔴 22-09 · ESTA PRUEBA ES EL EJEMPLO DE POR QUÉ EL CI NO VEÍA EL DEFECTO.
+   *
+   * Decía `/mapeo/rubros/sembrar` y el back expone `@Post('rubros/semilla')`.
+   * Verde durante todo ese tiempo, porque lo único que comprobaba era que le
+   * mandáramos al doble de `apiClient` exactamente la ruta equivocada. Al
+   * usuario, el botón «Sembrar el preset» le respondía 404.
+   *
+   * Una prueba que espía al cliente HTTP verifica QUÉ pedimos, nunca si eso
+   * existe. Lo segundo lo vigila `rutas-que-el-back-no-tiene.guardian.test.ts`,
+   * que compara contra la tabla de rutas real del back.
+   */
+  it('sembrarRubros hace POST a /mapeo/rubros/semilla', async () => {
     await contabilidadApi.mapeo.sembrarRubros();
     expect(clienteMock.post).toHaveBeenCalledWith(
-      '/inmobiliaria/contabilidad/mapeo/rubros/sembrar',
+      '/inmobiliaria/contabilidad/mapeo/rubros/semilla',
       {},
     );
   });

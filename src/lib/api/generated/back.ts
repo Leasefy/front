@@ -613,18 +613,18 @@ export interface paths {
         };
         /**
          * Get per-agency role permission matrices (admin only)
-         * @description Returns the effective permission matrix for each role in this agency: { roles: { ADMIN, AGENTE, CONTADOR, VIEWER } }. ADMIN is the full matrix (read-only display). Non-ADMIN roles resolve to the agency override if set, otherwise the static role defaults. Scoped to the current agency.
+         * @description Returns the effective permission matrix for each role in this agency: { roles: { ADMIN, AGENTE, CONTADOR, VIEWER, COORDINADOR, AUXILIAR_CARTERA, ABOGADO_EXTERNO } }. ADMIN is the full matrix (read-only display). Non-ADMIN roles resolve to the agency override if set, otherwise the static role defaults. Scoped to the current agency.
          */
         get: operations["AgencyController_getRolePermissions"];
         /**
          * Update per-agency role permission templates (admin only)
-         * @description Body: { AGENTE?, CONTADOR?, VIEWER? } where each value is a module→actions map. Persists into this agency only and clears per-member permission overrides for the edited roles (active members) so the template becomes authoritative. ADMIN is never editable. Returns the updated effective matrices.
+         * @description Body: { AGENTE?, CONTADOR?, VIEWER?, COORDINADOR?, AUXILIAR_CARTERA?, ABOGADO_EXTERNO? } where each value is a module→actions map. Only roles that are sent AND differ from what the role already has are written; the rest stay untouched. Per-member overrides of the changed roles are rebased (their additions/removals kept) onto the new template. ADMIN is never editable. Returns the updated effective matrices.
          */
         put: operations["AgencyController_updateRolePermissions"];
         post?: never;
         /**
          * Reset per-agency role permission templates (admin only)
-         * @description Clears Agency.rolePermissions and per-member overrides for AGENTE/CONTADOR/VIEWER active members in this agency, restoring the static role defaults. Returns the effective matrices (= static defaults).
+         * @description Clears Agency.rolePermissions and per-member overrides for every non-ADMIN active member in this agency, restoring the static role defaults. Returns the effective matrices (= static defaults).
          */
         delete: operations["AgencyController_resetRolePermissions"];
         options?: never;
@@ -1499,6 +1499,24 @@ export interface paths {
         /** Request a renewal (tenant reminder to the agency) */
         post: operations["LeasesController_requestRenovacion"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leases/{leaseId}/renovacion/no-renovar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Avisar que no se renueva (inquilino) */
+        post: operations["LeasesController_avisarQueNoRenueva"];
+        /** Retirar el aviso de no renovación (inquilino) */
+        delete: operations["LeasesController_retirarElAviso"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3423,6 +3441,829 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/{id}/extender": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renovar un contrato vencido con el inquilino adentro */
+        post: operations["CicloDeVidaDelContratoController_extender"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Incrementos del canon y su carta */
+        get: operations["CicloDeVidaDelContratoController_listarIncrementos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/tasa-anual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Tasa de incremento pactada para cada año (local comercial) */
+        put: operations["CicloDeVidaDelContratoController_fijarTasaAnual"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Incremento digitado para un aniversario (local comercial) */
+        put: operations["CicloDeVidaDelContratoController_digitarIncremento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}/carta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generar la carta del incremento (queda por revisar) */
+        post: operations["CicloDeVidaDelContratoController_generarCarta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}/carta/revisar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar la carta como revisada (puede corregir el texto) */
+        post: operations["CicloDeVidaDelContratoController_revisarCarta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}/carta/enviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enviar la carta del incremento con un clic (deja constancia) */
+        post: operations["CicloDeVidaDelContratoController_enviarCarta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}/carta/constancia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar la constancia de la carta entregada por otro medio (soporte opcional) */
+        post: operations["CicloDeVidaDelContratoController_registrarConstancia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/incrementos/{desde}/carta/constancia/soporte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Abrir el soporte de la constancia (URL firmada) */
+        get: operations["CicloDeVidaDelContratoController_soporteDeLaConstancia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/motivos-de-terminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los motivos por los que se termina un arriendo */
+        get: operations["CicloDeVidaDelContratoController_motivos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/vencidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los contratos vencidos que nadie decidió qué hacer */
+        get: operations["CicloDeVidaDelContratoController_listarVencidos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/terminacion/vista-previa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qué pasa si termino este contrato en esa fecha */
+        get: operations["CicloDeVidaDelContratoController_vistaPrevia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/terminar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Terminar un arriendo antes de su fecha de fin */
+        post: operations["CicloDeVidaDelContratoController_terminar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/cesion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar la cesión: el inmueble cambió de dueño */
+        post: operations["CicloDeVidaDelContratoController_registrarCesion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/prorroga": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La prórroga del contrato: el plan y el historial */
+        get: operations["ProrrogaDelContratoController_plan"];
+        put?: never;
+        /** Prorrogar el contrato vencido (Ley 820 art. 6) */
+        post: operations["ProrrogaDelContratoController_prorrogar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/prorroga/meses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Término de la prórroga (pactado o confirmado) */
+        put: operations["ProrrogaDelContratoController_fijarMeses"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/prorroga/no-se-prorroga": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Este contrato NO se prorroga al vencer (queda en alerta, sin cuotas nuevas) */
+        put: operations["ProrrogaDelContratoController_fijarNoSeProrroga"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/aviso-de-no-renovacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar el aviso de no renovación del contrato */
+        post: operations["ProrrogaDelContratoController_registrarAviso"];
+        /** Retirar el aviso de no renovación del contrato */
+        delete: operations["ProrrogaDelContratoController_retirarAviso"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartas-de-incremento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cartas del incremento por enviar, vencidas sin constancia y enviadas recientes */
+        get: operations["BandejaDeCartasController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/condiciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gastos de cobranza, seguro opcional, póliza y administración */
+        get: operations["CondicionesDelContratoController_leer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/gastos-de-cobranza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** D9: si el contrato pacta gastos de cobranza */
+        put: operations["CondicionesDelContratoController_fijarGastos"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/seguro-opcional": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** El inquilino aceptó expresamente el seguro opcional */
+        put: operations["CondicionesDelContratoController_aceptarSeguro"];
+        post?: never;
+        /** Retirar el seguro opcional */
+        delete: operations["CondicionesDelContratoController_retirarSeguro"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/poliza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** La póliza o afianzadora del contrato (no le cobra al inquilino) */
+        put: operations["CondicionesDelContratoController_registrarPoliza"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/administracion-de-la-copropiedad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cómo se paga la administración de la copropiedad */
+        put: operations["CondicionesDelContratoController_fijarAdministracion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/cambiar-parte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cambiar el inquilino o el propietario sin tocar el historial */
+        post: operations["PartesDelContratoController_cambiarParte"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/partes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El historial de inquilinos y propietarios */
+        get: operations["PartesDelContratoController_partes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/exogena": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cuánto se le pagó a cada propietario entre dos fechas */
+        get: operations["PartesDelContratoController_exogena"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List consignaciones with filters */
+        get: operations["ConsignacionesController_findAll"];
+        put?: never;
+        /** Create a new consignacion */
+        post: operations["ConsignacionesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get consignacion detail */
+        get: operations["ConsignacionesController_findOne"];
+        /** Update a consignacion */
+        put: operations["ConsignacionesController_update"];
+        post?: never;
+        /** Delete a consignacion */
+        delete: operations["ConsignacionesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/acta.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the handover report (acta de entrega) as PDF */
+        get: operations["ConsignacionesController_getActaPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/contrato": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach the signed consignment contract (PDF) */
+        post: operations["ConsignacionesController_subirContrato"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/historial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial del inmueble (eventos de la consignación) */
+        get: operations["ConsignacionesController_historial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/assign-agent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Assign agent to consignacion */
+        put: operations["ConsignacionesController_assignAgent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reemplazar el inventario del inmueble */
+        put: operations["ConsignacionesController_actualizarInventario"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventario/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir la foto de un ítem del inventario */
+        post: operations["ConsignacionesController_subirFotoDeInventario"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/lease-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get lease/cobros history for a consignacion */
+        get: operations["ConsignacionesController_getLeaseHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get maintenance requests for a consignacion */
+        get: operations["ConsignacionesController_getMaintenanceRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/inmuebles/sin-consignacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List agency properties that have no consignación mandate yet */
+        get: operations["InmueblesController_findWithoutConsignacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Versiones del inventario del inmueble y si está vigente */
+        get: operations["InventarioDelInmuebleController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventarios/borrador": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Guardar el borrador del inventario del inmueble */
+        put: operations["InventarioDelInmuebleController_guardarBorrador"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventarios/borrador/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir la foto de un ítem del borrador */
+        post: operations["InventarioDelInmuebleController_subirFoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/consignaciones/{id}/inventarios/borrador/completar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Completar el inventario: la versión queda fija */
+        post: operations["InventarioDelInmuebleController_completar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/inventarios/para-iniciar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Si el inventario del inmueble permite iniciar un contrato */
+        get: operations["InventarioDelInmuebleController_paraIniciar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/contratos/{contractId}/inventario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El inventario con el que se inició el contrato */
+        get: operations["InventarioDelInmuebleController_copiaDelContrato"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/garantia-de-servicios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La garantía de servicios públicos del contrato */
+        get: operations["GarantiaDeServiciosController_leer"];
+        put?: never;
+        /** Registrar la garantía: promedio de las facturas, con soporte */
+        post: operations["GarantiaDeServiciosController_registrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/garantia-de-servicios/movimientos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recaudo, pago de un servicio, devolución o cobro de la diferencia */
+        post: operations["GarantiaDeServiciosController_movimiento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/garantia-de-servicios/movimientos/{movimientoId}/anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anular un movimiento de la garantía, con motivo */
+        post: operations["GarantiaDeServiciosController_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{id}/garantia-de-servicios/soporte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** URL firmada del soporte (de la garantía o de un movimiento) */
+        get: operations["GarantiaDeServiciosController_soporte"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contracts": {
         parameters: {
             query?: never;
@@ -3677,6 +4518,24 @@ export interface paths {
         put?: never;
         /** Reparar en masa los contratos migrados que quedaron incompletos */
         post: operations["ContractsController_repararActivados"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/migrar/fecha-de-corte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La fecha de corte de la migración de la agencia */
+        get: operations["ContractsController_fechaDeCorteDeLaMigracion"];
+        /** Fijar la fecha de corte de la migración (sin valor por defecto; no se cambia si ya hay cuotas migradas) */
+        put: operations["ContractsController_fijarFechaDeCorteDeLaMigracion"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4197,228 +5056,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/consignaciones/{id}/inventarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Versiones del inventario del inmueble y si está vigente */
-        get: operations["InventarioDelInmuebleController_listar"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/inventarios/borrador": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Guardar el borrador del inventario del inmueble */
-        put: operations["InventarioDelInmuebleController_guardarBorrador"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/inventarios/borrador/foto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Subir la foto de un ítem del borrador */
-        post: operations["InventarioDelInmuebleController_subirFoto"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/inventarios/borrador/completar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Completar el inventario: la versión queda fija */
-        post: operations["InventarioDelInmuebleController_completar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/inventarios/para-iniciar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Si el inventario del inmueble permite iniciar un contrato */
-        get: operations["InventarioDelInmuebleController_paraIniciar"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/contratos/{contractId}/inventario": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El inventario con el que se inició el contrato */
-        get: operations["InventarioDelInmuebleController_copiaDelContrato"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/garantia-de-servicios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La garantía de servicios públicos del contrato */
-        get: operations["GarantiaDeServiciosController_leer"];
-        put?: never;
-        /** Registrar la garantía: promedio de las facturas, con soporte */
-        post: operations["GarantiaDeServiciosController_registrar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/garantia-de-servicios/movimientos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recaudo, pago de un servicio, devolución o cobro de la diferencia */
-        post: operations["GarantiaDeServiciosController_movimiento"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/garantia-de-servicios/movimientos/{movimientoId}/anular": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Anular un movimiento de la garantía, con motivo */
-        post: operations["GarantiaDeServiciosController_anular"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/garantia-de-servicios/soporte": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** URL firmada del soporte (de la garantía o de un movimiento) */
-        get: operations["GarantiaDeServiciosController_soporte"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/cambiar-parte": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cambiar el inquilino o el propietario sin tocar el historial */
-        post: operations["PartesDelContratoController_cambiarParte"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/partes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El historial de inquilinos y propietarios */
-        get: operations["PartesDelContratoController_partes"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/exogena": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cuánto se le pagó a cada propietario entre dos fechas */
-        get: operations["PartesDelContratoController_exogena"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tenant/aprobacion": {
         parameters: {
             query?: never;
@@ -4434,6 +5071,1019 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/portal/autopago/tokenizacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Con qué tokenizar y qué se autoriza */
+        get: operations["AutopagoController_tokenizacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/autopago/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El estado del cobro automático de mi contrato */
+        get: operations["AutopagoController_estado"];
+        put?: never;
+        post?: never;
+        /** Cancelar mi cobro automático */
+        delete: operations["AutopagoController_cancelar"];
+        options?: never;
+        head?: never;
+        /** Pausar o reactivar mi cobro automático */
+        patch: operations["AutopagoController_pausar"];
+        trace?: never;
+    };
+    "/portal/autopago": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Autorizar el cobro automático del canon */
+        post: operations["AutopagoController_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/autopago/{contractId}/cobrar-ahora": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cobrar ahora con mi medio guardado */
+        post: operations["AutopagoController_cobrarAhora"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los recibos de caja de la inmobiliaria */
+        get: operations["RecibosDeCajaController_listar"];
+        put?: never;
+        /** Emitir un recibo de caja (abono contra un cobro) */
+        post: operations["RecibosDeCajaController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/por-cliente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emitir el recibo de un cliente, imputado a la deuda más vieja */
+        post: operations["RecibosDeCajaController_crearPorCliente"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/cartera/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La deuda de un inquilino, de lo más viejo a lo más nuevo */
+        get: operations["RecibosDeCajaController_cartera"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/anticipos/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saldo a favor de un cliente y sus movimientos */
+        get: operations["RecibosDeCajaController_anticipos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/anticipos/contrato/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El anticipo del inquilino sobre un contrato */
+        get: operations["RecibosDeCajaController_anticipoDelContrato"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/anticipos/{tenantId}/aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aplicar el saldo a favor a la cartera del cliente */
+        post: operations["RecibosDeCajaController_aplicarAnticipos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/cartera-por-cobro/{cobroId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La cartera de la persona dueña de un cobro */
+        get: operations["RecibosDeCajaController_carteraPorCobro"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/por-cobro/{cobroId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recibos de un cobro, con el saldo recalculado */
+        get: operations["RecibosDeCajaController_listarPorCobro"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver un recibo de caja */
+        get: operations["RecibosDeCajaController_obtener"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/{id}/anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Anular un recibo de caja */
+        put: operations["RecibosDeCajaController_anular"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recibos-de-caja/conciliar/{cobroId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Conciliar un pago sin recibo de caja */
+        post: operations["RecibosDeCajaController_conciliar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/inquilinos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los inquilinos de la inmobiliaria */
+        get: operations["InquilinosController_listar"];
+        put?: never;
+        /** Crear un inquilino (sin contrato) */
+        post: operations["InquilinosController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/inquilinos/conteos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cuántas personas hay detrás de cada pestaña de la lista */
+        get: operations["InquilinosController_conteos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/inquilinos/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver un inquilino y todos sus arriendos */
+        get: operations["InquilinosController_obtener"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/plantilla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Columnas esperadas del archivo, por tipo */
+        get: operations["MigracionTercerosController_plantilla"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/preparar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cargar un archivo de terceros al staging */
+        post: operations["MigracionTercerosController_preparar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/revisar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Volver a revisar las filas de un lote con las reglas actuales */
+        post: operations["MigracionTercerosController_revisar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/descartar-lote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Descartar una carga sin terminar entera */
+        post: operations["MigracionTercerosController_descartarLote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/filas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filas del staging, con lo que le falta a cada una */
+        get: operations["MigracionTercerosController_listarFilas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Corregir o descartar muchas filas de una vez */
+        patch: operations["MigracionTercerosController_resolverMasivo"];
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/lotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las cargas que todavía tienen trabajo pendiente */
+        get: operations["MigracionTercerosController_lotesAbiertos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conteo por estado de un lote */
+        get: operations["MigracionTercerosController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/filas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Descartar una fila del staging */
+        delete: operations["MigracionTercerosController_descartarFila"];
+        options?: never;
+        head?: never;
+        /** Corregir una fila del staging */
+        patch: operations["MigracionTercerosController_corregirFila"];
+        trace?: never;
+    };
+    "/inmobiliaria/migracion-terceros/aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crear las fichas de las filas listas de un lote */
+        post: operations["MigracionTercerosController_aplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado del muro de migración de la inmobiliaria */
+        get: operations["MigracionEstadoController_estado"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion/recordatorio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Descartar o volver a prender el recordatorio de migración del menú */
+        post: operations["MigracionEstadoController_recordatorio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion/terminar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dar por terminada la migración */
+        post: operations["MigracionEstadoController_terminar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/migracion/omitir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Arrancar de cero, sin migrar */
+        post: operations["MigracionEstadoController_omitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/invitaciones/pendientes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inquilinos (o propietarios, con `quienes`) sin invitación al portal */
+        get: operations["InvitacionesController_pendientes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/invitaciones/enviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enviar invitaciones al portal, por tandas (inquilinos o propietarios) */
+        post: operations["InvitacionesController_enviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/por-generar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las prefacturas que corresponde emitir, de un mes o hasta una fecha */
+        get: operations["FacturacionController_porGenerar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/generar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emitir las facturas del mes */
+        post: operations["FacturacionController_generar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/resolucion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las resoluciones de facturación de la inmobiliaria */
+        get: operations["FacturacionController_resoluciones"];
+        put?: never;
+        /** Cargar una resolución de facturación */
+        post: operations["FacturacionController_crearResolucion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/resolucion/{id}/anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anular una resolución: deja de numerar */
+        post: operations["FacturacionController_anularResolucion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/emitidas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las facturas ya emitidas de un mes */
+        get: operations["FacturacionController_emitidas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/{id}/nota-credito": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anular una factura emitiendo una nota crédito */
+        post: operations["FacturacionController_emitirNotaCredito"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/transmision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La cola de transmisión a la DIAN */
+        get: operations["FacturacionController_colaDeTransmision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/transmision/{id}/reintentar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Volver a encolar un documento para transmitirlo */
+        post: operations["FacturacionController_reintentarTransmision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/transmision/reintentar-sin-proveedor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Volver a encolar todo lo que quedó sin proveedor */
+        post: operations["FacturacionController_reintentarLosSinProveedor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/entregas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La entrega de los documentos y su acuse */
+        get: operations["FacturacionController_entregas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/entregas/{id}/acuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar el acuse del cliente */
+        post: operations["FacturacionController_registrarAcuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/certificaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las certificaciones del mandatario generadas */
+        get: operations["FacturacionController_certificaciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/certificaciones/{propietarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generar la certificación del mandatario */
+        post: operations["FacturacionController_generarCertificacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/notas-debito": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las notas débito emitidas */
+        get: operations["FacturacionController_listarNotasDebito"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/documento-soporte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los documentos soporte de proveedores no obligados a facturar */
+        get: operations["FacturacionController_listarDocumentosSoporte"];
+        put?: never;
+        /** Emitir un documento soporte */
+        post: operations["FacturacionController_emitirDocumentoSoporte"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/documento-soporte/proveedores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los proveedores no obligados a facturar */
+        get: operations["FacturacionController_listarProveedores"];
+        put?: never;
+        /** Registrar un proveedor no obligado a facturar */
+        post: operations["FacturacionController_crearProveedor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/documento-soporte/previsualizar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ver las retenciones de un documento soporte antes de emitirlo */
+        post: operations["FacturacionController_previsualizarDocumentoSoporte"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/terceros-sin-correo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los inquilinos y propietarios que todavía no tienen correo */
+        get: operations["FacturacionController_tercerosSinCorreo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/{id}/nota-credito-parcial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emitir una nota crédito PARCIAL */
+        post: operations["FacturacionController_emitirNotaCreditoParcial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/{id}/nota-debito": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emitir una nota débito sobre una factura */
+        post: operations["FacturacionController_emitirNotaDebito"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/documentos.zip/en-segundo-plano": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El ZIP de muchas facturas, armado en el centro de procesos */
+        post: operations["FacturacionController_zipEnSegundoPlano"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/documentos.zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los PDFs de varias facturas emitidas, en un ZIP */
+        get: operations["FacturacionController_zipDeFacturas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El PDF de una factura emitida */
+        get: operations["FacturacionController_pdfDeLaFactura"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/facturacion/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El detalle de una factura emitida */
+        get: operations["FacturacionController_ver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/aseguradoras": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las aseguradoras de la inmobiliaria */
+        get: operations["AseguradorasController_listar"];
+        put?: never;
+        /** Registrar una aseguradora (nombre y NIT) */
+        post: operations["AseguradorasController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/aseguradoras/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Renombrar, activar o desactivar una aseguradora */
+        patch: operations["AseguradorasController_actualizar"];
         trace?: never;
     };
     "/visits/properties/{propertyId}/availability": {
@@ -5452,15 +7102,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/invitaciones/pendientes": {
+    "/portal/propietario/informes": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Inquilinos (o propietarios, con `quienes`) sin invitación al portal */
-        get: operations["InvitacionesController_pendientes"];
+        /** Mis informes disponibles y sus años */
+        get: operations["InformesDelPropietarioController_disponibles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5469,17 +7119,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/invitaciones/enviar": {
+    "/portal/propietario/certificado-de-ingresos": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Mi certificado anual de ingresos */
+        get: operations["InformesDelPropietarioController_certificadoDeIngresos"];
         put?: never;
-        /** Enviar invitaciones al portal, por tandas (inquilinos o propietarios) */
-        post: operations["InvitacionesController_enviar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/propietario/reparaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El historial de reparaciones de mis inmuebles */
+        get: operations["InformesDelPropietarioController_reparaciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/propietario/reparaciones/{deduccionId}/comprobante": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Abrir el comprobante de un descuento mío */
+        get: operations["InformesDelPropietarioController_comprobante"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5725,196 +7409,6 @@ export interface paths {
         head?: never;
         /** Editar una plantilla */
         patch: operations["PlantillasDeMensajeController_actualizar"];
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List consignaciones with filters */
-        get: operations["ConsignacionesController_findAll"];
-        put?: never;
-        /** Create a new consignacion */
-        post: operations["ConsignacionesController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get consignacion detail */
-        get: operations["ConsignacionesController_findOne"];
-        /** Update a consignacion */
-        put: operations["ConsignacionesController_update"];
-        post?: never;
-        /** Delete a consignacion */
-        delete: operations["ConsignacionesController_remove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/acta.pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download the handover report (acta de entrega) as PDF */
-        get: operations["ConsignacionesController_getActaPdf"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/contrato": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Attach the signed consignment contract (PDF) */
-        post: operations["ConsignacionesController_subirContrato"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/historial": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Historial del inmueble (eventos de la consignación) */
-        get: operations["ConsignacionesController_historial"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/assign-agent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Assign agent to consignacion */
-        put: operations["ConsignacionesController_assignAgent"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/inventario": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Reemplazar el inventario del inmueble */
-        put: operations["ConsignacionesController_actualizarInventario"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/inventario/foto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Subir la foto de un ítem del inventario */
-        post: operations["ConsignacionesController_subirFotoDeInventario"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/lease-history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get lease/cobros history for a consignacion */
-        get: operations["ConsignacionesController_getLeaseHistory"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/consignaciones/{id}/maintenance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get maintenance requests for a consignacion */
-        get: operations["ConsignacionesController_getMaintenanceRequests"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/inmuebles/sin-consignacion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List agency properties that have no consignación mandate yet */
-        get: operations["InmueblesController_findWithoutConsignacion"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/inmobiliaria/inmuebles/importar/preparar": {
@@ -6638,1258 +8132,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/recibos-de-caja": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Listar los recibos de caja de la inmobiliaria */
-        get: operations["RecibosDeCajaController_listar"];
-        put?: never;
-        /** Emitir un recibo de caja (abono contra un cobro) */
-        post: operations["RecibosDeCajaController_crear"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/por-cliente": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Emitir el recibo de un cliente, imputado a la deuda más vieja */
-        post: operations["RecibosDeCajaController_crearPorCliente"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/cartera/{tenantId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La deuda de un inquilino, de lo más viejo a lo más nuevo */
-        get: operations["RecibosDeCajaController_cartera"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/anticipos/{tenantId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Saldo a favor de un cliente y sus movimientos */
-        get: operations["RecibosDeCajaController_anticipos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/anticipos/contrato/{contractId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El anticipo del inquilino sobre un contrato */
-        get: operations["RecibosDeCajaController_anticipoDelContrato"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/anticipos/{tenantId}/aplicar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Aplicar el saldo a favor a la cartera del cliente */
-        post: operations["RecibosDeCajaController_aplicarAnticipos"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/cartera-por-cobro/{cobroId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La cartera de la persona dueña de un cobro */
-        get: operations["RecibosDeCajaController_carteraPorCobro"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/por-cobro/{cobroId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recibos de un cobro, con el saldo recalculado */
-        get: operations["RecibosDeCajaController_listarPorCobro"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Ver un recibo de caja */
-        get: operations["RecibosDeCajaController_obtener"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/{id}/anular": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Anular un recibo de caja */
-        put: operations["RecibosDeCajaController_anular"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recibos-de-caja/conciliar/{cobroId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Conciliar un pago sin recibo de caja */
-        post: operations["RecibosDeCajaController_conciliar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/inquilinos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Listar los inquilinos de la inmobiliaria */
-        get: operations["InquilinosController_listar"];
-        put?: never;
-        /** Crear un inquilino (sin contrato) */
-        post: operations["InquilinosController_crear"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/inquilinos/{tenantId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Ver un inquilino y todos sus arriendos */
-        get: operations["InquilinosController_obtener"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/plantilla": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Columnas esperadas del archivo, por tipo */
-        get: operations["MigracionTercerosController_plantilla"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/preparar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cargar un archivo de terceros al staging */
-        post: operations["MigracionTercerosController_preparar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/revisar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Volver a revisar las filas de un lote con las reglas actuales */
-        post: operations["MigracionTercerosController_revisar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/descartar-lote": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Descartar una carga sin terminar entera */
-        post: operations["MigracionTercerosController_descartarLote"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/filas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Filas del staging, con lo que le falta a cada una */
-        get: operations["MigracionTercerosController_listarFilas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Corregir o descartar muchas filas de una vez */
-        patch: operations["MigracionTercerosController_resolverMasivo"];
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/lotes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las cargas que todavía tienen trabajo pendiente */
-        get: operations["MigracionTercerosController_lotesAbiertos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/resumen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Conteo por estado de un lote */
-        get: operations["MigracionTercerosController_resumen"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/filas/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Descartar una fila del staging */
-        delete: operations["MigracionTercerosController_descartarFila"];
-        options?: never;
-        head?: never;
-        /** Corregir una fila del staging */
-        patch: operations["MigracionTercerosController_corregirFila"];
-        trace?: never;
-    };
-    "/inmobiliaria/migracion-terceros/aplicar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Crear las fichas de las filas listas de un lote */
-        post: operations["MigracionTercerosController_aplicar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion/estado": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Estado del muro de migración de la inmobiliaria */
-        get: operations["MigracionEstadoController_estado"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion/recordatorio": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Descartar o volver a prender el recordatorio de migración del menú */
-        post: operations["MigracionEstadoController_recordatorio"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion/terminar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Dar por terminada la migración */
-        post: operations["MigracionEstadoController_terminar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/migracion/omitir": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Arrancar de cero, sin migrar */
-        post: operations["MigracionEstadoController_omitir"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/por-generar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las prefacturas que corresponde emitir, de un mes o hasta una fecha */
-        get: operations["FacturacionController_porGenerar"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/generar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Emitir las facturas del mes */
-        post: operations["FacturacionController_generar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/resolucion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las resoluciones de facturación de la inmobiliaria */
-        get: operations["FacturacionController_resoluciones"];
-        put?: never;
-        /** Cargar una resolución de facturación */
-        post: operations["FacturacionController_crearResolucion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/resolucion/{id}/anular": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Anular una resolución: deja de numerar */
-        post: operations["FacturacionController_anularResolucion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/emitidas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las facturas ya emitidas de un mes */
-        get: operations["FacturacionController_emitidas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/{id}/nota-credito": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Anular una factura emitiendo una nota crédito */
-        post: operations["FacturacionController_emitirNotaCredito"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/transmision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La cola de transmisión a la DIAN */
-        get: operations["FacturacionController_colaDeTransmision"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/transmision/{id}/reintentar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Volver a encolar un documento para transmitirlo */
-        post: operations["FacturacionController_reintentarTransmision"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/transmision/reintentar-sin-proveedor": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Volver a encolar todo lo que quedó sin proveedor */
-        post: operations["FacturacionController_reintentarLosSinProveedor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/entregas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La entrega de los documentos y su acuse */
-        get: operations["FacturacionController_entregas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/entregas/{id}/acuse": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Registrar el acuse del cliente */
-        post: operations["FacturacionController_registrarAcuse"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/certificaciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las certificaciones del mandatario generadas */
-        get: operations["FacturacionController_certificaciones"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/certificaciones/{propietarioId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generar la certificación del mandatario */
-        post: operations["FacturacionController_generarCertificacion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/notas-debito": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las notas débito emitidas */
-        get: operations["FacturacionController_listarNotasDebito"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/documento-soporte": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los documentos soporte de proveedores no obligados a facturar */
-        get: operations["FacturacionController_listarDocumentosSoporte"];
-        put?: never;
-        /** Emitir un documento soporte */
-        post: operations["FacturacionController_emitirDocumentoSoporte"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/documento-soporte/proveedores": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los proveedores no obligados a facturar */
-        get: operations["FacturacionController_listarProveedores"];
-        put?: never;
-        /** Registrar un proveedor no obligado a facturar */
-        post: operations["FacturacionController_crearProveedor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/documento-soporte/previsualizar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ver las retenciones de un documento soporte antes de emitirlo */
-        post: operations["FacturacionController_previsualizarDocumentoSoporte"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/terceros-sin-correo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los inquilinos y propietarios que todavía no tienen correo */
-        get: operations["FacturacionController_tercerosSinCorreo"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/{id}/nota-credito-parcial": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Emitir una nota crédito PARCIAL */
-        post: operations["FacturacionController_emitirNotaCreditoParcial"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/{id}/nota-debito": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Emitir una nota débito sobre una factura */
-        post: operations["FacturacionController_emitirNotaDebito"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/facturacion/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El detalle de una factura emitida */
-        get: operations["FacturacionController_ver"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/aseguradoras": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Las aseguradoras de la inmobiliaria */
-        get: operations["AseguradorasController_listar"];
-        put?: never;
-        /** Registrar una aseguradora (nombre y NIT) */
-        post: operations["AseguradorasController_crear"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/aseguradoras/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Renombrar, activar o desactivar una aseguradora */
-        patch: operations["AseguradorasController_actualizar"];
-        trace?: never;
-    };
-    "/contracts/{id}/extender": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Renovar un contrato vencido con el inquilino adentro */
-        post: operations["CicloDeVidaDelContratoController_extender"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Incrementos del canon y su carta */
-        get: operations["CicloDeVidaDelContratoController_listarIncrementos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/tasa-anual": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Tasa de incremento pactada para cada año (local comercial) */
-        put: operations["CicloDeVidaDelContratoController_fijarTasaAnual"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Incremento digitado para un aniversario (local comercial) */
-        put: operations["CicloDeVidaDelContratoController_digitarIncremento"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}/carta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generar la carta del incremento (queda por revisar) */
-        post: operations["CicloDeVidaDelContratoController_generarCarta"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}/carta/revisar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Marcar la carta como revisada (puede corregir el texto) */
-        post: operations["CicloDeVidaDelContratoController_revisarCarta"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}/carta/enviar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Enviar la carta del incremento con un clic (deja constancia) */
-        post: operations["CicloDeVidaDelContratoController_enviarCarta"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}/carta/constancia": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Registrar la constancia de la carta entregada por otro medio (soporte opcional) */
-        post: operations["CicloDeVidaDelContratoController_registrarConstancia"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/incrementos/{desde}/carta/constancia/soporte": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Abrir el soporte de la constancia (URL firmada) */
-        get: operations["CicloDeVidaDelContratoController_soporteDeLaConstancia"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/motivos-de-terminacion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los motivos por los que se termina un arriendo */
-        get: operations["CicloDeVidaDelContratoController_motivos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/vencidos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los contratos vencidos que nadie decidió qué hacer */
-        get: operations["CicloDeVidaDelContratoController_listarVencidos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/terminacion/vista-previa": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Qué pasa si termino este contrato en esa fecha */
-        get: operations["CicloDeVidaDelContratoController_vistaPrevia"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/terminar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Terminar un arriendo antes de su fecha de fin */
-        post: operations["CicloDeVidaDelContratoController_terminar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/cesion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Registrar la cesión: el inmueble cambió de dueño */
-        post: operations["CicloDeVidaDelContratoController_registrarCesion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/prorroga": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La prórroga del contrato: el plan y el historial */
-        get: operations["ProrrogaDelContratoController_plan"];
-        put?: never;
-        /** Prorrogar el contrato vencido (Ley 820 art. 6) */
-        post: operations["ProrrogaDelContratoController_prorrogar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/prorroga/meses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Término de la prórroga (pactado o confirmado) */
-        put: operations["ProrrogaDelContratoController_fijarMeses"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/prorroga/no-se-prorroga": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Este contrato NO se prorroga al vencer (queda en alerta, sin cuotas nuevas) */
-        put: operations["ProrrogaDelContratoController_fijarNoSeProrroga"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/aviso-de-no-renovacion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Registrar el aviso de no renovación del contrato */
-        post: operations["ProrrogaDelContratoController_registrarAviso"];
-        /** Retirar el aviso de no renovación del contrato */
-        delete: operations["ProrrogaDelContratoController_retirarAviso"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartas-de-incremento": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cartas del incremento por enviar, vencidas sin constancia y enviadas recientes */
-        get: operations["BandejaDeCartasController_listar"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/condiciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Gastos de cobranza, seguro opcional, póliza y administración */
-        get: operations["CondicionesDelContratoController_leer"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/gastos-de-cobranza": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** D9: si el contrato pacta gastos de cobranza */
-        put: operations["CondicionesDelContratoController_fijarGastos"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/seguro-opcional": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** El inquilino aceptó expresamente el seguro opcional */
-        put: operations["CondicionesDelContratoController_aceptarSeguro"];
-        post?: never;
-        /** Retirar el seguro opcional */
-        delete: operations["CondicionesDelContratoController_retirarSeguro"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/poliza": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** La póliza o afianzadora del contrato (no le cobra al inquilino) */
-        put: operations["CondicionesDelContratoController_registrarPoliza"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contracts/{id}/administracion-de-la-copropiedad": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Cómo se paga la administración de la copropiedad */
-        put: operations["CondicionesDelContratoController_fijarAdministracion"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/inmobiliaria/medios-de-pago": {
         parameters: {
             query?: never;
@@ -7989,6 +8231,23 @@ export interface paths {
         put?: never;
         /** Armar el lote de pagos del mes */
         post: operations["LotesDeDispersionController_armar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/lotes-de-dispersion/bancos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Desde qué banco se puede girar, y con qué archivo */
+        get: operations["LotesDeDispersionController_bancos"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8132,6 +8391,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/dispersiones/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What generating this month would produce */
+        get: operations["DispersionesController_preview"];
+        put?: never;
+        /** What generating this selection would produce */
+        post: operations["DispersionesController_previewDeLaSeleccion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/dispersiones/disponible": {
         parameters: {
             query?: never;
@@ -8149,15 +8426,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/dispersiones/preview": {
+    "/inmobiliaria/dispersiones/origen-del-giro": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** What generating this month would produce */
-        get: operations["DispersionesController_preview"];
+        /** Bancos y última cuenta de origen para marcar girada */
+        get: operations["DispersionesController_origenDelGiro"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8261,6 +8538,195 @@ export interface paths {
         get?: never;
         /** Process a dispersion (mark as completed) */
         put: operations["DispersionesController_process"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/wompi-pagos/conexion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La conexión con Wompi (sin las llaves) */
+        get: operations["WompiPagosController_verConexion"];
+        /** Guardar (cifradas) y probar las llaves de Wompi */
+        put: operations["WompiPagosController_guardarConexion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/wompi-pagos/conexion/probar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probar la conexión (GET /accounts en Wompi) */
+        post: operations["WompiPagosController_probar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/wompi-pagos/lotes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El lote en Wompi: si se puede mandar y cómo va */
+        get: operations["WompiPagosController_verLote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/wompi-pagos/lotes/{id}/enviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enviar un lote aprobado a Wompi (idempotente) */
+        post: operations["WompiPagosController_enviar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/wompi-pagos/lotes/{id}/consultar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preguntarle a Wompi cómo va el lote, ya */
+        post: operations["WompiPagosController_consultar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los procesos de la agencia (los míos; los de todos si soy administrador o contador) */
+        get: operations["ProcesosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/procesos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un proceso */
+        get: operations["ProcesosController_ver"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/procesos/{id}/descarga": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descargar el archivo que dejó el proceso */
+        get: operations["ProcesosController_descarga"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/procesos/{id}/cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pedir que se cancele (en cola: ya; corriendo: en su próximo paso) */
+        post: operations["ProcesosController_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/contabilidad/copropiedades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las copropiedades de la inmobiliaria, con cuántos inmuebles tiene cada una */
+        get: operations["CopropiedadesController_listar"];
+        put?: never;
+        /** Registrar una copropiedad con su NIT */
+        post: operations["CopropiedadesController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/contabilidad/copropiedades/mandato/{consignacionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** A qué copropiedad pertenece el inmueble de un mandato (`null` la desvincula) */
+        put: operations["CopropiedadesController_asignar"];
         post?: never;
         delete?: never;
         options?: never;
@@ -8539,6 +9005,23 @@ export interface paths {
         put?: never;
         /** Reversar un asiento: crea su espejo y deja el original intacto */
         post: operations["AsientosController_reversar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/contabilidad/reportes/libro.csv/exportar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exportar el libro del rango en el centro de procesos */
+        post: operations["ReportesContablesController_exportarLibro"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9079,6 +9562,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/contabilidad/egresos/{id}/cambios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El historial de cambios del egreso y su referencia y nota vigentes */
+        get: operations["GastosController_cambiosDelEgreso"];
+        put?: never;
+        /** Cambia la fecha (mueve el asiento), la referencia o la nota de un egreso, con motivo */
+        post: operations["GastosController_cambiarEgreso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/contabilidad/egresos/{id}/comprobante": {
         parameters: {
             query?: never;
@@ -9571,7 +10072,7 @@ export interface paths {
         /** Los cambios de cuenta bancaria del propietario */
         get: operations["CambiosDeCuentaController_listar"];
         put?: never;
-        /** Pedir el cambio de cuenta: certificación bancaria obligatoria; se le pide confirmar al propietario por correo */
+        /** Pedir el cambio de cuenta: certificación bancaria obligatoria (con reparto, una por cada cuenta nueva en `certificacion_<i>`); se le pide confirmar al propietario por correo */
         post: operations["CambiosDeCuentaController_solicitar"];
         delete?: never;
         options?: never;
@@ -9637,7 +10138,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** URL firmada de la certificación o del soporte de aprobación */
+        /** URL firmada de la certificación (`certificacion`, o `certificacion-<i>` la de la cuenta i del reparto) o del soporte de aprobación (`aprobacion`) */
         get: operations["CambiosDeCuentaController_archivo"];
         put?: never;
         post?: never;
@@ -10086,6 +10587,57 @@ export interface paths {
         };
         /** Las acciones que la bitácora registra */
         get: operations["BitacoraDePlataController_acciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/movimientos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quién hizo qué en la inmobiliaria, con su rol */
+        get: operations["MovimientosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/movimientos/opciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Personas, roles y módulos para los filtros */
+        get: operations["MovimientosController_opciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/movimientos/recurso/{tipo}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los movimientos de un recurso (para su cajón) */
+        get: operations["MovimientosController_delRecurso"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11573,6 +12125,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/documents/templates/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Variables disponibles para una plantilla propia */
+        get: operations["DocumentosController_variablesDePlantilla"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/documents/templates/{id}": {
         parameters: {
             query?: never;
@@ -11587,6 +12156,23 @@ export interface paths {
         post?: never;
         /** Delete document template */
         delete: operations["DocumentosController_deleteTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/documents/templates/{id}/duplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicar una plantilla en una propia de la agencia */
+        post: operations["DocumentosController_duplicarTemplate"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -11671,6 +12257,227 @@ export interface paths {
         put?: never;
         /** Sign a document */
         post: operations["DocumentosController_signDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/certificados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis certificados: cuáles puedo pedir y cuáles no */
+        get: operations["CertificadosDelPortalController_mios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/certificados/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emitir el certificado de uno de mis contratos */
+        post: operations["CertificadosDelPortalController_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/certificados/{documentoId}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descargar mi certificado */
+        get: operations["CertificadosDelPortalController_pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/inquilino/{tenantRef}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de cuenta de un inquilino: todos sus contratos, cuota por cuota */
+        get: operations["EstadoDeCuentaController_inquilino"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/propietario/{propietarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de cuenta de un propietario: lo que se le ha girado y lo que falta */
+        get: operations["EstadoDeCuentaController_propietario"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Un enlace público al estado de cuenta del cliente */
+        post: operations["EstadoDeCuentaController_compartir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/enlaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los enlaces vivos del estado de cuenta */
+        get: operations["EstadoDeCuentaController_enlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/enlaces/{enlaceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revocar un enlace compartido */
+        delete: operations["EstadoDeCuentaController_revocar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/correo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mandarle el enlace al cliente por correo */
+        post: operations["EstadoDeCuentaController_porCorreo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mandarle el enlace al cliente por WhatsApp */
+        post: operations["EstadoDeCuentaController_porWhatsapp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen del estado de cuenta, para las fichas */
+        get: operations["EstadoDeCuentaController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/publico/estado-de-cuenta/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El estado de cuenta detrás de un enlace público */
+        get: operations["EstadoDeCuentaPublicoController_porToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/estado-de-cuenta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mi estado de cuenta, resuelto por la sesión */
+        get: operations["PortalEstadoDeCuentaController_mio"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12039,40 +12846,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/recaudo/resumen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen del recaudo de un mes */
-        get: operations["RecaudoController_resumen"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/recaudo/serie": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Facturado, recaudado y dispersado por mes */
-        get: operations["RecaudoController_serie"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/inmobiliaria/cartera/inquilinos": {
         parameters: {
             query?: never;
@@ -12116,6 +12889,143 @@ export interface paths {
         };
         /** Lo que la inmobiliaria le debe a cada propietario, por mes */
         get: operations["CarteraController_propietarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los castigos de cartera: lo propuesto, lo castigado y lo que se recuperó de ello. */
+        get: operations["CastigoDeCarteraController_listar"];
+        put?: never;
+        /** Propone castigar unas cuotas. Congela el monto: las dos firmas aprueban ESE número. */
+        post: operations["CastigoDeCarteraController_proponer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/candidatas/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qué cuotas de un contrato se pueden castigar hoy, y por qué NO las demás. */
+        get: operations["CastigoDeCarteraController_candidatas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un castigo, con sus firmas y su recuperación. */
+        get: operations["CastigoDeCarteraController_uno"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/firmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Firma el castigo por el lado que le toca al rol. Con las dos firmas queda castigada. */
+        post: operations["CastigoDeCarteraController_firmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rechaza la propuesta con su motivo. Las cuotas quedan libres. */
+        post: operations["CastigoDeCarteraController_rechazar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/reversar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Devuelve a la vida una cartera castigada: vuelve al informe activo y a la cobranza. */
+        post: operations["CastigoDeCarteraController_reversar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recaudo/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen del recaudo de un mes */
+        get: operations["RecaudoController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/recaudo/serie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Facturado, recaudado y dispersado por mes */
+        get: operations["RecaudoController_serie"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13462,176 +14372,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/estado-de-cuenta/inquilino/{tenantRef}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Estado de cuenta de un inquilino: todos sus contratos, cuota por cuota */
-        get: operations["EstadoDeCuentaController_inquilino"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/propietario/{propietarioId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Estado de cuenta de un propietario: lo que se le ha girado y lo que falta */
-        get: operations["EstadoDeCuentaController_propietario"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Un enlace público al estado de cuenta del cliente */
-        post: operations["EstadoDeCuentaController_compartir"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/enlaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los enlaces vivos del estado de cuenta */
-        get: operations["EstadoDeCuentaController_enlaces"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/enlaces/{enlaceId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revocar un enlace compartido */
-        delete: operations["EstadoDeCuentaController_revocar"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/correo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mandarle el enlace al cliente por correo */
-        post: operations["EstadoDeCuentaController_porCorreo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/whatsapp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mandarle el enlace al cliente por WhatsApp */
-        post: operations["EstadoDeCuentaController_porWhatsapp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/resumen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen del estado de cuenta, para las fichas */
-        get: operations["EstadoDeCuentaController_resumen"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/publico/estado-de-cuenta/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El estado de cuenta detrás de un enlace público */
-        get: operations["EstadoDeCuentaPublicoController_porToken"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/portal/estado-de-cuenta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Mi estado de cuenta, resuelto por la sesión */
-        get: operations["PortalEstadoDeCuentaController_mio"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/inmobiliaria/analytics/kpis": {
         parameters: {
             query?: never;
@@ -14105,6 +14845,23 @@ export interface paths {
         put?: never;
         /** Email the evaluation certificate PDF to a property owner */
         post: operations["EvaluationsController_sendToOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evaluations/verificar/{codigo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dice si un estudio es auténtico. Público: lo abre quien recibe el certificado. */
+        get: operations["VerificacionPublicaController_verificar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -16618,7 +17375,7 @@ export interface components {
         };
         UpdateRolePermissionsDto: {
             /**
-             * @description AGENTE role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description AGENTE role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -16636,7 +17393,7 @@ export interface components {
              */
             AGENTE?: Record<string, never>;
             /**
-             * @description CONTADOR role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description CONTADOR role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -16654,7 +17411,7 @@ export interface components {
              */
             CONTADOR?: Record<string, never>;
             /**
-             * @description VIEWER role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description VIEWER role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -16672,7 +17429,7 @@ export interface components {
              */
             VIEWER?: Record<string, never>;
             /**
-             * @description COORDINADOR role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description COORDINADOR role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -16690,7 +17447,7 @@ export interface components {
              */
             COORDINADOR?: Record<string, never>;
             /**
-             * @description AUXILIAR_CARTERA role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description AUXILIAR_CARTERA role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -16708,7 +17465,7 @@ export interface components {
              */
             AUXILIAR_CARTERA?: Record<string, never>;
             /**
-             * @description ABOGADO_EXTERNO role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes. Actions: view, create, edit, delete, export.
+             * @description ABOGADO_EXTERNO role template. Permission matrix: each key is a module, value is an array of allowed actions. Modules: dashboard, propietarios, portafolio, pipeline, agentes, cobros, dispersiones, operaciones, reportes, configuracion, documentos, analytics, contratos, subscription, avaluos, clientes, bitacora. Actions: view, create, edit, delete, export. Acciones puntuales (en el módulo `reportes`): cambiar_fecha_egreso.
              * @example {
              *       "dashboard": [
              *         "view"
@@ -17048,7 +17805,7 @@ export interface components {
              * @description Bank code for PSE
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
         };
         PseMockResponseDto: {
             /** @description Transaction ID (PSE-timestamp-random) */
@@ -17109,6 +17866,13 @@ export interface components {
             email: string;
             /** @description Full name of the payer */
             fullName: string;
+        };
+        AvisoDeNoRenovacionDelInquilinoDto: {
+            /**
+             * @description Por qué no renueva. Queda en la historia de la renovación.
+             * @example Me mudo de ciudad por trabajo en diciembre.
+             */
+            motivo: string;
         };
         CreatePaymentDto: {
             /**
@@ -17276,7 +18040,7 @@ export interface components {
              * @description Bank code for PSE payment
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @description Full name of account holder (min 3 characters) */
             holderName: string;
             /** @description Colombian phone number */
@@ -17349,7 +18113,7 @@ export interface components {
              * @description Bank code for PSE payment
              * @enum {string}
              */
-            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @description Full name of account holder (min 3 characters) */
             holderName: string;
             /** @description Colombian phone number */
@@ -18422,6 +19186,346 @@ export interface components {
              */
             content: string;
         };
+        ExtenderContratoDto: {
+            /**
+             * @description DIAS_OCUPADOS: renueva hasta el día de entrega (prorrateado). TERMINO_INICIAL: renueva por el término inicial.
+             * @enum {string}
+             */
+            modo?: "DIAS_OCUPADOS" | "TERMINO_INICIAL";
+            /** @description DIAS_OCUPADOS: el día de entrega, `YYYY-MM-DD`. */
+            hasta?: string;
+        };
+        TasaAnualPactadaDto: {
+            /** @description Local comercial: la tasa de incremento pactada para cada año (5.5 = 5,5 %). `null` la quita. */
+            porcentaje?: Record<string, never> | null;
+        };
+        IncrementoDigitadoDto: {
+            /** @description El porcentaje del incremento ese año. */
+            porcentaje?: Record<string, never> | null;
+            /** @description O el canon nuevo, en pesos. */
+            canonNuevoCop?: Record<string, never> | null;
+        };
+        RevisarCartaDto: {
+            /** @description El texto corregido por quien revisa. */
+            contenido?: string;
+        };
+        ConstanciaDeLaCartaDto: {
+            /**
+             * @description Cómo se entregó la carta (el correo deja su propia constancia).
+             * @enum {string}
+             */
+            medio?: "FISICO" | "WHATSAPP" | "OTRO";
+            /** @description El día de la entrega, `YYYY-MM-DD`. */
+            fecha?: string;
+            /** @description A quién se entregó, guía de envío, número de WhatsApp… */
+            nota?: string;
+        };
+        TerminarContratoDto: {
+            /**
+             * @description Día en que se termina el arriendo, «YYYY-MM-DD».
+             * @example 2026-09-30
+             */
+            terminadoEn: string;
+            /**
+             * @description Por qué. MUTUO_ACUERDO (Mutuo acuerdo) · ENTREGA_ANTICIPADA_DEL_INQUILINO (Entrega anticipada del inquilino) · INCUMPLIMIENTO_DEL_INQUILINO (Incumplimiento del inquilino) · INCUMPLIMIENTO_DEL_ARRENDADOR (Incumplimiento del arrendador) · VENTA_DEL_INMUEBLE (Venta del inmueble) · FUERZA_MAYOR (Fuerza mayor) · OTRO (Otro)
+             * @enum {string}
+             */
+            motivo: "MUTUO_ACUERDO" | "ENTREGA_ANTICIPADA_DEL_INQUILINO" | "INCUMPLIMIENTO_DEL_INQUILINO" | "INCUMPLIMIENTO_DEL_ARRENDADOR" | "VENTA_DEL_INMUEBLE" | "FUERZA_MAYOR" | "OTRO";
+            /** @description La explicación. OBLIGATORIA cuando el motivo es OTRO — el servicio la exige. */
+            nota?: string;
+            /** @description La penalidad por terminar antes de tiempo, en pesos enteros. Ausente = la por defecto (cánones del contrato, o de la inmobiliaria); `null` = sin penalidad. Entra al estado de cuenta del inquilino como un cobro de una sola vez, en la cuota del último mes. */
+            penalidadCop?: Record<string, never>;
+            /** @description Reparto negociado al terminar: la parte de la penalidad que se queda la inmobiliaria. El resto le llega al propietario menos la comisión. Ausente = todo del propietario. */
+            penalidadParaLaInmobiliariaCop?: number;
+        };
+        NuevoDuenoDto: {
+            propietarioId: string;
+            /** @description Participación en puntos básicos (100 % = 10000). */
+            participacionBps: number;
+        };
+        RegistrarCesionDto: {
+            /**
+             * @description Desde qué día la plata es del nuevo dueño, «YYYY-MM-DD». Lo anterior no se toca.
+             * @example 2026-10-01
+             */
+            desde: string;
+            /** @description Los nuevos dueños con su tajada. Las participaciones suman 10000. */
+            nuevosPropietarios: components["schemas"]["NuevoDuenoDto"][];
+            /** @description Aclaración que queda en el historial. */
+            nota?: string;
+        };
+        MesesDeProrrogaDto: {
+            /** @description Local comercial: la prórroga pactada (null = mes a mes). Vivienda: el término inicial confirmado (null = el del contrato). */
+            meses?: Record<string, never> | null;
+        };
+        NoSeProrrogaDto: {
+            /** @description `true` = este contrato NO se prorroga al vencer. `false` = se prorroga como diga la regla (vivienda Ley 820 art. 6; comercial lo pactado o mes a mes). */
+            noSeProrroga: boolean;
+        };
+        AvisoDeNoRenovacionDelContratoDto: {
+            /** @enum {string} */
+            parte: "INQUILINO" | "PROPIETARIO" | "INMOBILIARIA";
+            /** @description Por qué no se renueva. */
+            motivo: string;
+        };
+        GastosDeCobranzaDelContratoDto: {
+            /** @description D9: si el contrato pacta gastos de cobranza. `null` = hereda de la inmobiliaria. */
+            pacta?: Record<string, never> | null;
+        };
+        AceptarSeguroOpcionalDto: {
+            /** @description Quién aceptó expresamente el seguro. */
+            aceptadoPor: string;
+            /** @description El día de la aceptación, `YYYY-MM-DD`. */
+            aceptadoEl: string;
+            /** @description La prima mensual FIJA. Ausente = la del plan ofrecido. Se ignora si hay un `%` (el del cuerpo o el que la inmobiliaria le puso al plan). */
+            primaCop?: Record<string, never> | null;
+            /**
+             * @description 🔴 El seguro como % DEL CANON (Nico, 17-09). Ausente = el % que la inmobiliaria le puso a este plan; si tampoco hay, la prima fija. Migración 20260918021000.
+             * @example 1.5
+             */
+            pct?: Record<string, never> | null;
+            nombre?: Record<string, never> | null;
+        };
+        PolizaDelContratoDto: {
+            aseguradora?: Record<string, never> | null;
+            numero?: Record<string, never> | null;
+            cobertura?: Record<string, never> | null;
+            /** @description `YYYY-MM-DD` */
+            vigenciaDesde?: Record<string, never> | null;
+            /** @description `YYYY-MM-DD` */
+            vigenciaHasta?: Record<string, never> | null;
+        };
+        AdministracionDeLaCopropiedadDto: {
+            /**
+             * @description `null` = como hoy (la del mandato se le cobra al inquilino aparte).
+             * @enum {string|null}
+             */
+            modalidad?: "INCLUIDA_EN_CANON" | "LA_PAGA_EL_PROPIETARIO" | "LA_PAGA_LA_INMOBILIARIA" | null;
+            /** @description Sólo LA_PAGA_LA_INMOBILIARIA: lo que se le descuenta al propietario. */
+            valorCop?: Record<string, never> | null;
+        };
+        CambiarParteDto: Record<string, never>;
+        CopropietarioDto: {
+            /** @description Id del propietario */
+            propietarioId: string;
+            /** @description Participación en puntos básicos (100 % = 10000). Las de un mismo mandato suman 10000. */
+            participacionBps: number;
+        };
+        CreateConsignacionDto: {
+            /** @description ID del propietario único. Alternativa a `copropietarios`; equivale a una lista de uno al 100 %. */
+            propietarioId?: string;
+            /** @description Dueños del inmueble con su participación en puntos básicos. Deben sumar 10000. */
+            copropietarios?: components["schemas"]["CopropietarioDto"][];
+            /** @description Optional linked property ID from properties table */
+            propertyId?: string;
+            /** @description User ID of the assigned agent */
+            agenteUserId?: string;
+            /** @description Title/name of the property */
+            propertyTitle: string;
+            /** @description Physical address of the property */
+            propertyAddress: string;
+            /** @description City where the property is located */
+            propertyCity: string;
+            /** @description Zone/neighborhood within the city */
+            propertyZone?: string;
+            /**
+             * @description Type of property
+             * @enum {string}
+             */
+            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
+            /** @description Thumbnail image URL */
+            propertyThumbnail?: string;
+            /** @description Monthly rent amount in COP */
+            monthlyRent?: number;
+            /** @description Sale commission percentage (SALE mandates only) */
+            saleCommissionPercent?: number;
+            /** @description Monthly admin fee in COP */
+            adminFee?: number;
+            /** @description Commission percentage for the agency */
+            commissionPercent: number;
+            /**
+             * @description Consignment contract start date (YYYY-MM-DD)
+             * @example 2026-01-15
+             */
+            contractDate: string;
+            /** @description Consignment contract end date (YYYY-MM-DD) */
+            contractEndDate?: string;
+            /** @description Minimum lease term in months */
+            minimumTerm?: number;
+        };
+        UpdateConsignacionDto: {
+            /** @description ID del propietario único. Alternativa a `copropietarios`; equivale a una lista de uno al 100 %. */
+            propietarioId?: string;
+            /** @description Dueños del inmueble con su participación en puntos básicos. Deben sumar 10000. */
+            copropietarios?: components["schemas"]["CopropietarioDto"][];
+            /** @description Optional linked property ID from properties table */
+            propertyId?: string;
+            /** @description User ID of the assigned agent */
+            agenteUserId?: string;
+            /** @description Title/name of the property */
+            propertyTitle?: string;
+            /** @description Physical address of the property */
+            propertyAddress?: string;
+            /** @description City where the property is located */
+            propertyCity?: string;
+            /** @description Zone/neighborhood within the city */
+            propertyZone?: string;
+            /**
+             * @description Type of property
+             * @enum {string}
+             */
+            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
+            /** @description Thumbnail image URL */
+            propertyThumbnail?: string;
+            /** @description Monthly rent amount in COP */
+            monthlyRent?: number;
+            /** @description Sale commission percentage (SALE mandates only) */
+            saleCommissionPercent?: number;
+            /** @description Monthly admin fee in COP */
+            adminFee?: number;
+            /** @description Commission percentage for the agency */
+            commissionPercent?: number;
+            /**
+             * @description Consignment contract start date (YYYY-MM-DD)
+             * @example 2026-01-15
+             */
+            contractDate?: string;
+            /** @description Consignment contract end date (YYYY-MM-DD) */
+            contractEndDate?: string;
+            /** @description Minimum lease term in months */
+            minimumTerm?: number;
+            /** @description Consignacion status (ACTIVE, TERMINATED, EXPIRED, PENDING) */
+            status?: string;
+            /** @description Availability (AVAILABLE, RENTED, IN_PROCESS, MAINTENANCE) */
+            availability?: string;
+            /** @description Current lease ID if property is rented */
+            currentLeaseId?: string;
+            /** @description Name of the current tenant */
+            currentTenantName?: string;
+            /** @description Current lease end date (YYYY-MM-DD) */
+            leaseEndDate?: string;
+            /** @description URL to the consignment contract document */
+            consignmentContractUrl?: string;
+            /** @description Con `true`, un `propietarioId` suelto reemplaza a TODOS los dueños de un mandato con varios. Sin ella, ese caso es 400 MANDATO_CON_VARIOS_DUENOS. */
+            reemplazarPropietarios?: boolean;
+        };
+        AssignAgentToConsignacionDto: {
+            /** @description User ID of the agent to assign */
+            agenteUserId: string;
+        };
+        ItemDeInventarioDto: {
+            /** @example b1f4… */
+            id: string;
+            /** @example Nevera Samsung 300 L */
+            name: string;
+            /** @example 1 */
+            quantity: number;
+            /**
+             * @example good
+             * @enum {string}
+             */
+            condition: "excellent" | "good" | "fair" | "poor";
+            /** @example Rayón en la puerta izquierda */
+            notes?: string;
+            /** @example https://…/nevera.jpg */
+            photoUrl?: string;
+        };
+        ActualizarInventarioDto: {
+            items: components["schemas"]["ItemDeInventarioDto"][];
+        };
+        SubirFotoDeInventarioDto: {
+            /** @example b1f4c2de-0a11-4f0e-9b4e-1a2b3c4d5e6f */
+            itemId: string;
+        };
+        InmuebleSinConsignacionResponseDto: {
+            /**
+             * Format: uuid
+             * @description Property.id. This DTO deliberately has no `id` field of its own — unlike a Consignacion row, there is no mandate id to carry, and that omission is what keeps an unmandated row structurally out of every consignación-keyed surface (contract.md §3.2).
+             */
+            propertyId: string;
+            propertyTitle: string;
+            propertyAddress: string;
+            propertyCity: string;
+            /** @description Property.neighborhood. May be an empty string — the front MUST treat "" as absent (contract.md §3.2). */
+            propertyZone: string;
+            /**
+             * @description Raw Prisma PropertyType, including ROOM. The back does NOT filter or remap ROOM — that trap is handled front-side only (contract.md §3.2).
+             * @enum {string}
+             */
+            propertyType: "APARTMENT" | "HOUSE" | "STUDIO" | "ROOM" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
+            /** @description URL of the first PropertyImage ordered by `order` asc, or null when the property has no image. Never a fabricated URL. */
+            propertyThumbnail: string | null;
+            /** @description Colombian department the property sits in, or null when it is unknown. Null for a municipality whose name is ambiguous across departments (Armenia, Barbosa, Rionegro...) and for rows created before T-0038. Never an empty string and never a placeholder — null means "we do not know". */
+            propertyDepartment: string | null;
+            /**
+             * @description RENT or SALE. Always present: the column is NOT NULL with a RENT default.
+             * @enum {string}
+             */
+            propertyListingType: "RENT" | "SALE";
+            /** @description Sale price in COP on a SALE listing, null on a RENT one. Serialised as a JSON number from a bigint column; never 0 to mean "no price" (C6). */
+            propertySalePrice: number | null;
+            /** @description Progressive per-agency reference number, starting at 1. A plain integer, never zero-padded — any display padding is a front concern. */
+            propertyCode: number;
+            /** @description Date the property was consigned, as a date-only YYYY-MM-DD string, or null when unrecorded. NOT an ISO timestamp: this route is agency-guarded so the field is always present, and a timestamp would render as the previous day in America/Bogota. */
+            propertyConsignedAt: string | null;
+            /** @description Monthly rent in COP. Null on a SALE listing, which has no canon. Was non-nullable before T-0038 — the front must null-guard it. */
+            monthlyRent: number | null;
+            /** @description Monthly admin fee in COP. Always a number, 0 when unset. */
+            adminFee: number;
+            /**
+             * @description Property.status. Drives the "Estado" cell for this row on the front — there is no `availability` on an unmandated property (contract.md §3.2).
+             * @enum {string}
+             */
+            status: "DRAFT" | "AVAILABLE" | "RENTED" | "PENDING" | "RESERVED";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ItemDeVersionDto: {
+            /** @example b1f4… */
+            id: string;
+            /** @example Nevera Samsung 300 L */
+            name: string;
+            /** @example 1 */
+            quantity: number;
+            /**
+             * @example good
+             * @enum {string}
+             */
+            condition: "excellent" | "good" | "fair" | "poor";
+            /** @example Rayón en la puerta izquierda */
+            notes?: string;
+            /** @example https://…/nevera.jpg */
+            photoUrl?: string;
+            /** @example Cocina */
+            espacio?: string;
+        };
+        GuardarBorradorDeInventarioDto: {
+            items: components["schemas"]["ItemDeVersionDto"][];
+        };
+        SubirFotoDelBorradorDto: {
+            /** @example it-1726500000000 */
+            itemId: string;
+        };
+        RegistrarGarantiaDto: {
+            /** @description El promedio digitado, si no se digitan las facturas. */
+            valorCop?: number;
+            /** @description JSON: `[{ "servicio": "Energía", "periodo": "2026-07", "valorCop": 130000 }]`. */
+            facturas?: string;
+            nota?: string;
+        };
+        MovimientoDeGarantiaDto: {
+            /** @enum {string} */
+            tipo: "RECAUDO" | "PAGO_DE_SERVICIO" | "DEVOLUCION" | "COBRO_DE_DIFERENCIA";
+            valorCop: number;
+            /** @description `YYYY-MM-DD` */
+            fecha: string;
+            descripcion: string;
+            /** @description efectivo, transferencia… */
+            medio?: string;
+        };
+        AnularMovimientoDeGarantiaDto: {
+            motivo: string;
+        };
         CustomClauseDto: {
             /** @example SEXTA. MASCOTAS */
             title: string;
@@ -18757,6 +19861,10 @@ export interface components {
             /** @description Sólo este lote. Sin esto, todos los activados de la agencia. */
             lote?: string;
         };
+        FijarFechaDeCorteDto: {
+            /** @example 2026-10-01 */
+            fecha: string;
+        };
         ActivarMigracionDto: {
             /** @description Sólo este lote. Sin esto, todas las listas. */
             lote?: string;
@@ -18950,53 +20058,481 @@ export interface components {
              */
             code: string;
         };
-        ItemDeVersionDto: {
-            /** @example b1f4… */
-            id: string;
-            /** @example Nevera Samsung 300 L */
-            name: string;
-            /** @example 1 */
-            quantity: number;
+        ActivarAutopagoDto: {
+            /** @description El contrato. Tiene que ser tuyo. */
+            contractId: string;
+            /** @description El token que emitió el widget de Wompi EN EL NAVEGADOR. Nuestro código nunca ve el número de la tarjeta. */
+            token: string;
+            /** @enum {string} */
+            metodo: "CARD" | "NEQUI" | "BANCOLOMBIA_TRANSFER";
             /**
-             * @example good
+             * @description Día del mes del cobro, 1 a 28. No 29-31: ningún febrero los tiene y un cobro que se salta febrero no sirve.
+             * @example 5
+             */
+            diaDelMes: number;
+            /**
+             * @description Hasta cuánto autorizas por cobro, en pesos. OBLIGATORIO: un cobro automático sin techo es un cheque en blanco.
+             * @example 2500000
+             */
+            topeCop: number;
+            /** @description El texto EXACTO que la persona aceptó. Se guarda el texto y no su versión: cambiar la redacción no puede reescribir lo que alguien aceptó. */
+            autorizacionTexto: string;
+        };
+        PausarAutopagoDto: {
+            /** @description true reactiva, false pausa. */
+            activar: boolean;
+        };
+        CrearReciboDeCajaDto: {
+            /**
+             * @description Cobro contra el que se abona.
+             * @example 0f8d4c62-1f3a-4a17-9f8a-2b1c3d4e5f60
+             */
+            cobroId: string;
+            /**
+             * @description Valor abonado en pesos, siempre positivo (la base lo exige: CHECK valor_cop > 0).
+             * @example 500000
+             */
+            valorCop: number;
+            /**
+             * @description Día del recibo, `YYYY-MM-DD`. Si no viene, se usa el día de hoy en Bogotá.
+             * @example 2026-08-31
+             */
+            fecha?: string;
+            /**
+             * @description Cómo entró la plata. Por defecto sólo transferencia y pasarela (PSE, Nequi, tarjeta): efectivo y cheque están apagados salvo que la inmobiliaria los habilite en sus medios de recaudo.
+             * @example TRANSFERENCIA
+             */
+            medio: string;
+            /**
+             * @description Referencia del banco o de la pasarela. Es con lo que después se concilia el extracto.
+             * @example TRF-99182
+             */
+            referencia?: string;
+            /** @example Abono parcial recibido en la oficina. */
+            notas?: string;
+        };
+        PagadorDelReciboDto: {
+            /**
+             * @example ASEGURADORA
              * @enum {string}
              */
-            condition: "excellent" | "good" | "fair" | "poor";
-            /** @example Rayón en la puerta izquierda */
-            notes?: string;
-            /** @example https://…/nevera.jpg */
-            photoUrl?: string;
-            /** @example Cocina */
-            espacio?: string;
+            tipo: "ASEGURADORA";
+            /** @description La aseguradora, de GET /inmobiliaria/aseguradoras */
+            aseguradoraId: string;
+            /**
+             * @description El número del siniestro en la aseguradora
+             * @example SIN-2026-00123
+             */
+            siniestroReferencia?: string;
         };
-        GuardarBorradorDeInventarioDto: {
-            items: components["schemas"]["ItemDeVersionDto"][];
-        };
-        SubirFotoDelBorradorDto: {
-            /** @example it-1726500000000 */
-            itemId: string;
-        };
-        RegistrarGarantiaDto: {
-            /** @description El promedio digitado, si no se digitan las facturas. */
-            valorCop?: number;
-            /** @description JSON: `[{ "servicio": "Energía", "periodo": "2026-07", "valorCop": 130000 }]`. */
-            facturas?: string;
-            nota?: string;
-        };
-        MovimientoDeGarantiaDto: {
-            /** @enum {string} */
-            tipo: "RECAUDO" | "PAGO_DE_SERVICIO" | "DEVOLUCION" | "COBRO_DE_DIFERENCIA";
+        CrearReciboPorClienteDto: {
+            /**
+             * @description La persona (User.id o id de su ficha de tercero), como la lista /inmobiliaria/inquilinos. Va éste o cobroId.
+             * @example 0f8d4c62-1f3a-4a17-9f8a-2b1c3d4e5f60
+             */
+            tenantId?: string;
+            /**
+             * @description Un cobro de la persona, para resolverla desde ahí. Va éste o tenantId. La plata NO va necesariamente a este cobro.
+             * @example 9bb564bc-1c9f-403e-b73f-5bee1a639447
+             */
+            cobroId?: string;
+            /**
+             * @description Cuánto va a pagar, en pesos enteros y positivo. Se reparte solo, del período más viejo al más nuevo.
+             * @example 1000000
+             */
             valorCop: number;
-            /** @description `YYYY-MM-DD` */
-            fecha: string;
-            descripcion: string;
-            /** @description efectivo, transferencia… */
-            medio?: string;
+            /**
+             * @description Qué día entró la plata, `YYYY-MM-DD`: la fecha en la que se recibió, cualquier día pasado. Si no viene, hoy en Bogotá. Una fecha futura es 400 `FECHA_FUTURA`.
+             * @example 2026-09-12
+             */
+            fecha?: string;
+            /**
+             * @description Cómo pagó: efectivo, transferencia, PSE, cheque, Nequi…
+             * @example transferencia
+             */
+            medio: string;
+            /**
+             * @description Referencia del banco o de la pasarela. Si el pago se reparte en varios recibos, todos la llevan.
+             * @example TRF-99182
+             */
+            referencia?: string;
+            /**
+             * @description Los «saludos»: el texto del recibo. Tope de 380 y no 500 porque el servicio le agrega, cuando el pago se reparte, en qué parte va y cuánto fue a intereses; la columna es de 500.
+             * @example Gracias por tu pago.
+             */
+            notas?: string;
+            /**
+             * @description Una llave por cada vez que se abre el formulario de pago, reusada al reintentar. Si ya se emitió un pago con esta llave en la inmobiliaria, se devuelve el MISMO resultado y no se emite nada nuevo.
+             * @example 7c1f0e0a-3b5d-4e9a-9f1e-0b6f3f2a1c44
+             */
+            idempotencyKey?: string;
+            /**
+             * @description `ABONAR_A_LAS_CUOTAS` (por defecto): abona ya a las cuotas futuras del contrato. `ANTICIPO_DEL_CONTRATO`: lo futuro queda como anticipo del contrato y se descuenta con un recibo el día de pago de cada mes. Sin la migración 20260916200000, 503 `ANTICIPO_DEL_CONTRATO_NO_DISPONIBLE`.
+             * @example ANTICIPO_DEL_CONTRATO
+             * @enum {string}
+             */
+            formaDelAdelanto?: "ABONAR_A_LAS_CUOTAS" | "ANTICIPO_DEL_CONTRATO";
+            /** @description Sin este campo pagó el cliente. Con `tipo: ASEGURADORA` el pago no puede quedar como anticipo ni dejar saldo a favor. Sin la migración 20260917190000, 503 `PAGADOR_ASEGURADORA_SIN_MIGRAR`. */
+            pagador?: components["schemas"]["PagadorDelReciboDto"];
         };
-        AnularMovimientoDeGarantiaDto: {
+        AnularReciboDeCajaDto: {
+            /**
+             * @description Por qué se anula. Queda en el recibo para siempre.
+             * @example El cheque fue devuelto por el banco.
+             */
             motivo: string;
         };
-        CambiarParteDto: Record<string, never>;
+        ConciliarSaldoAnteriorDto: {
+            /**
+             * @description De dónde salió esta plata. Queda en las notas del recibo.
+             * @example Pago por PSE del 12 de agosto, transacción 1234-5
+             */
+            origen: string;
+            /**
+             * @description Medio del pago original. Por defecto, «conciliación».
+             * @example PSE
+             */
+            medio?: string;
+            /** @description Referencia del pago original. */
+            referencia?: string;
+            /** @description Cualquier detalle adicional. */
+            notas?: string;
+        };
+        CreateInquilinoDto: {
+            /** @description Nombre completo del inquilino */
+            nombre: string;
+            /**
+             * @description Tipo de documento. Obligatorio cuando viene el número: sin él no se sabe si «900123456-7» lleva dígito de verificación.
+             * @enum {string}
+             */
+            tipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
+            /** @description Número de documento */
+            documento?: string;
+            /** @description Correo. Con él se le crea la cuenta del portal y se le manda la invitación. */
+            correo?: string;
+            /** @description Teléfono */
+            telefono?: string;
+        };
+        FilaTerceroDto: {
+            /** @example CC */
+            tipoDocumento?: string;
+            /** @example 1020304050 */
+            documento?: string;
+            /** @example 7 */
+            digitoVerificacion?: string;
+            /** @example Jorge Restrepo Vélez */
+            nombre?: string;
+            /** @example jorge@correo.co */
+            correo?: string;
+            /** @example 3105551234 */
+            telefono?: string;
+            /** @example Carrera 13 # 55-20 */
+            direccion?: string;
+            /** @example Medellín */
+            ciudad?: string;
+            /** @example Antioquia */
+            departamento?: string;
+            /** @example BANCOLOMBIA */
+            banco?: string;
+            /** @example AHORROS */
+            tipoCuenta?: string;
+            /** @example 12345678901 */
+            numeroCuenta?: string;
+            /** @example Jorge Restrepo Vélez */
+            titularCuenta?: string;
+            /** @example No */
+            responsableIva?: string;
+            /** @example No */
+            agenteRetenedorRenta?: string;
+            /** @example No */
+            agenteRetenedorIva?: string;
+            /** @example No */
+            agenteRetenedorIca?: string;
+            /** @example Prefiere WhatsApp */
+            notas?: string;
+            /**
+             * @description Su id en el sistema anterior
+             * @example 1050
+             */
+            externalId?: string;
+        };
+        PrepararTercerosDto: {
+            /** @example propietarios-marzo */
+            lote: string;
+            /** @enum {string} */
+            tipo: "PROPIETARIO" | "INQUILINO";
+            filas: components["schemas"]["FilaTerceroDto"][];
+        };
+        RevisarLoteDto: {
+            /** @example propietarios-marzo */
+            lote: string;
+        };
+        DescartarLoteDto: {
+            /** @example inquilinos-2026-09-02-0230 */
+            lote: string;
+        };
+        ResolverMasivoTercerosDto: {
+            ids: string[];
+            campos?: components["schemas"]["FilaTerceroDto"];
+            vincularAExistente?: boolean;
+            /** @description Descartar las filas seleccionadas */
+            descartar?: boolean;
+        };
+        CorregirFilaTerceroDto: {
+            campos?: components["schemas"]["FilaTerceroDto"];
+            /** @description Vincular esta fila a la ficha que ya existe, sin sobrescribirla */
+            vincularAExistente?: boolean;
+            /** @example 3 */
+            version?: number;
+        };
+        AplicarLoteTercerosDto: {
+            /** @example propietarios-marzo */
+            lote: string;
+            /** @example 100 */
+            maximo?: number;
+            /**
+             * @description Mandar la invitación al portal ahora (sólo inquilinos)
+             * @default true
+             * @example true
+             */
+            invitar: boolean;
+        };
+        RecordatorioDeMigracionDto: {
+            /**
+             * @description true = no mostrar más el recordatorio del menú
+             * @example true
+             */
+            descartado: boolean;
+        };
+        OmitirMigracionDto: {
+            /** @example Somos una inmobiliaria nueva, no tenemos cartera anterior. */
+            motivo?: string;
+        };
+        EnviarInvitacionesDto: {
+            userIds?: string[];
+            /** @default 100 */
+            limite: number;
+            /**
+             * @description De quiénes es la tanda. Por defecto, los inquilinos.
+             * @default INQUILINOS
+             * @enum {string}
+             */
+            quienes: "INQUILINOS" | "PROPIETARIOS" | "TODOS";
+        };
+        GenerarFacturasDto: {
+            /**
+             * @description Mes de facturación, «YYYY-MM»
+             * @example 2026-09
+             */
+            mes: string;
+            /**
+             * @description Las facturas elegidas, con la clave del listado. Vacío o ausente = todas las del mes.
+             * @example [
+             *       "0f8e…|2026-09|INQUILINO"
+             *     ]
+             */
+            claves?: string[];
+            /** @description El proceso de la corrida (lo devolvió la primera tanda) */
+            procesoId?: string;
+            /** @description Cuántas claves de la corrida ya se mandaron antes de ésta */
+            yaEnviadas?: number;
+            /** @description Cuántas claves tiene la corrida entera */
+            totalDeLaCorrida?: number;
+            /** @description `false` = vienen más tandas: el proceso NO se cierra todavía */
+            ultimaTanda?: boolean;
+            /** @description En la última tanda: los ids de TODAS las facturas de la corrida, para su único ZIP */
+            idsDeLaCorrida?: string[];
+        };
+        CrearResolucionDto: {
+            /**
+             * @description El número de la resolución, tal cual lo emitió la DIAN
+             * @example 18764003394379
+             */
+            numero: string;
+            /**
+             * @description Fecha de la resolución
+             * @example 2026-01-15
+             */
+            fechaResolucion: string;
+            /**
+             * @description El prefijo autorizado. Puede ir vacío: hay resoluciones sin prefijo.
+             * @example FE
+             */
+            prefijo: string;
+            /**
+             * @description Primer número del rango
+             * @example 1
+             */
+            desde: number;
+            /**
+             * @description Último número del rango
+             * @example 5000
+             */
+            hasta: number;
+            /** @example 2026-01-15 */
+            vigenteDesde: string;
+            /** @example 2028-01-15 */
+            vigenteHasta: string;
+            /**
+             * @description Si la inmobiliaria ya gastó parte del rango en otro sistema, desde qué número seguir. Ausente = el rango arranca sin consumir.
+             * @example 1200
+             */
+            ultimoNumeroUsado?: number;
+            /**
+             * @description Qué tipo de documento numera. Ausente = cualquiera (una sola resolución para todo).
+             * @example CANON_INQUILINO
+             * @enum {string}
+             */
+            tipoDeDocumento?: "CANON_INQUILINO" | "COMISION_PROPIETARIO" | "OTROS" | "NOTA_CREDITO" | "NOTA_DEBITO" | "DOCUMENTO_SOPORTE";
+        };
+        AnularResolucionDto: {
+            /**
+             * @description Por qué se anula la resolución. Queda guardado en ella.
+             * @example La DIAN autorizó un rango nuevo y este quedó sin uso.
+             */
+            motivo: string;
+        };
+        EmitirNotaCreditoDto: {
+            /**
+             * @description El concepto de la corrección, en el vocabulario de la DIAN. Lista cerrada.
+             * @example ANULACION
+             * @enum {string}
+             */
+            concepto: "DEVOLUCION" | "ANULACION" | "REBAJA" | "AJUSTE_DE_PRECIO" | "OTROS";
+            /**
+             * @description Por qué se anula, en palabras de quien lo hace. Queda en la nota.
+             * @example El contrato se terminó el 3 y el mes se facturó completo.
+             */
+            motivo: string;
+        };
+        RegistrarAcuseDto: {
+            /**
+             * @description `true` la aceptó; `false` la rechazó (y entonces hay motivo).
+             * @example true
+             */
+            aceptada: boolean;
+            /**
+             * @description Obligatorio cuando el cliente RECHAZA.
+             * @example El canon no corresponde al contrato.
+             */
+            motivo?: string;
+            /** @example Pedro Inquilino */
+            por?: string;
+        };
+        GenerarCertificacionDto: {
+            /** @example 2026-01-01 */
+            desde: string;
+            /** @example 2026-12-31 */
+            hasta: string;
+        };
+        CrearProveedorNoObligadoDto: {
+            /** @example Plomería Martínez */
+            nombre: string;
+            /** @example CC */
+            tipoDocumento?: string;
+            /** @example 71234567 */
+            documento?: string;
+            /** @example plomeria@correo.com */
+            email?: string;
+            /** @example 3103640479 */
+            telefono?: string;
+            direccion?: string;
+            ciudad?: string;
+            responsableIva?: boolean;
+            regimenSimple?: boolean;
+            /**
+             * @description El % de retención en la fuente que se le practica. Sin él, el documento sale SIN retención y marcado.
+             * @example 4
+             */
+            retefuentePct?: number;
+            activo?: boolean;
+        };
+        LineaDelDocumentoSoporteDto: {
+            /** @example Mano de obra */
+            concepto: string;
+            /** @example 200000 */
+            valorCop: number;
+        };
+        PrevisualizarDocumentoSoporteDto: {
+            /** Format: uuid */
+            proveedorId: string;
+            lineas: components["schemas"]["LineaDelDocumentoSoporteDto"][];
+        };
+        EmitirDocumentoSoporteDto: {
+            /** Format: uuid */
+            proveedorId: string;
+            /**
+             * @example MANTENIMIENTO
+             * @enum {string}
+             */
+            origenTipo: "MANTENIMIENTO" | "EGRESO" | "MANUAL";
+            /** Format: uuid */
+            origenId?: string;
+            /** @example 2026-09-17 */
+            fecha: string;
+            /** @example Cambio de la llave del baño del apto 302 */
+            concepto: string;
+            lineas: components["schemas"]["LineaDelDocumentoSoporteDto"][];
+        };
+        LineaDeLaNotaDto: {
+            /** @example CONCEPTO_DEL_CONTRATO */
+            tipo: string;
+            /** @example Parqueadero */
+            nombre: string;
+            /**
+             * @description Siempre positivo, en pesos.
+             * @example 120000
+             */
+            valorCop: number;
+        };
+        NotaCreditoParcialDto: {
+            /** @example REBAJA */
+            concepto: string;
+            /** @example Se cobró el parqueadero y el contrato no lo tiene. */
+            motivo: string;
+            /**
+             * @description Cuánto se acredita. No puede pasar del saldo de la factura: la que se pasa se rechaza con el máximo exacto.
+             * @example 120000
+             */
+            valorCop: number;
+            /** @description Los renglones que la nota netea. Si van, tienen que sumar exactamente `valorCop`. */
+            lineas?: components["schemas"]["LineaDeLaNotaDto"][];
+        };
+        EmitirNotaDebitoDto: {
+            /**
+             * @example INTERESES_DE_MORA
+             * @enum {string}
+             */
+            concepto: "INTERESES_DE_MORA" | "GASTOS_DE_COBRANZA" | "AJUSTE_DE_PRECIO" | "OTROS";
+            /** @example Intereses de mora de septiembre, pagados el 12 de octubre. */
+            motivo: string;
+            /** @example 25000 */
+            valorCop: number;
+            /**
+             * @description El IVA incluido en `valorCop`, si lo lleva. 0 por defecto.
+             * @example 0
+             */
+            ivaCop?: number;
+            lineas?: components["schemas"]["LineaDeLaNotaDto"][];
+        };
+        ZipEnSegundoPlanoDto: {
+            /** @description Ids de las facturas emitidas */
+            ids: string[];
+        };
+        CrearAseguradoraDto: {
+            /** @example Seguros Bolívar S.A. */
+            nombre: string;
+            /**
+             * @description El NIT. Se guarda sólo con dígitos y sin el dígito de verificación (lo que va después del guion).
+             * @example 860002503-2
+             */
+            nit: string;
+        };
+        ActualizarAseguradoraDto: {
+            nombre?: string;
+            /** @description Una aseguradora inactiva no se ofrece para recibos nuevos; los recibos que ya pagó la siguen nombrando. */
+            activa?: boolean;
+        };
         CreateAvailabilityDto: {
             /**
              * @description Day of week (0=Sunday, 6=Saturday)
@@ -19641,10 +21177,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT, PPT)
              * @enum {string}
              */
-            documentType: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            documentType: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Document number */
             documentNumber: string;
             /** @description Physical address */
@@ -19657,7 +21193,7 @@ export interface components {
              * @description Catalogued bank code. When present, the server derives bankName from it and the bankName below is ignored.
              * @enum {string}
              */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /**
              * @deprecated
              * @description Legacy free-text bank name for disbursements. Deprecated: ignored when bankCode is present, still accepted for backward compatibility.
@@ -19670,13 +21206,18 @@ export interface components {
             bankAccountType?: "AHORROS" | "CORRIENTE";
             /** @description Bank account number */
             bankAccountNumber?: string;
+            /**
+             * @description A quién pertenece la cuenta: PROPIETARIO o TERCERO (otra persona, con su documento).
+             * @enum {string}
+             */
+            titularDeLaCuenta?: "PROPIETARIO" | "TERCERO";
             /** @description Bank account holder name */
-            bankAccountHolder?: string;
+            bankAccountHolder?: Record<string, never>;
             /**
              * @description Tipo de documento del titular de la cuenta, si no es el propietario
              * @enum {string}
              */
-            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Documento del titular de la cuenta, si no es el propietario */
             bankAccountHolderDocument?: Record<string, never>;
             /** @description Additional notes */
@@ -19712,10 +21253,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT, PPT)
              * @enum {string}
              */
-            documentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            documentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Document number */
             documentNumber?: string;
             /** @description Physical address */
@@ -19728,7 +21269,7 @@ export interface components {
              * @description Catalogued bank code. When present, the server derives bankName from it and the bankName below is ignored.
              * @enum {string}
              */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /**
              * @deprecated
              * @description Legacy free-text bank name for disbursements. Deprecated: ignored when bankCode is present, still accepted for backward compatibility.
@@ -19741,13 +21282,18 @@ export interface components {
             bankAccountType?: "AHORROS" | "CORRIENTE";
             /** @description Bank account number */
             bankAccountNumber?: string;
+            /**
+             * @description A quién pertenece la cuenta: PROPIETARIO o TERCERO (otra persona, con su documento).
+             * @enum {string}
+             */
+            titularDeLaCuenta?: "PROPIETARIO" | "TERCERO";
             /** @description Bank account holder name */
-            bankAccountHolder?: string;
+            bankAccountHolder?: Record<string, never>;
             /**
              * @description Tipo de documento del titular de la cuenta, si no es el propietario
              * @enum {string}
              */
-            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             /** @description Documento del titular de la cuenta, si no es el propietario */
             bankAccountHolderDocument?: Record<string, never>;
             /** @description Additional notes */
@@ -19769,17 +21315,6 @@ export interface components {
              * @example 2026-08
              */
             month: string;
-        };
-        EnviarInvitacionesDto: {
-            userIds?: string[];
-            /** @default 100 */
-            limite: number;
-            /**
-             * @description De quiénes es la tanda. Por defecto, los inquilinos.
-             * @default INQUILINOS
-             * @enum {string}
-             */
-            quienes: "INQUILINOS" | "PROPIETARIOS" | "TODOS";
         };
         RegistrarDescuentoDto: {
             /**
@@ -19834,181 +21369,6 @@ export interface components {
              * @example 3
              */
             orden?: number;
-        };
-        CopropietarioDto: {
-            /** @description Id del propietario */
-            propietarioId: string;
-            /** @description Participación en puntos básicos (100 % = 10000). Las de un mismo mandato suman 10000. */
-            participacionBps: number;
-        };
-        CreateConsignacionDto: {
-            /** @description ID del propietario único. Alternativa a `copropietarios`; equivale a una lista de uno al 100 %. */
-            propietarioId?: string;
-            /** @description Dueños del inmueble con su participación en puntos básicos. Deben sumar 10000. */
-            copropietarios?: components["schemas"]["CopropietarioDto"][];
-            /** @description Optional linked property ID from properties table */
-            propertyId?: string;
-            /** @description User ID of the assigned agent */
-            agenteUserId?: string;
-            /** @description Title/name of the property */
-            propertyTitle: string;
-            /** @description Physical address of the property */
-            propertyAddress: string;
-            /** @description City where the property is located */
-            propertyCity: string;
-            /** @description Zone/neighborhood within the city */
-            propertyZone?: string;
-            /**
-             * @description Type of property
-             * @enum {string}
-             */
-            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
-            /** @description Thumbnail image URL */
-            propertyThumbnail?: string;
-            /** @description Monthly rent amount in COP */
-            monthlyRent?: number;
-            /** @description Sale commission percentage (SALE mandates only) */
-            saleCommissionPercent?: number;
-            /** @description Monthly admin fee in COP */
-            adminFee?: number;
-            /** @description Commission percentage for the agency */
-            commissionPercent: number;
-            /**
-             * @description Consignment contract start date (YYYY-MM-DD)
-             * @example 2026-01-15
-             */
-            contractDate: string;
-            /** @description Consignment contract end date (YYYY-MM-DD) */
-            contractEndDate?: string;
-            /** @description Minimum lease term in months */
-            minimumTerm?: number;
-        };
-        UpdateConsignacionDto: {
-            /** @description ID del propietario único. Alternativa a `copropietarios`; equivale a una lista de uno al 100 %. */
-            propietarioId?: string;
-            /** @description Dueños del inmueble con su participación en puntos básicos. Deben sumar 10000. */
-            copropietarios?: components["schemas"]["CopropietarioDto"][];
-            /** @description Optional linked property ID from properties table */
-            propertyId?: string;
-            /** @description User ID of the assigned agent */
-            agenteUserId?: string;
-            /** @description Title/name of the property */
-            propertyTitle?: string;
-            /** @description Physical address of the property */
-            propertyAddress?: string;
-            /** @description City where the property is located */
-            propertyCity?: string;
-            /** @description Zone/neighborhood within the city */
-            propertyZone?: string;
-            /**
-             * @description Type of property
-             * @enum {string}
-             */
-            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
-            /** @description Thumbnail image URL */
-            propertyThumbnail?: string;
-            /** @description Monthly rent amount in COP */
-            monthlyRent?: number;
-            /** @description Sale commission percentage (SALE mandates only) */
-            saleCommissionPercent?: number;
-            /** @description Monthly admin fee in COP */
-            adminFee?: number;
-            /** @description Commission percentage for the agency */
-            commissionPercent?: number;
-            /**
-             * @description Consignment contract start date (YYYY-MM-DD)
-             * @example 2026-01-15
-             */
-            contractDate?: string;
-            /** @description Consignment contract end date (YYYY-MM-DD) */
-            contractEndDate?: string;
-            /** @description Minimum lease term in months */
-            minimumTerm?: number;
-            /** @description Consignacion status (ACTIVE, TERMINATED, EXPIRED, PENDING) */
-            status?: string;
-            /** @description Availability (AVAILABLE, RENTED, IN_PROCESS, MAINTENANCE) */
-            availability?: string;
-            /** @description Current lease ID if property is rented */
-            currentLeaseId?: string;
-            /** @description Name of the current tenant */
-            currentTenantName?: string;
-            /** @description Current lease end date (YYYY-MM-DD) */
-            leaseEndDate?: string;
-            /** @description URL to the consignment contract document */
-            consignmentContractUrl?: string;
-            /** @description Con `true`, un `propietarioId` suelto reemplaza a TODOS los dueños de un mandato con varios. Sin ella, ese caso es 400 MANDATO_CON_VARIOS_DUENOS. */
-            reemplazarPropietarios?: boolean;
-        };
-        AssignAgentToConsignacionDto: {
-            /** @description User ID of the agent to assign */
-            agenteUserId: string;
-        };
-        ItemDeInventarioDto: {
-            /** @example b1f4… */
-            id: string;
-            /** @example Nevera Samsung 300 L */
-            name: string;
-            /** @example 1 */
-            quantity: number;
-            /**
-             * @example good
-             * @enum {string}
-             */
-            condition: "excellent" | "good" | "fair" | "poor";
-            /** @example Rayón en la puerta izquierda */
-            notes?: string;
-            /** @example https://…/nevera.jpg */
-            photoUrl?: string;
-        };
-        ActualizarInventarioDto: {
-            items: components["schemas"]["ItemDeInventarioDto"][];
-        };
-        SubirFotoDeInventarioDto: {
-            /** @example b1f4c2de-0a11-4f0e-9b4e-1a2b3c4d5e6f */
-            itemId: string;
-        };
-        InmuebleSinConsignacionResponseDto: {
-            /**
-             * Format: uuid
-             * @description Property.id. This DTO deliberately has no `id` field of its own — unlike a Consignacion row, there is no mandate id to carry, and that omission is what keeps an unmandated row structurally out of every consignación-keyed surface (contract.md §3.2).
-             */
-            propertyId: string;
-            propertyTitle: string;
-            propertyAddress: string;
-            propertyCity: string;
-            /** @description Property.neighborhood. May be an empty string — the front MUST treat "" as absent (contract.md §3.2). */
-            propertyZone: string;
-            /**
-             * @description Raw Prisma PropertyType, including ROOM. The back does NOT filter or remap ROOM — that trap is handled front-side only (contract.md §3.2).
-             * @enum {string}
-             */
-            propertyType: "APARTMENT" | "HOUSE" | "STUDIO" | "ROOM" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
-            /** @description URL of the first PropertyImage ordered by `order` asc, or null when the property has no image. Never a fabricated URL. */
-            propertyThumbnail: string | null;
-            /** @description Colombian department the property sits in, or null when it is unknown. Null for a municipality whose name is ambiguous across departments (Armenia, Barbosa, Rionegro...) and for rows created before T-0038. Never an empty string and never a placeholder — null means "we do not know". */
-            propertyDepartment: string | null;
-            /**
-             * @description RENT or SALE. Always present: the column is NOT NULL with a RENT default.
-             * @enum {string}
-             */
-            propertyListingType: "RENT" | "SALE";
-            /** @description Sale price in COP on a SALE listing, null on a RENT one. Serialised as a JSON number from a bigint column; never 0 to mean "no price" (C6). */
-            propertySalePrice: number | null;
-            /** @description Progressive per-agency reference number, starting at 1. A plain integer, never zero-padded — any display padding is a front concern. */
-            propertyCode: number;
-            /** @description Date the property was consigned, as a date-only YYYY-MM-DD string, or null when unrecorded. NOT an ISO timestamp: this route is agency-guarded so the field is always present, and a timestamp would render as the previous day in America/Bogota. */
-            propertyConsignedAt: string | null;
-            /** @description Monthly rent in COP. Null on a SALE listing, which has no canon. Was non-nullable before T-0038 — the front must null-guard it. */
-            monthlyRent: number | null;
-            /** @description Monthly admin fee in COP. Always a number, 0 when unset. */
-            adminFee: number;
-            /**
-             * @description Property.status. Drives the "Estado" cell for this row on the front — there is no `availability` on an unmandated property (contract.md §3.2).
-             * @enum {string}
-             */
-            status: "DRAFT" | "AVAILABLE" | "RENTED" | "PENDING" | "RESERVED";
-            /** Format: date-time */
-            createdAt: string;
         };
         PropietarioDelInmuebleDto: {
             /** @example 43090971 */
@@ -20338,550 +21698,6 @@ export interface components {
         AgenciaBodyDto: Record<string, never>;
         ConciliarBodyDto: Record<string, never>;
         IgnorarBodyDto: Record<string, never>;
-        CrearReciboDeCajaDto: {
-            /**
-             * @description Cobro contra el que se abona.
-             * @example 0f8d4c62-1f3a-4a17-9f8a-2b1c3d4e5f60
-             */
-            cobroId: string;
-            /**
-             * @description Valor abonado en pesos, siempre positivo (la base lo exige: CHECK valor_cop > 0).
-             * @example 500000
-             */
-            valorCop: number;
-            /**
-             * @description Día del recibo, `YYYY-MM-DD`. Si no viene, se usa el día de hoy en Bogotá.
-             * @example 2026-08-31
-             */
-            fecha?: string;
-            /**
-             * @description Cómo entró la plata: efectivo, transferencia, PSE, cheque, Nequi…
-             * @example EFECTIVO
-             */
-            medio: string;
-            /**
-             * @description Referencia del banco o de la pasarela. Es con lo que después se concilia el extracto.
-             * @example TRF-99182
-             */
-            referencia?: string;
-            /** @example Abono parcial recibido en la oficina. */
-            notas?: string;
-        };
-        PagadorDelReciboDto: {
-            /**
-             * @example ASEGURADORA
-             * @enum {string}
-             */
-            tipo: "ASEGURADORA";
-            /** @description La aseguradora, de GET /inmobiliaria/aseguradoras */
-            aseguradoraId: string;
-            /**
-             * @description El número del siniestro en la aseguradora
-             * @example SIN-2026-00123
-             */
-            siniestroReferencia?: string;
-        };
-        CrearReciboPorClienteDto: {
-            /**
-             * @description La persona (User.id o id de su ficha de tercero), como la lista /inmobiliaria/inquilinos. Va éste o cobroId.
-             * @example 0f8d4c62-1f3a-4a17-9f8a-2b1c3d4e5f60
-             */
-            tenantId?: string;
-            /**
-             * @description Un cobro de la persona, para resolverla desde ahí. Va éste o tenantId. La plata NO va necesariamente a este cobro.
-             * @example 9bb564bc-1c9f-403e-b73f-5bee1a639447
-             */
-            cobroId?: string;
-            /**
-             * @description Cuánto va a pagar, en pesos enteros y positivo. Se reparte solo, del período más viejo al más nuevo.
-             * @example 1000000
-             */
-            valorCop: number;
-            /**
-             * @description Qué día entró la plata, `YYYY-MM-DD`: la fecha en la que se recibió, cualquier día pasado. Si no viene, hoy en Bogotá. Una fecha futura es 400 `FECHA_FUTURA`.
-             * @example 2026-09-12
-             */
-            fecha?: string;
-            /**
-             * @description Cómo pagó: efectivo, transferencia, PSE, cheque, Nequi…
-             * @example transferencia
-             */
-            medio: string;
-            /**
-             * @description Referencia del banco o de la pasarela. Si el pago se reparte en varios recibos, todos la llevan.
-             * @example TRF-99182
-             */
-            referencia?: string;
-            /**
-             * @description Los «saludos»: el texto del recibo. Tope de 380 y no 500 porque el servicio le agrega, cuando el pago se reparte, en qué parte va y cuánto fue a intereses; la columna es de 500.
-             * @example Gracias por tu pago.
-             */
-            notas?: string;
-            /**
-             * @description Una llave por cada vez que se abre el formulario de pago, reusada al reintentar. Si ya se emitió un pago con esta llave en la inmobiliaria, se devuelve el MISMO resultado y no se emite nada nuevo.
-             * @example 7c1f0e0a-3b5d-4e9a-9f1e-0b6f3f2a1c44
-             */
-            idempotencyKey?: string;
-            /**
-             * @description `ABONAR_A_LAS_CUOTAS` (por defecto): abona ya a las cuotas futuras del contrato. `ANTICIPO_DEL_CONTRATO`: lo futuro queda como anticipo del contrato y se descuenta con un recibo el día de pago de cada mes. Sin la migración 20260916200000, 503 `ANTICIPO_DEL_CONTRATO_NO_DISPONIBLE`.
-             * @example ANTICIPO_DEL_CONTRATO
-             * @enum {string}
-             */
-            formaDelAdelanto?: "ABONAR_A_LAS_CUOTAS" | "ANTICIPO_DEL_CONTRATO";
-            /** @description Sin este campo pagó el cliente. Con `tipo: ASEGURADORA` el pago no puede quedar como anticipo ni dejar saldo a favor. Sin la migración 20260917190000, 503 `PAGADOR_ASEGURADORA_SIN_MIGRAR`. */
-            pagador?: components["schemas"]["PagadorDelReciboDto"];
-        };
-        AnularReciboDeCajaDto: {
-            /**
-             * @description Por qué se anula. Queda en el recibo para siempre.
-             * @example El cheque fue devuelto por el banco.
-             */
-            motivo: string;
-        };
-        ConciliarSaldoAnteriorDto: {
-            /**
-             * @description De dónde salió esta plata. Queda en las notas del recibo.
-             * @example Pago por PSE del 12 de agosto, transacción 1234-5
-             */
-            origen: string;
-            /**
-             * @description Medio del pago original. Por defecto, «conciliación».
-             * @example PSE
-             */
-            medio?: string;
-            /** @description Referencia del pago original. */
-            referencia?: string;
-            /** @description Cualquier detalle adicional. */
-            notas?: string;
-        };
-        CreateInquilinoDto: {
-            /** @description Nombre completo del inquilino */
-            nombre: string;
-            /**
-             * @description Tipo de documento. Obligatorio cuando viene el número: sin él no se sabe si «900123456-7» lleva dígito de verificación.
-             * @enum {string}
-             */
-            tipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
-            /** @description Número de documento */
-            documento?: string;
-            /** @description Correo. Con él se le crea la cuenta del portal y se le manda la invitación. */
-            correo?: string;
-            /** @description Teléfono */
-            telefono?: string;
-        };
-        FilaTerceroDto: {
-            /** @example CC */
-            tipoDocumento?: string;
-            /** @example 1020304050 */
-            documento?: string;
-            /** @example 7 */
-            digitoVerificacion?: string;
-            /** @example Jorge Restrepo Vélez */
-            nombre?: string;
-            /** @example jorge@correo.co */
-            correo?: string;
-            /** @example 3105551234 */
-            telefono?: string;
-            /** @example Carrera 13 # 55-20 */
-            direccion?: string;
-            /** @example Medellín */
-            ciudad?: string;
-            /** @example Antioquia */
-            departamento?: string;
-            /** @example BANCOLOMBIA */
-            banco?: string;
-            /** @example AHORROS */
-            tipoCuenta?: string;
-            /** @example 12345678901 */
-            numeroCuenta?: string;
-            /** @example Jorge Restrepo Vélez */
-            titularCuenta?: string;
-            /** @example No */
-            responsableIva?: string;
-            /** @example No */
-            agenteRetenedorRenta?: string;
-            /** @example No */
-            agenteRetenedorIva?: string;
-            /** @example No */
-            agenteRetenedorIca?: string;
-            /** @example Prefiere WhatsApp */
-            notas?: string;
-            /**
-             * @description Su id en el sistema anterior
-             * @example 1050
-             */
-            externalId?: string;
-        };
-        PrepararTercerosDto: {
-            /** @example propietarios-marzo */
-            lote: string;
-            /** @enum {string} */
-            tipo: "PROPIETARIO" | "INQUILINO";
-            filas: components["schemas"]["FilaTerceroDto"][];
-        };
-        RevisarLoteDto: {
-            /** @example propietarios-marzo */
-            lote: string;
-        };
-        DescartarLoteDto: {
-            /** @example inquilinos-2026-09-02-0230 */
-            lote: string;
-        };
-        ResolverMasivoTercerosDto: {
-            ids: string[];
-            campos?: components["schemas"]["FilaTerceroDto"];
-            vincularAExistente?: boolean;
-            /** @description Descartar las filas seleccionadas */
-            descartar?: boolean;
-        };
-        CorregirFilaTerceroDto: {
-            campos?: components["schemas"]["FilaTerceroDto"];
-            /** @description Vincular esta fila a la ficha que ya existe, sin sobrescribirla */
-            vincularAExistente?: boolean;
-            /** @example 3 */
-            version?: number;
-        };
-        AplicarLoteTercerosDto: {
-            /** @example propietarios-marzo */
-            lote: string;
-            /** @example 100 */
-            maximo?: number;
-            /**
-             * @description Mandar la invitación al portal ahora (sólo inquilinos)
-             * @default true
-             * @example true
-             */
-            invitar: boolean;
-        };
-        RecordatorioDeMigracionDto: {
-            /**
-             * @description true = no mostrar más el recordatorio del menú
-             * @example true
-             */
-            descartado: boolean;
-        };
-        OmitirMigracionDto: {
-            /** @example Somos una inmobiliaria nueva, no tenemos cartera anterior. */
-            motivo?: string;
-        };
-        GenerarFacturasDto: {
-            /**
-             * @description Mes de facturación, «YYYY-MM»
-             * @example 2026-09
-             */
-            mes: string;
-            /**
-             * @description Las facturas elegidas, con la clave del listado. Vacío o ausente = todas las del mes.
-             * @example [
-             *       "0f8e…|2026-09|INQUILINO"
-             *     ]
-             */
-            claves?: string[];
-        };
-        CrearResolucionDto: {
-            /**
-             * @description El número de la resolución, tal cual lo emitió la DIAN
-             * @example 18764003394379
-             */
-            numero: string;
-            /**
-             * @description Fecha de la resolución
-             * @example 2026-01-15
-             */
-            fechaResolucion: string;
-            /**
-             * @description El prefijo autorizado. Puede ir vacío: hay resoluciones sin prefijo.
-             * @example FE
-             */
-            prefijo: string;
-            /**
-             * @description Primer número del rango
-             * @example 1
-             */
-            desde: number;
-            /**
-             * @description Último número del rango
-             * @example 5000
-             */
-            hasta: number;
-            /** @example 2026-01-15 */
-            vigenteDesde: string;
-            /** @example 2028-01-15 */
-            vigenteHasta: string;
-            /**
-             * @description Si la inmobiliaria ya gastó parte del rango en otro sistema, desde qué número seguir. Ausente = el rango arranca sin consumir.
-             * @example 1200
-             */
-            ultimoNumeroUsado?: number;
-            /**
-             * @description Qué tipo de documento numera. Ausente = cualquiera (una sola resolución para todo).
-             * @example CANON_INQUILINO
-             * @enum {string}
-             */
-            tipoDeDocumento?: "CANON_INQUILINO" | "COMISION_PROPIETARIO" | "OTROS" | "NOTA_CREDITO" | "NOTA_DEBITO" | "DOCUMENTO_SOPORTE";
-        };
-        AnularResolucionDto: {
-            /**
-             * @description Por qué se anula la resolución. Queda guardado en ella.
-             * @example La DIAN autorizó un rango nuevo y este quedó sin uso.
-             */
-            motivo: string;
-        };
-        EmitirNotaCreditoDto: {
-            /**
-             * @description El concepto de la corrección, en el vocabulario de la DIAN. Lista cerrada.
-             * @example ANULACION
-             * @enum {string}
-             */
-            concepto: "DEVOLUCION" | "ANULACION" | "REBAJA" | "AJUSTE_DE_PRECIO" | "OTROS";
-            /**
-             * @description Por qué se anula, en palabras de quien lo hace. Queda en la nota.
-             * @example El contrato se terminó el 3 y el mes se facturó completo.
-             */
-            motivo: string;
-        };
-        RegistrarAcuseDto: {
-            /**
-             * @description `true` la aceptó; `false` la rechazó (y entonces hay motivo).
-             * @example true
-             */
-            aceptada: boolean;
-            /**
-             * @description Obligatorio cuando el cliente RECHAZA.
-             * @example El canon no corresponde al contrato.
-             */
-            motivo?: string;
-            /** @example Pedro Inquilino */
-            por?: string;
-        };
-        GenerarCertificacionDto: {
-            /** @example 2026-01-01 */
-            desde: string;
-            /** @example 2026-12-31 */
-            hasta: string;
-        };
-        CrearProveedorNoObligadoDto: {
-            /** @example Plomería Martínez */
-            nombre: string;
-            /** @example CC */
-            tipoDocumento?: string;
-            /** @example 71234567 */
-            documento?: string;
-            /** @example plomeria@correo.com */
-            email?: string;
-            /** @example 3103640479 */
-            telefono?: string;
-            direccion?: string;
-            ciudad?: string;
-            responsableIva?: boolean;
-            regimenSimple?: boolean;
-            /**
-             * @description El % de retención en la fuente que se le practica. Sin él, el documento sale SIN retención y marcado.
-             * @example 4
-             */
-            retefuentePct?: number;
-            activo?: boolean;
-        };
-        LineaDelDocumentoSoporteDto: {
-            /** @example Mano de obra */
-            concepto: string;
-            /** @example 200000 */
-            valorCop: number;
-        };
-        PrevisualizarDocumentoSoporteDto: {
-            /** Format: uuid */
-            proveedorId: string;
-            lineas: components["schemas"]["LineaDelDocumentoSoporteDto"][];
-        };
-        EmitirDocumentoSoporteDto: {
-            /** Format: uuid */
-            proveedorId: string;
-            /**
-             * @example MANTENIMIENTO
-             * @enum {string}
-             */
-            origenTipo: "MANTENIMIENTO" | "EGRESO" | "MANUAL";
-            /** Format: uuid */
-            origenId?: string;
-            /** @example 2026-09-17 */
-            fecha: string;
-            /** @example Cambio de la llave del baño del apto 302 */
-            concepto: string;
-            lineas: components["schemas"]["LineaDelDocumentoSoporteDto"][];
-        };
-        LineaDeLaNotaDto: {
-            /** @example CONCEPTO_DEL_CONTRATO */
-            tipo: string;
-            /** @example Parqueadero */
-            nombre: string;
-            /**
-             * @description Siempre positivo, en pesos.
-             * @example 120000
-             */
-            valorCop: number;
-        };
-        NotaCreditoParcialDto: {
-            /** @example REBAJA */
-            concepto: string;
-            /** @example Se cobró el parqueadero y el contrato no lo tiene. */
-            motivo: string;
-            /**
-             * @description Cuánto se acredita. No puede pasar del saldo de la factura: la que se pasa se rechaza con el máximo exacto.
-             * @example 120000
-             */
-            valorCop: number;
-            /** @description Los renglones que la nota netea. Si van, tienen que sumar exactamente `valorCop`. */
-            lineas?: components["schemas"]["LineaDeLaNotaDto"][];
-        };
-        EmitirNotaDebitoDto: {
-            /**
-             * @example INTERESES_DE_MORA
-             * @enum {string}
-             */
-            concepto: "INTERESES_DE_MORA" | "GASTOS_DE_COBRANZA" | "AJUSTE_DE_PRECIO" | "OTROS";
-            /** @example Intereses de mora de septiembre, pagados el 12 de octubre. */
-            motivo: string;
-            /** @example 25000 */
-            valorCop: number;
-            /**
-             * @description El IVA incluido en `valorCop`, si lo lleva. 0 por defecto.
-             * @example 0
-             */
-            ivaCop?: number;
-            lineas?: components["schemas"]["LineaDeLaNotaDto"][];
-        };
-        CrearAseguradoraDto: {
-            /** @example Seguros Bolívar S.A. */
-            nombre: string;
-            /**
-             * @description El NIT. Se guarda sólo con dígitos y sin el dígito de verificación (lo que va después del guion).
-             * @example 860002503-2
-             */
-            nit: string;
-        };
-        ActualizarAseguradoraDto: {
-            nombre?: string;
-            /** @description Una aseguradora inactiva no se ofrece para recibos nuevos; los recibos que ya pagó la siguen nombrando. */
-            activa?: boolean;
-        };
-        ExtenderContratoDto: {
-            /**
-             * @description DIAS_OCUPADOS: renueva hasta el día de entrega (prorrateado). TERMINO_INICIAL: renueva por el término inicial.
-             * @enum {string}
-             */
-            modo?: "DIAS_OCUPADOS" | "TERMINO_INICIAL";
-            /** @description DIAS_OCUPADOS: el día de entrega, `YYYY-MM-DD`. */
-            hasta?: string;
-        };
-        TasaAnualPactadaDto: {
-            /** @description Local comercial: la tasa de incremento pactada para cada año (5.5 = 5,5 %). `null` la quita. */
-            porcentaje?: Record<string, never> | null;
-        };
-        IncrementoDigitadoDto: {
-            /** @description El porcentaje del incremento ese año. */
-            porcentaje?: Record<string, never> | null;
-            /** @description O el canon nuevo, en pesos. */
-            canonNuevoCop?: Record<string, never> | null;
-        };
-        RevisarCartaDto: {
-            /** @description El texto corregido por quien revisa. */
-            contenido?: string;
-        };
-        ConstanciaDeLaCartaDto: {
-            /**
-             * @description Cómo se entregó la carta (el correo deja su propia constancia).
-             * @enum {string}
-             */
-            medio?: "FISICO" | "WHATSAPP" | "OTRO";
-            /** @description El día de la entrega, `YYYY-MM-DD`. */
-            fecha?: string;
-            /** @description A quién se entregó, guía de envío, número de WhatsApp… */
-            nota?: string;
-        };
-        TerminarContratoDto: {
-            /**
-             * @description Día en que se termina el arriendo, «YYYY-MM-DD».
-             * @example 2026-09-30
-             */
-            terminadoEn: string;
-            /**
-             * @description Por qué. MUTUO_ACUERDO (Mutuo acuerdo) · ENTREGA_ANTICIPADA_DEL_INQUILINO (Entrega anticipada del inquilino) · INCUMPLIMIENTO_DEL_INQUILINO (Incumplimiento del inquilino) · INCUMPLIMIENTO_DEL_ARRENDADOR (Incumplimiento del arrendador) · VENTA_DEL_INMUEBLE (Venta del inmueble) · FUERZA_MAYOR (Fuerza mayor) · OTRO (Otro)
-             * @enum {string}
-             */
-            motivo: "MUTUO_ACUERDO" | "ENTREGA_ANTICIPADA_DEL_INQUILINO" | "INCUMPLIMIENTO_DEL_INQUILINO" | "INCUMPLIMIENTO_DEL_ARRENDADOR" | "VENTA_DEL_INMUEBLE" | "FUERZA_MAYOR" | "OTRO";
-            /** @description La explicación. OBLIGATORIA cuando el motivo es OTRO — el servicio la exige. */
-            nota?: string;
-            /** @description La penalidad por terminar antes de tiempo, en pesos enteros. Ausente = la por defecto (cánones del contrato, o de la inmobiliaria); `null` = sin penalidad. Entra al estado de cuenta del inquilino como un cobro de una sola vez, en la cuota del último mes. */
-            penalidadCop?: Record<string, never>;
-            /** @description Reparto negociado al terminar: la parte de la penalidad que se queda la inmobiliaria. El resto le llega al propietario menos la comisión. Ausente = todo del propietario. */
-            penalidadParaLaInmobiliariaCop?: number;
-        };
-        NuevoDuenoDto: {
-            propietarioId: string;
-            /** @description Participación en puntos básicos (100 % = 10000). */
-            participacionBps: number;
-        };
-        RegistrarCesionDto: {
-            /**
-             * @description Desde qué día la plata es del nuevo dueño, «YYYY-MM-DD». Lo anterior no se toca.
-             * @example 2026-10-01
-             */
-            desde: string;
-            /** @description Los nuevos dueños con su tajada. Las participaciones suman 10000. */
-            nuevosPropietarios: components["schemas"]["NuevoDuenoDto"][];
-            /** @description Aclaración que queda en el historial. */
-            nota?: string;
-        };
-        MesesDeProrrogaDto: {
-            /** @description Local comercial: la prórroga pactada (null = mes a mes). Vivienda: el término inicial confirmado (null = el del contrato). */
-            meses?: Record<string, never> | null;
-        };
-        NoSeProrrogaDto: {
-            /** @description `true` = este contrato NO se prorroga al vencer. `false` = se prorroga como diga la regla (vivienda Ley 820 art. 6; comercial lo pactado o mes a mes). */
-            noSeProrroga: boolean;
-        };
-        AvisoDeNoRenovacionDelContratoDto: {
-            /** @enum {string} */
-            parte: "INQUILINO" | "PROPIETARIO" | "INMOBILIARIA";
-            /** @description Por qué no se renueva. */
-            motivo: string;
-        };
-        GastosDeCobranzaDelContratoDto: {
-            /** @description D9: si el contrato pacta gastos de cobranza. `null` = hereda de la inmobiliaria. */
-            pacta?: Record<string, never> | null;
-        };
-        AceptarSeguroOpcionalDto: {
-            /** @description Quién aceptó expresamente el seguro. */
-            aceptadoPor: string;
-            /** @description El día de la aceptación, `YYYY-MM-DD`. */
-            aceptadoEl: string;
-            /** @description La prima mensual FIJA. Ausente = la del plan ofrecido. Se ignora si hay un `%` (el del cuerpo o el que la inmobiliaria le puso al plan). */
-            primaCop?: Record<string, never> | null;
-            /**
-             * @description 🔴 El seguro como % DEL CANON (Nico, 17-09). Ausente = el % que la inmobiliaria le puso a este plan; si tampoco hay, la prima fija. Migración 20260918021000.
-             * @example 1.5
-             */
-            pct?: Record<string, never> | null;
-            nombre?: Record<string, never> | null;
-        };
-        PolizaDelContratoDto: {
-            aseguradora?: Record<string, never> | null;
-            numero?: Record<string, never> | null;
-            cobertura?: Record<string, never> | null;
-            /** @description `YYYY-MM-DD` */
-            vigenciaDesde?: Record<string, never> | null;
-            /** @description `YYYY-MM-DD` */
-            vigenciaHasta?: Record<string, never> | null;
-        };
-        AdministracionDeLaCopropiedadDto: {
-            /**
-             * @description `null` = como hoy (la del mandato se le cobra al inquilino aparte).
-             * @enum {string|null}
-             */
-            modalidad?: "INCLUIDA_EN_CANON" | "LA_PAGA_EL_PROPIETARIO" | "LA_PAGA_LA_INMOBILIARIA" | null;
-            /** @description Sólo LA_PAGA_LA_INMOBILIARIA: lo que se le descuenta al propietario. */
-            valorCop?: Record<string, never> | null;
-        };
         CrearMedioDePagoDto: {
             /** @enum {string} */
             tipo: "TRANSFERENCIA" | "EFECTIVO" | "PSE" | "NEQUI" | "DAVIPLATA" | "ENLACE_DE_PAGO" | "OTRO";
@@ -20940,6 +21756,17 @@ export interface components {
             activo?: boolean;
             orden?: number;
         };
+        OrigenDelLoteDto: {
+            /**
+             * @description Id del banco (`GET /inmobiliaria/lotes-de-dispersion/bancos`)
+             * @example BANCOLOMBIA
+             */
+            banco: string;
+            /** @enum {string} */
+            tipoDeCuenta: "AHORROS" | "CORRIENTE";
+            /** @example 12345678901 */
+            numeroDeCuenta: string;
+        };
         ArmarLoteDto: {
             /**
              * @description Mes a pagar, `YYYY-MM`
@@ -20955,6 +21782,7 @@ export interface components {
              * @example 100000000
              */
             topeCop?: number;
+            origen?: components["schemas"]["OrigenDelLoteDto"];
         };
         AprobarLoteDto: {
             /**
@@ -20965,7 +21793,7 @@ export interface components {
         };
         GenerarArchivoDto: {
             /** @enum {string} */
-            formato?: "BANCOLOMBIA_PAB" | "BANCOLOMBIA_SAP" | "ONEPAY";
+            formato?: "BANCOLOMBIA_PAB" | "BANCOLOMBIA_SAP" | "ONEPAY" | "BANCO_DE_BOGOTA" | "BANCO_AGRARIO" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "PLANILLA_MANUAL" | "BANCOOMEVA" | "BANCO_DAVIVIENDA" | "BANCO_DAVIBANK" | "BANCO_BBVA" | "BANCO_DE_OCCIDENTE" | "PLANILLA_FINANDINA" | "PLANILLA_BANCAMIA";
         };
         MarcarPagadoDto: Record<string, never>;
         AnularLoteDto: {
@@ -20983,10 +21811,23 @@ export interface components {
             month: string;
             /** @description Generate only for these propietarios. Omit for the whole month. */
             propietarioIds?: string[];
+            /** @description Generate only these properties of those propietarios. Omit for all. */
+            propertyIds?: string[];
             /**
              * @description CAUSADO (todas las cuotas del mes, el default) o RECAUDADO (sólo las que el inquilino ya pagó)
              * @enum {string}
              */
+            base?: "RECAUDADO" | "CAUSADO";
+        };
+        PreviewDispersionDto: {
+            /**
+             * @description Month, YYYY-MM
+             * @example 2026-02
+             */
+            month: string;
+            propietarioIds?: string[];
+            propertyIds?: string[];
+            /** @enum {string} */
             base?: "RECAUDADO" | "CAUSADO";
         };
         ProcessDispersionDto: {
@@ -20995,6 +21836,38 @@ export interface components {
              * @example TRF-2026-02-001
              */
             transferReference: string;
+            origen?: components["schemas"]["OrigenDelLoteDto"];
+        };
+        GuardarConexionWompiDto: {
+            /** @enum {string} */
+            ambiente: "SANDBOX" | "PRODUCCION";
+            /** @description API Key (Desarrollo → Programadores → Pagos a Terceros) */
+            apiKey: string;
+            /** @description ID de usuario principal */
+            usuarioPrincipalId: string;
+            /** @description El secreto de eventos del webhook. Sin enviarlo se deja el que había; vacío lo quita. */
+            secretoDeEventos?: string;
+        };
+        EnviarLoteAWompiDto: {
+            /** @example false */
+            facturarAhora?: boolean;
+        };
+        CrearCopropiedadDto: {
+            /** @example Conjunto Residencial Altos del Poblado */
+            nombre: string;
+            /**
+             * @description Sólo dígitos, sin el DV ni puntos: es con lo que la DIAN identifica al tercero. El dígito de verificación lo calcula el sistema.
+             * @example 9001234567
+             */
+            nit: string;
+            direccion?: string;
+            contactoNombre?: string;
+            contactoCorreo?: string;
+            contactoTelefono?: string;
+        };
+        AsignarCopropiedadDto: {
+            /** @description `null` desvincula: una casa independiente no pertenece a ninguna copropiedad. */
+            copropiedadId?: Record<string, never> | null;
         };
         CuentaImportadaDto: {
             /** @example 110505 */
@@ -21243,7 +22116,7 @@ export interface components {
              * @example RECIBO_BANCOS
              * @enum {string}
              */
-            evento: "RECIBO_BANCOS" | "RECIBO_CAJA" | "RECAUDO_CANON_TERCEROS" | "RECAUDO_ADMINISTRACION" | "RECAUDO_OTROS_TERCEROS" | "INGRESO_COMISION" | "IVA_GENERADO" | "GIRO_PROPIETARIO_BANCOS" | "CARTERA_INQUILINOS" | "AJUSTE_AL_PESO";
+            evento: "RECIBO_BANCOS" | "RECIBO_CAJA" | "RECAUDO_CANON_TERCEROS" | "RECAUDO_ADMINISTRACION" | "RECAUDO_OTROS_TERCEROS" | "INGRESO_COMISION" | "IVA_GENERADO" | "GIRO_PROPIETARIO_BANCOS" | "CARTERA_INQUILINOS" | "AJUSTE_AL_PESO" | "RETENCION_RENTA_COMISION" | "RETENCION_IVA_COMISION" | "RETENCION_ICA_COMISION";
             /**
              * Format: uuid
              * @description Cuenta del PUC de la inmobiliaria: activa e imputable.
@@ -21372,6 +22245,22 @@ export interface components {
         MotivoDto: {
             /** @example La comisión de septiembre se traslada junto con la de octubre. */
             motivo: string;
+        };
+        CambiarEgresoDto: {
+            /**
+             * @description La fecha contable nueva (AAAA-MM-DD). Mueve el asiento: reversa el vigente y lo vuelve a causar ese día.
+             * @example 2026-09-18
+             */
+            fecha?: string;
+            /** @example PAB-88231 */
+            referencia?: string;
+            /** @example Se volvió a girar desde la cuenta de Davivienda */
+            nota?: string;
+            /**
+             * @description Obligatorio si cambia la fecha o la referencia.
+             * @example El banco rechazó el giro y se volvió a enviar el 18
+             */
+            motivo?: string;
         };
         CrearEgresoDto: {
             /** @enum {string} */
@@ -21519,17 +22408,21 @@ export interface components {
         };
         SolicitarCambioDeCuentaDto: {
             /** @enum {string} */
-            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA";
+            bankCode?: "BANCOLOMBIA" | "DAVIVIENDA" | "BBVA" | "BANCO_BOGOTA" | "BANCO_OCCIDENTE" | "BANCO_POPULAR" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "NEQUI" | "DAVIPLATA" | "SCOTIABANK" | "ITAU" | "BANCOOMEVA" | "BANCO_FALABELLA" | "BANCO_PICHINCHA" | "NU_COLOMBIA" | "BANCO_AGRARIO" | "BANCO_FINANDINA" | "BANCAMIA" | "GNB_SUDAMERIS" | "SANTANDER" | "BANCO_SERFINANZA" | "BANCO_COOPCENTRAL" | "BANCO_MUNDO_MUJER" | "BAN100" | "BTG_PACTUAL" | "JP_MORGAN" | "CITIBANK" | "LULO_BANK";
             /** @example Bancolombia */
             bankName?: string;
             /** @enum {string} */
-            bankAccountType: "AHORROS" | "CORRIENTE";
+            bankAccountType?: "AHORROS" | "CORRIENTE";
             /** @example 12345678901 */
-            bankAccountNumber: string;
+            bankAccountNumber?: string;
+            /** @example [{"bankCode":"BANCOLOMBIA","bankAccountType":"AHORROS","bankAccountNumber":"00123444521","porcentaje":50}] */
+            reparto?: string;
+            /** @enum {string} */
+            titularDeLaCuenta?: "PROPIETARIO" | "TERCERO";
             bankAccountHolder?: string;
             bankAccountHolderDocument?: string;
             /** @enum {string} */
-            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
         };
         ConfirmarConCodigoDto: {
             /** @example 482913 */
@@ -22085,7 +22978,7 @@ export interface components {
              * @description Plantilla legal del sistema. Con este campo el back arma el documento con datos reales.
              * @enum {string}
              */
-            codigo?: "CONTRATO_VIVIENDA" | "CONTRATO_COMERCIAL" | "ACTA_ENTREGA" | "ACTA_DEVOLUCION" | "INVENTARIO" | "CARTA_INCREMENTO";
+            codigo?: "CONTRATO_VIVIENDA" | "CONTRATO_COMERCIAL" | "ACTA_ENTREGA" | "ACTA_DEVOLUCION" | "INVENTARIO" | "CARTA_INCREMENTO" | "PAZ_Y_SALVO" | "CERTIFICADO_ESTAR_AL_DIA";
             /** @description Contrato del que salen las partes, el canon y el plazo */
             contractId?: string;
             /** @description Mandato/inmueble del que salen el inventario y el propietario */
@@ -22133,7 +23026,7 @@ export interface components {
             /** @example 79123456 */
             arrendatarioDocumento?: string;
             /** @enum {string} */
-            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             arrendatarioEmail?: string;
             arrendatarioTelefono?: string;
             /** @description Arrendador, cuando no sale del propietario del mandato (contrato entre particulares). */
@@ -22183,7 +23076,7 @@ export interface components {
             /** @example 79123456 */
             arrendatarioDocumento?: string;
             /** @enum {string} */
-            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             arrendatarioEmail?: string;
             arrendatarioTelefono?: string;
             /** @description Arrendador, cuando no sale del propietario del mandato (contrato entre particulares). */
@@ -22234,7 +23127,7 @@ export interface components {
             /** @example 79123456 */
             arrendatarioDocumento?: string;
             /** @enum {string} */
-            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            arrendatarioTipoDocumento?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
             arrendatarioEmail?: string;
             arrendatarioTelefono?: string;
             /** @description Arrendador, cuando no sale del propietario del mandato (contrato entre particulares). */
@@ -22406,6 +23299,16 @@ export interface components {
         ObjetarActaDto: {
             /** @description Con qué no está de acuerdo el inquilino */
             texto: string;
+        };
+        ProponerCastigoDto: {
+            /** @description El contrato de cuya cartera se trata. */
+            contractId: string;
+            /** @description Las cuotas que se proponen castigar. El tope de 500 es el mismo criterio que el resto: un lote que nadie puede revisar no es una decisión. */
+            cuotaIds: string[];
+            /** @description Por qué esta cartera es incobrable. Obligatorio: un castigo sin motivo no se defiende ante una revisoría. */
+            motivo: string;
+            /** @description Notas internas. */
+            notas?: string;
         };
         GuardarUsuraDto: {
             /** @example 2026-09 */
@@ -24620,7 +25523,7 @@ export interface operations {
                         /** Format: uuid */
                         memberId?: string;
                         /** @enum {string} */
-                        role?: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER";
+                        role?: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "COORDINADOR" | "AUXILIAR_CARTERA" | "ABOGADO_EXTERNO";
                         permissions?: string | {
                             dashboard?: string[];
                             portafolio?: string[];
@@ -26331,6 +27234,50 @@ export interface operations {
         responses: {
             /** @description Renewal requested */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LeasesController_avisarQueNoRenueva: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoDeNoRenovacionDelInquilinoDto"];
+            };
+        };
+        responses: {
+            /** @description Aviso registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LeasesController_retirarElAviso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aviso retirado */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30101,6 +31048,1185 @@ export interface operations {
             };
         };
     };
+    CicloDeVidaDelContratoController_extender: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtenderContratoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_listarIncrementos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_fijarTasaAnual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TasaAnualPactadaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_digitarIncremento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncrementoDigitadoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_generarCarta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_revisarCarta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisarCartaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_enviarCarta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisarCartaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_registrarConstancia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ConstanciaDeLaCartaDto"];
+                "application/json": components["schemas"]["ConstanciaDeLaCartaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_soporteDeLaConstancia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                desde: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_motivos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_listarVencidos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cuántos hay, cuántos sin renovación abierta, y la lista. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_vistaPrevia: {
+        parameters: {
+            query: {
+                terminadoEn: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_terminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminarContratoDto"];
+            };
+        };
+        responses: {
+            /** @description La fecha, el motivo, el plazo que se había pactado, si el inmueble quedó disponible y qué paga el último mes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CicloDeVidaDelContratoController_registrarCesion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrarCesionDto"];
+            };
+        };
+        responses: {
+            /** @description Quién era el dueño, quién es desde ahora y cuántas cuotas quedaron a su nombre. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_prorrogar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_fijarMeses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesesDeProrrogaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_fijarNoSeProrroga: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoSeProrrogaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_registrarAviso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoDeNoRenovacionDelContratoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProrrogaDelContratoController_retirarAviso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BandejaDeCartasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_leer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_fijarGastos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GastosDeCobranzaDelContratoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_aceptarSeguro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AceptarSeguroOpcionalDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_retirarSeguro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_registrarPoliza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolizaDelContratoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CondicionesDelContratoController_fijarAdministracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdministracionDeLaCopropiedadDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PartesDelContratoController_cambiarParte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambiarParteDto"];
+            };
+        };
+        responses: {
+            /** @description El id de la parte nueva, cuántas cuotas quedaron a su nombre y quién era antes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PartesDelContratoController_partes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PartesDelContratoController_exogena: {
+        parameters: {
+            query: {
+                desde: string;
+                hasta: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_findAll: {
+        parameters: {
+            query?: {
+                status?: string;
+                availability?: string;
+                agenteUserId?: string;
+                search?: string;
+                /** @description Busca el mandato de un inmueble. Existe porque hay pantallas que sólo tienen el id del INMUEBLE (la paleta de comandos, el matching de candidatos) y el panel unificado abre por CONSIGNACIÓN. */
+                propertyId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of consignaciones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateConsignacionDto"];
+            };
+        };
+        responses: {
+            /** @description Consignacion created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consignacion detail with propietario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConsignacionDto"];
+            };
+        };
+        responses: {
+            /** @description Consignacion updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consignacion deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_getActaPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF binary stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_subirContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract stored; signed URL returned */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_historial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { eventos } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_assignAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignAgentToConsignacionDto"];
+            };
+        };
+        responses: {
+            /** @description Agent assigned successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_actualizarInventario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarInventarioDto"];
+            };
+        };
+        responses: {
+            /** @description La consignación con su inventario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_subirFotoDeInventario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubirFotoDeInventarioDto"];
+            };
+        };
+        responses: {
+            /** @description { itemId, photoUrl } */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_getLeaseHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of cobros for this consignacion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsignacionesController_getMaintenanceRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of maintenance requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InmueblesController_findWithoutConsignacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mandate-less properties for the caller agency */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InmuebleSinConsignacionResponseDto"][];
+                };
+            };
+        };
+    };
+    InventarioDelInmuebleController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { disponible, versiones, borrador, ultimoCompleto, vigencia } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventarioDelInmuebleController_guardarBorrador: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuardarBorradorDeInventarioDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventarioDelInmuebleController_subirFoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubirFotoDelBorradorDto"];
+            };
+        };
+        responses: {
+            /** @description { itemId, photoUrl } */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventarioDelInmuebleController_completar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventarioDelInmuebleController_paraIniciar: {
+        parameters: {
+            query: {
+                propertyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InventarioDelInmuebleController_copiaDelContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GarantiaDeServiciosController_leer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GarantiaDeServiciosController_registrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["RegistrarGarantiaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GarantiaDeServiciosController_movimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["MovimientoDeGarantiaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GarantiaDeServiciosController_anular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                movimientoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnularMovimientoDeGarantiaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GarantiaDeServiciosController_soporte: {
+        parameters: {
+            query: {
+                movimientoId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ContractsController_list: {
         parameters: {
             query?: never;
@@ -30583,6 +32709,44 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContractsController_fechaDeCorteDeLaMigracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContractsController_fijarFechaDeCorteDeLaMigracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FijarFechaDeCorteDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31520,18 +33684,16 @@ export interface operations {
             };
         };
     };
-    InventarioDelInmuebleController_listar: {
+    TenantApprovalController_getAprobacion: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description { disponible, versiones, borrador, ultimoCompleto, vigencia } */
+            /** @description La aprobación, o estado `sin_estudio` si no tiene ninguna */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -31540,77 +33702,9 @@ export interface operations {
             };
         };
     };
-    InventarioDelInmuebleController_guardarBorrador: {
+    AutopagoController_tokenizacion: {
         parameters: {
             query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuardarBorradorDeInventarioDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InventarioDelInmuebleController_subirFoto: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubirFotoDelBorradorDto"];
-            };
-        };
-        responses: {
-            /** @description { itemId, photoUrl } */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InventarioDelInmuebleController_completar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InventarioDelInmuebleController_paraIniciar: {
-        parameters: {
-            query: {
-                propertyId: string;
-            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -31625,7 +33719,7 @@ export interface operations {
             };
         };
     };
-    InventarioDelInmuebleController_copiaDelContrato: {
+    AutopagoController_estado: {
         parameters: {
             query?: never;
             header?: never;
@@ -31644,103 +33738,14 @@ export interface operations {
             };
         };
     };
-    GarantiaDeServiciosController_leer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GarantiaDeServiciosController_registrar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["RegistrarGarantiaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GarantiaDeServiciosController_movimiento: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["MovimientoDeGarantiaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GarantiaDeServiciosController_anular: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                movimientoId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnularMovimientoDeGarantiaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GarantiaDeServiciosController_soporte: {
+    AutopagoController_cancelar: {
         parameters: {
             query: {
-                movimientoId: string;
+                motivo: string;
             };
             header?: never;
             path: {
-                id: string;
+                contractId: string;
             };
             cookie?: never;
         };
@@ -31754,7 +33759,289 @@ export interface operations {
             };
         };
     };
-    PartesDelContratoController_cambiarParte: {
+    AutopagoController_pausar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PausarAutopagoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AutopagoController_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivarAutopagoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AutopagoController_cobrarAhora: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_listar: {
+        parameters: {
+            query?: {
+                /** @description Desde esta fecha, inclusive. Formato `YYYY-MM-DD`. */
+                desde?: string;
+                /** @description Hasta esta fecha, inclusive. Formato `YYYY-MM-DD`. */
+                hasta?: string;
+                /** @description Medio exacto (sin importar mayúsculas). */
+                medio?: string;
+                /** @description Coincidencia parcial de la referencia — es como se busca un movimiento del extracto bancario. */
+                referencia?: string;
+                /** @description Por defecto los anulados TAMBIÉN salen: son parte de la auditoría. Poner `false` para ver sólo los vivos. */
+                incluirAnulados?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recibos, del más nuevo al más viejo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearReciboDeCajaDto"];
+            };
+        };
+        responses: {
+            /** @description Recibo emitido y cobro recompuesto */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_crearPorCliente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearReciboPorClienteDto"];
+            };
+        };
+        responses: {
+            /** @description Un recibo por período tocado, con el plan de imputación */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_cartera: {
+        parameters: {
+            query?: {
+                /** @description El día del recibo, `YYYY-MM-DD`: la fecha en la que se recibió. El interés se liquida hasta ese día. Sin fecha, hoy. Cualquier día pasado vale; uno futuro es 400 `FECHA_FUTURA`. */
+                fecha?: string;
+            };
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { cuotas[], total, vencidoCop, futuroCop, interesCop, saldoAFavor, anticipoDisponible, liquidadoAl } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_anticipos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { saldoCop, disponible, movimientos } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_anticipoDelContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { contractId, disponible, saldoCop, recibidoCop, descontadoCop, movimientos[] } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_aplicarAnticipos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { aplicadoCop, saldoAFavor, deudaRestante, recibos } */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_carteraPorCobro: {
+        parameters: {
+            query?: {
+                /** @description El día del recibo, `YYYY-MM-DD`: la fecha en la que se recibió. El interés se liquida hasta ese día. Sin fecha, hoy. Cualquier día pasado vale; uno futuro es 400 `FECHA_FUTURA`. */
+                fecha?: string;
+            };
+            header?: never;
+            path: {
+                cobroId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Períodos con saldo, su inmueble y el total */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_listarPorCobro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cobroId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Histórico completo, anulados incluidos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_obtener: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El recibo con un resumen de su cobro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecibosDeCajaController_anular: {
         parameters: {
             query?: never;
             header?: never;
@@ -31765,11 +34052,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CambiarParteDto"];
+                "application/json": components["schemas"]["AnularReciboDeCajaDto"];
             };
         };
         responses: {
-            /** @description El id de la parte nueva, cuántas cuotas quedaron a su nombre y quién era antes. */
+            /** @description Recibo anulado y cobro recompuesto */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -31778,12 +34065,108 @@ export interface operations {
             };
         };
     };
-    PartesDelContratoController_partes: {
+    RecibosDeCajaController_conciliar: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                cobroId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConciliarSaldoAnteriorDto"];
+            };
+        };
+        responses: {
+            /** @description Recibo de conciliación emitido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InquilinosController_listar: {
+        parameters: {
+            query?: {
+                /** @description Nombre, correo o teléfono */
+                buscar?: string;
+                estado?: "activos" | "terminados" | "todos";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Una fila por persona, con sus arriendos adentro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InquilinosController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInquilinoDto"];
+            };
+        };
+        responses: {
+            /** @description { inquilino, invitado }: la persona como fila de la lista */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya hay alguien en la inmobiliaria con ese documento o correo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InquilinosController_conteos: {
+        parameters: {
+            query?: {
+                /** @description La misma búsqueda de la lista */
+                buscar?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { activos, terminados, todos }. Las partes pueden sumar MÁS que el total: una persona con un contrato vivo y uno terminado está en las dos listas. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InquilinosController_obtener: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
             };
             cookie?: never;
         };
@@ -31797,11 +34180,100 @@ export interface operations {
             };
         };
     };
-    PartesDelContratoController_exogena: {
+    MigracionTercerosController_plantilla: {
         parameters: {
             query: {
-                desde: string;
-                hasta: string;
+                tipo: "PROPIETARIO" | "INQUILINO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definición de la plantilla */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_preparar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepararTercerosDto"];
+            };
+        };
+        responses: {
+            /** @description Conteo por estado del lote recién cargado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_revisar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisarLoteDto"];
+            };
+        };
+        responses: {
+            /** @description { revisadas, ahoraListas } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_descartarLote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DescartarLoteDto"];
+            };
+        };
+        responses: {
+            /** @description { descartadas, aplicadasIntactas } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_listarFilas: {
+        parameters: {
+            query?: {
+                lote?: string;
+                tipo?: "PROPIETARIO" | "INQUILINO";
+                estado?: "BORRADOR" | "REQUIERE_ATENCION" | "LISTO" | "APLICADO" | "DESCARTADO";
+                pagina?: number;
+                porPagina?: number;
             };
             header?: never;
             path?: never;
@@ -31817,7 +34289,28 @@ export interface operations {
             };
         };
     };
-    TenantApprovalController_getAprobacion: {
+    MigracionTercerosController_resolverMasivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolverMasivoTercerosDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_lotesAbiertos: {
         parameters: {
             query?: never;
             header?: never;
@@ -31826,7 +34319,854 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description La aprobación, o estado `sin_estudio` si no tiene ninguna */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_resumen: {
+        parameters: {
+            query: {
+                lote: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_descartarFila: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_corregirFila: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorregirFilaTerceroDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionTercerosController_aplicar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AplicarLoteTercerosDto"];
+            };
+        };
+        responses: {
+            /** @description Qué se creó y qué falló, fila por fila */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionEstadoController_estado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Si bloquea, cómo se resolvió y cada paso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionEstadoController_recordatorio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordatorioDeMigracionDto"];
+            };
+        };
+        responses: {
+            /** @description El estado, con `recordatorioDescartado` ya actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionEstadoController_terminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El estado ya resuelto como completada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Todavía falta algún paso */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MigracionEstadoController_omitir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OmitirMigracionDto"];
+            };
+        };
+        responses: {
+            /** @description El estado ya resuelto como omitida */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InvitacionesController_pendientes: {
+        parameters: {
+            query?: {
+                /** @description Filtra por nombre o correo */
+                buscar?: string;
+                limite?: number;
+                /** @description A quiénes listar. Por defecto, los inquilinos. */
+                quienes?: "INQUILINOS" | "PROPIETARIOS" | "TODOS";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Total y primeras personas pendientes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InvitacionesController_enviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarInvitacionesDto"];
+            };
+        };
+        responses: {
+            /** @description Cuántas salieron y cuántas faltan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_porGenerar: {
+        parameters: {
+            query?: {
+                /** @description Un solo mes, «YYYY-MM». Compatibilidad: se usa como «desde» y como «hasta» cuando esos dos no vienen. */
+                mes?: string;
+                /** @description Desde qué mes mirar, «YYYY-MM». Ausente = el mes en curso. */
+                desde?: string;
+                /** @description Hasta cuándo mirar: «YYYY-MM» o «YYYY-MM-DD». Ausente = el mismo mes de «desde». */
+                hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dos listas —inquilinos y propietarios— con cada prefactura, sus renglones, su total, si ya se emitió y si hoy se puede emitir; más el resumen por mes, el agrupado por contrato («10 facturas de un millón») y las cuotas que no generan factura, con el motivo. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_generar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarFacturasDto"];
+            };
+        };
+        responses: {
+            /** @description Cuántas se emitieron, cuántas ya estaban y el total facturado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_resoluciones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada resolución con su rango, su vigencia, cuántos números usó y si hoy puede numerar; más cuál es la vigente. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_crearResolucion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearResolucionDto"];
+            };
+        };
+        responses: {
+            /** @description La resolución cargada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_anularResolucion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnularResolucionDto"];
+            };
+        };
+        responses: {
+            /** @description La resolución anulada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_emitidas: {
+        parameters: {
+            query: {
+                /** @description Mes de facturación, «YYYY-MM» */
+                mes: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada factura emitida con su número DIAN, su total, su nota crédito si la tienen y si se puede anular. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_emitirNotaCredito: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitirNotaCreditoDto"];
+            };
+        };
+        responses: {
+            /** @description La nota crédito emitida, con su consecutivo propio (NC-12). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_colaDeTransmision: {
+        parameters: {
+            query?: {
+                estado?: "POR_TRANSMITIR" | "TRANSMITIDA" | "ACEPTADA_DIAN" | "RECHAZADA_DIAN" | "SIN_PROVEEDOR";
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada documento con su estado, sus intentos, su CUFE o su motivo de rechazo; el resumen por estado y los avisos de lo que lleva N horas sin transmitirse. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_reintentarTransmision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento, otra vez por transmitir */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_reintentarLosSinProveedor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cuántos volvieron a la cola */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_entregas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada entrega con su canal (correo, WhatsApp, enlace), su constancia, su plazo de aceptación tácita y su acuse. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_registrarAcuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrarAcuseDto"];
+            };
+        };
+        responses: {
+            /** @description La entrega con su acuse */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_certificaciones: {
+        parameters: {
+            query: {
+                propietarioId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada certificación con su propietario, su período y lo facturado, el IVA y las retenciones. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_generarCertificacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propietarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarCertificacionDto"];
+            };
+        };
+        responses: {
+            /** @description La certificación, con su detalle por factura */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_listarNotasDebito: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada nota débito con su concepto, su motivo y su valor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_listarDocumentosSoporte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada documento con su proveedor, sus retenciones y su estado de transmisión. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_emitirDocumentoSoporte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitirDocumentoSoporteDto"];
+            };
+        };
+        responses: {
+            /** @description El documento soporte emitido, con su numeración */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_listarProveedores: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada proveedor con su perfil tributario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_crearProveedor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearProveedorNoObligadoDto"];
+            };
+        };
+        responses: {
+            /** @description El proveedor registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_previsualizarDocumentoSoporte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrevisualizarDocumentoSoporteDto"];
+            };
+        };
+        responses: {
+            /** @description La liquidación, con lo que no se pudo liquidar y qué falta configurar. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_tercerosSinCorreo: {
+        parameters: {
+            query?: {
+                clase?: "INQUILINO" | "PROPIETARIO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El resumen (cuántos tienen correo, cuántos sólo WhatsApp, cuántos nada) y la lista ordenada por cuántos contratos tiene cada uno. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_emitirNotaCreditoParcial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotaCreditoParcialDto"];
+            };
+        };
+        responses: {
+            /** @description La nota crédito parcial emitida */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_emitirNotaDebito: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitirNotaDebitoDto"];
+            };
+        };
+        responses: {
+            /** @description La nota débito emitida */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_zipEnSegundoPlano: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZipEnSegundoPlanoDto"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_zipDeFacturas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El ZIP con un PDF por factura */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_pdfDeLaFactura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El PDF de la factura */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FacturacionController_ver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La factura con sus renglones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AseguradorasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activas primero, por nombre */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AseguradorasController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearAseguradoraDto"];
+            };
+        };
+        responses: {
+            /** @description La aseguradora creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AseguradorasController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarAseguradoraDto"];
+            };
+        };
+        responses: {
+            /** @description La aseguradora actualizada */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -33632,22 +36972,15 @@ export interface operations {
             };
         };
     };
-    InvitacionesController_pendientes: {
+    InformesDelPropietarioController_disponibles: {
         parameters: {
-            query?: {
-                /** @description Filtra por nombre o correo */
-                buscar?: string;
-                limite?: number;
-                /** @description A quiénes listar. Por defecto, los inquilinos. */
-                quienes?: "INQUILINOS" | "PROPIETARIOS" | "TODOS";
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Total y primeras personas pendientes */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -33656,20 +36989,53 @@ export interface operations {
             };
         };
     };
-    InvitacionesController_enviar: {
+    InformesDelPropietarioController_certificadoDeIngresos: {
+        parameters: {
+            query: {
+                anio: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InformesDelPropietarioController_reparaciones: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EnviarInvitacionesDto"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
+    };
+    InformesDelPropietarioController_comprobante: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deduccionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
-            /** @description Cuántas salieron y cuántas faltan */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -34054,309 +37420,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    ConsignacionesController_findAll: {
-        parameters: {
-            query?: {
-                status?: string;
-                availability?: string;
-                agenteUserId?: string;
-                search?: string;
-                /** @description Busca el mandato de un inmueble. Existe porque hay pantallas que sólo tienen el id del INMUEBLE (la paleta de comandos, el matching de candidatos) y el panel unificado abre por CONSIGNACIÓN. */
-                propertyId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of consignaciones */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateConsignacionDto"];
-            };
-        };
-        responses: {
-            /** @description Consignacion created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Consignacion detail with propietario */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateConsignacionDto"];
-            };
-        };
-        responses: {
-            /** @description Consignacion updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_remove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Consignacion deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_getActaPdf: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description PDF binary stream */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_subirContrato: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Contract stored; signed URL returned */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_historial: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description { eventos } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_assignAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignAgentToConsignacionDto"];
-            };
-        };
-        responses: {
-            /** @description Agent assigned successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_actualizarInventario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActualizarInventarioDto"];
-            };
-        };
-        responses: {
-            /** @description La consignación con su inventario */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_subirFotoDeInventario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubirFotoDeInventarioDto"];
-            };
-        };
-        responses: {
-            /** @description { itemId, photoUrl } */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_getLeaseHistory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of cobros for this consignacion */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ConsignacionesController_getMaintenanceRequests: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of maintenance requests */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InmueblesController_findWithoutConsignacion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Mandate-less properties for the caller agency */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InmuebleSinConsignacionResponseDto"][];
-                };
             };
         };
     };
@@ -35383,1812 +38446,6 @@ export interface operations {
             };
         };
     };
-    RecibosDeCajaController_listar: {
-        parameters: {
-            query?: {
-                /** @description Desde esta fecha, inclusive. Formato `YYYY-MM-DD`. */
-                desde?: string;
-                /** @description Hasta esta fecha, inclusive. Formato `YYYY-MM-DD`. */
-                hasta?: string;
-                /** @description Medio exacto (sin importar mayúsculas). */
-                medio?: string;
-                /** @description Coincidencia parcial de la referencia — es como se busca un movimiento del extracto bancario. */
-                referencia?: string;
-                /** @description Por defecto los anulados TAMBIÉN salen: son parte de la auditoría. Poner `false` para ver sólo los vivos. */
-                incluirAnulados?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Recibos, del más nuevo al más viejo */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_crear: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearReciboDeCajaDto"];
-            };
-        };
-        responses: {
-            /** @description Recibo emitido y cobro recompuesto */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_crearPorCliente: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearReciboPorClienteDto"];
-            };
-        };
-        responses: {
-            /** @description Un recibo por período tocado, con el plan de imputación */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_cartera: {
-        parameters: {
-            query?: {
-                /** @description El día del recibo, `YYYY-MM-DD`: la fecha en la que se recibió. El interés se liquida hasta ese día. Sin fecha, hoy. Cualquier día pasado vale; uno futuro es 400 `FECHA_FUTURA`. */
-                fecha?: string;
-            };
-            header?: never;
-            path: {
-                tenantId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description { cuotas[], total, vencidoCop, futuroCop, interesCop, saldoAFavor, anticipoDisponible, liquidadoAl } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_anticipos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tenantId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description { saldoCop, disponible, movimientos } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_anticipoDelContrato: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                contractId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description { contractId, disponible, saldoCop, recibidoCop, descontadoCop, movimientos[] } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_aplicarAnticipos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tenantId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description { aplicadoCop, saldoAFavor, deudaRestante, recibos } */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_carteraPorCobro: {
-        parameters: {
-            query?: {
-                /** @description El día del recibo, `YYYY-MM-DD`: la fecha en la que se recibió. El interés se liquida hasta ese día. Sin fecha, hoy. Cualquier día pasado vale; uno futuro es 400 `FECHA_FUTURA`. */
-                fecha?: string;
-            };
-            header?: never;
-            path: {
-                cobroId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Períodos con saldo, su inmueble y el total */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_listarPorCobro: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                cobroId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Histórico completo, anulados incluidos */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_obtener: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El recibo con un resumen de su cobro */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_anular: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnularReciboDeCajaDto"];
-            };
-        };
-        responses: {
-            /** @description Recibo anulado y cobro recompuesto */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecibosDeCajaController_conciliar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                cobroId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConciliarSaldoAnteriorDto"];
-            };
-        };
-        responses: {
-            /** @description Recibo de conciliación emitido */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InquilinosController_listar: {
-        parameters: {
-            query?: {
-                /** @description Nombre, correo o teléfono */
-                buscar?: string;
-                estado?: "activos" | "terminados" | "todos";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Una fila por persona, con sus arriendos adentro */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InquilinosController_crear: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateInquilinoDto"];
-            };
-        };
-        responses: {
-            /** @description { inquilino, invitado }: la persona como fila de la lista */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Ya hay alguien en la inmobiliaria con ese documento o correo */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    InquilinosController_obtener: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tenantId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_plantilla: {
-        parameters: {
-            query: {
-                tipo: "PROPIETARIO" | "INQUILINO";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Definición de la plantilla */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_preparar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PrepararTercerosDto"];
-            };
-        };
-        responses: {
-            /** @description Conteo por estado del lote recién cargado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_revisar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RevisarLoteDto"];
-            };
-        };
-        responses: {
-            /** @description { revisadas, ahoraListas } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_descartarLote: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DescartarLoteDto"];
-            };
-        };
-        responses: {
-            /** @description { descartadas, aplicadasIntactas } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_listarFilas: {
-        parameters: {
-            query?: {
-                lote?: string;
-                tipo?: "PROPIETARIO" | "INQUILINO";
-                estado?: "BORRADOR" | "REQUIERE_ATENCION" | "LISTO" | "APLICADO" | "DESCARTADO";
-                pagina?: number;
-                porPagina?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_resolverMasivo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolverMasivoTercerosDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_lotesAbiertos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_resumen: {
-        parameters: {
-            query: {
-                lote: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_descartarFila: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_corregirFila: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CorregirFilaTerceroDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionTercerosController_aplicar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AplicarLoteTercerosDto"];
-            };
-        };
-        responses: {
-            /** @description Qué se creó y qué falló, fila por fila */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionEstadoController_estado: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Si bloquea, cómo se resolvió y cada paso */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionEstadoController_recordatorio: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecordatorioDeMigracionDto"];
-            };
-        };
-        responses: {
-            /** @description El estado, con `recordatorioDescartado` ya actualizado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionEstadoController_terminar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El estado ya resuelto como completada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Todavía falta algún paso */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MigracionEstadoController_omitir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OmitirMigracionDto"];
-            };
-        };
-        responses: {
-            /** @description El estado ya resuelto como omitida */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_porGenerar: {
-        parameters: {
-            query?: {
-                /** @description Un solo mes, «YYYY-MM». Compatibilidad: se usa como «desde» y como «hasta» cuando esos dos no vienen. */
-                mes?: string;
-                /** @description Desde qué mes mirar, «YYYY-MM». Ausente = el mes en curso. */
-                desde?: string;
-                /** @description Hasta cuándo mirar: «YYYY-MM» o «YYYY-MM-DD». Ausente = el mismo mes de «desde». */
-                hasta?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Dos listas —inquilinos y propietarios— con cada prefactura, sus renglones, su total, si ya se emitió y si hoy se puede emitir; más el resumen por mes, el agrupado por contrato («10 facturas de un millón») y las cuotas que no generan factura, con el motivo. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_generar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerarFacturasDto"];
-            };
-        };
-        responses: {
-            /** @description Cuántas se emitieron, cuántas ya estaban y el total facturado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_resoluciones: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada resolución con su rango, su vigencia, cuántos números usó y si hoy puede numerar; más cuál es la vigente. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_crearResolucion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearResolucionDto"];
-            };
-        };
-        responses: {
-            /** @description La resolución cargada */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_anularResolucion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnularResolucionDto"];
-            };
-        };
-        responses: {
-            /** @description La resolución anulada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_emitidas: {
-        parameters: {
-            query: {
-                /** @description Mes de facturación, «YYYY-MM» */
-                mes: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada factura emitida con su número DIAN, su total, su nota crédito si la tienen y si se puede anular. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_emitirNotaCredito: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmitirNotaCreditoDto"];
-            };
-        };
-        responses: {
-            /** @description La nota crédito emitida, con su consecutivo propio (NC-12). */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_colaDeTransmision: {
-        parameters: {
-            query?: {
-                estado?: "POR_TRANSMITIR" | "TRANSMITIDA" | "ACEPTADA_DIAN" | "RECHAZADA_DIAN" | "SIN_PROVEEDOR";
-                limite?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada documento con su estado, sus intentos, su CUFE o su motivo de rechazo; el resumen por estado y los avisos de lo que lleva N horas sin transmitirse. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_reintentarTransmision: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El documento, otra vez por transmitir */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_reintentarLosSinProveedor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cuántos volvieron a la cola */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_entregas: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada entrega con su canal (correo, WhatsApp, enlace), su constancia, su plazo de aceptación tácita y su acuse. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_registrarAcuse: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegistrarAcuseDto"];
-            };
-        };
-        responses: {
-            /** @description La entrega con su acuse */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_certificaciones: {
-        parameters: {
-            query: {
-                propietarioId: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada certificación con su propietario, su período y lo facturado, el IVA y las retenciones. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_generarCertificacion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                propietarioId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerarCertificacionDto"];
-            };
-        };
-        responses: {
-            /** @description La certificación, con su detalle por factura */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_listarNotasDebito: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada nota débito con su concepto, su motivo y su valor. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_listarDocumentosSoporte: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada documento con su proveedor, sus retenciones y su estado de transmisión. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_emitirDocumentoSoporte: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmitirDocumentoSoporteDto"];
-            };
-        };
-        responses: {
-            /** @description El documento soporte emitido, con su numeración */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_listarProveedores: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada proveedor con su perfil tributario */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_crearProveedor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearProveedorNoObligadoDto"];
-            };
-        };
-        responses: {
-            /** @description El proveedor registrado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_previsualizarDocumentoSoporte: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PrevisualizarDocumentoSoporteDto"];
-            };
-        };
-        responses: {
-            /** @description La liquidación, con lo que no se pudo liquidar y qué falta configurar. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_tercerosSinCorreo: {
-        parameters: {
-            query?: {
-                clase?: "INQUILINO" | "PROPIETARIO";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El resumen (cuántos tienen correo, cuántos sólo WhatsApp, cuántos nada) y la lista ordenada por cuántos contratos tiene cada uno. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_emitirNotaCreditoParcial: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotaCreditoParcialDto"];
-            };
-        };
-        responses: {
-            /** @description La nota crédito parcial emitida */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_emitirNotaDebito: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmitirNotaDebitoDto"];
-            };
-        };
-        responses: {
-            /** @description La nota débito emitida */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FacturacionController_ver: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description La factura con sus renglones */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AseguradorasController_listar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Activas primero, por nombre */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AseguradorasController_crear: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearAseguradoraDto"];
-            };
-        };
-        responses: {
-            /** @description La aseguradora creada */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AseguradorasController_actualizar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActualizarAseguradoraDto"];
-            };
-        };
-        responses: {
-            /** @description La aseguradora actualizada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_extender: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExtenderContratoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_listarIncrementos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_fijarTasaAnual: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TasaAnualPactadaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_digitarIncremento: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IncrementoDigitadoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_generarCarta: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_revisarCarta: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RevisarCartaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_enviarCarta: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RevisarCartaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_registrarConstancia: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["ConstanciaDeLaCartaDto"];
-                "application/json": components["schemas"]["ConstanciaDeLaCartaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_soporteDeLaConstancia: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                desde: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_motivos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_listarVencidos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cuántos hay, cuántos sin renovación abierta, y la lista. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_vistaPrevia: {
-        parameters: {
-            query: {
-                terminadoEn: string;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_terminar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TerminarContratoDto"];
-            };
-        };
-        responses: {
-            /** @description La fecha, el motivo, el plazo que se había pactado, si el inmueble quedó disponible y qué paga el último mes. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CicloDeVidaDelContratoController_registrarCesion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegistrarCesionDto"];
-            };
-        };
-        responses: {
-            /** @description Quién era el dueño, quién es desde ahora y cuántas cuotas quedaron a su nombre. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_plan: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_prorrogar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_fijarMeses: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MesesDeProrrogaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_fijarNoSeProrroga: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NoSeProrrogaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_registrarAviso: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AvisoDeNoRenovacionDelContratoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ProrrogaDelContratoController_retirarAviso: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    BandejaDeCartasController_listar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_leer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_fijarGastos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GastosDeCobranzaDelContratoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_aceptarSeguro: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AceptarSeguroOpcionalDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_retirarSeguro: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_registrarPoliza: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolizaDelContratoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CondicionesDelContratoController_fijarAdministracion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdministracionDeLaCopropiedadDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     MediosDePagoController_listar: {
         parameters: {
             query?: never;
@@ -37331,7 +38588,7 @@ export interface operations {
         parameters: {
             query?: {
                 month?: string;
-                estado?: "BORRADOR" | "ESPERANDO_APROBACION" | "APROBADO" | "ARCHIVO_GENERADO" | "PAGADO" | "ANULADO";
+                estado?: "BORRADOR" | "ESPERANDO_APROBACION" | "APROBADO" | "ARCHIVO_GENERADO" | "PAGADO" | "ANULADO" | "EN_WOMPI";
             };
             header?: never;
             path?: never;
@@ -37363,6 +38620,24 @@ export interface operations {
         responses: {
             /** @description Lote en BORRADOR, con los excluidos y su motivo */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LotesDeDispersionController_bancos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bancos con su formato o el motivo, cuentas de la inmobiliaria y la última elección */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -37570,6 +38845,49 @@ export interface operations {
             };
         };
     };
+    DispersionesController_preview: {
+        parameters: {
+            query: {
+                month: string;
+                base?: "RECAUDADO" | "CAUSADO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-owner draft, nothing persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_previewDeLaSeleccion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewDispersionDto"];
+            };
+        };
+        responses: {
+            /** @description Per-owner draft of the selection, nothing persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     DispersionesController_disponible: {
         parameters: {
             query?: never;
@@ -37588,19 +38906,16 @@ export interface operations {
             };
         };
     };
-    DispersionesController_preview: {
+    DispersionesController_origenDelGiro: {
         parameters: {
-            query: {
-                month: string;
-                base?: "RECAUDADO" | "CAUSADO";
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Per-owner draft, nothing persisted */
+            /** @description Bancos, cuentas registradas y la última usada */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -37633,6 +38948,7 @@ export interface operations {
         parameters: {
             query?: {
                 month?: string;
+                /** @description pending | processing | completed | failed (o el nombre del enum). Otro valor = 400. */
                 status?: string;
                 propietarioId?: string;
             };
@@ -37727,6 +39043,278 @@ export interface operations {
         };
         responses: {
             /** @description Dispersion processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_verConexion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ambiente, estado, cuentas origen y URL del webhook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_guardarConexion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuardarConexionWompiDto"];
+            };
+        };
+        responses: {
+            /** @description La conexión, ya probada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_probar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La conexión con las cuentas origen y el saldo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_verLote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conexión, si se puede enviar y el último envío */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_enviar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarLoteAWompiDto"];
+            };
+        };
+        responses: {
+            /** @description El lote en Wompi, esperando al Aprobador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WompiPagosController_consultar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El lote en Wompi, conciliado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_listar: {
+        parameters: {
+            query?: {
+                /** @description `ACTIVOS` = en cola o corriendo */
+                estado?: "EN_COLA" | "CORRIENDO" | "TERMINADO" | "FALLO" | "CANCELADO" | "ACTIVOS";
+                tipo?: "REPROCESAR_ASIENTOS" | "ARCHIVO_DEL_LOTE" | "EMISION_DE_FACTURAS" | "MIGRACION_CONTRATOS" | "MIGRACION_INMUEBLES" | "EXPORTACION" | "ENVIO_A_WOMPI";
+                /** @description `todos` sólo para administrador y contador */
+                alcance?: "mios" | "todos";
+                /** @description Los procesos que lanzó esta persona */
+                usuarioId?: string;
+                recursoTipo?: string;
+                recursoId?: string;
+                limite?: number;
+                /** @description Los creados antes de esta fecha (ISO) */
+                antesDe?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista, cuántos siguen activos y `disponible: false` si falta la migración */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_ver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_descarga: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CopropiedadesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin la migración, una lista vacía. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CopropiedadesController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearCopropiedadDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CopropiedadesController_asignar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consignacionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsignarCopropiedadDto"];
+            };
+        };
+        responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -38155,6 +39743,28 @@ export interface operations {
         responses: {
             /** @description El original y la reversa */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportesContablesController_exportarLibro: {
+        parameters: {
+            query?: {
+                /** @description Desde (inclusive). Sin esto, arranca en el primer asiento. */
+                desde?: string;
+                /** @description Hasta (inclusive). Sin esto, llega hasta el último asiento. */
+                hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38971,6 +40581,48 @@ export interface operations {
             };
         };
     };
+    GastosController_cambiosDelEgreso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GastosController_cambiarEgreso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambiarEgresoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GastosController_comprobante: {
         parameters: {
             query?: never;
@@ -39058,7 +40710,7 @@ export interface operations {
     GastosController_archivoDelLote: {
         parameters: {
             query?: {
-                formato?: "BANCOLOMBIA_PAB" | "BANCOLOMBIA_SAP" | "ONEPAY";
+                formato?: "BANCOLOMBIA_PAB" | "BANCOLOMBIA_SAP" | "ONEPAY" | "BANCO_DE_BOGOTA" | "BANCO_AGRARIO" | "BANCO_AV_VILLAS" | "BANCO_CAJA_SOCIAL" | "PLANILLA_MANUAL" | "BANCOOMEVA" | "BANCO_DAVIVIENDA" | "BANCO_DAVIBANK" | "BANCO_BBVA" | "BANCO_DE_OCCIDENTE" | "PLANILLA_FINANDINA" | "PLANILLA_BANCAMIA";
             };
             header?: never;
             path: {
@@ -40471,6 +42123,78 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MovimientosController_listar: {
+        parameters: {
+            query?: {
+                /** @description Quién (id del usuario) */
+                usuario?: string;
+                /** @description El rol que tenía al actuar (ADMIN, CONTADOR, …) */
+                rol?: string;
+                /** @description Módulo (lotes-de-dispersion, contabilidad, …) */
+                modulo?: string;
+                /** @description Tipo de recurso (lote, dispersion, egreso, …) */
+                recursoTipo?: string;
+                recursoId?: string;
+                /** @description Desde (YYYY-MM-DD, día de Bogotá, inclusive) */
+                desde?: string;
+                /** @description Hasta (YYYY-MM-DD, día de Bogotá, inclusive) */
+                hasta?: string;
+                resultado?: "exito" | "negado" | "error";
+                pagina?: number;
+                porPagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de movimientos, del más nuevo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MovimientosController_opciones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MovimientosController_delRecurso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -42536,7 +44260,7 @@ export interface operations {
     DocumentosController_preparar: {
         parameters: {
             query: {
-                codigo: "CONTRATO_VIVIENDA" | "CONTRATO_COMERCIAL" | "ACTA_ENTREGA" | "ACTA_DEVOLUCION" | "INVENTARIO" | "CARTA_INCREMENTO";
+                codigo: "CONTRATO_VIVIENDA" | "CONTRATO_COMERCIAL" | "ACTA_ENTREGA" | "ACTA_DEVOLUCION" | "INVENTARIO" | "CARTA_INCREMENTO" | "PAZ_Y_SALVO" | "CERTIFICADO_ESTAR_AL_DIA";
                 contractId?: string;
                 consignacionId?: string;
                 /** @description Día en que empieza a regir el reajuste, YYYY-MM-DD. Decide qué IPC es el tope. */
@@ -42599,6 +44323,24 @@ export interface operations {
             };
         };
     };
+    DocumentosController_variablesDePlantilla: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catálogo de variables */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     DocumentosController_getTemplate: {
         parameters: {
             query?: never;
@@ -42652,6 +44394,26 @@ export interface operations {
         responses: {
             /** @description Template deleted */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DocumentosController_duplicarTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia creada */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42758,6 +44520,259 @@ export interface operations {
         };
         responses: {
             /** @description Signature added to document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CertificadosDelPortalController_mios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CertificadosDelPortalController_emitir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CertificadosDelPortalController_pdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_inquilino: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description El id de usuario del inquilino, o su número de documento */
+                tenantRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cabecera de la inmobiliaria, una sección por contrato (Arriendos y Otros Conceptos) y los totales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_propietario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propietarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las mismas secciones del inquilino más las columnas de comisión (comisión, su IVA y lo que el propietario le retiene a la inmobiliaria). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_compartir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: "inquilino" | "propietario";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_enlaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_revocar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enlaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_porCorreo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_porWhatsapp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_resumen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaPublicoController_porToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PortalEstadoDeCuentaController_mio: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -43331,47 +45346,6 @@ export interface operations {
             };
         };
     };
-    RecaudoController_resumen: {
-        parameters: {
-            query?: {
-                month?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Las cifras del mes, cada una con su definición en el service. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RecaudoController_serie: {
-        parameters: {
-            query?: {
-                meses?: string;
-                hasta?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Un punto por mes, en orden cronológico. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     CarteraController_inquilinos: {
         parameters: {
             query?: never;
@@ -43420,6 +45394,191 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Cada propietario con sus meses (neto, girado, pendiente y el estado de la dispersión) y los totales por mes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_listar: {
+        parameters: {
+            query: {
+                contractId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin la migración responde con la lista vacía y el motivo, no con un error: la pantalla abre igual y dice por qué está vacía. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_proponer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProponerCastigoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_candidatas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_uno: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_firmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_rechazar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotivoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_reversar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotivoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecaudoController_resumen: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las cifras del mes, cada una con su definición en el service. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RecaudoController_serie: {
+        parameters: {
+            query?: {
+                meses?: string;
+                hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Un punto por mes, en orden cronológico. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -45358,204 +47517,6 @@ export interface operations {
             };
         };
     };
-    EstadoDeCuentaController_inquilino: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description El id de usuario del inquilino, o su número de documento */
-                tenantRef: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cabecera de la inmobiliaria, una sección por contrato (Arriendos y Otros Conceptos) y los totales. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_propietario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                propietarioId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Las mismas secciones del inquilino más las columnas de comisión (comisión, su IVA y lo que el propietario le retiene a la inmobiliaria). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_compartir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: "inquilino" | "propietario";
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_enlaces: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_revocar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enlaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_porCorreo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_porWhatsapp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_resumen: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaPublicoController_porToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PortalEstadoDeCuentaController_mio: {
-        parameters: {
-            query: {
-                agencyId: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     AnalyticsController_getKpis: {
         parameters: {
             query?: never;
@@ -46311,6 +48272,26 @@ export interface operations {
             };
             /** @description Email delivery failed or service not configured */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VerificacionPublicaController_verificar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Siempre 200, también cuando no existe: un 404 en una página pública de verificación se lee como «se cayó», no como «ese código no es nuestro». */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

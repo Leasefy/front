@@ -24,6 +24,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,7 +121,7 @@ export function ParametrosDeNominaPanel({ anio }: { anio?: number }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Label htmlFor="anio-de-nomina" className="text-xs text-fg-muted">
+        <Label htmlFor="anio-de-nomina" className="text-caption text-fg-muted">
           Año
         </Label>
         <Input
@@ -281,7 +282,7 @@ function Formulario({
           está bien. Guardar de nuevo NO reconfirma.
         */}
         <div
-          className="rounded-lg border border-border bg-surface p-4 text-xs leading-relaxed text-fg-muted"
+          className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
           data-testid="quien-y-cuando"
         >
           {cargado ? (
@@ -347,7 +348,7 @@ function Formulario({
                 }
                 data-testid={`campo-${clave}`}
               />
-              <p className="text-xs text-fg-muted" data-testid={`ref-${clave}`}>
+              <p className="text-caption text-fg-muted" data-testid={`ref-${clave}`}>
                 {referencia != null
                   ? `En ${referencia.anio} fue ${
                       ref != null ? formatCurrency(ref) : SIN_MEDIR
@@ -385,7 +386,7 @@ function Formulario({
                   }
                   data-testid={`campo-${c.campo}`}
                 />
-                <p className="text-xs text-fg-muted">
+                <p className="text-caption text-fg-muted">
                   {c.unidad === 'bps'
                     ? `${((entero(c.campo) ?? 0) / 100).toFixed(2)} %`
                     : c.unidad}
@@ -409,19 +410,12 @@ function Formulario({
           explicacion="Exonera de salud del empleador, SENA e ICBF por los empleados que devengan menos de 10 salarios mínimos, pero sólo para ciertos contribuyentes. Viene APAGADA: prenderla sin confirmarlo calcularía aportes de menos, y pagar de menos a la seguridad social se corrige con intereses."
         />
         <div className="flex items-center gap-3">
-          <input
-            id="exoneracion1141"
-            type="checkbox"
-            className="h-4 w-4"
-            checked={valores.exoneracion1141 === 'si'}
-            onChange={(e) =>
+          <Checkbox id="exoneracion1141" checked={valores.exoneracion1141 === 'si'} onCheckedChange={(marcada: boolean) =>
               setValores((v) => ({
                 ...v,
-                exoneracion1141: e.target.checked ? 'si' : 'no',
+                exoneracion1141: marcada ? 'si' : 'no',
               }))
-            }
-            data-testid="campo-exoneracion1141"
-          />
+            } data-testid="campo-exoneracion1141" />
           <Label htmlFor="exoneracion1141">
             Mi contador confirmó que esta inmobiliaria está exonerada
           </Label>
@@ -460,7 +454,7 @@ function Formulario({
             Deshacer los cambios
           </Button>
         </div>
-        <p className="text-xs text-fg-muted">
+        <p className="text-caption text-fg-muted">
           Guardar deja tu nombre y la fecha en «Cargadas»; confirmar es un acto
           aparte, y corregir una cifra lo borra — si cambia el número, el contador
           tiene que volver a mirarlo.

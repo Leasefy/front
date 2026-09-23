@@ -53,6 +53,7 @@ const CUENTA: Cuenta = {
       fecha: '2026-09-05',
       mesDesde: '2026-10',
       tieneSoporte: false,
+      dias: 16,
       estado: 'VIGENTE',
     },
     {
@@ -64,6 +65,7 @@ const CUENTA: Cuenta = {
       fecha: '2026-09-20',
       mesDesde: '2026-09',
       tieneSoporte: true,
+      dias: 1,
       estado: 'ANULADA',
     },
   ],

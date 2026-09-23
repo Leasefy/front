@@ -202,17 +202,23 @@ export function ActaEntregaView({
                 <Printer className="w-4 h-4" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              hideArrow
-              onClick={onDownload}
-              className="h-8 w-8 text-fg-muted opacity-50 cursor-not-allowed"
-              disabled
-              title={t('inmobiliaria.acta.comingSoon')}
-            >
-              <DownloadSimple className="w-4 h-4" />
-            </Button>
+            {/* 🔴 Hasta el 21-09-2026 había acá un icono de DESCARGA
+                deshabilitado, con el título «Próximamente», al lado de un
+                «Imprimir» que sí funciona —y sin que nadie pasara `onDownload`,
+                así que ni siquiera tenía a dónde ir. Dos botones para lo mismo,
+                uno de ellos muerto. Se pinta sólo si alguien manda el handler. */}
+            {onDownload && (
+              <Button
+                variant="ghost"
+                size="icon"
+                hideArrow
+                onClick={onDownload}
+                className="h-8 w-8 text-fg-muted"
+                title={t('inmobiliaria.acta.downloadPdf')}
+              >
+                <DownloadSimple className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
         <p className="text-sm text-fg-muted">

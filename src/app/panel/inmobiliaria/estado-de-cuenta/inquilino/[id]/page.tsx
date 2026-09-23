@@ -9,6 +9,7 @@
  * no se comparte, y compartirlo es medio pedido del CEO.
  */
 
+import * as React from 'react';
 import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -19,6 +20,8 @@ import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/Pantall
 import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { ProveedorDeAnularRecibo } from '@/components/estado-de-cuenta/AnularReciboDeLaFila';
 
 const LISTA = '/panel/inmobiliaria/inquilinos';
 
@@ -26,36 +29,47 @@ function Contenido() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const volver = rutaDeRegreso(searchParams.get('volver'), LISTA);
+  // Desde la ficha de un contrato llega `?contrato=<número>`: abre sólo ese.
+  const contrato = searchParams.get('contrato') ?? '';
+  const filtrosIniciales = React.useMemo(() => ({ contrato }), [contrato]);
+  // Anular un recibo desde su fila: sólo un administrador (regla del CEO).
+  // Al anular se vuelve a montar la pantalla, que relee el documento.
+  const { isAdmin } = usePermissions();
+  const [version, setVersion] = React.useState(0);
 
   return (
-    <PantallaDelEstadoDeCuenta
-      /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
-         el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
-         quien abre el enlace compartido. */
-      cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
-      volverA={{ href: volver }}
-      /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
-         a configurar las reglas. El portal y el enlace no lo pasan. */
-      reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}
-      /* El anticipo del contrato (lo que se descuenta mes a mes) sólo se
-         lee desde el panel. */
-      conAnticipoDelContrato
-      acciones={(doc, nota, filtros) => (
-        <CompartirEstadoDeCuenta
-          doc={doc}
-          hoy={doc.fecha}
-          tipo="inquilino"
-          id={id}
-          /* El `tenantRef` del inquilino ES su `User.id` cuando tiene cuenta
-             del portal, que es justo lo que necesita el hilo del chat. Cuando
-             no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
-          personaId={id}
-          nota={nota}
-          /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
-          filtros={filtros}
-        />
-      )}
-    />
+    <ProveedorDeAnularRecibo habilitado={isAdmin} onAnulado={() => setVersion((v) => v + 1)}>
+      <PantallaDelEstadoDeCuenta
+        key={version}
+        /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
+           el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
+           quien abre el enlace compartido. */
+        cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
+        volverA={{ href: volver }}
+        /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
+           a configurar las reglas. El portal y el enlace no lo pasan. */
+        reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}
+        /* El anticipo del contrato (lo que se descuenta mes a mes) sólo se
+           lee desde el panel. */
+        conAnticipoDelContrato
+        filtrosIniciales={filtrosIniciales}
+        acciones={(doc, nota, filtros) => (
+          <CompartirEstadoDeCuenta
+            doc={doc}
+            hoy={doc.fecha}
+            tipo="inquilino"
+            id={id}
+            /* El `tenantRef` del inquilino ES su `User.id` cuando tiene cuenta
+               del portal, que es justo lo que necesita el hilo del chat. Cuando
+               no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
+            personaId={id}
+            nota={nota}
+            /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
+            filtros={filtros}
+          />
+        )}
+      />
+    </ProveedorDeAnularRecibo>
   );
 }
 

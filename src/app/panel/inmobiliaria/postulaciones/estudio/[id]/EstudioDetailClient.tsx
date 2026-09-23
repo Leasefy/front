@@ -126,7 +126,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
   // ── 404 — run inexistente o ajeno ────────────────────────────────────────
   if (notAvailable) {
     return (
-      <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-4 lg:p-8">
         <EmptyState
           icon={FileMagnifyingGlass}
           title={tf(`${NS}.detalle.noDisponibleTitulo`, 'Estudio no disponible')}
@@ -139,14 +139,14 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
             href: '/panel/inmobiliaria/postulaciones/estudio/estudios',
           }}
         />
-      </main>
+      </div>
     )
   }
 
   const inProgress = status === 'pending' || status === 'processing'
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
+    <div className="p-4 lg:p-8 pb-8">
       {/* Header */}
       <header className="mb-5">
         <VolverALaLista
@@ -247,6 +247,6 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
           <EstudioRecommendationRail decision={decision} runId={runId} onAction={onAction} />
         </div>
       </div>
-    </main>
+    </div>
   )
 }

@@ -17,8 +17,57 @@ import type { FacturaDelMes, FacturasPorGenerar } from '@/lib/api/facturacion-po
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+/*
+ * El Select de Radix no abre en happy-dom: un doble con el mismo contrato, que
+ * conserva el `data-testid` del trigger para que las pruebas de estructura
+ * («el selector vive dentro de la tarjeta de la tabla») sigan valiendo.
+ *
+ * Hizo falta el 21-09, cuando «Ver hasta» dejó de ser un `<input type="month">`
+ * —que pintaba «September 2026» en una pantalla en español— y pasó a ser un
+ * Select del design system.
+ */
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react');
+  const Ctx = R.createContext<(v: string) => void>(() => undefined);
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string;
+      onValueChange: (v: string) => void;
+      children?: React.ReactNode;
+    }) =>
+      R.createElement(
+        Ctx.Provider,
+        { value: onValueChange },
+        R.createElement('div', { 'data-select': value }, children),
+      ),
+    SelectTrigger: ({
+      children,
+      ...resto
+    }: { children?: React.ReactNode } & Record<string, unknown>) =>
+      R.createElement('div', resto, children),
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) =>
+      R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx);
+      return R.createElement(
+        'button',
+        { type: 'button', 'data-opcion': value, onClick: () => elegir(value) },
+        children,
+      );
+    },
+  };
+});
+
 const porGenerarMock = vi.fn();
 const generarMock = vi.fn();
+const pdfMock = vi.fn();
+const zipMock = vi.fn();
+const descargarBlobMock = vi.fn();
 const toastOk = vi.fn();
 const toastErr = vi.fn();
 
@@ -31,9 +80,15 @@ vi.mock('@/lib/api/facturacion-por-mes.service', async () => {
     facturacionPorMesService: {
       porGenerar: (...a: unknown[]) => porGenerarMock(...a),
       generar: (...a: unknown[]) => generarMock(...a),
+      pdfDeLaFactura: (...a: unknown[]) => pdfMock(...a),
+      zipDeFacturas: (...a: unknown[]) => zipMock(...a),
     },
   };
 });
+
+vi.mock('@/lib/reportes/exportables', () => ({
+  descargarBlob: (...a: unknown[]) => descargarBlobMock(...a),
+}));
 
 vi.mock('@/components/ui/toast', () => ({
   toast: {
@@ -43,6 +98,7 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { NuevaFactura } from './NuevaFactura';
+import { alEventoDelCentro, type EventoDelCentro } from '@/lib/api/procesos.service';
 
 function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {
@@ -217,6 +273,9 @@ async function clic(sel: string) {
 beforeEach(() => {
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
+  pdfMock.mockReset().mockResolvedValue(new Blob(['%PDF']));
+  zipMock.mockReset().mockResolvedValue(new Blob(['PK']));
+  descargarBlobMock.mockReset();
   irAResolucion.mockReset();
   toastOk.mockReset();
   toastErr.mockReset();
@@ -551,9 +610,18 @@ describe('NuevaFactura', () => {
 
   it('🔴 dice que un escenario sin confirmar se factura SIN impuestos', async () => {
     await montar();
-    expect(host.textContent).toContain('se factura SIN impuestos');
+    // La explicación vive detrás de «Cómo se factura» (no sobre la tabla):
+    // se abre y se lee en el diálogo, que se monta en el body.
+    const boton = Array.from(host.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Cómo se factura'),
+    );
+    expect(boton).toBeTruthy();
+    await act(async () => {
+      boton!.click();
+    });
+    expect(document.body.textContent).toContain('se factura SIN impuestos');
     // Y que numerar no es transmitir: la factura electrónica no está.
-    expect(host.textContent).toContain('todavía no se transmite');
+    expect(document.body.textContent).toContain('todavía no se transmite');
   });
 
   /**
@@ -818,11 +886,12 @@ describe('NuevaFactura', () => {
 
       expect(generarMock).toHaveBeenCalledTimes(3);
       expect(generarMock.mock.calls.map((c) => (c[1] as string[]).length)).toEqual([200, 200, 50]);
-      const informe = q('[data-testid="facturacion-informe"]')!;
-      expect(informe.getAttribute('data-corte')).toBe('completa');
-      expect(informe.textContent).toContain('Se emitieron 450 facturas');
-      // Sin pendientes no hay nada que reintentar: no se lo pide.
-      expect(q('[data-testid="facturacion-informe-que-hacer"]')).toBeNull();
+      // 🔴 22-09: el resultado entero va al CENTRO DE PROCESOS, no a la página
+      // (Nico: «no creo que sea el lugar para mostrar eso ya cargado»). Sin
+      // pendientes no queda nada en la página: un toast con «Ver en el centro».
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+      expect(String(toastOk.mock.calls[0]?.[0])).toContain('450 facturas emitidas');
+      expect(toastOk.mock.calls[0]?.[1]).toMatchObject({ action: { label: 'Ver en el centro' } });
     });
 
     it('🔴 F3: dice en qué va y «Detener» corta al cerrar la tanda en curso', async () => {
@@ -838,10 +907,13 @@ describe('NuevaFactura', () => {
       await apretarGenerar();
 
       expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitiendo 0 de 450');
-      expect(q('[data-testid="facturacion-progreso"]')).not.toBeNull();
+      // La corrida se pinta con la MISMA fila del centro de procesos.
+      const enCurso = q('[data-testid="facturacion-en-curso"]')!;
+      expect(enCurso.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull();
+      expect(enCurso.querySelector('[data-testid="avance-del-proceso"]')!.textContent).toBe('0 de 450');
 
       await act(async () => {
-        (q('[data-testid="facturacion-detener"]') as HTMLButtonElement).click();
+        (enCurso.querySelector('[data-testid="cancelar-proceso"]') as HTMLButtonElement).click();
       });
       await act(async () => {
         soltar();
@@ -882,8 +954,8 @@ describe('NuevaFactura', () => {
       expect(porGenerarMock).toHaveBeenCalledTimes(2);
     });
 
-    it('el informe se cierra', async () => {
-      generarMock.mockImplementation(sale);
+    it('el informe (sólo cuando algo no salió) se cierra', async () => {
+      generarMock.mockImplementationOnce(sale).mockRejectedValueOnce(new Error('504 Gateway Timeout'));
       await montar();
       await apretarGenerar();
       await soltarTareas();
@@ -966,13 +1038,32 @@ describe('NuevaFactura', () => {
       expect(q('[data-testid="prefacturas-del-rango"]')).toBeNull();
     });
 
-    it('«Hasta diciembre» estira la consulta hasta el 31 de diciembre', async () => {
+    /*
+     * 🔴 ACTUALIZADA EL 21-09: «Hasta diciembre» era un BOTÓN al lado de un
+     * `<input type="month">`. Nico: «no estás usando los componentes de
+     * cadence, eso de hasta diciembre no se entiende como un filtro». Un botón
+     * se lee como una acción; diciembre siempre fue una opción del mismo
+     * filtro, y ahora es eso.
+     *
+     * Lo que la prueba cuida NO cambió: que se pueda estirar el rango hasta
+     * diciembre y que `desde` siga siendo el mes elegido — un rango al revés lo
+     * rechaza el back con un 400.
+     */
+    it('el tope se puede estirar hasta diciembre, y el mes de inicio no se mueve', async () => {
       await montar();
+      /* Acotado al select de «Ver hasta»: el de «Mes de facturación» también
+         tiene diciembres (los meses pasados), y buscar en toda la pantalla
+         tocaba el control equivocado — la prueba pasaba por la razón errada. */
+      const elDeVerHasta = q('[data-testid="facturacion-hasta"]')!.closest('[data-select]')!;
+      const diciembre = Array.from(
+        elDeVerHasta.querySelectorAll('[data-opcion]'),
+      ).find((b) => /^\d{4}-12$/.test(b.getAttribute('data-opcion') ?? ''));
+      expect(diciembre, 'diciembre tiene que estar entre los topes').not.toBeUndefined();
+
       await act(async () => {
-        (
-          q('[data-testid="facturacion-hasta-fin-de-anio"]') as HTMLButtonElement
-        ).click();
+        (diciembre as HTMLButtonElement).click();
       });
+
       const ultima = porGenerarMock.mock.calls.at(-1)?.[0] as {
         desde: string;
         hasta: string;
@@ -1312,5 +1403,285 @@ describe('🔴 un botón apagado tiene que decir por qué, y al lado', () => {
     await montar();
     expect(q('[data-testid="facturacion-motivo-apagado"]')).toBeNull();
     expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09: «y al dar clic se debería abrir detalle de ese en un drawer y
+ * ahí quizás ver y accionar más cosas». La tabla tiene once columnas y recorta
+ * el tercero, el inmueble y el concepto con «…»; lo recortado vivía sólo en un
+ * `title`, que en un teléfono no existe.
+ */
+describe('NuevaFactura · la fila abre el cajón', () => {
+  it('🔴 al hacer clic en la fila se abre el detalle, sin recortar el inmueble', async () => {
+    await montar();
+    const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement;
+    expect(fila.getAttribute('role')).toBe('button');
+    // Cerrado antes de tocar nada.
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+
+    await act(async () => {
+      fila.click();
+    });
+
+    // El cajón vive en un PORTAL: se busca en el documento, no en el host.
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon).not.toBeNull();
+    expect(cajon.textContent).toContain('Cra 76 #45-12 apto 302');
+  });
+
+  it('🔴 marcar la casilla NO abre el cajón: son dos blancos distintos', async () => {
+    await montar();
+    const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement;
+    const casilla = fila.querySelector('button[role="checkbox"]') as HTMLElement;
+    await act(async () => {
+      casilla.click();
+    });
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+  });
+});
+
+/**
+ * 🔴 QA de Nico, 22-09: «acá tampoco están teniendo en cuenta el IVA, ¡ojo con
+ * eso!». La factura de un LOCAL salió sin IVA, con «ESCENARIO TRIBUTARIO
+ * SIN_DEFINIR» y la explicación enterrada al pie del cajón. Lo que se congela:
+ * el conteo se ve ARRIBA de la tabla antes de emitir, se pueden aislar esas
+ * facturas, y el cajón dice en palabras por qué sale sin impuestos y lleva al
+ * contrato a confirmarlo.
+ */
+describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-09)', () => {
+  const confirmada = factura({
+    clave: 'ct-2|2026-09|INQUILINO',
+    cuotaId: 'cu-2',
+    contractId: 'ct-2',
+    terceroNombre: 'Marta Confirmada',
+    impuestosSinConfirmar: false,
+    notasTributarias: [],
+    escenario: { codigo: 'E1', nombre: 'Vivienda o local entre personas naturales', certeza: 'CONFIRMADO' },
+  });
+  const papas = factura({
+    clave: 'ct-151|2026-09|INQUILINO',
+    cuotaId: 'cu-151',
+    contractId: 'ct-151',
+    numeroExterno: '3',
+    codigo: 151,
+    terceroNombre: 'J y C Papas S.A.S',
+    escenario: { codigo: 'SIN_DEFINIR', nombre: 'Escenario sin definir', certeza: 'SIN_DEFINIR' },
+    notasTributarias: [
+      'La cuota de 2026-09 se generó SIN impuestos porque el escenario tributario del contrato estaba deducido o sin definir. Confírmalo en la ficha del contrato y vuelve a generar la tabla de amortización.',
+    ],
+  });
+  const yaEmitida = factura({
+    clave: 'ct-3|2026-09|INQUILINO',
+    cuotaId: 'cu-3',
+    contractId: 'ct-3',
+    terceroNombre: 'Ya Emitida',
+    estado: 'EMITIDA',
+    numero: 7,
+  });
+
+  it('dice cuántas saldrían sin impuestos, sin contar las ya emitidas', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada, papas, yaEmitida], propietarios: [] }),
+    );
+    await montar();
+    const aviso = q('[data-testid="facturacion-inquilinos-sin-escenario"]');
+    expect(aviso?.textContent).toContain(
+      '1 factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.',
+    );
+  });
+
+  it('«Ver sólo esas» deja en la tabla únicamente las que salen sin impuestos', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada, papas, yaEmitida], propietarios: [] }),
+    );
+    await montar();
+    await clic('[data-testid="facturacion-inquilinos-ver-sin-escenario"]');
+    expect(q('[data-testid="factura-ct-151|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="factura-ct-2|2026-09|INQUILINO"]')).toBeNull();
+    expect(q('[data-testid="facturacion-inquilinos-ver-sin-escenario"]')?.textContent).toBe(
+      'Ver todas',
+    );
+  });
+
+  it('con todo confirmado no hay aviso', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada], propietarios: [] }),
+    );
+    await montar();
+    expect(q('[data-testid="facturacion-inquilinos-sin-escenario"]')).toBeNull();
+  });
+
+  it('el cajón dice «Escenario sin definir» (nunca SIN_DEFINIR) y lleva al contrato a confirmarlo', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [papas], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-151|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    const aviso = cajon.querySelector('[data-testid="cajon-escenario-sin-confirmar"]');
+    expect(aviso?.textContent).toContain('Escenario sin definir');
+    expect(cajon.textContent).not.toContain('SIN_DEFINIR');
+    expect(
+      cajon.querySelector('[data-testid="cajon-confirmar-escenario"]')?.getAttribute('href'),
+    ).toBe('/panel/inmobiliaria/contratos/ct-151#escenario-tributario');
+    // La nota del back dice lo mismo que el aviso: no se repite.
+    expect(cajon.textContent).not.toContain('se generó SIN impuestos');
+  });
+
+  it('una factura con el escenario confirmado no muestra el aviso en el cajón', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [confirmada], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-2|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon.querySelector('[data-testid="cajon-escenario-sin-confirmar"]')).toBeNull();
+    expect(cajon.textContent).toContain('Escenario 1 · Vivienda o local entre personas naturales');
+  });
+});
+
+/**
+ * 🔴 Nico, 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote o
+ * esa factura en sí, porque literal no deja ver en ningún lado; y pues si ya
+ * acabó, en el drawer debería de verse, y también ahí donde dice estado». La
+ * fila emitida mostraba «PRU-3 · interna Nº 4» como texto y el aviso de la
+ * emisión sólo ofrecía «Cerrar».
+ */
+describe('🔴 el documento de la factura emitida (22-09)', () => {
+  const emitida = factura({
+    estado: 'EMITIDA',
+    numero: 4,
+    numeroDian: 'PRU-3',
+    facturaId: 'fac-3',
+  });
+  const soltarTareas = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+  it('la columna de estado dice «Emitida · PRU-3» y baja su PDF sin abrir el cajón', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    const clave = 'ct-1|2026-09|INQUILINO';
+    expect(q(`[data-testid="emitida-${clave}"]`)?.textContent).toBe('Emitida · PRU-3');
+
+    await clic(`[data-testid="descargar-pdf-${clave}"]`);
+    await soltarTareas();
+
+    expect(pdfMock).toHaveBeenCalledWith('fac-3');
+    expect(descargarBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'factura-PRU-3.pdf');
+    // El botón vive en la celda que frena la propagación: no abre el cajón.
+    expect(document.querySelector('[data-testid="cajon-de-la-factura"]')).toBeNull();
+  });
+
+  it('lo mismo en la lista de propietarios', async () => {
+    const comision = factura({
+      clave: 'ct-1|2026-09|PROPIETARIO',
+      destinatario: 'PROPIETARIO',
+      terceroNombre: 'Jorge Restrepo',
+      estado: 'EMITIDA',
+      numero: 5,
+      numeroDian: 'PRU-4',
+      facturaId: 'fac-4',
+    });
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [], propietarios: [comision] }));
+    await montar();
+    await verA('Propietarios');
+    await clic('[data-testid="descargar-pdf-ct-1|2026-09|PROPIETARIO"]');
+    await soltarTareas();
+    expect(pdfMock).toHaveBeenCalledWith('fac-4');
+  });
+
+  it('sin `facturaId` (un back viejo) no se ofrece una descarga que pediría /undefined/pdf', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [{ ...emitida, facturaId: undefined }], propietarios: [] }),
+    );
+    await montar();
+    expect(q('[data-testid="emitida-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+    expect(q('[data-testid="descargar-pdf-ct-1|2026-09|INQUILINO"]')).toBeNull();
+  });
+
+  it('🔴 el cajón de una EMITIDA tiene la sección «Documento» con el PDF', async () => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    const documento = cajon.querySelector('[data-testid="cajon-documento"]')!;
+    expect(documento.textContent).toContain('PRU-3');
+    expect(documento.textContent).toContain('N° 4');
+
+    await act(async () => {
+      (documento.querySelector('[data-testid="cajon-descargar-pdf"]') as HTMLElement).click();
+    });
+    await soltarTareas();
+    expect(pdfMock).toHaveBeenCalledWith('fac-3');
+  });
+
+  it('🔴 y el de una POR EMITIR no: no hay documento todavía', async () => {
+    await montar();
+    await act(async () => {
+      (q('[data-testid="factura-ct-1|2026-09|INQUILINO"]') as HTMLElement).click();
+    });
+    const cajon = document.querySelector('[data-testid="cajon-de-la-factura"]')!;
+    expect(cajon.querySelector('[data-testid="cajon-documento"]')).toBeNull();
+  });
+
+  it('🔴 emitir ABRE el centro de procesos, y el toast del resultado lleva «Ver en el centro»', async () => {
+    const eventos: EventoDelCentro[] = [];
+    const dejar = alEventoDelCentro((e) => eventos.push(e));
+    try {
+      generarMock.mockResolvedValue({
+        mes: '2026-09',
+        emitidas: 1,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 1_879_608,
+        facturas: [
+          { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_879_608, facturaId: 'fac-3' },
+        ],
+        procesoId: 'proc-9',
+        zipEnElCentro: true,
+      });
+      await montar();
+      await clic('[data-testid="facturacion-generar"]');
+      await soltarTareas();
+
+      expect(eventos[0]).toMatchObject({ tipo: 'anuncio', titulo: 'Emitiendo 1 factura' });
+      // El resultado no se queda pegado en la página.
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+      const [texto, opciones] = toastOk.mock.calls[0] as [string, { action: { onClick: () => void } }];
+      expect(texto).toContain('1 factura emitida');
+      opciones.action.onClick();
+      expect(eventos.at(-1)).toEqual({ tipo: 'abrir', procesoId: 'proc-9' });
+    } finally {
+      dejar();
+    }
+  });
+
+  it('un error de la descarga se dice, con las palabras del back', async () => {
+    pdfMock.mockRejectedValue(new Error('Esa factura no existe.'));
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [emitida], propietarios: [] }));
+    await montar();
+    await clic('[data-testid="descargar-pdf-ct-1|2026-09|INQUILINO"]');
+    await soltarTareas();
+    expect(toastErr).toHaveBeenCalledWith('Esa factura no existe.');
+    expect(descargarBlobMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('🔴 EL MOLDE en «Por facturar» (Nico, 23-09: «tarjeta dentro de tarjeta dentro de tarjeta»)', () => {
+  it('no dibuja una tarjeta propia dentro de la de pestañas, y el resumen es UNA frase', async () => {
+    await montar();
+    const bloque = q('[data-testid="facturacion-por-facturar"]')!;
+    expect(bloque.className).not.toContain('rounded-lg');
+    expect(bloque.className).not.toMatch(/(^|\s)border(\s|$)/);
+    const frase = q('[data-testid="facturacion-resumen"]')!.textContent ?? '';
+    expect(frase).toMatch(/contratos? con cuotas de/);
+    // Los filtros dicen que son filtros.
+    expect(document.body.textContent).toContain('Filtrar por mes');
   });
 });

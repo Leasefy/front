@@ -25,53 +25,6 @@ import { normalizarParte, partirCelda } from './columnaCompuesta';
 // Reexport: los tests y cualquier consumidor viejo siguen importándolo de acá.
 export { cleanNumericValue } from './valorNumerico';
 
-// ============================================================================
-// Rent estimates by city + property type (Colombian market data)
-// ============================================================================
-
-export const RENT_ESTIMATES: Record<string, Record<string, number>> = {
-  bogota: {
-    apartment: 1800000,
-    house: 2800000,
-    studio: 1200000,
-    commercial: 3500000,
-    office: 2500000,
-    warehouse: 4000000,
-  },
-  medellin: {
-    apartment: 1600000,
-    house: 2400000,
-    studio: 1000000,
-    commercial: 3000000,
-    office: 2200000,
-    warehouse: 3500000,
-  },
-  cali: {
-    apartment: 1400000,
-    house: 2000000,
-    studio: 900000,
-    commercial: 2500000,
-    office: 1800000,
-    warehouse: 3000000,
-  },
-  barranquilla: {
-    apartment: 1300000,
-    house: 1800000,
-    studio: 800000,
-    commercial: 2200000,
-    office: 1600000,
-    warehouse: 2800000,
-  },
-  default: {
-    apartment: 1500000,
-    house: 2200000,
-    studio: 950000,
-    commercial: 2800000,
-    office: 2000000,
-    warehouse: 3200000,
-  },
-};
-
 export const COLOMBIAN_CITIES = [
   'Bogotá',
   'Medellín',
@@ -189,12 +142,6 @@ function extractCityFromAddress(address: string): string | null {
   return null;
 }
 
-function getCityKey(city: string): string {
-  return city
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
 
 // ============================================================================
 // Row → ImportProperty mapper
@@ -411,21 +358,20 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
         // Auto-apply normalization — not a user suggestion
         updates.propertyType = normalized;
       }
-    } else {
-      // No type — suggest apartment as default
-      suggestions.push({
-        field: 'propertyType',
-        suggestedValue: 'apartment',
-        confidence: 'media',
-        reasoning: 'Tipo no especificado. Se sugiere Apartamento como valor predeterminado.',
-        accepted: null,
-      });
     }
+    /*
+     * 🔴 22-09 · Regla de Nico: la migración no inventa NADA («todo tiene que
+     * ser tal cual se migra»). Este archivo proponía cuatro valores que el
+     * archivo no traía —tipo «Apartamento», ciudad «Bogotá», un canon de
+     * «promedios de mercado» y una comisión del 10 %— y «Aceptar todas» los
+     * guardaba como si fueran del cliente. Se fueron los cuatro. Lo que falta
+     * queda vacío y lo piden `faltantesParaElBack` / el back (el inmueble entra
+     * PENDIENTE con su motivo; la comisión queda «desconocida»). Sólo se
+     * propone lo que sale del PROPIO archivo: la ciudad leída en la dirección y
+     * el título armado con tipo y municipio del archivo.
+     */
 
-    const effectiveType =
-      updates.propertyType ||
-      prop.propertyType ||
-      'apartment';
+    const effectiveType = updates.propertyType || prop.propertyType || '';
 
     // Rule 4: Missing propertyCity
     if (!prop.propertyCity) {
@@ -441,54 +387,10 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
           reasoning: 'Ciudad detectada en la dirección proporcionada.',
           accepted: null,
         });
-      } else {
-        suggestions.push({
-          field: 'propertyCity',
-          suggestedValue: 'Bogotá',
-          confidence: 'baja',
-          reasoning: 'No se pudo detectar ciudad. Se sugiere Bogotá como valor predeterminado.',
-          accepted: null,
-        });
       }
     }
 
-    const effectiveCity = prop.propertyCity || 'Bogotá';
-
-    // Rule 1: Missing monthlyRent — T-0038: only for a RENT row. A SALE row's
-    // missing price is `salePrice`, and there is no comparable sale-price
-    // market-estimate table here (RENT_ESTIMATES is rent-only, Colombian
-    // market data) — suggesting a rental estimate for a sale listing's price
-    // would be a fabricated, wrong-field number, not a gap fill.
-    if (
-      tipoEfectivo(prop) === 'rent' &&
-      (!prop.monthlyRent || prop.monthlyRent === 0 || isNaN(prop.monthlyRent))
-    ) {
-      const cityKey = getCityKey(effectiveCity);
-      const cityEstimates = RENT_ESTIMATES[cityKey] || RENT_ESTIMATES['default'];
-      const typeKey = effectiveType in cityEstimates ? effectiveType : 'apartment';
-      const estimate = cityEstimates[typeKey];
-
-      const typeLabel =
-        effectiveType === 'apartment'
-          ? 'Apartamento'
-          : effectiveType === 'house'
-            ? 'Casa'
-            : effectiveType === 'studio'
-              ? 'Estudio'
-              : effectiveType === 'commercial'
-                ? 'Local comercial'
-                : effectiveType === 'office'
-                  ? 'Oficina'
-                  : 'Bodega';
-
-      suggestions.push({
-        field: 'monthlyRent',
-        suggestedValue: String(estimate),
-        confidence: 'media',
-        reasoning: `Estimado basado en promedios de mercado para ${typeLabel} en ${effectiveCity}.`,
-        accepted: null,
-      });
-    }
+    const effectiveCity = prop.propertyCity || '';
 
     // (Antes acá se sugería «Por definir» como barrio. Un barrio es un dato,
     // no una suposición: aceptar esa sugerencia guardaba la palabra «Por
@@ -496,23 +398,8 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
     // un valor falso. Hoy el barrio faltante lo pide `faltantesParaElBack`,
     // con un campo para escribir el de verdad.)
 
-    // Rule 5: Missing commissionPercent (0% is valid — only suggest when undefined/NaN)
-    if (
-      prop.commissionPercent === undefined ||
-      prop.commissionPercent === null ||
-      (typeof prop.commissionPercent === 'number' && isNaN(prop.commissionPercent))
-    ) {
-      suggestions.push({
-        field: 'commissionPercent',
-        suggestedValue: '10',
-        confidence: 'alta',
-        reasoning: 'Porcentaje estándar del mercado colombiano (8–12%).',
-        accepted: null,
-      });
-    }
-
     // Rule 6: Missing propertyTitle
-    if (!prop.propertyTitle) {
+    if (!prop.propertyTitle && effectiveType && effectiveCity) {
       /*
        * 🔴 El MUNICIPIO, no el barrio. Antes se prefería `propertyZone` y
        * salían títulos como «Bodega en HOSPITAL» — el barrio de una celda de

@@ -102,7 +102,7 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
           <h3 className="text-sm font-medium">
             Doble verificación: lo que quedó guardado contra el archivo
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Se vuelve a leer el archivo por otro camino y se contrasta campo por
             campo: inmueble, inquilino, propietario, fechas, canon y cuotas.
             Nada se corrige solo.
@@ -196,7 +196,7 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
           </p>
 
           {resultado.guardado === false ? (
-            <p className="text-xs text-muted-foreground" data-testid="verificacion-no-guardada">
+            <p className="text-caption text-muted-foreground" data-testid="verificacion-no-guardada">
               Este resultado no quedó guardado en el servidor (falta aplicar una
               migración de base): al recargar la página hay que volver a
               verificar. Las filas que difieren sí quedaron marcadas.
@@ -204,12 +204,12 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
           ) : null}
 
           {resultado.detenidoPorPersona ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Se detuvo a mitad: el número es de lo que alcanzó a mirar.
             </p>
           ) : null}
           {resultado.detenidoSinAvance ? (
-            <p className="text-xs text-warning">
+            <p className="text-caption text-warning">
               El servidor dejó de avanzar, así que se cortó. El número es de lo
               que alcanzó a mirar, no del lote completo.
             </p>
@@ -233,7 +233,7 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
                       {v.diferencias.map((d, i) => (
                         <li key={`${d.campo}-${i}`} className="text-sm">
                           {d.frase}{" "}
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-caption text-muted-foreground">
                             (según {d.fuente})
                           </span>
                         </li>
@@ -263,7 +263,7 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
           ) : null}
 
           {resultado.veredictosTruncados ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Se muestran las primeras; los conteos de arriba sí son del total
               mirado.
             </p>

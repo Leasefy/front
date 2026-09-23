@@ -26,7 +26,8 @@ import type {
 // Propietario (Property Owner/Client)
 // ============================================================================
 
-export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
+/** `PPT` = Permiso por Protección Temporal (22-09, «agrega la PPT»). */
+export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT' | 'PPT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;
@@ -130,6 +131,12 @@ export interface PropietarioFormData {
   /** Documento del titular de la cuenta si no es el propietario; vacío = es el propietario. */
   accountHolderDocumentType?: DocumentType | '';
   accountHolderDocument?: string;
+  /**
+   * 🔴 «¿A quién pertenece la cuenta?» (22-09). Con la respuesta, el back valida
+   * y guarda el titular (`TERCERO` exige nombre, tipo y documento; `PROPIETARIO`
+   * lo limpia). Ausente = el titular viaja como estaba (editar sin tocarlo).
+   */
+  titularDeLaCuenta?: 'PROPIETARIO' | 'TERCERO';
   notes?: string;
   /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
   responsableIva?: boolean | null;
@@ -327,6 +334,12 @@ export interface Consignacion {
    * on a sale row.
    */
   commissionPercent: number;
+  /**
+   * 🔴 QA 22-09: el archivo de inmuebles NO traía la comisión. Con `true`,
+   * `commissionPercent` vale 0 y NO es un dato: la pantalla dice «no venía en
+   * el archivo» (`textoDeLaComision`). Ausente en un back anterior = `false`.
+   */
+  comisionDesconocida?: boolean;
   contractDate: string;
   contractEndDate?: string;
   minimumTerm?: number; // Minimum lease term in months
@@ -695,6 +708,16 @@ export interface DispersionItem {
   cobroId: string | null;
   /** La cuota del propietario que se gira. Es la identidad de la línea. */
   cuotaId: string | null;
+  /**
+   * 🔴 El inmueble del renglón, y la LLAVE con la que se destilda.
+   *
+   * El asistente deja elegir a qué inmuebles de un propietario se le gira
+   * (pedido del CEO, 21-09) y esa selección viaja al back como `propertyIds`.
+   * El título no sirve de llave: dos inmuebles del mismo edificio se llaman
+   * casi igual. `null` = un renglón que no se puede nombrar (una liquidación
+   * vieja, los intereses ya guardados) y entra siempre.
+   */
+  propertyId?: string | null;
   propertyTitle: string;
   /**
    * El canon liquidado, SIN la administración: ésa es de la copropiedad. 🔴 Con
@@ -704,6 +727,14 @@ export interface DispersionItem {
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
+  /**
+   * 🔴 22-09 · El IVA que la inmobiliaria cobra sobre su comisión, a cargo del
+   * propietario. Va APARTE de `conceptosACargo` (antes iba escondido ahí) y ya
+   * está restado de `netAmount`. Ausente = back anterior o dispersión vieja.
+   */
+  ivaComisionAmount?: number;
+  /** Lo que el propietario le retuvo a la comisión: le suma. Aparte de los conceptos. */
+  retencionesComisionAmount?: number;
   netAmount: number;
   /** Conceptos del contrato que suman a favor del propietario. */
   conceptosAFavor: number;
@@ -747,6 +778,22 @@ export interface DispersionItem {
 /** D1: con qué base se le gira al propietario. */
 export type ModalidadDelMandato = 'GARANTIZADO' | 'SOBRE_RECAUDO';
 
+/**
+ * 🔴 22-09: el reparto del neto entre varias cuentas, copiado con el giro, en
+ * pesos (la suma es el neto; el residuo, a la cuenta de mayor porcentaje).
+ * `null` = una sola cuenta.
+ */
+export interface ParteDelReparto {
+  porcentaje: number;
+  banco: string | null;
+  tipoDeCuenta: string | null;
+  /** Sólo los últimos cuatro: `····4521`. */
+  cuenta: string;
+  titularDeOtraPersona: string | null;
+  valorCop: number;
+  enUnaLinea: string;
+}
+
 export interface Dispersion {
   id: string;
   propietarioId: string;
@@ -757,6 +804,19 @@ export interface Dispersion {
    * arma `adaptarDispersion`. Ver `lib/api/dispersion-adapter.ts`.
    */
   propietarioBankAccount: PropietarioBankAccount | null;
+  /**
+   * 🔴 A nombre de quién sale ESTE giro (22-09): del propietario u otra persona,
+   * con su documento, copiado al generar la dispersión. Ver
+   * `lib/propietarios/titular-de-la-cuenta.ts`.
+   */
+  titularDeLaCuenta?: import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro | null;
+  /** 🔴 22-09: el reparto entre varias cuentas. `null`/ausente = una sola. */
+  repartoDeLaCuenta?: ParteDelReparto[] | null;
+  /**
+   * 23-09 · «Desde»: la cuenta de la inmobiliaria de la que salió el giro (la
+   * del giro suelto o la del lote que lo pagó), tapada. Ausente = no quedó.
+   */
+  origenDelGiro?: import('@/lib/api/lotes-de-dispersion.types').OrigenDelGiroEnPantalla;
 
   month: string; // '2026-02'
   items: DispersionItem[];
@@ -774,6 +834,18 @@ export interface Dispersion {
   /** Canon liquidado del mes, sin administración (causado o recaudado según `baseDelCanon`). */
   totalCollected: number;
   totalCommission: number;
+  /**
+   * 🔴 22-09 · El IVA de la comisión, línea propia. 0 en una dispersión vieja;
+   * ausente sólo en datos armados a mano (el adaptador siempre lo pone).
+   */
+  totalIvaComision?: number;
+  /** Lo que el propietario le retuvo a la comisión: le suma. */
+  totalRetencionesComision?: number;
+  /**
+   * La dispersión se generó SIN el IVA de la comisión (antes del 22-09) y sus
+   * cuotas quedaron con esa cuenta: el back lo dice con el número que falta.
+   */
+  avisoDelIvaDeLaComision?: string | null;
   totalConceptosAFavor: number;
   totalConceptosACargo: number;
   totalDeTerceros: number;
@@ -791,7 +863,10 @@ export interface Dispersion {
 
   // Status
   status: DispersionStatus;
+  /** El id de quien aprobó: sirve para comparar con la sesión, no para mostrar. */
   approvedBy?: string;
+  /** Su nombre (23-09), para mostrar. Ausente = back anterior o no se supo. */
+  approvedByName?: string;
   approvedAt?: string;
   processedAt?: string;
   transferReference?: string;
@@ -881,9 +956,18 @@ export interface VistaPreviaDeDispersiones {
     propietarioName: string;
     propietarioBankName: string | null;
     propietarioBankAccount: string | null;
+    /**
+     * A nombre de quién está la cuenta HOY (22-09); es lo que se copia con la
+     * dispersión al generarla. Opcional: back anterior.
+     */
+    titularDeLaCuenta?: Omit<import('@/lib/propietarios/titular-de-la-cuenta').TitularDelGiro, 'copiadoAlGenerar'>;
     yaExiste: boolean;
     totalCollected: number;
     totalCommission: number;
+    /** 🔴 22-09 · El IVA de la comisión, línea propia. Ausente = back anterior. */
+    totalIvaComision?: number;
+    /** Lo que el propietario le retuvo a la comisión: le suma. */
+    totalRetencionesComision?: number;
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
@@ -1121,6 +1205,13 @@ export interface ExtractoPropietario {
     status: string;
     commissionPercent: number;
     commissionAmount: number;
+    /**
+     * 🔴 22-09 · El IVA de la comisión y lo que el propietario le retuvo, APARTE
+     * de los conceptos. Opcionales: una línea vieja (por cobro) o un back
+     * anterior no los separan.
+     */
+    ivaComisionAmount?: number;
+    retencionesComisionAmount?: number;
     /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
     /**
@@ -1175,6 +1266,9 @@ export interface ExtractoPropietario {
     totalAdmin: number;
     totalPaid: number;
     totalCommission: number;
+    /** 🔴 22-09 · Opcionales: un back anterior no los manda. */
+    totalIvaComision?: number;
+    totalRetencionesComision?: number;
     totalNet: number;
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
@@ -1284,6 +1378,10 @@ export interface CarteraItem {
   diasDePlazo: number;
   /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
   esVencida: boolean;
+  /** La inmobiliaria decidió dejar de perseguir esta deuda (21-09-2026). */
+  castigada?: boolean;
+  /** `YYYY-MM-DD` del día en que quedó castigada. `null` si no lo está. */
+  castigadaDesde?: string | null;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
@@ -1317,9 +1415,18 @@ export interface CarteraSummary {
   vencidaEnPlazoCop: number;
   /** 🔴 LA CARTERA: pasó el plazo. Siniestros incluidos. */
   carteraCop: number;
-  /** Cartera − siniestros: lo que sigue siendo cobranza. Suman los tramos. */
+  /**
+   * `cartera − siniestros − castigada`: lo que sigue siendo cobranza. Es lo
+   * único que suman los tramos por edad.
+   */
   carteraVivaCop: number;
   enSiniestroCop: number;
+  /**
+   * 🔴 Lo que la inmobiliaria decidió dejar de perseguir (21-09-2026). No se
+   * resta de la deuda —el inquilino sigue debiendo— pero sale de la cartera
+   * activa y de los tramos. `carteraViva + siniestro + castigada = cartera`.
+   */
+  castigadaCop?: number;
   /** Los tramos por edad, sobre la mora REAL y sobre la cartera viva. */
   bucket0to30: number;
   bucket31to60: number;
@@ -1330,10 +1437,13 @@ export interface CarteraSummary {
   cuotasVencidasEnPlazo: number;
   cuotasEnCartera: number;
   cuotasEnSiniestro: number;
+  cuotasCastigadas?: number;
   /** 🔴 El interés de mora que falta, sumado. Va aparte del capital. */
   interesCop?: number;
   /** De ese interés, el de los casos en siniestro. */
   interesEnSiniestroCop?: number;
+  /** De ese interés, el de la cartera castigada. */
+  interesCastigadoCop?: number;
   /** `carteraCop + interesCop`. */
   carteraConInteresCop?: number;
   /** `deudaTotalCop + interesCop`. */
@@ -1361,6 +1471,12 @@ export interface CarteraReport {
   summary: CarteraSummary;
   byMonth?: CarteraMonthItem[];
   siniestros: CarteraSiniestros;
+  /**
+   * El listado de cartera CASTIGADA, aparte de la activa (Nico, 17-09: «sale
+   * del informe de cartera activa y queda en un listado de castigada»).
+   * Opcional: un back sin la migración del castigo no lo manda.
+   */
+  castigada?: CarteraCastigada;
   sinCamino: CarteraSinCamino;
   /** Contratos vigentes sin tabla de amortización: su deuda NO está acá. */
   contratosSinCuotas: number;
@@ -1379,6 +1495,15 @@ export interface CarteraSiniestro extends CarteraItem {
    */
   siniestroDesde: string;
   diasEnSiniestro: number;
+}
+
+/** Lo que la inmobiliaria ya no persigue, con su día de castigo. */
+export interface CarteraCastigada {
+  cantidad: number;
+  totalCop: number;
+  /** El interés de mora de esas cuotas. Tampoco se persigue. */
+  interesCop: number;
+  items: CarteraItem[];
 }
 
 export interface CarteraSiniestros {
@@ -1734,9 +1859,20 @@ export interface InmobiliariaDashboardKPIs {
   tasaDeRecaudo?: TasaDeRecaudo;
   totalCommissions: number;
 
-  // Trends (signed % change vs previous month)
-  collectionTrend: number;
-  commissionsTrend: number;
+  /**
+   * 🔴 La variación contra el mes anterior, en % con signo, o `null` cuando NO
+   * HAY CON QUÉ COMPARAR (el mes anterior fue cero).
+   *
+   * `null` y `0` son cosas distintas y la pantalla tiene que distinguirlas: el
+   * back devolvía `100` cuando el mes anterior era cero, y el panel decía
+   * «$8.200.000 · +100% vs mes anterior» en una inmobiliaria que el mes pasado
+   * no recaudó nada. Pasar de nada a algo no tiene porcentaje.
+   *
+   * Una respuesta vieja en caché puede traer todavía un número: por eso el
+   * tipo admite `number` y la pantalla conserva su heurística de respaldo.
+   */
+  collectionTrend: number | null;
+  commissionsTrend: number | null;
 
   // Pipeline
   activeLeads: number;
@@ -2568,7 +2704,22 @@ export const PLAN_LIMITS: Record<BillingPlan, PlanLimits> = {
 // Configuracion - Users & Permissions
 // ============================================================================
 
-export type AgencyRole = 'admin' | 'agente' | 'contador' | 'viewer';
+/**
+ * El rol del sistema de un miembro, en minúsculas (el servicio lo sube a
+ * mayúsculas al hablar con el back).
+ *
+ * 🔴 QA 22-09: acá había cuatro y el back tiene SIETE (`AgencyMemberRole`).
+ * Invitar sólo podía crear agentes y «Editar rol» ofrecía cuatro; un miembro
+ * COORDINADOR salía con el rol «—» en la tabla.
+ */
+export type AgencyRole =
+  | 'admin'
+  | 'agente'
+  | 'contador'
+  | 'viewer'
+  | 'coordinador'
+  | 'auxiliar_cartera'
+  | 'abogado_externo';
 
 export type PermissionModule =
   | 'dashboard'
@@ -2585,13 +2736,52 @@ export type PermissionModule =
   | 'analytics'
   | 'contratos'
   | 'subscription'
-  | 'avaluos';
+  | 'avaluos'
+  /**
+   * «Ver bitácora» (22-09-2026): quién hizo qué, con su rol, en toda la
+   * inmobiliaria. Sólo `view` significa algo. De fábrica sólo el ADMIN.
+   */
+  | 'bitacora';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
+/**
+ * 🔴 PERMISOS PUNTUALES (22-09-2026): una cosa concreta que la inmobiliaria
+ * otorga con nombre propio, no una de las cinco acciones de la matriz.
+ *
+ * Espejo de `PERMISOS_PUNTUALES` del back (`agency-permissions.ts`). El primero:
+ * cambiar la fecha (y la referencia o la nota) de un egreso ya registrado —
+ * Nico: «que sólo lo pueda hacer alguien con permisos». Por defecto lo tiene
+ * SÓLO el administrador.
+ *
+ * Cuelga del módulo `reportes` por una razón de almacenamiento (el eje de
+ * módulos está congelado con el agente; `reportes` es con el que ya se entra a
+ * la contabilidad). La pantalla de permisos NO lo muestra como una columna de
+ * la matriz: lo muestra aparte, con su nombre, y marcar la fila de Reportes
+ * entera no lo otorga.
+ */
+export type AccionPuntual = 'cambiar_fecha_egreso';
+
+/** Todo lo que puede ir en la lista de acciones de un módulo. */
+export type AccionDePermiso = PermissionAction | AccionPuntual;
+
+export interface PermisoPuntual {
+  accion: AccionPuntual;
+  /** De qué módulo cuelga en la matriz que viaja al back. */
+  modulo: PermissionModule;
+}
+
+/**
+ * El nombre y la descripción viven en i18n:
+ * `inmobiliaria.config.permissions.puntuales.<accion>.nombre|descripcion`.
+ */
+export const PERMISOS_PUNTUALES: readonly PermisoPuntual[] = [
+  { accion: 'cambiar_fecha_egreso', modulo: 'reportes' },
+];
+
 export interface RolePermission {
   module: PermissionModule;
-  actions: PermissionAction[];
+  actions: AccionDePermiso[];
 }
 
 export interface RolePermissions {
@@ -2638,11 +2828,30 @@ export function getRoleLabel(role: AgencyRole | null | undefined): string {
     // «Asesor» (Nico, 17-09-2026): el rol AGENTE es el asesor comercial.
     agente: 'Asesor comercial',
     contador: 'Contador',
-    viewer: 'Solo Lectura',
+    viewer: 'Solo lectura',
+    coordinador: 'Coordinador',
+    auxiliar_cartera: 'Auxiliar de cartera',
+    abogado_externo: 'Abogado externo',
   };
   // Unknown/undefined role (e.g. an invited member with incomplete data) → '—'.
   return (role && labels[role]) || '—';
 }
+
+/**
+ * Los siete roles del sistema, en el orden en que se ofrecen, con el MISMO
+ * nombre que la tabla del equipo. Una sola lista para invitar, editar el rol y
+ * filtrar: antes cada selector tenía la suya («Agente» en uno, «Asesor
+ * comercial» en la tabla; «Contable» y «Contador»; «Viewer» en inglés).
+ */
+export const ROLES_DEL_SISTEMA: readonly AgencyRole[] = [
+  'admin',
+  'coordinador',
+  'agente',
+  'auxiliar_cartera',
+  'contador',
+  'abogado_externo',
+  'viewer',
+];
 
 export function getRoleColor(role: AgencyRole | null | undefined): string {
   const colors: Record<AgencyRole, string> = {
@@ -2650,6 +2859,9 @@ export function getRoleColor(role: AgencyRole | null | undefined): string {
     agente: 'bg-primary-soft text-primary',
     contador: 'bg-success-soft text-success',
     viewer: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    coordinador: 'bg-primary-soft text-primary',
+    auxiliar_cartera: 'bg-success-soft text-success',
+    abogado_externo: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   // Always a valid color-class string, even for an unknown/undefined role.
   return (role && colors[role]) || NEUTRAL_BADGE_COLOR;
@@ -2690,6 +2902,7 @@ export function getModuleLabel(module: PermissionModule): string {
     contratos: 'Contratos',
     subscription: 'Suscripción',
     avaluos: 'Avalúos',
+    bitacora: 'Bitácora',
   };
   return labels[module];
 }
@@ -2706,7 +2919,16 @@ export function getActionLabel(action: PermissionAction): string {
 }
 
 // Default permissions by role
-export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
+/**
+ * Los roles que la matriz de «Permisos por rol» muestra: los SIETE.
+ *
+ * 🔴 22-09 noche: eran cuatro. Coordinador, auxiliar de cartera y abogado
+ * externo no salían, y como el cuerpo del PUT mandaba sólo tres roles, el back
+ * reescribía el objeto entero y devolvía a fábrica lo que no venía.
+ */
+export type RolDeLaMatriz = AgencyRole;
+
+export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = {
   admin: {
     role: 'admin',
     permissions: [
@@ -2724,6 +2946,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'analytics', actions: ['view', 'export'] },
       { module: 'subscription', actions: ['view', 'edit'] },
       { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
+      { module: 'bitacora', actions: ['view'] },
     ],
   },
   // El ASESOR COMERCIAL (Nico, 17-09-2026): «sólo los apartados comerciales,
@@ -2762,6 +2985,45 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'reportes', actions: ['view'] },
     ],
   },
+  // Los tres roles de O-05 (18-09-2026). Espejo de `AGENCY_ROLE_DEFAULTS` del
+  // back: la pantalla SIEMPRE pinta lo que devuelve el back; esto sólo es el
+  // punto de partida mientras carga.
+  coordinador: {
+    role: 'coordinador',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'portafolio', actions: ['view'] },
+      { module: 'pipeline', actions: ['view', 'create', 'edit'] },
+      { module: 'agentes', actions: ['view', 'create', 'edit'] },
+      { module: 'operaciones', actions: ['view', 'create', 'edit'] },
+      { module: 'reportes', actions: ['view'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'analytics', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+      { module: 'subscription', actions: ['view'] },
+      { module: 'avaluos', actions: ['view'] },
+    ],
+  },
+  auxiliar_cartera: {
+    role: 'auxiliar_cartera',
+    permissions: [
+      { module: 'dashboard', actions: ['view'] },
+      { module: 'propietarios', actions: ['view'] },
+      { module: 'cobros', actions: ['view', 'create'] },
+      { module: 'reportes', actions: ['view'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+    ],
+  },
+  abogado_externo: {
+    role: 'abogado_externo',
+    permissions: [
+      { module: 'cobros', actions: ['view', 'edit'] },
+      { module: 'documentos', actions: ['view'] },
+      { module: 'contratos', actions: ['view'] },
+    ],
+  },
 };
 
 // All modules for permission matrix
@@ -2781,6 +3043,7 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'contratos',
   'subscription',
   'avaluos',
+  'bitacora',
 ];
 
 // All actions for permission matrix
@@ -3025,7 +3288,7 @@ export interface RendimientoAgentesReport {
 export function hasPermission(
   permissions: RolePermissions,
   module: PermissionModule,
-  action: PermissionAction
+  action: AccionDePermiso
 ): boolean {
   const modulePermission = permissions.permissions.find((p) => p.module === module);
   if (!modulePermission) return false;
@@ -3036,10 +3299,14 @@ export function hasPermission(
 export function updateRolePermission(
   permissions: RolePermissions,
   module: PermissionModule,
-  action: PermissionAction,
+  action: AccionDePermiso,
   enabled: boolean
 ): RolePermissions {
-  const newPermissions = { ...permissions };
+  // 🔴 22-09 noche: copia TAMBIÉN el arreglo. Antes sólo copiaba el objeto y
+  // asignaba sobre `permissions[moduleIndex]`, que es el MISMO arreglo del
+  // estado anterior: marcar una casilla mutaba la matriz cargada, y «qué roles
+  // cambiaron» comparaba una matriz contra sí misma.
+  const newPermissions = { ...permissions, permissions: [...permissions.permissions] };
   const moduleIndex = newPermissions.permissions.findIndex((p) => p.module === module);
 
   if (moduleIndex === -1) {

@@ -116,7 +116,7 @@ export function ProvisionesDeNominaPanel() {
                 })}
               </div>
               <p
-                className="rounded-lg border border-border bg-surface p-3 text-xs text-fg-muted"
+                className="rounded-lg border border-border bg-surface p-3 text-caption text-fg-muted"
                 data-testid="total-vivo"
               >
                 Total del pasivo vivo:{' '}
@@ -146,18 +146,18 @@ export function ProvisionesDeNominaPanel() {
                         <TableCell className="font-medium text-fg">
                           {t.nombre}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-caption">
                           {t.incluyeAuxilio ? 'Entra' : 'NO entra'}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-caption">
                           {t.incluyeHorasExtras ? 'Entran' : 'NO entran'}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-caption">
                           {t.seCausaConSalarioIntegral
                             ? 'Se causa'
                             : 'No se causa (el factor del 30 % ya la paga)'}
                         </TableCell>
-                        <TableCell className="max-w-md text-xs leading-relaxed text-fg-muted">
+                        <TableCell className="max-w-md text-caption leading-relaxed text-fg-muted">
                           {t.fuente}
                         </TableCell>
                       </TableRow>
@@ -196,7 +196,7 @@ export function ProvisionesDeNominaPanel() {
                           <TableCell>
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
-                              <span className="ml-1.5 text-xs text-fg-muted">
+                              <span className="ml-1.5 text-caption text-fg-muted">
                                 {p.documento}
                               </span>
                             ) : null}

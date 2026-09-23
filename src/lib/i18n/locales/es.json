@@ -51,7 +51,14 @@
     "hours": "horas",
     "minutes": "minutos",
     "refresh": "Actualizar",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "selectorDeArchivo": {
+      "elegir": "Elegir archivo",
+      "elegirOtro": "Elegir otro",
+      "quitar": "Quitar",
+      "quitarArchivo": "Quitar {{nombre}}",
+      "ninguno": "Ningún archivo elegido"
+    }
   },
   "nav": {
     "panel": "Inicio",
@@ -597,7 +604,8 @@
         "manager": "Manager",
         "accountant": "Contable",
         "viewer": "Viewer"
-      }
+      },
+      "noMembers": "Todavía no hay nadie en el equipo"
     },
     "security": {
       "title": "Seguridad",
@@ -973,7 +981,6 @@
       "secGeneral": "General",
       "solicitudes": "Solicitudes",
       "contabilidad": "Contabilidad general",
-      "proximamente": "Próximamente",
       "aprendizaje": "Aprendizaje del asistente",
       "hintPipeline": "pipeline",
       "hintCatalogo": "catálogo",
@@ -1010,8 +1017,8 @@
       "origenesDeLeads": "Orígenes",
       "portalesDePublicacion": "Portales",
       "requisitosDePostulacion": "Requisitos",
-      "calceDeLeads": "Calce",
-      "visitasDelPipeline": "Visitas",
+      "calceDeLeads": "Qué ofrecer",
+      "visitasDelPipeline": "Preparar visitas",
       "reclamosDeCandidatos": "Reclamos",
       "invitacionesAFirmar": "Firmas",
       "listasRestrictivas": "Listas",
@@ -1437,6 +1444,8 @@
         "avisosDesc": "Qué les llega solo a tus inquilinos y propietarios. Todo arranca apagado.",
         "bitacora": "Bitácora de plata",
         "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas.",
+        "movimientos": "Bitácora de movimientos",
+        "movimientosDesc": "Quién hizo qué en todo el panel, con su rol y el resultado. Nadie la edita ni la borra a mano.",
         "slaDePqrs": "Tiempo de respuesta",
         "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo."
       },
@@ -1574,7 +1583,8 @@
         "inviteEmailNotDelivered": "Invitación creada, correo no enviado",
         "inviteEmailNotDeliveredDesc": "No pudimos enviar el correo. Usa \"Reenviar invitación\" o verifica la dirección.",
         "resendEmailNotDelivered": "No se pudo reenviar el correo",
-        "resendEmailNotDeliveredDesc": "El miembro sigue activo, pero el correo no se envió. Verifica la dirección e inténtalo de nuevo."
+        "resendEmailNotDeliveredDesc": "El miembro sigue activo, pero el correo no se envió. Verifica la dirección e inténtalo de nuevo.",
+        "error": "No se pudo guardar"
       },
       "profile": {
         "title": "Perfil de la Agencia",
@@ -1795,6 +1805,15 @@
         "alcancePlata": "Sin «Dispersiones · Ver», la ficha del propietario llega sin cuenta bancaria ni plata, y sus extractos, deudas y deducciones no se abren.",
         "alcanceContabilidad": "La contabilidad (libro, balance, PUC) pide «Reportes · Ver».",
         "alcanceAsesor": "Por defecto el Asesor comercial no tiene ninguno de los tres: ve lo comercial y nada de la operación. Dáselos aquí si tu inmobiliaria trabaja distinto.",
+        "puntualesTitulo": "Permisos puntuales",
+        "puntualesDescripcion": "Una acción concreta que se otorga con nombre propio. No entra con marcar la fila entera de un módulo.",
+        "puntualAdminSiempre": "El administrador siempre lo tiene.",
+        "puntuales": {
+          "cambiar_fecha_egreso": {
+            "nombre": "Cambiar la fecha de un egreso",
+            "descripcion": "Corregir la fecha, la referencia o la nota de un egreso ya registrado. Cambiar la fecha mueve su asiento a otro día. Por defecto, sólo el administrador."
+          }
+        },
         "confirmTitle": "Confirmar cambios",
         "confirmDescription": "Los cambios en permisos afectaran inmediatamente a todos los usuarios con estos roles.",
         "cancel": "Cancelar",
@@ -1802,7 +1821,7 @@
         "resetDescription": "Esto restablecera los permisos de todos los roles a sus valores por defecto.",
         "resetWarning": "Todos los cambios personalizados se perderan. Esta accion no se puede deshacer.",
         "adminNote": "Los administradores tienen todos los permisos por defecto y no se pueden modificar.",
-        "memberOverrideNote": "Guardar o restablecer los permisos de un rol restablece las personalizaciones individuales de los miembros de ese rol."
+        "memberOverrideNote": "Si una persona de este rol tiene permisos propios, los conserva: guardar sólo cambia lo que hereda del rol. «Restablecer» sí borra los permisos propios de todo el equipo."
       },
       "integrations": {
         "title": "Integraciones",
@@ -2077,7 +2096,9 @@
         "statusInProcess": "En proceso",
         "tenant": "Inquilino",
         "saleCommission": "Comisión de venta",
-        "propertiesCount": "propiedad(es)"
+        "propertiesCount": "propiedad(es)",
+        "copiarCorreo": "Copiar el correo",
+        "copiarTelefono": "Copiar el teléfono"
       }
     },
     "agentes": {
@@ -2149,11 +2170,6 @@
         "properties": "Propiedades Asignadas",
         "pipeline": "Pipeline Activo",
         "commissions": "Comisiones",
-        "editComingSoon": "Editar perfil próximamente",
-        "editComingSoonDesc": "Podrás modificar los datos del agente",
-        "assignComingSoon": "Asignar propiedad próximamente",
-        "assignComingSoonDesc": "Podrás asignar nuevas propiedades a este agente",
-        "comingSoon": "Próximamente",
         "commissionsDesc": "Historial detallado de pagos y comisiones del agente"
       }
     },
@@ -2497,6 +2513,8 @@
         "canonRecaudado": "Canon recaudado",
         "queEsCanonCausado": "Canon causado: lo que el contrato cobra ese mes, aunque el inquilino no haya pagado.",
         "commission": "Comisión",
+        "ivaComision": "IVA de la comisión",
+        "retenidoComision": "Retenido sobre la comisión",
         "net": "Neto",
         "propertyBreakdown": "Desglose por Propiedad",
         "history": "Historial",
@@ -2530,7 +2548,13 @@
         "downloading": "Descargando...",
         "copyTooltip": "Copiar",
         "call": "Llamar",
-        "email": "Email"
+        "email": "Email",
+        "titularDeLaFichaHoy": "Tomado de la ficha de hoy: esta dispersión es anterior a la copia del titular.",
+        "repartoTitulo": "Repartido en {{n}} cuentas",
+        "repartoANombreDe": "A nombre de {{titular}}",
+        "titularOtraPersona": "otra persona",
+        "registrarElGiro": "Registrar el giro",
+        "aprobadoPorTi": "ti"
       },
       "resumen": {
         "summaryMonth": "Resumen {{month}}",
@@ -2588,6 +2612,28 @@
         "failedAbbr": "{{count}} fall.",
         "emptyTitle": "No hay dispersiones para mostrar",
         "emptyDescription": "Genera las dispersiones del mes para enviar pagos a los propietarios"
+      },
+      "cuentaDeOrigen": {
+        "tusCuentas": "Tus cuentas de {{banco}}:",
+        "tipo": "Tipo de cuenta",
+        "tipos": {
+          "AHORROS": "Ahorros",
+          "CORRIENTE": "Corriente"
+        },
+        "numero": "Número de la cuenta de {{banco}} desde la que sale la plata",
+        "soloDigitos": "El número de cuenta sólo lleva dígitos.",
+        "laTienesRegistrada": "¿La tienes registrada? Guárdala en",
+        "mediosDePago": "Medios de pago",
+        "yLaProximaVez": "y la próxima vez aparece aquí."
+      },
+      "origenDelGiro": {
+        "pregunta": "¿Desde qué cuenta de la inmobiliaria salió el giro?",
+        "elegirBanco": "Elige el banco",
+        "ayuda": "Se lo decimos al propietario en el correo del giro: es lo que busca en el extracto de su banco para reconocer la plata.",
+        "cargando": "Cargando los bancos…",
+        "errorAlCargar": "No se pudo cargar la lista de bancos.",
+        "desde": "Desde {{banco}} · {{tipo}}",
+        "teProponemosLaUltima": "Te proponemos la última cuenta desde la que giraste."
       }
     },
     "operaciones": {
@@ -2788,8 +2834,6 @@
         "statusApproved": "Aprobada",
         "quoteApproved": "Cotización aprobada",
         "noteAdded": "Nota agregada",
-        "featureInDevelopment": "Función en desarrollo",
-        "featureInDevelopmentDesc": "Próximamente podrás solicitar cotizaciones directamente",
         "calculationComplete": "Cálculo completado",
         "newRent": "Nuevo arriendo: {{amount}}",
         "renewalTerminated": "Renovación terminada"
@@ -2960,7 +3004,6 @@
       "status": "Estado",
       "sortBy": "Ordenar por",
       "clearFilters": "Limpiar filtros",
-      "comingSoon": "Disponible próximamente",
       "edit": "Editar",
       "since": "Desde",
       "commissionDistribution": "Distribución de comisión",
@@ -3132,7 +3175,8 @@
       "stats": {
         "inProcess": "En proceso",
         "maintenance": "Mantenimiento",
-        "propertyCount": "{{count}} inmuebles"
+        "propertyCount": "{{count}} inmuebles",
+        "propertyCountSinContar": "Sin contar"
       },
       "views": {
         "table": "Tabla",
@@ -3167,9 +3211,7 @@
           "autoSave": "Los cambios se guardarán automáticamente",
           "terminateConsignment": "Terminar consignación",
           "requiresConfirmation": "Esta acción requiere confirmación adicional",
-          "renewSoon": "Renovar consignación próximamente",
           "renewDesc": "Podrás extender el contrato de consignación",
-          "reassignSoon": "Reasignar agente próximamente",
           "reassignDesc": "Podrás cambiar el agente asignado",
           "updateError": "No se pudieron guardar los cambios",
           "statusChangeError": "No se pudo cambiar el estado",
@@ -3481,7 +3523,6 @@
         "moreActions": "Más acciones",
         "viewOnPortal": "Ver en Portal",
         "viewOnPortalUnavailable": "Este inmueble no tiene una propiedad vinculada",
-        "comingSoon": "Próximamente",
         "changeStatus": "Cambiar estado",
         "renewConsignment": "Renovar consignación",
         "terminateConsignment": "Terminar consignación",
@@ -3748,7 +3789,8 @@
         "handoverReportOpen": "Abrir el acta para imprimir",
         "gallery": "Galería ({{count}} fotos)",
         "photoAlt": "Foto {{number}}",
-        "viewMorePhotos": "Ver {{count}} fotos más"
+        "viewMorePhotos": "Ver {{count}} fotos más",
+        "sinContratoTodavia": "Este inmueble todavía no tiene un contrato de arrendamiento"
       },
       "wizard": {
         "steps": {
@@ -4266,7 +4308,7 @@
         "all": "Todos",
         "contracts": "Contratos",
         "templates": "Plantillas",
-        "actas": "Actas",
+        "actas": "Actas de entrega",
         "legal": "Legal"
       },
       "table": {
@@ -4316,7 +4358,6 @@
         "documentDuplicated": "Documento duplicado",
         "copyCreated": "Copia de \"{{name}}\" creada",
         "documentDeleted": "Documento eliminado",
-        "comingSoon": "Esta funcionalidad estará disponible próximamente",
         "inventory": "Inventario",
         "incrementLetter": "Carta de Incremento",
         "actaCreated": "Acta creada",
@@ -4519,7 +4560,6 @@
       "inventoryTitle": "Inventario por Espacio",
       "inventoryDesc": "Registra los elementos y su estado en cada espacio",
       "defectPlaceholder": "Describir defecto o nota...",
-      "addPhotoSoon": "Agregar foto (próximamente)",
       "deleteItem": "Quitar ítem",
       "addItem": "Agregar ítem",
       "noSpacesSelected": "No hay espacios seleccionados",
@@ -4579,7 +4619,6 @@
       "condFair": "Regular",
       "condPoor": "Malo",
       "title": "Inventario del Inmueble",
-      "comingSoon": "Próximamente",
       "deliveryDateLabel": "Fecha de entrega",
       "searchItem": "Buscar ítem...",
       "thItem": "Ítem",
@@ -4700,101 +4739,8 @@
       "scheduledExport": "Exportación programada",
       "cuotasEnCartera": "{{count}} cuotas en cartera",
       "claimsBucket": "En siniestro",
-      "bucketsAddUp": "Los tramos suman la cartera: la cobranza viva por días de mora y lo que ya está en siniestro."
-    },
-    "documento": {
-      "today": "Hoy",
-      "yesterday": "Ayer",
-      "daysAgo": "Hace {{days}} días",
-      "weeksAgo": "Hace {{weeks}} semanas",
-      "signedOf": "{{signed}} de {{total}} firmados",
-      "title": "Gestor de Documentos",
-      "countOf": "{{filtered}} de {{total}} documentos",
-      "listView": "Lista",
-      "cardView": "Tarjetas",
-      "generateDoc": "Generar documento",
-      "leaseContract": "Contrato de arriendo",
-      "deliveryAct": "Acta de entrega",
-      "returnAct": "Acta de devolución",
-      "inventory": "Inventario",
-      "incrementLetter": "Carta de incremento",
-      "searchPlaceholder": "Buscar por nombre, propiedad o inquilino...",
-      "typeLabel": "Tipo",
-      "allTypes": "Todos los tipos",
-      "statusLabel": "Estado",
-      "allStatuses": "Todos los estados",
-      "clearFilters": "Limpiar filtros",
-      "totalLabel": "Total",
-      "pendingSignature": "Pendiente firma",
-      "signed": "Firmado",
-      "expired": "Expirado",
-      "selectedCount": "{{count}} seleccionados",
-      "download": "Descargar",
-      "delete": "Eliminar",
-      "noDocuments": "No se encontraron documentos",
-      "adjustFilters": "Intenta ajustar los filtros de búsqueda",
-      "noDocumentsAvailable": "No hay documentos disponibles",
-      "thDocument": "Documento",
-      "thProperty": "Propiedad",
-      "thTenant": "Inquilino",
-      "thCategory": "Categoría",
-      "thStatus": "Estado",
-      "thSignatures": "Firmas",
-      "thDate": "Fecha",
-      "thSize": "Tamaño",
-      "viewDoc": "Ver documento",
-      "downloadPdf": "Descargar PDF",
-      "sendForSignature": "Enviar para firma",
-      "viewSignatures": "Ver firmas",
-      "duplicate": "Duplicar",
-      "catAll": "Todos",
-      "catContracts": "Contratos",
-      "catActas": "Actas",
-      "catInventory": "Inventarios",
-      "catPoliza": "Pólizas",
-      "catLetters": "Cartas",
-      "varTenantName": "Nombre del inquilino",
-      "varTenantCedula": "Cédula del inquilino",
-      "varPropertyAddress": "Dirección de la propiedad",
-      "varMonthlyRent": "Canon mensual",
-      "varStartDate": "Fecha de inicio",
-      "varEndDate": "Fecha de finalización",
-      "varDeliveryDate": "Fecha de entrega",
-      "varInventoryItems": "Ítems del inventario",
-      "varReturnDate": "Fecha de devolución",
-      "varDamages": "Daños",
-      "varDepositDeductions": "Deducciones del depósito",
-      "varRooms": "Habitaciones",
-      "varAppliances": "Electrodomésticos",
-      "varFurniture": "Muebles",
-      "varTerminationDate": "Fecha de terminación",
-      "varReason": "Razón",
-      "varCurrentRent": "Canon actual",
-      "varNewRent": "Canon nuevo",
-      "varIpcRate": "Tasa IPC",
-      "varEffectiveDate": "Fecha efectiva",
-      "varCoverageAmount": "Monto de cobertura",
-      "templatesTitle": "Plantillas de Documentos",
-      "templatesCount": "{{count}} plantillas disponibles",
-      "comingSoon": "Próximamente",
-      "newTemplate": "Nueva plantilla",
-      "searchTemplates": "Buscar plantilla...",
-      "noTemplatesFound": "No se encontraron plantillas",
-      "tryAnotherSearch": "Intenta con otro término de búsqueda",
-      "noTemplatesInCategory": "No hay plantillas en esta categoría",
-      "usedTimes": "Usado {{count}} veces",
-      "updated": "Actualizado",
-      "defaultTemplate": "Plantilla predeterminada",
-      "preview": "Vista previa",
-      "use": "Usar",
-      "description": "Descripción",
-      "lastUpdated": "Última actualización",
-      "variables": "Variables",
-      "customVariable": "Variable personalizada",
-      "documentPreview": "Vista previa del documento",
-      "simulatedPreview": "Vista previa simulada - El documento final será generado con los datos reales",
-      "close": "Cerrar",
-      "useTemplate": "Usar plantilla"
+      "bucketsAddUp": "Los tramos suman la cartera: la cobranza viva por días de mora y lo que ya está en siniestro.",
+      "upgradeToAccess": "Mejorar el plan"
     },
     "mantenimiento": {
       "priorityEmergency": "Emergencia",
@@ -5010,6 +4956,7 @@
         "docNIT": "NIT (Empresas)",
         "docPassport": "Pasaporte",
         "docTI": "Tarjeta de Identidad",
+        "docPPT": "Permiso por Protección Temporal (PPT)",
         "fullName": "Nombre completo",
         "businessName": "Razón social",
         "phone": "Teléfono",
@@ -5025,15 +4972,11 @@
         "checking": "Corriente",
         "accountNumber": "Número de cuenta",
         "hintDigitsOnly": "Solo dígitos, sin puntos ni guiones",
-        "accountHolder": "Titular de la cuenta",
-        "hintMatchBank": "Debe coincidir con el nombre registrado en el banco",
         "department": "Departamento",
         "selectDepartment": "Seleccionar departamento…",
         "noDepartment": "Sin departamento",
         "holderDocumentType": "Tipo de documento del titular",
         "holderDocumentTypePlaceholder": "Tipo",
-        "holderDocument": "Documento del titular",
-        "hintHolderDocument": "Solo si la cuenta está a nombre de otra persona. Bancolombia lo pide en el archivo de dispersión.",
         "errHolderDocTypeRequired": "Elige el tipo de documento del titular",
         "internalNotes": "Notas internas",
         "hintTeamOnly": "Solo visible para el equipo",
@@ -5054,7 +4997,30 @@
         "errAccountTypeRequired": "Selecciona tipo de cuenta",
         "errAccountNumRequired": "Número de cuenta requerido",
         "errAccountNumInvalid": "Número de cuenta inválido (10-20 dígitos)",
-        "errHolderRequired": "Nombre del titular requerido"
+        "titularPregunta": "¿A quién pertenece la cuenta?",
+        "titularDelPropietario": "Del propietario",
+        "titularDeOtraPersona": "De otra persona",
+        "titularEsElPropietario": "La cuenta queda a nombre de {{name}}, con su documento.",
+        "titularAvisoOtraPersona": "Primero, la persona dueña de la cuenta: el banco revisa el giro contra su documento, no contra el del propietario.",
+        "titularNombre": "Nombre completo del titular",
+        "titularNombreHint": "Como aparece en el banco",
+        "titularNumero": "Número de documento del titular",
+        "titularErrNombre": "Escribe el nombre completo de la persona dueña de la cuenta",
+        "titularErrVacio": "Escribe el número de documento del titular",
+        "titularErrSoloNumeros": "Este documento lleva sólo números",
+        "titularErrLargo": "Debe tener entre {{min}} y {{max}} dígitos",
+        "titularErrPasaporte": "El pasaporte lleva sólo letras y números, entre 5 y 20",
+        "titularErrNit": "Escribe el NIT así: 900123456-7 (el dígito de verificación es opcional)",
+        "titularErrDv": "El dígito de verificación no corresponde: es {{dv}}",
+        "titularErrEsElPropietario": "Ese es el documento del propietario: si la cuenta es suya, elige «Del propietario»",
+        "docCorto": {
+          "CC": "Cédula (CC)",
+          "CE": "Extranjería (CE)",
+          "TI": "Identidad (TI)",
+          "NIT": "NIT",
+          "PASSPORT": "Pasaporte",
+          "PPT": "PPT"
+        }
       },
       "stats": {
         "properties": "Propiedades",
@@ -5075,7 +5041,9 @@
         "ofTotalRented": "{{rentados}} de {{total}} arrendados",
         "copropiedades": "{{n}} como copropietario",
         "sinPropiedades": "sin inmuebles",
-        "lastPayment": "Último giro"
+        "lastPayment": "Último giro",
+        "unaPropiedad": "1 propiedad",
+        "nPropiedades": "{{n}} propiedades"
       },
       "alertas": {
         "sinCuenta": {
@@ -5136,7 +5104,9 @@
         "show": "Mostrar",
         "copy": "Copiar",
         "verified": "Datos verificados",
-        "sinCuenta": "Sin cuenta bancaria: sin esto no se le puede girar. Cárgala con el lápiz."
+        "sinCuenta": "Sin cuenta bancaria: sin esto no se le puede girar. Cárgala con el lápiz.",
+        "titularOtraPersona": "Otra persona",
+        "titularElPropietario": "El propietario"
       },
       "selector": {
         "searchPlaceholder": "Buscar propietario por nombre, email o documento...",
@@ -5147,6 +5117,29 @@
         "noRegistered": "No hay propietarios registrados",
         "addNewOwner": "Agregar nuevo propietario",
         "ownerSelected": "Propietario seleccionado"
+      },
+      "cambioDeCuenta": {
+        "certificacionDeLaCuenta": "Certificación bancaria de esta cuenta (PDF o foto, obligatoria)",
+        "yaCertificada": "Ya certificada: esta cuenta ya recibe hoy, sólo le cambia el porcentaje.",
+        "certificacionesDelReparto": "Certificaciones del reparto",
+        "certificacionDeLaCuentaN": "Certificación de la cuenta {{n}}",
+        "sinCertificacionNueva": "ya certificada",
+        "certificacionUnica": "Certificación",
+        "revisarCertificaciones": "Revisa la certificación de cada cuenta nueva antes de aprobar.",
+        "certificacionDeTercero": "Certificación bancaria de esta cuenta (obligatoria: está a nombre de otra persona)",
+        "certificacionNuevaOpcional": "¿La certificación venció? Adjunta una nueva (opcional)",
+        "paraPedirloCompleta": "Para pedirlo, completa {{que}}.",
+        "enLaCuentaN": "en la cuenta {{n}}, {{campos}}",
+        "campo": {
+          "tipoDoc": "el tipo de documento del titular",
+          "numeroDoc": "el número de documento del titular",
+          "nombre": "el nombre del titular",
+          "banco": "el banco",
+          "numeroCuenta": "el número de la cuenta",
+          "certificacion": "la certificación bancaria"
+        },
+        "faltaCertificacionDeLaCuenta": "Falta la certificación de la cuenta {{n}}: cada banco certifica una cuenta.",
+        "faltanCertificacionesDeLasCuentas": "Falta la certificación de las cuentas {{cuentas}}: cada banco certifica una cuenta."
       }
     },
     "finance": {
@@ -5447,7 +5440,6 @@
       },
       "cotizador": {
         "placeholder": {
-          "title": "Próximamente",
           "subtitle": "El módulo de Cotización estará disponible en la siguiente actualización.",
           "phase": "Phase 30",
           "backLink": "Volver a Agentes AI"
@@ -5854,8 +5846,7 @@
             "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
             "porQuePending": "Todavía estamos consultando a esta aseguradora.",
             "condicionesVisibleHint": "Condiciones listadas arriba",
-            "avanzarAction": "Avanzar",
-            "proximamente": "Próximamente"
+            "avanzarAction": "Avanzar"
           }
         },
         "pdf": {
@@ -8315,7 +8306,6 @@
                 "desc": "Tú decides únicamente donde tu criterio hace falta."
               }
             },
-            "importarProximamente": "Próximamente",
             "importarNota": "¿Primera cartera? Escríbele a tu contacto Leasefy para cargarla."
           }
         }
@@ -8574,7 +8564,6 @@
             "solicitud": "Solicitud",
             "asesor": "Asesor"
           },
-          "confirmacion": "Próximamente: esto creará el estudio y enviará la solicitud al candidato.",
           "cta": "Crear estudio y enviar solicitud"
         },
         "equipo": {
@@ -8804,7 +8793,6 @@
             "sms": "SMS",
             "llamada": "Llamada"
           },
-          "confirmacion": "Próximamente: estas reglas se guardarán y el agente las aplicará a los nuevos estudios.",
           "aviso": "Vista previa de configuración. Aún no se conecta con el agente: los cambios no se aplican.",
           "guardar": "Guardar reglas"
         }
@@ -8983,8 +8971,7 @@
           },
           "estado": {
             "conectar": "Conectar",
-            "desconectado": "Sin conectar",
-            "proximamente": "Próximamente"
+            "desconectado": "Sin conectar"
           },
           "trazabilidad": {
             "title": "Trazabilidad",
@@ -9100,7 +9087,6 @@
       "heading": "Tu inmobiliaria, en piloto",
       "subtitle": "ERP · CRM · Autopilot, todo en uno. El sistema opera; tú tomas las decisiones.",
       "insightsTitle": "Insights & Alertas",
-      "insightsDesc": "Pronto: qué pasa hoy y qué hacer — contratos por vencer, cartera en mora y egresos por dispersar, convertidos en acciones.",
       "insightsExample1": "18 contratos por vencer · 6 sin gestión",
       "insightsExample2": "42 inquilinos en mora · 11 prioritarios",
       "insightsExample3": "$84M por dispersar · cubres 62%",
@@ -9420,6 +9406,8 @@
         "titulo": "Le debe a la inmobiliaria",
         "descripcion": "Deducciones o saldo en contra que ya no tienen ninguna liquidación de la cual descontarse: se le cobran.",
         "desde": "Desde {{mes}}",
+        "diaUno": "hace 1 día",
+        "dias": "hace {{dias}} días",
         "sinCuentaDeCobro": "{{valor}} todavía sin cuenta de cobro",
         "generar": "Generar cuenta de cobro",
         "generando": "Generando…",
@@ -9434,7 +9422,12 @@
         "descripcion": "Ya no tienen ninguna liquidación de la cual descontar sus deducciones o su saldo en contra: se les cobra con una cuenta de cobro.",
         "colPropietario": "Propietario",
         "colDebe": "Debe",
-        "colDesde": "Desde",
+        "edadDeLaCartera": "Edad de la cartera de propietarios",
+        "colMasViejo": "El más viejo",
+        "diaUno": "1 día",
+        "dias": "{{dias}} días",
+        "conceptoUno": "1 concepto",
+        "conceptos": "{{cuantos}} conceptos",
         "colCuenta": "Cuenta de cobro",
         "sinCuenta": "Sin generar",
         "cuenta": "N.º {{numero}}",
@@ -9491,6 +9484,7 @@
       "fCanonQueEsRecaudado": "Sólo las cuotas del mes que el inquilino ya pagó completas.",
       "fComision": "Comisión admin",
       "fIva": "IVA sobre comisión",
+      "fRetencionesComision": "Retenido sobre la comisión",
       "fDescuentos": "Descuentos",
       "fNeto": "Neto al propietario",
       "fAFavor": "Conceptos a favor",
@@ -9518,7 +9512,6 @@
       "colNeto": "Neto",
       "colCuenta": "Cuenta destino",
       "colEstado": "Estado",
-      "colComprobante": "Comprobante",
       "emptyTitle": "Este mes todavía no hay nada que liquidar",
       "emptyDesc": "Aparece un propietario acá cuando sus contratos tienen cuotas del mes por girar, haya pagado o no el inquilino. El giro se ejecuta en Dispersiones.",
       "emptyDescRecaudado": "Aparece un propietario acá cuando el inquilino ya pagó completa la cuota del mes. El giro se ejecuta en Dispersiones.",
@@ -9915,6 +9908,7 @@
       "esperandoAlInquilino": "Lo hace el inquilino",
       "sigue": "Sigue",
       "verPaso": "Ver",
+      "verElRecorrido": "El recorrido completo",
       "sinPantalla": "Todavía sin pantalla",
       "cambioDeManos": "Acá cambia de manos",
       "actorInquilino": "Inquilino",
@@ -10838,6 +10832,7 @@
         "docNIT": "NIT (Empresas)",
         "docPassport": "Pasaporte",
         "docTI": "Tarjeta de Identidad",
+        "docPPT": "Permiso por Protección Temporal (PPT)",
         "fullName": "Nombre completo",
         "businessName": "Razón social",
         "phone": "Teléfono",
@@ -11543,6 +11538,8 @@
       "descripcion": "Vas a dejar constancia de que entró plata. Se aplica a la deuda más vieja primero y sale un recibo numerado por cada mes que toque.",
       "montoLabel": "¿Cuánto va a pagar?",
       "maximo": "Máximo abonable: {{monto}}",
+      "deudaTotal": "Deuda total, vencida y futura: {{monto}}",
+      "confirmarAFavor": "Sí, quedan {{monto}} a favor de {{nombre}}",
       "abonarTodo": "Paga toda la deuda",
       "montoRequerido": "Escribe cuánto entró",
       "montoPositivo": "Tiene que ser mayor que cero",
@@ -11816,7 +11813,8 @@
       "porConcepto": "Por concepto",
       "porPagar": "Por pagar a propietarios",
       "cobrosEmitidos": "Cobros emitidos",
-      "juridico": "Cobro jurídico"
+      "juridico": "Cobro jurídico",
+      "castigada": "Castigada"
     },
     "interes": {
       "columnaIntereses": "Intereses",
@@ -12074,6 +12072,16 @@
     "ciudadYFecha": "{{ciudad}}, {{fecha}}",
     "sinEmisor": "Inmobiliaria sin datos de contacto cargados",
     "restaPorPagar": "Resta por pagar",
+    "delPropietario": {
+      "restaPorPagar": "Por girar",
+      "cancelado": "Girado",
+      "vencido": "Atrasado",
+      "enMoraDias": "Giro atrasado · {{dias}} días",
+      "vencidoEnPlazo": "Por girar, en plazo",
+      "cuotasVencidas": "{{n}} giros atrasados",
+      "unaCuotaVencida": "1 giro atrasado",
+      "pagadasDe": "Giradas {{pagadas}} de {{total}} cuotas"
+    },
     "cancelado": "Cancelado",
     "pendiente": "Pendiente",
     "totalesDelContrato": "Totales del contrato {{numero}}",

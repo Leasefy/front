@@ -214,7 +214,10 @@ describe('<FacturasDeProveedor>', () => {
 
     await pintar();
 
-    expect(q('facturas-sin-migracion')!.textContent).toContain('facturas_de_proveedor');
+    /* 🔴 El identificador va al `title`, no al texto. */
+    expect(
+      q('facturas-sin-migracion')!.querySelector('[title]')?.getAttribute('title'),
+    ).toContain('facturas_de_proveedor');
     expect(q('facturas-sin-migracion')!.textContent).toContain('sin los gastos propios');
     expect(q('facturas-de-proveedor')).toBeNull();
   });

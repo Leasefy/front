@@ -238,7 +238,7 @@ export default function RevisionesClient() {
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-5">
+    <div className="p-6 lg:p-8 space-y-5">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-fg">
           Cola de revisión de decisiones
@@ -472,6 +472,6 @@ export default function RevisionesClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </div>
   )
 }

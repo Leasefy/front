@@ -57,6 +57,32 @@ export interface MotivoEnCristiano {
   seTradujo: boolean
 }
 
+/**
+ * 🔴 20-09 · EL MISMO DEFECTO DE NICO, UN NIVEL MÁS ADENTRO.
+ *
+ * El 18-09 se dejó de mostrar el identificador de la migración. Pero la
+ * consecuencia que se captura venía con la frase del operador pegada al final,
+ * y esa sí llegaba entera a la pantalla:
+ *
+ *     «Esta función todavía no está disponible. Por ahora, el cálculo se ve,
+ *      pero no se puede proponer ni aprobar. **La aplica Víctor.**»
+ *
+ * Quien administra inmuebles no sabe quién es Víctor, no puede escribirle y lo
+ * único que aprende es que hay una persona suelta entre él y su contabilidad.
+ * Es exactamente el mismo error que el identificador: el mensaje del operador
+ * mandado al usuario final.
+ *
+ * El motivo técnico sigue viajando entero en `tecnico` —al `title`, al DOM y
+ * al log—, así que no se pierde nada para quien sí necesita leerlo.
+ */
+const FRASE_DEL_OPERADOR =
+  /\s*(?:la\s+)?(?:la\s+)?(?:migraci[óo]n\s+)?(?:la\s+)?aplica\s+(?:v[íi]ctor|el\s+equipo|soporte)\s*\.?/gi
+
+/** Quita del texto las frases dirigidas a quien despliega, no al usuario. */
+export function sinLaFraseDelOperador(texto: string): string {
+  return texto.replace(FRASE_DEL_OPERADOR, ' ').replace(/\s+/g, ' ').trim()
+}
+
 /** Deja la consecuencia con mayúscula inicial y un punto al final. */
 function comoFrase(bruto: string): string {
   const limpio = bruto.trim().replace(/\s+/g, ' ')
@@ -83,7 +109,7 @@ export function enCristiano(motivo: string | null | undefined): MotivoEnCristian
   for (const forma of FORMAS) {
     const m = forma.exec(bruto)
     if (!m) continue
-    const consecuencia = m[1]?.trim()
+    const consecuencia = sinLaFraseDelOperador(m[1]?.trim() ?? '')
     const texto = consecuencia
       ? `Esta función todavía no está disponible. Por ahora, ${consecuencia.charAt(0).toLowerCase()}${consecuencia.slice(1)}`
       : 'Esta función todavía no está disponible.'
@@ -100,7 +126,9 @@ export function enCristiano(motivo: string | null | undefined): MotivoEnCristian
     }
   }
 
-  return { texto: bruto, tecnico: bruto, seTradujo: false }
+  // Aunque no se reconozca la forma, la frase del operador nunca se muestra.
+  const limpio = sinLaFraseDelOperador(bruto)
+  return { texto: limpio || bruto, tecnico: bruto, seTradujo: limpio !== bruto }
 }
 
 /** Atajo para pintar: sólo el texto. */

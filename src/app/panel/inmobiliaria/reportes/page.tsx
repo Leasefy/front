@@ -172,7 +172,7 @@ function ReportesContent() {
   const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('ocupacion');
 
   const advancedTabs: { key: AdvancedTab; label: string; icon: typeof Buildings }[] = [
-    { key: 'ocupacion', label: locale === 'es' ? 'Ocupacion' : 'Occupancy', icon: Buildings },
+    { key: 'ocupacion', label: locale === 'es' ? 'Ocupación' : 'Occupancy', icon: Buildings },
     { key: 'cobros', label: locale === 'es' ? 'Cobros' : 'Collections', icon: CurrencyDollar },
     { key: 'agentes', label: locale === 'es' ? 'Agentes' : 'Agents', icon: Users },
     { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
@@ -330,7 +330,9 @@ function ReportesContent() {
             minute: '2-digit',
           })
         : t('inmobiliaria.reportes.stats.never'),
-      lastGeneratedReport: lastGenerated?.title || 'N/A',
+      // Una raya, no «N/A»: es el símbolo con el que el resto del producto
+      // dice «acá no hay dato todavía», y no hay que traducirlo de la cabeza.
+      lastGeneratedReport: lastGenerated?.title || '—',
     };
   }, [reports, favorites]);
 
@@ -782,7 +784,7 @@ function ReportesContent() {
               </h2>
               <p className="text-xs text-muted-foreground">
                 {locale === 'es'
-                  ? 'Analisis detallado de ocupacion, cobros y rendimiento'
+                  ? 'Análisis detallado de ocupación, cobros y rendimiento'
                   : 'Detailed occupancy, collections and performance analysis'}
               </p>
             </div>
@@ -790,7 +792,7 @@ function ReportesContent() {
           <ReportPDFExport
             title={
               activeAdvancedTab === 'ocupacion'
-                ? (locale === 'es' ? 'Reporte de Ocupacion' : 'Occupancy Report')
+                ? (locale === 'es' ? 'Reporte de Ocupación' : 'Occupancy Report')
                 : activeAdvancedTab === 'cobros'
                 ? (locale === 'es' ? 'Reporte de Cobros' : 'Collections Report')
                 : activeAdvancedTab === 'ejecutivo'

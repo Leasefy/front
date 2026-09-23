@@ -29,7 +29,7 @@ import {
   type AmortizacionDelContrato,
   type ResumenDelCliente,
 } from './resumen';
-import { useTextoDelEstado } from './textos';
+import { claveDelLado, useTextoDelEstado } from './textos';
 import { interesesDelEstado } from './intereses';
 
 export function ResumenDelEstado({
@@ -41,7 +41,11 @@ export function ResumenDelEstado({
   hoy: string;
   className?: string;
 }) {
-  const t = useTextoDelEstado();
+  const texto = useTextoDelEstado();
+  // Los rótulos dependen del lado: al propietario no se le dice «en mora».
+  const rol = doc.cliente.tipo;
+  const esPropietario = rol === 'PROPIETARIO';
+  const t: typeof texto = (clave, params) => texto(claveDelLado(clave, rol), params);
   const r = React.useMemo(() => resumirElCliente(doc, hoy), [doc, hoy]);
   const intereses = interesesDelEstado(doc);
 
@@ -90,7 +94,7 @@ export function ResumenDelEstado({
                 {t('estadoDeCuenta.vencido')}{' '}
                 <span
                   data-testid="vencido-del-cliente"
-                  className="font-mono tabular-nums text-danger"
+                  className={cn('font-mono tabular-nums', esPropietario ? 'text-warning' : 'text-danger')}
                 >
                   {formatCurrency(r.vencidoCop)}
                 </span>
@@ -151,7 +155,10 @@ export function ResumenDelEstado({
               className={cn(
                 'inline-block rounded-full px-3 py-1 text-body-sm font-medium',
                 r.enMora
-                  ? 'bg-danger-soft text-danger'
+                  ? /* Rojo es «debes»: al propietario se le avisa en ámbar. */
+                    esPropietario
+                    ? 'bg-warning-soft text-warning'
+                    : 'bg-danger-soft text-danger'
                   : r.enPlazo
                     ? 'bg-warning-soft text-warning'
                     : 'bg-success-soft text-success',
@@ -196,12 +203,16 @@ export function BarraDeAmortizacion({
   amortizacion,
   className,
   testid,
+  rol,
 }: {
   amortizacion: AmortizacionDelContrato;
   className?: string;
   testid?: string;
+  /** Del lado PROPIETARIO la barra dice «Giradas», no «Pagadas». */
+  rol?: 'INQUILINO' | 'PROPIETARIO';
 }) {
-  const t = useTextoDelEstado();
+  const texto = useTextoDelEstado();
+  const t: typeof texto = (clave, params) => texto(claveDelLado(clave, rol), params);
   const a = amortizacion;
   if (a.total === 0) return null;
 
@@ -209,7 +220,11 @@ export function BarraDeAmortizacion({
     <div className={cn('space-y-2', className)} data-testid={testid}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="text-body-sm text-fg">
-          {t('estadoDeCuenta.pagadasDe', { pagadas: a.pagadas, total: a.total })}
+          {/* 🔴 `cubiertas`, no `pagadas`: una cuota que vino pagada del sistema
+              anterior está pagada (Nico, 21-09). La distinción entre lo que
+              recaudamos nosotros y lo migrado la siguen llevando la barra y su
+              leyenda, que es donde no se puede perder. */}
+          {t('estadoDeCuenta.pagadasDe', { pagadas: a.cubiertas, total: a.total })}
           {a.anteriores > 0 && (
             <span className="text-fg-subtle">
               {' '}
@@ -219,7 +234,7 @@ export function BarraDeAmortizacion({
         </span>
         <span className="font-mono text-caption tabular-nums text-fg-muted">
           {t('estadoDeCuenta.deLoPactado', {
-            pagado: formatCurrency(a.pagadoCop),
+            pagado: formatCurrency(a.cubiertoCop),
             pactado: formatCurrency(a.pactadoCop),
           })}
         </span>
@@ -228,7 +243,7 @@ export function BarraDeAmortizacion({
         className="flex h-2 overflow-hidden rounded-full bg-surface-muted"
         role="img"
         aria-label={t('estadoDeCuenta.cuotasDe', {
-          pagadas: a.pagadas,
+          pagadas: a.cubiertas,
           total: a.total,
         })}
       >
@@ -296,6 +311,7 @@ export function AmortizacionDelContrato({
   return (
     <BarraDeAmortizacion
       amortizacion={a}
+      rol={contrato.rol}
       className={className}
       testid={`amortizacion-${contrato.numero}`}
     />

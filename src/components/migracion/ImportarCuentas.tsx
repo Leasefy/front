@@ -72,6 +72,48 @@ import { mensajeDeContabilidad } from "./contabilidad-errores";
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
 
+/**
+ * Por qué cada asiento automático no quedó asignado solo, dicho con verdad
+ * (QA 22-09): «tu plan no tiene 130505» era falso cuando la cuenta estaba
+ * como MAYOR, y un código que coincide con otro nombre no se asigna solo.
+ */
+export function fraseDeLoQueNoSeAsigno(
+  sinCuenta: ReadonlyArray<{
+    codigo: string;
+    motivo?: "NO_EXISTE" | "NO_IMPUTABLE" | "INACTIVA" | "OTRO_NOMBRE";
+    nombreEnTuPlan?: string;
+  }>,
+): string {
+  const de = (m: string) =>
+    sinCuenta.filter((c) => (c.motivo ?? "NO_EXISTE") === m);
+  const partes: string[] = [];
+  const noExisten = de("NO_EXISTE");
+  if (noExisten.length > 0) {
+    partes.push(`Tu plan no tiene ${noExisten.map((c) => c.codigo).join(", ")}.`);
+  }
+  const mayores = de("NO_IMPUTABLE");
+  if (mayores.length > 0) {
+    partes.push(
+      `${mayores.map((c) => c.codigo).join(", ")} ${mayores.length === 1 ? "está" : "están"} en tu plan como cuenta mayor: los movimientos van en una subcuenta.`,
+    );
+  }
+  const inactivas = de("INACTIVA");
+  if (inactivas.length > 0) {
+    partes.push(
+      `${inactivas.map((c) => c.codigo).join(", ")} ${inactivas.length === 1 ? "está inhabilitada" : "están inhabilitadas"} en tu plan.`,
+    );
+  }
+  const otroNombre = de("OTRO_NOMBRE");
+  if (otroNombre.length > 0) {
+    partes.push(
+      `En tu plan ${otroNombre
+        .map((c) => `${c.codigo} se llama «${c.nombreEnTuPlan ?? ""}»`)
+        .join(", ")}: no la asignamos sola porque el mismo código puede significar otra cosa.`,
+    );
+  }
+  return partes.join(" ");
+}
+
 export function ImportarCuentas({
   onImportado,
   onCerrar,
@@ -248,9 +290,7 @@ export function ImportarCuentas({
           <p className="mt-1 text-sm text-fg-muted" data-testid="puc-importacion-mapeo">
             {resultado.mapeo.sinCuenta.length === 0
               ? "Los asientos automáticos ya tienen su cuenta en tu plan."
-              : `Tu plan no tiene ${resultado.mapeo.sinCuenta
-                  .map((c) => c.codigo)
-                  .join(", ")}: asigna esas cuentas en «Cuentas de los asientos automáticos», más abajo.`}
+              : `${fraseDeLoQueNoSeAsigno(resultado.mapeo.sinCuenta)} Asígnalas en «Cuentas de los asientos automáticos», más abajo.`}
           </p>
         ) : null}
         {resultado.invalidas > 0 ? (
@@ -392,7 +432,7 @@ export function ImportarCuentas({
             <p className="text-sm font-medium text-fg">
               Arrastra el archivo o haz clic para elegirlo
             </p>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Excel o CSV. Nada se crea todavía.
             </p>
           </div>
@@ -435,7 +475,7 @@ export function ImportarCuentas({
               <TableBody>
                 {mapeo.map((m) => (
                   <TableRow key={m.columna}>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-caption">
                       {m.columna}
                     </TableCell>
                     <TableCell>
@@ -469,7 +509,7 @@ export function ImportarCuentas({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       {m.isManual ? "elegido a mano" : m.porque}
                     </TableCell>
                   </TableRow>
@@ -604,21 +644,21 @@ function TablaDeRevision({
               {pageItems.map((f) => (
                 <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
                   {/* +2: en el archivo la primera fila de datos es la 2. */}
-                  <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
+                  <TableCell className="font-mono text-caption tabular-nums text-fg-subtle">
                     {f.indice + 2}
                   </TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">
+                  <TableCell className="font-mono text-caption tabular-nums">
                     {f.codigo || f.codigoOriginal}
                   </TableCell>
                   <TableCell className="text-sm">{f.nombre}</TableCell>
-                  <TableCell className="text-xs text-fg-muted">
+                  <TableCell className="text-caption text-fg-muted">
                     {f.naturaleza === "DEBITO"
                       ? "Débito"
                       : f.naturaleza === "CREDITO"
                         ? "Crédito"
                         : "—"}
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-caption">
                     <Veredicto fila={f} />
                   </TableCell>
                 </TableRow>
@@ -640,7 +680,7 @@ function TablaDeRevision({
         ) : null}
       </div>
       {ordenadas.length > 1 ? (
-        <p className="mt-2 text-xs text-fg-subtle">
+        <p className="mt-2 text-caption text-fg-subtle">
           Primero las que necesitan atención.
         </p>
       ) : null}

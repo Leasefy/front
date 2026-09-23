@@ -174,13 +174,13 @@ function EscalacionesContent() {
     data.resolved.length === 0
   if (!isLoading && allEmpty && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
         <EmptyState
           icon={CheckCircle}
           title={t('inmobiliaria.ai.cobranza.escalaciones.empty.title')}
           description={t('inmobiliaria.ai.cobranza.escalaciones.empty.description')}
         />
-      </main>
+      </div>
     )
   }
 

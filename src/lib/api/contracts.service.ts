@@ -4,6 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from './client';
+import { anunciarProceso } from './procesos.service';
 import type {
   BackendContract,
   CreateContractDto,
@@ -339,6 +340,8 @@ export const contractsApi = {
      * parecidos (N2).
      */
     async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
+      // La carga aparece en el centro de procesos del header (22-09).
+      anunciarProceso();
       return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
         lote: undefined,
@@ -551,8 +554,33 @@ export const contractsApi = {
       );
     },
 
-    /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
-    async activar(lote?: string, invitar = true): Promise<ResumenActivacion> {
+    /**
+     * La fecha de corte de la migración: desde qué día la inmobiliaria cobra
+     * con Leasefy (QA 22-09). Lo que venció antes lo gestionó el sistema
+     * anterior y no es deuda. Sin ella el back no activa contratos (409
+     * `FALTA_FECHA_DE_CORTE`).
+     */
+    async fechaDeCorte(): Promise<FechaDeCorteDeLaMigracion> {
+      return apiClient.get<FechaDeCorteDeLaMigracion>(
+        '/contracts/migrar/fecha-de-corte',
+      );
+    },
+
+    /** Fija la fecha de corte (`AAAA-MM-DD`). Sin valor por defecto. */
+    async fijarFechaDeCorte(fecha: string): Promise<FechaDeCorteDeLaMigracion> {
+      return apiClient.put<FechaDeCorteDeLaMigracion>(
+        '/contracts/migrar/fecha-de-corte',
+        { fecha },
+      );
+    },
+
+    /**
+     * 3. Convierte en contratos las filas LISTO. Sólo esas.
+     *
+     * 🔴 `invitar` es `false` por defecto (QA 22-09): la invitación al portal
+     * es una decisión, no un efecto de apretar «Activar».
+     */
+    async activar(lote?: string, invitar = false): Promise<ResumenActivacion> {
       return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
         lote,
         invitar,
@@ -568,10 +596,17 @@ export const contractsApi = {
      * (`ultimaFila`) y `terminado`. `reconciliarLoteCompleto` da la vuelta
      * entera. Desde el 2026-09-11 `activar` ya NO lo corre adentro.
      */
-    async reconciliar(lote: string, desdeFila = 0): Promise<ResultadoReconciliacion> {
+    async reconciliar(
+      lote: string,
+      /**
+       * La última fila mirada. AUSENTE en la primera vuelta: las filas se
+       * numeran desde 0 y un `0` acá se saltaba la primera (QA 22-09).
+       */
+      desdeFila?: number,
+    ): Promise<ResultadoReconciliacion> {
       return apiClient.post<ResultadoReconciliacion>('/contracts/migrar/reconciliar', {
         lote,
-        desdeFila,
+        ...(desdeFila !== undefined ? { desdeFila } : {}),
       });
     },
 
@@ -1150,6 +1185,12 @@ export interface FilaDeMigracion {
    */
   propietario?: { id: string; nombre: string; documento: string } | null;
   /**
+   * 🔴 QA 22-09: la fila es un contrato TERMINADO y el archivo nombra a otro
+   * dueño que el del inmueble de hoy. El contrato queda a nombre de éste.
+   * Ausente = un back anterior; `null` = no hay diferencia.
+   */
+  propietarioDelHistorico?: { documento: string; nombre: string } | null;
+  /**
    * El % que se le cobra al propietario, **el de la consignación** — que es
    * el que efectivamente va a facturar, no el que traía el archivo.
    */
@@ -1482,6 +1523,16 @@ export interface ResultadoDeVerificacion {
    * se aplicó: los números son ciertos, pero se pierden al recargar.
    */
   guardado: boolean
+}
+
+/** `GET/PUT /contracts/migrar/fecha-de-corte`. */
+export interface FechaDeCorteDeLaMigracion {
+  /** `AAAA-MM-DD`, o `null` si la inmobiliaria todavía no la dijo. */
+  fecha: string | null;
+  /** `false` cuando ya hay contratos migrados con cuotas armadas sobre ella. */
+  editable: boolean;
+  /** Por qué no se puede cambiar. */
+  motivo: string | null;
 }
 
 /** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */

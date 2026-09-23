@@ -30,6 +30,11 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import { RESUMEN_PQRS_VACIO } from '@/lib/api/pqrs-agencia.types';
 import type { Pqrs, PqrsEstado, PqrsListResponse } from '@/lib/api/pqrs-agencia.types';
+import {
+  filtrarPqrs,
+  FILTROS_DE_PQRS_VACIOS,
+  type FiltrosDePqrs,
+} from './filtrar-pqrs';
 import { PQRS_ESTADOS } from '@/lib/api/pqrs-agencia.types';
 import { NuevaPqrsDrawer } from '@/components/inmobiliaria/pqrs/NuevaPqrsDrawer';
 import { PqrsDrawer } from '@/components/inmobiliaria/pqrs/PqrsDrawer';
@@ -67,33 +72,9 @@ const VUELVE_A: Record<ReturnType<typeof lugarDeRegreso>, string> = {
   otro: 'Volver',
 };
 
-/**
- * Buscador y filtro de la tabla (S4 de la auditoría del 13-09: era la única
- * lista del panel sin ninguno de los dos, y `listar()` trae TODAS las
- * solicitudes de la agencia — con cien filas, encontrar una era scroll).
- *
- * Se filtra en el cliente a propósito: la consulta ya trajo todo y el resumen
- * de arriba sigue contando el total de la agencia, no lo que quedó filtrado.
- */
-export interface FiltrosDePqrs {
-  texto: string;
-  estado: PqrsEstado | 'todos';
-}
-
-export const FILTROS_DE_PQRS_VACIOS: FiltrosDePqrs = { texto: '', estado: 'todos' };
-
-export function filtrarPqrs(solicitudes: Pqrs[], filtros: FiltrosDePqrs): Pqrs[] {
-  const texto = filtros.texto.trim().toLowerCase();
-  return solicitudes.filter((p) => {
-    if (filtros.estado !== 'todos' && p.estado !== filtros.estado) return false;
-    if (!texto) return true;
-    // Lo que alguien tiene en la mano cuando busca: el radicado que le dieron,
-    // el nombre de quien reclamó, de qué se trata, o el inmueble.
-    return [p.radicado, p.solicitanteNombre, p.asunto, p.inmuebleLabel, p.asignadoANombre]
-      .filter((x): x is string => Boolean(x))
-      .some((campo) => campo.toLowerCase().includes(texto));
-  });
-}
+// 🔴 El buscador y el filtro viven en `filtrar-pqrs.ts`: un archivo de página
+// no puede exportar nada fuera del juego que Next admite, y estaban exportados
+// para poder probarlos. Ver la cabecera de ese archivo.
 
 const COLUMNS = [
   'colRadicado', 'colSolicitante', 'colTipo', 'colInmueble',

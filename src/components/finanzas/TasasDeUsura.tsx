@@ -27,6 +27,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash, WarningOctagon } from '@phosphor-icons/react';
 
 import {
@@ -252,7 +253,7 @@ export function TasasDeUsuraPanel() {
               </div>
             </div>
 
-            <p className="text-xs leading-relaxed text-fg-muted">
+            <p className="text-caption leading-relaxed text-fg-muted">
               La <strong>efectiva anual</strong> es la que certifica la Superfinanciera cada mes; la{' '}
               <strong>equivalente diaria</strong> es la que el sistema aplica día por día sobre el
               capital en mora, y la calcula el back con la misma fórmula del tope. Tu tasa pisa a la
@@ -318,7 +319,7 @@ export function TasasDeUsuraPanel() {
  */
 export function explicar(error: unknown, porDefecto: string): string {
   const mensaje = mensajeDelFallo(error, porDefecto);
-  return codigoSinMigrar(error) ? `${mensaje} (la aplica Víctor)` : mensaje;
+  return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
 function EditorDeTasa({
@@ -401,7 +402,7 @@ function EditorDeTasa({
               value={efectiva}
               onChange={(e) => setEfectiva(e.target.value)}
             />
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               En porcentaje, mayor que 0. Una tasa en cero apagaría el tope sin decirlo.
             </p>
           </div>
@@ -415,16 +416,10 @@ function EditorDeTasa({
             />
           </div>
           <label className="flex items-start gap-2 text-sm text-fg">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={general}
-              onChange={(e) => setGeneral(e.target.checked)}
-              data-testid="guardar-en-la-general"
-            />
+            <Checkbox className="mt-1" checked={general} onCheckedChange={(marcada: boolean) => setGeneral(marcada)} data-testid="guardar-en-la-general" />
             <span>
               Guardarla en la serie general de Colombia
-              <span className="block text-xs text-fg-muted">
+              <span className="block text-caption text-fg-muted">
                 La comparten todas las inmobiliarias. Sin marcar, la tasa queda sólo para la tuya y
                 pisa a la general en ese mes.
               </span>

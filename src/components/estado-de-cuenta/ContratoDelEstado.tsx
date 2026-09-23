@@ -43,6 +43,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
+import { BotonAnularRecibo } from './AnularReciboDeLaFila';
 import { formatCurrency } from '@/lib/format';
 import {
   Table,
@@ -607,6 +608,8 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           {doc.numero} · {doc.tipo}
         </p>
       )}
+      {/* Sólo en el panel y para un administrador (llega por contexto). */}
+      <BotonAnularRecibo fila={fila} />
       {/* 🔴 D11: la pagó una aseguradora — la fila lo dice, no el pie. */}
       {fila.subrogadaA && (
         <p className="text-caption text-fg-muted" data-testid="fila-subrogada">

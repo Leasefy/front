@@ -37,6 +37,7 @@ import {
 import { IconButton } from '@leasefy/cadence';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 
 interface ConsignacionHeaderProps {
   consignacion: Consignacion;
@@ -255,9 +256,7 @@ export function ConsignacionHeader({
           <div className="absolute top-3 right-3">
             <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-1.5">
               <Percent className="w-4 h-4" />
-              {consignacion.listingType === 'sale'
-                ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
-                : `${consignacion.commissionPercent}%`}{' '}
+              {textoDeLaComision(consignacion)}{' '}
               {consignacion.listingType === 'sale'
                 ? t('inmobiliaria.consignaciones.header.saleCommission')
                 : t('inmobiliaria.consignaciones.header.commission')}

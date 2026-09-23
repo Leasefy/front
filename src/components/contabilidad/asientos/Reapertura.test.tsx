@@ -269,8 +269,15 @@ describe('<Reapertura>', () => {
     );
     await pintar('2025-12-31');
 
-    expect(q('reapertura-sin-migracion')!.textContent).toContain('20260919000000');
-    expect(q('reapertura-sin-migracion')!.textContent).toContain('La aplica Víctor');
+      /* 🔴 20-09 · Acá se exigía que el cartel dijera el identificador de la
+         migración y el nombre de quien la aplica. Nico lo reportó dos veces:
+         el 18-09 por el identificador y el 20-09 por «La aplica Víctor». Son
+         el mensaje del OPERADOR mandado al usuario final: quien administra
+         inmuebles no puede aplicar nada y no sabe quién es Víctor.
+         El original sigue en el `title` para quien deba diagnosticar. */
+      expect(q('reapertura-sin-migracion')!.textContent).not.toContain('20260919000000');
+    expect(q('reapertura-sin-migracion')!.textContent).not.toContain('Víctor');
+    expect(q('reapertura-sin-migracion')!.textContent).toContain('todavía no está disponible');
     expect(q('abrir-reapertura')).toBeNull();
   });
 });

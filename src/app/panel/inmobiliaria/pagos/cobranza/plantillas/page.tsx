@@ -262,7 +262,7 @@ export default function PlantillasPage() {
   // continues to use NoDataYetBadge inside TemplateGrid below.
   if (data && data.templates.length === 0 && !error) {
     return (
-      <main className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
@@ -280,12 +280,12 @@ export default function PlantillasPage() {
           title={t('inmobiliaria.ai.cobranza.plantillas.empty.title')}
           description={t('inmobiliaria.ai.cobranza.plantillas.empty.description')}
         />
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -359,6 +359,6 @@ export default function PlantillasPage() {
           {errorToast}
         </div>
       )}
-    </main>
+    </div>
   )
 }

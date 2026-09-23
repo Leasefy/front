@@ -141,7 +141,7 @@ function EstudioNuevo() {
   ]
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
         <h1 className="text-h2 text-fg">
@@ -441,7 +441,7 @@ function EstudioNuevo() {
           </p>
         </div>
       </form>
-    </main>
+    </div>
   )
 }
 

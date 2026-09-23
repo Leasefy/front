@@ -11,10 +11,13 @@
  *    de cada una. Un botón que siempre falla enseña a ignorar los errores.
  * 2. **Dejar que quien armó el lote crea que puede aprobarlo.** El back lo
  *    prohíbe; acá se dice antes de que gaste un clic.
- * 3. **Entregar el archivo sin el aviso.** Mientras el layout no esté cotejado
- *    contra un archivo real del banco, el nombre lleva `SIN-VERIFICAR` y acá
- *    se muestra ANTES de guardar. Un giro de mil millones con el layout
- *    equivocado no se corrige después.
+ * 3. **Entregar el archivo sin el aviso.** Mientras nadie haya subido un
+ *    archivo de ese formato al banco y visto que lo acepta, el nombre lleva
+ *    `SIN-VERIFICAR` y acá se muestra ANTES de guardar. Un giro de mil
+ *    millones con el layout equivocado no se corrige después.
+ * 5. **Dejar elegir el formato al final.** Es el del banco elegido al armar
+ *    el lote (Nico, 22-09): el archivo de un lote que otra persona aprobó para
+ *    girar desde Bancolombia no puede salir con el layout de otro banco.
  * 4. **Reescribir el error del back.** Sus mensajes dicen por qué y qué hacer
  *    («Código incorrecto. 3 intentos antes de que el lote se bloquee»). Van
  *    tal cual.
@@ -70,8 +73,8 @@ import {
   type ArchivoGenerado,
   type ExtractosDeLosCompensados,
   type FacturacionDelLote,
-  type FormatoArchivoDePagos,
   type LoteDeDispersion,
+  type OrigenDelLote,
   type SolicitudDeAprobacion,
   type VistaDelLote,
 } from '@/lib/api/lotes-de-dispersion.service';
@@ -84,10 +87,10 @@ import {
   CAMINO_DEL_LOTE,
   codigoValido,
   esSinVerificar,
-  FORMATOS,
   guardarArchivo,
   motivoValido,
   NOMBRE_DEL_ESTADO,
+  NOMBRE_DEL_FORMATO,
   pasoAlcanzado,
   PERMISO_DE_LA_ACCION,
   QUE_SIGUE,
@@ -95,18 +98,21 @@ import {
   type AccionDelLote,
 } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import { ArchivoDelLote, useArchivoDelLote } from './ArchivoDelLote';
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
 import {
   AccionesDelGiro,
   MarcarDevueltoDialog,
   RegirarDialog,
   useGirosDevueltos,
 } from './GirosDevueltos';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
+import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
 
 type Dialogo =
   | 'pedirAprobacion'
   | 'aprobar'
   | 'generarArchivo'
-  | 'descargarArchivo'
   | 'marcarPagado'
   | 'anular'
   | null;
@@ -330,10 +336,24 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    */
   const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
 
+  /*
+   * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
+   * carga de lotes es horrible»). «Descargar archivo» ya no abre un diálogo
+   * con un spinner: baja la copia del centro, y si no la hay la vuelve a
+   * preparar —cotejando el hash— como un proceso más. Antes de los returns
+   * tempranos: es un hook.
+   */
+  const archivoDelLote = useArchivoDelLote(id, vista?.lote.estado ?? 'BORRADOR', guardar);
+
   // Igual que el de arriba: antes de los returns tempranos, porque un hook no
   // se puede llamar condicionalmente.
   const lotePagado = vista?.lote.estado === 'PAGADO';
   const giros = useGirosDevueltos(lotePagado);
+  /*
+   * 🔴 Wompi · Pagos a terceros (23-09). Falla abierto: si la lectura falla,
+   * `wompi.vista` queda en `null` y el lote sigue por archivo como siempre.
+   */
+  const wompi = useLoteEnWompi(id, vista?.lote.estado ?? 'BORRADOR');
   // El contrato pide `dispersiones:edit` para marcar devuelto y para regirar.
   const puedeTocarGiros = canAccess('dispersiones', 'edit');
 
@@ -476,13 +496,23 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </Button>
           )}
           {acciones.includes('generarArchivo') && (
-            <Button onClick={() => setDialogo('generarArchivo')} hideArrow>
+            /* Con Wompi listo para este lote, la acción principal es «Enviar a
+               Wompi» (abajo) y el archivo queda como alternativa. */
+            <Button
+              variant={wompi.vista?.sePuedeEnviar ? 'secondary' : 'default'}
+              onClick={() => setDialogo('generarArchivo')}
+              hideArrow
+            >
               <FileText className="h-4 w-4" />
-              Generar archivo
+              {wompi.vista?.sePuedeEnviar ? 'Usar el archivo del banco' : 'Generar archivo'}
             </Button>
           )}
           {acciones.includes('descargarArchivo') && (
-            <Button onClick={() => setDialogo('descargarArchivo')} hideArrow>
+            <Button
+              onClick={() => void archivoDelLote.descargar()}
+              isLoading={archivoDelLote.preparando}
+              hideArrow
+            >
               <DownloadSimple className="h-4 w-4" />
               Descargar archivo
             </Button>
@@ -507,14 +537,36 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </section>
       )}
 
+      {/* ── Wompi · Pagos a terceros ─────────────────────────────────────── */}
+      <LoteEnWompi
+        loteId={lote.id}
+        estado={lote.estado}
+        vista={wompi.vista}
+        puedeEditar={canAccess('dispersiones', 'edit')}
+        onCambio={(v) => {
+          wompi.setVista(v);
+          void refetch();
+        }}
+      />
+
       {/* ── Datos del cierre ────────────────────────────────────────────── */}
-      {(lote.formatoArchivo || lote.referenciaBanco) && (
+      {(vista.origen || lote.formatoArchivo || lote.referenciaBanco) && (
         <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 text-sm shadow-sm sm:grid-cols-3">
+          {vista.origen && (
+            <div data-testid="origen-del-lote">
+              <p className="text-caption text-fg-muted">Se gira desde</p>
+              <p className="text-fg">{vista.origen.nombreDelBanco}</p>
+              <p className="text-caption text-fg-muted">
+                {vista.origen.tipoDeCuenta === 'CORRIENTE' ? 'Corriente' : 'Ahorros'}{' '}
+                <span className="font-mono">{vista.origen.cuenta}</span>
+              </p>
+            </div>
+          )}
           {lote.formatoArchivo && (
             <div>
               <p className="text-xs text-fg-muted">Formato del archivo</p>
               <p className="font-mono text-fg">
-                {FORMATOS.find((f) => f.codigo === lote.formatoArchivo)?.nombre ?? lote.formatoArchivo}
+                {NOMBRE_DEL_FORMATO[lote.formatoArchivo] ?? lote.formatoArchivo}
               </p>
               {lote.archivoGeneradoAt && (
                 <p className="text-xs text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
@@ -541,6 +593,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </section>
       )}
+
+      {/* ── El archivo al banco, con el componente del centro de procesos ── */}
+      <ArchivoDelLote archivo={archivoDelLote} generadoAt={lote.archivoGeneradoAt} />
 
       {/* ── Excluidos ───────────────────────────────────────────────────── */}
       {excluidos.length > 0 && (
@@ -713,6 +768,10 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </p>
       </section>
 
+      {/* ── Movimientos: quién lo armó, aprobó, bajó el archivo, lo marcó
+          pagado — con su rol, y también quién lo intentó sin permiso. ──── */}
+      <BitacoraDelRecurso tipo="lote" id={lote.id} />
+
       {/* ── Diálogos ────────────────────────────────────────────────────── */}
       <PedirAprobacionDialog
         abierto={dialogo === 'pedirAprobacion'}
@@ -731,12 +790,15 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         onFallo={() => void refetch()}
       />
       <ArchivoDialog
-        abierto={dialogo === 'generarArchivo' || dialogo === 'descargarArchivo'}
-        modo={dialogo === 'descargarArchivo' ? 'descargar' : 'generar'}
+        abierto={dialogo === 'generarArchivo'}
         lote={lote}
+        origen={vista.origen}
         guardar={guardar}
         onCerrar={cerrar}
-        onGenerado={() => void refetch()}
+        onGenerado={() => {
+          void refetch();
+          void archivoDelLote.refetch();
+        }}
       />
       <MarcarPagadoDialog
         abierto={dialogo === 'marcarPagado'}
@@ -810,6 +872,8 @@ function Cifra({
 function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
   const alcanzado = pasoAlcanzado(lote);
   const anulado = lote.estado === 'ANULADO';
+  // Un lote que salió por Wompi no tuvo archivo: ese paso fue Wompi.
+  const porWompi = lote.estado === 'EN_WOMPI' || (lote.referenciaBanco ?? '').startsWith('Wompi ');
   const fechas: Record<string, string | null> = {
     BORRADOR: lote.createdAt,
     ESPERANDO_APROBACION: null,
@@ -855,7 +919,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
                 actual || hecho ? 'font-medium text-fg' : 'text-fg-muted',
               )}
             >
-              {NOMBRE_DEL_ESTADO[estado]}
+              {porWompi && estado === 'ARCHIVO_GENERADO' ? 'En Wompi' : NOMBRE_DEL_ESTADO[estado]}
             </span>
             {(hecho || (actual && !anulado)) && fecha && (
               <span className="font-mono text-[10px] text-fg-muted">{formatDateTime(fecha)}</span>
@@ -1091,28 +1155,29 @@ function AprobarDialog({
 }
 
 /**
- * Generar (desde APROBADO) o descargar (desde ARCHIVO_GENERADO) el archivo.
+ * Generar el archivo (desde APROBADO).
  *
- * Las dos puntas pasan por el POST del back, que devuelve JSON con el aviso
- * del layout, los excluidos y las advertencias — eso se ve ANTES de guardar.
- * Al descargar, el POST además coteja el hash: si el contenido cambió por
- * debajo de un lote cerrado, el back no lo entrega y lo dice.
+ * El POST del back devuelve JSON con el aviso del layout, los excluidos y las
+ * advertencias — eso se ve ANTES de guardar. Volver a bajarlo (desde
+ * ARCHIVO_GENERADO) ya no pasa por acá: es la sección «El archivo al banco»,
+ * con el centro de procesos (`ArchivoDelLote.tsx`).
  */
 function ArchivoDialog({
   abierto,
-  modo,
   lote,
+  origen,
   guardar,
   onCerrar,
   onGenerado,
 }: DialogoBase & {
-  modo: 'generar' | 'descargar';
+  /**
+   * El banco elegido al armar. `null` = el lote se armó sin preguntarlo y su
+   * archivo no puede salir; `undefined` = un back anterior que no lo manda.
+   */
+  origen?: OrigenDelLote | null;
   guardar: (contenido: Blob | string, nombre: string) => void;
   onGenerado: () => void;
 }) {
-  const [formato, setFormato] = useState<FormatoArchivoDePagos>(
-    lote.formatoArchivo ?? 'BANCOLOMBIA_PAB',
-  );
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [archivo, setArchivo] = useState<ArchivoGenerado | null>(null);
@@ -1121,10 +1186,8 @@ function ArchivoDialog({
     setTrabajando(true);
     setError(null);
     try {
-      const r = await lotesDeDispersionApi.generarArchivo(
-        lote.id,
-        modo === 'generar' ? formato : undefined,
-      );
+      // Sin formato: sale en el del banco elegido al armar el lote.
+      const r = await lotesDeDispersionApi.generarArchivo(lote.id);
       setArchivo(r);
       if (!r.reenvio) onGenerado();
     } catch (e) {
@@ -1132,25 +1195,30 @@ function ArchivoDialog({
     } finally {
       setTrabajando(false);
     }
-  }, [formato, lote.id, modo, onGenerado]);
+  }, [lote.id, onGenerado]);
 
   useEffect(() => {
     if (!abierto) {
       setError(null);
       setArchivo(null);
       setTrabajando(false);
-      return;
     }
-    // Al descargar no hay nada que elegir: se pide el archivo de una.
-    if (modo === 'descargar') void pedirAlBack();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [abierto, modo]);
+  }, [abierto]);
 
   const guardarEnElEscritorio = async () => {
     if (!archivo) return;
     setTrabajando(true);
     try {
-      // Tal cual se sube al banco: los bytes del GET, no el JSON.
+      // Del centro de procesos si el back lo dejó ahí (22-09); si no, tal cual
+      // se sube al banco: los bytes del GET, no el JSON.
+      if (archivo.procesoId) {
+        try {
+          await descargarArchivoDelProceso(archivo.procesoId);
+          return;
+        } catch {
+          /* la copia no quedó en el storage: por el GET del lote */
+        }
+      }
       const blob = await lotesDeDispersionApi.descargarArchivo(lote.id);
       guardar(blob, archivo.nombreArchivo);
       toast.success('Archivo guardado', { description: archivo.nombreArchivo });
@@ -1161,13 +1229,20 @@ function ArchivoDialog({
     }
   };
 
-  const sinVerificar = archivo ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
+  const esPlanilla = archivo?.entrega === 'PLANILLA';
+  const deTercero = archivo?.entrega === 'ARCHIVO_DE_TERCERO';
+  const sinVerificar =
+    archivo && !esPlanilla ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
         <DialogHeader>
-          <DialogTitle>{modo === 'generar' ? 'Generar el archivo plano' : 'Descargar el archivo'}</DialogTitle>
+          <DialogTitle>
+            {origen?.formato === 'PLANILLA_MANUAL'
+              ? 'Generar la planilla para cargar a mano'
+              : 'Generar el archivo plano'}
+          </DialogTitle>
           <DialogDescription>
             Lote de {nombreDelMes(lote.month)} · {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'} por{' '}
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
@@ -1175,62 +1250,76 @@ function ArchivoDialog({
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4 text-sm">
-          {!archivo && modo === 'generar' && (
-            <div role="radiogroup" aria-label="Formato del archivo" className="space-y-2">
-              {FORMATOS.map((f) => {
-                const elegido = formato === f.codigo;
-                return (
-                  <button
-                    key={f.codigo}
-                    type="button"
-                    role="radio"
-                    aria-checked={elegido}
-                    disabled={!f.disponible}
-                    data-testid={`formato-${f.codigo}`}
-                    onClick={() => setFormato(f.codigo)}
-                    className={cn(
-                      'flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors',
-                      elegido ? 'border-primary bg-primary-soft/40' : 'border-border',
-                      f.disponible ? 'hover:border-primary/40' : 'cursor-not-allowed opacity-60',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                        elegido ? 'border-primary' : 'border-border',
-                      )}
-                      aria-hidden="true"
-                    >
-                      {elegido && <span className="h-2 w-2 rounded-full bg-primary" />}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-medium text-fg">{f.nombre}</span>
-                      <span className="block text-xs text-fg-muted">{f.descripcion}</span>
-                      {!f.disponible && (
-                        <span className="mt-1 block text-xs text-warning">{f.porQueNo}</span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          {!archivo && origen && origen.formato !== 'PLANILLA_MANUAL' && (
+            <p className="text-fg" data-testid="archivo-del-banco">
+              Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
+              {NOMBRE_DEL_FORMATO[origen.formato] ?? origen.formato}), girando desde la cuenta{' '}
+              {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
+              <span className="font-mono">{origen.cuenta}</span>. Es el banco que se eligió al armar el lote.
+            </p>
           )}
 
-          {!archivo && modo === 'descargar' && !error && (
-            <p className="flex items-center gap-2 text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Pidiendo el archivo y cotejando el hash…
+          {!archivo && origen?.formato === 'PLANILLA_MANUAL' && (
+            <p className="text-fg" data-testid="archivo-del-banco">
+              Sale la <span className="font-medium">planilla para cargar a mano</span> en{' '}
+              <span className="font-medium">{origen.nombreDelBanco}</span>, girando desde la cuenta{' '}
+              {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
+              <span className="font-mono">{origen.cuenta}</span>. No es un archivo para subir al banco: trae los
+              datos de cada pago para digitarlos en su portal.
             </p>
+          )}
+
+          {!archivo && origen === null && (
+            <Banner variant="warning" title="Este lote no dice desde qué banco sale la plata">
+              Se armó antes de que se preguntara el banco, y el archivo de cada banco lleva la cuenta desde
+              la que se gira. Anúlalo y ármalo otra vez eligiendo el banco.
+            </Banner>
           )}
 
           {archivo && (
             <div className="space-y-3" data-testid="archivo-listo">
-              {sinVerificar ? (
+              {esPlanilla ? (
+                <div data-testid="es-planilla">
+                  <Banner variant="info" title="Es una planilla para cargar a mano, no el archivo del banco">
+                    {archivo.pendienteDeConfirmar.join(' ')}
+                  </Banner>
+                </div>
+              ) : sinVerificar ? (
                 <div className="space-y-2">
-                  <Banner variant="danger" title="Este layout no se verificó contra un archivo real del banco">
-                    Revísalo antes de subirlo. El nombre del archivo lleva{' '}
-                    <span className="font-mono">SIN-VERIFICAR</span> para que el aviso viaje hasta el
-                    escritorio.
+                  <Banner variant="warning" title="Este layout no se verificó contra un archivo real del banco">
+                    {deTercero && archivo.fuente ? (
+                      <>
+                        Formato tomado de{' '}
+                        <a
+                          href={archivo.fuente.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {archivo.fuente.documento}
+                        </a>
+                        , no de un documento del banco. Sube primero un archivo de prueba al portal y revisa que lo
+                        valide sin errores antes de autorizar el pago.
+                      </>
+                    ) : archivo.fuente ? (
+                      <>
+                        Está armado campo por campo con{' '}
+                        <a
+                          href={archivo.fuente.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          el instructivo oficial del banco
+                        </a>{' '}
+                        ({archivo.fuente.version}), pero todavía nadie ha subido uno al portal. La primera vez,
+                        revisa que el banco lo valide sin errores antes de autorizar el pago.
+                      </>
+                    ) : (
+                      'Revísalo antes de subirlo.'
+                    )}{' '}
+                    El nombre del archivo lleva <span className="font-mono">SIN-VERIFICAR</span> para que el aviso
+                    viaje hasta el escritorio.
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
                     <div className="rounded-lg border border-border bg-surface-muted p-3">
@@ -1308,8 +1397,13 @@ function ArchivoDialog({
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={trabajando}>
             {archivo ? 'Cerrar' : 'Cancelar'}
           </Button>
-          {!archivo && modo === 'generar' && (
-            <Button onClick={() => void pedirAlBack()} isLoading={trabajando} hideArrow>
+          {!archivo && (
+            <Button
+              onClick={() => void pedirAlBack()}
+              isLoading={trabajando}
+              hideArrow
+              disabled={origen === null}
+            >
               <FileText className="h-4 w-4" />
               Generar
             </Button>

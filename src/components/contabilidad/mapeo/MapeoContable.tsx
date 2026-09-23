@@ -352,7 +352,7 @@ export function MapeoContable({
             <p className="text-sm font-medium text-fg">
               {faltantes.total === 1 ? '1 movimiento sin asiento' : `${faltantes.total} movimientos sin asiento`}
             </p>
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               {[
                 faltantes.cobros > 0 ? `${faltantes.cobros} cobro${faltantes.cobros === 1 ? '' : 's'} sin causar` : null,
                 faltantes.recibos > 0 ? `${faltantes.recibos} recibo${faltantes.recibos === 1 ? '' : 's'} de caja` : null,
@@ -439,7 +439,7 @@ export function MapeoContable({
                 <TableCell>
                   {e.propuesta ? (
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-fg-muted">
+                      <span className="font-mono text-caption text-fg-muted">
                         {e.propuesta.codigo} · {e.propuesta.nombre}
                       </span>
                       {!e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
@@ -456,7 +456,7 @@ export function MapeoContable({
                       ) : null}
                     </div>
                   ) : (
-                    <span className="font-mono text-xs text-fg-subtle" title="Créala en el plan de cuentas con ese código, o elige otra">
+                    <span className="font-mono text-caption text-fg-subtle" title="Créala en el plan de cuentas con ese código, o elige otra">
                       {e.codigoPropuesto} no está en el PUC
                     </span>
                   )}

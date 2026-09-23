@@ -12,10 +12,23 @@
  * 1.733 propietarios y no todos lo traían— no se les bloquea nada: salen acá,
  * ordenados por lo que cuestan (primero el que más contratos tiene, y entre
  * iguales el que no tiene ni WhatsApp, porque a ése no le llega NADA).
+ *
+ * ── 🔴 21-09 · «un listado infinito por allá abajo» ───────────────────────
+ *
+ * Eso dijo Nico de esta pestaña, y con 1.733 propietarios migrados era literal:
+ * la tabla pintaba TODAS las filas, sin paginar y sin buscador, debajo de otra
+ * tabla. Tres cosas cambiaron:
+ *
+ *   1. paginación y buscador, con el alcance dicho al lado («12 de 340»);
+ *   2. el filtro de tipo dejó de ser un `<select>` crudo suelto encima de la
+ *      tabla y pasó al `Select` del DS, en la cabecera de la tarjeta, donde se
+ *      ve que gobierna a ESTA lista;
+ *   3. la tarjeta dice qué es: son dos tablas seguidas en la misma pestaña, y
+ *      ninguna se presentaba.
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { EnvelopeSimpleOpen } from '@phosphor-icons/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { EnvelopeSimpleOpen, MagnifyingGlass } from '@phosphor-icons/react'
 
 import {
   Table,
@@ -25,6 +38,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
@@ -33,11 +56,15 @@ import {
   type TercerosSinCorreo as Datos,
 } from '@/lib/api/facturacion-electronica.service'
 
+/** Radix reserva `''` para «sin selección», así que «Todos» lleva su clave. */
+const TODOS = 'TODOS'
+
 export function TercerosSinCorreo() {
   const [datos, setDatos] = useState<Datos | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [clase, setClase] = useState<ClaseDeTercero | ''>('')
+  const [busqueda, setBusqueda] = useState('')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -59,6 +86,19 @@ export function TercerosSinCorreo() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  const todos = datos?.terceros ?? []
+  const visibles = useMemo(() => {
+    const t = busqueda.trim().toLowerCase()
+    if (t === '') return todos
+    return todos.filter(
+      (x) =>
+        x.nombre.toLowerCase().includes(t) ||
+        (x.documento ?? '').toLowerCase().includes(t) ||
+        (x.telefono ?? '').toLowerCase().includes(t),
+    )
+  }, [todos, busqueda])
+  const paginado = useTablePagination(visibles, { resetKey: `${clase}|${busqueda}` })
 
   return (
     <div className="space-y-4" data-testid="terceros-sin-correo">
@@ -94,32 +134,68 @@ export function TercerosSinCorreo() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="terceros-clase" className="text-caption text-fg-muted">
-          Tipo
-        </label>
-        <select
-          id="terceros-clase"
-          className="h-9 rounded-md border border-border bg-surface px-3 text-sm"
-          value={clase}
-          onChange={(e) => setClase(e.target.value as ClaseDeTercero | '')}
-          data-testid="terceros-clase"
-        >
-          <option value="">Todos</option>
-          <option value="INQUILINO">Inquilinos</option>
-          <option value="PROPIETARIO">Propietarios</option>
-        </select>
-      </div>
-
-      <EstadoDeDatos
-        cargando={cargando}
-        error={error}
-        vacio={false}
-        queEs="los terceros sin correo"
-        onReintentar={cargar}
+      <section
+        className="overflow-x-clip rounded-lg border border-border bg-surface"
+        data-testid="terceros-tarjeta"
       >
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <Table>
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-body font-semibold text-fg">A quién le falta el correo</h3>
+            <p className="text-caption text-fg-muted">
+              Primero los que más cuestan: el que tiene más contratos, y entre
+              iguales el que no tiene ni WhatsApp. Se completa desde su ficha.
+            </p>
+          </div>
+          <Select
+            value={clase === '' ? TODOS : clase}
+            onValueChange={(v) => setClase(v === TODOS ? '' : (v as ClaseDeTercero))}
+          >
+            <SelectTrigger
+              id="terceros-clase"
+              className="w-48 shrink-0"
+              aria-label="Tipo de tercero en la lista"
+              data-testid="terceros-clase"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos los terceros</SelectItem>
+              <SelectItem value="INQUILINO">Sólo inquilinos</SelectItem>
+              <SelectItem value="PROPIETARIO">Sólo propietarios</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <MagnifyingGlass
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+              aria-hidden="true"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Nombre, documento o teléfono"
+              aria-label="Buscar un tercero sin correo"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              data-testid="buscar-tercero"
+            />
+          </div>
+          <p className="text-caption text-fg-muted" data-testid="alcance-de-terceros">
+            {visibles.length} de {todos.length}{' '}
+            {todos.length === 1 ? 'tercero' : 'terceros'} sin correo
+          </p>
+        </div>
+
+        <EstadoDeDatos
+          cargando={cargando}
+          error={error}
+          vacio={false}
+          queEs="los terceros sin correo"
+          onReintentar={cargar}
+        >
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Nombre</TableHead>
@@ -133,19 +209,30 @@ export function TercerosSinCorreo() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!datos || datos.terceros.length === 0 ? (
+              {paginado.pageItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="p-0">
+                    {/* 🔴 «No hay ninguno» y «ninguno coincide con lo que
+                        buscaste» no son lo mismo: con el buscador escrito, el
+                        primero se leería como que ya están todos completos. */}
                     <SinDatos
                       queSon="terceros sin correo"
                       icono={EnvelopeSimpleOpen}
-                      titulo="Todos tus terceros tienen correo"
-                      descripcion="Sus facturas electrónicas salen con el XML y el PDF, y queda la constancia de cada entrega."
+                      titulo={
+                        todos.length > 0
+                          ? `Ningún tercero coincide con «${busqueda.trim()}»`
+                          : 'Todos tus terceros tienen correo'
+                      }
+                      descripcion={
+                        todos.length > 0
+                          ? 'Buscamos por nombre, documento y teléfono en la lista de arriba.'
+                          : 'Sus facturas electrónicas salen con el XML y el PDF, y queda la constancia de cada entrega.'
+                      }
                     />
                   </TableCell>
                 </TableRow>
               ) : (
-                datos.terceros.map((t) => (
+                paginado.pageItems.map((t) => (
                   <TableRow key={`${t.clase}-${t.id}`} data-testid={`tercero-${t.id}`}>
                     <TableCell className="text-fg">{t.nombre}</TableCell>
                     <TableCell className="whitespace-nowrap text-fg-muted">
@@ -172,8 +259,21 @@ export function TercerosSinCorreo() {
               )}
             </TableBody>
           </Table>
-        </div>
-      </EstadoDeDatos>
+          </div>
+          {paginado.shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={paginado.total}
+                page={paginado.page}
+                pageSize={paginado.pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={paginado.setPage}
+                onPageSizeChange={paginado.setPageSize}
+              />
+            </div>
+          )}
+        </EstadoDeDatos>
+      </section>
     </div>
   )
 }

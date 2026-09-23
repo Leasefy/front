@@ -50,7 +50,7 @@ import { hoy, rangoDelMesAnterior } from '@/lib/contabilidad/fechas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
-import { Bloqueos, Nota } from '../piezas';
+import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
 
 /** Las clases del PUC que se pueden pedir sueltas. */
 const CLASES = [
@@ -108,8 +108,16 @@ export function LibroMayor() {
   const descuadre = mayor ? descuadreDelMayor(mayor, formatCurrency) : null;
 
   return (
-    <div className="space-y-5" data-testid="libro-mayor">
-      <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
+    /* 🔴 20-09 · Eran cuatro bloques sueltos —filtros, avisos, tabla y
+       totales—, cada uno con su borde o flotando en el aire. Ahora es UNA
+       tarjeta: los filtros pegados a la tabla que filtran, los avisos entre
+       medio y los totales en el pie, separados por bordes y no por 20 px de
+       vacío. */
+    <TarjetaDeInforme
+      testId="libro-mayor"
+      filtrosClassName="grid gap-3 sm:grid-cols-4"
+      filtros={
+        <>
         <div className="sm:col-span-2">
           <RangoDeFechas
             desde={rango.desde}
@@ -150,25 +158,33 @@ export function LibroMayor() {
             ))}
           </select>
         </div>
-      </section>
-
+        </>
+      }
+    >
       {cargando && !mayor ? (
         <div className="flex flex-col items-center gap-3 py-16">
           <Spinner size="lg" />
           <p className="text-sm text-fg-muted">Armando el mayor…</p>
         </div>
       ) : error && !mayor ? (
-        <FalloDeCarga error={error} queEs="el libro mayor" onReintentar={cargar} />
+        <div className="p-4">
+          <FalloDeCarga error={error} queEs="el libro mayor" onReintentar={cargar} />
+        </div>
       ) : mayor ? (
         <>
           {/* 🔴 Con partida doble esto no puede pasar: es un defecto del libro. */}
-          <Bloqueos
-            bloqueos={descuadre ? [descuadre] : []}
-            titulo="El mayor no cuadra"
-            testId="mayor-no-cuadra"
-          />
+          {descuadre ? (
+            <div className="border-b border-border p-4">
+              <Bloqueos
+                bloqueos={[descuadre]}
+                titulo="El mayor no cuadra"
+                testId="mayor-no-cuadra"
+              />
+            </div>
+          ) : null}
 
           {recortados > 0 ? (
+            <div className="border-b border-border p-4">
             <Nota testId="meses-recortados">
               <p>
                 {recortados === 1
@@ -178,9 +194,10 @@ export function LibroMayor() {
                 no empezó.
               </p>
             </Nota>
+            </div>
           ) : null}
 
-          <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <div>
             {mayor.filas.length === 0 ? (
               <p className="p-8 text-center text-sm text-fg-muted">
                 No hay movimientos en este rango con estos filtros.
@@ -223,7 +240,7 @@ export function LibroMayor() {
                     {mayor.filas.map((f) => (
                       <TableRow key={f.codigo} data-testid={`mayor-${f.codigo}`}>
                         <TableCell className="sticky left-0 whitespace-nowrap bg-surface">
-                          <span className="font-mono text-xs">{f.codigo}</span> {f.nombre}
+                          <span className="font-mono text-caption">{f.codigo}</span> {f.nombre}
                         </TableCell>
                         <TableCell className="text-right">
                           <Monto valor={f.saldoAnteriorCop} vacioSiCero className="text-sm" />
@@ -264,13 +281,23 @@ export function LibroMayor() {
                 </Table>
               </div>
             )}
-          </section>
+          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3">
             <p className="text-caption text-fg-muted" data-testid="totales-del-mayor">
               Débitos <Monto valor={mayor.totalDebitosCop} className="text-caption" /> · créditos{' '}
               <Monto valor={mayor.totalCreditosCop} className="text-caption" />
               {mayor.cuadra ? ' · cuadra.' : ' · NO cuadra.'}
+              {/* 🔴 20-09 · Con más de dos meses la tabla no cabe en 1440 px y
+                  se corta a la derecha sin decirlo: en la captura se leía
+                  «$ 317.» y ahí terminaba. La columna de la cuenta queda
+                  anclada, así que desplazarse funciona — lo que faltaba era
+                  avisar que hay algo más allá del borde. */}
+              {meses.length > 2 ? (
+                <span data-testid="el-mayor-se-desplaza">
+                  {' '}· {meses.length} meses: la tabla se desplaza de lado, con la cuenta fija.
+                </span>
+              ) : null}
             </p>
             <Button variant="ghost" size="sm" hideArrow onClick={cargar} data-testid="recargar-mayor">
               Volver a calcular
@@ -278,6 +305,6 @@ export function LibroMayor() {
           </div>
         </>
       ) : null}
-    </div>
+    </TarjetaDeInforme>
   );
 }

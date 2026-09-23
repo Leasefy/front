@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
@@ -260,14 +260,15 @@ export default function ArriendoPage() {
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
-                            <Image
-                              src={lease.propertyThumbnail}
+                            {/* Sin foto no hay <Image>: los inmuebles migrados llegan con
+                                `propertyThumbnail: null`, y `next/image` con `src={null}` tumbaba
+                                la pantalla entera («Leasefy no pudo abrir», QA 22-09). */}
+                            <PortadaDelInmueble
+                              property={{ thumbnailUrl: lease.propertyThumbnail }}
                               alt={lease.propertyTitle}
-                              fill
-                              quality={90}
                               sizes="(max-width: 1024px) 100vw, 288px"
                               priority={index === 0}
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              className="transition-transform duration-500 group-hover:scale-105"
                             />
                             {/* Status Badge */}
                             <div className="absolute top-4 left-4">

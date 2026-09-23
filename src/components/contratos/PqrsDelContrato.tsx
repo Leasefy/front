@@ -192,7 +192,7 @@ export function PqrsDelContrato({ contractId }: Props) {
       ) : solicitudes.length === 0 ? (
         <div className="space-y-1" data-testid="pqrs-del-contrato-vacio">
           <p className="text-sm text-muted-foreground">Este contrato no tiene PQRS.</p>
-          <p className="text-xs text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
+          <p className="text-caption text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -203,7 +203,7 @@ export function PqrsDelContrato({ contractId }: Props) {
             >
               {lineaDeResumen(datos!.resumen)}
             </p>
-            <p className="text-xs text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
+            <p className="text-caption text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
           </div>
 
           {hayHerramientas && (
@@ -260,7 +260,7 @@ function FiltroChip({
       onClick={onClick}
       aria-pressed={activo}
       className={cn(
-        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        'rounded-full border px-3 py-1 text-caption font-medium transition-colors',
         activo
           ? 'border-primary bg-primary-soft text-primary'
           : 'border-border text-muted-foreground hover:bg-surface-muted',
@@ -281,23 +281,23 @@ function FilaDePqrs({ pqrs, href }: { pqrs: Pqrs; href: string }) {
   return (
     <li className="py-3 space-y-1.5" data-testid="pqrs-del-contrato-fila">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-xs text-muted-foreground">{pqrs.radicado}</span>
-        <span className="text-xs text-muted-foreground">{TIPO_LABEL[pqrs.tipo]}</span>
+        <span className="font-mono text-caption text-muted-foreground">{pqrs.radicado}</span>
+        <span className="text-caption text-muted-foreground">{TIPO_LABEL[pqrs.tipo]}</span>
         <span
           className={cn(
-            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+            'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
             ESTADO_BADGE[pqrs.estado],
           )}
         >
           {ESTADO_LABEL[pqrs.estado]}
         </span>
-        <span className="text-xs text-muted-foreground tabular-nums">
+        <span className="text-caption text-muted-foreground tabular-nums">
           Radicada el {formatDate(pqrs.createdAt)}
         </span>
         {!resuelta && sla.texto !== '—' && (
           <span
             className={cn(
-              'text-xs tabular-nums',
+              'text-caption tabular-nums',
               sla.vencido ? 'font-medium text-destructive' : 'text-muted-foreground',
             )}
           >
@@ -312,7 +312,7 @@ function FilaDePqrs({ pqrs, href }: { pqrs: Pqrs; href: string }) {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p className="text-caption text-muted-foreground tabular-nums">
           {/* La presentó: el tipo de solicitante es un dato del modelo; el
               nombre es texto libre y va tal cual se escribió. */}
           {SOLICITANTE_LABEL[pqrs.solicitanteTipo]} · {pqrs.solicitanteNombre}
@@ -331,7 +331,7 @@ function FilaDePqrs({ pqrs, href }: { pqrs: Pqrs; href: string }) {
         </p>
         <Link
           href={href}
-          className="text-xs font-medium text-primary hover:underline"
+          className="text-caption font-medium text-primary hover:underline"
           data-testid="pqrs-del-contrato-enlace"
         >
           Ver la solicitud

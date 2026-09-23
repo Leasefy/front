@@ -1417,15 +1417,19 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           había pedido para Pagos el 18 —«esto tiene que hacer parte de la
           tabla»—: el control con el que se filtra una tabla no es otro objeto
           que la tabla. */}
-      <section className="overflow-x-clip rounded-lg border border-border bg-surface">
-      <div className="border-b border-border p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      {/* 🔴 23-09 (Nico: «tarjeta dentro de tarjeta dentro de tarjeta»): esto
+          YA vive dentro de la tarjeta de pestañas de Facturación; un segundo
+          borde acá era la tarjeta de adentro. Pestañas + filtros + tabla son UNA
+          tarjeta: acá sólo hay separadores. */}
+      <section className="overflow-x-clip" data-testid="facturacion-por-facturar">
+      <div className="border-b border-border px-4 py-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-mes"
-              className="text-caption font-medium text-fg"
+              className="text-caption font-medium text-fg-muted"
             >
-              Mes de facturación
+              Filtrar por mes
             </label>
             <Select
               value={mes}
@@ -1469,9 +1473,9 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="facturacion-hasta"
-              className="text-caption font-medium text-fg"
+              className="text-caption font-medium text-fg-muted"
             >
-              Ver hasta
+              Ver hasta (sólo mirar)
             </label>
             <Select value={hasta || mes} onValueChange={(v) => setHasta(v)}>
               <SelectTrigger
@@ -1497,38 +1501,39 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             —Inquilinos y Propietarios— que comparten una sola selección, y
             desde arriba quedaba fuera de la pantalla justo cuando se estaba
             marcando (Nico, 19-09). */}
-        <div className="flex flex-col items-start gap-1.5 lg:items-end">
-          {datos && (
-            <p className="text-caption text-fg-muted tabular-nums">
-              {datos.totales.contratos}{' '}
-              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'} ·{' '}
-              {datos.totales.meses === 1
-                ? mesLegible(mes)
-                : `${datos.totales.meses} meses hasta ${mesLegible(datos.hasta)}`}
-            </p>
-          )}
-          {datos?.resolucion.puedeNumerar && (
-            <p
-              className="text-caption text-fg-muted tabular-nums"
-              data-testid="facturacion-siguiente-numero"
-            >
-              Resolución {datos.resolucion.numero} · sigue el{' '}
-              {datos.resolucion.siguiente} · {datos.resolucion.disponibles}{' '}
-              números disponibles hasta el{' '}
-              {fechaLegible(datos.resolucion.vigenteHasta)}
-            </p>
-          )}
-        </div>
+        {/* El resumen es UNA frase, debajo de los filtros y en su lugar de
+            lectura —no dos líneas grises sueltas a la derecha—, y la
+            numeración se dice como un dato: con qué resolución, cuál sigue y
+            cuántos quedan. */}
+        {datos && (
+          <p className="text-body-sm text-fg-muted" data-testid="facturacion-resumen">
+            <span className="font-medium text-fg tabular-nums">
+              {datos.totales.contratos.toLocaleString('es-CO')}{' '}
+              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'}
+            </span>{' '}
+            {datos.totales.meses === 1
+              ? `con cuotas de ${mesLegible(mes)}`
+              : `con cuotas en ${datos.totales.meses} meses, hasta ${mesLegible(datos.hasta)}`}
+            .
+            {datos.resolucion.puedeNumerar && (
+              <span data-testid="facturacion-siguiente-numero">
+                {' '}Se numeran con la resolución{' '}
+                <span className="font-mono text-fg">{datos.resolucion.numero}</span>: sigue la{' '}
+                <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> y quedan{' '}
+                <span className="font-mono text-fg tabular-nums">{datos.resolucion.disponibles}</span>{' '}
+                {datos.resolucion.disponibles === 1 ? 'número' : 'números'} hasta el{' '}
+                {fechaLegible(datos.resolucion.vigenteHasta)}.
+              </span>
+            )}
+          </p>
+        )}
       </div>
 
       {/* F3: la corrida en curso, con la MISMA fila del centro de procesos
           (22-09: «no dos diseños para lo mismo»): misma barra, mismo
           «Detener». Una línea, no una tarjeta: el detalle vive en el centro. */}
       {generando && progreso && (
-        <div
-          className="overflow-hidden rounded-lg border border-border bg-surface"
-          data-testid="facturacion-en-curso"
-        >
+        <div className="border-b border-border" data-testid="facturacion-en-curso">
           <FilaDeProceso
             as="div"
             sinVerResultado

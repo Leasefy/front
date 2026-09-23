@@ -107,7 +107,7 @@ export function InformeDeFacturacion({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+      className="border-b border-border px-4 py-4"
       role="status"
       data-testid="facturacion-informe"
       data-corte={corte}

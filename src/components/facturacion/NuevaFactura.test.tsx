@@ -1663,3 +1663,16 @@ describe('🔴 el documento de la factura emitida (22-09)', () => {
     expect(descargarBlobMock).not.toHaveBeenCalled();
   });
 });
+
+describe('🔴 EL MOLDE en «Por facturar» (Nico, 23-09: «tarjeta dentro de tarjeta dentro de tarjeta»)', () => {
+  it('no dibuja una tarjeta propia dentro de la de pestañas, y el resumen es UNA frase', async () => {
+    await montar();
+    const bloque = q('[data-testid="facturacion-por-facturar"]')!;
+    expect(bloque.className).not.toContain('rounded-lg');
+    expect(bloque.className).not.toMatch(/(^|\s)border(\s|$)/);
+    const frase = q('[data-testid="facturacion-resumen"]')!.textContent ?? '';
+    expect(frase).toMatch(/contratos? con cuotas de/);
+    // Los filtros dicen que son filtros.
+    expect(document.body.textContent).toContain('Filtrar por mes');
+  });
+});

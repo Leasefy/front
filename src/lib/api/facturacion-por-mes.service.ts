@@ -39,7 +39,8 @@
  */
 
 import { apiClient } from './client'
-import { anunciarProceso } from './procesos.service'
+import { anunciarProceso, RECURSO_DE_PROCESOS } from './procesos.service'
+import { invalidar } from './refresco-de-datos'
 import type {
   AvisoDeLaResolucion,
   EstadoDeLaCorreccion,
@@ -542,8 +543,10 @@ export const facturacionPorMesService = {
    * todas las del mes que estén por emitir.
    */
   generar: (mes: string, claves?: string[]) => {
-    // La emisión vive en el centro de procesos (22-09): «300 de 800».
-    anunciarProceso()
+    // La emisión vive en el centro de procesos (22-09): «300 de 800». Sólo
+    // se le avisa al centro que relea: el anuncio (que ABRE el panel) lo hace
+    // la pantalla una vez por corrida, no una vez por tanda.
+    invalidar(RECURSO_DE_PROCESOS)
     return apiClient.post<ResultadoDeGeneracion>(
       `${BASE}/generar`,
       claves && claves.length > 0 ? { mes, claves } : { mes },

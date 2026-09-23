@@ -117,7 +117,7 @@ export function InformeDeFacturacion({
         <div className="min-w-0 flex-1 space-y-1">
           <h3 className="font-medium text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted tabular-nums">
-            {mesLegible(informe.mes)} · {facturas(informe.pedidas)} elegidas
+            {mesLegible(informe.mes)} · {numero(informe.pedidas)} {informe.pedidas === 1 ? 'elegida' : 'elegidas'}
           </p>
           {lineas.length > 0 && (
             <ul className="mt-2 space-y-1 text-body-sm text-fg-muted">

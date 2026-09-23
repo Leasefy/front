@@ -34,14 +34,32 @@ vi.mock('next/link', () => ({
 }))
 // El Popover de Radix se monta en un portal; para leerlo se pinta plano.
 vi.mock('@/components/ui/popover', () => ({
-  Popover: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Popover: ({ children, open }: { children?: React.ReactNode; open?: boolean }) => (
+    <div data-testid="popover-raiz" data-open={open ? '1' : '0'}>
+      {children}
+    </div>
+  ),
   PopoverTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   PopoverContent: ({ children }: { children?: React.ReactNode }) => <div data-testid="popover">{children}</div>,
+}))
+const { bus, toastMock, reprocesarMock } = vi.hoisted(() => ({
+  bus: new Set<(e: Record<string, unknown>) => void>(),
+  toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+  reprocesarMock: vi.fn(),
+}))
+vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
+vi.mock('@/lib/api/contabilidad.service', () => ({
+  contabilidadApi: { asientos: { reprocesar: reprocesarMock } },
 }))
 vi.mock('@/lib/api/procesos.service', () => ({
   RECURSO_DE_PROCESOS: 'procesos',
   RECURSO_LOTE: 'LOTE_DE_DISPERSION',
-  anunciarProceso: vi.fn(),
+  anunciarProceso: (a: Record<string, unknown> = {}) => bus.forEach((cb) => cb({ tipo: 'anuncio', ...a })),
+  abrirCentroDeProcesos: (a: Record<string, unknown> = {}) => bus.forEach((cb) => cb({ tipo: 'abrir', ...a })),
+  alEventoDelCentro: (cb: (e: Record<string, unknown>) => void) => {
+    bus.add(cb)
+    return () => bus.delete(cb)
+  },
   procesosApi: {
     listar: vi.fn(),
     descarga: vi.fn(),
@@ -49,7 +67,7 @@ vi.mock('@/lib/api/procesos.service', () => ({
   },
 }))
 
-import { procesosApi } from '@/lib/api/procesos.service'
+import { procesosApi, anunciarProceso } from '@/lib/api/procesos.service'
 import { BotonDelCentroDeProcesos, resumenDelCentro } from './BotonDelCentroDeProcesos'
 import { FilaDeProceso } from './FilaDeProceso'
 import { HistorialDeProcesos, fraseDelHistorial } from './HistorialDeProcesos'
@@ -152,7 +170,7 @@ describe('<BotonDelCentroDeProcesos>', () => {
     expect(q('centro-de-procesos-anillo')).toBeNull()
     expect(q('centro-de-procesos-cuantos')).toBeNull()
     expect(q('centro-de-procesos-resumen')?.textContent).toBe('Nada en curso. Estos son los últimos tuyos.')
-    expect(procesosApi.listar).toHaveBeenCalledWith({ limite: 8 })
+    expect(procesosApi.listar).toHaveBeenCalledWith({ limite: 12 })
   })
 
   it('con algo en curso: anillo, cuántos van, y el nombre accesible lo dice', async () => {
@@ -178,6 +196,98 @@ describe('<BotonDelCentroDeProcesos>', () => {
     await montar(<BotonDelCentroDeProcesos />)
     expect(q('centro-de-procesos-resumen')?.textContent).toContain('20260922230000_centro_de_procesos')
     expect(todas('fila-de-proceso')).toHaveLength(0)
+  })
+})
+
+describe('<BotonDelCentroDeProcesos> — se hace presente (22-09)', () => {
+  it('🔴 lanzar un proceso ABRE el centro solo, con ese proceso arriba y resaltado', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista([proceso(), TERMINADO_CON_ARCHIVO]))
+    await montar(<BotonDelCentroDeProcesos />)
+    expect(q('popover-raiz')?.getAttribute('data-open')).toBe('0')
+
+    await act(async () => {
+      anunciarProceso({ titulo: 'Emitiendo 450 facturas' })
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(q('popover-raiz')?.getAttribute('data-open')).toBe('1')
+    const filas = todas('fila-de-proceso')
+    expect(filas[0].getAttribute('data-proceso-id')).toBe('p-1')
+    expect(filas[0].getAttribute('data-resaltado')).toBe('1')
+    expect(container.textContent).toContain('En curso')
+    expect(container.textContent).toContain('Recientes')
+  })
+
+  it('con un diálogo abierto no se le mete encima: avisa con «Ver en el centro»', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista([]))
+    const dialogo = document.createElement('div')
+    dialogo.setAttribute('role', 'dialog')
+    dialogo.setAttribute('data-state', 'open')
+    document.body.appendChild(dialogo)
+    try {
+      await montar(<BotonDelCentroDeProcesos />)
+      await act(async () => {
+        anunciarProceso({ titulo: 'Archivo del lote' })
+      })
+      expect(q('popover-raiz')?.getAttribute('data-open')).toBe('0')
+      expect(toastMock.info).toHaveBeenCalledWith(
+        'Archivo del lote',
+        expect.objectContaining({ action: expect.objectContaining({ label: 'Ver en el centro' }) }),
+      )
+    } finally {
+      dialogo.remove()
+    }
+  })
+
+  it('vacío útil: sin nada en curso muestra los últimos 5 con sus acciones', async () => {
+    const viejos = Array.from({ length: 7 }, (_, i) =>
+      proceso({ id: `v-${i}`, estado: 'TERMINADO', terminadoAt: '2026-09-22T10:00:00.000Z', mensaje: 'ok' }),
+    )
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista(viejos))
+    await montar(<BotonDelCentroDeProcesos />)
+    expect(todas('fila-de-proceso')).toHaveLength(5)
+    expect(todas('ver-resultado-proceso')).toHaveLength(5)
+  })
+})
+
+describe('<FilaDeProceso> — acciones según el estado', () => {
+  it('terminado: «Ver en Facturación» lleva a su pantalla; falló: «Reintentar» relanza el reproceso', async () => {
+    reprocesarMock.mockResolvedValue({ asentados: 1, sinResolver: 0, motivos: [] })
+    const onCambio = vi.fn()
+    await montar(
+      <ul>
+        <FilaDeProceso
+          proceso={proceso({ estado: 'TERMINADO', recurso: { tipo: 'FACTURACION_DEL_MES', id: '2026-09' } })}
+          ahora={AHORA}
+        />
+        <FilaDeProceso proceso={FALLIDO} onCambio={onCambio} ahora={AHORA} />
+      </ul>,
+    )
+    expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/facturacion')
+    await act(async () => {
+      ;(q('reintentar-proceso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(reprocesarMock).toHaveBeenCalled()
+    expect(onCambio).toHaveBeenCalled()
+  })
+
+  it('la etapa se lee aparte del resumen: «Armando el ZIP» con su «0 de 1», sin contradecirse', async () => {
+    await montar(
+      <ul>
+        <FilaDeProceso
+          proceso={proceso({
+            hechos: 0,
+            total: 1,
+            porcentaje: 0,
+            mensaje: 'Etapa: Armando el ZIP. 1 factura emitida · $1.326.782.',
+          })}
+          ahora={AHORA}
+        />
+      </ul>,
+    )
+    expect(container.textContent).toContain('Armando el ZIP')
+    expect(q('mensaje-del-proceso')?.textContent).toBe('1 factura emitida · $1.326.782.')
   })
 })
 

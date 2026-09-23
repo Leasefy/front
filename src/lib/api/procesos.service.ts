@@ -42,8 +42,45 @@ function consulta(filtros: FiltrosDeProcesos | Record<string, string | undefined
  * Se llama ANTES de esperar la respuesta del proceso — la fila del centro
  * nace en el back apenas empieza, pero la respuesta llega cuando termina.
  */
-export function anunciarProceso(): void {
+export function anunciarProceso(aviso: AvisoDeProceso = {}): void {
   invalidar(RECURSO_DE_PROCESOS)
+  for (const cb of [...oyentesDelCentro]) {
+    try {
+      cb({ tipo: 'anuncio', ...aviso })
+    } catch {
+      /* un oyente roto no frena a los demás */
+    }
+  }
+}
+
+/**
+ * 🔴 Que el centro SE HAGA PRESENTE (Nico, 22-09: «mandé a emitir algo y el
+ * centro de procesos ni se abrió»). Quien lanza un proceso lo anuncia y el
+ * botón del header se abre solo con ese proceso arriba —o, si la persona está
+ * en medio de un diálogo, muestra un aviso con «Ver en el centro»—.
+ */
+export interface AvisoDeProceso {
+  /** Cómo se llama lo que arrancó, para el aviso: «Emitiendo 450 facturas». */
+  titulo?: string
+  /** El proceso a resaltar, si ya se sabe. */
+  procesoId?: string | null
+}
+
+export type EventoDelCentro = ({ tipo: 'anuncio' } | { tipo: 'abrir' }) & AvisoDeProceso
+
+const oyentesDelCentro = new Set<(e: EventoDelCentro) => void>()
+
+/** Lo escucha el botón del header. Devuelve cómo dejar de escuchar. */
+export function alEventoDelCentro(cb: (e: EventoDelCentro) => void): () => void {
+  oyentesDelCentro.add(cb)
+  return () => {
+    oyentesDelCentro.delete(cb)
+  }
+}
+
+/** Abre el centro (el «Ver en el centro» de un toast), resaltando un proceso. */
+export function abrirCentroDeProcesos(aviso: AvisoDeProceso = {}): void {
+  for (const cb of [...oyentesDelCentro]) cb({ tipo: 'abrir', ...aviso })
 }
 
 export const procesosApi = {

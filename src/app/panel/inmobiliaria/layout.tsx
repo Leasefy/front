@@ -304,18 +304,18 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* La píldora del Piloto («Piloto · Copiloto») va en `actions`, a la
               izquierda de la campana: en cada pantalla se ve en qué modo está
               la flota y se cambia con un clic (Nico, 2026-09-02). */}
-          {/* 🔴 El CENTRO DE PROCESOS va a la IZQUIERDA de la píldora del
-              Piloto (Nico, 22-09-2026: «colócala arriba al lado izquierdo de
-              Piloto»): las cargas, descargas y procesos largos —reprocesar
-              asientos, el archivo del lote, la emisión del mes, la
-              migración— se ven y se bajan desde ahí, en cualquier pantalla. */}
+          {/* 🔴 El CENTRO DE PROCESOS va a la DERECHA de la píldora del
+              Piloto (Nico, 22-09-2026; primero la pidió a la izquierda y
+              después la movió): las cargas, descargas y procesos largos
+              —reprocesar asientos, el archivo del lote, la emisión del mes,
+              la migración— se ven y se bajan desde ahí, en cualquier pantalla. */}
           <PlanHeader
             showMagnifyingGlass={false}
             leftSlot={<AgentHeaderBreadcrumb />}
             actions={
               <>
-                <BotonDelCentroDeProcesos />
                 <PilotoModoHeader />
+                <BotonDelCentroDeProcesos />
               </>
             }
           />

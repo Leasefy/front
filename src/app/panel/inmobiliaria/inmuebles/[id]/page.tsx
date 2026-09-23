@@ -69,6 +69,7 @@ import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
 import { useSinSenal } from '@/lib/hooks/use-sin-senal';
 import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -684,6 +685,17 @@ function ConsignacionDetailContent() {
           >
             <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
           </motion.div>
+
+          {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
+              en el back —el inmueble (`/properties/:id`: fotos, datos,
+              ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
+              estado, canon, terminación)— y aquí se leen como una sola lista. */}
+          <BitacoraDelRecurso
+            recursos={[
+              { tipo: 'inmueble', id: consignacion.propertyId },
+              { tipo: 'consignacion', id: consignacion.id },
+            ]}
+          />
         </div>
 
         {/* Right Column - Sidebar (1/3) */}

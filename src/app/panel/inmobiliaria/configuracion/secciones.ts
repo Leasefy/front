@@ -18,6 +18,7 @@ import {
   Megaphone,
   ClipboardText,
   Clock,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react';
 
 /**
@@ -68,6 +69,7 @@ export type SeccionId =
   | 'avisos'
   | 'sla-de-pqrs'
   | 'bitacora'
+  | 'movimientos'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -289,6 +291,25 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     // nadie abra la que necesita.
     icon: ClipboardText,
     gate: { tipo: 'admin' },
+  },
+  {
+    /**
+     * 🔴 La bitácora de MOVIMIENTOS (22-09-2026). Nico: «cada uno de los
+     * features debería tener bitácora de uso/movimiento, del usuario que haga
+     * algo, su rol, etc.». Quién hizo qué en TODO el panel —no sólo en la
+     * plata— con el rol que tenía ese día y si le fue negado.
+     *
+     * Su gate es el MÓDULO `bitacora` y no «sólo admin»: de fábrica lo tiene
+     * sólo el administrador, pero él se lo puede dar a otro (un contador, una
+     * auditora) desde Permisos sin abrirle la configuración entera.
+     */
+    id: 'movimientos',
+    grupo: 'sistema',
+    slug: 'movimientos',
+    labelKey: 'inmobiliaria.config.tabs.movimientos',
+    descKey: 'inmobiliaria.config.tabs.movimientosDesc',
+    icon: ClockCounterClockwise,
+    gate: { tipo: 'modulo', module: 'bitacora' },
   },
   {
     id: 'seguridad',

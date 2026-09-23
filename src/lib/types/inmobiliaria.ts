@@ -2728,7 +2728,12 @@ export type PermissionModule =
   | 'analytics'
   | 'contratos'
   | 'subscription'
-  | 'avaluos';
+  | 'avaluos'
+  /**
+   * «Ver bitácora» (22-09-2026): quién hizo qué, con su rol, en toda la
+   * inmobiliaria. Sólo `view` significa algo. De fábrica sólo el ADMIN.
+   */
+  | 'bitacora';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -2889,6 +2894,7 @@ export function getModuleLabel(module: PermissionModule): string {
     contratos: 'Contratos',
     subscription: 'Suscripción',
     avaluos: 'Avalúos',
+    bitacora: 'Bitácora',
   };
   return labels[module];
 }
@@ -2930,6 +2936,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RolDeLaMatriz, RolePermissions> = 
       { module: 'analytics', actions: ['view', 'export'] },
       { module: 'subscription', actions: ['view', 'edit'] },
       { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
+      { module: 'bitacora', actions: ['view'] },
     ],
   },
   // El ASESOR COMERCIAL (Nico, 17-09-2026): «sólo los apartados comerciales,
@@ -2987,6 +2994,7 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'contratos',
   'subscription',
   'avaluos',
+  'bitacora',
 ];
 
 // All actions for permission matrix

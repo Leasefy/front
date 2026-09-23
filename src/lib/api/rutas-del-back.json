@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-09-23",
-  "cuantas": 1110,
+  "cuantas": 1113,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -406,6 +406,9 @@
     "GET /inmobiliaria/migracion-terceros/plantilla",
     "GET /inmobiliaria/migracion-terceros/resumen",
     "GET /inmobiliaria/migracion/estado",
+    "GET /inmobiliaria/movimientos",
+    "GET /inmobiliaria/movimientos/opciones",
+    "GET /inmobiliaria/movimientos/recurso/:tipo/:id",
     "GET /inmobiliaria/nomina/conceptos",
     "GET /inmobiliaria/nomina/definitiva/causales",
     "GET /inmobiliaria/nomina/electronica",

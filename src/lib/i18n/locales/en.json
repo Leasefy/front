@@ -1403,6 +1403,8 @@
         "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off.",
         "bitacora": "Money log",
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
+        "movimientos": "Activity log",
+        "movimientosDesc": "Who did what across the panel, with their role and the outcome. It cannot be edited or deleted.",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },

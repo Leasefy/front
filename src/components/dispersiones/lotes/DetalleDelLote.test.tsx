@@ -1016,3 +1016,24 @@ describe('<DetalleDelLote> — el archivo que pudo llegar al banco (23-09)', () 
     );
   });
 });
+
+describe('<DetalleDelLote> — quien registró una devolución no aprueba (Nico, 23-09)', () => {
+  it('🔴 «Aprobar» apagado con el porqué cuando yo registré la devolución de un giro del lote', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-otro'] }),
+    );
+    const b = boton('Aprobar');
+    expect(b.disabled).toBe(true);
+    expect(b.getAttribute('title')).toContain('registraste la devolución');
+    expect(container.querySelector('[data-testid="registre-una-devolucion"]')).not.toBeNull();
+  });
+
+  it('otra persona sí ve «Aprobar» prendido', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-tercero'] }),
+    );
+    expect(boton('Aprobar').disabled).toBe(false);
+  });
+});

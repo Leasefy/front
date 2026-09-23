@@ -2653,6 +2653,14 @@
       "enUnLote": {
         "titulo": "Esta liquidación ya está en un lote",
         "irAlLote": "Abrir el lote"
+      },
+      "giroDevuelto": {
+        "soporte": "Soporte del banco (obligatorio)",
+        "soporteAyuda": "El extracto o el comprobante de la devolución, en PDF o imagen, hasta 10 MB. Queda guardado con el giro: una devolución vuelve a pagarle al propietario, y sin el papel del banco no se registra.",
+        "faltaSoporte": "Adjunta el soporte del banco para marcar el giro devuelto.",
+        "verSoporte": "Ver soporte",
+        "soporteNoAbre": "No se pudo abrir el soporte del banco.",
+        "noApruebasLoQueDevolviste": "Tú registraste la devolución de un giro de este lote: lo aprueba otra persona. Es el segundo par de ojos sobre un pago que se hace dos veces."
       }
     },
     "operaciones": {

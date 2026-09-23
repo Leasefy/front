@@ -21,12 +21,37 @@ import type { GiroDevuelto } from '@/lib/api/finanzas.types';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const h = vi.hoisted(() => ({ listar: vi.fn(), marcar: vi.fn(), regirar: vi.fn() }));
+const h = vi.hoisted(() => ({
+  listar: vi.fn(),
+  marcar: vi.fn(),
+  regirar: vi.fn(),
+  soporte: vi.fn(),
+}));
 
 vi.mock('@/lib/api/finanzas.service', () => ({
-  finanzasApi: { girosDevueltos: h.listar, marcarDevuelto: h.marcar, regirar: h.regirar },
+  finanzasApi: {
+    girosDevueltos: h.listar,
+    marcarDevuelto: h.marcar,
+    regirar: h.regirar,
+    soporteDelGiroDevuelto: h.soporte,
+  },
   codigoSinMigrar: () => null,
 }));
+
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
+/** El extracto del banco: obligatorio desde el 23-09. */
+const EXTRACTO = new File(['%PDF-1.4'], 'extracto.pdf', { type: 'application/pdf' });
+
+async function adjuntar(archivo: File = EXTRACTO) {
+  const input = document.body.querySelector<HTMLInputElement>(
+    '[data-testid="soporte-de-la-devolucion"]',
+  )!;
+  Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+  await act(async () => {
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
 
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -144,6 +169,21 @@ describe('la celda del giro', () => {
     expect(container.querySelector('[data-testid="regirar-d-1"]')).not.toBeNull();
   });
 
+  it('🔴 una devolución con soporte ofrece verlo, y abre la URL firmada', async () => {
+    h.soporte.mockResolvedValue({ url: 'https://firmada/x.pdf', nombre: 'x.pdf', tipo: 'application/pdf' });
+    const abrirVentana = vi.spyOn(window, 'open').mockImplementation(() => null);
+    await pintarCelda({ giro: giro({ tieneSoporte: true }) });
+    const b = document.body.querySelector<HTMLButtonElement>(`[data-testid="ver-soporte-${giro().id}"]`)!;
+    expect(b.textContent).toContain('Ver soporte');
+    await act(async () => {
+      b.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(h.soporte).toHaveBeenCalledWith(giro().id);
+    expect(abrirVentana).toHaveBeenCalledWith('https://firmada/x.pdf', '_blank', 'noopener,noreferrer');
+    abrirVentana.mockRestore();
+  });
+
   it('un giro ya regirado dice cuándo salió y no ofrece la acción otra vez', async () => {
     await pintarCelda({ giro: giro({ dispersionNuevaId: 'd-1', fechaDelNuevoGiro: '2026-09-18' }) });
     expect(container.querySelector('[data-testid="regirado-d-1"]')?.textContent).toContain(
@@ -184,6 +224,7 @@ describe('marcar devuelto', () => {
       setter?.call(codigo, 'R04');
       codigo.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await adjuntar();
     await act(async () => {
       boton('Marcar devuelto').click();
       await new Promise((r) => setTimeout(r, 0));
@@ -194,11 +235,25 @@ describe('marcar devuelto', () => {
       motivoDetalle: undefined,
       codigoDelBanco: 'R04',
       fechaDeLaDevolucion: hoyEnBogota(),
+      soporte: EXTRACTO,
     });
+  });
+
+  it('🔴 sin el soporte del banco, «Marcar devuelto» está apagado y no se le pega al back', async () => {
+    await abrir();
+    const b = document.body.querySelector<HTMLButtonElement>('[data-testid="confirmar-devuelto"]')!;
+    expect(b.disabled).toBe(true);
+    expect(b.getAttribute('title')).toContain('soporte del banco');
+    await act(async () => {
+      b.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(h.marcar).not.toHaveBeenCalled();
   });
 
   it('🔴 muestra el texto de la bitácora TAL CUAL lo devolvió el back', async () => {
     await abrir();
+    await adjuntar();
     await act(async () => {
       boton('Marcar devuelto').click();
       await new Promise((r) => setTimeout(r, 0));

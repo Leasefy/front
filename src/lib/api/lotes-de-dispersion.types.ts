@@ -331,6 +331,11 @@ export interface VistaDelLote {
   bloqueado: boolean;
   /** Opcional: back anterior al 2026-09-23. Vacío = ninguno. */
   salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
+  /**
+   * Quiénes registraron la devolución de algún giro de este lote: ninguno lo
+   * puede aprobar (Nico, 23-09). Opcional: back anterior.
+   */
+  devolucionesRegistradasPor?: string[];
 }
 
 export interface LoteArmado {

@@ -287,6 +287,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const { vista, cargando, error, refetch, setVista } = useLoteDeDispersion(id);
   const { canAccess } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
+  const { t } = useI18n();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   /*
    * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
@@ -385,6 +386,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
+  /*
+   * 🔴 Nico, 23-09: el giro que vuelve a salir no lo aprueba quien registró su
+   * devolución (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
+   * Se apaga «Aprobar» con el porqué antes del clic.
+   */
+  const registreUnaDevolucion =
+    yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
 
   return (
@@ -437,6 +445,11 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {lote.extractosDeCompensados && (
         <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
       )}
+      {lote.estado === 'ESPERANDO_APROBACION' && registreUnaDevolucion && !soyElCreador && !bloqueado && (
+        <Banner variant="info" data-testid="registre-una-devolucion">
+          {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
+        </Banner>
+      )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
@@ -484,8 +497,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Button
               onClick={() => setDialogo('aprobar')}
               hideArrow
-              disabled={soyElCreador || bloqueado}
-              title={soyElCreador ? 'Quien arma el lote no puede aprobarlo' : undefined}
+              disabled={soyElCreador || registreUnaDevolucion || bloqueado}
+              title={
+                soyElCreador
+                  ? 'Quien arma el lote no puede aprobarlo'
+                  : registreUnaDevolucion
+                    ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
+                    : undefined
+              }
             >
               <ShieldCheck className="h-4 w-4" />
               Aprobar

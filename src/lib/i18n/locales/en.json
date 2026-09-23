@@ -2619,6 +2619,14 @@
       "enUnLote": {
         "titulo": "This settlement is already in a batch",
         "irAlLote": "Open the batch"
+      },
+      "giroDevuelto": {
+        "soporte": "Bank support (required)",
+        "soporteAyuda": "The bank statement or receipt of the return, as PDF or image, up to 10 MB. It is stored with the transfer: a return pays the owner again, and without the bank document it is not recorded.",
+        "faltaSoporte": "Attach the bank support to mark the transfer as returned.",
+        "verSoporte": "View support",
+        "soporteNoAbre": "The bank support could not be opened.",
+        "noApruebasLoQueDevolviste": "You recorded the return of a transfer in this batch: someone else approves it. It is the second pair of eyes on a payment made twice."
       }
     },
     "operaciones": {

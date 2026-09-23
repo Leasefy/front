@@ -867,6 +867,11 @@ export interface Dispersion {
   approvedBy?: string;
   /** Su nombre (23-09), para mostrar. Ausente = back anterior o no se supo. */
   approvedByName?: string;
+  /**
+   * Quién registró la devolución abierta de este giro (23-09): esa persona no
+   * lo aprueba. Ausente = nadie, o back anterior.
+   */
+  devolucionRegistradaPor?: string;
   approvedAt?: string;
   processedAt?: string;
   transferReference?: string;

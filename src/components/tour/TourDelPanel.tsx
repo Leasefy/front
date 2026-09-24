@@ -22,9 +22,13 @@
  *    presente pero de tamaño cero —el sidebar por debajo de `lg`— no se puede
  *    señalar. Si además desaparece a mitad del recorrido, su paso se salta
  *    solo. Nunca se señala un hueco.
- * 2. **Omitir está en todos los pasos** y cuenta como visto
- *    (`setTourDismissed(true)`), igual que llegar al final: es la misma
- *    preferencia que mueve el interruptor de Configuración → Preferencias.
+ * 2. **Omitir está en todos los pasos** y cuenta como visto, igual que llegar
+ *    al final — para TODA la inmobiliaria y una sola vez (Nico, 23-09: «si le
+ *    da omitir no vuelve a aparecer y si lo ve completo no vuelve a
+ *    aparecer»). Omitir, la ✕ y Esc guardan `omitido`; «Entendido» en el
+ *    cierre, `completo` (`cerrarRecorrido`, `PanelPrefsContext`). Mientras
+ *    no se sabe si la agencia ya lo vio (`tourDismissed === null`), no se
+ *    monta.
  * 3. **El velo NO se puede clickear para cerrar.** Cierran la ✕, «Omitir» y
  *    Esc, que son los tres caminos que un lector de pantalla también encuentra.
  *    Un botón invisible a pantalla completa se anunciaba como un control más y
@@ -221,7 +225,7 @@ function focusables(caja: HTMLElement): HTMLElement[] {
 export function TourDelPanel() {
   const { t } = useI18n();
   const { user, agency } = useAuth();
-  const { tourDismissed, setTourDismissed } = usePanelPrefs();
+  const { tourDismissed, cerrarRecorrido } = usePanelPrefs();
   const reducirMovimiento = useReducedMotion();
   // Los permisos deciden qué filas del sidebar existen. Medir antes de que
   // resuelvan es medir el esqueleto. `…Safe` porque el recorrido tiene que
@@ -267,9 +271,11 @@ export function TourDelPanel() {
       yaArrancoRef.current = true;
       setPasos(visibles);
       setIndice(0);
-      // Nadie a quien señalar ⇒ el recorrido no arranca y la preferencia se
-      // apaga igual, para no reintentarlo en cada navegación.
-      if (visibles.length === 0) setTourDismissed(true);
+      // Nadie a quien señalar (p. ej. el panel en un teléfono, sin sidebar) ⇒
+      // el recorrido no arranca en esta sesión y NO se marca como visto: la
+      // inmobiliaria no lo vio, y marcarlo acá se lo quitaría a quien entre
+      // después desde un computador. `yaArrancoRef` evita reintentarlo en
+      // cada navegación.
     };
 
     const contar = () => {
@@ -301,7 +307,7 @@ export function TourDelPanel() {
       cancelado = true;
       clearTimeout(id);
     };
-  }, [activo, permisosListos, setTourDismissed]);
+  }, [activo, permisosListos]);
 
   const pantallas = useMemo<PantallaDelTour[]>(
     () => (pasos ? pantallasDelTour(pasos) : []),
@@ -354,8 +360,8 @@ export function TourDelPanel() {
     };
   }, [selectorActual, reducirMovimiento]);
 
-  const cerrar = useCallback(() => {
-    setTourDismissed(true);
+  const cerrar = useCallback((estado: 'completo' | 'omitido') => {
+    void cerrarRecorrido(estado);
     setPasos(null);
     setIndice(0);
     // El foco vuelve a donde estaba: cerrar una capa no puede dejar a quien
@@ -363,7 +369,7 @@ export function TourDelPanel() {
     const previo = focoPrevioRef.current;
     focoPrevioRef.current = null;
     if (previo && typeof previo.focus === 'function' && previo.isConnected) previo.focus();
-  }, [setTourDismissed]);
+  }, [cerrarRecorrido]);
 
   const abierto = activo && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
 
@@ -405,7 +411,7 @@ export function TourDelPanel() {
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        cerrar();
+        cerrar('omitido');
         return;
       }
       if (e.key === 'Tab') {
@@ -439,7 +445,7 @@ export function TourDelPanel() {
       const esUltimaPantalla = indice >= pantallas.length - 1;
       if (e.key === 'ArrowRight' || (e.key === 'Enter' && e.target === tarjetaRef.current)) {
         e.preventDefault();
-        if (esUltimaPantalla) cerrar();
+        if (esUltimaPantalla) cerrar('completo');
         else avanzar();
       }
     };
@@ -589,7 +595,7 @@ export function TourDelPanel() {
                 variant="ghost"
                 size="icon"
                 hideArrow
-                onClick={cerrar}
+                onClick={() => cerrar('omitido')}
                 aria-label={t('inmobiliaria.tour.cerrar')}
                 className="-mr-2 -mt-2 h-8 w-8 shrink-0 text-fg-subtle hover:text-fg"
                 data-testid="tour-cerrar"
@@ -672,7 +678,7 @@ export function TourDelPanel() {
                 variant="link"
                 size="sm"
                 hideArrow
-                onClick={cerrar}
+                onClick={() => cerrar('omitido')}
                 className="h-auto px-0 text-fg-muted hover:text-fg"
                 data-testid="tour-saltar"
               >
@@ -694,7 +700,7 @@ export function TourDelPanel() {
                 <Button
                   size="sm"
                   hideArrow
-                  onClick={pantalla.tipo === 'cierre' ? cerrar : avanzar}
+                  onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
                   data-testid="tour-siguiente"
                 >
                   {t(

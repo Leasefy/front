@@ -10,8 +10,11 @@
  * el agente de Asegurabilidad y sacaba al usuario del agente que acababa de
  * abrir.
  *
- * `tourDismissed` es el interruptor global de novedades:
- *   false → mostrarlas · true → apagadas · null → hidratando (no parpadear).
+ * `tourDismissed` dice si la INMOBILIARIA ya vio el recorrido del panel
+ * (23-09): la presentación del agente sale DESPUÉS del recorrido, nunca
+ * encima ni mientras no se sabe:
+ *   true → el recorrido ya pasó: se presenta · false → el recorrido está
+ *   saliendo: espera · null → no se sabe: nada.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -23,14 +26,14 @@ import { CabeceraDelAgente } from './CabeceraDelAgente'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let pathname = '/panel/inmobiliaria/pagos/cobranza'
-let tourDismissed: boolean | null = false
+let tourDismissed: boolean | null = true
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
 }))
 
 vi.mock('@/lib/context/PanelPrefsContext', () => ({
-  usePanelPrefs: () => ({ tourDismissed, setTourDismissed: vi.fn() }),
+  usePanelPrefs: () => ({ tourDismissed }),
 }))
 
 // El nav del workspace hace fetch propio — fuera del alcance de este test.
@@ -57,7 +60,7 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   pathname = '/panel/inmobiliaria/pagos/cobranza'
-  tourDismissed = false
+  tourDismissed = true
 })
 
 afterEach(() => {
@@ -87,7 +90,7 @@ describe('CabeceraDelAgente — novedades', () => {
     expect(tour()).toBeNull()
   })
 
-  it('presenta el agente en el que estás, con las novedades activas', () => {
+  it('presenta el agente en el que estás, cuando la inmobiliaria ya vio el recorrido', () => {
     render()
     expect(intro()?.getAttribute('data-path')).toBe('/panel/inmobiliaria/pagos/cobranza')
   })
@@ -99,13 +102,19 @@ describe('CabeceraDelAgente — novedades', () => {
     expect(tour()).toBeNull()
   })
 
-  it('no muestra nada con las novedades apagadas', () => {
-    tourDismissed = true
+  it('🔴 no se monta ENCIMA del recorrido del panel (false: el recorrido está saliendo)', () => {
+    tourDismissed = false
     render()
     expect(intro()).toBeNull()
   })
 
-  it('no parpadea mientras la preferencia hidrata (null)', () => {
+  it('🔴 que la inmobiliaria ya haya visto el recorrido NO apaga las presentaciones (el sentido viejo las mataba para siempre)', () => {
+    tourDismissed = true
+    render()
+    expect(intro()).not.toBeNull()
+  })
+
+  it('no parpadea mientras no se sabe si la inmobiliaria ya vio el recorrido (null)', () => {
     tourDismissed = null
     render()
     expect(intro()).toBeNull()

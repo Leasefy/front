@@ -683,8 +683,8 @@ export function ConfigFacturacion({
           </DialogHeader>
           <DialogDescription className="text-sm text-fg-muted">
             {nextBillingDate
-              ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasás a Starter y no se te cobra más. Podés deshacer esto antes de esa fecha.`
-              : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasás a Starter y no se te cobra más. Podés deshacer esto antes de esa fecha.`}
+              ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`
+              : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasas a Starter y no se te cobra más. Puedes deshacer esto antes de esa fecha.`}
           </DialogDescription>
           <DialogFooter>
             <Button variant="outline" hideArrow onClick={() => setCancelDialogOpen(false)}>

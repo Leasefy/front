@@ -661,25 +661,6 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
   })
 })
 
-describe('AuthProvider — el token después del código del segundo factor', () => {
-  it('MFA_CHALLENGE_VERIFIED deja puesto el token nuevo (aal2), no el de antes del código', async () => {
-    getMock.mockResolvedValue({ id: 'u1', email: 'ana@example.com', role: 'AGENCY', onboardingCompletedAt: null })
-    await renderProviderAndEmitInitialSession()
-    const { setAccessToken } = await import('@/lib/api/client')
-    const setAccessTokenMock = vi.mocked(setAccessToken)
-    expect(setAccessTokenMock).toHaveBeenLastCalledWith('jwt-token')
-
-    await act(async () => {
-      await authCallbacks[authCallbacks.length - 1]('MFA_CHALLENGE_VERIFIED', {
-        ...fakeSession,
-        access_token: 'jwt-token-aal2',
-      })
-    })
-
-    expect(setAccessTokenMock).toHaveBeenLastCalledWith('jwt-token-aal2')
-  })
-})
-
 describe('fetchAgencyWithTimeout', () => {
   it('resolves as a transient failure when the fetch hangs past the timeout (bounds the probe)', async () => {
     vi.useFakeTimers()

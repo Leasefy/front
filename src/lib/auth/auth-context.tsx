@@ -1152,16 +1152,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setNeedsOnboarding(false)
           setPerfilElegido(null)
           setIsLoading(false)
-        } else if (event === 'MFA_CHALLENGE_VERIFIED' && session) {
-          // 🔴 El código del segundo factor trae una sesión NUEVA (`aal2`), y
-          // auth-js la anuncia con este evento, no con TOKEN_REFRESHED. Sin
-          // esta rama el apiClient seguía mandando el token de antes del código
-          // (`aal1`) hasta el refresco automático, ~1 h después, y el back le
-          // contestaba 403 «Tu rol exige segundo factor» a quien acababa de
-          // ponerlo (Nico, 24-09 07:56 → 08:21).
-          huboSesionRef.current = true
-          setAccessToken(session.access_token)
-          alSoltarElLock(checkMfaLevel)
         } else if (event === 'USER_UPDATED' && session) {
           // `updateUser` (por ejemplo, guardar el perfil elegido) trae el
           // usuario nuevo en la misma sesión: releer los metadatos acá.
@@ -1234,6 +1224,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
            * GoTrueClient#_notifyAllSubscribers) antes de devolver el
            * control. El chequeo de MFA sigue diferido: mismo lock de auth-js
            * que todo lo demás acá.
+           *
+           * Incidente real (Nico, 24-09): su sesión quedó `aal2` a las
+           * 07:56:36 y el back siguió viendo `aal1` de 07:56:41 a 08:21 —
+           * un administrador recién puesto el segundo factor recibía 403
+           * «Tu rol exige segundo factor» hasta el refresco automático,
+           * ~1h después.
            */
           const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true

@@ -356,7 +356,7 @@ export function ConfigFacturacion({
                       <p className="text-sm font-medium text-warning">
                         {isPendingCancellation ? 'Cancelación programada' : 'Cambio de plan programado'}
                       </p>
-                      <p className="text-xs text-fg-muted mt-0.5">
+                      <p className="text-caption text-fg-muted mt-0.5">
                         {isPendingCancellation
                           ? `Pasás a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}. Sin más cobros.`
                           : `Cambia a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}.`}

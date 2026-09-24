@@ -1243,6 +1243,94 @@
       "catalogo": {
         "titulo": "All processes",
         "descripcion": "Every piece of the platform, process by process: what each one does, who runs it, what mode it is in and when it was last seen."
+      },
+      "operaSola": {
+        "boton": "Runs on its own?",
+        "pendientesAria": "{{n}} things missing for it to run on its own in Automatic",
+        "titulo": "Runs on its own?",
+        "descripcion": "What your whole agency still needs to run on its own in Automatic, and who unblocks it.",
+        "sinFuente": "I could not measure whether your agency runs on its own",
+        "sinFuenteHint": "I am not saying yes or no: the measurement did not answer. Open this panel again in a moment.",
+        "estadoListo": "Runs on its own in Automatic",
+        "estadoNoListo": "It does not run on its own yet",
+        "nadaQueFalta": "Nothing: everything that can run on its own, does.",
+        "afecta": "Affects: {{agentes}}",
+        "sinModoElegido": "nobody chose its mode",
+        "verProcesos": "See its {{n}} processes",
+        "ocultarProcesos": "Hide its processes",
+        "interruptoresAyuda": "Leasefy turns these on in the server, never the agency. This only says whether they are on, never their value.",
+        "migraciones": "Missing migrations (Leasefy applies them)",
+        "migracionSinAplicar": "not applied",
+        "migracionNoSe": "could not be checked",
+        "loQueHizoSinFuente": "I could not read what it did: the ERP did not answer.",
+        "secciones": {
+          "queFalta": "What is missing, and who unblocks it",
+          "porAgente": "By agent",
+          "interruptores": "Server switches",
+          "loQueHizo": "What it did in the last 30 days"
+        },
+        "quien": {
+          "leasefy": "Leasefy unblocks it",
+          "administrador": "An administrator unblocks it",
+          "programar": "It has to be built"
+        },
+        "estadoAgente": {
+          "listo": "Runs on its own",
+          "frenado": "Blocked",
+          "siempre_humano": "Asks for a click by rule",
+          "apagado": "Off"
+        },
+        "estadoProceso": {
+          "opera_solo": "Runs on its own",
+          "siempre_humano": "Always asks for a click",
+          "frenado": "Blocked",
+          "apagado": "Off"
+        },
+        "delegacion": {
+          "registrada": "on behalf of {{quien}}",
+          "falta": "not registered on whose behalf it acts",
+          "noMedida": "could not check on whose behalf it acts"
+        },
+        "interruptor": {
+          "encendido": "On",
+          "apagado": "Off",
+          "noSeVe": "Not visible from here",
+          "donde": {
+            "micro": "In the Pilot",
+            "back": "In the ERP"
+          }
+        }
+      },
+      "topes": {
+        "titulo": "Your limits in Automatic",
+        "descripcion": "How far the Pilot acts on its own. Above a limit, even in Automatic, it asks for your click.",
+        "sinFuente": "I could not read your limits: the Pilot did not answer.",
+        "fueraDeRango": "It must be between {{min}} and {{max}}.",
+        "porDefecto": "These are the Leasefy defaults: nobody has changed them yet.",
+        "cambiadoPor": "{{quien}} changed them on {{fecha}}.",
+        "guardar": "Save the limits",
+        "guardado": "Limits saved.",
+        "errorAlGuardar": "Not saved: {{error}}",
+        "topeMontoCop": {
+          "label": "Limit per action",
+          "ayuda": "The money in a single action (a receipt, a charge). With $0, every action with money asks for your click."
+        },
+        "topeDestinatarios": {
+          "label": "People per send",
+          "ayuda": "How many people can receive something in a single send. With 0, every send asks for your click."
+        },
+        "graciaSegundos": {
+          "label": "Seconds to undo",
+          "ayuda": "What the Pilot sends on its own waits this long with «Undo» in view. The minimum is one minute."
+        },
+        "horario": {
+          "titulo": "Legal schedule",
+          "ayuda": "Set by law, not editable: outside this schedule, the Pilot schedules it for the next opening."
+        },
+        "ventana": {
+          "cobranza": "Collections",
+          "aviso": "Notices"
+        }
       }
     },
     "mobileNav": {

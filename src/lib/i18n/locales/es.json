@@ -11419,11 +11419,90 @@
         "si": "Sí, hazlo",
         "no": "No, no lo hagas",
         "deshacer": "Deshacer: {{etiqueta}}",
-        "verFicha": "Ver la ficha de {{titulo}}"
+        "verFicha": "Ver la ficha de {{titulo}}",
+        "reintentar": "Reintentar: {{titulo}}"
       },
       "verFicha": "Ver ficha",
       "enlaceExterno": "se abre en otra pestaña ({{destino}})",
-      "verElResto": "Ver el resto"
+      "verElResto": "Ver el resto",
+      "tarjeta": {
+        "estado": {
+          "propuesta": "Espera tu respuesta",
+          "respondida": "Respondida",
+          "en_curso": "En curso",
+          "en_gracia": "Por salir",
+          "hecha": "Hecho",
+          "cancelada": "No se hizo",
+          "deshecha": "Deshecho",
+          "vencida": "Venció",
+          "programada": "Programada",
+          "error": "No se pudo",
+          "ensayo": "Ensayo"
+        },
+        "propuesta": {
+          "hacerlo": "Hacerlo",
+          "no": "No",
+          "dijisteSi": "Dijiste que sí.",
+          "dijisteNo": "Dijiste que no.",
+          "programada": "Si dices que sí, queda programada para {{cuando}}.",
+          "ensayo": "Modo ensayo: esto no se va a hacer ni a programar."
+        },
+        "riesgo": {
+          "titulo": "Qué implica",
+          "irreversible": "No se puede deshacer",
+          "plata": "Mueve plata",
+          "fiscal": "Fiscal (DIAN)",
+          "terceros": "Le escribe a otra persona",
+          "masiva": "Masiva",
+          "masivaConTope": "Masiva (hasta {{tope}})",
+          "dobleControl": "Doble control"
+        },
+        "vistaPrevia": {
+          "titulo": "Lo que va a quedar",
+          "sinVistaPrevia": "El ERP no mandó una vista previa de esta acción.",
+          "verMas": "Ver {{n}} más",
+          "verMenos": "Ver menos",
+          "si": "Sí",
+          "no": "No"
+        },
+        "dobleControl": {
+          "otraPersona": "Esto lo aprueba otra persona.",
+          "laPuedesHacerTu": "Eres administrador: puedes aprobarlo tú (queda en la bitácora que fuiste la misma persona)."
+        },
+        "enCurso": {
+          "avance": "{{hechos}} de {{total}}",
+          "avanceSinTotal": "{{hechos}} hechos",
+          "barra": "Avance de {{titulo}}",
+          "cancelar": "Cancelar",
+          "cancelacionPedida": "Pediste cancelarlo: se detiene en el siguiente paso.",
+          "noPudeCancelar": "No pude cancelarlo: {{motivo}}",
+          "noPudeLeer": "No pude leer cómo va; sigo intentando.",
+          "sinResultado": "Terminó, pero no pude traer el resultado. Pregúntame en un momento."
+        },
+        "gracia": {
+          "seEnviaEn": "Se envía en",
+          "enviando": "Enviándolo…",
+          "anuncioInicio": "Se envía en {{segundos}} segundos. Puedes deshacerlo antes.",
+          "anuncioDiez": "Quedan 10 segundos para deshacerlo.",
+          "anuncioFinal": "Se está enviando: ya no se puede deshacer.",
+          "sinConfirmar": "No pude confirmar que salió. Pregúntame en un momento.",
+          "pedisteDeshacer": "Pediste deshacerlo."
+        },
+        "programada": {
+          "cuando": "Lo programé para {{cuando}}.",
+          "saleConTuSesion": "Tu sesión vence antes de esa hora: sale apenas vuelvas a escribirle al chat, dentro del horario."
+        },
+        "error": {
+          "permiso": "Permiso que falta: {{modulo}} · {{accion}}",
+          "quienesPueden": "Lo pueden hacer: {{nombres}}.",
+          "nadiePuede": "Hoy nadie de tu inmobiliaria tiene ese permiso.",
+          "codigo": "Código de tu app de autenticación",
+          "verificar": "Verificar y reintentar",
+          "sinFactor": "Todavía no tienes el segundo factor activado en tu cuenta.",
+          "codigoIncorrecto": "Ese código no era. Prueba con el siguiente.",
+          "noPudeVerificar": "No pude verificar el código: {{motivo}}"
+        }
+      }
     }
   },
   "landlordProfile": {

@@ -340,6 +340,16 @@ export interface ChatMessage {
   resultado?: import('@/lib/chat/acciones-del-hilo').ResultadoEnElHilo;
   formulario?: import('@/lib/chat/acciones-del-hilo').FormularioEnElHilo;
   /**
+   * La tarjeta del EJECUTOR (24-09): propuesta, en curso, resultado (con la
+   * gracia de «Deshacer» de P-10), programada o error. Con ella a la vista,
+   * `confirmacion` y `resultado` (la misma ejecución, para un panel viejo) no
+   * se pintan. Se pone al día con `GET …/ejecuciones/{id}` en su mismo mensaje.
+   * Ver `src/lib/chat/tarjetas-de-ejecucion.ts`.
+   */
+  ejecucion?: import('@/lib/chat/tarjetas-de-ejecucion').TarjetaDeEjecucion;
+  /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
+  ensayo?: boolean;
+  /**
    * El id de ESTE turno en el cerebro del micro (23-09), acuñado por el
    * servidor: llega en el `done` del stream y en la respuesta del POST. Con él
    * viajan las señales que sólo ve la pantalla (`src/lib/chat/senales.ts`) y

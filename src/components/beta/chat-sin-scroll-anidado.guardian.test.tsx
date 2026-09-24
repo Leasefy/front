@@ -42,6 +42,7 @@ const DENTRO_DEL_HILO = [
   'CajaDelChat.tsx',
   'RespuestaConForma.tsx',
   'AccionesEnElHilo.tsx',
+  'TarjetaDeEjecucion.tsx',
   'ResponseCard.tsx',
   'AssistantBubble.tsx',
   'MarkdownRenderer.tsx',

@@ -56,7 +56,11 @@ export function FirmasClient() {
 
   const recordatorios = barrido.datos?.recordatorios ?? []
   const vencidas = barrido.datos?.vencidas ?? []
-  const vacio = recordatorios.length === 0 && vencidas.length === 0
+  const porVencer = barrido.datos?.porVencer ?? []
+  const vacio =
+    recordatorios.length === 0 &&
+    vencidas.length === 0 &&
+    porVencer.length === 0
 
   async function cancelar(contractId: string) {
     setResultado(null)
@@ -228,6 +232,39 @@ export function FirmasClient() {
                             </Button>
                           )
                         ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {/* 🔴 24-09-2026: abrir esta pantalla ya NO vence nada — antes la
+                lectura devolvía contratos a borrador sin preguntarle al modo
+                del Piloto. Lo que se quedó sin firma al cumplirse el plazo lo
+                vence el Piloto según su modo; acá se ve mientras tanto. */}
+            {porVencer.length > 0 ? (
+              <Card data-testid="por-vencer">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Se les pasó el plazo ({porVencer.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-3 text-sm">
+                    Nadie firmó a tiempo. El Piloto las vence según su modo: en
+                    Automático devuelve el contrato a borrador solo, en Copiloto
+                    te espera en la Bandeja del Piloto con un clic y en Manual te
+                    lo propone. El inmueble sigue reservado.
+                  </p>
+                  <ul className="divide-y">
+                    {porVencer.map((p) => (
+                      <li
+                        key={p.invitacionId}
+                        className="py-3 text-sm"
+                        data-testid={`por-vencer-${p.contractId}`}
+                      >
+                        {p.tenantName ?? 'Contrato sin nombre del inquilino'}
                       </li>
                     ))}
                   </ul>

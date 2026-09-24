@@ -907,11 +907,25 @@ export const invitacionApi = {
         correo: string | null
         mensaje: string
       }[]
+      /**
+       * 🔴 Las que ya se vencieron (24-09-2026): el back las LEE; ya no las
+       * vence al abrir esta pantalla. Las vence el Piloto según su modo.
+       */
       vencidas: {
         contractId: string
         contratoVolvioABorrador: boolean
         inmuebleLiberado: boolean
         aviso: string
+      }[]
+      /**
+       * Las que se quedaron sin firma al cumplirse el plazo y todavía nadie
+       * venció: el Piloto decide según su modo (Automático las vence, Copiloto
+       * te las deja en la Bandeja, Manual te las propone).
+       */
+      porVencer?: {
+        invitacionId: string
+        contractId: string
+        tenantName: string | null
       }[]
     }>(`${BASE}/invitacion-a-firmar/barrido`),
 }

@@ -84,7 +84,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-09: 2755 al pasar la compra de créditos al PSE real (el formulario nuevo
 // pinta rótulos y avisos en 14).
 // 23-09 noche: 2753 al unir la tercera ronda de seguridad.
-const CUANTOS_HABIA = 2753;
+// 24-09: 2746 al retirar `ActionProposalCard` (la tarjeta F5 que ninguna
+// pantalla montaba; las tarjetas del ejecutor del chat no usan 12 px).
+const CUANTOS_HABIA = 2746;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

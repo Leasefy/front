@@ -10,6 +10,13 @@ import type {
 import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
 import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
 import {
+  conElProcesoDelStream,
+  type EventoProcesoIniciado,
+  type TarjetaDeEjecucion,
+} from '@/lib/chat/tarjetas-de-ejecucion';
+import { invalidar } from '@/lib/api/refresco-de-datos';
+import { RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
+import {
   crearTestigoDeTurnos,
   mandarSenal,
   mandarSenalEnUnMomento,
@@ -40,6 +47,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import {
   postChatTurn,
   streamChatTurn,
+  fetchEjecucion,
   leerReintentable,
   fetchBriefing,
   isAgentConfigured,
@@ -412,6 +420,18 @@ export interface UseBetaChatReturn {
    * sale nada. Fuego y olvido: nunca frena ni rompe el chat.
    */
   anotarTarjetaAbierta: (turnoId: string | undefined, entidad?: { tipo: string; id: string }) => void;
+
+  /**
+   * Pide al micro la tarjeta de HOY de una ejecución (`GET …/ejecuciones/{id}`)
+   * y la deja en SU mensaje (sólo ése: la misma ejecución puede haber pasado
+   * por otro mensaje como propuesta, y ése no cambia). Devuelve la tarjeta, o
+   * `null` si el micro no la tiene; lanza si no se pudo preguntar.
+   *
+   * 🔴 No es una lectura pasiva (lo programado que ya tocaba SALE): la llaman
+   * sólo la cuenta regresiva de la gracia al terminar, la programada al
+   * montarse con la hora pasada y la tarjeta en curso cuando su proceso termina.
+   */
+  refrescarEjecucion: (messageId: string, ejecucionId: string) => Promise<TarjetaDeEjecucion | null>;
 }
 
 // ============================================================================
@@ -701,6 +721,35 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       });
     },
     [testigo]
+  );
+
+  /**
+   * La tarjeta de hoy de una ejecución, en SU mensaje (24-09). Se busca el
+   * mensaje por id en todas las conversaciones (la persona pudo cambiar de
+   * conversación mientras corría la cuenta) y sólo se toca si sigue siendo la
+   * misma ejecución: una tarjeta vieja que vuelve tarde no pisa otra.
+   */
+  const refrescarEjecucion = useCallback(
+    async (messageId: string, ejecucionId: string): Promise<TarjetaDeEjecucion | null> => {
+      const agencia = agencyIdRef.current;
+      if (!agencia || !isAgentConfigured()) return null;
+      const tarjeta = await fetchEjecucion({ agencyId: agencia, ejecucionId });
+      if (!tarjeta || tarjeta.ejecucionId !== ejecucionId) return tarjeta;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.messages.some((m) => m.id === messageId && m.ejecucion?.ejecucionId === ejecucionId)
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === messageId && m.ejecucion?.ejecucionId === ejecucionId ? { ...m, ejecucion: tarjeta } : m
+                ),
+              }
+            : c
+        )
+      );
+      return tarjeta;
+    },
+    []
   );
 
   // Cerrar la pestaña, recargar o irse a otra página: `pagehide` es el último
@@ -1157,6 +1206,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         confirmacion?: ConfirmacionEnElHilo | null;
         resultado?: ResultadoEnElHilo | null;
         formulario?: FormularioEnElHilo | null;
+        /** La tarjeta del ejecutor (24-09, sólo por el stream). */
+        ejecucion?: TarjetaDeEjecucion | null;
+        ensayo?: boolean;
+        /** El proceso largo que anunció el stream antes del `done` (`proceso_iniciado`). */
+        procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
         camino?: string;
       },
@@ -1188,7 +1242,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const confirmacion = resp.confirmacion ?? null;
       const resultado = resp.resultado ?? null;
       const formulario = resp.formulario ?? null;
-      const actua = acciones.length > 0 || confirmacion || resultado || formulario;
+      // La tarjeta del ejecutor (24-09). Si el stream anunció el proceso largo
+      // antes del `done` y la tarjeta todavía no lo trae, se le pega: así la
+      // barra del Centro de procesos arranca con la respuesta.
+      const ejecucion = conElProcesoDelStream(resp.ejecucion ?? null, resp.procesoIniciado ?? null);
+      const ensayo = resp.ensayo === true;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo;
       if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
         setConversations((prev) =>
           prev.map((c) =>
@@ -1209,6 +1268,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(confirmacion ? { confirmacion } : {}),
                           ...(resultado ? { resultado } : {}),
                           ...(formulario ? { formulario } : {}),
+                          ...(ejecucion ? { ejecucion } : {}),
+                          ...(ensayo ? { ensayo } : {}),
                         }
                       : m
                   ),
@@ -1327,6 +1388,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       confirmacion: ConfirmacionEnElHilo | null;
       resultado: ResultadoEnElHilo | null;
       formulario: FormularioEnElHilo | null;
+      ejecucion: TarjetaDeEjecucion | null;
+      ensayo: boolean;
+      procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
     }> => {
       const startedAt = new Date();
@@ -1350,12 +1414,16 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           confirmacion?: ConfirmacionEnElHilo | null;
           resultado?: ResultadoEnElHilo | null;
           formulario?: FormularioEnElHilo | null;
+          ejecucion?: TarjetaDeEjecucion | null;
+          ensayo?: boolean;
           camino?: string;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
         streamError: unknown;
-      } = { final: null, snapshot: null, streamError: null };
+        /** SSE `proceso_iniciado` (24-09): sale antes del `done`. */
+        procesoIniciado: EventoProcesoIniciado | null;
+      } = { final: null, snapshot: null, streamError: null, procesoIniciado: null };
 
       await streamChatTurn({
         agencyId: args.agencyId,
@@ -1402,6 +1470,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             );
           },
           onProgreso: (p) => ponerActividad(p.texto, p),
+          onProcesoIniciado: (evento) => {
+            collected.procesoIniciado = evento;
+            // El Centro de procesos del panel (el anillo del header) mira ya,
+            // sin esperar su minuto de reposo. No se ABRE: la barra de avance
+            // la muestra la tarjeta, dentro del chat.
+            invalidar(RECURSO_DE_PROCESOS);
+          },
           onMessage: (text, actions) => {
             messageText = text;
             messageActions = actions;
@@ -1579,6 +1654,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               confirmacion: f.confirmacion,
               resultado: f.resultado,
               formulario: f.formulario,
+              ejecucion: f.ejecucion,
+              ensayo: f.ensayo,
               ...(f.camino ? { camino: f.camino } : {}),
             };
           },
@@ -1623,6 +1700,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         confirmacion: final?.confirmacion ?? null,
         resultado: final?.resultado ?? null,
         formulario: final?.formulario ?? null,
+        // La tarjeta del ejecutor y el proceso que anunció el stream (24-09).
+        ejecucion: final?.ejecucion ?? null,
+        ensayo: final?.ensayo === true,
+        procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
       };
     },
@@ -2482,5 +2563,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
     // Señales de la pantalla para el cerebro (23-09)
     anotarTarjetaAbierta,
+
+    // Las tarjetas del ejecutor, al día (24-09)
+    refrescarEjecucion,
   };
 }

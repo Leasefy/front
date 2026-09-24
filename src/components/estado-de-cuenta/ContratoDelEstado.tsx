@@ -31,12 +31,19 @@
  *
  * En móvil la tabla se vuelve tarjetas. Once columnas en 390 px no son una
  * tabla, son un scroll horizontal que nadie recorre.
+ *
+ * ── Los intereses de mora (2026-09-16) ──────────────────────────────────────
+ * 8. Van en su PROPIA sección, después de Otros conceptos, y en el pie del
+ *    contrato suman aparte: «Resta por pagar» sigue siendo capital, y al lado
+ *    van «Intereses de mora» y «Total con intereses». El número sale del back,
+ *    con la misma regla que la prefactura y la cartera.
  */
 
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
+import { BotonAnularRecibo } from './AnularReciboDeLaFila';
 import { formatCurrency } from '@/lib/format';
 import {
   Table,
@@ -69,6 +76,9 @@ import {
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { useTextoDelEstado } from './textos';
+import { InteresesDelContratoSeccion } from './InteresesDelContrato';
+import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
+import { hayQueContarIntereses, interesesDelContrato } from './intereses';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
 export const FILAS_SIN_PAGINAR = 15;
@@ -86,11 +96,27 @@ interface Props {
    * con lo impreso.
    */
   sinPaginar?: boolean;
+  /**
+   * A dónde se configuran las reglas de mora. Sólo el panel lo pasa: el
+   * motivo de «cuotas en mora sin intereses» habla de la configuración de la
+   * inmobiliaria y no se le muestra al cliente.
+   */
+  reglasDeMoraHref?: string;
+  /** El anticipo del contrato, sólo en el panel (endpoint de la inmobiliaria). */
+  conAnticipoDelContrato?: boolean;
 }
 
-export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) {
+export function ContratoDelEstado({
+  contrato,
+  hoy,
+  sinPaginar = false,
+  reglasDeMoraHref,
+  conAnticipoDelContrato = false,
+}: Props) {
   const t = useTextoDelEstado();
   const esPropietario = contrato.rol === 'PROPIETARIO';
+  const intereses = interesesDelContrato(contrato);
+  const conIntereses = Boolean(intereses && intereses.filas.length > 0);
 
   const columnas = React.useMemo(
     () =>
@@ -120,17 +146,10 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
         <div className="min-w-0">
-          {/* El número que el cliente conoce, y el nuestro rotulado al lado
-              cuando no es el mismo («Contrato 1686 · Leasefy #1839»). */}
+          {/* El número que el cliente conoce: «Contrato 1686». Sin el de Leasefy (16-09). */}
           <h3 className="text-subtitle text-fg">
             {t('estadoDeCuenta.contratoPalabra')}{' '}
             <span className="font-mono tabular-nums">{numero.principal}</span>
-            {numero.numeroDeLeasefy != null && (
-              <span className="font-mono tabular-nums text-body-sm text-fg-muted" data-testid="numero-de-leasefy">
-                {' · '}
-                {t('estadoDeCuenta.numeroDeLeasefy', { numero: String(numero.numeroDeLeasefy) })}
-              </span>
-            )}
           </h3>
           <p className="mt-0.5 text-body-sm text-fg-muted">
             {t(
@@ -190,6 +209,39 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
         </p>
       )}
 
+      {hayQueContarIntereses(intereses) && (
+        <InteresesDelContratoSeccion
+          intereses={intereses}
+          numero={contrato.numero}
+          reglasDeMoraHref={reglasDeMoraHref}
+        />
+      )}
+
+      {conAnticipoDelContrato && !esPropietario && (
+        <AnticipoDelContratoSeccion contractId={contrato.id} />
+      )}
+
+      {/* 🔴 D11: la deuda subrogada, VISIBLE y SEPARADA de lo que se le debe a
+          la inmobiliaria: no suma a «resta por pagar». */}
+      {contrato.subrogacion && contrato.subrogacion.totalCop > 0 && (
+        <div
+          className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+          data-testid={`subrogacion-contrato-${contrato.numero}`}
+        >
+          <p className="text-label uppercase tracking-wide text-fg-subtle">
+            {t('estadoDeCuenta.deudaSubrogada')}
+          </p>
+          {contrato.subrogacion.aseguradoras.map((a) => (
+            <p key={a.nit} className="text-body-sm text-fg">
+              {a.nombre} · NIT {a.nit}
+              {a.siniestros.length > 0 ? ` · ${a.siniestros.join(', ')}` : ''}:{' '}
+              <span className="font-mono tabular-nums">{formatCurrency(a.valorCop)}</span>
+            </p>
+          ))}
+          <p className="text-caption text-fg-muted">{t('estadoDeCuenta.deudaSubrogadaAyuda')}</p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.totalDelContrato')}
@@ -203,9 +255,30 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
           <Cifra
             etiqueta={t('estadoDeCuenta.restaPorPagar')}
             valor={contrato.totales.restaPorPagar}
-            tono={contrato.totales.restaPorPagar > 0 ? 'fuerte' : 'apagado'}
+            tono={
+              contrato.totales.restaPorPagar > 0 && !conIntereses
+                ? 'fuerte'
+                : 'apagado'
+            }
             testid={`total-contrato-${contrato.numero}`}
           />
+          {/* Capital e interés por separado, y el total que suma los dos. */}
+          {conIntereses && intereses && (
+            <>
+              <Cifra
+                etiqueta={t('estadoDeCuenta.interesesDeMora')}
+                valor={intereses.pendiente}
+                tono="apagado"
+                testid={`intereses-contrato-${contrato.numero}`}
+              />
+              <Cifra
+                etiqueta={t('estadoDeCuenta.conIntereses')}
+                valor={intereses.restaPorPagarConIntereses}
+                tono="fuerte"
+                testid={`total-con-intereses-${contrato.numero}`}
+              />
+            </>
+          )}
         </div>
       </div>
     </section>
@@ -275,9 +348,29 @@ function SeccionDeFilas({
     [visibles, cortes],
   );
 
+  /*
+   * 🔴 19-09-2026 (Nico) · «tienes una cosa que dice otros conceptos, e
+   * interés de mora y no se sabe si ahí van tablas o qué, no se entiende bien
+   * qué es de qué o qué hace parte a qué».
+   *
+   * Tenía razón: el rótulo era un `<h4>` en mayúsculas flotando en el aire,
+   * con una tabla enmarcada debajo y aire igual arriba y abajo. Nada decía
+   * dónde empieza y dónde termina cada sección, ni que las tres —arriendos,
+   * otros conceptos e intereses— son partes del MISMO contrato. Y con la
+   * sección vacía era peor: quedaba un título suelto y una frase, sin nada
+   * que los uniera.
+   *
+   * Ahora cada sección es UNA caja: el título es su encabezado, pegado a lo
+   * que contiene, y el contenido va adentro —tabla o frase, da igual—. La
+   * tabla pierde su marco propio para no tener dos bordes, uno dentro del
+   * otro.
+   */
   return (
-    <div data-testid={testid} className="space-y-2">
-      <div className="flex items-baseline justify-between gap-3">
+    <section
+      data-testid={testid}
+      className="overflow-hidden rounded-md border border-border-faint"
+    >
+      <div className="flex items-baseline justify-between gap-3 border-b border-border-faint bg-surface-muted/30 px-4 py-2.5">
         <h4 className="text-label uppercase tracking-wide text-fg-subtle">{titulo}</h4>
         {filas.length > 0 && (
           <span className="font-mono text-caption tabular-nums text-fg-subtle">
@@ -289,7 +382,7 @@ function SeccionDeFilas({
       </div>
 
       {filas.length === 0 ? (
-        <p className="py-2 text-body-sm text-fg-muted">{vacio}</p>
+        <p className="px-4 py-3 text-body-sm text-fg-muted">{vacio}</p>
       ) : (
         <>
           {/* Escritorio: la tabla. `md:` y no `sm:` porque con las columnas de
@@ -303,7 +396,7 @@ function SeccionDeFilas({
               las tarjetas del móvil en el papel. */}
           <div
             data-tabla
-            className="hidden overflow-x-auto rounded-md border border-border-faint md:block"
+            className="hidden overflow-x-auto md:block"
           >
             <Table>
               <TableHeader>
@@ -376,7 +469,7 @@ function SeccionDeFilas({
           </ul>
 
           {paginar && shouldPaginate && (
-            <div className="print:hidden">
+            <div className="border-t border-border-faint px-4 py-2 print:hidden">
               <TablePagination
                 total={total}
                 page={page}
@@ -389,7 +482,7 @@ function SeccionDeFilas({
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -495,6 +588,7 @@ function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
  * pago: «Sin pago» al lado de un «—» en otra columna decía lo mismo dos veces.
  */
 function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
+  const t = useTextoDelEstado();
   const doc = fila.documentoDePago;
   if (!doc && !fila.fechaDePago) {
     return <span className="text-caption text-fg-subtle">—</span>;
@@ -512,6 +606,14 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           title={doc.descripcion || undefined}
         >
           {doc.numero} · {doc.tipo}
+        </p>
+      )}
+      {/* Sólo en el panel y para un administrador (llega por contexto). */}
+      <BotonAnularRecibo fila={fila} />
+      {/* 🔴 D11: la pagó una aseguradora — la fila lo dice, no el pie. */}
+      {fila.subrogadaA && (
+        <p className="text-caption text-fg-muted" data-testid="fila-subrogada">
+          {t('estadoDeCuenta.subrogadaA', { nombre: fila.subrogadaA.nombre })}
         </p>
       )}
     </>

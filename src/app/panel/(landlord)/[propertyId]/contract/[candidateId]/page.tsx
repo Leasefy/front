@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { FileText, Clock, CheckCircle, WarningCircle, Upload, Shield, X, Check, House, Bed, Users, MapPin, User, Calendar, CurrencyDollar } from '@phosphor-icons/react';
@@ -28,10 +28,10 @@ import type { Contract, ContractType } from '@/lib/types/contract';
 // ============================================================================
 
 interface ContractPageProps {
-  params: {
+  params: Promise<{
     propertyId: string;
     candidateId: string;
-  };
+  }>;
 }
 
 // ============================================================================
@@ -719,7 +719,8 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 // Main Component (with Suspense boundary)
 // ============================================================================
 
-export default function ContractPage({ params }: ContractPageProps) {
+export default function ContractPage(props: ContractPageProps) {
+  const params = use(props.params);
   const { propertyId, candidateId } = params;
 
   return (

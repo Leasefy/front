@@ -323,7 +323,7 @@ function VacioDeLaPestana({
       <p className="mb-1 text-sm font-semibold text-fg">No hay {quienes} en esta lista</p>
       <p className="max-w-xs text-sm text-fg-muted">
         {hayBusqueda
-          ? `Tu búsqueda trajo ${personas}, pero ninguna es de este grupo. Mirá en «Todos» o busca otra cosa.`
+          ? `Tu búsqueda trajo ${personas}, pero ninguna es de este grupo. Mira en «Todos» o busca otra cosa.`
           : `Puedes escribirle a ${personas}, pero ninguna es de este grupo. Están en las otras pestañas.`}
       </p>
       <Button
@@ -377,7 +377,7 @@ function FilaPersona({
             <span className="truncate text-sm font-medium text-fg">{nombre}</span>
             <InsigniaDePerfil perfil={perfilDe(persona.role)} conIcono={false} />
           </span>
-          <span className="block truncate text-xs text-fg-muted">{persona.email}</span>
+          <span className="block truncate text-caption text-fg-muted">{persona.email}</span>
         </span>
         <IconoDeAccion abriendo={abriendo} />
       </button>

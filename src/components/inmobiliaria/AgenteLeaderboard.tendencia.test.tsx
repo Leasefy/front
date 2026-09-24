@@ -77,7 +77,7 @@ describe('<AgenteLeaderboard> — tendencia', () => {
   it('no afirma tendencia para nadie, ni la buena ni la mala', () => {
     // Con el código viejo: la primera se llevaba flecha verde y la segunda
     // flecha roja, sin que nadie hubiera comparado dos períodos.
-    pintar([agente('Sofía', 0.8), agente('Iván', 0.2)]);
+    pintar([agente('Sofía', 80), agente('Iván', 20)]);
 
     expect(celdas().length).toBe(2);
     for (const celda of celdas()) {
@@ -86,14 +86,14 @@ describe('<AgenteLeaderboard> — tendencia', () => {
   });
 
   it('explica el vacío a quien lo lea con lector de pantalla', () => {
-    pintar([agente('Sofía', 0.8)]);
+    pintar([agente('Sofía', 80)]);
 
     const etiqueta = celdas()[0]?.querySelector('[aria-label]')?.getAttribute('aria-label') ?? '';
     expect(etiqueta).toContain('período anterior');
   });
 
   it('la conversión real sigue en su columna: no se tiró lo bueno', () => {
-    pintar([agente('Sofía', 0.8)]);
+    pintar([agente('Sofía', 80)]);
     expect(container.textContent).toContain('80%');
   });
 });

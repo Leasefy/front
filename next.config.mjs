@@ -1,11 +1,14 @@
 import path from "path";
 // Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
-// Node with no TypeScript loader on Next.js 14.2. See
+// Node with no TypeScript loader (was Next.js 14.2; still .mjs on 15). See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-vida.data.mjs";
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
 import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-en-un-solo-lugar.data.mjs";
+import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
+import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
+import { LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA } from "./src/lib/nav/los-nombres-que-no-decian-nada.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -43,11 +46,9 @@ const nextConfig = {
   // `isomorphic-dompurify` SÍ es dependencia directa (resuelve desde la raíz), así
   // que marcarlo como externo del servidor pasa el chequeo y jsdom nunca entra al
   // bundle: en el servidor se carga por `require` normal desde node_modules.
-  // En Next 14 la clave es `experimental.serverComponentsExternalPackages`; al
-  // subir a Next 15 se llama `serverExternalPackages` (nivel raíz).
-  experimental: {
-    serverComponentsExternalPackages: ['isomorphic-dompurify'],
-  },
+  // En Next 14 la clave era `experimental.serverComponentsExternalPackages`; desde
+  // Next 15 (subida del 23-09) se llama `serverExternalPackages` y va en la raíz.
+  serverExternalPackages: ['isomorphic-dompurify'],
   // TEMPORARY (stg-demo integration): the redesign depends on @leasefy/cadence, linked
   // locally via `file:../cadence` (no real pnpm workspace, no published tarball yet).
   // That linkage still surfaces type errors and some lint noise. We let `next build`
@@ -95,33 +96,60 @@ const nextConfig = {
   },
   async headers() {
     const securityHeaders = [
-      { key: "X-Frame-Options", value: "DENY" },
+      // `SAMEORIGIN` y no `DENY` (23-09): coherente con `frame-ancestors 'self'`
+      // de la CSP (que es la que mandan los navegadores modernos; ésta queda
+      // para los viejos). Nadie de AFUERA nos enmarca; los visores de PDF son
+      // iframes de `blob:`/URLs firmadas que crean nuestras propias páginas.
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+        // 🔴 `microphone=(self)`, no `()`: el dictado del chat (`ChatInput`) y
+        // la captura por voz del inmueble (`PropertyIACapture`) usan el
+        // micrófono. Con `microphone=()` el navegador negaba el permiso sin
+        // preguntar y los dos botones fallaban en silencio. Lo demás, apagado:
+        // nadie de adentro lo usa y un iframe de terceros no lo necesita.
+        value: [
+          "camera=()",
+          "microphone=(self)",
+          "geolocation=()",
+          "browsing-topics=()",
+          "payment=()",
+          "usb=()",
+          "serial=()",
+          "bluetooth=()",
+          "hid=()",
+          "midi=()",
+          "display-capture=()",
+          "magnetometer=()",
+          "gyroscope=()",
+          "accelerometer=()",
+        ].join(", "),
       },
+      // Aísla la ventana de las que abre otro sitio: una página ajena que nos
+      // abra con `window.open` no conserva una referencia a la nuestra (tab-
+      // nabbing, fugas por `window.opener`). `-allow-popups` porque NOSOTROS sí
+      // abrimos el checkout de Wompi y los PDFs en pestaña nueva y seguimos
+      // hablándole a esa pestaña (`aprobacion`, `avaluos`).
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
     ];
 
-    // Report-only CSP in production. NOT enforcing: the app relies on Next.js
-    // inline hydration, JsonLd inline scripts, and signing pages — a strict
-    // enforcing CSP would break them. Report-only lets us observe violations
-    // before tightening to an enforced policy later.
+    // La CSP ya NO vive acá: la pone `src/middleware.ts` con un nonce nuevo
+    // por petición (ver `src/lib/seguridad/politica-de-contenido.ts`). Una
+    // cabecera fija de next.config no puede llevar un nonce.
     if (process.env.NODE_ENV === "production") {
+      // HSTS (auditoría de seguridad 23-09): sin esto, la primera visita que
+      // alguien escribe como `leasefy.co` a secas sale por http y, en una red
+      // hostil (el wifi de un café), se puede interceptar antes del salto a
+      // https —y con ella la sesión de quien mueve la plata—. Dos años, SIN
+      // `includeSubDomains` ni `preload`: esos dos obligan a TODOS los
+      // subdominios presentes y futuros a tener https, y eso es una decisión de
+      // infraestructura, no de este archivo. Sólo en producción: en local el
+      // navegador ignora HSTS sobre http, pero no hay por qué mandarlo.
       securityHeaders.push({
-        key: "Content-Security-Policy-Report-Only",
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-          "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob: https:",
-          "font-src 'self' data:",
-          "connect-src 'self' https:",
-          "frame-ancestors 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-        ].join("; "),
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000",
       });
     }
 
@@ -129,6 +157,15 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // Las rutas propias (`/api/docs/*` sirve documentos de postulaciones
+        // desde nuestro origen) no se dejan incrustar desde otro sitio como
+        // `<img>`/`<script>`: `same-origin`. Las imágenes y archivos de
+        // `public/` quedan sin esta cabecera a propósito: los correos y los
+        // portales cargan el logo desde otro origen.
+        source: "/api/:path*",
+        headers: [{ key: "Cross-Origin-Resource-Policy", value: "same-origin" }],
       },
     ];
   },
@@ -144,14 +181,34 @@ const nextConfig = {
   // La conciliación bancaria también quedó en UN solo lugar: la vieja
   // /cobros/extracto-bancario ahora vive dentro del workspace del agente. Ver
   // src/lib/nav/conciliacion-en-un-solo-lugar.ts para el porqué (con test).
+  // Y la plata quedó en UN solo módulo: «Cobros» desapareció del sidebar y sus
+  // pantallas viven bajo /pagos. Ver src/lib/nav/un-solo-modulo-de-plata.ts.
   async redirects() {
     return [
-      // La arquitectura por ciclo de vida (2026-09) va PRIMERO: Next aplica la
-      // primera regla que calza y estas son las más específicas. Ver
+      // 🔴 PRIMERA de todas: las seis pantallas que dejó la Sala del agente de
+      // Pagos al irse (2026-09-16). Sus fuentes son LITERALES —no tapan nada—
+      // y declaran también el gemelo /ai/pagos/<x>, que si no se lo comería
+      // /ai/pagos/:path* de la tabla siguiente y el salto sería doble. Ver
+      // src/lib/nav/la-sala-de-pagos-se-fue.data.mjs (con test que lee ESTE
+      // archivo para exigir el orden).
+      ...LA_SALA_DE_PAGOS_SE_FUE_DATA,
+      // Las dos pestañas del Pipeline que se renombraron el 21-09 («Calce» →
+      // «Qué ofrecer», «Visitas» → «Preparar visitas»). Fuentes literales, así
+      // que van arriba sin tapar nada. Ver
+      // src/lib/nav/los-nombres-que-no-decian-nada.data.mjs.
+      ...LOS_NOMBRES_QUE_NO_DECIAN_NADA_DATA,
+      // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
+      // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).
       ...RUTAS_POR_CICLO_DE_VIDA_DATA,
       ...RUTAS_UNIFICADAS_DEL_PANEL_DATA,
       ...CONCILIACION_EN_UN_SOLO_LUGAR_DATA,
+      // 🔴 DESPUÉS de la conciliación, a propósito: `/cobros/extracto-bancario`
+      // ya redirige al workspace de Conciliación desde la tanda anterior, y
+      // `/cobros/:path*` de acá se lo comería. Ver
+      // src/lib/nav/un-solo-modulo-de-plata.data.mjs (con test que lee ESTE
+      // archivo para exigir el orden).
+      ...UN_SOLO_MODULO_DE_PLATA_DATA,
       ...LEGACY_PRODUCT_REDIRECTS_DATA,
     ];
   },

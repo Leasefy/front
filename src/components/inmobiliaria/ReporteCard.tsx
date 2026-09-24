@@ -318,7 +318,7 @@ export function ReporteCard({
             className="flex-1 gap-2"
           >
             <Lock className="w-4 h-4" />
-            {t('inmobiliaria.reporte.upgradeToAccess') || 'Mejorar plan'}
+            {t('inmobiliaria.reporte.upgradeToAccess')}
           </Button>
         ) : (
           <>

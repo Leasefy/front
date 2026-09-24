@@ -7,9 +7,10 @@ import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getPlanById, getYearlySavings } from '@/lib/constants/subscription-plans';
+import { getYearlySavings } from '@/lib/constants/subscription-plans';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
-import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import { useI18n } from '@/lib/i18n';
 
@@ -30,9 +31,11 @@ export default function UpgradePage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // El precio de cada plan lo dice el back (QA 23-09), no `PLANS`.
+  const { planDe } = usePlanesDelPropietario();
   // currentPlan is null when subscription failed to load (currentPlanId is undefined).
-  const currentPlan = currentPlanId ? getPlanById(currentPlanId as PlanId) : null;
-  const newPlan = selectedPlan ? getPlanById(selectedPlan) : null;
+  const currentPlan = currentPlanId ? planDe(currentPlanId as PlanId) : null;
+  const newPlan = selectedPlan ? planDe(selectedPlan) : null;
 
   const handleSelectPlan = (planId: string) => {
     if (planId !== currentPlanId) {
@@ -153,7 +156,7 @@ export default function UpgradePage() {
                   <p className="text-sm text-fg-muted mt-0.5">
                     {(currentPlan?.price.monthly ?? 0) > 0 ? (
                       <>
-                        {t('landlord.upgrade.nextPayment')} <span className="font-medium text-fg">{formatCurrency(currentPlan!.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
+                        {t('landlord.upgrade.nextPayment')} <span className="font-medium text-fg">{precioLegible(currentPlan!.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
                         <span className="font-medium text-fg">
                           {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                             day: 'numeric',
@@ -244,8 +247,8 @@ export default function UpgradePage() {
                   </p>
                   <p className="text-sm text-fg-muted mt-0.5">
                     {billingCycle === 'yearly'
-                      ? t('landlord.upgrade.perYearSaving', { price: formatCurrency(newPlan.price.yearly), percent: getYearlySavings(newPlan) })
-                      : t('landlord.upgrade.perMonthPrice', { price: formatCurrency(newPlan.price.monthly) })}
+                      ? t('landlord.upgrade.perYearSaving', { price: precioLegible(newPlan.price.yearly), percent: getYearlySavings(newPlan) })
+                      : t('landlord.upgrade.perMonthPrice', { price: precioLegible(newPlan.price.monthly) })}
                   </p>
                 </div>
               </div>
@@ -272,7 +275,10 @@ export default function UpgradePage() {
             </div>
 
             {/* Downgrade warning — only shown when we know the current plan price */}
-            {currentPlan && newPlan.price.monthly < currentPlan.price.monthly && (
+            {currentPlan &&
+              newPlan.price.monthly !== null &&
+              currentPlan.price.monthly !== null &&
+              newPlan.price.monthly < currentPlan.price.monthly && (
               <div className="mt-4 flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-lg">
                 <WarningCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <p className="text-sm text-warning">

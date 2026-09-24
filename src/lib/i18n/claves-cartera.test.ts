@@ -48,9 +48,14 @@ const CLAVES_EN_USO = [
   'tabla.whatsapp',
   'tabla.vence',
   'tabla.abonado',
-  'tabla.alDia',
+  'tabla.porVencer',
+  'tabla.vencidoEnPlazo',
+  'tabla.unDiaDePlazo',
+  'tabla.diasDePlazo',
   'tabla.unDiaDeMora',
   'tabla.diasDeMora',
+  'tabla.sinCobroEmitido',
+  'tabla.verContrato',
   'tabla.unRecordatorio',
   'tabla.recordatorios',
   'tabla.sinRecordatorios',
@@ -58,6 +63,38 @@ const CLAVES_EN_USO = [
   'tabla.sinTelefono',
   'tabla.sinDireccion',
   'tabla.sinPropietario',
+  // El interés de mora (`CLAVE_DE_MORA` en `components/cartera/interes-de-mora.ts`).
+  'interes.columnaIntereses',
+  'interes.columnaMoraLiquidadaHoy',
+  'interes.columnaTotal',
+  'interes.sinDato',
+  'interes.pagadaEnMora',
+  'interes.abonado',
+  'interes.sinReglas',
+  'interes.configurar',
+  'interes.sinInteres',
+  'interes.intereses',
+  'interes.masIntereses',
+  'interes.conIntereses',
+  'interes.configurarReglas',
+  'interes.explicacion',
+  // «Por edad»: el siniestro como parte de la cartera (bug A, 16-09).
+  'porEdad.deLaCualEnSiniestro',
+  'porEdad.tramoEnSiniestro',
+  'porEdad.desdeLosDias',
+  'porEdad.edadDeLaCartera',
+  // «Por propietario», con el interés aparte.
+  'porPropietario.propietario',
+  'porPropietario.deudas',
+  'porPropietario.inmuebles',
+  'porPropietario.loPeor',
+  'porPropietario.capital',
+  'porPropietario.intereses',
+  'porPropietario.total',
+  // «Por pagar a propietarios»: el pie que dice la base de verdad.
+  'porPagar.pieCausado',
+  'porPagar.canonCausado',
+  'porPagar.nadaQueRepartir',
 ];
 
 /** Las claves que llevan `{{param}}` y qué parámetro esperan. */
@@ -65,8 +102,29 @@ const CON_PARAMETROS: Record<string, string[]> = {
   'tabla.vence': ['fecha'],
   'tabla.abonado': ['monto'],
   'tabla.diasDeMora': ['n'],
+  'tabla.diasDePlazo': ['n'],
   'tabla.recordatorios': ['n'],
+  'interes.abonado': ['monto'],
+  'interes.masIntereses': ['monto'],
+  'interes.conIntereses': ['monto'],
+  'porEdad.deLaCualEnSiniestro': ['monto'],
+  'porEdad.desdeLosDias': ['dias'],
 };
+
+/**
+ * 🔴 Que `CLAVE_DE_MORA` no apunte a una clave que no existe: es el mapa por
+ * el que pasan TODAS las palabras del interés en la cartera.
+ */
+describe('`CLAVE_DE_MORA` apunta a claves reales', () => {
+  it('cada clave del mapa está en los dos diccionarios', async () => {
+    const { CLAVE_DE_MORA } = await import('@/components/cartera/interes-de-mora');
+    for (const clave of Object.values(CLAVE_DE_MORA)) {
+      const ruta = clave.replace(/^cartera\./, '');
+      expect(leer(CARTERA_ES, ruta), `falta en es.json: ${clave}`).toBeTypeOf('string');
+      expect(leer(CARTERA_EN, ruta), `falta en en.json: ${clave}`).toBeTypeOf('string');
+    }
+  });
+});
 
 describe('el bloque `cartera` existe en los dos diccionarios', () => {
   it('es un bloque de nivel superior en es y en en', () => {

@@ -313,7 +313,8 @@ describe('D1 — un fallo de carga no es «no hay dispersiones»', () => {
     });
     const vacio = q('sin-datos') as HTMLElement;
     expect(vacio.getAttribute('data-caso')).toBe('filtros');
-    expect(vacio.textContent).toContain('Ningún resultado coincide');
+    // 20-09: `SinDatos` dejó de usar artículo con género (ver su prueba).
+    expect(vacio.textContent).toContain('que coincidan con lo que buscaste');
   });
 });
 
@@ -424,6 +425,35 @@ describe('D3 — la agencia aprueba por lote', () => {
     // Y la pantalla deja de ofrecer aprobar suelto.
     expect(q('resumen-aprobar-todas')).toBeNull();
     expect(q('fila-aprobar')).toBeNull();
+  });
+});
+
+describe('23-09 — la liquidación que ya está en un lote', () => {
+  it('🔴 un 409 DISPERSION_EN_UN_LOTE dice el mensaje del back y abre ESE lote, no «No se pudo aprobar»', async () => {
+    const msg =
+      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por acá le pagaría dos veces al propietario.';
+    m.approve.mockRejectedValue(
+      new ApiError(409, msg, 'DISPERSION_EN_UN_LOTE', {
+        code: 'DISPERSION_EN_UN_LOTE',
+        message: msg,
+        loteId: 'lote-9',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      (q('detalle-aprobar') as HTMLButtonElement).click();
+    });
+    await asentar();
+
+    expect(m.toast.error).toHaveBeenCalledTimes(1);
+    const [titulo, opciones] = m.toast.error.mock.calls[0] as [
+      string,
+      { description: string; action: { label: string; onClick: () => void } },
+    ];
+    expect(titulo).toBe('inmobiliaria.dispersiones.enUnLote.titulo');
+    expect(opciones.description).toBe(msg);
+    opciones.action.onClick();
+    expect(m.push).toHaveBeenCalledWith('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-9');
   });
 });
 

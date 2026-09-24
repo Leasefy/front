@@ -21,6 +21,8 @@ import type { LoteDeDispersion, VistaDelLote } from '@/lib/api/lotes-de-dispersi
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
@@ -30,8 +32,9 @@ vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: { id: usuarioActual, email: 'x@x.co' } }),
 }));
 
+let soyAdmin = false;
 vi.mock('@/lib/hooks/usePermissions', () => ({
-  usePermissions: () => ({ canAccess: () => true, isAdmin: false, isLoading: false, agencyRole: 'admin' }),
+  usePermissions: () => ({ canAccess: () => true, isAdmin: soyAdmin, isLoading: false, agencyRole: 'admin' }),
 }));
 
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
@@ -57,7 +60,26 @@ vi.mock('@/lib/api/lotes-de-dispersion.service', () => ({
   },
 }));
 
+// El centro de procesos (22-09): el archivo del lote se lee de ahí.
+vi.mock('@/lib/api/procesos.service', () => ({
+  RECURSO_DE_PROCESOS: 'procesos',
+  RECURSO_LOTE: 'LOTE_DE_DISPERSION',
+  anunciarProceso: vi.fn(),
+  procesosApi: {
+    listar: vi.fn(),
+    descarga: vi.fn(),
+    cancelar: vi.fn(),
+  },
+}));
+
+vi.mock('@/components/procesos/descargar-archivo-del-proceso', () => ({
+  descargarArchivoDelProceso: vi.fn(async () => 'archivo.txt'),
+}));
+
 import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service';
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
+import { procesosApi } from '@/lib/api/procesos.service';
+import type { Proceso } from '@/lib/api/procesos.types';
 import { DetalleDelLote } from './DetalleDelLote';
 
 const ID = '6b0f2e2c-1d4a-4a2b-9c3e-0f1a2b3c4d5e';
@@ -157,8 +179,48 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   usuarioActual = 'u-otro';
+  soyAdmin = false;
   guardar.mockReset();
+  vi.mocked(procesosApi.listar).mockResolvedValue({
+    disponible: true,
+    motivo: null,
+    procesos: [],
+    activos: 0,
+    veTodos: false,
+  });
 });
+
+/** El proceso del centro que dejó el archivo del lote. */
+function procesoDelArchivo(extra: Partial<Proceso> = {}): Proceso {
+  return {
+    id: 'proc-lote',
+    tipo: 'ARCHIVO_DEL_LOTE',
+    titulo: 'Archivo del lote de Agosto de 2026 · Bancolombia',
+    estado: 'TERMINADO',
+    hechos: 1,
+    total: 1,
+    porcentaje: 100,
+    mensaje: '3 pagos en el archivo.',
+    lanzadoPor: { id: 'u-creador', nombre: 'Ana Ruiz', rol: 'ADMIN' },
+    esMio: false,
+    recurso: { tipo: 'LOTE_DE_DISPERSION', id: ID },
+    archivo: {
+      nombre: `lote-2026-08-bancolombia_pab-${ID.slice(0, 8)}-SIN-VERIFICAR.txt`,
+      tipo: 'text/plain',
+      bytes: 420,
+      venceAt: '2026-09-29T00:00:00.000Z',
+      vencido: false,
+    },
+    sePuedeCancelar: false,
+    cancelacionPedida: false,
+    interrumpido: false,
+    createdAt: '2026-09-22T15:00:00.000Z',
+    iniciadoAt: '2026-09-22T15:00:00.000Z',
+    terminadoAt: '2026-09-22T15:00:01.000Z',
+    actualizadoAt: '2026-09-22T15:00:01.000Z',
+    ...extra,
+  };
+}
 
 afterEach(() => {
   act(() => root.unmount());
@@ -247,6 +309,16 @@ describe('<DetalleDelLote> — qué se ofrece en cada estado', () => {
     );
     // El nombre del que lo armó, no el uuid.
     expect(container.textContent).toContain('Armado por Ana Ruiz');
+  });
+
+  it('🔴 quien armó NO está en la lista de agentes (un administrador): el nombre lo dice el back (QA 23-09)', async () => {
+    await render(
+      vista(lote({ creadoPorUserId: '435f5734-0000-4000-8000-000000000000' }), {
+        creadoPorNombre: 'Nicolás García',
+      }),
+    );
+    expect(container.textContent).toContain('Armado por Nicolás García');
+    expect(container.textContent).not.toContain('Usuario 435f5734');
   });
 
   it('APROBADO: generar archivo y anular', async () => {
@@ -371,6 +443,106 @@ describe('<DetalleDelLote> — aprobación', () => {
   });
 });
 
+/**
+ * P-4 aclarado (Nico, 24-09): «si quien propone es ADMINISTRADOR, no se le
+ * pide que se confirme a sí mismo». El lote que él arma vuelve del back ya
+ * aprobado: acá no se le muestra un «Aprobar» apagado ni un «pendiente de
+ * aprobación» que nunca llega.
+ */
+describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo', () => {
+  it('🔴 el lote que armó y quedó aprobado dice «Aprobado por ti como administrador (P-4)», sin nada apagado', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+
+    const nota = container.querySelector('[data-testid="aprobado-por-la-misma-persona"]');
+    expect(nota?.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(nota?.textContent).toContain('sin código');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
+    expect(acciones()).toEqual(['Generar archivo', 'Anular']);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+    expect(container.textContent).toContain('Como administrador, en el mismo paso (P-4)');
+  });
+
+  it('otra persona que lo mira lo lee sin «ti»', async () => {
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+    expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')?.textContent).toContain(
+      'Lo armó y lo aprobó la misma persona (P-4)',
+    );
+  });
+
+  it('aprobado por OTRA persona: ninguna nota de P-4', async () => {
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+    expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')).toBeNull();
+  });
+
+  it('🔴 un borrador suyo (de antes de la regla): el botón dice «Aprobar» y lo aprueba en un paso, sin código', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote()));
+    expect(acciones()).toEqual(['Aprobar', 'Anular']);
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeTruthy();
+    vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockResolvedValue({
+      lote: lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
+      exigeCodigo: false,
+      motivoDelCodigo: null,
+      expiraAt: null,
+      enviadoA: [],
+      mismoPaso: {
+        aprobadoEnElMismoPaso: true,
+        porQueNo: null,
+        nota: 'Aprobado por ti como administrador (P-4): quedó aprobado en el mismo paso en que lo armaste, sin código.',
+      },
+    });
+
+    await clic('Aprobar');
+    const dialogo = document.body.querySelector('[data-testid="dialogo-pedir-aprobacion"]');
+    expect(dialogo?.textContent).toContain('Aprobar el lote');
+    expect(dialogo?.textContent).toContain('sin código');
+    await clicEnDialogo('dialogo-pedir-aprobacion', 'Aprobar');
+
+    expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID);
+    const resultado = document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent ?? '';
+    expect(resultado).toContain('Aprobado por ti como administrador (P-4)');
+    expect(resultado).not.toContain('Le llegó a');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
+  });
+
+  it('🔴 un lote suyo esperando con código: «Aprobar» prendido y SIN pedirle el código', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
+    vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(
+      lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
+    );
+
+    expect(boton('Aprobar').disabled).toBe(false);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+    // No hay código que reenviar: a él no le sale uno.
+    expect(acciones()).not.toContain('Volver a mandar el código');
+
+    await clic('Aprobar');
+    expect(document.body.querySelector('[data-testid="codigo-de-aprobacion"]')).toBeNull();
+    await clicEnDialogo('dialogo-aprobar', 'Aprobar');
+    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined);
+  });
+
+  it('quien armó y NO es administrador: como hoy, «Aprobar» apagado', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = false;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION' })));
+    expect(boton('Aprobar').disabled).toBe(true);
+    expect(container.textContent).toContain('Tú armaste este lote');
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
+  });
+});
+
 describe('<DetalleDelLote> — el archivo', () => {
   const ARCHIVO_SIN_VERIFICAR = {
     nombreArchivo: `lote-2026-08-bancolombia_pab-SIN-VERIFICAR-${ID.slice(0, 8)}.txt`,
@@ -386,18 +558,32 @@ describe('<DetalleDelLote> — el archivo', () => {
     reenvio: false,
   };
 
-  it('sólo Bancolombia PAB se puede elegir; SAP y OnePay dicen por qué no', async () => {
-    await render(vista(lote({ estado: 'APROBADO' })));
+  const DESDE_BOGOTA = {
+    banco: 'BANCO_BOGOTA',
+    nombreDelBanco: 'Banco de Bogotá',
+    formato: 'BANCO_DE_BOGOTA' as const,
+    tipoDeCuenta: 'AHORROS' as const,
+    cuenta: '•••• 6789',
+  };
+
+  it('🔴 el formato NO se elige al final: sale el del banco elegido al armar, y lo dice', async () => {
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: DESDE_BOGOTA }));
     await clic('Generar archivo');
 
-    const pab = document.body.querySelector('[data-testid="formato-BANCOLOMBIA_PAB"]') as HTMLButtonElement;
-    const sap = document.body.querySelector('[data-testid="formato-BANCOLOMBIA_SAP"]') as HTMLButtonElement;
-    const onepay = document.body.querySelector('[data-testid="formato-ONEPAY"]') as HTMLButtonElement;
-    expect(pab.disabled).toBe(false);
-    expect(pab.getAttribute('aria-checked')).toBe('true');
-    expect(sap.disabled).toBe(true);
-    expect(onepay.disabled).toBe(true);
-    expect(sap.textContent).toContain('Pendiente del archivo de ejemplo del banco.');
+    // Ya no hay selector de formato.
+    expect(document.body.querySelector('[role="radiogroup"][aria-label="Formato del archivo"]')).toBeNull();
+    const texto = document.body.querySelector('[data-testid="archivo-del-banco"]')?.textContent ?? '';
+    expect(texto).toContain('Banco de Bogotá');
+    expect(texto).toContain('•••• 6789');
+  });
+
+  it('un lote armado sin banco no ofrece generar: dice qué hacer', async () => {
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: null }));
+    await clic('Generar archivo');
+
+    expect(cuerpo()).toContain('Este lote no dice desde qué banco sale la plata');
+    const generar = botones('Generar').find((b) => b.closest('[data-testid="dialogo-archivo"]'));
+    expect(generar?.disabled).toBe(true);
   });
 
   it('🔴 generar muestra el aviso SIN-VERIFICAR, los excluidos y qué falta confirmar ANTES de guardar', async () => {
@@ -409,7 +595,8 @@ describe('<DetalleDelLote> — el archivo', () => {
     await clic('Generar archivo');
     await clicEnDialogo('dialogo-archivo', 'Generar');
 
-    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID, 'BANCOLOMBIA_PAB');
+    // Sin formato: el back usa el del banco elegido al armar.
+    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID);
     const listo = document.body.querySelector('[data-testid="archivo-listo"]')?.textContent ?? '';
     expect(listo).toContain('no se verificó contra un archivo real del banco');
     expect(listo).toContain('Si el monto lleva dos decimales implícitos.');
@@ -425,18 +612,55 @@ describe('<DetalleDelLote> — el archivo', () => {
     expect(guardar).toHaveBeenCalledWith(blob, ARCHIVO_SIN_VERIFICAR.nombreArchivo);
   });
 
-  it('descargar desde ARCHIVO_GENERADO pide el mismo archivo (reenvío) sin elegir formato', async () => {
+  it('🔴 «Descargar archivo» con la copia en el centro de procesos la baja de ahí: sin diálogo, sin spinner, sin volver a pedirla', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      procesos: [procesoDelArchivo()],
+      activos: 0,
+      veTodos: false,
+    });
     await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'deadbeef' })));
-    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({ ...ARCHIVO_SIN_VERIFICAR, reenvio: true });
+
+    // El estado del archivo lo pinta el componente del centro, con su fila.
+    const seccion = document.body.querySelector('[data-testid="archivo-del-lote"]');
+    expect(seccion?.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull();
+    expect(seccion?.textContent).toContain('Ana Ruiz');
+    // 🔴 El aviso SIN-VERIFICAR sigue antes de bajar nada.
+    expect(seccion?.textContent).toContain('no se verificó contra un archivo real del banco');
+    expect(procesosApi.listar).toHaveBeenCalledWith({
+      recursoTipo: 'LOTE_DE_DISPERSION',
+      recursoId: ID,
+      limite: 1,
+    });
 
     await clic('Descargar archivo');
 
-    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID, undefined);
-    expect(document.body.querySelector('[data-testid="formato-BANCOLOMBIA_PAB"]')).toBeNull();
-    expect(cuerpo()).toContain('no se verificó contra un archivo real del banco');
+    expect(descargarArchivoDelProceso).toHaveBeenCalledWith('proc-lote', undefined);
+    expect(lotesDeDispersionApi.generarArchivo).not.toHaveBeenCalled();
+    expect(document.body.querySelector('[data-testid="dialogo-archivo"]')).toBeNull();
+    expect(cuerpo()).not.toContain('Pidiendo el archivo');
   });
 
-  it('con el layout verificado NO aparece el aviso', async () => {
+  it('sin copia en el centro (lote de antes, o venció) lo vuelve a preparar —cotejando el hash— y, sin centro en el back, lo baja por el GET del lote', async () => {
+    await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'deadbeef' })));
+    expect(document.body.querySelector('[data-testid="archivo-sin-proceso"]')?.textContent).toContain(
+      'antes del centro de procesos',
+    );
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({ ...ARCHIVO_SIN_VERIFICAR, reenvio: true });
+    const blob = new Blob([ARCHIVO_SIN_VERIFICAR.contenido]);
+    vi.mocked(lotesDeDispersionApi.descargarArchivo).mockResolvedValue(blob);
+
+    await clic('Descargar archivo');
+
+    expect(lotesDeDispersionApi.generarArchivo).toHaveBeenCalledWith(ID);
+    expect(guardar).toHaveBeenCalledWith(blob, ARCHIVO_SIN_VERIFICAR.nombreArchivo);
+    expect(document.body.querySelector('[data-testid="archivo-del-lote"]')?.textContent).toContain(
+      'no se verificó contra un archivo real del banco',
+    );
+  });
+
+  it('si el back lo dejó en el centro, el archivo re-preparado se baja del centro', async () => {
     await render(vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'ok' })));
     vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
       ...ARCHIVO_SIN_VERIFICAR,
@@ -444,12 +668,70 @@ describe('<DetalleDelLote> — el archivo', () => {
       layoutVerificado: true,
       pendienteDeConfirmar: [],
       reenvio: true,
+      procesoId: 'proc-nuevo',
     });
 
     await clic('Descargar archivo');
 
+    expect(descargarArchivoDelProceso).toHaveBeenCalledWith('proc-nuevo', undefined);
+    expect(lotesDeDispersionApi.descargarArchivo).not.toHaveBeenCalled();
+    // Con el layout verificado NO aparece el aviso.
     expect(cuerpo()).not.toContain('no se verificó contra un archivo real del banco');
-    expect(cuerpo()).toContain('Layout verificado contra un archivo real del banco');
+  });
+
+  it('🔴 la PLANILLA no se presenta como archivo del banco: ni «verificado» ni «SIN-VERIFICAR»', async () => {
+    const DESDE_DAVIVIENDA = {
+      banco: 'DAVIVIENDA',
+      nombreDelBanco: 'Davivienda',
+      formato: 'PLANILLA_MANUAL' as const,
+      tipoDeCuenta: 'AHORROS' as const,
+      cuenta: '•••• 3456',
+    };
+    await render(vista(lote({ estado: 'APROBADO' }), { origen: DESDE_DAVIVIENDA }));
+    await clic('Generar archivo');
+
+    expect(document.body.querySelector('[data-testid="archivo-del-banco"]')?.textContent).toContain(
+      'planilla para cargar a mano',
+    );
+
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
+      ...ARCHIVO_SIN_VERIFICAR,
+      nombreArchivo: `lote-2026-08-planilla-para-cargar-a-mano-davivienda-${ID.slice(0, 8)}.csv`,
+      formato: 'PLANILLA_MANUAL',
+      entrega: 'PLANILLA',
+      fuente: null,
+      layoutVerificado: true,
+      pendienteDeConfirmar: ['Esta planilla NO se sube al banco.'],
+    });
+    await clicEnDialogo('dialogo-archivo', 'Generar');
+
+    const aviso = document.body.querySelector('[data-testid="es-planilla"]')?.textContent ?? '';
+    expect(aviso).toContain('Es una planilla para cargar a mano, no el archivo del banco');
+    expect(aviso).toContain('Esta planilla NO se sube al banco.');
+    expect(cuerpo()).not.toContain('Layout verificado contra un archivo real del banco');
+    expect(cuerpo()).not.toContain('no se verificó contra un archivo real del banco');
+  });
+
+  it('un archivo de TERCERO dice de dónde salió y pide subir primero uno de prueba', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockResolvedValue({
+      ...ARCHIVO_SIN_VERIFICAR,
+      entrega: 'ARCHIVO_DE_TERCERO',
+      fuente: {
+        url: 'https://ejemplo.co/estructura.pdf',
+        documento: 'Manual de pagos de un software contable',
+        version: '2025',
+        consultado: '2026-09-22',
+      },
+    });
+
+    await clic('Generar archivo');
+    await clicEnDialogo('dialogo-archivo', 'Generar');
+
+    const listo = document.body.querySelector('[data-testid="archivo-listo"]')?.textContent ?? '';
+    expect(listo).toContain('Formato tomado de');
+    expect(listo).toContain('Manual de pagos de un software contable');
+    expect(listo).toContain('Sube primero un archivo de prueba al portal');
   });
 
   it('el error del back al generar llega tal cual', async () => {
@@ -481,9 +763,252 @@ describe('<DetalleDelLote> — cierre', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-20260907-00123');
+    // `false` = «se factura después», que es lo que queda sin tildar la
+    // casilla. Viaja explícito: es una decisión del CEO que se REGISTRA, y un
+    // `undefined` no distingue «después» de «nadie decidió».
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(
+      ID,
+      'BC-20260907-00123',
+      false,
+    );
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Pagado');
     expect(container.querySelector('[data-testid="acciones-del-lote"]')).toBeNull();
+  });
+
+  /**
+   * 🔴 «Factura ahora o después», y qué pasó con ella.
+   *
+   * El CEO (2026-09-15): «archivo plano por banco, egreso, factura ahora o
+   * después, correo al propietario». Hasta la segunda vuelta la casilla
+   * guardaba un booleano y no emitía nada. Lo que estos tests fijan:
+   *
+   *  · que tildar la casilla mande `true` y que el resultado se VEA;
+   *  · que un fallo de facturación NO se lea como «el lote no se pagó»: la
+   *    plata ya salió del banco;
+   *  · que «ya estaban» no se pinte como error.
+   */
+  const listoParaPagar = () =>
+    vista(
+      lote({
+        estado: 'ARCHIVO_GENERADO',
+        formatoArchivo: 'BANCOLOMBIA_PAB',
+        archivoHash: 'x',
+      }),
+    );
+
+  const pagadoCon = (facturacion: LoteDeDispersion['facturacion']) =>
+    lote({
+      estado: 'PAGADO',
+      pagadoAt: '2026-09-02T10:00:00.000Z',
+      referenciaBanco: 'BC-1',
+      facturacion,
+    });
+
+  async function pagar(conFactura: boolean) {
+    await clic('Marcar pagado');
+    await escribir('referencia-del-banco', 'BC-1');
+    if (conFactura) {
+      await act(async () => {
+        (
+          document.querySelector(
+            '[data-testid="facturar-ahora"]',
+          ) as HTMLElement | null
+        )?.click();
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    }
+    const confirmar = botones('Marcar pagado').find((b) =>
+      b.closest('[data-testid="dialogo-pagado"]'),
+    );
+    await act(async () => {
+      confirmar?.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('🔴 tildar «facturar ahora» manda `true` y muestra cuántas se emitieron', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 2,
+        emitidas: 2,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 360_000,
+        numeros: ['FE-1042', 'FE-1043'],
+        fallas: [],
+      }),
+    );
+
+    await pagar(true);
+
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-1', true);
+    const bloque = container.querySelector('[data-testid="facturacion-del-lote"]');
+    expect(bloque?.textContent).toContain('2 facturas emitidas');
+    expect(bloque?.textContent).toContain('360.000');
+    expect(bloque?.textContent).toContain('FE-1042');
+  });
+
+  it('🔴 si la facturación falla, se dice que el lote quedó PAGADO igual', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 2,
+        emitidas: 0,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [
+          {
+            mes: '2026-08',
+            motivo: 'La resolución 18764003394379 venció el 15/01/2028.',
+          },
+        ],
+      }),
+    );
+
+    await pagar(true);
+
+    // La plata salió: el lote está pagado y no se ofrece nada más.
+    expect(
+      container.querySelector('[data-testid="estado-del-lote"]')?.textContent,
+    ).toBe('Pagado');
+    const falla = container.querySelector('[data-testid="falla-2026-08"]');
+    expect(falla?.textContent).toContain('venció el 15/01/2028');
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote"]')?.textContent,
+    ).toContain('La plata ya salió del banco');
+  });
+
+  it('🔴 el aviso de la facturación no mete bloques dentro del <p> del Banner (error de hidratación, QA 23-09)', async () => {
+    const errores: string[] = [];
+    const espia = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errores.push(a.map(String).join(' '));
+    });
+    try {
+      await render(listoParaPagar());
+      vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+        pagadoCon({
+          pedida: true,
+          candidatas: 2,
+          emitidas: 1,
+          yaEstaban: 0,
+          sinNumero: 0,
+          totalCop: 100_000,
+          numeros: ['FE-1'],
+          fallas: [{ mes: '2026-08', motivo: 'La resolución venció.' }],
+        }),
+      );
+      await pagar(true);
+    } finally {
+      espia.mockRestore();
+    }
+    expect(errores.filter((e) => /cannot (be a descendant of|contain a nested)/.test(e))).toEqual([]);
+    expect(container.querySelector('[data-testid="falla-2026-08"]')?.textContent).toContain(
+      'La resolución venció.',
+    );
+  });
+
+  it('«ya estaban» se cuenta, no se pinta como error', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: true,
+        candidatas: 1,
+        emitidas: 0,
+        yaEstaban: 1,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [],
+      }),
+    );
+
+    await pagar(true);
+
+    const bloque = container.querySelector('[data-testid="facturacion-del-lote"]');
+    expect(bloque?.textContent).toContain('1 ya estaba emitida');
+    expect(container.querySelector('[data-testid="falla-2026-08"]')).toBeNull();
+  });
+
+  it('sin tildar, dice cuántas prefacturas quedan esperando en Facturación', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon({
+        pedida: false,
+        candidatas: 3,
+        emitidas: 0,
+        yaEstaban: 0,
+        sinNumero: 0,
+        totalCop: 0,
+        numeros: [],
+        fallas: [],
+      }),
+    );
+
+    await pagar(false);
+
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-1', false);
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote-despues"]')
+        ?.textContent,
+    ).toContain('3 prefacturas quedan');
+  });
+
+  it('🔴 a los que quedaron en $0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: {
+        compensados: 2,
+        enviados: 1,
+        fallas: [
+          {
+            propietarioId: 'p-4',
+            nombre: 'Elena Mora',
+            motivo: 'El propietario no tiene correo registrado',
+          },
+        ],
+      },
+    });
+
+    await pagar(false);
+
+    const bloque = container.querySelector('[data-testid="extractos-de-compensados"]');
+    expect(bloque?.textContent).toContain('1 de 2 extractos enviados');
+    expect(
+      container.querySelector('[data-testid="extracto-fallido-p-4"]')?.textContent,
+    ).toContain('Elena Mora: El propietario no tiene correo registrado');
+    expect(bloque?.textContent).toContain('El lote quedó PAGADO igual');
+  });
+
+  it('sin compensados en el lote no aparece el bloque de extractos', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
+      ...pagadoCon(undefined),
+      extractosDeCompensados: { compensados: 0, enviados: 0, fallas: [] },
+    });
+
+    await pagar(false);
+
+    expect(container.querySelector('[data-testid="extractos-de-compensados"]')).toBeNull();
+  });
+
+  it('un back anterior sin `facturacion` no pinta ningún bloque', async () => {
+    await render(listoParaPagar());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+      pagadoCon(undefined),
+    );
+
+    await pagar(false);
+
+    expect(container.querySelector('[data-testid="facturacion-del-lote"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="facturacion-del-lote-despues"]'),
+    ).toBeNull();
   });
 
   it('anular exige motivo (5 a 300) antes de pegarle al back, y después manda el motivo', async () => {
@@ -501,7 +1026,7 @@ describe('<DetalleDelLote> — cierre', () => {
     await escribir('motivo-de-anulacion', 'Cambió una cuenta');
     await clic('Anular lote');
 
-    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta', false);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Anulado');
   });
 
@@ -515,5 +1040,141 @@ describe('<DetalleDelLote> — cierre', () => {
 
     expect(container.textContent).toContain('Lote bloqueado');
     expect(boton('Aprobar').disabled).toBe(true);
+  });
+});
+
+describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
+  const MOTIVO =
+    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
+
+  function conCompensada(): VistaDelLote {
+    const base = lote();
+    const l: LoteDeDispersion = {
+      ...base,
+      items: [
+        ...base.items,
+        {
+          id: 'i-4',
+          loteId: ID,
+          dispersionId: 'd-4',
+          propietarioId: 'p-4',
+          nombreTitular: 'Elena Mora',
+          documento: '43111222',
+          tipoDocumento: 'CC',
+          banco: 'Bancolombia',
+          tipoDeCuenta: 'AHORROS',
+          numeroDeCuenta: '55566677',
+          valorCop: -250_000,
+          motivoDeExclusion: MOTIVO,
+        },
+      ],
+    };
+    // El back no la cuenta como excluida: la manda aparte.
+    return vista(l, {
+      excluidos: vista(base).excluidos,
+      compensados: [
+        { propietarioId: 'p-4', nombre: 'Elena Mora', dispersionId: 'd-4', netoCop: -250_000, saldoEnContraCop: 250_000 },
+      ],
+    });
+  }
+
+  it('🔴 se ve aparte de los excluidos: $0 girado y cuánto pasa al mes siguiente', async () => {
+    await render(conCompensada());
+
+    const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
+    expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
+    expect(seccion?.textContent).toContain('Elena Mora');
+    expect(seccion?.textContent).toContain('$250.000');
+    expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
+    expect(container.textContent).toContain('Se cierra en $0');
+  });
+
+  it('sin compensados no aparece la sección', async () => {
+    await render(vista(lote()));
+    expect(container.querySelector('[data-testid="compensados-del-lote"]')).toBeNull();
+  });
+});
+
+describe('<DetalleDelLote> — el archivo que pudo llegar al banco (23-09)', () => {
+  async function marcarCasilla() {
+    await act(async () => {
+      (document.body.querySelector('[data-testid="casilla-archivo-del-banco"]') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('🔴 con el archivo generado, anular pide la casilla y manda la confirmación al back', async () => {
+    await render(
+      vista(lote({ estado: 'ARCHIVO_GENERADO', archivoGeneradoAt: '2026-09-20T14:00:00.000Z' })),
+    );
+    vi.mocked(lotesDeDispersionApi.anular).mockResolvedValue(
+      lote({ estado: 'ANULADO', anuladoAt: '2026-09-21T10:00:00.000Z', motivoDeLaAnulacion: 'El banco lo rechazó' }),
+    );
+
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).not.toBeNull();
+    await escribir('motivo-de-anulacion', 'El banco lo rechazó');
+    // Sin la casilla, el botón está apagado y no se le pega al back.
+    expect(boton('Anular lote').disabled).toBe(true);
+    expect(lotesDeDispersionApi.anular).not.toHaveBeenCalled();
+
+    await marcarCasilla();
+    await clic('Anular lote');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'El banco lo rechazó', true);
+  });
+
+  it('un lote sin archivo se anula sin casilla', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).toBeNull();
+  });
+
+  it('🔴 los pagos que ya salieron en el archivo de un lote anulado se avisan en el detalle', async () => {
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), {
+        salieronEnUnArchivoAnulado: [
+          {
+            dispersionId: 'disp-1',
+            propietarioId: 'prop-1',
+            nombre: 'JORGE RESTREPO',
+            valorCop: 1_800_000,
+            loteAnteriorId: 'lote-viejo',
+            archivoGeneradoAt: '2026-09-20T14:00:00.000Z',
+            anuladoAt: '2026-09-21T10:00:00.000Z',
+            motivoDeLaAnulacion: 'El banco lo rechazó',
+          },
+        ],
+      }),
+    );
+
+    const aviso = container.querySelector('[data-testid="aviso-archivo-anulado"]');
+    expect(aviso).not.toBeNull();
+    expect(cuerpo()).toContain('1 pago de este lote ya salió en el archivo de un lote anulado');
+    expect(aviso?.textContent).toContain('JORGE RESTREPO');
+    expect(aviso?.textContent).toContain('El banco lo rechazó');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/dispersiones/lotes/lote-viejo',
+    );
+  });
+});
+
+describe('<DetalleDelLote> — quien registró una devolución no aprueba (Nico, 23-09)', () => {
+  it('🔴 «Aprobar» apagado con el porqué cuando yo registré la devolución de un giro del lote', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-otro'] }),
+    );
+    const b = boton('Aprobar');
+    expect(b.disabled).toBe(true);
+    expect(b.getAttribute('title')).toContain('registraste la devolución');
+    expect(container.querySelector('[data-testid="registre-una-devolucion"]')).not.toBeNull();
+  });
+
+  it('otra persona sí ve «Aprobar» prendido', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-tercero'] }),
+    );
+    expect(boton('Aprobar').disabled).toBe(false);
   });
 });

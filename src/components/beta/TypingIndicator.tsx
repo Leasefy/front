@@ -13,6 +13,12 @@ interface TypingIndicatorProps {
   historyCount?: number;
   /** El «estado de hoy» llega por el stream ANTES de la respuesta. */
   snapshot?: ChatSnapshot | null;
+  /**
+   * Lo que el micro dice que está haciendo AHORA (evento `progreso`), p. ej.
+   * «Buscando en toda la plataforma…». Cuando llega, manda sobre las frases que
+   * rotan: es un hecho del turno, no una frase de espera (Nico, 23-09).
+   */
+  actividad?: string | null;
   className?: string;
 }
 
@@ -44,7 +50,7 @@ export function faseDeEspera(segundos: number): 'reading' | 'deciding' | 'longer
   return 'longer';
 }
 
-export function TypingIndicator({ historyCount = 0, snapshot, className }: TypingIndicatorProps) {
+export function TypingIndicator({ historyCount = 0, snapshot, actividad, className }: TypingIndicatorProps) {
   const { t } = useI18n();
   const desde = useSince(true);
   const ms = useElapsed(desde, true);
@@ -78,7 +84,7 @@ export function TypingIndicator({ historyCount = 0, snapshot, className }: Typin
     const id = window.setInterval(() => setI((n) => n + 1), 2400);
     return () => window.clearInterval(id);
   }, []);
-  const linea = lineas[i % lineas.length];
+  const linea = actividad || lineas[i % lineas.length];
 
   return (
     <div className={cn('flex items-start gap-3', className)}>

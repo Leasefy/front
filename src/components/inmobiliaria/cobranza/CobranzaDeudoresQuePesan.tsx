@@ -30,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const CASOS_HREF = '/panel/inmobiliaria/cobros/cobranza/deudores'
+const CASOS_HREF = '/panel/inmobiliaria/pagos/cobranza/deudores'
 const TOP_N = 5
 
 export function CobranzaDeudoresQuePesan() {

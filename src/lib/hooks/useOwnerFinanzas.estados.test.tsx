@@ -11,11 +11,16 @@ import { act } from 'react';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+/*
+ * Las tres partes del portal se piden CON ESTADO: el hook distingue «falló» de
+ * «no hay nada», y una tarjeta que se borra no dice cuál de las dos pasó (O3).
+ * Este doble tiene que hablar ese idioma o el efecto revienta al montar.
+ */
 const api = vi.hoisted(() => ({
   getPortafolioConEstado: vi.fn(),
   getInmuebles: vi.fn(async () => []),
-  getProyeccion: vi.fn(async () => null),
-  getRecaudoAnual: vi.fn(async () => null),
+  getProyeccionConEstado: vi.fn(async () => ({ estado: 'ok', data: null })),
+  getRecaudoAnualConEstado: vi.fn(async () => ({ estado: 'ok', data: null })),
 }));
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => ({ agency: { id: 'ag-1' } }) }));
 vi.mock('@/lib/api/owner-finanzas.service', () => ({ ownerFinanzasApi: api }));
@@ -50,15 +55,19 @@ beforeEach(() => {
   root = createRoot(container);
 });
 
-afterEach(() => {
-  act(() => root.unmount());
+afterEach(async () => {
+  await act(async () => {
+    root.unmount();
+  });
   container.remove();
 });
 
 describe('useOwnerFinanzas — fallo ≠ no habilitado (O1)', () => {
   it('🔴 un 500 es un fallo, no «no disponible»', async () => {
     api.getPortafolioConEstado.mockResolvedValue({ estado: 'fallo', status: 500, mensaje: 'El portal respondió 500.' });
-    act(() => root.render(<Sonda />));
+    await act(async () => {
+      root.render(<Sonda />);
+    });
     await esperar();
 
     expect(ultimo?.isLoading).toBe(false);
@@ -68,7 +77,9 @@ describe('useOwnerFinanzas — fallo ≠ no habilitado (O1)', () => {
 
   it('con el portal apagado es «no disponible», sin fallo', async () => {
     api.getPortafolioConEstado.mockResolvedValue({ estado: 'no-habilitado' });
-    act(() => root.render(<Sonda />));
+    await act(async () => {
+      root.render(<Sonda />);
+    });
     await esperar();
 
     expect(ultimo?.fallo).toBeNull();
@@ -79,11 +90,15 @@ describe('useOwnerFinanzas — fallo ≠ no habilitado (O1)', () => {
     api.getPortafolioConEstado
       .mockResolvedValueOnce({ estado: 'fallo', status: 0, mensaje: 'No hubo conexión con el portal.' })
       .mockResolvedValueOnce({ estado: 'ok', data: { totalCop: 5 } });
-    act(() => root.render(<Sonda />));
+    await act(async () => {
+      root.render(<Sonda />);
+    });
     await esperar();
     expect(ultimo?.fallo?.status).toBe(0);
 
-    act(() => ultimo?.reintentar());
+    await act(async () => {
+      ultimo?.reintentar();
+    });
     await esperar();
 
     expect(api.getPortafolioConEstado).toHaveBeenCalledTimes(2);

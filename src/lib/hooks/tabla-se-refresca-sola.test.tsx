@@ -16,7 +16,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot } from 'react-dom/client';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 
 import { usePropietarios } from './useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';

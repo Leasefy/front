@@ -7,6 +7,12 @@
  *     tasa · monto conciliado. «En cola» NO va acá: es el número del que habla
  *     <HallazgosDelAgente>, y decirlo dos veces en la misma pantalla lo
  *     convierte en ruido (Nico: no repetir información).
+ *
+ *     🔴 Los cuatro son DEL AGENTE, y van bajo un encabezado que lo dice
+ *     («Lo que lleva cruzado el agente»). Los movimientos que el BANCO mandó y
+ *     nadie cruzó todavía los cuenta el back, y salen arriba en otra frase:
+ *     sin encabezado, «Hay 3 movimientos esperando» y «Movimientos 0» se leen
+ *     como una contradicción en la misma pantalla.
  *   · <HallazgosDelAgente>     — «Lo que encontró el agente»: la conclusión en
  *     palabras + el desglose por tipo + UNA acción que lleva a la cola.
  *
@@ -88,10 +94,22 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
   ]
 
   return (
-    <div
-      className="grid grid-cols-2 gap-4 lg:grid-cols-4"
-      data-testid="conciliacion-resumen"
-    >
+    <section aria-labelledby="lo-que-cruzo-el-agente" className="space-y-2">
+      {/*
+        🔴 21-09-2026, abriendo la pantalla: arriba decía «Hay 3 movimientos
+        del banco esperando en Movimientos» y aquí abajo «Movimientos 0», en
+        la misma pantalla. No es un error de ninguno de los dos: son cosas
+        distintas —lo que el banco mandó y todavía nadie cruzó, contra lo que
+        el AGENTE ya cruzó— contadas las dos como «movimientos». El encabezado
+        le pone dueño a estas cuatro cifras; sin él, una de las dos miente.
+      */}
+      <p id="lo-que-cruzo-el-agente" className="text-caption text-fg-muted">
+        Lo que lleva cruzado el agente
+      </p>
+      <div
+        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        data-testid="conciliacion-resumen"
+      >
       {kpis.map((kpi) => (
         <div
           key={kpi.id}
@@ -102,7 +120,8 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
           <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">{kpi.value}</p>
         </div>
       ))}
-    </div>
+      </div>
+    </section>
   )
 }
 

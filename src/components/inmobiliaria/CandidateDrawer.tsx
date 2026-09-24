@@ -27,6 +27,7 @@ import { Spinner as DSSpinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
+import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -515,6 +516,10 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
+            {/* 17-09-2026: el estudio lo paga el solicitante a la inmobiliaria
+                (recibo + factura) y, vigente, no se le vuelve a cobrar. Sólo
+                dentro del panel de la inmobiliaria. */}
+            <EstudioPagadoALaInmobiliaria applicationId={candidate.id} />
           </section>
 
           {/* AI Scoring Block */}
@@ -542,6 +547,8 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                   Este candidato aún no tiene un análisis de IA generado por el agente.
                 </p>
               </div>
+            ) : evaluacionDesactualizada(evaluation) ? (
+              <AvisoDeEvaluacionDesactualizada />
             ) : aiError ? (
               <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -992,6 +999,34 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
  *
  * Exported for direct unit testing (see CandidateDrawer.test.tsx).
  */
+/**
+ * 🔴 Auditoría 23-09-2026: el candidato cambió sus datos (o reactivó la
+ * postulación) después de evaluarlo. El back ya borró el puntaje y dejó la
+ * evaluación esperando con `datos_cambiaron`: mostrar el viejo al lado de los
+ * datos nuevos era aprobar a alguien con el estudio de otra versión suya.
+ */
+export function evaluacionDesactualizada(
+  evaluation: Pick<EvaluationResult, 'awaiting_reason'> | null | undefined,
+): boolean {
+  return evaluation?.awaiting_reason === 'datos_cambiaron';
+}
+
+export function AvisoDeEvaluacionDesactualizada() {
+  return (
+    <div
+      className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm"
+      data-testid="evaluacion-desactualizada"
+    >
+      <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+      <span>
+        <span className="font-semibold">Hay que volver a evaluarlo.</span> El candidato
+        cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide
+        un estudio nuevo; no se exige subir documentos otra vez.
+      </span>
+    </div>
+  );
+}
+
 export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
   if (!study) {
     return (
@@ -1022,6 +1057,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
           <p className="text-xs text-fg-muted">Monto máximo asegurable</p>
           <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
             {formatCurrency(study.maxAsegurableCop)}
+          </p>
+          {/*
+            D13 (Nico y Juan Camilo, 17-09-2026, «como Portofino»): el tope es un
+            DATO, no un bloqueo. Un canon por encima no frena la postulación; lo
+            decide la inmobiliaria, sin registro ni aviso obligatorio.
+          */}
+          <p className="text-xs text-fg-muted mt-1" data-testid="prescoring-tope-informativo">
+            Dato informativo: si el canon del inmueble lo supera, la inmobiliaria decide si arrienda igual.
           </p>
         </div>
       ) : (

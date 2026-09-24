@@ -39,6 +39,7 @@ import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { fechaLegible, hoyLocal, sumarTotales } from './filas';
 import { resumirElCliente } from './resumen';
 import { useTextoDelEstado } from './textos';
+import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 /** Lo que pinta la tarjeta, venga del resumen barato o del documento entero. */
 export interface NumerosDeLaFicha {
@@ -46,6 +47,13 @@ export interface NumerosDeLaFicha {
   proxima: { fecha: string; monto: number } | null;
   enMora: boolean;
   diasDeMora: number;
+  /** Vencido, pero dentro del plazo del contrato: todavía no es mora. */
+  enPlazo?: boolean;
+  /**
+   * El interés de mora que falta, APARTE de `restaPorPagar` (que es capital).
+   * Ausente = el back no lo mandó; no se inventa un cero.
+   */
+  interesDeMora?: number;
   /** `false` cuando el cliente no tiene nada que mostrar acá. */
   hayAlgo: boolean;
 }
@@ -65,11 +73,16 @@ export function numerosDelDocumento(
     totales: soloContrato ? sumarTotales(contratos.map((c) => c.totales)) : doc.totales,
   };
   const r = resumirElCliente(recortado, hoy);
+  const interesDeMora = soloContrato
+    ? contratos.reduce((s, c) => s + (interesesDelContrato(c)?.pendiente ?? 0), 0)
+    : interesesDelEstado(doc)?.pendiente;
   return {
     restaPorPagar: r.restaPorPagar,
     proxima: r.proxima ? { fecha: r.proxima.fecha, monto: r.proxima.valor } : null,
     enMora: r.enMora,
     diasDeMora: r.diasDeMora,
+    enPlazo: r.enPlazo,
+    interesDeMora,
     hayAlgo: contratos.length > 0,
   };
 }
@@ -120,6 +133,9 @@ export function ResumenEnLaFicha({
             proxima: r.proximaCuota,
             enMora: r.enMora !== null,
             diasDeMora: r.enMora?.dias ?? 0,
+            // `pendiente` es lo vencido, en plazo o no; `enMora`, sólo lo que pasó el plazo.
+            enPlazo: r.enMora === null && r.pendiente > 0,
+            interesDeMora: (r as { interesDeMora?: number }).interesDeMora,
             hayAlgo: r.contratos > 0,
           }))
           .catch(documentoEntero);
@@ -183,6 +199,17 @@ export function ResumenEnLaFicha({
             >
               {formatCurrency(numeros.restaPorPagar)}
             </p>
+            {/* Capital arriba; el interés de mora, aparte y debajo. */}
+            {(numeros.interesDeMora ?? 0) > 0 && (
+              <p
+                data-testid="ficha-intereses"
+                className="mt-1 font-mono text-caption tabular-nums text-danger"
+              >
+                {t('estadoDeCuenta.masIntereses', {
+                  monto: formatCurrency(numeros.interesDeMora ?? 0),
+                })}
+              </p>
+            )}
           </div>
 
           <div>
@@ -215,12 +242,16 @@ export function ResumenEnLaFicha({
                   'inline-block rounded-full px-2.5 py-0.5 text-body-sm',
                   numeros.enMora
                     ? 'bg-danger-soft text-danger'
-                    : 'bg-success-soft text-success',
+                    : numeros.enPlazo
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-success-soft text-success',
                 )}
               >
                 {numeros.enMora
                   ? t('estadoDeCuenta.enMoraDias', { dias: numeros.diasDeMora })
-                  : t('estadoDeCuenta.alDia')}
+                  : numeros.enPlazo
+                    ? t('estadoDeCuenta.vencidoEnPlazo')
+                    : t('estadoDeCuenta.alDia')}
               </span>
             </p>
           </div>

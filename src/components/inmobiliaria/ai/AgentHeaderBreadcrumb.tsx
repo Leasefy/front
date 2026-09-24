@@ -4,20 +4,27 @@ import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { Breadcrumb, type BreadcrumbItem } from '@/components/ui/breadcrumb';
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav';
-import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
+import { grupoDelModulo, moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 
 /**
  * AgentHeaderBreadcrumb — el breadcrumb de los workspaces de agente, en el
  * slot izquierdo del PlanHeader. Se esconde fuera de un agente.
  *
- * Antes arrancaba en «Agentes IA › /ai»: la IA era un lugar. Ahora la IA es un
- * modo dentro de cada módulo, así que arranca en el módulo dueño:
+ * ── Dónde dice que estás (Nico, 2026-09-16) ────────────────────────────────
  *
- *   Cobros › Cobranza › Casos [› Detalle]
+ * Los agentes tienen su propia sección del menú, «Agentes IA», y conservan sus
+ * URLs: Cobranza sigue en `/pagos/cobranza`. El primer escalón es el GRUPO del
+ * módulo dueño, así que la sala se lee dentro de Agentes y no dentro de Pagos:
  *
- * El primer escalón sale de `arquitectura-del-panel.ts` (el módulo cuyo href
- * es prefijo de la ruta). Cuando el agente ES la raíz del módulo (Pagos,
- * Conciliación) no se repite el nombre: «Pagos › Por aprobar».
+ *   Agentes IA › Cobranza › Casos [› Detalle]
+ *
+ * El grupo no navega (no tiene ruta: es una cabecera del menú), por eso va sin
+ * enlace. El módulo dueño sale de `moduloDeLaRuta` —el href más largo que sea
+ * prefijo—, que en `/pagos/cobranza/…` es Cobranza y no Pagos. Cuando el agente
+ * ES el módulo (hoy, todos) no se repite el nombre.
+ *
+ * Antes de la sección, el primer escalón era el módulo que hospedaba al agente
+ * («Pagos › Cobranza › Casos»): decía, justamente, que la sala vivía en Pagos.
  */
 export function AgentHeaderBreadcrumb() {
   const pathname = usePathname() ?? '';
@@ -47,6 +54,10 @@ export function AgentHeaderBreadcrumb() {
 
   const items: BreadcrumbItem[] = [];
   const modulo = moduloDeLaRuta(pathname);
+  const grupo = modulo ? grupoDelModulo(modulo) : null;
+  if (grupo?.labelKey) {
+    items.push({ label: t(grupo.labelKey) });
+  }
   if (modulo && modulo.href !== ws.basePath) {
     items.push({ label: t(modulo.labelKey), href: modulo.href });
   }

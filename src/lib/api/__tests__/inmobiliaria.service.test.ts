@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { agencyApi, cobrosApi, documentosApi, inmobiliariaConfigApi, inmueblesApi, mantenimientoApi, normalizeCobro, normalizeConsignacion, normalizeInmuebleSinConsignacion, normalizePipelineItem, permissionsApi, propietariosApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
+import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const { ok = true, status = 200 } = init;
@@ -285,15 +286,74 @@ describe('cobrosApi.sendReminder — matches backend @Put(:id/send-reminder)', (
 });
 
 describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quote)', () => {
-  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId }', async () => {
-    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId, aCargoDe }', async () => {
+    const fetchMock = mockFetchOnce({
+      id: 'sol-1',
+      status: 'IN_PROGRESS',
+      cargo: { aCargoDe: 'PROPIETARIO', deduccionIds: ['d-1'], avisos: [] },
+    });
 
-    await mantenimientoApi.approveQuote('sol-1', 'quote-9');
+    const aprobada = await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'PROPIETARIO',
+    });
 
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/select-quote')).toBe(true);
     expect(opts.method).toBe('PUT');
-    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9' });
+    // A cargo de quién queda la reparación viaja SIEMPRE: el back lo exige.
+    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9', aCargoDe: 'PROPIETARIO' });
+    expect(aprobada.cargo).toEqual({ aCargoDe: 'PROPIETARIO', deduccionIds: ['d-1'], avisos: [] });
+  });
+
+  /**
+   * 🔴 H-03 (18-09-2026): las dos formas nuevas viajan con lo que el back
+   * EXIGE. Sin esta prueba, mandar `COMPARTIDA` sin porcentajes compila igual
+   * y revienta en la base con un CHECK.
+   */
+  it('COMPARTIDA manda los DOS porcentajes', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'COMPARTIDA',
+      porcentajes: { propietarioPct: 60, inquilinoPct: 40 },
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(opts.body as string)).toEqual({
+      quoteId: 'quote-9',
+      aCargoDe: 'COMPARTIDA',
+      propietarioPct: 60,
+      inquilinoPct: 40,
+    });
+  });
+
+  it('INMOBILIARIA manda el motivo', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'INMOBILIARIA',
+      motivoInmobiliaria: 'Garantía del proveedor.',
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(opts.body as string)).toEqual({
+      quoteId: 'quote-9',
+      aCargoDe: 'INMOBILIARIA',
+      motivoInmobiliaria: 'Garantía del proveedor.',
+    });
+  });
+
+  it('🔴 las dos de siempre NO mandan porcentajes colgados', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9', {
+      aCargoDe: 'INQUILINO',
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const cuerpo = JSON.parse(opts.body as string) as Record<string, unknown>;
+    expect('propietarioPct' in cuerpo).toBe(false);
+    expect('motivoInmobiliaria' in cuerpo).toBe(false);
   });
 });
 
@@ -429,6 +489,40 @@ describe('propietariosApi.create — maps front bank fields to the wire contract
     expect(body.accountHolderDocumentType).toBeUndefined();
   });
 
+  it('🔴 «Del propietario» (22-09) manda la respuesta y NINGÚN dato del titular: el back lo limpia', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      titularDeLaCuenta: 'PROPIETARIO',
+      accountHolder: '',
+      accountHolderDocumentType: '',
+      accountHolderDocument: '',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.titularDeLaCuenta).toBe('PROPIETARIO');
+    expect(body).not.toHaveProperty('bankAccountHolder');
+    expect(body).not.toHaveProperty('bankAccountHolderDocument');
+    expect(body).not.toHaveProperty('bankAccountHolderDocumentType');
+  });
+
+  it('🔴 «De otra persona» (22-09) manda la respuesta con nombre, tipo y documento', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      titularDeLaCuenta: 'TERCERO',
+      accountHolder: 'Carlos Restrepo',
+      accountHolderDocumentType: 'CE',
+      accountHolderDocument: '8001234',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toMatchObject({
+      titularDeLaCuenta: 'TERCERO',
+      bankAccountHolder: 'Carlos Restrepo',
+      bankAccountHolderDocumentType: 'CE',
+      bankAccountHolderDocument: '8001234',
+    });
+  });
+
   it('un tipo de documento del titular sin documento no se manda (no significa nada)', async () => {
     const fetchMock = mockFetchOnce({ id: 'prop-1' });
     await propietariosApi.create({ ...BASE_PROPIETARIO, accountHolderDocumentType: 'CC', accountHolderDocument: '' });
@@ -535,6 +629,30 @@ describe('propietariosApi.update — applies the same wire mapping on a partial 
     await propietariosApi.update('prop-1', { department: '', accountHolderDocument: '', accountHolderDocumentType: '' });
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body).toEqual({ department: null, bankAccountHolderDocument: null, bankAccountHolderDocumentType: null });
+  });
+
+  it('🔴 lo que guarda quien no ve la cuenta no lleva NINGÚN campo de la cuenta (23-09)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.update(
+      'prop-1',
+      sinLaCuenta({
+        name: 'Jorge',
+        email: 'jorge@correo.co',
+        phone: '3001234567',
+        documentType: 'CC',
+        documentNumber: '71234567',
+        bankCode: 'bbva',
+        accountType: 'checking',
+        accountNumber: '',
+        accountHolder: '',
+        accountHolderDocument: '',
+        accountHolderDocumentType: '',
+        titularDeLaCuenta: 'PROPIETARIO',
+      }),
+    );
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(Object.keys(body).filter((k) => /bank|titular/i.test(k))).toEqual([]);
+    expect(body.name).toBe('Jorge');
   });
 
   it('throws instead of silently coercing an unmapped bank slug on update too', async () => {
@@ -790,4 +908,25 @@ describe('normalizeCobro no se come los campos nuevos del detalle', () => {
     expect(salida.recibosDeCaja).toHaveLength(1);
   });
 });
+});
+
+describe('🔴 propietariosApi.getAll — la lista trae la cuenta resumida (23-09, datos personales)', () => {
+  it('los 4 últimos dígitos quedan en bankAccount.ultimos4 y el número no se inventa', async () => {
+    mockFetchOnce([
+      {
+        id: 'p1',
+        name: 'Jorge',
+        documentType: 'CC',
+        documentNumber: '71234567',
+        bankName: 'Bancolombia',
+        bankAccountType: 'Ahorros',
+        bankAccountNumber: null,
+        bankAccountUltimos4: '8901',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    ]);
+    const [p] = await propietariosApi.getAll();
+    expect(p.bankAccount.ultimos4).toBe('8901');
+    expect(p.bankAccount.accountNumber).toBe('');
+  });
 });

@@ -109,6 +109,34 @@ vi.mock('@/components/ui/error-state', () => ({
     ),
 }))
 
+// S6 — `AccionDePostulacion` pasó al `ResponsiveDialog` de la casa (portal,
+// role, Escape, Lenis). Acá se reemplaza por envoltorios planos: el portal
+// montaría el modal fuera del contenedor de la prueba, y lo que se verifica es
+// el contenido, no el diálogo del design system.
+vi.mock('@/components/ui/responsive-dialog', () => {
+  const Pasa = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children);
+  return {
+    ResponsiveDialog: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+      open === false ? null : React.createElement('div', { role: 'dialog' }, children),
+    ResponsiveDialogContent: Pasa,
+    ResponsiveDialogHeader: Pasa,
+    ResponsiveDialogTitle: Pasa,
+    ResponsiveDialogDescription: Pasa,
+    ResponsiveDialogFooter: Pasa,
+  };
+});
+
+/* El explicador vive detrás de un botón y abre un modal del design system; su
+   cadena de importes llega al `Dialog` real, que esta prueba dobla a medias.
+   Acá sólo interesa que el mapa NO esté puesto sobre la pantalla, así que el
+   doble pinta el botón y nada más. */
+vi.mock('@/components/ui/para-entender-mas', () => ({
+  ParaEntenderMas: ({ etiqueta }: { etiqueta: string }) => (
+    <button type="button">{etiqueta}</button>
+  ),
+}))
+
 vi.mock('@leasefy/cadence', () => ({
   // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
   // pasar por bueno un botón sin data-testid ni aria-label reales.
@@ -383,7 +411,15 @@ describe('PostulacionesPage', () => {
 
     await renderPage()
 
-    expect(container.querySelector('[data-testid="recorrido-mapa"]')).not.toBeNull()
+    /* 🔴 21-09: esto exigía que el mapa de ONCE tarjetas estuviera puesto sobre
+       la pantalla. Nico lo miró y dijo que no: «eso ahí expuesto… debería
+       estar en un botón de quiero entender más, y que al clic se abra un
+       modal». Lo que la prueba defendía —que el vacío EXPLIQUE en vez de
+       mostrar seis KPI en cero— se mantiene; lo que cambió es que explicar no
+       es volcarlo todo encima. */
+    expect(container.querySelector('[data-testid="recorrido-mapa"]')).toBeNull()
+    expect(container.textContent).toContain('Cómo funciona una postulación')
+    expect(container.textContent).toContain('Todavía no te ha llegado ninguna postulación')
     expect(container.querySelector('table')).toBeNull()
     expect(tiles().length).toBe(0)
   })
@@ -393,9 +429,12 @@ describe('PostulacionesPage', () => {
 
     await renderPage()
 
-    const detalles = container.querySelector('details')
-    expect(detalles).not.toBeNull()
-    expect(detalles?.hasAttribute('open')).toBe(false)
+    /* Era un `<details>` plegado. Sigue sin robarle espacio a la lista —esa es
+       la intención— pero ahora ni siquiera crece dentro de la pantalla: abre
+       un modal encima y la devuelve intacta. */
+    expect(container.querySelector('details')).toBeNull()
+    expect(container.textContent).toContain('Cómo funciona el recorrido')
+    expect(container.querySelector('[data-testid="recorrido-mapa"]')).toBeNull()
     expect(container.querySelector('table')).not.toBeNull()
   })
 

@@ -51,7 +51,14 @@
     "hours": "hours",
     "minutes": "minutes",
     "refresh": "Refresh",
-    "retry": "Retry"
+    "retry": "Retry",
+    "selectorDeArchivo": {
+      "elegir": "Choose file",
+      "elegirOtro": "Choose another",
+      "quitar": "Remove",
+      "quitarArchivo": "Remove {{nombre}}",
+      "ninguno": "No file chosen"
+    }
   },
   "nav": {
     "panel": "Home",
@@ -597,7 +604,8 @@
         "manager": "Manager",
         "accountant": "Accountant",
         "viewer": "Viewer"
-      }
+      },
+      "noMembers": "No one on the team yet"
     },
     "security": {
       "title": "Security",
@@ -857,6 +865,68 @@
     }
   },
   "inmobiliaria": {
+    "inventarioDelInmueble": {
+      "estadoFirmado": "Signed",
+      "estadoPendiente": "Pending",
+      "firmaTitulo": "Tenant signature",
+      "firmaPendiente": "Pending: the tenant has not signed this inventory yet. It does not prevent activating the contract.",
+      "firmadoPor": "Signed by {{nombre}} on {{fecha}}.",
+      "firmaNoIntegra": "The copy does not match what was signed: review this inventory with support.",
+      "firmaInquilinoTitulo": "Sign the inventory of your rental",
+      "firmaInquilinoAyuda": "It lists what is in the property and its condition (version {{version}}). Review and sign it: it records how you received it.",
+      "firmaAceptacion": "I receive the property with this inventory and confirm it describes its condition and contents.",
+      "firmaBoton": "Sign inventory",
+      "firmaHecha": "Inventory signed",
+      "firmaExito": "You signed the inventory.",
+      "firmaError": "The inventory could not be signed.",
+      "espacio": "Room",
+      "espacioPlaceholder": "Kitchen, main bedroom, guest bathroom…",
+      "titulo": "Property inventory",
+      "cargando": "Loading the inventory…",
+      "errorAlCargar": "The inventory could not be loaded.",
+      "reintentar": "Retry",
+      "desdeCache": "Offline: you are seeing the last copy of the inventory saved on this phone.",
+      "migracionPendiente": "Versioned inventory is not enabled yet: it is saved as usual and not required to start contracts.",
+      "vigente": "Current: version {{version}}, completed on {{fecha}}.",
+      "sinInventario": "This property has no inventory. Create and complete it before starting a contract.",
+      "soloBorrador": "The inventory is a draft. Complete it to be able to start a contract.",
+      "porActualizarTitulo": "Inventory to update after contract {{numero}}",
+      "porActualizarTexto": "The contract ended on {{fecha}}. Check the property, update the inventory and complete it: until then no other contract can start. The previous inventory stays on record.",
+      "borradorDeVersion": "Draft · version {{version}}",
+      "versionCompleta": "Version {{version}} · complete",
+      "sinVersiones": "There is no inventory yet. Add the first item to start it.",
+      "completar": "Complete inventory",
+      "completando": "Completing…",
+      "completarAyuda": "Once completed, this version is locked: contracts started from now on keep it. Any later change opens a new version.",
+      "completarSubePrimero": "Upload what is pending before completing.",
+      "completarSinItems": "Add at least one item before completing.",
+      "completado": "Inventory completed: version {{version}} is locked.",
+      "errorAlCompletar": "The inventory could not be completed.",
+      "historialTitulo": "Version history",
+      "historialVacio": "Once you complete the first inventory, its versions show up here.",
+      "estadoBorrador": "Draft",
+      "estadoCompleto": "Complete",
+      "items": "{{n}} items",
+      "contratosQueLaUsan": "{{n}} contracts started with this version",
+      "origenConsignacion": "Brought from the previous inventory",
+      "completadaEl": "Completed on {{fecha}}",
+      "editadaEl": "Last edited on {{fecha}}",
+      "verVersion": "View",
+      "versionTitulo": "Inventory · version {{version}}",
+      "cerrar": "Close",
+      "contratoTitulo": "Inventory the contract started with",
+      "contratoVersion": "Version {{version}}, completed on {{fecha}}. It does not change when the property gets new inventories.",
+      "contratoSinCopia": "This contract has no inventory copy: it was created before inventories had versions, or without a complete inventory.",
+      "contratoVerInmueble": "View the property inventory",
+      "tareaEsteContrato": "This contract ended on {{fecha}}: update the property inventory before starting another contract.",
+      "irAlInventario": "Update the inventory",
+      "bloqueoTitulo": "You cannot start this contract yet",
+      "bloqueoSinInventario": "The property has no inventory. Create and complete it.",
+      "bloqueoSoloBorrador": "The property inventory is a draft. Complete it.",
+      "bloqueoAnterior": "The property inventory must be updated after contract {{numero}}, which ended on {{fecha}}.",
+      "bloqueoEnlace": "Go to the property inventory",
+      "bloqueoSinEnlace": "Find the property in the portfolio and update its inventory."
+    },
     "nav": {
       "dashboard": "Dashboard",
       "aiAgents": "Overview",
@@ -911,7 +981,6 @@
       "secGeneral": "General",
       "solicitudes": "Requests",
       "contabilidad": "General accounting",
-      "proximamente": "Coming soon",
       "aprendizaje": "Assistant learning",
       "hintPipeline": "pipeline",
       "hintCatalogo": "catalog",
@@ -924,20 +993,44 @@
       "secCaptacion": "Acquisition & leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
+      "caraInquilinos": "Collect from tenants",
+      "caraInquilinosDetalle": "money coming in",
+      "caraPropietarios": "Pay owners",
+      "caraPropietariosDetalle": "money going out",
       "secDirectorio": "Directory",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Maintenance",
+      "proveedores": "Vendors",
       "soportesCorto": "Documents",
       "contabilidadCorta": "Accounting",
+      "nomina": "Payroll",
       "liquidaciones": "Settlements",
       "retencion": "Retention",
       "resumenDelNegocio": "Business overview",
       "rentabilidad": "Profitability",
       "desempenoIa": "AI performance",
+      "agenteDePagos": "Payments agent",
       "agentesIa": "AI agents",
       "automatizacionIa": "AI automation",
       "riesgo": "Risk",
-      "porAprobar": "To approve"
+      "porAprobar": "To approve",
+      "origenesDeLeads": "Sources",
+      "portalesDePublicacion": "Portals",
+      "requisitosDePostulacion": "Requirements",
+      "calceDeLeads": "What to offer",
+      "visitasDelPipeline": "Get visits ready",
+      "reclamosDeCandidatos": "Claims",
+      "invitacionesAFirmar": "Signatures",
+      "listasRestrictivas": "Lists",
+      "clausulasPropias": "Custom clauses",
+      "caraTesoreria": "Balance the till",
+      "caraTesoreriaDetalle": "money sitting in the account",
+      "tableroFinanciero": "Financial dashboard",
+      "cuadre": "Today's balance",
+      "trasladoComision": "Commission transfers",
+      "pendientesDeAplicar": "Unapplied money",
+      "recaudoBancario": "Bank collections",
+      "deudaDelMes": "Debt this month"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -952,6 +1045,8 @@
       },
       "bandeja": {
         "titulo": "Inbox",
+        "queEs": "Decisions the agents left waiting for you, the one waiting longest first.",
+        "contadorParcial": "Showing {{mostrando}} of {{total}}",
         "verCaso": "View case",
         "vacia": "Nothing is waiting for you",
         "vaciaHint": "When an agent needs your decision, it shows up here.",
@@ -983,26 +1078,28 @@
         "apagado": "Off",
         "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
         "cargando": "Reading the fleet state…",
-        "corriendo": "{{n}} agents running in this mode.",
-        "mixtoHint": "Agents don't share a mode: {{autonomo}} autopilot · {{copiloto}} copilot · {{sombra}} shadow. Pick one for the whole fleet or adjust per agent.",
+        "corriendo": "{{n}} agents act in this mode.",
+        "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",
+        "distintosCorto": "({{n}} in another mode)",
+        "cadaAgente": "Each agent",
+        "todaviaNo": "Don't act on their own yet (their mode is saved): {{agentes}}.",
         "aria": "Autopilot: {{modo}} mode. Open to change it",
         "elegir": "Pilot mode",
         "modo": {
-          "sombra": "Shadow",
+          "sombra": "Manual",
           "copiloto": "Copilot",
-          "autonomo": "Autopilot",
-          "mixto": "Mixed"
+          "autonomo": "Automatic"
         },
         "que": {
-          "sombra": "Watches, records and proposes. Contacts nobody, signs nothing, and doesn't interrupt you.",
-          "copiloto": "Prepares every action and leaves it in your inbox: nothing goes out without your OK.",
-          "autonomo": "Calls, writes and issues receipts on its own, within the law and your limits. Tells you what it did."
+          "sombra": "Prepares every action and leaves it in the Inbox with its button. Nothing goes out without you, and it doesn't interrupt you.",
+          "copiloto": "Prepares every action and leaves it in the Inbox with its button: nothing goes out without your OK. It tells you when something is waiting.",
+          "autonomo": "Agents that already know how to act on their own do it without asking, within collection hours (8 a.m.–7 p.m.); anything doubtful still goes to the Inbox, and they tell you what they did."
         },
-        "confirmarAutonomo": "On autopilot the Pilot calls, writes and issues receipts without asking. Switch it on?",
-        "confirmarSi": "Yes, autopilot",
+        "confirmarAutonomo": "In Automatic, agents that already act on their own call, write and reconcile exact matches without asking, within collection hours. Switch it on?",
+        "confirmarSi": "Yes, Automatic",
         "cancelar": "Cancel",
-        "toastOk": "Pilot in {{modo}} mode for the whole fleet",
-        "toastParcial": "Pilot in {{modo}} mode, except: {{agentes}}",
+        "toastOk": "Pilot in {{modo}} for every agent",
+        "toastParcial": "Pilot in {{modo}}, except: {{agentes}}",
         "toastFail": "Couldn't change the mode: {{error}}",
         "ahora": "Right now",
         "llamadas": "{{n}} call(s) in progress",
@@ -1040,7 +1137,7 @@
         "sinFuente": "We couldn't query the processes",
         "sinFuenteHint": "The source didn't answer; that doesn't mean nothing happened.",
         "fuenteCaida": "{{fuente}} didn't answer: those processes aren't in this list.",
-        "sinBack": "The ERP isn't connected to the Pilot: deposits don't show here.",
+        "sinBack": "The Pilot's reconciliation is switched off on the server: bank deposits don't show here or reach the Inbox. The tech team turns it on.",
         "contador": "{{visibles}} of {{total}}",
         "verPasos": "Show steps",
         "ocultarPasos": "Hide steps",
@@ -1053,7 +1150,8 @@
           "deposito": "The ERP",
           "llamada": "Calls",
           "whatsapp": "WhatsApp"
-        }
+        },
+        "loQuePaso": "What happened"
       },
       "dock": {
         "boton": "Processes",
@@ -1075,14 +1173,18 @@
         "toastOk": "{{agente}} is now in {{modo}} mode",
         "toastFail": "Could not change the mode: {{error}}",
         "modo": {
-          "sombra": "Shadow",
+          "sombra": "Manual",
           "copiloto": "Copilot",
-          "autonomo": "Autonomous"
+          "autonomo": "Automatic"
         },
-        "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own."
+        "noActuaSolo": "Doesn't act on its own yet",
+        "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own.",
+        "contadorTitulo": "{{n}} of {{total}} agents act on their own, with nobody approving"
       },
       "pulso": {
         "titulo": "Pilot pulse",
+        "midiendo": "Measuring what's happening now: calls, conversations, promises and decisions waiting for you.",
+        "queEs": "the Pilot pulse",
         "ahora": "In progress",
         "ahoraVacio": "Nothing in progress right now.",
         "alertas": "Alerts",
@@ -1095,7 +1197,7 @@
           "ok": "All under control",
           "atencion": "Needs your attention",
           "critico": "Needs action now",
-          "desconocido": "Unrecognized state"
+          "desconocido": "No reading"
         }
       },
       "cajon": {
@@ -1132,11 +1234,103 @@
       "gobierno": {
         "activo": "Active",
         "inactivo": "Off for your agency",
-        "apagadoServidor": "Off at the server",
+        "apagadoServidor": "Off at the server: the tech team turns it on",
         "proximamente": "Coming soon",
         "switchAria": "Turn {agente} on or off for your agency",
         "toastOn": "{agente} turned on for your agency",
         "toastOff": "{agente} turned off for your agency"
+      },
+      "catalogo": {
+        "titulo": "All processes",
+        "descripcion": "Every piece of the platform, process by process: what each one does, who runs it, what mode it is in and when it was last seen."
+      },
+      "operaSola": {
+        "boton": "Runs on its own?",
+        "pendientesAria": "{{n}} things missing for it to run on its own in Automatic",
+        "titulo": "Runs on its own?",
+        "descripcion": "What your whole agency still needs to run on its own in Automatic, and who unblocks it.",
+        "sinFuente": "I could not measure whether your agency runs on its own",
+        "sinFuenteHint": "I am not saying yes or no: the measurement did not answer. Open this panel again in a moment.",
+        "estadoListo": "Runs on its own in Automatic",
+        "estadoNoListo": "It does not run on its own yet",
+        "nadaQueFalta": "Nothing: everything that can run on its own, does.",
+        "afecta": "Affects: {{agentes}}",
+        "sinModoElegido": "nobody chose its mode",
+        "verProcesos": "See its {{n}} processes",
+        "ocultarProcesos": "Hide its processes",
+        "interruptoresAyuda": "Leasefy turns these on in the server, never the agency. This only says whether they are on, never their value.",
+        "migraciones": "Missing migrations (Leasefy applies them)",
+        "migracionSinAplicar": "not applied",
+        "migracionNoSe": "could not be checked",
+        "loQueHizoSinFuente": "I could not read what it did: the ERP did not answer.",
+        "secciones": {
+          "queFalta": "What is missing, and who unblocks it",
+          "porAgente": "By agent",
+          "interruptores": "Server switches",
+          "loQueHizo": "What it did in the last 30 days"
+        },
+        "quien": {
+          "leasefy": "Leasefy unblocks it",
+          "administrador": "An administrator unblocks it",
+          "programar": "It has to be built"
+        },
+        "estadoAgente": {
+          "listo": "Runs on its own",
+          "frenado": "Blocked",
+          "siempre_humano": "Asks for a click by rule",
+          "apagado": "Off"
+        },
+        "estadoProceso": {
+          "opera_solo": "Runs on its own",
+          "siempre_humano": "Always asks for a click",
+          "frenado": "Blocked",
+          "apagado": "Off"
+        },
+        "delegacion": {
+          "registrada": "on behalf of {{quien}}",
+          "falta": "not registered on whose behalf it acts",
+          "noMedida": "could not check on whose behalf it acts"
+        },
+        "interruptor": {
+          "encendido": "On",
+          "apagado": "Off",
+          "noSeVe": "Not visible from here",
+          "donde": {
+            "micro": "In the Pilot",
+            "back": "In the ERP"
+          }
+        }
+      },
+      "topes": {
+        "titulo": "Your limits in Automatic",
+        "descripcion": "How far the Pilot acts on its own. Above a limit, even in Automatic, it asks for your click.",
+        "sinFuente": "I could not read your limits: the Pilot did not answer.",
+        "fueraDeRango": "It must be between {{min}} and {{max}}.",
+        "porDefecto": "These are the Leasefy defaults: nobody has changed them yet.",
+        "cambiadoPor": "{{quien}} changed them on {{fecha}}.",
+        "guardar": "Save the limits",
+        "guardado": "Limits saved.",
+        "errorAlGuardar": "Not saved: {{error}}",
+        "topeMontoCop": {
+          "label": "Limit per action",
+          "ayuda": "The money in a single action (a receipt, a charge). With $0, every action with money asks for your click."
+        },
+        "topeDestinatarios": {
+          "label": "People per send",
+          "ayuda": "How many people can receive something in a single send. With 0, every send asks for your click."
+        },
+        "graciaSegundos": {
+          "label": "Seconds to undo",
+          "ayuda": "What the Pilot sends on its own waits this long with «Undo» in view. The minimum is one minute."
+        },
+        "horario": {
+          "titulo": "Legal schedule",
+          "ayuda": "Set by law, not editable: outside this schedule, the Pilot schedules it for the next opening."
+        },
+        "ventana": {
+          "cobranza": "Collections",
+          "aviso": "Notices"
+        }
       }
     },
     "mobileNav": {
@@ -1191,7 +1385,7 @@
         "totalProperties": "Total Properties",
         "rentedAndAvailable": "{{rented}} rented · {{available}} available",
         "monthlyCollection": "Monthly Collection",
-        "collectionRateLabel": "{{rate}} collection rate",
+        "collectionRateLabel": "{{rate}} · {{rotulo}}",
         "commissions": "Commissions",
         "commissionsGenerated": "Generated this month",
         "occupancy": "Occupancy",
@@ -1200,7 +1394,10 @@
         "activeLeads": "Active leads",
         "scheduledVisits": "Scheduled visits",
         "contractsInProgress": "Contracts in progress",
-        "pendingCollections": "Pending collections"
+        "pendingCollections": "Pending collections",
+        "cuotasPendientes": "Pending installments",
+        "cuotasPendientesDetalle": "All lease debt · {{enCartera}} past the grace period",
+        "cuotasPendientesSinDato": "The server does not send the lease installments yet"
       },
       "pipeline": {
         "title": "Active Pipeline",
@@ -1233,7 +1430,11 @@
         "pendingMaintenance": "{{count}} maintenance requests still open",
         "latePaymentsDetalle": "Overdue rent that has not come in yet. From Collections you record the payment or send the reminder.",
         "pendingMaintenanceDetalle": "Open or in-progress requests. Assign who handles them and close them once resolved.",
-        "viewRequests": "View requests"
+        "viewRequests": "View requests",
+        "carteraDelMes": "{{count}} installments this month past the grace period, for {{amount}}",
+        "carteraDelMesDetalle": "Rent past the contract's grace period that has not come in yet. From the Portfolio you record the payment or send the reminder.",
+        "verCartera": "View portfolio",
+        "verRecaudo": "View collections"
       },
       "financial": {
         "title": "Financial Summary",
@@ -1291,7 +1492,25 @@
         "seguridad": "Security",
         "seguridadDesc": "Password and access",
         "automatizacionIa": "AI automation",
-        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat"
+        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat",
+        "mandato": "Mandate and payouts",
+        "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission",
+        "mediosDeRecibo": "Receipt methods",
+        "mediosDeReciboDesc": "What the cashier can record a payment with: cash and cheque off by default",
+        "costosDeLaPlata": "Cost of moving money",
+        "costosDeLaPlataDesc": "The 4x1000 tax and the payment gateway, and who absorbs them",
+        "sedes": "Branches",
+        "sedesDesc": "Cost centres: the financial dashboard and the allowance can be read per branch",
+        "avisos": "Automatic notices",
+        "avisosDesc": "What goes out on its own to your tenants and owners. Everything starts off.",
+        "bitacora": "Money log",
+        "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
+        "movimientos": "Activity log",
+        "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
+        "proteccionDeDatos": "Data protection",
+        "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
+        "slaDePqrs": "Response time",
+        "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },
       "notifications": {
         "title": "Notifications",
@@ -1321,12 +1540,12 @@
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
         "panelTour": "Panel tour",
-        "panelTourDesc": "Guided walkthrough of the panel the first time you come in",
-        "panelTourEnabled": "Tour enabled — it will show on your next visit",
-        "panelTourDismissed": "Tour silenced on this device",
-        "panelTourSyncing": "Syncing preference…",
+        "panelTourDesc": "Shown only once per agency: the first time someone on the team opens the panel",
+        "panelTourPendiente": "Your agency hasn't seen it yet: it shows only once, the next time someone on the team opens the panel",
+        "panelTourVistoOmitido": "Your agency already saw it: {{quien}} skipped it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoCompleto": "Your agency already saw it: {{quien}} finished it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoSinQuien": "Your agency already saw it on {{fecha}}. It won't show up on its own again",
         "relaunchTour": "See the tour now",
-        "relaunchTourDesc": "See the walkthrough again without changing your preference",
         "relaunchTourStarted": "Tour started — follow the hints on screen"
       },
       "security": {
@@ -1427,7 +1646,8 @@
         "inviteEmailNotDelivered": "Invitation created, email not sent",
         "inviteEmailNotDeliveredDesc": "We couldn't send the email. Use \"Resend invitation\" or check the address.",
         "resendEmailNotDelivered": "Could not resend the email",
-        "resendEmailNotDeliveredDesc": "The member is still active, but the email wasn't sent. Check the address and try again."
+        "resendEmailNotDeliveredDesc": "The member is still active, but the email wasn't sent. Check the address and try again.",
+        "error": "Could not save"
       },
       "profile": {
         "title": "Agency Profile",
@@ -1643,6 +1863,20 @@
         "legendActive": "Active permission",
         "legendSensitive": "Sensitive permission",
         "legendNoPermission": "No permission",
+        "alcanceTitulo": "What each permission unlocks beyond its module",
+        "alcanceArrendados": "Without «Contracts · View», the role only sees AVAILABLE properties: rented ones are hidden from the portfolio and cannot be opened (they are an ongoing contract).",
+        "alcancePlata": "Without «Disbursements · View», the owner record arrives without bank details or money, and their statements, debts and deductions do not open.",
+        "alcanceContabilidad": "Accounting (ledger, trial balance, chart of accounts) requires «Reports · View».",
+        "alcanceAsesor": "By default the Sales advisor has none of the three: they see the commercial side and nothing of operations. Grant them here if your agency works differently.",
+        "puntualesTitulo": "Specific permissions",
+        "puntualesDescripcion": "A single action granted by name. Checking a module's whole row does not grant it.",
+        "puntualAdminSiempre": "The administrator always has it.",
+        "puntuales": {
+          "cambiar_fecha_egreso": {
+            "nombre": "Change the date of a disbursement",
+            "descripcion": "Correct the date, reference or note of a disbursement already recorded. Changing the date moves its journal entry to another day. By default, only the administrator."
+          }
+        },
         "confirmTitle": "Confirm changes",
         "confirmDescription": "Permission changes will immediately affect all users with these roles.",
         "cancel": "Cancel",
@@ -1650,7 +1884,7 @@
         "resetDescription": "This will reset permissions for all roles to their default values.",
         "resetWarning": "All custom changes will be lost. This action cannot be undone.",
         "adminNote": "Admins have all permissions by default and cannot be modified.",
-        "memberOverrideNote": "Saving or resetting a role's permissions will reset the individual customizations of that role's members."
+        "memberOverrideNote": "If someone in this role has their own permissions, they keep them: saving only changes what the role gives. «Reset» does erase everyone's own permissions."
       },
       "integrations": {
         "title": "Integrations",
@@ -1813,7 +2047,7 @@
       "totalOwners": "Total owners",
       "activeOwners": "Active owners",
       "totalProperties": "Total properties",
-      "monthlyRevenue": "Monthly collection",
+      "monthlyRevenue": "Monthly rent",
       "upToDate": "Up to date",
       "withBalance": "{{count}} with balance",
       "noPending": "No pending",
@@ -1843,7 +2077,8 @@
         "exportError": "Could not export. Try again.",
         "createError": "Could not create the owner. Please try again.",
         "updateError": "Could not update the owner. Please try again.",
-        "deleteError": "Could not delete the owner. Please try again."
+        "deleteError": "Could not delete the owner. Please try again.",
+        "loadForEditError": "Could not open the owner record for editing. Try again in a moment."
       },
       "detail": {
         "title": "Owner Details",
@@ -1925,7 +2160,9 @@
         "statusInProcess": "In process",
         "tenant": "Tenant",
         "saleCommission": "Sale commission",
-        "propertiesCount": "property(ies)"
+        "propertiesCount": "property(ies)",
+        "copiarCorreo": "Copy the email",
+        "copiarTelefono": "Copy the phone"
       }
     },
     "agentes": {
@@ -1997,11 +2234,6 @@
         "properties": "Assigned Properties",
         "pipeline": "Active Pipeline",
         "commissions": "Commissions",
-        "editComingSoon": "Edit profile coming soon",
-        "editComingSoonDesc": "You will be able to modify the agent's data",
-        "assignComingSoon": "Assign property coming soon",
-        "assignComingSoonDesc": "You will be able to assign new properties to this agent",
-        "comingSoon": "Coming soon",
         "commissionsDesc": "Detailed payment and commission history for the agent"
       }
     },
@@ -2215,6 +2447,33 @@
         "cancel": "Cancel",
         "save": "Save Configuration",
         "saving": "Saving..."
+      },
+      "anular": {
+        "accion": "Void charge",
+        "titulo": "Void this charge",
+        "descripcion": "The charge is not deleted: it is voided with your reason and no longer shows in Issued charges. What the tenant owes does not change. If it already had an invoice, its credit note is generated, unnumbered and not issued.",
+        "motivo": "Reason",
+        "motivoAyuda": "It is kept in the audit trail and in the credit note, if any.",
+        "faltaMotivo": "Write why you are voiding it (at least 3 letters).",
+        "cancelar": "Cancel",
+        "confirmar": "Void charge",
+        "anulando": "Voiding…",
+        "anulado": "Charge voided. What the tenant owes did not change.",
+        "conNotaGenerada": "The credit note for its invoice was generated, unnumbered: it is pending issuance.",
+        "conNotaPrevia": "Its invoice already had a credit note: no new one was created.",
+        "errores": {
+          "COBRO_CON_RECIBOS": "This charge has active cash receipts. Void the receipts first and try again.",
+          "COBRO_YA_ANULADO": "This charge was already voided. Refresh the list.",
+          "COBRO_NO_ENCONTRADO": "This charge no longer exists in your agency. Refresh the list.",
+          "MOTIVO_REQUERIDO": "Write why you are voiding it.",
+          "ANULAR_COBRO_NO_DISPONIBLE": "Voiding charges is not available yet: a database migration is missing. Nothing changed.",
+          "generico": "The charge could not be voided. Nothing changed; try again."
+        },
+        "sinPermiso": "You need permission to edit charges.",
+        "anuladoBadge": "Voided",
+        "vigentes": "Active",
+        "anulados": "Voided",
+        "sinAnulados": "There are no voided charges this month."
       }
     },
     "dispersiones": {
@@ -2314,8 +2573,12 @@
         "savings": "Savings",
         "checking": "Checking",
         "summaryTitle": "Summary",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
+        "queEsCanonCausado": "Accrued rent: what the contract charges that month, even if the tenant has not paid.",
         "commission": "Commission",
+        "ivaComision": "VAT on commission",
+        "retenidoComision": "Withheld on commission",
         "net": "Net",
         "propertyBreakdown": "Property Breakdown",
         "history": "History",
@@ -2349,7 +2612,13 @@
         "downloading": "Downloading...",
         "copyTooltip": "Copy",
         "call": "Call",
-        "email": "Email"
+        "email": "Email",
+        "titularDeLaFichaHoy": "Taken from today's profile: this disbursement predates the holder copy.",
+        "repartoTitulo": "Split across {{n}} accounts",
+        "repartoANombreDe": "In the name of {{titular}}",
+        "titularOtraPersona": "someone else",
+        "registrarElGiro": "Record the transfer",
+        "aprobadoPorTi": "you"
       },
       "resumen": {
         "summaryMonth": "Summary {{month}}",
@@ -2386,7 +2655,11 @@
         "propietario": "Owner",
         "month": "Month",
         "properties": "Properties",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
+        "canon": "Rent",
+        "filaCausado": "accrued",
+        "filaRecaudado": "collected",
         "commission": "Commission",
         "net": "Net",
         "status": "Status",
@@ -2403,6 +2676,55 @@
         "failedAbbr": "{{count}} fail.",
         "emptyTitle": "No disbursements to show",
         "emptyDescription": "Generate month's disbursements to send payments to owners"
+      },
+      "cuentaDeOrigen": {
+        "tusCuentas": "Your {{banco}} accounts:",
+        "tipo": "Account type",
+        "tipos": {
+          "AHORROS": "Savings",
+          "CORRIENTE": "Checking"
+        },
+        "numero": "Number of the {{banco}} account the money leaves from",
+        "soloDigitos": "The account number only has digits.",
+        "laTienesRegistrada": "Is it registered? Save it in",
+        "mediosDePago": "Payment methods",
+        "yLaProximaVez": "and it will show up here next time."
+      },
+      "origenDelGiro": {
+        "pregunta": "Which agency account did the transfer leave from?",
+        "elegirBanco": "Choose the bank",
+        "ayuda": "We tell the owner in the transfer email: it is what they look for in their bank statement to recognize the money.",
+        "cargando": "Loading banks…",
+        "errorAlCargar": "The bank list could not be loaded.",
+        "desde": "From {{banco}} · {{tipo}}",
+        "teProponemosLaUltima": "We suggest the last account you transferred from."
+      },
+      "lote": {
+        "archivoAnulado": {
+          "titulo": "{{n}} payments in this batch already went out in the file of a cancelled batch",
+          "tituloUno": "1 payment in this batch already went out in the file of a cancelled batch",
+          "texto": "That file was generated and may have been uploaded to the bank. Before sending this batch for approval, check in the bank portal that those payments were NOT processed: if they were, paying them again pays the owner twice.",
+          "fila": "went out in the file of {{generado}}; that batch was cancelled on {{anulado}}",
+          "motivo": "Cancellation reason: {{motivo}}",
+          "alArmar": "Check the batch warning: {{n}} of these payments already went out in the file of a cancelled batch."
+        },
+        "anular": {
+          "confirmaArchivo": "I confirm I checked in the bank portal that this file was NOT processed. If it reached the bank, cancelling this batch makes its payments go out twice.",
+          "avisoArchivo": "This batch file was already generated and may have been uploaded to the bank.",
+          "faltaConfirmar": "Tick the confirmation: this batch file was already generated."
+        }
+      },
+      "enUnLote": {
+        "titulo": "This settlement is already in a batch",
+        "irAlLote": "Open the batch"
+      },
+      "giroDevuelto": {
+        "soporte": "Bank support (required)",
+        "soporteAyuda": "The bank statement or receipt of the return, as PDF or image, up to 10 MB. It is stored with the transfer: a return pays the owner again, and without the bank document it is not recorded.",
+        "faltaSoporte": "Attach the bank support to mark the transfer as returned.",
+        "verSoporte": "View support",
+        "soporteNoAbre": "The bank support could not be opened.",
+        "noApruebasLoQueDevolviste": "You recorded the return of a transfer in this batch: someone else approves it. It is the second pair of eyes on a payment made twice."
       }
     },
     "operaciones": {
@@ -2603,8 +2925,6 @@
         "statusApproved": "Approved",
         "quoteApproved": "Quote approved",
         "noteAdded": "Note added",
-        "featureInDevelopment": "Feature in development",
-        "featureInDevelopmentDesc": "Soon you will be able to request quotes directly",
         "calculationComplete": "Calculation complete",
         "newRent": "New rent: {{amount}}",
         "renewalTerminated": "Renewal terminated"
@@ -2775,7 +3095,6 @@
       "status": "Status",
       "sortBy": "Sort by",
       "clearFilters": "Clear filters",
-      "comingSoon": "Coming soon",
       "edit": "Edit",
       "since": "Since",
       "commissionDistribution": "Commission distribution",
@@ -2947,7 +3266,8 @@
       "stats": {
         "inProcess": "In process",
         "maintenance": "Maintenance",
-        "propertyCount": "{{count}} properties"
+        "propertyCount": "{{count}} properties",
+        "propertyCountSinContar": "Not counted"
       },
       "views": {
         "table": "Table",
@@ -2982,9 +3302,7 @@
           "autoSave": "Changes will be saved automatically",
           "terminateConsignment": "Terminate consignment",
           "requiresConfirmation": "This action requires additional confirmation",
-          "renewSoon": "Renew consignment coming soon",
           "renewDesc": "You will be able to extend the consignment contract",
-          "reassignSoon": "Reassign agent coming soon",
           "reassignDesc": "You will be able to change the assigned agent",
           "updateError": "Changes could not be saved",
           "statusChangeError": "The status could not be changed",
@@ -3296,7 +3614,6 @@
         "moreActions": "More actions",
         "viewOnPortal": "View on Portal",
         "viewOnPortalUnavailable": "This property has no linked listing",
-        "comingSoon": "Coming soon",
         "changeStatus": "Change status",
         "renewConsignment": "Renew consignment",
         "terminateConsignment": "Terminate consignment",
@@ -3320,6 +3637,7 @@
         "rented": "Rented",
         "inProcess": "In process",
         "maintenance": "Maint.",
+        "sinMandato": "No mandate",
         "allTypes": "All",
         "apartment": "Apt",
         "house": "House",
@@ -3562,7 +3880,8 @@
         "consignmentContractReplace": "Replace",
         "consignmentContractUploadError": "The contract could not be attached",
         "consignmentContractUploaded": "Contract attached",
-        "consignmentContractUploading": "Uploading the contract…"
+        "consignmentContractUploading": "Uploading the contract…",
+        "sinContratoTodavia": "This property does not have a lease contract yet"
       },
       "wizard": {
         "steps": {
@@ -3735,6 +4054,23 @@
           "addPhotos": "Add photos",
           "saveDraft": "Keep as draft",
           "publishAnyway": "Publish without photos"
+        },
+        "borrador": {
+          "titulo": "You left a property half-filled",
+          "detalle": "We saved it for you on {{fecha}}, at step {{paso}} of {{total}}.",
+          "conFotos": "It includes {{fotos}} photo(s) you had already picked.",
+          "fotosNoGuardadas": "This browser could not store the photos: you'll need to pick them again.",
+          "continuar": "Continue where I left off",
+          "descartar": "Discard draft",
+          "guardado": "Draft saved {{hora}}",
+          "propietarioPerdidoTitle": "The draft's owner is gone",
+          "propietarioPerdidoDesc": "It was deleted while the draft was waiting. Everything else is back: pick who this property belongs to.",
+          "dialogo": {
+            "titulo": "Discard the draft?",
+            "descripcion": "This erases what you had filled in for this property, photos included. It can't be undone.",
+            "conservar": "Keep it",
+            "descartar": "Yes, discard"
+          }
         }
       }
     },
@@ -3807,7 +4143,7 @@
         "stats": {
           "expected": "Expected",
           "collected": "Collected",
-          "collectionRate": "{{pct}}% collection rate",
+          "collectionRate": "{{pct}}% · {{rotulo}}",
           "commission": "Agency commission",
           "netToOwners": "Net to owners",
           "occupancy": "Average occupancy",
@@ -3834,7 +4170,7 @@
           "noValue": "No commercial value on record",
           "unknownRent": "Unknown rent",
           "sourceLeases": "from leases",
-          "sourceCobros": "from collections",
+          "sourceCuotas": "from instalments",
           "vacantDays": "{{dias}} days vacant",
           "sortedAsc": "sorted ascending",
           "sortedDesc": "sorted descending"
@@ -4063,7 +4399,7 @@
         "all": "All",
         "contracts": "Contracts",
         "templates": "Templates",
-        "actas": "Records",
+        "actas": "Handover records",
         "legal": "Legal"
       },
       "table": {
@@ -4113,7 +4449,6 @@
         "documentDuplicated": "Document duplicated",
         "copyCreated": "Copy of \"{{name}}\" created",
         "documentDeleted": "Document deleted",
-        "comingSoon": "This feature will be available soon",
         "inventory": "Inventory",
         "incrementLetter": "Increment Letter",
         "actaCreated": "Record created",
@@ -4316,7 +4651,6 @@
       "inventoryTitle": "Inventory by Space",
       "inventoryDesc": "Record items and their condition in each space",
       "defectPlaceholder": "Describe defect or note...",
-      "addPhotoSoon": "Add photo (coming soon)",
       "deleteItem": "Remove item",
       "addItem": "Add item",
       "noSpacesSelected": "No spaces selected",
@@ -4376,7 +4710,6 @@
       "condFair": "Fair",
       "condPoor": "Poor",
       "title": "Property Inventory",
-      "comingSoon": "Coming soon",
       "deliveryDateLabel": "Delivery date",
       "searchItem": "Search item...",
       "thItem": "Item",
@@ -4486,7 +4819,6 @@
       "commissions": "Commissions",
       "monthlyBreakdown": "Monthly breakdown",
       "totalOverduePortfolio": "Total overdue portfolio",
-      "pendingCharges": "{{count}} pending charges",
       "topDebtors": "Top debtors",
       "previewNotAvailable": "Preview not available",
       "generateToView": "Generate \"{{title}}\" to see the preview",
@@ -4495,101 +4827,11 @@
       "previewLabel": "Preview",
       "exporting": "Exporting...",
       "downloadFormat": "Download {{format}}",
-      "scheduledExport": "Scheduled export"
-    },
-    "documento": {
-      "today": "Today",
-      "yesterday": "Yesterday",
-      "daysAgo": "{{days}} days ago",
-      "weeksAgo": "{{weeks}} weeks ago",
-      "signedOf": "{{signed}} of {{total}} signed",
-      "title": "Document Manager",
-      "countOf": "{{filtered}} of {{total}} documents",
-      "listView": "List",
-      "cardView": "Cards",
-      "generateDoc": "Generate document",
-      "leaseContract": "Lease agreement",
-      "deliveryAct": "Handover record",
-      "returnAct": "Return record",
-      "inventory": "Inventory",
-      "incrementLetter": "Increment letter",
-      "searchPlaceholder": "Search by name, property, or tenant...",
-      "typeLabel": "Type",
-      "allTypes": "All types",
-      "statusLabel": "Status",
-      "allStatuses": "All statuses",
-      "clearFilters": "Clear filters",
-      "totalLabel": "Total",
-      "pendingSignature": "Pending signature",
-      "signed": "Signed",
-      "expired": "Expired",
-      "selectedCount": "{{count}} selected",
-      "download": "Download",
-      "delete": "Delete",
-      "noDocuments": "No documents found",
-      "adjustFilters": "Try adjusting your search filters",
-      "noDocumentsAvailable": "No documents available",
-      "thDocument": "Document",
-      "thProperty": "Property",
-      "thTenant": "Tenant",
-      "thCategory": "Category",
-      "thStatus": "Status",
-      "thSignatures": "Signatures",
-      "thDate": "Date",
-      "thSize": "Size",
-      "viewDoc": "View document",
-      "downloadPdf": "Download PDF",
-      "sendForSignature": "Send for signature",
-      "viewSignatures": "View signatures",
-      "duplicate": "Duplicate",
-      "catAll": "All",
-      "catContracts": "Contracts",
-      "catActas": "Records",
-      "catInventory": "Inventories",
-      "catPoliza": "Policies",
-      "catLetters": "Letters",
-      "varTenantName": "Tenant name",
-      "varTenantCedula": "Tenant ID number",
-      "varPropertyAddress": "Property address",
-      "varMonthlyRent": "Monthly rent",
-      "varStartDate": "Start date",
-      "varEndDate": "End date",
-      "varDeliveryDate": "Delivery date",
-      "varInventoryItems": "Inventory items",
-      "varReturnDate": "Return date",
-      "varDamages": "Damages",
-      "varDepositDeductions": "Deposit deductions",
-      "varRooms": "Rooms",
-      "varAppliances": "Appliances",
-      "varFurniture": "Furniture",
-      "varTerminationDate": "Termination date",
-      "varReason": "Reason",
-      "varCurrentRent": "Current rent",
-      "varNewRent": "New rent",
-      "varIpcRate": "CPI rate",
-      "varEffectiveDate": "Effective date",
-      "varCoverageAmount": "Coverage amount",
-      "templatesTitle": "Document Templates",
-      "templatesCount": "{{count}} templates available",
-      "comingSoon": "Coming soon",
-      "newTemplate": "New template",
-      "searchTemplates": "Search template...",
-      "noTemplatesFound": "No templates found",
-      "tryAnotherSearch": "Try a different search term",
-      "noTemplatesInCategory": "No templates in this category",
-      "usedTimes": "Used {{count}} times",
-      "updated": "Updated",
-      "defaultTemplate": "Default template",
-      "preview": "Preview",
-      "use": "Use",
-      "description": "Description",
-      "lastUpdated": "Last updated",
-      "variables": "Variables",
-      "customVariable": "Custom variable",
-      "documentPreview": "Document preview",
-      "simulatedPreview": "Simulated preview - The final document will be generated with actual data",
-      "close": "Close",
-      "useTemplate": "Use template"
+      "scheduledExport": "Scheduled export",
+      "cuotasEnCartera": "{{count}} installments in the portfolio",
+      "claimsBucket": "In claims",
+      "bucketsAddUp": "The buckets add up to the portfolio: active collections by days past due plus what is already in claims.",
+      "upgradeToAccess": "Upgrade plan"
     },
     "mantenimiento": {
       "priorityEmergency": "Emergency",
@@ -4751,6 +4993,15 @@
         "thRent": "Rent",
         "thAdmin": "Admin",
         "thCollected": "Collected",
+        "thCanonCausado": "Accrued",
+        "thCanon": "Base rent",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
+        "canonMixto": "Accrued and collected rent",
+        "queEsCanonCausado": "Accrued rent: what the lease charges that month, even if the tenant has not paid.",
+        "queEsCanonRecaudado": "Collected rent: what the tenant actually paid for that month.",
+        "filaCausado": "accrued",
+        "filaRecaudado": "collected",
         "thStatus": "Status",
         "thCommPct": "Comm. %",
         "thCommission": "Commission",
@@ -4796,6 +5047,7 @@
         "docNIT": "Tax ID (Companies)",
         "docPassport": "Passport",
         "docTI": "Identity Card",
+        "docPPT": "Temporary Protection Permit (PPT)",
         "fullName": "Full name",
         "businessName": "Business name",
         "phone": "Phone",
@@ -4804,6 +5056,7 @@
         "optional": "Optional",
         "bankDataTitle": "Bank details for disbursements",
         "bankDataInfo": "This information will be used to transfer the monthly rent to the owner, after deducting the management commission.",
+        "bankDataHidden": "Your role cannot see owners’ bank accounts. Saving here leaves the account untouched; someone with access to payouts registers or corrects it.",
         "bank": "Bank",
         "selectBank": "Select bank...",
         "accountType": "Account type",
@@ -4811,15 +5064,11 @@
         "checking": "Checking",
         "accountNumber": "Account number",
         "hintDigitsOnly": "Digits only, no dots or dashes",
-        "accountHolder": "Account holder",
-        "hintMatchBank": "Must match the name registered with the bank",
         "department": "Department",
         "selectDepartment": "Select a department…",
         "noDepartment": "No department",
         "holderDocumentType": "Holder's ID type",
         "holderDocumentTypePlaceholder": "Type",
-        "holderDocument": "Holder's ID number",
-        "hintHolderDocument": "Only if the account belongs to someone else. Bancolombia requires it in the disbursement file.",
         "errHolderDocTypeRequired": "Choose the holder's ID type",
         "internalNotes": "Internal notes",
         "hintTeamOnly": "Only visible to the team",
@@ -4840,7 +5089,31 @@
         "errAccountTypeRequired": "Select account type",
         "errAccountNumRequired": "Account number required",
         "errAccountNumInvalid": "Invalid account number (10-20 digits)",
-        "errHolderRequired": "Account holder name required"
+        "titularPregunta": "Who owns the account?",
+        "titularDelPropietario": "The owner",
+        "titularDeOtraPersona": "Someone else",
+        "titularEsElPropietario": "The account is in {{name}}'s name, with their ID.",
+        "titularAvisoOtraPersona": "First, the person who owns the account: the bank checks the transfer against their ID, not the owner's.",
+        "titularNombre": "Account holder's full name",
+        "titularNombreHint": "As registered with the bank",
+        "titularNumero": "Account holder's ID number",
+        "titularErrNombre": "Enter the full name of the account holder",
+        "titularErrVacio": "Enter the account holder's ID number",
+        "titularErrSoloNumeros": "This ID only has digits",
+        "titularErrLargo": "It must have between {{min}} and {{max}} digits",
+        "titularErrPasaporte": "A passport has only letters and digits, 5 to 20",
+        "titularErrNit": "Write the NIT like this: 900123456-7 (the check digit is optional)",
+        "titularErrDv": "The check digit doesn't match: it is {{dv}}",
+        "titularErrEsElPropietario": "That is the owner's ID: if the account is theirs, choose «The owner»",
+        "docCorto": {
+          "CC": "ID (CC)",
+          "CE": "Foreign ID (CE)",
+          "TI": "Identity (TI)",
+          "NIT": "NIT",
+          "PASSPORT": "Passport",
+          "PPT": "PPT"
+        },
+        "emailSoloAdministrador": "Only an administrator can change an owner’s email: it is how they confirm bank account changes and how they sign in to their portal."
       },
       "stats": {
         "properties": "Properties",
@@ -4861,17 +5134,19 @@
         "ofTotalRented": "{{rentados}} of {{total}} rented",
         "copropiedades": "{{n}} as co-owner",
         "sinPropiedades": "no properties",
-        "lastPayment": "Last payout"
+        "lastPayment": "Last payout",
+        "unaPropiedad": "1 property",
+        "nPropiedades": "{{n}} properties"
       },
       "alertas": {
         "sinCuenta": {
           "titulo": "No bank account: payouts cannot be made",
-          "detalle": "{{n}} rented unit(s) and the collected rent has nowhere to go. Add bank, type, number and holder.",
+          "detalle": "{{n}} rented unit(s) and the payouts have nowhere to go. Add bank, type, number and holder.",
           "accion": "Add bank account"
         },
         "pendienteDeGiro": {
           "titulo": "{{monto}} pending payout",
-          "detalle": "Rent already collected that has not been paid out yet. Pay it from Disbursements, with the month's statement.",
+          "detalle": "Disbursements already generated that have not been paid out yet. Pay them from Disbursements, with the month's statement.",
           "accion": "Go to disbursements"
         },
         "sinArrendar": {
@@ -4922,7 +5197,9 @@
         "show": "Show",
         "copy": "Copy",
         "verified": "Data verified",
-        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil."
+        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil.",
+        "titularOtraPersona": "Someone else",
+        "titularElPropietario": "The owner"
       },
       "selector": {
         "searchPlaceholder": "Search owner by name, email or document...",
@@ -4933,6 +5210,29 @@
         "noRegistered": "No registered owners",
         "addNewOwner": "Add new owner",
         "ownerSelected": "Owner selected"
+      },
+      "cambioDeCuenta": {
+        "certificacionDeLaCuenta": "Bank certificate for this account (PDF or photo, required)",
+        "yaCertificada": "Already certified: this account already receives payouts, only its percentage changes.",
+        "certificacionesDelReparto": "Certificates of the split",
+        "certificacionDeLaCuentaN": "Certificate for account {{n}}",
+        "sinCertificacionNueva": "already certified",
+        "certificacionUnica": "Certificate",
+        "revisarCertificaciones": "Check the certificate of each new account before approving.",
+        "certificacionDeTercero": "Bank certificate for this account (required: it is in another person's name)",
+        "certificacionNuevaOpcional": "Has the certificate expired? Attach a new one (optional)",
+        "paraPedirloCompleta": "To request it, fill in {{que}}.",
+        "enLaCuentaN": "in account {{n}}, {{campos}}",
+        "campo": {
+          "tipoDoc": "the holder's ID type",
+          "numeroDoc": "the holder's ID number",
+          "nombre": "the holder's name",
+          "banco": "the bank",
+          "numeroCuenta": "the account number",
+          "certificacion": "the bank certificate"
+        },
+        "faltaCertificacionDeLaCuenta": "Missing the certificate for account {{n}}: each bank certifies one account.",
+        "faltanCertificacionesDeLasCuentas": "Missing the certificates for accounts {{cuentas}}: each bank certifies one account."
       }
     },
     "finance": {
@@ -5018,7 +5318,8 @@
         "property": "property",
         "properties": "properties",
         "propertyHeader": "Property",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
         "commAmount": "Commission",
         "total": "Total",
         "inCommissions": "in commissions"
@@ -5209,7 +5510,7 @@
         "estudioReglas": "Rules",
         "cotizadorEjecucion": "Execution",
         "cotizadorIntegraciones": "Integrations",
-        "pagosHome": "Payments AI",
+        "pagosHome": "Payments",
         "mantenimiento": "Maintenance",
         "mantenimientoTickets": "Tickets",
         "mantenimientoResumen": "Overview"
@@ -5232,7 +5533,6 @@
       },
       "cotizador": {
         "placeholder": {
-          "title": "Coming Soon",
           "subtitle": "The Quoter module will be available in the next update.",
           "phase": "Phase 30",
           "backLink": "Back to AI Agents"
@@ -5639,8 +5939,7 @@
             "porQueStub": "Demo result — this insurer isn't connected in live mode yet.",
             "porQuePending": "We're still querying this insurer.",
             "condicionesVisibleHint": "Conditions listed above",
-            "avanzarAction": "Proceed",
-            "proximamente": "Coming soon"
+            "avanzarAction": "Proceed"
           }
         },
         "pdf": {
@@ -7656,7 +7955,12 @@
           "calidad": "Listing quality",
           "prospectos": "Prospects",
           "aprobaciones": "Owner approvals",
-          "mantenimiento": "Maintenance"
+          "mantenimiento": "Maintenance",
+          "chat": "The chat",
+          "contratos": "Contracts",
+          "facturacion": "Billing and cash",
+          "propietarios": "Owners",
+          "contabilidad": "Accounting"
         },
         "rol": {
           "cobrador": "Collector",
@@ -7739,12 +8043,12 @@
           "vallaTitle": "Agent limits",
           "vallaEmpty": "No limits published for this agent yet.",
           "modo": {
-            "sombra": "Shadow",
-            "sombraHint": "Only observes and suggests silently",
+            "sombra": "Manual",
+            "sombraHint": "Prepares and leaves the decision to you, without notifying",
             "copiloto": "Copilot",
-            "copilotoHint": "Suggests; nothing is applied without a human",
-            "autonomo": "Autonomous",
-            "autonomoHint": "Executes within the approved limits"
+            "copilotoHint": "Prepares; nothing goes out without your OK",
+            "autonomo": "Automatic",
+            "autonomoHint": "Acts on its own where it already knows how, within the law"
           },
           "modoTitle": "How much the agent decides on its own",
           "modoActivo": "Active mode",
@@ -8100,7 +8404,6 @@
                 "desc": "You decide only where your judgment is needed."
               }
             },
-            "importarProximamente": "Coming soon",
             "importarNota": "First portfolio? Write to your Leasefy contact to load it."
           }
         }
@@ -8359,7 +8662,6 @@
             "solicitud": "Application",
             "asesor": "Agent"
           },
-          "confirmacion": "Coming soon: this will create the study and send the request to the candidate.",
           "cta": "Create study and send request"
         },
         "equipo": {
@@ -8589,7 +8891,6 @@
             "sms": "SMS",
             "llamada": "Call"
           },
-          "confirmacion": "Coming soon: these rules will be saved and the agent will apply them to new studies.",
           "aviso": "Configuration preview. Not yet connected to the agent: changes are not applied.",
           "guardar": "Save rules"
         }
@@ -8768,8 +9069,7 @@
           },
           "estado": {
             "conectar": "Connect",
-            "desconectado": "Not connected",
-            "proximamente": "Coming soon"
+            "desconectado": "Not connected"
           },
           "trazabilidad": {
             "title": "Traceability",
@@ -8805,8 +9105,8 @@
         }
       },
       "pagos_home": {
-        "title": "Payments AI",
-        "subtitle": "Charges, received payments and owner payouts, orchestrated by the agent.",
+        "title": "Payments",
+        "subtitle": "What tenants owe this month, instalment by instalment: it exists from the day the contract was signed and it is a slice of each client's account statement.",
         "resumen": {
           "nuevaFactura": "New invoice",
           "atencion": {
@@ -8814,22 +9114,6 @@
             "titulo": "Needs your attention",
             "verCola": "See the full queue",
             "fallo": "We couldn't load the inbox. Try again in a few minutes."
-          },
-          "cobros": {
-            "aria": "Charges for the month",
-            "titulo": "Charges for",
-            "mesAria": "Month of the charges",
-            "queEs": "the charges for the month",
-            "queSon": "charges",
-            "generarCta": "Generate the charges for {{mes}}",
-            "vacioTitulo": "No charges for {{mes}} yet",
-            "vacioDescripcion": "Generate the charges for {{mes}} for the active leases and they'll show up here."
-          },
-          "kpi": {
-            "cobrosDelMes": "Charges this month",
-            "recaudado": "Collected",
-            "pendiente": "Outstanding",
-            "enMora": "Overdue"
           },
           "generar": {
             "titulo": "Generate the charges for {{mes}}",
@@ -8841,16 +9125,6 @@
             "avisoLimpio": "There are no charges for {{mes}} yet.",
             "confirmar": "Generate the charges for {{mes}}",
             "enviando": "Generating…"
-          },
-          "accesos": {
-            "aria": "Links to the detailed operations",
-            "titulo": "Detailed operations",
-            "cobros": "Tenant charges",
-            "cobrosDetalle": "Invoices, aging and reconciliation",
-            "propietarios": "Owner payouts",
-            "propietariosDetalle": "Owner payouts and bank batches",
-            "tesoreria": "Settlements",
-            "tesoreriaDetalle": "Balances, movements and approvals"
           },
           "actividad": {
             "aria": "Recent activity",
@@ -8911,7 +9185,6 @@
       "heading": "Your agency, on autopilot",
       "subtitle": "ERP · CRM · Autopilot, all in one. The system runs operations; you make the decisions.",
       "insightsTitle": "Insights & Alerts",
-      "insightsDesc": "Coming soon: what's happening today and what to do — expiring contracts, overdue receivables and pending payouts, turned into actions.",
       "insightsExample1": "18 contracts expiring · 6 unmanaged",
       "insightsExample2": "42 tenants overdue · 11 priority",
       "insightsExample3": "$84M to disburse · 62% covered",
@@ -8932,19 +9205,19 @@
       "label": "Finance",
       "title": "Invoicing",
       "subtitle": "Sales and purchase invoices, DIAN electronic invoicing, and credit/debit notes — all in one place.",
-      "tab_nueva": "New invoice",
+      "tab_nueva": "To invoice",
       "tab_resolucion": "Resolution",
       "new": "New invoice",
       "newSoon": "Invoice issuance is enabled with the DIAN engine (M2).",
       "m2BannerTitle": "Structure ready — the DIAN engine arrives in M2",
-      "m2BannerDesc": "This section already has the ERP structure. Issuance, CUFE and DIAN validation connect to the authorized provider in a later phase (M2).",
+      "m2BannerDesc": "Purchases still live in Payments. Issuing, CUFE and DIAN validation already have their structure under “Electronic (DIAN)”: what is missing is the technology provider being connected.",
       "tab_ventas": "Sales",
       "tab_compras": "Purchases",
       "tab_electronica": "Electronic (DIAN)",
       "tab_notas": "Notes (CN/DN)",
       "desc_ventas": "Invoices for concepts other than rent: repairs, fees, extraordinary charges, services.",
       "desc_compras": "Operating costs and expenses: suppliers, repairs, contracted services.",
-      "desc_electronica": "Electronic documents with CUFE and their DIAN status.",
+      "desc_electronica": "Electronic documents with their CUFE, their DIAN status and how they reached the client.",
       "desc_notas": "Credit and debit notes associated with an invoice.",
       "queSon_ventas": "sales invoices",
       "queSon_compras": "purchase invoices",
@@ -8984,7 +9257,13 @@
       "empty_notas_title": "No credit/debit notes yet",
       "emptyDesc": "They will connect automatically once the invoicing engine (M2) is active.",
       "registrarCompra": "Record supplier invoice",
-      "registrarCompraDesc": "Upload the photo or PDF and the AI reads it: vendor, number, amounts and dates. You review before recording it."
+      "registrarCompraDesc": "Upload the photo or PDF and the AI reads it: vendor, number, amounts and dates. You review before recording it.",
+      "tab_soporte": "Support document",
+      "tab_mandato": "Mandate & emails",
+      "desc_soporte": "Issued when paying a supplier that is not required to invoice (technicians, plumbers).",
+      "queSon_soporte": "support documents",
+      "desc_mandato": "The mandatary certificate for each landlord, and the parties still missing an email.",
+      "queSon_mandato": "mandatary certificates"
     },
     "conciliacion": {
       "label": "Reconciliation",
@@ -9053,6 +9332,241 @@
       "newSoon": "Reconciliation processing is enabled with the engine (M2).",
       "uploadSoon": "Ingestion and matching connect to the engine (M2)."
     },
+    "tasaDeRecaudo": {
+      "rotulo": {
+        "CAUSADO": "Collected over amount due",
+        "EMITIDO": "Paid of amount billed"
+      },
+      "cifras": {
+        "CAUSADO": "{{numerador}} applied of {{denominador}} due",
+        "EMITIDO": "{{numerador}} paid of {{denominador}} billed"
+      },
+      "sinMedir": {
+        "CAUSADO": "No lease installments are due this month",
+        "EMITIDO": "No collections were issued this month"
+      },
+      "generico": "collection rate",
+      "ajuste": {
+        "titulo": "How do you measure your collection rate?",
+        "intro": "It is the percentage you see in the Summary, Issued collections, Collections and reports. Every screen says which of the two it used, so you never compare two different numbers under the same name.",
+        "opcion": {
+          "CAUSADO": {
+            "titulo": "Over the amount due this month",
+            "explicacion": "What was applied to this month's installments ÷ what the leases charge this month. It comes from the lease debt, whether or not a collection was issued.",
+            "ejemplo": "Example: your leases charge $10,000,000 this month and $8,000,000 has been applied to those installments. Your rate is 80%, even if you issued no collection."
+          },
+          "EMITIDO": {
+            "titulo": "Over the amount billed in collections",
+            "explicacion": "What was paid of this month's issued collections ÷ what those collections claim. Only what you already billed with a document counts.",
+            "ejemplo": "Example: you issued collections for $4,000,000 and $3,000,000 of them was paid. Your rate is 75%, even if the leases charge more this month."
+          }
+        },
+        "porDefecto": "Default",
+        "enUso": "In use",
+        "conTusNumeros": "With your {{mes}} numbers: {{tasa}} · {{cifras}}",
+        "cargando": "Loading this month's numbers…",
+        "errorNumeros": "We couldn't load this month's numbers. You can still choose.",
+        "noDisponible": "You can't change it yet: a database update is pending. Meanwhile, everything is measured over the amount due.",
+        "soloAdmin": "Only an agency administrator can change it."
+      }
+    },
+    "deducciones": {
+      "tab": "Deductions",
+      "titulo": "Deductions",
+      "descripcion": "What is deducted from the owner's payout on top of what the lease already subtracts. It goes into the first unpaid payout from the month it is recorded.",
+      "registrar": "Record deduction",
+      "sinTabla": "Deductions are not available yet: payouts go out without deductions until the migration is applied.",
+      "vacio": "This owner has no deductions.",
+      "queSon": "the owner's deductions",
+      "totalPendiente": "To deduct",
+      "totalEnLiquidacion": "In an unpaid payout",
+      "totalSaldoEnContra": "Balance owed",
+      "colFecha": "Date",
+      "colConcepto": "Concept",
+      "colValor": "Amount",
+      "colEstado": "Status",
+      "colSoporte": "Receipt",
+      "verSoporte": "View receipt",
+      "abriendoSoporte": "Opening…",
+      "noSeAbrioSoporte": "The receipt could not be opened",
+      "sinSoporte": "—",
+      "anular": "Void",
+      "anuladaPorque": "Voided: {{motivo}}",
+      "suParte": "Their share ({{porcentaje}}) of {{total}}",
+      "origen": {
+        "REPARACION": "Repair",
+        "MANUAL": "Deduction",
+        "SALDO_ANTERIOR": "Balance owed from the previous month",
+        "COBRO_AL_ARRENDAR": "Leasing fee"
+      },
+      "estado": {
+        "PENDIENTE": "To deduct",
+        "EN_LIQUIDACION": "In the {{mes}} payout",
+        "EN_LIQUIDACION_SIN_MES": "In an unpaid payout",
+        "APLICADA": "Deducted in {{mes}}",
+        "APLICADA_SIN_MES": "Deducted",
+        "ANULADA": "Voided",
+        "PROYECTADA": "Deducted this month"
+      },
+      "nuevo": {
+        "titulo": "Record deduction",
+        "descripcion": "An expense the agency paid on the owner's behalf: utilities, property tax, a repair. It is deducted from their first unpaid payout.",
+        "motivo": "Reason",
+        "motivoAyuda": "This is what the owner reads on their statement.",
+        "motivoPlaceholder": "2026 property tax for apartment 402",
+        "valor": "Amount",
+        "inmueble": "Property",
+        "inmuebleNinguno": "None in particular",
+        "inmuebleAyuda": "If the property has several owners, the deduction is split by ownership share.",
+        "soporte": "Receipt",
+        "soporteAyuda": "PDF or image (JPG, PNG or WEBP), up to 10 MB. Required.",
+        "cancelar": "Cancel",
+        "guardar": "Record deduction",
+        "guardando": "Recording…",
+        "faltaMotivo": "Write the reason for the deduction.",
+        "faltaValor": "Enter an amount greater than zero.",
+        "faltaSoporte": "Attach the receipt: the deduction cannot be recorded without it.",
+        "soporteMuyPesado": "The receipt cannot be larger than 10 MB.",
+        "soporteTipo": "The receipt must be a PDF or an image (JPG, PNG or WEBP).",
+        "registrado": "Deduction recorded",
+        "noSeRegistro": "The deduction was not recorded"
+      },
+      "anularDialogo": {
+        "titulo": "Void deduction",
+        "descripcion": "The deduction is not deleted: it stays voided with its reason. If it was in an unpaid payout, that payout gets its net back.",
+        "motivo": "Why it is voided",
+        "faltaMotivo": "Write why it is voided.",
+        "cancelar": "Cancel",
+        "confirmar": "Void deduction",
+        "anulando": "Voiding…",
+        "anulado": "Deduction voided",
+        "noSeAnulo": "The deduction was not voided"
+      },
+      "liquidacion": {
+        "titulo": "Deductions this month",
+        "netoDelMes": "Net for the month",
+        "aGirar": "Net to pay",
+        "saldoEnContraAviso": "Deductions exceed the month's net: nothing is paid this month and {{valor}} moves to their next payout.",
+        "enContraFila": "{{valor}} owed, moves to next month",
+        "quedanEnContraUno": "1 owner gets $0 this month: their deductions exceed their net and the difference moves to their next payout.",
+        "quedanEnContraVarios": "{{cuantos}} owners get $0 this month: their deductions exceed their net and the difference moves to their next payout."
+      },
+      "aCargoDe": {
+        "titulo": "Who pays for the repair?",
+        "descripcion": "You are approving the quote from {{proveedor}} for {{valor}}.",
+        "propietario": "The owner",
+        "propietarioAyuda": "We ask the owner for approval: they see it in their portal and accept or reject it with one click. The deduction, on their first unpaid payout, is created when they approve.",
+        "emergencia": "It is an emergency: the owner cannot be waited for",
+        "emergenciaAyuda": "It is done and deducted right away. The notice to the owner is generated today, with the reason and the receipt.",
+        "emergenciaMotivo": "Why could it not wait?",
+        "emergenciaSoporte": "Receipt (photo or invoice of the repair)",
+        "pedirAprobacion": "Ask the owner for approval",
+        "confirmarEmergencia": "Approve as emergency",
+        "aprobacionPedida": "We asked the owner for approval",
+        "emergenciaRegistrada": "Emergency repair: deducted and notice generated",
+        "inquilino": "The tenant",
+        "inquilinoAyuda": "Nothing is deducted from the owner: it goes on the tenant's statement as a one-time charge, on this month's installment or the next unpaid one.",
+        "cancelar": "Cancel",
+        "confirmar": "Approve quote",
+        "aprobando": "Approving…",
+        "aprobadaPropietario": "Quote approved: the owner was asked for approval",
+        "aprobadaInquilino": "Quote approved, paid by the tenant",
+        "sugiereElAgente": "The agent suggests charging it to the {{quien}}. The decision is yours.",
+        "quienPropietario": "owner",
+        "quienInquilino": "tenant",
+        "compartida": "Shared",
+        "compartidaAyuda": "Split by the percentage you agree: the owner is asked to approve their share and the tenant is charged theirs.",
+        "inmobiliaria": "The agency pays",
+        "inmobiliariaAyuda": "Own expense: your provider's warranty or an agency mistake. Nothing is deducted from the owner or charged to the tenant.",
+        "inmobiliariaMotivo": "Why is the agency paying for it?",
+        "repartoInquilino": "Percentage charged to the tenant (%)",
+        "repartoResumen": "Tenant {{inquilino}}% ({{valorInquilino}}) · Owner {{propietario}}% ({{valorPropietario}}). The leftover peso goes to the owner.",
+        "quienCompartida": "owner and tenant, shared",
+        "quienInmobiliaria": "the agency",
+        "aprobadaCompartida": "Quote approved: shared between owner and tenant",
+        "aprobadaInmobiliaria": "Quote approved: the agency covers it"
+      },
+      "propuesta": {
+        "titulo": "Agent proposal",
+        "cotizacion": "Proposes the quote from {{proveedor}} for {{valor}}.",
+        "sinCotizacion": "Asks a person to approve the repair.",
+        "sugierePropietario": "Suggests it is charged to the owner.",
+        "sugiereInquilino": "Suggests it is charged to the tenant.",
+        "aprobacionHumana": "The agent does not approve: you approve it, and with it the deduction or the charge.",
+        "revisar": "Review and approve"
+      },
+      "cargoAlInquilino": {
+        "titulo": "Charge to the tenant",
+        "detalle": "{{valor}} on the {{mes}} installment: it is on the tenant's statement.",
+        "aprobada": "Added to the tenant's statement: {{valor}} on the {{mes}} installment."
+      },
+      "deuda": {
+        "titulo": "Owes the agency",
+        "descripcion": "Deductions or negative balance with no settlement left to deduct them from: they are collected.",
+        "desde": "Since {{mes}}",
+        "diaUno": "1 day ago",
+        "dias": "{{dias}} days ago",
+        "sinCuentaDeCobro": "{{valor}} not yet in a collection notice",
+        "generar": "Generate collection notice",
+        "generando": "Generating…",
+        "generada": "Collection notice no. {{numero}} generated",
+        "noSeGenero": "The collection notice was not generated",
+        "verCuenta": "Collection notice no. {{numero}}",
+        "sinMigrar": "Collection notices are not available on this database yet: the debt is still shown.",
+        "queEs": "what the owner owes the agency"
+      },
+      "cartera": {
+        "titulo": "Owners who owe the agency",
+        "descripcion": "They have no settlement left to deduct their deductions or negative balance from: they are charged with a collection notice.",
+        "colPropietario": "Owner",
+        "colDebe": "Owes",
+        "edadDeLaCartera": "Owner debt by age",
+        "colMasViejo": "Oldest",
+        "diaUno": "1 day",
+        "dias": "{{dias}} days",
+        "conceptoUno": "1 item",
+        "conceptos": "{{cuantos}} items",
+        "colCuenta": "Collection notice",
+        "sinCuenta": "Not generated",
+        "cuenta": "No. {{numero}}",
+        "total": "Total",
+        "queSon": "the owners who owe the agency"
+      },
+      "cuentaDeCobro": {
+        "titulo": "Collection notice",
+        "numero": "No. {{numero}}",
+        "emitida": "Issued on {{fecha}}",
+        "a": "To",
+        "de": "From",
+        "concepto": "Item",
+        "valor": "Amount",
+        "total": "Total due",
+        "estado": {
+          "VIGENTE": "Due",
+          "DESCONTADA": "Deducted later",
+          "ANULADA": "Voided"
+        },
+        "imprimir": "Print or save as PDF",
+        "volver": "Back to the owner",
+        "noEsFactura": "This document is not an electronic invoice.",
+        "queEs": "the collection notice"
+      },
+      "aprobacionDelPropietario": {
+        "PENDIENTE": "Waiting for the owner's approval",
+        "APROBADA": "The owner approved it: it is deducted",
+        "RECHAZADA": "The owner rejected it: nothing is deducted",
+        "EMERGENCIA": "Approved as emergency: deducted and notice generated",
+        "ANULADA": "Request withdrawn",
+        "valor": "For {{valor}}.",
+        "queSigue": "Decide what's next: ask again, move it to the tenant, approve it as an emergency or cancel the request.",
+        "decidir": "Decide what's next",
+        "avisoGenerado": "Notice generated for the owner",
+        "bandejaTitulo": "Owner approvals",
+        "bandejaVacia": "No repairs waiting for the owner or rejected.",
+        "bandejaRechazada": "Rejected",
+        "bandejaPendiente": "Waiting"
+      }
+    },
     "tesoreria": {
       "label": "Settlements",
       "title": "Settlements",
@@ -9062,13 +9576,20 @@
       "m2BannerDesc": "This view shows the full net formula. The authoritative computation, discounts and accounting posting connect in a later phase (M1).",
       "formulaLabel": "Net formula",
       "ejemplo": "Example",
-      "fCanon": "Rent collected",
+      "fCanonCausado": "Accrued rent",
+      "fCanonRecaudado": "Collected rent",
+      "fCanonQueEsCausado": "What the leases charge in the month, even if the tenant has not paid.",
+      "fCanonQueEsRecaudado": "Only the month's installments the tenant has already paid in full.",
       "fComision": "Admin commission",
       "fIva": "VAT on commission",
+      "fRetencionesComision": "Withheld on commission",
       "fDescuentos": "Discounts",
       "fNeto": "Net to owner",
       "fAFavor": "Credits to owner",
       "fACargo": "Owner charges",
+      "fDeducciones": "Deductions",
+      "fAGirar": "To pay",
+      "fSaldoEnContra": "Balance owed",
       "colAFavor": "Credits",
       "resumenLabel": "The month, in money",
       "estadoGenerada": "Dispersion generated",
@@ -9085,12 +9606,13 @@
       "colComision": "Commission",
       "colIva": "VAT comm.",
       "colDescuentos": "Discounts",
+      "colDeducciones": "Deductions",
       "colNeto": "Net",
       "colCuenta": "Destination account",
       "colEstado": "Status",
-      "colComprobante": "Receipt",
       "emptyTitle": "Nothing to settle this month yet",
-      "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements.",
+      "emptyDesc": "An owner shows up here when their leases have installments for the month to pay out, whether or not the tenant has paid. Payment processing is done in Disbursements.",
+      "emptyDescRecaudado": "An owner shows up here once the tenant has paid the month's installment in full. Payment processing is done in Disbursements.",
       "registrarFacturaCta": "Register invoice",
       "facturasCardTitle": "Supplier invoices",
       "facturasCardDesc": "Upload a photo or PDF of an invoice and the AI reads it: supplier, number, amounts and dates. You review it and register it in accounts payable.",
@@ -9484,6 +10006,7 @@
       "esperandoAlInquilino": "Tenant's turn",
       "sigue": "Next",
       "verPaso": "Open",
+      "verElRecorrido": "The full journey",
       "sinPantalla": "No screen yet",
       "cambioDeManos": "Hands over here",
       "actorInquilino": "Tenant",
@@ -9646,7 +10169,7 @@
       "cierre": {
         "titulo": "That's it",
         "punto1": "You start at «New listing» and follow the property through to the contract.",
-        "punto2": "Collections and Payouts are the two sides of the money: what comes in and what goes out.",
+        "punto2": "Payments holds both sides of the money: what comes in from tenants and what goes out to owners.",
         "punto3": "Search and chat take you anywhere without walking the menu.",
         "volver": "You can see it again from Settings → Preferences."
       },
@@ -9664,11 +10187,11 @@
         "inmuebles": {
           "titulo": "Properties is your portfolio",
           "cuerpo": "Each property with its record, photos, owner and history. Listings and viewings come out of here.",
-          "dato": "Appraisals lives inside, to request a market value for one."
+          "dato": "A property's market value comes from the Appraisals agent, up top under «AI Agents»."
         },
         "postulaciones": {
           "titulo": "Who wants to rent",
-          "cuerpo": "Incoming applications, with matching against your inventory, the candidate's documents and the insurability request to the carriers.",
+          "cuerpo": "Incoming applications and each candidate's documents. Matching against your inventory and insurability are handled by their agents, up top under «AI Agents».",
           "dato": "The number next to the name says how many are waiting on you."
         },
         "contratos": {
@@ -9676,24 +10199,19 @@
           "cuerpo": "Rent, line items, guarantee and signature. Each contract produces the month's charges, and shows how they are being paid.",
           "dato": "Renewals lives inside: what expires and the proposal to the tenant."
         },
-        "cobros": {
-          "titulo": "The money coming in",
-          "cuerpo": "Receipts is what already arrived, Receivables what is missing, and Collections the agent that chases arrears within what the law allows.",
-          "dato": "Bank statement reconciliation matches payments against these charges."
-        },
         "pagos": {
-          "titulo": "The money going out",
-          "cuerpo": "Settlements build each owner's net — rent minus commission and deductions — and Disbursements execute it against the bank.",
-          "dato": "Supplier invoices are deducted in the property's settlement."
+          "titulo": "The money, from both sides",
+          "cuerpo": "One stop with both sides: on the tenant side you have Receipts (what already came in) and Receivables (what is missing, and the charges you issued); on the owner side, Settlements and Disbursements. Collections, which chases receivables, is an agent: it lives under «AI Agents».",
+          "dato": "Debt is born with the contract: the monthly charge is the document you claim it with, and you decide when to issue it by looking at receivables."
         },
         "reportes": {
           "titulo": "How the business is doing",
-          "cuerpo": "The month's summary, profitability per property and how the AI agents performed.",
+          "cuerpo": "The month's summary and profitability per property. How the agents perform lives in «AI performance», under «AI Agents».",
           "dato": "Every table in the panel exports to Excel or PDF."
         },
         "piloto": {
           "titulo": "You decide how much the AI does alone",
-          "cuerpo": "Shadow watches and proposes. Copilot leaves each action ready for your approval. Automatic acts within the law and your limits.",
+          "cuerpo": "Manual and Copilot leave each action ready in the Inbox for your approval (Manual, without notifying you). Automatic lets agents that already know how act on their own, within the law.",
           "dato": "This pill changes the mode for the whole fleet, or you can tune it agent by agent."
         },
         "chat": {
@@ -9723,6 +10241,11 @@
       "elInmueble": "the property",
       "elContrato": "the contract",
       "viendoCopia": "You are without signal. You are seeing the copy saved on {{cuando}}; whatever you fill in uploads when the signal returns."
+    },
+    "egresos": {
+      "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
+      "anularAnulado": "This disbursement is already cancelled.",
+      "anulado": "Disbursement cancelled. It is unpaid again."
     }
   },
   "validation": {
@@ -9932,9 +10455,40 @@
       "planNotFound": "The selected plan was not found. Go back to the plans list.",
       "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
-      "securePayment": "Secure payment processed by Stripe",
+      "securePayment": "Secure PSE payment, processed by Wompi",
       "cancelAnytime": "Cancel anytime. No commitments.",
-      "paymentSuccess": "Payment successful! {{name}} plan activated."
+      "paymentSuccess": "Payment successful! {{name}} plan activated.",
+      "pseTitle": "PSE payment details",
+      "pseHint": "We take you to your bank to approve the payment. The plan is activated once the bank confirms it.",
+      "bank": "Bank",
+      "bankPlaceholder": "Choose your bank",
+      "banksError": "We couldn't load the list of banks. Reload the page to try again.",
+      "personType": "Person type",
+      "personNatural": "Individual",
+      "personJuridica": "Company",
+      "documentType": "Document type",
+      "documentTypes": {
+        "CC": "Citizen ID (CC)",
+        "CE": "Foreigner ID (CE)",
+        "NIT": "NIT",
+        "PP": "Passport"
+      },
+      "documentNumber": "Document number",
+      "fullName": "Account holder name",
+      "email": "Email",
+      "completePayerData": "Complete the payment details: bank, document (6 to 15 digits), name and email.",
+      "bankLinkMissing": "Your bank hasn't returned the payment link yet. Try again in a few minutes.",
+      "paymentStartError": "We couldn't start the payment. Try again.",
+      "priceLoading": "The price comes from the server; if it doesn't show up, reload the page.",
+      "yearlySaving": "-{{percent}}%",
+      "noPuedePagar": "You can't pay for this plan right now",
+      "resultadoTitulo": "Your plan payment",
+      "resultadoAprobado": "The bank approved the payment: your {{name}} plan is active.",
+      "resultadoRechazado": "The bank didn't approve the payment. You weren't charged for the plan.",
+      "resultadoPendiente": "We're waiting for the bank's confirmation. This can take a few minutes; you can close this page, the plan activates on its own when the bank confirms.",
+      "resultadoError": "We couldn't check how the payment ended. Check your plan in Settings in a few minutes.",
+      "resultadoIrAlPanel": "Go to my panel",
+      "resultadoIntentarDeNuevo": "Try again"
     },
     "upgrade": {
       "unlockPotential": "Unlock the full potential",
@@ -10412,6 +10966,7 @@
         "docNIT": "Tax ID (Companies)",
         "docPassport": "Passport",
         "docTI": "Identity Card",
+        "docPPT": "Temporary Protection Permit (PPT)",
         "fullName": "Full name",
         "businessName": "Business name",
         "phone": "Phone",
@@ -10739,12 +11294,38 @@
       "endYes": "End",
       "endCancel": "Cancel"
     },
+    "cerebro": {
+      "boton": "Should I learn this?",
+      "ayuda": "Only you see this, as the administrator: decide what the chat learns from this answer.",
+      "titulo": "What I would learn from this answer",
+      "cargando": "Checking what can be learned…",
+      "error": "I couldn't check it. Try again.",
+      "reintentar": "Retry",
+      "errorGuardar": "I couldn't save it. Try again.",
+      "nada": "There is nothing to learn from this answer yet.",
+      "aprender": "Yes, learn it",
+      "descartar": "No",
+      "aprendido": "Learned",
+      "descartado": "Not learning it",
+      "aprendidoToast": "Done: I learned it",
+      "descartadoToast": "Done: I won't learn it",
+      "sinUso": "It was learned. Using what the chat learns is turned off in this installation: I'll take it into account once it is turned on.",
+      "cerrar": "Close",
+      "origen": {
+        "accion_deshecha": "From an action that was undone",
+        "ambiguedad": "From the card picked among several",
+        "definicion": "From what something is called here",
+        "apodo": "From a nickname used here"
+      }
+    },
     "actions": {
       "copy": "Copy response",
       "copied": "Response copied",
       "copyError": "Couldn't copy. Select the text and press Cmd+C.",
       "regenerate": "Regenerate",
       "regenerating": "Generating again…",
+      "reintentar": "Retry",
+      "reintentando": "Retrying…",
       "busy": "Wait for the current response to finish.",
       "like": "Helpful response",
       "dislike": "Unhelpful response",
@@ -10789,9 +11370,262 @@
         "consultAgent": "Consult the {{agent}} specialist"
       },
       "detail": {
-        "cartera": "{{deudores}} debtors in management · {{escalaciones}} escalations · {{prejuridico}} pre-legal",
-        "carteraVacia": "No portfolio data for this agency",
-        "toolRunning": "Querying {{herramienta}}"
+        "toolRunning": "Querying {{herramienta}}",
+        "carteraErp": "Receivables: {{cartera}} across {{contratos}} leases"
+      },
+      "activo": {
+        "cartera": "Reading your receivables and what I already know about your agency…",
+        "entender": "Deciding how to solve it…",
+        "redactar": "Writing the answer…"
+      },
+      "avance": "{{hechos}} of {{total}}"
+    },
+    "forma": {
+      "resultados": "Results",
+      "fila": "{{n}} row",
+      "filas": "{{n}} rows",
+      "filasDe": "{{n}} of {{total}} rows",
+      "verTodas": "See all {{n}} rows",
+      "verMenos": "See less",
+      "estado": {
+        "activo": "Active",
+        "firmado": "Signed",
+        "vencido": "Expired",
+        "terminado": "Terminated",
+        "cancelado": "Cancelled",
+        "borrador": "Draft",
+        "pendiente": "Pending",
+        "porFirmar": "Awaiting signature",
+        "parcial": "Partial payment",
+        "enMora": "Overdue",
+        "incumplido": "Defaulted",
+        "pagado": "Paid",
+        "renovacionPendiente": "To renew",
+        "notificado": "Notified",
+        "enNegociacion": "Negotiating",
+        "aprobada": "Approved",
+        "firmada": "Signed",
+        "renovado": "Renewed",
+        "noRenueva": "Not renewing",
+        "reportado": "Reported",
+        "cotizado": "Quoted",
+        "aprobado": "Approved",
+        "enCurso": "In progress",
+        "girado": "Paid out",
+        "fallido": "Failed"
+      },
+      "semaforo": {
+        "mora": "Overdue · {{dias}} days",
+        "vence": "Ends in {{dias}} days",
+        "alDia": "Up to date"
+      },
+      "papel": {
+        "inquilino": "Tenant",
+        "coarrendatario": "Co-tenant",
+        "propietario": "Owner",
+        "inmueble": "Property",
+        "contrato": "Lease",
+        "postulante": "Applicant",
+        "lead": "Lead",
+        "contacto": "Contact",
+        "proveedor": "Supplier"
+      },
+      "pedir": {
+        "estadoDeCuenta": "Give me the account statement for {{nombre}}",
+        "renovar": "Prepare the renewal of lease #{{codigo}}"
+      },
+      "accion": {
+        "estadoDeCuenta": "Account statement",
+        "renovar": "Prepare renewal"
+      },
+      "canon": "rent",
+      "fin": "Ends",
+      "propietario": "Owner",
+      "inquilino": "Tenant",
+      "cartera": "Receivables",
+      "sinCartera": "No installments",
+      "otroContrato": "And {{n}} more lease in their history.",
+      "otrosContratos": "And {{n}} more leases in their history.",
+      "verFilasQueFaltan": "Show the {{n}} remaining rows",
+      "masInteres": "+ {{monto}} late interest",
+      "restaDelContrato": "Contract balance"
+    },
+    "estadoDeHoy": {
+      "cartera": "Receivables",
+      "contratosEnCartera": "Leases with debt",
+      "deudores": "Active debtors",
+      "pagadoHoy": "Paid today",
+      "llamadas": "Calls today",
+      "escalaciones": "Escalations",
+      "prejuridico": "Pre-legal"
+    },
+    "enElChat": {
+      "acciones": {
+        "titulo": "What I can do",
+        "ninguna": "There is nothing that can be done from here right now.",
+        "ocultarNo": "Hide the actions you can’t do",
+        "verNoUna": "Show 1 action you can’t do yet",
+        "verNoVarias": "Show {{n}} actions you can’t do yet",
+        "sePuedeDesde": "possible from {{fecha}}"
+      },
+      "riesgo": {
+        "plata": "Moves money",
+        "terceros": "Writes to someone else",
+        "irreversible": "Can’t be undone"
+      },
+      "modo": {
+        "manual": "Manual",
+        "copiloto": "Copilot",
+        "automatico": "Automatic"
+      },
+      "confirmacion": {
+        "si": "Yes, do it",
+        "no": "No",
+        "vencida": "It expired without an answer: if you still need it, ask me again."
+      },
+      "resultado": {
+        "hecha": "Done",
+        "fallida": "Couldn’t do it",
+        "cancelada": "Not done",
+        "deshecha": "Undone",
+        "deshacer": "Undo"
+      },
+      "formulario": {
+        "elige": "Choose an option",
+        "seguir": "Done, continue"
+      },
+      "mensaje": {
+        "si": "Yes, do it",
+        "no": "No, don’t do it",
+        "deshacer": "Undo: {{etiqueta}}",
+        "verFicha": "Show the record of {{titulo}}",
+        "reintentar": "Retry: {{titulo}}"
+      },
+      "verFicha": "Show record",
+      "enlaceExterno": "opens in another tab ({{destino}})",
+      "verElResto": "See the rest",
+      "tarjeta": {
+        "estado": {
+          "propuesta": "Waiting for you",
+          "respondida": "Answered",
+          "en_curso": "In progress",
+          "en_gracia": "About to go out",
+          "hecha": "Done",
+          "cancelada": "Not done",
+          "deshecha": "Undone",
+          "vencida": "Expired",
+          "programada": "Scheduled",
+          "error": "Couldn’t do it",
+          "ensayo": "Dry run"
+        },
+        "propuesta": {
+          "hacerlo": "Do it",
+          "no": "No",
+          "dijisteSi": "You said yes.",
+          "dijisteNo": "You said no.",
+          "programada": "If you say yes, it will be scheduled for {{cuando}}.",
+          "ensayo": "Dry run: this will not be done or scheduled."
+        },
+        "riesgo": {
+          "titulo": "What it implies",
+          "irreversible": "Can’t be undone",
+          "plata": "Moves money",
+          "fiscal": "Tax (DIAN)",
+          "terceros": "Writes to someone else",
+          "masiva": "Bulk",
+          "masivaConTope": "Bulk (up to {{tope}})",
+          "dobleControl": "Dual control"
+        },
+        "vistaPrevia": {
+          "titulo": "What it will look like",
+          "sinVistaPrevia": "The ERP didn’t send a preview for this action.",
+          "verMas": "Show {{n}} more",
+          "verMenos": "Show less",
+          "si": "Yes",
+          "no": "No"
+        },
+        "dobleControl": {
+          "otraPersona": "Someone else approves this.",
+          "laPuedesHacerTu": "You are an administrator: you can approve it yourself (the log records it was the same person)."
+        },
+        "enCurso": {
+          "avance": "{{hechos}} of {{total}}",
+          "avanceSinTotal": "{{hechos}} done",
+          "barra": "Progress of {{titulo}}",
+          "cancelar": "Cancel",
+          "cancelacionPedida": "You asked to cancel it: it stops at the next step.",
+          "noPudeCancelar": "I couldn’t cancel it: {{motivo}}",
+          "noPudeLeer": "I couldn’t read the progress; still trying.",
+          "sinResultado": "It finished, but I couldn’t get the result. Ask me again in a moment."
+        },
+        "gracia": {
+          "seEnviaEn": "Sends in",
+          "enviando": "Sending…",
+          "anuncioInicio": "It sends in {{segundos}} seconds. You can undo it before then.",
+          "anuncioDiez": "10 seconds left to undo it.",
+          "anuncioFinal": "It is being sent: it can no longer be undone.",
+          "sinConfirmar": "I couldn’t confirm it went out. Ask me again in a moment.",
+          "pedisteDeshacer": "You asked to undo it."
+        },
+        "programada": {
+          "cuando": "I scheduled it for {{cuando}}.",
+          "saleConTuSesion": "Your session expires before then: it goes out as soon as you write to the chat again, within the allowed hours."
+        },
+        "error": {
+          "permiso": "Missing permission: {{modulo}} · {{accion}}",
+          "quienesPueden": "Who can do it: {{nombres}}.",
+          "nadiePuede": "Nobody in your agency has that permission today.",
+          "codigo": "Code from your authenticator app",
+          "verificar": "Verify and retry",
+          "sinFactor": "You don’t have the second factor turned on in your account yet.",
+          "codigoIncorrecto": "That code didn’t work. Try the next one.",
+          "noPudeVerificar": "I couldn’t verify the code: {{motivo}}"
+        }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Waiting for your answer",
+          "contestado": "Answered",
+          "ejecutando": "In progress",
+          "hecho": "Done",
+          "detenido": "Stopped",
+          "cancelado": "Not done",
+          "vencido": "Expired"
+        },
+        "loQuePediste": "What you asked: “{{cita}}”",
+        "pasos": "Plan steps",
+        "paso": {
+          "estado": {
+            "pendiente": "Pending",
+            "hecho": "Done",
+            "fallido": "Failed",
+            "en_curso": "Still running",
+            "omitido": "Not needed"
+          },
+          "dependeDe": "Possible once step {{n}} is done.",
+          "pedisteDeshacer": "You asked to undo it: the answer is below."
+        },
+        "seDetieneAntesDe": "The plan stops before step {{n}} ({{que}}):",
+        "detenidoEn": "Stopped at step {{n}}:",
+        "hacerTodo": "Do it all",
+        "no": "No",
+        "noSeguir": "Don’t continue",
+        "reintentarDesde": "Retry from step {{n}}",
+        "seguirDesde": "Continue from step {{n}}",
+        "llenaLoQueFalta": "Fill in what’s missing in the steps to do it all.",
+        "yaRespondiste": {
+          "hacer_plan": "You said yes: progress is in the answer below.",
+          "cancelar_plan": "You said no.",
+          "seguir_plan": "You asked to continue: progress is in the answer below."
+        },
+        "vencido": "This plan expired: ask me again and I’ll build it with current data.",
+        "ensayo": "Dry run: the plan is complete, but nothing is saved or executed.",
+        "mensaje": {
+          "hacerTodo": "Yes, do it all",
+          "no": "No, don’t do the plan",
+          "seguir": "Continue from step {{n}}",
+          "noSeguir": "Don’t continue the plan"
+        }
       }
     }
   },
@@ -10966,7 +11800,7 @@
       "alerta": {
         "canon": "This property's rent",
         "superaTope": "is above your approved cap of",
-        "codeudor": "You can apply using another person's profile (a co-signer) who does qualify for this amount."
+        "codeudor": "You can still apply: the agency decides whether to rent it to you. To strengthen your application, add another person (a co-signer)."
       }
     },
     "resultado": {
@@ -11117,12 +11951,16 @@
       "descripcion": "You are recording that money came in. It is applied to the oldest debt first and issues one numbered receipt per month it covers.",
       "montoLabel": "How much are they paying?",
       "maximo": "Maximum you can apply: {{monto}}",
+      "deudaTotal": "Total debt, due and upcoming: {{monto}}",
+      "confirmarAFavor": "Yes, {{monto}} stays as credit for {{nombre}}",
       "abonarTodo": "Pay the whole debt",
       "montoRequerido": "Enter how much came in",
       "montoPositivo": "It has to be greater than zero",
       "montoExcede": "That is over the balance. The maximum you can apply is {{monto}}.",
       "fechaLabel": "What day did it come in?",
       "fechaRequerida": "Pick the day",
+      "fechaFutura": "It can't be after today.",
+      "recalculandoInteres": "Recalculating late-payment interest for this date…",
       "medioLabel": "How did it come in?",
       "medioRequerido": "Pick how it came in",
       "opcional": "optional",
@@ -11158,10 +11996,22 @@
         "cargando": "Looking up what they owe…",
         "fallo": "We could not load their balance.",
         "reintentar": "Retry",
-        "sinDeuda": "{{nombre}} owes nothing right now: there is nothing to receive money against.",
+        "sinDeuda": "{{nombre}} has no outstanding instalments.",
         "total": "Owes in total",
         "masVieja": "Oldest",
-        "variosInmuebles": "{{count}} properties"
+        "variosInmuebles": "{{count}} properties",
+        "vencidoLabel": "Past due",
+        "futuroLabel": "Not due yet",
+        "grupoVencido": "Past due",
+        "grupoFuturo": "Not due yet",
+        "vencida": "Past due",
+        "conMora": "{{dias}} days late",
+        "noVenceAun": "Due on {{fecha}}",
+        "abonado": "paid {{monto}}",
+        "soloAdelanto": "{{nombre}} has nothing past due, but the contract does carry debt ahead. Anything you receive today is an advance: it pays down instalments that have not fallen due yet.",
+        "capitalEInteres": "Principal {{capital}} · interest {{intereses}}",
+        "deLosCualesIntereses": "of which {{monto}} is late interest",
+        "interesPrimero": "Interest is paid first, then the principal (art. 1653 of the Civil Code)."
       },
       "plan": {
         "titulo": "Where this money goes",
@@ -11169,8 +12019,32 @@
         "intereses": "Late interest {{intereses}} · principal {{capital}}",
         "queda": "{{monto}} of this month remains outstanding.",
         "despues": "After this payment they still owe",
-        "sinConciliar": "One of these months already has money recorded that no receipt backs. It has to be reconciled before receiving."
-      }
+        "sinConciliar": "One of these months already has money recorded that no receipt backs. It has to be reconciled before receiving.",
+        "adelanto": "Advance",
+        "hayAdelanto": "The months marked as an advance have not fallen due yet: paying them now reduces the contract debt.",
+        "anticipo": "Advance",
+        "hayAnticipo": "The months marked as an advance don't go down yet: the money stays with the contract and a cash receipt takes it on each month's due date."
+      },
+      "descripcionAdelanto": "Nothing is past due. Anything that comes in today is an advance: it pays down the contract instalments that have not fallen due yet, starting with the closest one.",
+      "pagaLoVencido": "Pay what is due",
+      "adelantoDesde": "Past due today: {{vencido}}. Above that figure you are paying ahead against {{futuro}} that has not fallen due yet.",
+      "sinMandato": "The property has no mandate",
+      "cuotaYCobroNoCuadran": "That month's records don't match",
+      "forma": {
+        "titulo": "How do you record the advance?",
+        "ayuda": "This payment reaches {{meses}}, which aren't due yet. Anything overdue is paid first either way.",
+        "parteDe": "part of {{mes}}",
+        "abonarTitulo": "Record it all now",
+        "abonarAyuda": "Applies {{monto}} to {{meses}} now: those installments are paid today, with their cash receipt.",
+        "anticipoTitulo": "Keep it as an advance and apply it month by month",
+        "anticipoAyuda": "{{monto}} stay as the contract's advance and no installment goes down yet. On each month's due date a cash receipt is issued automatically for that installment, until the advance reaches zero."
+      },
+      "anticipoRegistrado": "Advance recorded",
+      "emitidoConAnticipo": "{{anticipo}} stayed as the contract's advance: they're applied automatically on each month's due date.",
+      "facturasDelPago": "Invoices for {{meses}} updated: {{saldo}} left to pay.",
+      "facturasSinEmitir": "They were generated and are pending issue with the DIAN.",
+      "ajusteAlPeso": "{{valor}} were recorded as a rounding adjustment: they don't pay any installment.",
+      "facturaDeIntereses": "The interest paid ({{valor}}) was invoiced separately, unnumbered and pending issuance."
     },
     "historial": {
       "titulo": "Cash receipts",
@@ -11214,6 +12088,18 @@
       "conciliado": "Earlier payment reconciled",
       "conciliadoDesc": "Receipt {{numero}} was issued. You can make the payment now.",
       "fallo": "It could not be reconciled"
+    },
+    "anticipoDelContrato": {
+      "titulo": "Tenant's advance",
+      "ayuda": "Money received in advance that hasn't been applied to any installment yet. On each month's due date a cash receipt takes it.",
+      "saldo": "Left to apply",
+      "recibido": "Received",
+      "descontado": "Applied",
+      "entrada": "Came in as an advance",
+      "descuento": "Applied to {{mes}}",
+      "recibo": "Receipt {{numero}}",
+      "anulado": "Voided",
+      "errorAlLeer": "We could not read this contract's advance payment: we don't know whether it has a balance left to apply."
     }
   },
   "inquilinos": {
@@ -11260,30 +12146,31 @@
     },
     "cajon": {
       "canonVigente": "Current rent",
-      "arriendosVigentes": "Current leases",
-      "deTotal": "of {{n}} in total",
-      "saldoPendiente": "Outstanding balance",
-      "diasDeMora": "{{n}} days overdue",
+      "restaPorPagar": "Left to pay",
+      "proximaCuota": "Next: {{fecha}} · {{monto}}",
+      "vencidoSinPagar": "Overdue, unpaid",
+      "vencidoEnPlazo": "Overdue, within grace period",
+      "enCartera": "In collections · {{n}} days",
+      "enCarteraUnDia": "In collections · 1 day",
+      "errorCuenta": "We could not read their account statement, so we do not know what they owe.",
+      "sinEstadoDeCuenta": "None of their leases has an account statement with this agency: we do not know what they owe.",
+      "verEstadoDeCuenta": "View their account statement",
       "arriendos": "Leases",
       "arriendosIncluyeTerminados": "Every lease they have with you, ended ones included.",
       "cargandoArriendos": "Looking for the ended ones…",
       "arriendosIncompletos": "The full detail could not be loaded — an ended lease may be missing.",
       "verContrato": "View the lease",
-      "pagos": "Payments",
+      "cobrosEmitidos": "Issued charges",
       "pagosDeSusContratos": "The charges on their leases, most recent first.",
-      "cargandoPagos": "Loading their payments…",
-      "errorPagos": "Payments could not be loaded.",
+      "cargandoPagos": "Loading their charges…",
+      "errorPagos": "Their charges could not be loaded.",
       "pagosIncompletos": "One of their leases did not respond — what you see is incomplete.",
-      "sinPagosTitulo": "No charges yet",
-      "sinPagos": "As soon as the first charge is generated on their leases, it shows up here with its status and balance.",
       "sinArriendosTitulo": "No lease yet",
-      "sinContratos": "With no lease there is no rent, no charges and nothing to collect. Create one and this drawer fills itself.",
+      "sinContratos": "With no lease there is no rent, no installments and nothing to collect. Create one and this drawer fills itself.",
       "reintentar": "Retry",
       "ultimoPago": "Last paid on {{fecha}}",
       "recordatorios": "{{n}} reminders · last one on {{fecha}}",
       "pagadoEl": "Paid on {{fecha}}",
-      "venceEl": "Due on {{fecha}}",
-      "debe": "Owes {{monto}}",
       "yMasCobros": "and {{n}} more charges, on the lease.",
       "verCobrosDelContrato": "See all their charges on the lease",
       "alDia": "Up to date",
@@ -11292,7 +12179,11 @@
       "documento": "ID number",
       "copiar": "Copy",
       "copiado": "Copied",
-      "noSePudoCopiar": "We could not copy it. Select it and copy it by hand."
+      "noSePudoCopiar": "We could not copy it. Select it and copy it by hand.",
+      "sinCobrosTitulo": "No charge has been issued yet",
+      "sinCobros": "A charge is the document used to claim an installment. What they owe does not depend on it: it is above and in their account statement.",
+      "vencimiento": "Due: {{fecha}}",
+      "saldoDelCobro": "Balance {{monto}}"
     },
     "estados": {
       "activo": "Active",
@@ -11308,12 +12199,11 @@
       "propietario": "Owner",
       "mes": "Month",
       "debe": "Owes",
-      "mora": "Overdue",
+      "mora": "Status",
       "verCobro": "View the charge",
       "whatsapp": "Message on WhatsApp",
       "vence": "due {{fecha}}",
       "abonado": "paid {{monto}}",
-      "alDia": "Not due yet",
       "unDiaDeMora": "1 day",
       "diasDeMora": "{{n}} days",
       "unRecordatorio": "1 reminder",
@@ -11322,7 +12212,58 @@
       "sinInquilino": "No tenant on file",
       "sinTelefono": "No phone number",
       "sinDireccion": "No address",
-      "sinPropietario": "Owner not on file"
+      "sinPropietario": "Owner not on file",
+      "porVencer": "Not due yet",
+      "vencidoEnPlazo": "Due, within grace period",
+      "diasDePlazo": "{{n}}-day grace period",
+      "unDiaDePlazo": "1-day grace period",
+      "sinCobroEmitido": "No charge issued yet",
+      "verContrato": "View the contract"
+    },
+    "pestanas": {
+      "ariaLabel": "How to read receivables",
+      "porEdad": "By age",
+      "porConcepto": "By item",
+      "porPagar": "Owed to owners",
+      "cobrosEmitidos": "Issued charges",
+      "juridico": "Legal collection",
+      "castigada": "Written off"
+    },
+    "interes": {
+      "columnaIntereses": "Interest",
+      "columnaMoraLiquidadaHoy": "Late fees accrued today",
+      "columnaTotal": "Total",
+      "sinDato": "The server didn't send this installment's interest",
+      "pagadaEnMora": "Paid late",
+      "abonado": "paid {{monto}}",
+      "sinReglas": "No late-fee rules",
+      "configurar": "Set them up",
+      "sinInteres": "No interest",
+      "intereses": "Late interest",
+      "masIntereses": "+ {{monto}} in interest",
+      "conIntereses": "{{monto}} with interest",
+      "configurarReglas": "Set up late-fee rules",
+      "explicacion": "Kept apart from the principal. They include the daily interest and the collection fee set by your late-fee rules, and grow every day while the installment stays past due."
+    },
+    "porEdad": {
+      "deLaCualEnSiniestro": "of which {{monto}} is in claims",
+      "tramoEnSiniestro": "In claims",
+      "desdeLosDias": "from {{dias}} days past due",
+      "edadDeLaCartera": "Portfolio age · days past due counted AFTER the contract’s grace period. The five buckets add up to the portfolio."
+    },
+    "porPropietario": {
+      "propietario": "Owner",
+      "deudas": "Debts",
+      "inmuebles": "Properties",
+      "loPeor": "Worst",
+      "capital": "Principal",
+      "intereses": "Interest",
+      "total": "Total with interest"
+    },
+    "porPagar": {
+      "pieCausado": "The net is the same one the payout calculates on accrued rent: what the contract accrues in the month, whether or not the tenant paid it, plus what is in the owner’s favor, minus the commission and what is charged to the owner.",
+      "canonCausado": "Accrued rent",
+      "nadaQueRepartir": "There is no accrued rent to distribute yet, or everything has been paid out."
     }
   },
   "migracion": {
@@ -11534,5 +12475,152 @@
       "conReglasTitulo": "Others you could add",
       "conReglasDescripcion": "These are not created. They are suggestions on top of what you already have above; if one is useful, it is created with a single tap."
     }
+  },
+  "estadoDeCuenta": {
+    "titulo": "Account statement",
+    "de": "Account statement of",
+    "nit": "Tax ID",
+    "matricula": "Real estate license",
+    "telefono": "Phone",
+    "ciudadYFecha": "{{ciudad}}, {{fecha}}",
+    "sinEmisor": "Agency without contact details on file",
+    "restaPorPagar": "Remaining balance",
+    "delPropietario": {
+      "restaPorPagar": "To be paid out",
+      "cancelado": "Paid out",
+      "vencido": "Late",
+      "enMoraDias": "Payout late · {{dias}} days",
+      "vencidoEnPlazo": "To be paid out, within grace period",
+      "cuotasVencidas": "{{n}} late payouts",
+      "unaCuotaVencida": "1 late payout",
+      "pagadasDe": "Paid out {{pagadas}} of {{total}} installments"
+    },
+    "cancelado": "Paid",
+    "pendiente": "Pending",
+    "totalesDelContrato": "Totals for contract {{numero}}",
+    "totalGeneral": "Total across all contracts",
+    "proximaCuota": "Next installment",
+    "sinProxima": "No upcoming installments left",
+    "estado": "Status",
+    "alDia": "Up to date",
+    "enMoraDias": "Past due · {{dias}} days",
+    "cuotasVencidas": "{{n}} overdue installments",
+    "unaCuotaVencida": "1 overdue installment",
+    "cuotasDe": "{{pagadas}} of {{total}} installments",
+    "delSistemaAnterior": "{{n}} from the previous system",
+    "compartir": "Share",
+    "porCorreo": "Send by email",
+    "porWhatsapp": "Send by WhatsApp",
+    "copiarEnlace": "Copy link",
+    "enlaceCopiado": "Link copied",
+    "enlaceVence": "Expires on {{fecha}}",
+    "copialoAMano": "Copy it manually",
+    "armandoEnlace": "Building the link…",
+    "falloEnlace": "The share link couldn't be built.",
+    "correoEnviado": "Account statement sent to {{correo}}",
+    "whatsappEnviado": "Account statement sent by WhatsApp to {{telefono}}",
+    "falloCorreo": "The email couldn't be sent.",
+    "sinWhatsapp": "This client hasn't authorized WhatsApp or has no phone on file.",
+    "mensajeParaCompartir": "Hi {{nombre}}, this is your account statement with {{inmobiliaria}}: {{url}}",
+    "verEstadoDeCuenta": "View account statement",
+    "miEstadoDeCuenta": "My account statement",
+    "enlaceVencido": "This link has expired",
+    "enlaceVencidoDetalle": "Ask your agency for a new one: links expire so your information does not stay open on the internet.",
+    "contrato": "Contract {{numero}}",
+    "comoInquilino": "Tenant of the property at {{direccion}}",
+    "comoPropietario": "Owner of the property at {{direccion}}",
+    "vigente": "Active",
+    "terminado": "Ended",
+    "arriendos": "Rent",
+    "otrosConceptos": "Other charges",
+    "sinOtrosConceptos": "This contract has no other charges.",
+    "sinArriendos": "No rent installments match these filters.",
+    "colConcepto": "Description",
+    "colEstado": "Status",
+    "colPagado": "Payment date",
+    "colBruto": "Gross amount",
+    "colNeto": "Net amount",
+    "colVence": "Due",
+    "colDocumento": "Payment document",
+    "sinPago": "Not paid",
+    "vencida": "overdue",
+    "saldoDe": "Outstanding balance",
+    "columnasOmitidas": "{{columnas}} are hidden: they are zero in every row of this contract.",
+    "quiebre": "{{motivo}} · {{fecha}}",
+    "quiebreDeA": "from {{anterior}} to {{nueva}}",
+    "filtros": "Filters",
+    "soloPendientes": "Only pending",
+    "todo": "All",
+    "pendientes": "Pending",
+    "queMostrar": "What to show",
+    "periodo": "Period",
+    "periodoTodo": "Whole period",
+    "periodoDesde": "from {{desde}}",
+    "periodoHasta": "until {{hasta}}",
+    "esteMes": "This month",
+    "ultimosTresMeses": "Last 3 months",
+    "proximosTresMeses": "Next 3 months",
+    "esteAnio": "This year",
+    "quitarPeriodo": "Clear the period",
+    "fechasExactas": "Exact dates…",
+    "desde": "From",
+    "hasta": "To",
+    "todosLosContratos": "All contracts",
+    "limpiar": "Clear",
+    "viendoFilas": "{{visibles}} of {{total}} rows",
+    "filtrado": "The totals are for what you're viewing, not the whole contract.",
+    "volver": {
+      "contrato": "Back to the contract",
+      "inmueble": "Back to the property",
+      "cobro": "Back to charges",
+      "propietario": "Back to the owner",
+      "dispersiones": "Back to payouts",
+      "lista": "Back to the list",
+      "otro": "Back"
+    },
+    "contratoPalabra": "Contract",
+    "colPago": "Payment",
+    "pagadasDe": "Paid {{pagadas}} of {{total}} installments",
+    "deLoPactado": "{{pagado}} of {{pactado}}",
+    "leyendaPagadas": "Paid in Leasefy",
+    "leyendaAnteriores": "From the previous system",
+    "leyendaPorPagar": "To be paid",
+    "unaFila": "1 row",
+    "nFilas": "{{n}} rows",
+    "totalDelContrato": "Contract total",
+    "vencido": "Overdue",
+    "intereses": "Late interest",
+    "interesesExplicacion": "Kept apart from the principal. Calculated with the agency’s late-fee rules and grows every day while the installment stays past due.",
+    "colDiasDeMora": "Days past due",
+    "colLiquidado": "Accrued",
+    "colAbonado": "Paid",
+    "colFalta": "Outstanding",
+    "pagadaEnMora": "The installment was paid late",
+    "unDia": "1 day",
+    "nDias": "{{n}} days",
+    "unaCuota": "1 installment",
+    "nCuotas": "{{n}} installments",
+    "interesesDeMora": "Late interest",
+    "conIntereses": "Total with interest",
+    "masIntereses": "+ {{monto}} in late interest",
+    "sinReglasDeMora": "The agency has no active late-fee rules: {{cuotas}} past due without interest.",
+    "sinInteresPorOtroMotivo": "{{cuotas}} past due without interest. {{motivo}}",
+    "configurarReglas": "Set up late-fee rules",
+    "descargarPDF": "Download PDF",
+    "imprimir": "Print",
+    "generando": "Building the PDF…",
+    "falloPDF": "The PDF couldn't be built. Try again.",
+    "sinContratos": "This client has no contracts",
+    "sinContratosDetalle": "Without a contract there are no installments to spread, so there is no account statement to show.",
+    "sinResultados": "No rows match these filters",
+    "sinResultadosDetalle": "Clear the filters to see the full account statement again.",
+    "pie": "Generated by Leasefy on {{fecha}}",
+    "pagina": "Page {{n}} of {{total}}",
+    "vencidoEnPlazo": "Overdue, within grace period",
+    "vencidoEnPlazoDetalle": "{{n}} overdue within the contract’s grace period: not late yet.",
+    "subrogadaA": "Subrogated to {{nombre}}",
+    "pagoLaAseguradora": "Paid by {{nombre}}",
+    "deudaSubrogada": "Debt subrogated to the insurer",
+    "deudaSubrogadaAyuda": "These instalments are settled for the agency and the owner because an insurer paid them. The tenant owes that amount to the insurer, not to the agency."
   }
 }

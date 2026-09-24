@@ -38,6 +38,9 @@ import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { useBorradorDePublicacion } from '@/lib/hooks/use-borrador-de-publicacion';
+import { conPropietariosVivos, sinRepetidas } from '@/lib/inmuebles/borrador-de-publicacion';
+import { AvisoDeBorradorDePublicacion } from './AvisoDeBorradorDePublicacion';
 import { aListaDelCable, motivoInvalido } from './CopropietariosField';
 import type { PropertyType } from '@/lib/types/property';
 import type { Propietario, Agente, InventoryItem, PropietarioFormData } from '@/lib/types/inmobiliaria';
@@ -92,8 +95,8 @@ export function ConsignacionWizard({
 }: ConsignacionWizardProps) {
   const router = useRouter();
   const destinoAlSalir = volverA ?? PORTAFOLIO;
-  const { t } = useI18n();
-  const { user } = useAuth();
+  const { t, locale } = useI18n();
+  const { user, agency } = useAuth();
   const { isAdmin } = usePermissions();
   // Agents skip the "Assign agent" step — they get auto-assigned
   const isAgentRole = !isAdmin;
@@ -128,6 +131,26 @@ export function ConsignacionWizard({
   const updateFormData = useCallback((data: Partial<WizardFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
+
+  /**
+   * W4 — el borrador reanudable. Las fotos viajan aparte del resto porque son
+   * `File`, no texto (ver `lib/inmuebles/borrador-de-publicacion.ts`).
+   */
+  const datosDelBorrador = useMemo(() => {
+    const { photos: _fotos, ...resto } = formData;
+    return resto;
+  }, [formData]);
+  const fotosDelBorrador = formData.photos ?? [];
+  const borrador = useBorradorDePublicacion({
+    agencyId: agency?.id,
+    userId: user?.id,
+    datos: datosDelBorrador,
+    fotos: fotosDelBorrador,
+    paso: currentStep,
+    // Sin usuario no se guarda nada: la llave sería la de «nadie» y dos
+    // personas en el mismo computador compartirían borrador.
+    activo: Boolean(user?.id),
+  });
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -323,6 +346,55 @@ export function ConsignacionWizard({
   }, []);
 
   /**
+   * W4 — retomar el borrador. Sólo corre cuando la persona lo pide desde el
+   * aviso: el asistente arranca en blanco siempre.
+   *
+   * Tres cuidados:
+   *  · Las fotos se REEMPLAZAN, no se suman. Si se sumaran, retomar dos veces
+   *    dejaría la misma imagen repetida en el inmueble publicado.
+   *  · Si el propietario que tenía guardado ya no existe (lo borraron mientras
+   *    el borrador dormía), se vuelve al paso 1 a elegir otro en vez de mandar
+   *    un id muerto al back y morir en el último paso con un 400.
+   *  · El paso se acomoda al rol: el agente no ve el paso 4, y dejarlo ahí
+   *    sería dejarlo en una pantalla que para él no existe.
+   */
+  const continuarBorrador = useCallback(() => {
+    const guardado = borrador.aceptar();
+    if (!guardado) return;
+    const { datos, sePerdioElPropietario } = conPropietariosVivos(guardado.datos, propietarios);
+
+    setFormData((prev) => {
+      const siguiente: Partial<WizardFormData> = {
+        ...prev,
+        ...datos,
+        photos: sinRepetidas(guardado.fotos),
+      };
+      if (sePerdioElPropietario) {
+        delete siguiente.propietarioId;
+        delete siguiente.copropietarios;
+        delete siguiente.newPropietarioData;
+        delete siguiente.duenoPendienteId;
+        // Quien entró desde la ficha de un propietario vuelve a tenerlo
+        // marcado: ese sí existe, se acaba de abrir desde él.
+        if (propietarioInicial) siguiente.propietarioId = propietarioInicial;
+      }
+      return siguiente;
+    });
+
+    if (sePerdioElPropietario) {
+      setCurrentStep(1);
+      toast.warning(t('inmobiliaria.consignaciones.wizard.borrador.propietarioPerdidoTitle'), {
+        description: t('inmobiliaria.consignaciones.wizard.borrador.propietarioPerdidoDesc'),
+      });
+      return;
+    }
+
+    let paso = Math.min(Math.max(guardado.paso, 1), 6);
+    if (isAgentRole && paso === 4) paso = 5;
+    setCurrentStep(paso);
+  }, [borrador, propietarios, propietarioInicial, isAgentRole, t]);
+
+  /**
    * Crea el inmueble Y el mandato. Son dos cosas.
    *
    * Durante meses esto sólo creó el inmueble: las seis pantallas preguntaban
@@ -415,6 +487,18 @@ export function ConsignacionWizard({
         area:         formData.area ?? 10,
         adminFee:     formData.adminFee,
       });
+
+      /**
+       * W4 — el borrador muere acá, apenas el inmueble EXISTE, y no al final.
+       *
+       * Es el punto exacto que separa «se puede retomar» de «se duplica»: de
+       * acá en adelante cualquier fallo (fotos, agente, mandato, publicar)
+       * deja un inmueble en la base, y retomar el borrador después lo cargaría
+       * por segunda vez — que es el daño que W4 describe. Lo que falte se
+       * completa desde la ficha del inmueble, que ya existe, nunca volviendo a
+       * empezar el asistente.
+       */
+      await borrador.limpiar();
 
       // Photos are best-effort: the property already exists at this point,
       // so a failed upload must never abort the rest of the flow (same
@@ -630,7 +714,7 @@ export function ConsignacionWizard({
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t]);
+  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t, borrador]);
 
   /**
    * W2 — publicar sin fotos deja un recuadro gris en el portal
@@ -653,9 +737,16 @@ export function ConsignacionWizard({
     setShowCancelDialog(true);
   }, []);
 
+  /**
+   * Cancelar es abandonar, no pausar: el diálogo dice «se perderá toda la
+   * información ingresada» y guardar un borrador a escondidas después de eso
+   * sería mentirle a quien acaba de decir que no. Quien quiera seguirlo
+   * después simplemente cierra la pestaña — eso sí lo conserva.
+   */
   const confirmCancel = useCallback(() => {
+    void borrador.limpiar();
     router.push(destinoAlSalir);
-  }, [router, destinoAlSalir]);
+  }, [router, destinoAlSalir, borrador]);
 
   // Render step content
   const renderStepContent = () => {
@@ -709,6 +800,19 @@ export function ConsignacionWizard({
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* W4 — lo que quedó de la última vez. Se OFRECE, no se aplica solo. */}
+      {borrador.decisionPendiente && borrador.encontrado && (
+        <AvisoDeBorradorDePublicacion
+          actualizadoEn={borrador.encontrado.actualizadoEn}
+          paso={Math.min(Math.max(borrador.encontrado.paso, 1), 6)}
+          totalDePasos={6}
+          fotos={borrador.encontrado.fotos.length}
+          fotosNoGuardadas={borrador.encontrado.fotosNoGuardadas}
+          onContinuar={continuarBorrador}
+          onDescartar={() => void borrador.descartar()}
+        />
+      )}
+
       {/* Step Indicator */}
       <div className="mb-8">
         {/* Desktop Steps */}
@@ -813,16 +917,30 @@ export function ConsignacionWizard({
         {/* Footer Navigation */}
         <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
           {/* Cancel Button */}
-          <Button
-            type="button"
-            variant="ghost"
-            hideArrow
-            size="sm"
-            onClick={handleCancel}
-            className="text-fg-muted dark:text-fg-subtle"
-          >
-            {t('inmobiliaria.consignaciones.wizard.cancel')}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              hideArrow
+              size="sm"
+              onClick={handleCancel}
+              className="text-fg-muted dark:text-fg-subtle"
+            >
+              {t('inmobiliaria.consignaciones.wizard.cancel')}
+            </Button>
+            {/* W4 — que se vea que se está guardando solo. Sin esto el
+                autoguardado es invisible y nadie confía en él. */}
+            {borrador.guardadoEn !== null && (
+              <span className="hidden text-xs text-fg-subtle sm:inline">
+                {t('inmobiliaria.consignaciones.wizard.borrador.guardado', {
+                  hora: new Date(borrador.guardadoEn).toLocaleTimeString(
+                    locale === 'en' ? 'en-US' : 'es-CO',
+                    { hour: '2-digit', minute: '2-digit' },
+                  ),
+                })}
+              </span>
+            )}
+          </div>
 
           {/* Navigation Buttons */}
           <div className="flex items-center gap-3">

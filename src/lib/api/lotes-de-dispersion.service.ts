@@ -17,13 +17,18 @@
 
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
+import { anunciarProceso } from './procesos.service';
 import type {
   ArchivoGenerado,
+  BancosParaGirar,
+  CandidatosDeDispersion,
   FiltrosDeLotes,
   FormatoArchivoDePagos,
   LoteArmado,
   LoteDeDispersion,
   LoteResumen,
+  OrdenDeCandidatos,
+  QueMeterEnElLote,
   SolicitudDeAprobacion,
   VistaDelLote,
 } from './lotes-de-dispersion.types';
@@ -47,10 +52,55 @@ export const lotesDeDispersionApi = {
    * Las que no tienen la cuenta completa ENTRAN igual, con su motivo: por eso
    * la respuesta trae `excluidos`.
    */
-  async armar(month: string): Promise<LoteArmado> {
-    const res = await apiClient.post<LoteArmado>(BASE_DE_LOTES, { month });
+  async armar(que: QueMeterEnElLote): Promise<LoteArmado> {
+    // Clave por clave: el back valida con `forbidNonWhitelisted` y un
+    // `topeCop: undefined` en el cuerpo también es una clave de más.
+    const cuerpo: Record<string, unknown> = { month: que.month };
+    if (que.dispersionIds?.length) cuerpo.dispersionIds = que.dispersionIds;
+    if (que.orden) cuerpo.orden = que.orden;
+    if (que.topeCop !== undefined) cuerpo.topeCop = que.topeCop;
+    if (que.origen) {
+      cuerpo.origen = {
+        banco: que.origen.banco,
+        tipoDeCuenta: que.origen.tipoDeCuenta,
+        numeroDeCuenta: que.origen.numeroDeCuenta,
+      };
+    }
+    const res = await apiClient.post<LoteArmado>(BASE_DE_LOTES, cuerpo);
     invalidar('dispersiones');
     return res;
+  },
+
+  /**
+   * A quién le puedo pagar hoy: ordenado, sumando y con hasta dónde alcanza.
+   *
+   * Sin `month` trae las pendientes de TODOS los meses — a un propietario al
+   * que se le debe agosto y septiembre se le paga junto.
+   *
+   * `entraEnElCupo` es informativo: se puede girar por encima de la plata
+   * disponible y el exceso queda como descubierto del lote.
+   */
+  async candidatos(filtros?: {
+    month?: string;
+    orden?: OrdenDeCandidatos;
+    topeCop?: number;
+  }): Promise<CandidatosDeDispersion> {
+    const query = new URLSearchParams();
+    if (filtros?.month) query.set('month', filtros.month);
+    if (filtros?.orden) query.set('orden', filtros.orden);
+    if (filtros?.topeCop !== undefined) query.set('topeCop', String(filtros.topeCop));
+    const qs = query.toString();
+    return apiClient.get<CandidatosDeDispersion>(
+      `${BASE_DE_LOTES}/candidatos${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  /**
+   * «¿Desde qué banco vas a dispersar?»: los bancos (con su formato o el motivo
+   * de por qué todavía no), las cuentas ya registradas y la última elección.
+   */
+  async bancos(): Promise<BancosParaGirar> {
+    return apiClient.get<BancosParaGirar>(`${BASE_DE_LOTES}/bancos`);
   },
 
   async listar(filtros?: FiltrosDeLotes): Promise<LoteResumen[]> {
@@ -96,11 +146,14 @@ export const lotesDeDispersionApi = {
    * Genera el archivo plano (desde APROBADO) o vuelve a entregar el MISMO
    * (desde ARCHIVO_GENERADO, `reenvio: true`, cotejando el hash).
    *
-   * Sin `formato` se usa el que el lote ya tiene o el de la inmobiliaria.
+   * El formato es el del banco elegido al armar el lote; `formato` queda por
+   * compatibilidad y el back responde 400 si no coincide.
    */
   async generarArchivo(id: string, formato?: FormatoArchivoDePagos): Promise<ArchivoGenerado> {
     const cuerpo: Record<string, unknown> = {};
     if (formato) cuerpo.formato = formato;
+    // El archivo queda en el centro de procesos (22-09).
+    anunciarProceso();
     const res = await apiClient.post<ArchivoGenerado>(`${BASE_DE_LOTES}/${id}/archivo`, cuerpo);
     invalidar('dispersiones');
     return res;
@@ -116,18 +169,48 @@ export const lotesDeDispersionApi = {
     return apiClient.getBlob(`${BASE_DE_LOTES}/${id}/archivo`);
   },
 
-  async marcarPagado(id: string, referenciaBanco: string): Promise<LoteDeDispersion> {
-    const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/pagado`, {
-      referenciaBanco: referenciaBanco.trim(),
-    });
+  /**
+   * Marca el lote pagado por el banco.
+   *
+   * 🔴 `facturarAhora: true` EMITE las facturas del lado propietario (la
+   * comisión de la inmobiliaria y sus impuestos) de las cuotas que el lote
+   * giró. El resultado viene en `lote.facturacion`: cuántas se emitieron,
+   * cuántas ya estaban y qué falló. Un fallo ahí NO deshace el pago — la plata
+   * ya salió del banco y el lote queda PAGADO igual.
+   *
+   * Con `false` la comisión queda como prefactura pendiente y se emite desde
+   * Facturación. Se manda sólo si se decidió: `undefined` sería clave de más
+   * (el back monta el `ValidationPipe` con `forbidNonWhitelisted`).
+   */
+  async marcarPagado(
+    id: string,
+    referenciaBanco: string,
+    facturarAhora?: boolean,
+  ): Promise<LoteDeDispersion> {
+    const cuerpo: Record<string, unknown> = { referenciaBanco: referenciaBanco.trim() };
+    if (facturarAhora !== undefined) cuerpo.facturarAhora = facturarAhora;
+    const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/pagado`, cuerpo);
     invalidar('dispersiones');
     return res;
   },
 
-  /** Anula el lote. El motivo es obligatorio (5 a 300 caracteres, lo exige el back). */
-  async anular(id: string, motivo: string): Promise<LoteDeDispersion> {
+  /**
+   * Anula el lote. El motivo es obligatorio (5 a 300 caracteres, lo exige el back).
+   *
+   * 🔴 `confirmoQueElArchivoPudoLlegarAlBanco`: el back lo EXIGE en `true` para
+   * anular un lote en ARCHIVO_GENERADO (409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin él), porque ese archivo
+   * pudo subirse al banco y anular libera sus pagos para otro lote. Sólo viaja
+   * cuando es `true`.
+   */
+  async anular(
+    id: string,
+    motivo: string,
+    confirmoQueElArchivoPudoLlegarAlBanco = false,
+  ): Promise<LoteDeDispersion> {
     const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/anular`, {
       motivo: motivo.trim(),
+      ...(confirmoQueElArchivoPudoLlegarAlBanco ? { confirmoQueElArchivoPudoLlegarAlBanco: true } : {}),
     });
     invalidar('dispersiones');
     return res;
@@ -136,7 +219,23 @@ export const lotesDeDispersionApi = {
 
 export type {
   ArchivoGenerado,
+  BancoDeOrigen,
+  BancosParaGirar,
+  CandidatoDeDispersion,
+  CuentaRegistrada,
+  EntregaDelFormato,
+  FuenteDelFormato,
+  OrigenDelLote,
+  SalioEnUnArchivoAnulado,
+  OrigenDelGiroEnPantalla,
+  OpcionesDelOrigenDelGiro,
+  OrigenPedido,
+  TipoDeCuentaDeOrigen,
+  CandidatosDeDispersion,
   EstadoDelLote,
+  ExtractosDeLosCompensados,
+  FacturacionDelLote,
+  FilaCompensada,
   FilaExcluida,
   FiltrosDeLotes,
   FormatoArchivoDePagos,
@@ -144,6 +243,9 @@ export type {
   LoteArmado,
   LoteDeDispersion,
   LoteResumen,
+  OrdenDeCandidatos,
+  PlataDisponible,
+  QueMeterEnElLote,
   SolicitudDeAprobacion,
   VistaDelLote,
 } from './lotes-de-dispersion.types';

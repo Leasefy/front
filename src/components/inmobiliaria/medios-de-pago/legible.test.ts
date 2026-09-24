@@ -28,10 +28,20 @@ describe('describirMedio y enmascarar', () => {
 
 describe('sugerencias', () => {
   it('prellena titular y NIT con la agencia; el efectivo es directo', () => {
-    const [transferencia, efectivo] = sugerencias({ name: 'Portofino', razonSocial: 'Portofino S.A.S.', nit: '900.1-2' });
+    const [transferencia, efectivo] = sugerencias(
+      { name: 'Portofino', razonSocial: 'Portofino S.A.S.', nit: '900.1-2' },
+      { efectivoHabilitado: true },
+    );
     expect(transferencia.valores).toMatchObject({ tipo: 'TRANSFERENCIA', titular: 'Portofino S.A.S.', documentoTitular: '900.1-2' });
     expect(transferencia.directa).toBe(false);
     expect(efectivo.valores).toEqual({ tipo: 'EFECTIVO', nombre: 'Efectivo en la oficina' });
     expect(efectivo.directa).toBe(true);
+  });
+});
+
+describe('sugerencias — el efectivo', () => {
+  it('🔴 no se sugiere si la inmobiliaria lo apagó o no se sabe (QA 22-09)', () => {
+    expect(sugerencias({ name: 'Portofino' }).map((s) => s.id)).toEqual(['transferencia']);
+    expect(sugerencias({ name: 'Portofino' }, { efectivoHabilitado: false }).map((s) => s.id)).toEqual(['transferencia']);
   });
 });

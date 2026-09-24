@@ -1,7 +1,7 @@
 # Leasify — Frontend (front/)
 
 Frontend único de Leasify, plataforma de arriendos inmobiliarios en Colombia.
-Next.js 14 App Router. Corre en :3001 (el :3000 es del back).
+Next.js 15 App Router (React 19). Corre en :3001 (el :3000 es del back).
 
 > Conocimiento profundo del micro. Para contratos con otros servicios ver `../SYSTEM-MAP.md`.
 > Para historial y decisiones: `mem_search(project: "front")`.
@@ -30,16 +30,20 @@ activity feed, execution panel).
 
 ## Stack
 
-- Next.js 14.2 App Router + React 18 + TypeScript 5. Package manager: **pnpm**.
+- Next.js 15.5 App Router + React 19 + TypeScript 5. Package manager: **pnpm**. (Subido desde
+  14.2 el 23-09 por seguridad: `params`/`searchParams`/`cookies()` son promesas; en páginas
+  cliente se leen con `use()`.)
 - Tailwind 3.4 + tokens via CSS vars `hsl(var(--...))` + Radix UI/shadcn + Framer Motion.
 - Formularios: react-hook-form + zod. Toasts: sonner. Iconos: Phosphor + Lucide.
 - Estado: React Context + hooks custom (`src/lib/context/`, `src/lib/hooks/`). SIN Zustand/Redux.
-- Mapas: mapbox-gl/maplibre + supercluster. Gráficas: recharts. Scroll: lenis.
+- Mapas: maplibre 6 (react-map-gl 8) + supercluster. El worker de MapLibre se sirve desde
+  `public/maplibre/<versión>/` (lo copia el `postinstall`); todo `<Map>` importa
+  `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
 
 ## Estructura
 
-- Rutas: `/panel/inmobiliaria/*` (panel agencia; la IA vive dentro de cada módulo, p.ej. `/cobros/cobranza` y `/postulaciones/asegurabilidad` — ver `src/lib/nav/arquitectura-del-panel.ts`),
+- Rutas: `/panel/inmobiliaria/*` (panel agencia; los agentes de IA tienen su propia sección del menú, «Agentes IA», arriba de todo, pero conservan la URL del módulo cuyo proceso automatizan, p.ej. `/pagos/cobranza` y `/postulaciones/asegurabilidad` — ver `src/lib/nav/arquitectura-del-panel.ts`),
   `/panel/(landlord)`, `/inquilino`, `/propiedades`, `/onboarding`, `/aplicar`, `/auth`, `/avaluo`.
 - **Backoffice admin** (`/admin/*`, `src/app/admin/`): panel interno de Leasefy/Portofino
   (operación cross-tenant). Auth propia (`/admin/login`, allowlist `ADMIN_EMAILS`), sidebar
@@ -114,6 +118,14 @@ El CI (`.github/workflows/ci.yml`) solo corre: `install --frozen-lockfile` → `
 `pnpm test`. El job `e2e` es `workflow_dispatch` + `continue-on-error` (nunca bloquea merge).
 **Antes de abrir PR corré a mano:** `pnpm lint`, `pnpm api:check` (si tocaste el contrato del
 agent), `pnpm build`. Detalle en la skill `engineering-standards`.
+
+**Después de `pnpm build`:** `node scripts/variables-libres-del-build.mjs` (lee
+`.next/static/chunks`; sale 1 si encuentra algo, 2 si no hay build). Busca identificadores que
+un chunk usa sin declarar y que no son globales del navegador: la huella del
+`ReferenceError: propietarios is not defined` del 22-09 (commit `64a4a4aa`), que el
+minificador de SWC produjo al inlinear un cierre — el fuente estaba bien, `next dev`, `tsc` y
+las pruebas no lo veían. Un nombre de librería legítimo se agrega a `PERMITIDOS_DE_LIBRERIAS`
+con su motivo; un chunk que no se puede parsear también hace fallar (no se da por limpio).
 
 ## Agente de proyecto y skills
 

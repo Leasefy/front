@@ -219,11 +219,11 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
               </Campo>
               <Campo
                 id="regla-disparador-dia"
-                etiqueta={disparador === 'DIA_DEL_MES' ? 'Día del mes' : 'Día de mora'}
+                etiqueta="Días de mora"
                 ayuda={
-                  disparador === 'DIA_DEL_MES'
-                    ? 'Del 1 al 31. «15» = pasado el 15 de cada mes.'
-                    : '«1» = desde el primer día después del plazo. «0» = apenas vence.'
+                  // Nico, 17-09: los gastos de cobranza van «a los N días de mora»,
+                  // una sola vez por cuota. Una regla vieja «pasado el día M» lee M como días.
+                  '«15» = a los 15 días de mora de la cuota, una sola vez y se mire el día que se mire. «1» = desde el primer día después del plazo.'
                 }
                 error={errors.disparadorDia?.message}
               >
@@ -232,7 +232,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                   type="number"
                   inputMode="numeric"
                   min={0}
-                  max={disparador === 'DIA_DEL_MES' ? 31 : 365}
+                  max={365}
                   step={1}
                   className="font-mono tabular-nums"
                   aria-invalid={Boolean(errors.disparadorDia)}
@@ -312,7 +312,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
                     {unidadDelValor && (
                       <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-fg-muted"
+                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-caption text-fg-muted"
                       >
                         {unidadDelValor}
                       </span>
@@ -417,7 +417,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura
               {vistaPrevia}
             </Banner>
           ) : (
-            <p className="text-xs text-fg-muted">Completa los campos para ver cómo queda la regla.</p>
+            <p className="text-caption text-fg-muted">Completa los campos para ver cómo queda la regla.</p>
           )}
 
           {errorDelBack && (
@@ -461,11 +461,11 @@ function Campo({
       </Label>
       {children}
       {error ? (
-        <p className="text-xs text-danger" role="alert" data-testid={`error-${id}`}>
+        <p className="text-caption text-danger" role="alert" data-testid={`error-${id}`}>
           {error}
         </p>
       ) : ayuda ? (
-        <p className="text-xs text-fg-muted">{ayuda}</p>
+        <p className="text-caption text-fg-muted">{ayuda}</p>
       ) : null}
     </div>
   );
@@ -483,14 +483,14 @@ function LecturaDeLaTasaDiaria({
   const { aviso } = lectura;
   return (
     <div className="space-y-0.5" data-testid="lectura-de-la-tasa" aria-live="polite">
-      <p className="text-xs text-fg-muted">{lectura.equivalencia}</p>
+      <p className="text-caption text-fg-muted">{lectura.equivalencia}</p>
       {aviso && (
         <p
           data-testid="aviso-de-usura"
           data-tono={aviso.tono}
           role={aviso.tono === 'peligro' ? 'alert' : undefined}
           className={cn(
-            'text-xs',
+            'text-caption',
             aviso.tono === 'peligro'
               ? 'text-danger'
               : aviso.tono === 'atencion'

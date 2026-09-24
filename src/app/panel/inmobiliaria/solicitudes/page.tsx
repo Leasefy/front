@@ -1,12 +1,20 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/react';
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { SearchInput } from '@leasefy/cadence';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Spinner } from '@/components/ui/spinner';
@@ -21,9 +29,16 @@ import { ApiError } from '@/lib/api/client';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import { RESUMEN_PQRS_VACIO } from '@/lib/api/pqrs-agencia.types';
-import type { Pqrs, PqrsListResponse } from '@/lib/api/pqrs-agencia.types';
+import type { Pqrs, PqrsEstado, PqrsListResponse } from '@/lib/api/pqrs-agencia.types';
+import {
+  filtrarPqrs,
+  FILTROS_DE_PQRS_VACIOS,
+  type FiltrosDePqrs,
+} from './filtrar-pqrs';
+import { PQRS_ESTADOS } from '@/lib/api/pqrs-agencia.types';
 import { NuevaPqrsDrawer } from '@/components/inmobiliaria/pqrs/NuevaPqrsDrawer';
 import { PqrsDrawer } from '@/components/inmobiliaria/pqrs/PqrsDrawer';
+import { BandejaDePropuestas } from '@/components/inmobiliaria/pqrs/BandejaDePropuestas';
 import {
   ESTADO_BADGE,
   ESTADO_LABEL,
@@ -56,6 +71,10 @@ const VUELVE_A: Record<ReturnType<typeof lugarDeRegreso>, string> = {
   lista: 'Volver',
   otro: 'Volver',
 };
+
+// 🔴 El buscador y el filtro viven en `filtrar-pqrs.ts`: un archivo de página
+// no puede exportar nada fuera del juego que Next admite, y estaban exportados
+// para poder probarlos. Ver la cabecera de ese archivo.
 
 const COLUMNS = [
   'colRadicado', 'colSolicitante', 'colTipo', 'colInmueble',
@@ -110,7 +129,10 @@ function PqrsContent() {
   }, [pqrsPedida, data]);
 
   const resumen = data?.resumen ?? RESUMEN_PQRS_VACIO;
-  const solicitudes = data?.solicitudes ?? [];
+  const todas = data?.solicitudes ?? [];
+  const [filtros, setFiltros] = useState<FiltrosDePqrs>(FILTROS_DE_PQRS_VACIOS);
+  const hayFiltros = filtros.texto.trim() !== '' || filtros.estado !== 'todos';
+  const solicitudes = useMemo(() => filtrarPqrs(todas, filtros), [todas, filtros]);
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(solicitudes);
 
@@ -170,6 +192,14 @@ function PqrsContent() {
           {t(k('new'))}
         </Button>
       </header>
+
+      {/*
+        🔴 I-02: lo que el agente detectó y espera confirmación. Va ARRIBA del
+        resumen porque es lo único de esta pantalla que tiene un reloj legal
+        corriendo desde antes de que alguien la abra. Si no hay nada pendiente
+        no se dibuja.
+      */}
+      <BandejaDePropuestas onRadicada={load} />
 
       {/* Resumen por estado */}
       <section className="space-y-3">
@@ -232,6 +262,42 @@ function PqrsContent() {
       {/* Solicitudes — la tabla sola dentro de la tarjeta, sin título encima
           (Nico: «nosotros no nombramos las tablas»). */}
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
+        {/* Buscador + filtro por estado: la primera fila de la card, como en
+            Documentos. Van DENTRO de la tarjeta y FUERA del `EstadoDeDatos`
+            para que no desaparezcan mientras recarga. */}
+        <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center">
+          <SearchInput
+            value={filtros.texto}
+            onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
+            onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
+            placeholder="Radicado, solicitante, asunto o inmueble"
+            inputSize="md"
+            className="w-full sm:w-80"
+            data-testid="pqrs-buscar"
+          />
+          <Select
+            value={filtros.estado}
+            onValueChange={(v) => setFiltros((f) => ({ ...f, estado: v as FiltrosDePqrs['estado'] }))}
+          >
+            <SelectTrigger className="w-full whitespace-nowrap sm:w-48" data-testid="pqrs-filtro-estado">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              {PQRS_ESTADOS.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {ESTADO_LABEL[e]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hayFiltros && (
+            <span className="text-caption text-fg-muted tabular-nums" data-testid="pqrs-cuantas-filtradas">
+              {solicitudes.length} de {todas.length}
+            </span>
+          )}
+        </div>
+
         {/* El vacío vive dentro del <TableBody> para que se sigan viendo los
             encabezados. Acá sólo carga y fallo. */}
         <EstadoDeDatos
@@ -259,12 +325,22 @@ function PqrsContent() {
               {solicitudes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={COLUMNS.length} className="p-0">
+                    {/* Filtrado a cero NO es «no hay solicitudes»: ofrecer
+                        «Nueva solicitud» sobre un filtro que esconde 80 filas
+                        es mandar a radicar una que ya existe. */}
                     <SinDatos
                       queSon="solicitudes"
                       icono={Lifebuoy}
-                      titulo={t(k('emptyTitle'))}
-                      descripcion={t(k('emptyDesc'))}
-                      crear={{ label: t(k('new')), onClick: () => setNuevaOpen(true) }}
+                      hayFiltros={hayFiltros}
+                      titulo={hayFiltros ? 'Ninguna coincide con la búsqueda' : t(k('emptyTitle'))}
+                      descripcion={
+                        hayFiltros
+                          ? 'Prueba con otras palabras o quita el filtro de estado.'
+                          : t(k('emptyDesc'))
+                      }
+                      {...(hayFiltros
+                        ? { onLimpiarFiltros: () => setFiltros(FILTROS_DE_PQRS_VACIOS) }
+                        : { crear: { label: t(k('new')), onClick: () => setNuevaOpen(true) } })}
                     />
                   </TableCell>
                 </TableRow>

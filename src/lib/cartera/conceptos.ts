@@ -29,6 +29,25 @@ export const NOMBRE_DEL_CONCEPTO: Record<TipoDeConcepto, string> = {
   AJUSTE_MANUAL: 'Ajustes',
 };
 
+/**
+ * « · contrato 1686 · Leasefy #1839» en un migrado, « · contrato #94» en un
+ * nativo: el número que la inmobiliaria conoce primero, y el nuestro rotulado
+ * para que se sepa cuál es cuál (Nico se asustó con un «#1839» pelado).
+ *
+ * Vive acá y no dentro de una pantalla porque lo usan las dos lecturas de la
+ * misma plata —la cartera por concepto y las cuotas del mes en Pagos—, y dos
+ * copias es cómo el mismo contrato termina citado de dos formas distintas.
+ */
+export function rotuloDelContrato(c: {
+  contrato: string | null;
+  contratoDeLeasefy?: string | null;
+}): string {
+  // Sin «Leasefy #…» (Nico, 16-09: «ese código de Leasefy no lo dejemos»):
+  // `contratoDeLeasefy` se sigue aceptando para no romper al back, pero no se lee.
+  if (!c.contrato) return '';
+  return ` · contrato ${c.contrato}`;
+}
+
 /** Qué le pasó al giro de un mes, dicho como lo diría la persona de tesorería. */
 export const NOMBRE_DEL_ESTADO_DEL_GIRO: Record<EstadoDelGiro, string> = {
   SIN_GENERAR: 'Sin generar la dispersión',
@@ -49,17 +68,50 @@ export function haySinDesglose(filas: readonly FilaDeCarteraDelInquilino[]): boo
 }
 
 /**
- * Filtra inquilinos por lo que se escribió: nombre, documento, inmueble o
- * número de contrato. Sin texto, todos.
+ * En qué momento de su vida está la deuda que se quiere ver.
+ *
+ * 🔴 Reemplaza al booleano `soloEnMora` (21-09). Nico, mirando el interruptor
+ * «Sólo cartera»: «¿para qué es ese toggle de sólo cartera jaja». El problema
+ * no era el rótulo: **un interruptor sólo puede expresar dos estados de
+ * cuatro**. La deuda pasa por tres momentos que no son sinónimos —por vencer,
+ * vencido en plazo, cartera— y el interruptor obligaba a elegir entre «todo» y
+ * «lo último», sin manera de ver los otros dos. Es el mismo arreglo que ya se
+ * hizo en «Deuda del mes» el 18-09, y a propósito con las mismas palabras: el
+ * mismo hecho tiene que llamarse igual en las dos pantallas.
+ */
+export type CajonDeLaCartera =
+  | 'TODAS'
+  | 'POR_VENCER'
+  | 'VENCIDA_EN_PLAZO'
+  | 'CARTERA';
+
+/** Lo que cada cajón mira de los totales del inquilino. */
+const LO_QUE_MIRA_EL_CAJON: Record<
+  Exclude<CajonDeLaCartera, 'TODAS'>,
+  (t: InquilinoEnCartera['totales']) => number
+> = {
+  POR_VENCER: (t) => t.porVencerCop,
+  VENCIDA_EN_PLAZO: (t) => t.vencidaEnPlazoCop ?? 0,
+  // `enMoraCop` es LA CARTERA desde el 2026-09-15: lo vencido más allá de los
+  // días de plazo del contrato. Quien debe y está dentro de su plazo NO entra
+  // — es justo lo que la cobranza no puede perseguir.
+  CARTERA: (t) => t.enMoraCop,
+};
+
+/**
+ * Filtra inquilinos por el cajón elegido y por lo que se escribió: nombre,
+ * documento, inmueble o número de contrato. Sin texto y con `TODAS`, todos.
  */
 export function filtrarInquilinos(
   inquilinos: readonly InquilinoEnCartera[],
   busqueda: string,
-  soloEnMora: boolean,
+  cajon: CajonDeLaCartera = 'TODAS',
 ): InquilinoEnCartera[] {
   const texto = normalizar(busqueda);
   return inquilinos.filter((i) => {
-    if (soloEnMora && i.totales.enMoraCop <= 0) return false;
+    if (cajon !== 'TODAS' && LO_QUE_MIRA_EL_CAJON[cajon](i.totales) <= 0) {
+      return false;
+    }
     if (!texto) return true;
     const campos = [
       i.nombre,
@@ -88,8 +140,10 @@ export function sumarTotales(
     abonadoCop: 0,
     saldoCop: 0,
     enMoraCop: 0,
+    vencidaEnPlazoCop: 0,
     porVencerCop: 0,
     enSiniestroCop: 0,
+    cuotas: 0,
     cobros: 0,
   };
   for (const i of inquilinos) {
@@ -99,11 +153,21 @@ export function sumarTotales(
     total.sinDesgloseCop += i.totales.sinDesgloseCop;
     total.abonadoCop += i.totales.abonadoCop;
     total.saldoCop += i.totales.saldoCop;
+    /*
+     * 🔴 Los tres cajones se suman POR SEPARADO y nunca entre sí: cartera,
+     * vencido dentro del plazo y por vencer significan cosas distintas y
+     * `cartera + vencidaEnPlazo + porVencer = saldoCop` sólo cierra si cada uno
+     * conserva su propia cuenta.
+     */
     total.enMoraCop += i.totales.enMoraCop;
+    total.vencidaEnPlazoCop += i.totales.vencidaEnPlazoCop ?? 0;
     total.porVencerCop += i.totales.porVencerCop;
     total.enSiniestroCop += i.totales.enSiniestroCop;
-    total.cobros += i.totales.cobros;
+    total.cuotas += i.totales.cuotas ?? i.totales.cobros;
   }
+  // El alias deprecado sigue el mismo número, para que nada que todavía lea
+  // `cobros` muestre un cero mientras se termina de renombrar.
+  total.cobros = total.cuotas;
   return total;
 }
 

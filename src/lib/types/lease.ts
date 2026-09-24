@@ -42,7 +42,8 @@ export interface Lease {
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;
-  propertyThumbnail: string;
+  /** `null` cuando el inmueble no tiene fotos (todos los migrados). */
+  propertyThumbnail: string | null;
 
   // Tenant info (denormalized for landlord view)
   tenantName: string;
@@ -68,6 +69,17 @@ export interface Lease {
     proposedAdminFee: number | null;
     newEndDate: string | null;
     tenantAcceptedAt: string | null;
+    /**
+     * El aviso de que NO se renueva, venga de quien venga. `null` = nadie
+     * avisó, que es el caso normal: sin aviso el contrato se prorroga solo
+     * (Ley 820). `por` es INQUILINO · PROPIETARIO · INMOBILIARIA, y decide
+     * quién puede retirarlo.
+     */
+    avisoNoRenovar?: {
+      at: string;
+      por: string | null;
+      motivo: string | null;
+    } | null;
   } | null;
 
   // Metadata

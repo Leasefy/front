@@ -6,14 +6,16 @@ import { motion } from 'framer-motion';
 import { CaretLeft, PaperPlaneTilt } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { DispersionWizard } from '@/components/inmobiliaria';
-import type { Dispersion } from '@/lib/types/inmobiliaria';
+import { GenerarDispersion } from '@/components/inmobiliaria/dispersion/GenerarDispersion';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 
 /**
- * GenerarDispersionesPage - Wrapper page for DispersionWizard
- * Route: /panel/inmobiliaria/pagos/dispersiones/generar
+ * La pantalla de generar la dispersión del mes.
+ * Ruta: /panel/inmobiliaria/pagos/dispersiones/generar
+ *
+ * Adentro ya no hay un asistente de seis pasos: es UNA pantalla que pregunta a
+ * quién se le gira y confirma ahí mismo (ver `GenerarDispersion`).
  */
 function GenerarDispersionesContent() {
   const { t } = useI18n();
@@ -31,12 +33,8 @@ function GenerarDispersionesContent() {
    * así que generar las de julio y caer en agosto vacío se lee como que no
    * pasó nada.
    */
-  const handleComplete = (_dispersiones: Dispersion[], month?: string) => {
-    router.push(
-      month
-        ? `/panel/inmobiliaria/pagos/dispersiones?mes=${month}`
-        : '/panel/inmobiliaria/pagos/dispersiones',
-    );
+  const handleComplete = (month: string) => {
+    router.push(`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`);
   };
 
   const handleCancel = () => {
@@ -51,7 +49,13 @@ function GenerarDispersionesContent() {
         animate={{ opacity: 1, y: 0 }}
         className="border-b border-border bg-background"
       >
-        <div className="container max-w-4xl mx-auto px-4 py-4">
+        {/* 🔴 Nico, 22-09: «¿por qué no utilizas todo el ancho? ¡para eso lo
+            tienes!». Esta pantalla tenía DOS topes distintos —el encabezado en
+            `max-w-4xl` (896 px) y el contenido en `max-w-6xl` (1152 px)—, así
+            que en un monitor de 1.900 px sobraba media pantalla Y el botón de
+            volver ni siquiera quedaba alineado con las tarjetas de abajo. El
+            panel ya tiene su tope (1.920 px) en su layout: acá no va ninguno. */}
+        <div className="px-6 py-4 lg:px-8">
           <div className="flex items-center gap-4">
             <Button asChild variant="ghost" size="sm" hideArrow>
               <Link href="/panel/inmobiliaria/pagos/dispersiones">
@@ -81,12 +85,9 @@ function GenerarDispersionesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="container max-w-4xl mx-auto px-4 py-8"
+        className="px-6 py-6 lg:px-8"
       >
-        <DispersionWizard
-          onComplete={handleComplete}
-          onCancel={handleCancel}
-        />
+        <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
       </motion.div>
     </div>
   );

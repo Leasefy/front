@@ -26,7 +26,7 @@ export default function SeleccionPage() {
     return (
       <PortalPlaceholder
         title="Elegir inquilino"
-        subtitle="Compará los postulados asegurables y elige tú quién vive en tu inmueble."
+        subtitle="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
         icon={UsersThree}
         emptyDescription="Vas a poder comparar lado a lado los postulados asegurables de tu inmueble y elegir con un clic —tu elección se auto-valida. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
@@ -38,7 +38,7 @@ export default function SeleccionPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Elegir inquilino"
-          subtitle="Compará los postulados asegurables y elige tú quién vive en tu inmueble."
+          subtitle="Compara los postulados asegurables y elige tú quién vive en tu inmueble."
         />
 
         {procesos.length === 0 ? (

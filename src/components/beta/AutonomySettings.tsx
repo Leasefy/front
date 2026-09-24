@@ -9,6 +9,7 @@ import {
   ChartBar,
   Lightning,
   Hand,
+  Eye,
   ArrowCounterClockwise,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
@@ -34,7 +35,13 @@ const AGENT_ICON_MAP: Record<string, Icon> = {
   ChartBar,
 };
 
+/**
+ * Los iconos de los tres niveles (18-09-2026): Sombra = un ojo (mira y no
+ * toca), Copilot = una conversación, Automático = un rayo. `Hand` se queda
+ * porque alguna preferencia guardada puede traerlo.
+ */
 const LEVEL_ICON_MAP: Record<string, Icon> = {
+  Eye,
   Lightning,
   ChatCircle,
   Hand,

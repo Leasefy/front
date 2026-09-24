@@ -44,7 +44,7 @@ interface Props {
   puedeEditar: boolean
 }
 
-const PANTALLA_DE_REGLAS = '/panel/inmobiliaria/cobros/reglas-de-mora'
+const PANTALLA_DE_REGLAS = '/panel/inmobiliaria/pagos/cartera/reglas-de-mora'
 
 export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   const [reglas, setReglas] = useState<ReglaDeMoraDelContrato[] | null>(null)
@@ -86,7 +86,10 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
     try {
       const actualizada = await reglasDeMoraApi.ajustarEnContrato(contract.id, reglaId, ajuste)
       setReglas((prev) =>
-        (prev ?? []).map((r) => (r.regla.id === reglaId ? actualizada : r)),
+        // El ajuste no cambia si el contrato pacta gastos de cobranza (D9): se conserva la marca.
+        (prev ?? []).map((r) =>
+          r.regla.id === reglaId ? { ...actualizada, noPactada: actualizada.noPactada ?? r.noPactada } : r,
+        ),
       )
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar el ajuste.')
@@ -135,7 +138,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         </p>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Las reglas son de la inmobiliaria y rigen para todos los contratos.
             Acá se ajustan sólo para este.
           </p>
@@ -187,7 +190,7 @@ function FilaDeRegla({
             <p className="text-sm font-medium text-foreground">{regla.nombre}</p>
             {/* El concepto sólo si el nombre no lo dice ya: «Interés de mora · Interés de mora» es ruido. */}
             {NOMBRE_DEL_CONCEPTO[regla.concepto].toLowerCase() !== regla.nombre.trim().toLowerCase() ? (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-caption text-muted-foreground">
                 · {NOMBRE_DEL_CONCEPTO[regla.concepto]}
               </span>
             ) : null}
@@ -200,13 +203,18 @@ function FilaDeRegla({
               </span>
             ) : null}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {fila.aplica
               ? `Se dispara ${describirDisparador(efectiva)} y cobra ${describirFormula(efectiva)}, ${describirTope(regla.topeCop)}.`
               : 'No se le aplica a este contrato.'}
           </p>
+          {fila.noPactada ? (
+            <p className="text-caption font-medium text-plan-status-yellow" data-testid={`no-pactada-${regla.id}`}>
+              El contrato no pacta gastos de cobranza: esta regla no se causa. Se cambia en «Condiciones del contrato».
+            </p>
+          ) : null}
         </div>
-        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-caption text-muted-foreground">
           <span className="hidden sm:inline">Aplica</span>
           <Switch
             checked={fila.aplica}
@@ -235,7 +243,7 @@ function FilaDeRegla({
             testId={`valor-${regla.id}`}
           />
           <CampoPropio
-            etiqueta={regla.disparador === 'DIA_DEL_MES' ? 'Día del mes' : 'Día de mora'}
+            etiqueta="Días de mora"
             valor={fila.disparadorDia}
             deLaAgencia={fila.disparadorDiaDeLaAgencia}
             esPropio={diaEsPropio}
@@ -303,7 +311,7 @@ function CampoPropio({
 
   return (
     <div className="space-y-1">
-      <label className="text-xs text-muted-foreground">{etiqueta}</label>
+      <label className="text-caption text-muted-foreground">{etiqueta}</label>
       <div className="flex items-center gap-2">
         <Input
           type="number"

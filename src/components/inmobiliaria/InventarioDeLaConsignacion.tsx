@@ -141,16 +141,6 @@ export function InventarioDeLaConsignacion({
 
   return (
     <div className="space-y-2" data-testid="inventario-de-la-consignacion">
-      {copiaLocal && (
-        <PrepararParaSinSenal
-          guardadoEn={copiaLocal.guardadoEn}
-          preparando={copiaLocal.preparando}
-          ultimaPreparacion={copiaLocal.ultimaPreparacion}
-          sinSenal={sinSenal}
-          onPreparar={() => void copiaLocal.preparar()}
-        />
-      )}
-
       {/* La barra sólo tiene sentido para quien edita: quien mira no tiene
           borrador que subir ni que descartar. */}
       {puedeEditar && (
@@ -168,6 +158,21 @@ export function InventarioDeLaConsignacion({
       )}
 
       <ActaEntregaView
+        /* 🔴 «Trabajar sin señal» va DENTRO de la tarjeta del inventario: es la
+           copia de ESE inventario para llevárselo a la visita. Como tarjeta
+           aparte flotando encima parecía de otra cosa. */
+        franja={
+          copiaLocal ? (
+            <PrepararParaSinSenal
+              guardadoEn={copiaLocal.guardadoEn}
+              preparando={copiaLocal.preparando}
+              ultimaPreparacion={copiaLocal.ultimaPreparacion}
+              sinSenal={sinSenal}
+              onPreparar={() => void copiaLocal.preparar()}
+              sinMarco
+            />
+          ) : undefined
+        }
         inventoryItems={items}
         contractDate={consignacion.contractDate}
         // Imprimir es la hoja del acta del inmueble, la misma desde las dos

@@ -254,3 +254,28 @@ describe('soltar la tarjeta en otra columna', () => {
     expect(onStatusChange).not.toHaveBeenCalled();
   });
 });
+
+describe('MantenimientoKanban — el tablero vacío (M6)', () => {
+  it('🔴 sin solicitudes ofrece crear la primera, en vez de cinco columnas en cero', () => {
+    const onCrear = vi.fn();
+    act(() => {
+      root.render(<MantenimientoKanban data={[]} onCrear={onCrear} />);
+    });
+    expect(container.querySelector('[data-testid="columna-pending"]')).toBeNull();
+    const crear = container.querySelector<HTMLElement>('[data-testid="crear-el-primero"]');
+    expect(crear).not.toBeNull();
+    act(() => crear!.click());
+    expect(onCrear).toHaveBeenCalled();
+  });
+
+  it('filtrado a cero no dice «todavía no tienes»: ofrece quitar los filtros', () => {
+    const onLimpiarFiltros = vi.fn();
+    act(() => {
+      root.render(
+        <MantenimientoKanban data={[]} hayFiltros onLimpiarFiltros={onLimpiarFiltros} onCrear={vi.fn()} />,
+      );
+    });
+    expect(container.querySelector('[data-caso="filtros"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="crear-el-primero"]')).toBeNull();
+  });
+});

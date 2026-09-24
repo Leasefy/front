@@ -104,6 +104,11 @@ export interface ReglaDeMoraDelContrato {
   disparadorDia: number;
   disparadorDiaDeLaAgencia: number;
   esPropio: boolean;
+  /**
+   * D9 (17-09): `true` = es la regla de gastos de cobranza y este contrato no
+   * los pacta (marca del contrato o, si no dice, de la inmobiliaria): no se causa.
+   */
+  noPactada?: boolean;
 }
 
 /** Como llega del back: los `valor` son `Decimal` y pueden viajar como string. */

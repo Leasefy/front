@@ -24,6 +24,11 @@ export interface UseTenantPqrsResult {
   items: SolicitudPqrs[];
   isLoading: boolean;
   error: string | null;
+  /**
+   * ¿Se puede radicar desde el portal? `false` cuando la ruta no existe todavía
+   * (404/403/0); `null` mientras no se sabe (cargando o con otro error).
+   */
+  disponible: boolean | null;
   refetch: () => Promise<void>;
 }
 
@@ -32,13 +37,15 @@ export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult
   const [items, setItems] = useState<SolicitudPqrs[]>([]);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
+  const [disponible, setDisponible] = useState<boolean | null>(null);
 
   const fetchPqrs = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await pqrsApi.listMine();
-      setItems(result);
+      const result = await pqrsApi.listMineConDisponibilidad();
+      setItems(result.items);
+      setDisponible(result.disponible);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando solicitudes';
       setError(message);
@@ -60,6 +67,7 @@ export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult
     items,
     isLoading,
     error,
+    disponible,
     refetch: fetchPqrs,
   };
 }

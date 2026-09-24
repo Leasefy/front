@@ -1,12 +1,19 @@
 'use client';
 
 /**
- * Doce meses de facturado, recaudado y dispersado, en barras.
+ * Doce meses de deuda, recaudo y dispersión, en barras.
+ *
+ * 🔴 La primera barra era «Facturado» —los cobros EMITIDOS— y el 2026-09-16
+ * pasó a ser «Se debe» (`deudaDelMesCop`, las cuotas del contrato). El motivo
+ * está en `Recaudo.tsx`: la inmobiliaria migrada tiene 0 cobros y 30.951
+ * cuotas, así que esa barra era una línea plana en cero sobre miles de
+ * millones de deuda real, y al lado de «Llegó» daba a entender que se recaudó
+ * todo lo que había.
  *
  * Los colores van en hex como en el resto de los gráficos del repo
  * (`cotizador/*Chart.tsx`): recharts pinta atributos SVG y no resuelve
  * `var(--…)`. Cobalt para lo que llegó —la cifra que importa—, el neutro
- * cálido para lo facturado y el verde de apoyo para lo que salió
+ * cálido para lo que se debe y el verde de apoyo para lo que salió
  * (DESIGN §Tinted: los tonos de apoyo son para gráficos).
  */
 
@@ -26,15 +33,15 @@ import { formatCurrency } from '@/lib/format';
 import { mesCorto } from '@/lib/recaudo/meses';
 
 const COLOR = {
-  facturado: '#C9C5BE',
+  seDebe: '#C9C5BE',
   recaudado: '#1A40FF',
   dispersado: '#307E57',
   eje: '#6E6A63',
   grilla: '#E5E2DC',
 } as const;
 
-const NOMBRE: Record<'facturadoCop' | 'recaudadoCop' | 'dispersadoCop', string> = {
-  facturadoCop: 'Facturado',
+const NOMBRE: Record<'deudaDelMesCop' | 'recaudadoCop' | 'dispersadoCop', string> = {
+  deudaDelMesCop: 'Se debe',
   recaudadoCop: 'Llegó',
   dispersadoCop: 'Dispersado',
 };
@@ -98,7 +105,7 @@ export function GraficoDeRecaudo({ serie }: Props) {
             formatter={(valor) => NOMBRE[String(valor) as keyof typeof NOMBRE] ?? String(valor)}
             wrapperStyle={{ fontSize: 11 }}
           />
-          <Bar dataKey="facturadoCop" fill={COLOR.facturado} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="deudaDelMesCop" fill={COLOR.seDebe} radius={[3, 3, 0, 0]} isAnimationActive={false} />
           <Bar dataKey="recaudadoCop" fill={COLOR.recaudado} radius={[3, 3, 0, 0]} isAnimationActive={false} />
           <Bar dataKey="dispersadoCop" fill={COLOR.dispersado} radius={[3, 3, 0, 0]} isAnimationActive={false} />
         </BarChart>

@@ -16,23 +16,54 @@
  *    la deuda vieja, no a la nueva. Es más: ni siquiera me debe permitir
  *    abonarle al mes actual.»
  *
+ * ── La corrección del 2026-09-15: la deuda nace con el CONTRATO ─────────────
+ * Nico, viendo este mismo diálogo decir «no debe nada» con el contrato vigente:
+ *
+ *   «¿Por qué sigue apareciendo acá que no debe? **Desde que él comience el
+ *    contrato ya debe.** No tienes que esperar que se cumpla la fecha para
+ *    entender que él debe.»
+ *
+ *   «El puede hasta **adelantar dinero** sobre el contrato que tiene y pagar
+ *    dos meses o lo que sea, para bajarle a lo adeudado que está en el estado
+ *    de cuenta de ese contrato.»
+ *
+ * De ahí salen las dos reglas que gobiernan este archivo:
+ *
+ *   1. 🔴 La deuda se muestra PARTIDA en dos: **lo vencido** y **lo que todavía
+ *      no vence**. Son cosas distintas para quien recibe la plata —una se
+ *      reclama, la otra se adelanta— y sumarlas en un solo número esconde
+ *      justamente la pregunta que la persona de caja viene a responder. En dev
+ *      el 72 % de la plata es deuda futura.
+ *   2. 🔴 Se puede recibir plata aunque no haya NADA vencido. Eso es adelantar,
+ *      y la pantalla lo dice con esa palabra: no es un saldo a favor, es abonar
+ *      a cuotas del mismo contrato que todavía no vencieron.
+ *
+ * «No debe nada» quedó reservado para el único caso en que es verdad: no queda
+ * ninguna cuota pendiente, ni vencida ni futura.
+ *
  * ── Cómo se lee esta pantalla ───────────────────────────────────────────────
  *   1. `ElegirCliente` — el combobox sobre los inquilinos de la inmobiliaria.
  *      Cuando el recibo se abre desde la fila de un cobro, este paso no se ve:
  *      la persona sale del cobro (`cartera-por-cobro/:cobroId`).
- *   2. `CarteraDelClientePanel` — lo que debe AHORA, del mes más viejo al más
- *      nuevo, con el inmueble de cada deuda y el total. Un cliente con varios
- *      inmuebles la ve JUNTA: es una sola cartera, y el pago se imputa por
- *      antigüedad sin importar de qué inmueble sea cada mes.
+ *   2. `CarteraDelClientePanel` — lo que debe AHORA, vencido primero y futuro
+ *      después, con el inmueble de cada deuda y los dos totales. Un cliente con
+ *      varios inmuebles la ve JUNTA: es una sola cartera, y el pago se imputa
+ *      por antigüedad sin importar de qué inmueble sea cada mes.
+ *      Cada período dice cuánto es CAPITAL y cuánto INTERÉS DE MORA (el back lo
+ *      liquida con la misma regla de la cartera y la prefactura, también para
+ *      la cuota que todavía no tiene cobro): pagar exacto los dos deja la cuota
+ *      y su interés en cero.
  *   3. `PlanDeImputacion` — a qué meses y conceptos va a ir el dinero, ANTES de
- *      emitir. Se calcula acá para no ir al servidor en cada tecla, con una
- *      copia de la regla (`@/lib/recibos/imputar-pago`); la AUTORIDAD es el
- *      back, y lo que quede escrito es lo que él devuelve.
+ *      emitir, con los renglones de adelanto marcados. Se calcula acá para no
+ *      ir al servidor en cada tecla, con una copia de la regla
+ *      (`@/lib/recibos/imputar-pago`); la AUTORIDAD es el back, y lo que quede
+ *      escrito es lo que él devuelve.
  *
  * ── Lo que NO está, y por qué ───────────────────────────────────────────────
  * No hay selector de mes ni botón de «crear el cobro de este mes». Elegir el
  * mes es justamente lo que la regla de imputación no permite, y crear un cobro
- * para poder recibir contra él era el atajo que Nico quiere sacar.
+ * para poder recibir contra él era el atajo que Nico quiere sacar: la deuda ya
+ * existía desde la firma, no hace falta ningún documento para poder cobrarla.
  */
 
 import * as React from 'react';
@@ -44,15 +75,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ApiError } from '@/lib/api/client';
 import { inquilinosApi, type Inquilino } from '@/lib/api/inquilinos.service';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
-import type { CarteraDelCliente, CobroEnCartera } from '@/lib/api/recibos-de-caja.types';
+import type { CarteraDelCliente, PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
 import {
   deudasDeLaCartera,
   imputarPago,
   type Imputacion,
 } from '@/lib/recibos/imputar-pago';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { esAdelantableComoAnticipo } from '@/lib/recibos/forma-del-adelanto';
 
 // ── Reglas puras (probadas solas en ReciboPorCliente.test.tsx) ───────────────
 
@@ -83,41 +117,68 @@ export function etiquetaDeCliente(i: Inquilino): string {
  * inquilino esté pagando, y ponerlos al lado del canon en la misma lista hace
  * pensar que se le están cobrando.
  */
-export function conceptosDelPeriodo(cobro: CobroEnCartera): string[] {
-  return (cobro.conceptos ?? []).filter((c) => !c.resta).map((c) => c.nombre);
+export function conceptosDelPeriodo(periodo: PeriodoEnDeuda): string[] {
+  return (periodo.conceptos ?? []).filter((c) => !c.resta).map((c) => c.nombre);
 }
 
 /** ¿Algún período del plan tiene plata sin recibo? El back frena el pago ahí. */
 export function periodosSinConciliar(
   cartera: CarteraDelCliente | null,
   plan: Imputacion,
-): CobroEnCartera[] {
+): PeriodoEnDeuda[] {
   if (!cartera) return [];
   const tocados = new Set(plan.partes.map((p) => p.id));
-  return cartera.cobros.filter((c) => tocados.has(c.id) && c.sinRespaldo > 0);
+  return cartera.cuotas.filter((c) => tocados.has(c.id) && c.sinRespaldo > 0);
 }
 
-const VARIANTE_DEL_ESTADO: Record<string, 'warning' | 'default' | 'destructive' | 'success'> = {
-  pending: 'warning',
-  partial: 'default',
-  late: 'destructive',
-  defaulted: 'destructive',
-  paid: 'success',
-};
+/**
+ * La deuda partida en dos: lo VENCIDO y lo que TODAVÍA NO VENCE.
+ *
+ * 🔴 No se mezclan nunca. Lo vencido es lo que la inmobiliaria reclama hoy; lo
+ * futuro es deuda del contrato contra la que se puede ADELANTAR. Un solo número
+ * esconde la diferencia, y la diferencia es el 72 % de la plata.
+ *
+ * Cada lista conserva el orden que trajo el back (del más viejo al más nuevo),
+ * que es el mismo en que se va a imputar el pago.
+ */
+export function separarPorVencimiento(cuotas: readonly PeriodoEnDeuda[]): {
+  vencidas: PeriodoEnDeuda[];
+  futuras: PeriodoEnDeuda[];
+} {
+  const vencidas: PeriodoEnDeuda[] = [];
+  const futuras: PeriodoEnDeuda[] = [];
+  for (const c of cuotas) (c.vencida ? vencidas : futuras).push(c);
+  return { vencidas, futuras };
+}
 
 /**
- * El estado del cobro, en el vocabulario del front.
+ * ¿Lo único que se puede hacer con esta persona es adelantarle?
  *
- * 🔴 La cartera NO pasa por `normalizeCobro`: el back devuelve la fila con el
- * enum de Prisma (`COBRO_PENDING`, `PARTIAL`, …) y bajarlo a minúscula no
- * alcanza — `cobro_pending` no existe en el diccionario y la pantalla mostraba
- * la clave cruda `inmobiliaria.cobros.status.cobro_pending` al lado del monto.
- * Se lo vio en el navegador, no en ningún test: los fixtures ya venían con la
- * forma del front. Es la MISMA traducción que hace `normalizeCobro`.
+ * Debe —hay cuotas pendientes— pero ninguna venció todavía. Es el caso que Nico
+ * describió: «puede pagar dos meses o lo que sea para bajarle a lo adeudado».
+ * La pantalla tiene que decirlo con esa palabra, no callarse.
  */
-export function estadoLegible(status: string): string {
-  const s = String(status ?? '').toLowerCase();
-  return s === 'cobro_pending' ? 'pending' : s;
+export function soloSePuedeAdelantar(cartera: CarteraDelCliente | null): boolean {
+  if (!cartera) return false;
+  return (cartera.vencidoCop ?? 0) <= 0 && (cartera.futuroCop ?? 0) > 0;
+}
+
+/**
+ * Capital e interés de un período, por separado. Con un back que no manda los
+ * campos nuevos, todo lo pendiente es capital, que es lo que se veía antes.
+ */
+export function capitalEInteresDelPeriodo(periodo: PeriodoEnDeuda): {
+  capital: number;
+  interes: number;
+} {
+  const interes = Math.max(0, periodo.interesPendienteCop ?? 0);
+  const capital = periodo.capitalPendienteCop ?? Math.max(0, periodo.pendingAmount - interes);
+  return { capital, interes };
+}
+
+/** El día del vencimiento, tal cual: `dueDate` viaja como fecha ISO. */
+export function diaDeVencimiento(dueDate: string): string {
+  return String(dueDate ?? '').slice(0, 10);
 }
 
 // ── 1. Elegir al cliente ────────────────────────────────────────────────────
@@ -132,7 +193,8 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
   const k = (s: string) => `recibos.form.cliente.${s}`;
 
   const [clientes, setClientes] = React.useState<Inquilino[] | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  /** 🔴 El error ENTERO: un string pierde el `status` y el `code`. */
+  const [error, setError] = React.useState<unknown>(null);
 
   const cargar = React.useCallback(async () => {
     setError(null);
@@ -142,7 +204,22 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
       setClientes(clientesParaRecibo(lista));
     } catch (e) {
       setClientes([]);
-      setError(e instanceof Error && e.message ? e.message : '');
+      /*
+       * 🔴 21-09-2026 · EL ERROR ENTERO, NO SU MENSAJE.
+       *
+       * Acá se guardaba `e.message` y ese string se le pasaba a
+       * `FalloDeCarga`. Un string no tiene `status` ni `code`, así que el
+       * clasificador lo mandaba al cajón «servidor»: «Fue un problema
+       * nuestro, no tuyo… Referencia: SER-0721», con un botón de reintentar
+       * que no podía arreglar nada.
+       *
+       * Lo que de verdad pasaba era un **403 `SEGUNDO_FACTOR_REQUERIDO`**: el
+       * back ya mandaba el motivo exacto —activarlo en Configuración →
+       * Seguridad— y esta línea lo tiraba. Con el error entero,
+       * `lib/errores/clasificar.ts` lo reconoce y la pantalla dice qué hacer
+       * en vez de echarse la culpa.
+       */
+      setError(e);
     }
   }, []);
 
@@ -165,12 +242,20 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
           {t(k('cargando'))}
         </div>
       ) : error !== null ? (
-        <div className="space-y-2 rounded-lg border border-border p-4 text-sm">
-          <p className="text-destructive">{error || t(k('fallo'))}</p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            {t(k('reintentar'))}
-          </Button>
-        </div>
+        /*
+         * R3 (auditoría 13-09): esto era `<p className="text-destructive">` con
+         * el mensaje crudo del back —en inglés, a veces un stack— dentro de un
+         * marco propio. `FalloDeCarga` lo CLASIFICA (sin red, sin permiso,
+         * servidor caído) y decide si tiene sentido reintentar; `enmarcado`
+         * va en false porque esto vive adentro del diálogo del recibo y un
+         * borde dentro de otro borde se lee como un error del error.
+         */
+        <FalloDeCarga
+          error={error || t(k('fallo'))}
+          queEs="los clientes"
+          onReintentar={() => cargar()}
+          enmarcado={false}
+        />
       ) : opciones.length === 0 ? (
         <div
           className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted"
@@ -202,13 +287,116 @@ export interface CarteraDelClientePanelProps {
   cartera: CarteraDelCliente;
 }
 
-export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps) {
+/** Una tarjeta de período. Se usa igual en el bloque vencido y en el futuro. */
+function TarjetaDePeriodo({
+  periodo,
+  esLaMasVieja,
+}: {
+  periodo: PeriodoEnDeuda;
+  esLaMasVieja: boolean;
+}) {
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
-  const k = (s: string) => `recibos.form.cartera.${s}`;
+  const k = (x: string) => `recibos.form.cartera.${x}`;
+  const conceptos = conceptosDelPeriodo(periodo);
+  const { capital, interes } = capitalEInteresDelPeriodo(periodo);
 
   return (
-    <div className="space-y-2" data-testid="cartera-del-cliente">
+    <div
+      data-testid={`cartera-periodo-${periodo.month}`}
+      data-vencida={periodo.vencida ? 'si' : 'no'}
+      className={cn(
+        'rounded-lg border border-border bg-surface p-3',
+        // El más viejo es el que va a recibir la plata: se marca.
+        esLaMasVieja && 'border-fg/30',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
+            <CalendarBlank className="h-3.5 w-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
+            {mesEnTitulo(periodo.month, idioma)}
+            {esLaMasVieja && (
+              <Badge variant="warning" data-testid="cartera-mas-vieja">
+                {t(k('masVieja'))}
+              </Badge>
+            )}
+          </p>
+          <p className="flex items-center gap-1.5 truncate text-xs text-fg-muted">
+            <Buildings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {periodo.propertyTitle}
+          </p>
+          {conceptos.length > 0 && (
+            <p className="truncate text-xs text-fg-muted">{conceptos.join(' · ')}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <p
+            className={cn(
+              'font-mono text-sm font-semibold tabular-nums',
+              periodo.vencida ? 'text-warning' : 'text-fg',
+            )}
+          >
+            {formatCurrency(periodo.pendingAmount)}
+          </p>
+          {/* 🔴 Capital e interés, por separado: es lo que caja está cobrando. */}
+          {interes > 0 && (
+            <span
+              className="text-xs text-fg-muted"
+              data-testid={`periodo-capital-e-interes-${periodo.month}`}
+            >
+              {t(k('capitalEInteres'), {
+                capital: formatCurrency(capital),
+                intereses: formatCurrency(interes),
+              })}
+            </span>
+          )}
+          {/*
+            🔴 La insignia dejó de decir el estado del COBRO y dice si la cuota
+            venció. El cobro es un documento que puede no existir (`status:
+            null` en las 30.951 cuotas de la agencia migrada), y lo que la
+            persona de caja necesita saber es si esto se reclama o se adelanta.
+          */}
+          {periodo.vencida ? (
+            <Badge variant="destructive" data-testid="periodo-vencido">
+              {periodo.daysLate > 0
+                ? t(k('conMora'), { dias: periodo.daysLate })
+                : t(k('vencida'))}
+            </Badge>
+          ) : (
+            <Badge variant="default" data-testid="periodo-futuro">
+              {t(k('noVenceAun'), { fecha: diaDeVencimiento(periodo.dueDate) })}
+            </Badge>
+          )}
+          {periodo.paidAmount > 0 && (
+            <span className="text-xs text-fg-muted">
+              {t(k('abonado'), { monto: formatCurrency(periodo.paidAmount) })}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps) {
+  const { t, formatCurrency } = useI18n();
+  const k = (x: string) => `recibos.form.cartera.${x}`;
+
+  const { vencidas, futuras } = React.useMemo(
+    () => separarPorVencimiento(cartera.cuotas),
+    [cartera.cuotas],
+  );
+  const vencidoCop = cartera.vencidoCop ?? 0;
+  const futuroCop = cartera.futuroCop ?? 0;
+  const interesCop =
+    cartera.interesCop ??
+    cartera.cuotas.reduce((s, c) => s + capitalEInteresDelPeriodo(c).interes, 0);
+  const masVieja = cartera.cuotas[0]?.id ?? null;
+  const adelantoSolo = soloSePuedeAdelantar(cartera);
+
+  return (
+    <div className="space-y-3" data-testid="cartera-del-cliente">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
           <User className="h-4 w-4 text-fg-muted" aria-hidden="true" />
@@ -221,53 +409,73 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
         )}
       </div>
 
+      {/*
+        🔴 Los dos números, separados y rotulados. Quien recibe la plata tiene
+        que poder contestar «¿qué me debe HOY?» sin restar de cabeza el total
+        menos lo que todavía no vence.
+      */}
+      <div className="grid grid-cols-2 gap-2" data-testid="cartera-partida">
+        <div className="rounded-lg border border-border bg-surface px-3 py-2">
+          <p className="text-xs text-fg-muted">{t(k('vencidoLabel'))}</p>
+          <p
+            className="font-mono text-base font-semibold tabular-nums text-warning"
+            data-testid="cartera-vencido"
+          >
+            {formatCurrency(vencidoCop)}
+          </p>
+          {/* El interés sólo corre sobre lo vencido: se dice ahí. */}
+          {interesCop > 0 && (
+            <p className="text-xs text-fg-muted" data-testid="cartera-intereses">
+              {t(k('deLosCualesIntereses'), { monto: formatCurrency(interesCop) })}
+            </p>
+          )}
+        </div>
+        <div className="rounded-lg border border-border bg-surface px-3 py-2">
+          <p className="text-xs text-fg-muted">{t(k('futuroLabel'))}</p>
+          <p
+            className="font-mono text-base font-semibold tabular-nums text-fg"
+            data-testid="cartera-futuro"
+          >
+            {formatCurrency(futuroCop)}
+          </p>
+        </div>
+      </div>
+
+      {adelantoSolo && (
+        <p
+          className="rounded-lg border border-border bg-surface-muted p-3 text-xs text-fg"
+          data-testid="aviso-adelanto"
+        >
+          {t(k('soloAdelanto'), { nombre: cartera.nombre })}
+        </p>
+      )}
+
       <div
-        className="max-h-56 space-y-2 overflow-y-auto"
+        className="max-h-56 space-y-3 overflow-y-auto"
         data-lenis-prevent
         style={{ overscrollBehavior: 'contain' }}
       >
-        {cartera.cobros.map((c, i) => (
-          <div
-            key={c.id}
-            data-testid={`cartera-periodo-${c.month}`}
-            className={cn(
-              'rounded-lg border border-border bg-surface p-3',
-              // El más viejo es el que va a recibir la plata: se marca.
-              i === 0 && 'border-fg/30',
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
-                  <CalendarBlank className="h-3.5 w-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
-                  {mesEnTitulo(c.month, idioma)}
-                  {i === 0 && (
-                    <Badge variant="warning" data-testid="cartera-mas-vieja">
-                      {t(k('masVieja'))}
-                    </Badge>
-                  )}
-                </p>
-                <p className="flex items-center gap-1.5 truncate text-xs text-fg-muted">
-                  <Buildings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  {c.propertyTitle}
-                </p>
-                {conceptosDelPeriodo(c).length > 0 && (
-                  <p className="truncate text-xs text-fg-muted">
-                    {conceptosDelPeriodo(c).join(' · ')}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <p className="font-mono text-sm font-semibold tabular-nums text-warning">
-                  {formatCurrency(c.pendingAmount)}
-                </p>
-                <Badge variant={VARIANTE_DEL_ESTADO[estadoLegible(c.status)] ?? 'default'}>
-                  {t(`inmobiliaria.cobros.status.${estadoLegible(c.status)}`)}
-                </Badge>
-              </div>
-            </div>
+        {vencidas.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+              {t(k('grupoVencido'))}
+            </p>
+            {vencidas.map((c) => (
+              <TarjetaDePeriodo key={c.id} periodo={c} esLaMasVieja={c.id === masVieja} />
+            ))}
           </div>
-        ))}
+        )}
+
+        {futuras.length > 0 && (
+          <div className="space-y-2" data-testid="grupo-futuro">
+            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+              {t(k('grupoFuturo'))}
+            </p>
+            {futuras.map((c) => (
+              <TarjetaDePeriodo key={c.id} periodo={c} esLaMasVieja={c.id === masVieja} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-border bg-surface-muted px-3 py-2">
@@ -288,14 +496,38 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
 export interface PlanDeImputacionProps {
   cartera: CarteraDelCliente;
   plan: Imputacion;
+  /**
+   * 🔴 Caja eligió dejar el adelanto como ANTICIPO del contrato (2026-09-16):
+   * los meses futuros no bajan hoy, se descuentan el día de pago. El plan lo
+   * dice en cada renglón y la deuda de después NO los resta.
+   */
+  comoAnticipo?: boolean;
 }
 
-export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
+export function PlanDeImputacion({ cartera, plan, comoAnticipo = false }: PlanDeImputacionProps) {
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
   const k = (s: string) => `recibos.form.plan.${s}`;
 
   if (plan.partes.length === 0) return null;
+
+  const porId = new Map(cartera.cuotas.map((c) => [c.id, c]));
+  /*
+   * 🔴 Un renglón es ADELANTO cuando su cuota todavía no vencía. Sin decirlo,
+   * el usuario ve plata bajando meses que él no reclamó y no entiende por qué:
+   * es justo la operación que Nico pidió habilitar («pagar dos meses o lo que
+   * sea para bajarle a lo adeudado»), así que se nombra.
+   */
+  const hayAdelanto = plan.partes.some((parte) => porId.get(parte.id)?.vencida === false);
+  const aIntereses = plan.partes.reduce((s, parte) => s + parte.aIntereses, 0);
+  const esAnticipo = (id: string) => {
+    const periodo = porId.get(id);
+    return comoAnticipo && periodo !== undefined && esAdelantableComoAnticipo(periodo);
+  };
+  // Con anticipo, esas cuotas se siguen debiendo hasta su día de pago.
+  const queda =
+    plan.deudaRestante +
+    plan.partes.filter((parte) => esAnticipo(parte.id)).reduce((s, parte) => s + parte.valorCop, 0);
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-surface-muted p-3" data-testid="plan-de-imputacion">
@@ -307,14 +539,28 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
 
       <ul className="space-y-2">
         {plan.partes.map((parte) => {
-          const periodo = cartera.cobros.find((c) => c.id === parte.id);
+          const periodo = porId.get(parte.id);
           const conceptos = periodo ? conceptosDelPeriodo(periodo) : [];
+          const esAdelanto = periodo?.vencida === false;
           return (
             <li key={parte.id} className="space-y-0.5" data-testid={`plan-parte-${parte.month}`}>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate font-medium text-fg">
-                  {mesEnTitulo(parte.month, idioma)}
-                  {periodo ? ` · ${periodo.propertyTitle}` : ''}
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="min-w-0 truncate font-medium text-fg">
+                    {mesEnTitulo(parte.month, idioma)}
+                    {periodo ? ` · ${periodo.propertyTitle}` : ''}
+                  </span>
+                  {esAnticipo(parte.id) ? (
+                    <Badge variant="default" data-testid={`plan-anticipo-${parte.month}`}>
+                      {t(k('anticipo'))}
+                    </Badge>
+                  ) : (
+                    esAdelanto && (
+                      <Badge variant="default" data-testid={`plan-adelanto-${parte.month}`}>
+                        {t(k('adelanto'))}
+                      </Badge>
+                    )
+                  )}
                 </span>
                 <span className="shrink-0 font-mono tabular-nums text-fg">
                   {formatCurrency(parte.valorCop)}
@@ -343,10 +589,22 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
         })}
       </ul>
 
+      {aIntereses > 0 && (
+        <p className="text-xs text-fg-muted" data-testid="plan-interes-primero">
+          {t('recibos.form.cartera.interesPrimero')}
+        </p>
+      )}
+
+      {hayAdelanto && (
+        <p className="text-xs text-fg-muted" data-testid="plan-hay-adelanto">
+          {comoAnticipo ? t(k('hayAnticipo')) : t(k('hayAdelanto'))}
+        </p>
+      )}
+
       <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
         <span className="text-fg-muted">{t(k('despues'))}</span>
         <span className="font-mono font-semibold tabular-nums text-fg" data-testid="plan-deuda-restante">
-          {formatCurrency(plan.deudaRestante)}
+          {formatCurrency(queda)}
         </span>
       </div>
     </div>
@@ -356,54 +614,165 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
 // ── El pegamento: cargar la cartera ─────────────────────────────────────────
 
 /**
- * La cartera de la persona, resuelta por su id o por un cobro suyo.
+ * Cuánto se espera después del último cambio de la fecha antes de volver a
+ * pedir la cartera. Escribir `2026-08-20` a mano pasa por `2026-08-2`, `0002-…`
+ * y otros días intermedios: sin la espera, cada tecla sería una petición.
+ */
+export const ESPERA_DE_LA_FECHA_MS = 400;
+
+/** Un rechazo de la cartera pedida CON fecha: se muestra en el campo, no tapa la tabla. */
+export interface ErrorDeLaFecha {
+  mensaje: string;
+  /** `FECHA_FUTURA` o `FECHA_NO_VALIDA` cuando lo manda el back. */
+  code?: string;
+}
+
+/**
+ * La cartera de la persona, resuelta por su id o por un cobro suyo, liquidada
+ * hasta `fecha`.
  *
  * `cobroId` gana sobre `tenantId`: es la entrada desde la fila de un cobro, y
  * ahí la persona la resuelve el back (un cobro migrado puede no tener cuenta).
+ *
+ * 🔴 `fecha` (2026-09-16, prueba en vivo en QA, contrato #69): el interés de
+ * mora se liquida hasta el día del recibo, así que la cartera que se muestra
+ * TIENE que ser la de ese día. Antes se pedía una sola vez, a hoy: con la
+ * fecha en 2026-08-20 el diálogo seguía diciendo $2.588.062 de interés y el
+ * recibo cobraba menos. `null` = hoy (no se manda `?fecha=`).
+ *
+ * Tres reglas, cada una con su porqué:
+ *   · CAMBIAR DE PERSONA pide ya, a hoy, y es una carga «de cero» (`cargando`,
+ *     y `cargaDeLaPersona` sube: el formulario arranca de nuevo).
+ *   · CAMBIAR LA FECHA espera `ESPERA_DE_LA_FECHA_MS` y CONSERVA la cartera
+ *     que hay mientras llega la nueva (`recalculando`): la tabla no parpadea.
+ *     Si esa petición falla, la cartera anterior sigue ahí y el rechazo va a
+ *     `errorDeLaFecha` — el 400 de la fecha es un problema del campo, no de la
+ *     cartera.
+ *   · SIN CARRERAS: cada petición lleva un número; la respuesta de una fecha
+ *     (o de una persona) vieja que llega tarde no pisa la nueva.
+ *
+ * `fechaDeLaCartera` dice para qué fecha es la cartera que se está mostrando:
+ * quien emite compara contra la fecha elegida y no deja emitir con números de
+ * otro día.
  */
 export function useCarteraDelCliente(
   tenantId: string | null,
   cobroId: string | null,
   activo: boolean,
+  fecha: string | null = null,
 ) {
   const [cartera, setCartera] = React.useState<CarteraDelCliente | null>(null);
   const [cargando, setCargando] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [recalculando, setRecalculando] = React.useState(false);
+  /** 🔴 El error ENTERO: un string pierde el `status` y el `code`. */
+  const [error, setError] = React.useState<unknown>(null);
+  const [errorDeLaFecha, setErrorDeLaFecha] = React.useState<ErrorDeLaFecha | null>(null);
+  const [fechaDeLaCartera, setFechaDeLaCartera] = React.useState<string | null>(null);
+  const [cargaDeLaPersona, setCargaDeLaPersona] = React.useState(0);
 
-  /** Se cambia de cliente antes de que conteste el anterior: la vieja no pisa. */
+  /** La última petición que se lanzó. Una respuesta de otra no pisa. */
   const peticion = React.useRef(0);
+  /** La fecha de la última petición lanzada: no se repite la que ya va en camino. */
+  const fechaPedida = React.useRef<string | null>(null);
+  const hayCartera = React.useRef(false);
+  const fechaActual = React.useRef(fecha);
+  fechaActual.current = fecha;
 
-  const cargar = React.useCallback(async () => {
-    if (!activo || (!tenantId && !cobroId)) {
-      peticion.current += 1;
-      setCartera(null);
-      setError(null);
-      setCargando(false);
-      return;
-    }
-    const mia = ++peticion.current;
-    setCargando(true);
-    setError(null);
-    try {
-      const res = cobroId
-        ? await recibosDeCajaApi.carteraPorCobro(cobroId)
-        : await recibosDeCajaApi.cartera(tenantId!);
-      if (mia !== peticion.current) return;
-      setCartera(res);
-    } catch (e) {
-      if (mia !== peticion.current) return;
-      setCartera(null);
-      setError(e instanceof Error && e.message ? e.message : '');
-    } finally {
-      if (mia === peticion.current) setCargando(false);
-    }
-  }, [activo, cobroId, tenantId]);
+  const pedir = React.useCallback(
+    async (fechaAPedir: string | null, conservar: boolean) => {
+      if (!activo || (!tenantId && !cobroId)) {
+        peticion.current += 1;
+        fechaPedida.current = null;
+        hayCartera.current = false;
+        setCartera(null);
+        setError(null);
+        setErrorDeLaFecha(null);
+        setFechaDeLaCartera(null);
+        setCargando(false);
+        setRecalculando(false);
+        return;
+      }
+      const mia = ++peticion.current;
+      fechaPedida.current = fechaAPedir;
+      // Sin cartera a la vista no hay nada que conservar: es una carga de cero.
+      const soloLaFecha = conservar && hayCartera.current;
+      if (soloLaFecha) {
+        setRecalculando(true);
+      } else {
+        setCargando(true);
+        setError(null);
+      }
+      try {
+        // Sin fecha se llama como siempre: `?fecha=` sólo cuando la hay.
+        const res = cobroId
+          ? await (fechaAPedir
+              ? recibosDeCajaApi.carteraPorCobro(cobroId, fechaAPedir)
+              : recibosDeCajaApi.carteraPorCobro(cobroId))
+          : await (fechaAPedir
+              ? recibosDeCajaApi.cartera(tenantId!, fechaAPedir)
+              : recibosDeCajaApi.cartera(tenantId!));
+        if (mia !== peticion.current) return;
+        hayCartera.current = true;
+        setCartera(res);
+        setFechaDeLaCartera(fechaAPedir);
+        setError(null);
+        setErrorDeLaFecha(null);
+        if (!soloLaFecha) setCargaDeLaPersona((n) => n + 1);
+      } catch (e) {
+        if (mia !== peticion.current) return;
+        if (soloLaFecha) {
+          setErrorDeLaFecha({
+            mensaje: e instanceof Error && e.message ? e.message : '',
+            code: e instanceof ApiError ? e.code : undefined,
+          });
+        } else {
+          hayCartera.current = false;
+          setCartera(null);
+          setFechaDeLaCartera(null);
+          // El error ENTERO, por lo mismo que arriba.
+          setError(e);
+        }
+      } finally {
+        if (mia === peticion.current) {
+          setCargando(false);
+          setRecalculando(false);
+        }
+      }
+    },
+    [activo, cobroId, tenantId],
+  );
 
+  // Otra persona (o el diálogo se abrió): de cero y a hoy.
   React.useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    void pedir(null, false);
+  }, [pedir]);
 
-  return { cartera, cargando, error, recargar: cargar };
+  // Otra fecha para la misma persona: con espera y conservando la tabla.
+  React.useEffect(() => {
+    if (!activo || (!tenantId && !cobroId)) return;
+    if (fecha === fechaPedida.current) return;
+    const espera = setTimeout(() => {
+      void pedir(fecha, true);
+    }, ESPERA_DE_LA_FECHA_MS);
+    return () => clearTimeout(espera);
+  }, [fecha]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Vuelve a pedir la cartera de la fecha elegida (tras conciliar, o un fallo). */
+  const recargar = React.useCallback(
+    () => pedir(fechaActual.current, true),
+    [pedir],
+  );
+
+  return {
+    cartera,
+    cargando,
+    recalculando,
+    error,
+    errorDeLaFecha,
+    fechaDeLaCartera,
+    cargaDeLaPersona,
+    recargar,
+  };
 }
 
 /** El plan que se muestra antes de emitir. Memoizado: se recalcula al teclear. */
@@ -412,7 +781,7 @@ export function usePlanDeImputacion(
   monto: number,
 ): Imputacion {
   return React.useMemo(
-    () => imputarPago(cartera ? deudasDeLaCartera(cartera.cobros) : [], Math.round(monto)),
+    () => imputarPago(cartera ? deudasDeLaCartera(cartera.cuotas) : [], Math.round(monto)),
     [cartera, monto],
   );
 }
@@ -420,7 +789,7 @@ export function usePlanDeImputacion(
 // ── El aviso de que hay plata sin conciliar ─────────────────────────────────
 
 export interface AvisoSinConciliarProps {
-  periodos: readonly CobroEnCartera[];
+  periodos: readonly PeriodoEnDeuda[];
 }
 
 export function AvisoSinConciliar({ periodos }: AvisoSinConciliarProps) {

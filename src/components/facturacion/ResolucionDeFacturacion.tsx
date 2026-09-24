@@ -19,6 +19,15 @@
  * `/panel/inmobiliaria/facturacion` ya está detrás de `PageGuard` con ADMIN y
  * CONTADOR, que son exactamente los dos roles que pueden tocar esto.
  *
+ * ── 🔴 21-09: cargar una resolución es un CTA, no media pantalla ───────────
+ *
+ * Nico, sobre esta pantalla: «no entiendo esos filtros por allá abajo. Eso de
+ * carga resolución ni se entiende, creo que eso debería ser un CTA». El
+ * formulario de nueve campos vivía debajo de la tabla y se leía como una barra
+ * de filtros de la tabla de arriba. Se mudó entero a `CajonDeLaResolucion`,
+ * detrás del botón de la cabecera de la tabla — que es donde vive lo que se
+ * puede hacer con esa tabla.
+ *
  * ── Lo que la pantalla NO deja hacer ───────────────────────────────────────
  *
  * Editar una resolución cargada. Un rango o una vigencia que cambian después de
@@ -36,12 +45,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Certificate, SealWarning } from '@phosphor-icons/react'
+import { Certificate, DotsThreeVertical, SealWarning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
@@ -61,6 +68,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
@@ -70,39 +83,31 @@ import {
   type ResolucionDeFacturacion as Resolucion,
   type ResolucionesDeLaAgencia,
 } from '@/lib/api/facturacion-por-mes.service'
+import { NumeracionPorTipo } from './NumeracionPorTipo'
+import { CajonDeLaResolucion } from './CajonDeLaResolucion'
 
 /** El tope del back (`AnularResolucionDto`). */
 export const MAX_MOTIVO_DE_ANULACION = 500
 
-/** El formulario, con los campos como los trae el papel de la DIAN. */
-interface Formulario {
-  numero: string
-  fechaResolucion: string
-  prefijo: string
-  desde: string
-  hasta: string
-  vigenteDesde: string
-  vigenteHasta: string
-  ultimoNumeroUsado: string
+export interface ResolucionDeFacturacionProps {
+  /**
+   * Abre el cajón de carga al entrar. Lo usa «Nueva factura»: su aviso de «no
+   * hay resolución» manda acá, y mandar a una pantalla donde todavía hay que
+   * buscar el botón es la mitad del camino.
+   */
+  abrirCarga?: boolean
+  /** Para que el padre baje su bandera y no se reabra al volver a la pestaña. */
+  onCargaAbierta?: () => void
 }
 
-const VACIO: Formulario = {
-  numero: '',
-  fechaResolucion: '',
-  prefijo: '',
-  desde: '',
-  hasta: '',
-  vigenteDesde: '',
-  vigenteHasta: '',
-  ultimoNumeroUsado: '',
-}
-
-export function ResolucionDeFacturacion() {
+export function ResolucionDeFacturacion({
+  abrirCarga = false,
+  onCargaAbierta,
+}: ResolucionDeFacturacionProps = {}) {
   const [datos, setDatos] = useState<ResolucionesDeLaAgencia | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
-  const [form, setForm] = useState<Formulario>(VACIO)
-  const [guardando, setGuardando] = useState(false)
+  const [cargandoResolucion, setCargandoResolucion] = useState(false)
   const [anulando, setAnulando] = useState<string | null>(null)
   /** La resolución que se está por anular: abre el diálogo que pide el motivo. */
   const [porAnular, setPorAnular] = useState<Resolucion | null>(null)
@@ -125,50 +130,11 @@ export function ResolucionDeFacturacion() {
     void cargar()
   }, [cargar])
 
-  const campo = (clave: keyof Formulario) => (valor: string) =>
-    setForm((previo) => ({ ...previo, [clave]: valor }))
-
-  /*
-   * El formulario está completo cuando están los seis campos obligatorios. El
-   * prefijo NO lo es: hay resoluciones sin prefijo, y entonces el número va
-   * pelado. `ultimoNumeroUsado` tampoco: sólo hace falta cuando la inmobiliaria
-   * ya gastó parte del rango en otro sistema.
-   */
-  const completo =
-    form.numero.trim() !== '' &&
-    form.fechaResolucion !== '' &&
-    form.desde !== '' &&
-    form.hasta !== '' &&
-    form.vigenteDesde !== '' &&
-    form.vigenteHasta !== ''
-
-  async function guardar() {
-    if (!completo) return
-    setGuardando(true)
-    try {
-      await facturacionPorMesService.crearResolucion({
-        numero: form.numero.trim(),
-        fechaResolucion: form.fechaResolucion,
-        prefijo: form.prefijo.trim(),
-        desde: Number(form.desde),
-        hasta: Number(form.hasta),
-        vigenteDesde: form.vigenteDesde,
-        vigenteHasta: form.vigenteHasta,
-        ...(form.ultimoNumeroUsado !== ''
-          ? { ultimoNumeroUsado: Number(form.ultimoNumeroUsado) }
-          : {}),
-      })
-      toast.success('Resolución cargada')
-      setForm(VACIO)
-      await cargar()
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudo cargar la resolución.',
-      )
-    } finally {
-      setGuardando(false)
-    }
-  }
+  useEffect(() => {
+    if (!abrirCarga) return
+    setCargandoResolucion(true)
+    onCargaAbierta?.()
+  }, [abrirCarga, onCargaAbierta])
 
   function pedirAnulacion(r: Resolucion) {
     setMotivo('')
@@ -241,6 +207,8 @@ export function ResolucionDeFacturacion() {
         </div>
       )}
 
+      {datos && <NumeracionPorTipo datos={datos} />}
+
       <EstadoDeDatos
         cargando={cargando}
         error={error}
@@ -253,14 +221,28 @@ export function ResolucionDeFacturacion() {
             className="rounded-lg border border-border bg-surface overflow-hidden"
             data-testid="resolucion-listado"
           >
-            <div className="border-b border-border p-4">
-              <h3 className="text-body font-semibold text-fg">
-                Resoluciones cargadas
-              </h3>
-              <p className="text-caption text-fg-muted">
-                Una resolución no se edita: si el rango o la vigencia cambian,
-                se carga la nueva y se anula la anterior.
-              </p>
+            {/* 🔴 La cabecera de la tabla es donde vive lo que se puede hacer
+                con la tabla. Antes «Cargar una resolución» era un formulario
+                entero puesto abajo, y desde acá no se veía que existiera. */}
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="text-body font-semibold text-fg">
+                  Resoluciones cargadas
+                </h3>
+                <p className="text-caption text-fg-muted">
+                  Una resolución no se edita: si el rango o la vigencia cambian,
+                  se carga la nueva y se anula la anterior.
+                </p>
+              </div>
+              <Button
+                hideArrow
+                className="shrink-0"
+                onClick={() => setCargandoResolucion(true)}
+                data-testid="resolucion-abrir-carga"
+              >
+                <Certificate className="h-4 w-4" weight="bold" />
+                Cargar una resolución
+              </Button>
             </div>
 
             <div className="overflow-x-auto">
@@ -269,6 +251,7 @@ export function ResolucionDeFacturacion() {
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Resolución</TableHead>
                     <TableHead className="whitespace-nowrap">Prefijo</TableHead>
+                    <TableHead className="whitespace-nowrap">Numera</TableHead>
                     <TableHead className="whitespace-nowrap">Rango</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Usados</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Disponibles</TableHead>
@@ -280,11 +263,11 @@ export function ResolucionDeFacturacion() {
                 <TableBody>
                   {datos.resoluciones.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="p-0">
+                      <TableCell colSpan={9} className="p-0">
                         <SinDatos
                           queSon="resoluciones de facturación"
                           icono={Certificate}
-                          descripcion="Carga abajo la resolución que te autorizó la DIAN. Sin ella no se puede numerar una factura."
+                          descripcion="Sin una resolución de la DIAN no se puede numerar una factura. Cárgala con el botón de arriba: son los datos del papel que te autorizó."
                         />
                       </TableCell>
                     </TableRow>
@@ -300,6 +283,9 @@ export function ResolucionDeFacturacion() {
                         <TableCell className="whitespace-nowrap text-fg-muted">
                           {r.prefijo || '—'}
                         </TableCell>
+                        <TableCell className="whitespace-nowrap text-fg-muted">
+                          {r.tipoNombre ?? 'Cualquier tipo de documento'}
+                        </TableCell>
                         <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                           {r.desde}–{r.hasta}
                         </TableCell>
@@ -313,7 +299,12 @@ export function ResolucionDeFacturacion() {
                           {fechaLegible(r.vigenteDesde)} –{' '}
                           {fechaLegible(r.vigenteHasta)}
                         </TableCell>
-                        <TableCell className="max-w-[260px]">
+                        {/* 🔴 El estado en UN renglón. Con la acción escrita al
+                            lado, la tabla no cabía —la pantalla decía «esta
+                            tabla no cabe entera: se corre a los lados»— y
+                            «Numerando · sigue el PRU-1» se partía en tres
+                            líneas. */}
+                        <TableCell className="whitespace-nowrap">
                           {r.puedeNumerar ? (
                             <span className="text-caption text-primary">
                               Numerando · sigue el {r.siguiente}
@@ -324,17 +315,38 @@ export function ResolucionDeFacturacion() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
+                        {/* 🔴 Las acciones van en el kebab, como en el resto del
+                            panel: un botón con texto por fila empuja la tabla
+                            fuera de la pantalla y ademas grita más que el dato. */}
+                        <TableCell className="w-10 whitespace-nowrap text-right">
                           {!r.anulada && (
-                            <Button
-                              variant="ghost"
-                              hideArrow
-                              disabled={anulando === r.id}
-                              onClick={() => pedirAnulacion(r)}
-                              data-testid={`anular-${r.id}`}
-                            >
-                              Anular
-                            </Button>
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8"
+                                  disabled={anulando === r.id}
+                                  aria-label={`Acciones de la resolución ${r.numero}`}
+                                  data-testid={`acciones-${r.id}`}
+                                >
+                                  <DotsThreeVertical
+                                    className="h-4 w-4"
+                                    weight="bold"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className="w-52">
+                                <DropdownListItem
+                                  onSelect={() => pedirAnulacion(r)}
+                                  data-testid={`anular-${r.id}`}
+                                >
+                                  Anular la resolución
+                                </DropdownListItem>
+                              </DropdownListContent>
+                            </DropdownList>
                           )}
                         </TableCell>
                       </TableRow>
@@ -347,125 +359,12 @@ export function ResolucionDeFacturacion() {
         )}
       </EstadoDeDatos>
 
-      <section
-        className="rounded-lg border border-border bg-surface p-4 space-y-4"
-        data-testid="resolucion-formulario"
-      >
-        <div>
-          <h3 className="text-body font-semibold text-fg">Cargar una resolución</h3>
-          <p className="text-caption text-fg-muted">
-            Copia los datos tal cual están en la resolución que te dio la DIAN.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-numero">Número de la resolución</Label>
-            <Input
-              id="resolucion-numero"
-              value={form.numero}
-              onChange={(e) => campo('numero')(e.target.value)}
-              placeholder="18764003394379"
-              data-testid="resolucion-campo-numero"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-fecha">Fecha de la resolución</Label>
-            <Input
-              id="resolucion-fecha"
-              type="date"
-              value={form.fechaResolucion}
-              onChange={(e) => campo('fechaResolucion')(e.target.value)}
-              data-testid="resolucion-campo-fecha"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-prefijo">Prefijo</Label>
-            <Input
-              id="resolucion-prefijo"
-              value={form.prefijo}
-              onChange={(e) => campo('prefijo')(e.target.value)}
-              placeholder="FE"
-              data-testid="resolucion-campo-prefijo"
-            />
-            <p className="text-caption text-fg-muted">
-              Déjalo vacío si tu resolución no tiene prefijo.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-ultimo">Último número ya usado</Label>
-            <Input
-              id="resolucion-ultimo"
-              type="number"
-              value={form.ultimoNumeroUsado}
-              onChange={(e) => campo('ultimoNumeroUsado')(e.target.value)}
-              placeholder="opcional"
-              data-testid="resolucion-campo-ultimo"
-            />
-            <p className="text-caption text-fg-muted">
-              Sólo si ya gastaste parte del rango en otro sistema.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-desde">Rango desde</Label>
-            <Input
-              id="resolucion-desde"
-              type="number"
-              value={form.desde}
-              onChange={(e) => campo('desde')(e.target.value)}
-              placeholder="1"
-              data-testid="resolucion-campo-desde"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-hasta">Rango hasta</Label>
-            <Input
-              id="resolucion-hasta"
-              type="number"
-              value={form.hasta}
-              onChange={(e) => campo('hasta')(e.target.value)}
-              placeholder="5000"
-              data-testid="resolucion-campo-hasta"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-vigente-desde">Vigente desde</Label>
-            <Input
-              id="resolucion-vigente-desde"
-              type="date"
-              value={form.vigenteDesde}
-              onChange={(e) => campo('vigenteDesde')(e.target.value)}
-              data-testid="resolucion-campo-vigente-desde"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="resolucion-vigente-hasta">Vigente hasta</Label>
-            <Input
-              id="resolucion-vigente-hasta"
-              type="date"
-              value={form.vigenteHasta}
-              onChange={(e) => campo('vigenteHasta')(e.target.value)}
-              data-testid="resolucion-campo-vigente-hasta"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            hideArrow
-            disabled={!completo || guardando}
-            onClick={() => void guardar()}
-            data-testid="resolucion-guardar"
-          >
-            {guardando ? (
-              <Spinner className="h-4 w-4" />
-            ) : (
-              <Certificate className="h-4 w-4" weight="bold" />
-            )}
-            {guardando ? 'Cargando…' : 'Cargar resolución'}
-          </Button>
-        </div>
-      </section>
+      <CajonDeLaResolucion
+        abierto={cargandoResolucion}
+        onOpenChange={setCargandoResolucion}
+        datos={datos}
+        onCargada={cargar}
+      />
 
       <AlertDialog
         open={porAnular !== null}

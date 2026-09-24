@@ -17,6 +17,7 @@ import { useCarrierSla } from '@/lib/hooks/cotizador/use-carrier-sla'
 import { CarrierSlaStateCard } from '@/components/inmobiliaria/cotizador/CarrierSlaStateCard'
 import { CarrierSlaBreachWindows } from '@/components/inmobiliaria/cotizador/CarrierSlaBreachWindows'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { BackButton } from '@/components/ui/back-button'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -46,13 +47,23 @@ export default function CarrierSlaPage() {
    */
   if (error && !sla) {
     return (
-      <main className="p-6 lg:p-8">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton href="/panel/inmobiliaria/postulaciones/asegurabilidad" label="Asegurabilidad" />
+        <h1 className="text-h2 text-fg">Cumplimiento de la aseguradora</h1>
         <FalloDeCarga
           error={falloDelAgente(error)}
           queEs="el cumplimiento de esta aseguradora"
           onReintentar={refetch}
+          volverA={{
+            label: 'Asegurabilidad',
+            href: '/panel/inmobiliaria/postulaciones/asegurabilidad',
+          }}
         />
-      </main>
+      </div>
     )
   }
   if (
@@ -69,7 +80,7 @@ export default function CarrierSlaPage() {
   }
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
@@ -127,6 +138,6 @@ export default function CarrierSlaPage() {
         breachWindows={sla?.breachWindows ?? null}
         isLoading={isLoading}
       />
-    </main>
+    </div>
   )
 }

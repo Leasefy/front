@@ -1,0 +1,278 @@
+/**
+ * `/inmobiliaria/finanzas` — el cliente del contrato congelado del 17-09.
+ *
+ * Una función por endpoint, con el mismo nombre que la pieza del contrato y
+ * nada más: acá no se calcula, no se reordena y no se rellena. Lo que el back
+ * devuelve es lo que la pantalla pinta.
+ *
+ * Ver `finanzas.types.ts` para el porqué de `disponible: false` (lecturas) y
+ * del 503 con `code` (escrituras).
+ */
+
+import { apiClient, ApiError, getAccessToken } from '@/lib/api/client';
+import {
+  CODIGOS_SIN_MIGRAR,
+  type CambiosDeCostos,
+  type CambiosDeLaSede,
+  type CertificadoDeRetenciones,
+  type CatalogoDeRubros,
+  type ComparacionDelPresupuesto,
+  type CuadreDeTerceros,
+  type CodigoSinMigrar,
+  type CostosDeLaPlata,
+  type CriterioDeRetencion,
+  type DeterioroDelMes,
+  type DevolucionRegistrada,
+  type Emision,
+  type EmisionMasiva,
+  type GirosDevueltos,
+  type MediosDeRecibo,
+  type NuevaDevolucion,
+  type NuevaSede,
+  type NuevoPresupuesto,
+  type NuevaTasaDeUsura,
+  type PresupuestoCargado,
+  type PresupuestoDelMes,
+  type PropuestaDeDeterioro,
+  type ProvisionAprobada,
+  type ProvisionDeCartera,
+  type Regiro,
+  type Sede,
+  type Sedes,
+  type TableroFinanciero,
+  type TasaDeUsura,
+  type TasasDeUsura,
+} from './finanzas.types';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+const BASE = '/inmobiliaria/finanzas';
+
+/** `?a=1&b=2`, saltándose lo vacío. `''` cuando no queda nada. */
+function query(params: Record<string, string | number | null | undefined>): string {
+  const q = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(params)) {
+    if (valor === null || valor === undefined || valor === '') continue;
+    q.set(clave, String(valor));
+  }
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
+/**
+ * ¿Este fallo es «falta una migración»? Devuelve el `code` o `null`.
+ *
+ * Se mira el `code` y no el 503 a secas: un 503 del balanceador no se explica
+ * con «la aplica Víctor».
+ */
+export function codigoSinMigrar(error: unknown): CodigoSinMigrar | null {
+  if (!(error instanceof ApiError)) return null;
+  const codigo = error.code as CodigoSinMigrar | undefined;
+  if (codigo && (CODIGOS_SIN_MIGRAR as readonly string[]).includes(codigo)) return codigo;
+  return null;
+}
+
+export const finanzasApi = {
+  // ── 1. Tablero ──────────────────────────────────────────────────────────
+  /** Permiso `dashboard:view`. `sedeId` vacío = consolidado. */
+  tablero: (mes: string, sedeId?: string | null) =>
+    apiClient.get<TableroFinanciero>(`${BASE}/tablero${query({ mes, sedeId })}`),
+
+  // ── 2. Tasas de usura ───────────────────────────────────────────────────
+  /** Permiso `cobros:view`. */
+  usura: (desde?: string, hasta?: string) =>
+    apiClient.get<TasasDeUsura>(`${BASE}/usura${query({ desde, hasta })}`),
+
+  /** Permiso `cobros:edit`. 503 `USURA_SIN_MIGRAR`. */
+  guardarUsura: (tasa: NuevaTasaDeUsura) => apiClient.put<TasaDeUsura>(`${BASE}/usura`, tasa),
+
+  /** Permiso `cobros:edit`. Sólo borra la tasa PROPIA de la agencia. */
+  borrarUsura: (id: string) => apiClient.delete<void>(`${BASE}/usura/${encodeURIComponent(id)}`),
+
+  // ── 3. Deterioro ────────────────────────────────────────────────────────
+  /** Permiso `reportes:view`. */
+  deterioro: (mes: string, sedeId?: string | null) =>
+    apiClient.get<DeterioroDelMes>(`${BASE}/deterioro${query({ mes, sedeId })}`),
+
+  /** Permiso `reportes:edit`. Deja la provisión en PROPUESTA. */
+  proponerDeterioro: (propuesta: PropuestaDeDeterioro) =>
+    apiClient.post<ProvisionDeCartera>(`${BASE}/deterioro`, propuesta),
+
+  /**
+   * Permiso `reportes:edit`. Deja la provisión en APROBADA (y la asienta).
+   * Devuelve además `mismoAprobador`: la propuso y la aprobó la misma persona.
+   */
+  aprobarDeterioro: (id: string) =>
+    apiClient.post<ProvisionAprobada>(`${BASE}/deterioro/${encodeURIComponent(id)}/aprobar`),
+
+  /** Permiso `reportes:edit`. Deja la provisión en ANULADA. */
+  anularDeterioro: (id: string, motivo: string) =>
+    apiClient.post<ProvisionDeCartera>(`${BASE}/deterioro/${encodeURIComponent(id)}/anular`, { motivo }),
+
+  // ── 4. Sedes ────────────────────────────────────────────────────────────
+  /** Permiso `configuracion:view`. */
+  sedes: () => apiClient.get<Sedes>(`${BASE}/sedes`),
+
+  /** Permiso `configuracion:edit`. 503 `SEDES_SIN_MIGRAR`. */
+  crearSede: (sede: NuevaSede) => apiClient.post<Sede>(`${BASE}/sedes`, sede),
+
+  /** Permiso `configuracion:edit`. */
+  editarSede: (id: string, cambios: CambiosDeLaSede) =>
+    apiClient.patch<Sede>(`${BASE}/sedes/${encodeURIComponent(id)}`, cambios),
+
+  /** Permiso `configuracion:edit`. Cuántos inmuebles y contratos quedaron. */
+  asignarASede: (id: string, que: { propertyIds?: string[]; contractIds?: string[] }) =>
+    apiClient.post<{ inmuebles: number; contratos: number }>(
+      `${BASE}/sedes/${encodeURIComponent(id)}/asignar`,
+      que,
+    ),
+
+  // ── 5. Medios de recibo ─────────────────────────────────────────────────
+  /** Permiso `configuracion:view`. */
+  medios: () => apiClient.get<MediosDeRecibo>(`${BASE}/medios`),
+
+  /** Permiso `configuracion:edit`. 503 `COSTOS_SIN_MIGRAR`. */
+  guardarMedios: (apagados: string[]) => apiClient.put<MediosDeRecibo>(`${BASE}/medios`, { apagados }),
+
+  // ── 6. Costos de la plata ───────────────────────────────────────────────
+  /** Permiso `configuracion:view`. */
+  costos: () => apiClient.get<CostosDeLaPlata>(`${BASE}/costos`),
+
+  /** Permiso `configuracion:edit`. 503 `COSTOS_SIN_MIGRAR`. */
+  guardarCostos: (cambios: CambiosDeCostos) =>
+    apiClient.put<CostosDeLaPlata>(`${BASE}/costos`, cambios),
+
+  // ── 7. Certificado anual de retenciones ─────────────────────────────────
+  /** Permiso `reportes:view`. */
+  certificado: (anio: number, criterio: CriterioDeRetencion) =>
+    apiClient.get<CertificadoDeRetenciones>(
+      `${BASE}/retenciones/certificado${query({ anio, criterio })}`,
+    ),
+
+  /** Permiso `reportes:edit`. Fija número y fecha: es el ACTO de emitir. */
+  emitirCertificado: (anio: number, propietarioId: string, criterio?: CriterioDeRetencion) =>
+    apiClient.post<Emision>(`${BASE}/retenciones/certificado/emitir`, {
+      anio,
+      propietarioId,
+      ...(criterio ? { criterio } : {}),
+    }),
+
+  /**
+   * 🔴 (18-09-2026) Emite el certificado de TODOS los propietarios del año.
+   *
+   * Nico: «el certificado anual se genera SOLO para todos los propietarios, sin
+   * pedirlo». Lo hace el cron de enero; este botón es para el año que el cron no
+   * alcanzó, o para la inmobiliaria que acaba de migrar su historia. Es
+   * idempotente: se salta a quien ya lo tiene.
+   */
+  emitirTodosLosCertificados: (anio: number, criterio?: CriterioDeRetencion) =>
+    apiClient.post<EmisionMasiva>(`${BASE}/retenciones/certificado/emitir-todos`, {
+      anio,
+      ...(criterio ? { criterio } : {}),
+    }),
+
+  /** Regenera el de UN propietario: anula el anterior con motivo y emite otro. */
+  reemitirCertificado: (
+    anio: number,
+    propietarioId: string,
+    criterio?: CriterioDeRetencion,
+    motivo?: string,
+  ) =>
+    apiClient.post<Emision>(`${BASE}/retenciones/certificado/reemitir`, {
+      anio,
+      propietarioId,
+      ...(criterio ? { criterio } : {}),
+      ...(motivo ? { motivo } : {}),
+    }),
+
+  // ── 8. Giros devueltos ──────────────────────────────────────────────────
+  /** Permiso `dispersiones:view`. */
+  girosDevueltos: (estado: 'VIVOS' | 'TODOS' = 'VIVOS') =>
+    apiClient.get<GirosDevueltos>(`${BASE}/giros-devueltos${query({ estado })}`),
+
+  /**
+   * Permiso `dispersiones:edit`. 503 `GIROS_DEVUELTOS_SIN_MIGRAR`.
+   *
+   * 🔴 Multipart desde el 23-09 (Nico): el soporte del banco —el extracto o el
+   * comprobante de la devolución— es OBLIGATORIO, en el campo `soporte`
+   * (PDF o imagen, hasta 10 MB). Sin él el back responde 400
+   * `SOPORTE_DE_LA_DEVOLUCION_OBLIGATORIO`.
+   */
+  marcarDevuelto: async (devolucion: NuevaDevolucion): Promise<DevolucionRegistrada> => {
+    const f = new FormData();
+    f.append('dispersionId', devolucion.dispersionId);
+    f.append('motivo', devolucion.motivo);
+    if (devolucion.motivoDetalle) f.append('motivoDetalle', devolucion.motivoDetalle);
+    if (devolucion.codigoDelBanco) f.append('codigoDelBanco', devolucion.codigoDelBanco);
+    f.append('fechaDeLaDevolucion', devolucion.fechaDeLaDevolucion);
+    f.append('soporte', devolucion.soporte);
+    const token = getAccessToken();
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(`${BACKEND_URL}${BASE}/giros-devueltos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: f,
+      });
+    } catch (error) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    if (!respuesta.ok) {
+      const cuerpo = (await respuesta.json().catch(() => ({}))) as Record<string, unknown>;
+      const mensaje = Array.isArray(cuerpo.message)
+        ? (cuerpo.message as string[])
+        : typeof cuerpo.message === 'string'
+          ? cuerpo.message
+          : 'No se pudo marcar el giro como devuelto.';
+      throw new ApiError(
+        respuesta.status,
+        mensaje,
+        typeof cuerpo.code === 'string' ? cuerpo.code : undefined,
+        cuerpo,
+      );
+    }
+    return respuesta.json() as Promise<DevolucionRegistrada>;
+  },
+
+  /** Permiso `dispersiones:view`. La URL firmada (1 hora) del soporte del banco. */
+  soporteDelGiroDevuelto: (id: string) =>
+    apiClient.get<{ url: string; nombre: string; tipo: string }>(
+      `${BASE}/giros-devueltos/${encodeURIComponent(id)}/soporte`,
+    ),
+
+  /** Permiso `dispersiones:edit`. `fecha` = el día del giro que sí salió. */
+  regirar: (id: string, dispersionNuevaId: string, fecha: string) =>
+    apiClient.post<Regiro>(`${BASE}/giros-devueltos/${encodeURIComponent(id)}/regirar`, {
+      dispersionNuevaId,
+      fecha,
+    }),
+
+  // ── 10. Cuadre diario de la plata de terceros ───────────────────────────
+  /** Permiso `dispersiones:view`. Sin `fecha`, hoy en Bogotá. */
+  cuadre: (fecha?: string) =>
+    apiClient.get<CuadreDeTerceros>(`${BASE}/cuadre${query({ fecha })}`),
+
+  // ── 11. Presupuesto por mes y rubro ─────────────────────────────────────
+  /** Permiso `reportes:view`. Qué rubro se puede comparar y cuál no. */
+  rubros: () => apiClient.get<CatalogoDeRubros>(`${BASE}/presupuesto/rubros`),
+
+  /** Permiso `reportes:view`. Lo cargado de un mes, tal como está. */
+  presupuesto: (mes: string, sedeId?: string | null) =>
+    apiClient.get<PresupuestoDelMes>(`${BASE}/presupuesto${query({ mes, sedeId })}`),
+
+  /** Permiso `reportes:view`. Presupuesto vs. real vs. el año anterior. */
+  comparacionDelPresupuesto: (mes: string, sedeId?: string | null) =>
+    apiClient.get<ComparacionDelPresupuesto>(
+      `${BASE}/presupuesto/comparacion${query({ mes, sedeId })}`,
+    ),
+
+  /** Permiso `reportes:edit`. Pisa, no acumula. 503 `PRESUPUESTO_SIN_MIGRAR`. */
+  guardarPresupuesto: (presupuesto: NuevoPresupuesto) =>
+    apiClient.put<PresupuestoCargado>(`${BASE}/presupuesto`, presupuesto),
+
+  /** Permiso `reportes:edit`. */
+  borrarPresupuesto: (id: string) =>
+    apiClient.delete<void>(`${BASE}/presupuesto/${encodeURIComponent(id)}`),
+};

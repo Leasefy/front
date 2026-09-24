@@ -29,6 +29,7 @@ import { SegmentedControl, Stat, StatStrip } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { formatCurrency } from '@/lib/format';
+import { netoDelPropietario } from '@/lib/dinero/neto-del-propietario';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { useRentabilidadReport } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
@@ -179,6 +181,12 @@ function RentabilidadContent() {
 
   const fichaDe = (f: RentabilidadFila) => `/panel/inmobiliaria/inmuebles/${f.consignacionId}`;
   const totales = report?.totales;
+  /*
+   * Con qué fórmula se midió la tasa de las filas y de los totales: la de la
+   * inmobiliaria. Una respuesta de antes del 2026-09-16 no la trae, y ésa medía
+   * sobre lo causado.
+   */
+  const rotuloDeLaTasa = t(claveDelRotulo(report?.medidaDeLaTasa?.base ?? BASE_POR_DEFECTO));
   const meses = report?.meses ?? mesesEntre(consulta.desde, consulta.hasta);
 
   return (
@@ -326,6 +334,7 @@ function RentabilidadContent() {
                 pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', {
                   maximumFractionDigits: 1,
                 }),
+                rotulo: rotuloDeLaTasa,
               })}
               deltaDirection={totales.tasaDeRecaudoPct >= 95 ? 'up' : totales.enMoraCop > 0 ? 'down' : 'neutral'}
               compact
@@ -335,10 +344,21 @@ function RentabilidadContent() {
               value={formatCurrency(totales.comisionCop)}
               compact
             />
+            {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto
+                negativo NO es plata a favor del propietario. Se dice con la
+                palabra «queda debiendo» y en rojo — nunca en verde, y nunca un
+                «−$340.000» pelado entre columnas alineadas, que se lee como un
+                número más. La regla vive en `lib/dinero/neto-del-propietario`. */}
+            {/* 🔴 21-09 · El pie «N con valor comercial» colgaba de ACÁ, del
+                neto al propietario, y no habla del neto: cuenta cuántos
+                inmuebles tienen registrado su valor comercial, que es lo que
+                hace falta para la columna «Rentabilidad». Leído bajo el neto,
+                lo que dice es que el neto se calculó con 1 de 108 inmuebles,
+                que es falso y asusta. Se mudó al encabezado de la columna que
+                sí lo usa. */}
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.netToOwners')}
-              value={formatCurrency(totales.netoPropietarioCop)}
-              delta={t('inmobiliaria.reportes.rentabilidad.stats.withValue', { count: totales.conValor })}
+              value={netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
               compact
             />
             <Stat
@@ -395,6 +415,17 @@ function RentabilidadContent() {
                       numeric={col.numeric}
                       className="whitespace-nowrap"
                       aria-sort={activa ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      /* La rentabilidad sólo se puede calcular donde hay valor
+                         comercial registrado; el resto de la columna va en
+                         raya. Decir cuántos son, acá, explica la columna antes
+                         de que alguien la lea como un error. */
+                      {...(col.id === 'rentabilidad' && totales
+                        ? {
+                            title: t('inmobiliaria.reportes.rentabilidad.stats.withValue', {
+                              count: totales.conValor,
+                            }),
+                          }
+                        : {})}
                     >
                       <button
                         type="button"
@@ -426,10 +457,14 @@ function RentabilidadContent() {
 
             <TableBody>
               {pageItems.map((f) => {
+                /* 🔴 El respaldo pasó de «tuvo cobro ese mes» a «tuvo CUOTA
+                   ese mes» el 2026-09-16 (`RentabilidadOcupacionFuente`): una
+                   inmobiliaria migrada no tiene un solo cobro, así que el
+                   rótulo «según cobros» nombraba una fuente que no existe. */
                 const fuente =
                   f.ocupacionFuente === 'leases'
                     ? t('inmobiliaria.reportes.rentabilidad.table.sourceLeases')
-                    : t('inmobiliaria.reportes.rentabilidad.table.sourceCobros');
+                    : t('inmobiliaria.reportes.rentabilidad.table.sourceCuotas');
                 const detalleOcupacion = `${formatearPct(f.ocupacionPct, locale)} ${fuente} · ${t(
                   'inmobiliaria.reportes.rentabilidad.table.vacantDays',
                   { dias: f.diasVacantes },
@@ -479,7 +514,7 @@ function RentabilidadContent() {
                     <TableCell
                       numeric
                       className="whitespace-nowrap"
-                      title={`${formatearPct(f.tasaDeRecaudoPct, locale)} · ${formatCurrency(f.enMoraCop)} en mora`}
+                      title={`${formatearPct(f.tasaDeRecaudoPct, locale)} ${rotuloDeLaTasa} · ${formatCurrency(f.enMoraCop)} en mora`}
                     >
                       <div className="flex flex-col items-end gap-1">
                         <span className="font-mono text-sm tabular-nums text-fg">
@@ -495,8 +530,12 @@ function RentabilidadContent() {
                     <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
                       {formatCurrency(f.gastosMantenimientoCop)}
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
-                      {formatCurrency(f.netoPropietarioCop)}
+                    <TableCell
+                      numeric
+                      className={`whitespace-nowrap font-mono font-medium tabular-nums ${netoDelPropietario(f.netoPropietarioCop).clase}`}
+                      title={netoDelPropietario(f.netoPropietarioCop).explicacion ?? undefined}
+                    >
+                      {netoDelPropietario(f.netoPropietarioCop, formatCurrency).texto}
                     </TableCell>
                     <TableCell numeric className="whitespace-nowrap font-mono tabular-nums">
                       {f.rentabilidadNetaAnualPct === null ? (
@@ -535,8 +574,12 @@ function RentabilidadContent() {
                   <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg">
                     {formatCurrency(totales.gastosMantenimientoCop)}
                   </TableCell>
-                  <TableCell numeric className="whitespace-nowrap font-mono font-semibold tabular-nums text-fg">
-                    {formatCurrency(totales.netoPropietarioCop)}
+                  <TableCell
+                    numeric
+                    className={`whitespace-nowrap font-mono font-semibold tabular-nums ${netoDelPropietario(totales.netoPropietarioCop).clase}`}
+                    title={netoDelPropietario(totales.netoPropietarioCop).explicacion ?? undefined}
+                  >
+                    {netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
                   </TableCell>
                   <TableCell numeric />
                 </TableRow>

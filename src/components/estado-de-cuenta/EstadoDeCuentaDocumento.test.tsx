@@ -54,7 +54,7 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(texto).toContain('Caldas');
   });
 
-  it('🔴 dice de quién es cada número: «Contrato 1298 · Leasefy #1839» en un migrado, «Contrato #14» en un nativo', () => {
+  it('🔴 sin «Leasefy #…» (16-09): «Contrato 1298» en un migrado, «Contrato #14» en un nativo', () => {
     montar(
       <EstadoDeCuentaDocumento
         doc={estadoDeCuenta({
@@ -68,7 +68,8 @@ describe('EstadoDeCuentaDocumento', () => {
     );
     const migrado = host.querySelector('[data-testid="contrato-1298"]')!;
     expect(migrado.textContent).toContain('Contrato 1298');
-    expect(migrado.querySelector('[data-testid="numero-de-leasefy"]')?.textContent).toContain('Leasefy #1839');
+    expect(migrado.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull();
+    expect(migrado.textContent).not.toContain('Leasefy #');
     const nativo = host.querySelector('[data-testid="contrato-14"]')!;
     expect(nativo.textContent).toContain('Contrato #14');
     expect(nativo.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull();
@@ -171,8 +172,41 @@ describe('EstadoDeCuentaDocumento', () => {
       <EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [contrato()] })} hoy={HOY} />,
     );
     expect(host.querySelector('[data-testid="amortizacion-1298"]')).not.toBeNull();
-    expect(host.textContent).toContain('1 de 4 cuotas');
+    /* 🔴 21-09: «2 de 4» y no «1 de 4». Este contrato tiene una cuota cancelada
+       en Leasefy y otra que vino PAGADA del sistema anterior, y una cuota que
+       vino pagada está pagada (Nico: «que haya pagado en el sistema anterior
+       quiere decir que pagó»). La distinción de dónde salió cada una la siguen
+       llevando la barra de dos tonos y su leyenda. */
+    expect(host.textContent).toContain('2 de 4 cuotas');
     expect(host.textContent).toContain('1 del sistema anterior');
+  });
+
+  it('🔴 del lado PROPIETARIO no dice «Resta por pagar» ni «En mora» (QA 22-09)', () => {
+    const c = contrato({
+      rol: 'PROPIETARIO',
+      secciones: {
+        arriendos: [
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-01-01', cajon: 'CARTERA', diasDeMora: 250 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={estadoDeCuenta({
+          cliente: { nombre: 'Iván Mejía', documento: '71000000', tipo: 'PROPIETARIO' },
+          contratos: [c],
+        })}
+        hoy={HOY}
+      />,
+    );
+    const resumen = host.querySelector('[data-testid="estado-resumen"]')?.textContent ?? '';
+    expect(resumen).toContain('Por girar');
+    expect(resumen).toContain('Giro atrasado · 250 días');
+    expect(resumen).not.toContain('Resta por pagar');
+    expect(resumen).not.toContain('En mora');
+    const estado = host.querySelector('[data-testid="estado-del-cliente"]');
+    expect(estado?.className).not.toContain('text-danger');
   });
 
   it('la nota de los filtros sale cuando hay filtros puestos', () => {

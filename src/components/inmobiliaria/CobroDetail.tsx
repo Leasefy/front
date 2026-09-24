@@ -373,7 +373,7 @@ export function CobroDetail({
                   <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
                 </div>
                 <Link
-                  href={conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, '/panel/inmobiliaria/cobros')}
+                  href={conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, '/panel/inmobiliaria/pagos/cartera/cobros')}
                   className="text-sm text-primary hover:underline"
                 >
                   {t('inmobiliaria.cobros.detail.viewProfile')}
@@ -516,7 +516,7 @@ export function CobroDetail({
             {/* El documento del período, imprimible: la cuenta de cobro. */}
             <Button asChild variant="ghost">
               <Link
-                href={`/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent('/panel/inmobiliaria/cobros')}`}
+                href={`/panel/inmobiliaria/pagos/cartera/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/cartera/cobros')}`}
                 data-testid="cuenta-de-cobro"
               >
                 <Printer className="w-4 h-4 mr-2" />

@@ -432,7 +432,13 @@ export interface EvaluationResult {
   id?: string;
   applicationId: string;
   runId?: string;
-  status?: 'pending' | 'queued' | 'running' | 'completed' | 'failed';
+  status?: 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'awaiting_evaluation';
+  /**
+   * Por qué la evaluación está esperando. `datos_cambiaron` (auditoría
+   * 23-09-2026): el candidato editó sus datos o reactivó la postulación DESPUÉS
+   * de evaluarlo; el puntaje anterior ya no vale y hay que volver a evaluar.
+   */
+  awaiting_reason?: string;
   // Score
   totalScore?: number;
   level?: 'A' | 'B' | 'C' | 'D';

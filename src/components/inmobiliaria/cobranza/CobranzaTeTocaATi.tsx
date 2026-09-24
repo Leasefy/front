@@ -47,7 +47,7 @@ import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { errorLegible } from '@/lib/cobranza/error-legible'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
-const PENDIENTES_HREF = '/panel/inmobiliaria/cobros/cobranza/pendientes'
+const PENDIENTES_HREF = '/panel/inmobiliaria/pagos/cobranza/pendientes'
 
 // ── Columnas del tablero ─────────────────────────────────────────────────────
 

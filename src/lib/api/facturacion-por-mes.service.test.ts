@@ -11,11 +11,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const getMock = vi.fn()
 const postMock = vi.fn()
+const getBlobMock = vi.fn()
 
 vi.mock('./client', () => ({
   apiClient: {
     get: (...a: unknown[]) => getMock(...a),
     post: (...a: unknown[]) => postMock(...a),
+    getBlob: (...a: unknown[]) => getBlobMock(...a),
   },
 }))
 
@@ -48,11 +50,29 @@ beforeEach(() => {
 })
 
 describe('porGenerar', () => {
-  it('pide el mes por query, escapado', () => {
-    void facturacionPorMesService.porGenerar('2026-09')
+  it('un solo mes va como desde = hasta', () => {
+    void facturacionPorMesService.porGenerar({
+      desde: '2026-09',
+      hasta: '2026-09',
+    })
     expect(getMock).toHaveBeenCalledWith(
-      '/inmobiliaria/facturacion/por-generar?mes=2026-09',
+      '/inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-09',
     )
+  })
+
+  it('🔴 «hasta el 31 de diciembre» viaja tal cual: el back descarta el día', () => {
+    void facturacionPorMesService.porGenerar({
+      desde: '2026-09',
+      hasta: '2026-12-31',
+    })
+    expect(getMock).toHaveBeenCalledWith(
+      '/inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-12-31',
+    )
+  })
+
+  it('sin rango no manda query: el back responde el mes en curso', () => {
+    void facturacionPorMesService.porGenerar()
+    expect(getMock).toHaveBeenCalledWith('/inmobiliaria/facturacion/por-generar')
   })
 })
 
@@ -161,5 +181,24 @@ describe('fechaLegible', () => {
 
   it('sin fecha devuelve una raya, no «Invalid Date»', () => {
     expect(fechaLegible(null)).toBe('—')
+  })
+})
+
+/**
+ * 🔴 Nico, 22-09: «dónde puedo descargar el lote o esa factura en sí». Las dos
+ * rutas existen en el back (`GET :id/pdf` y `GET documentos.zip`, en
+ * `rutas-del-back.json`); acá se fija la forma exacta en que se piden.
+ */
+describe('el documento de la factura', () => {
+  it('el PDF de una factura va a /facturacion/:id/pdf', () => {
+    void facturacionPorMesService.pdfDeLaFactura('fac-3')
+    expect(getBlobMock).toHaveBeenCalledWith('/inmobiliaria/facturacion/fac-3/pdf')
+  })
+
+  it('el lote va a documentos.zip con los ids separados por comas', () => {
+    void facturacionPorMesService.zipDeFacturas(['fac-3', 'fac-4'])
+    expect(getBlobMock).toHaveBeenCalledWith(
+      '/inmobiliaria/facturacion/documentos.zip?ids=fac-3,fac-4',
+    )
   })
 })

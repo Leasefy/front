@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { PropertyDetailView } from '@/components/property/PropertyDetailView';
 
 interface TenantPropertyDetailPageProps {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -19,7 +19,7 @@ interface TenantPropertyDetailPageProps {
  * que ver con su recorrido, y que lo sacaba del listado con su tope aplicado.
  */
 export default function TenantPropertyDetailPage({ params }: TenantPropertyDetailPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const resolvedParams = use(params);
   const desdeParaTi = useSearchParams().get('from') === 'para-ti';
 
   return (

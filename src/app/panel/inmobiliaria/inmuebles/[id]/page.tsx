@@ -2,6 +2,7 @@
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -10,6 +11,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,15 +49,27 @@ import {
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
-import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
+import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+// 🔴 C-05 y la firma del mandato (18-09-2026): los papeles que hacen falta
+// antes de publicar y antes del primer giro, y la firma en sus dos formas.
+// Va al lado del inventario porque es el mismo tipo de dato: lo que el mandato
+// necesita para poder operar.
+import { MandatoDelInmueble } from '@/components/inmobiliaria/captacion/MandatoDelInmueble';
+import { ModalidadDelMandato } from '@/components/inmobiliaria/mandato/ModalidadDelMandato';
+import {
+  RetiroDeLaAdministracionDialog,
+  RetiroRegistrado,
+} from '@/components/inmobiliaria/mandato/RetiroDeLaAdministracion';
+import { ApiError } from '@/lib/api/client';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
 import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
 import { useSinSenal } from '@/lib/hooks/use-sin-senal';
 import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
 import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -113,7 +127,24 @@ function ConsignacionDetailContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
+  /**
+   * F5 — por qué NO se pudo terminar el mandato, dentro del propio diálogo.
+   *
+   * Antes el motivo del back viajaba en la descripción de un toast: se iba
+   * solo a los pocos segundos, mientras el diálogo seguía abierto sin decir
+   * nada. Y cuando el 400 venía del `ValidationPipe` (varios motivos
+   * concatenados con « · »), el texto pasaba el tope del toast y ni siquiera
+   * aparecía. Es el mismo trato que ya le da «Retirar» a su 409 en la lista de
+   * Inmuebles: el motivo se queda al lado del botón que lo produjo.
+   */
+  const [motivoAlTerminar, setMotivoAlTerminar] = useState<string[]>([]);
   const [isTerminating, setIsTerminating] = useState(false);
+  /**
+   * 🔴 17-09: con contrato vigente, terminar OBLIGA a escoger qué pasa con él
+   * (seguir hasta el fin o corte a una fecha). Ese diálogo reemplaza al de
+   * siempre; el back además lo exige (409 RETIRO_SIN_ESCOGER).
+   */
+  const [showRetiro, setShowRetiro] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
   const [showCambiarPropietario, setShowCambiarPropietario] = useState(false);
@@ -282,20 +313,27 @@ function ConsignacionDetailContent() {
         description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
       });
     } catch (err) {
+      // F5: un 400 del back trae sus motivos sueltos y `ApiError` los pega con
+      // « · ». El pegote pasa el tope del toast y se perdía entero; acá se
+      // pinta el primero, que es el que dice qué hay que cambiar.
+      const motivos = motivosDelError(err);
       toast.error(t('inmobiliaria.portafolio.detail.toasts.statusChangeError'), {
-        description: err instanceof Error ? err.message : undefined,
+        description: motivos[0],
       });
     }
   }, [consignacion, t]);
 
   // Opens the destructive confirmation; the PUT happens in handleTerminateConfirm.
+  // Con contrato vigente abre el retiro de la administración (17-09).
   const handleTerminate = useCallback(() => {
-    setShowTerminateDialog(true);
-  }, []);
+    if (contratoVigente) setShowRetiro(true);
+    else setShowTerminateDialog(true);
+  }, [contratoVigente]);
 
   const handleTerminateConfirm = useCallback(async () => {
     if (!consignacion || isTerminating) return;
     setIsTerminating(true);
+    setMotivoAlTerminar([]);
     try {
       // PUT /inmobiliaria/consignaciones/:id { status: TERMINATED }
       const updated = await consignacionesApi.update(consignacion.id, {
@@ -305,9 +343,19 @@ function ConsignacionDetailContent() {
       setShowTerminateDialog(false);
       toast.success(t('inmobiliaria.portafolio.detail.toasts.terminated'));
     } catch (err) {
-      toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateError'), {
-        description: err instanceof Error ? err.message : undefined,
-      });
+      // El back descubrió un contrato vigente que la ficha no veía: se escoge.
+      if (err instanceof ApiError && err.code === 'RETIRO_SIN_ESCOGER') {
+        setShowTerminateDialog(false);
+        setShowRetiro(true);
+        return;
+      }
+      // El diálogo NO se cierra: el motivo se queda donde se apretó el botón.
+      const motivos = motivosDelError(err);
+      setMotivoAlTerminar(motivos);
+      if (motivos.length === 0) {
+        // Un 5xx o un corte de red no explican nada: ahí sí el texto genérico.
+        toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateError'));
+      }
     } finally {
       setIsTerminating(false);
     }
@@ -365,9 +413,23 @@ function ConsignacionDetailContent() {
    * de red es lo esperado y ese cartel lo explica mejor.
    */
   if (!consignacion && errorConsignacion && !sinSenal) {
+    /*
+     * 🔴 20-09 · Mismo arreglo que la ficha del contrato (ver su comentario):
+     * el camino de vuelta va ARRIBA, donde vive en todas las pantallas del
+     * panel, y no sólo adentro de la tarjeta. Sin encabezado, un fallo a
+     * pantalla completa no dice en qué parte del panel estás.
+     */
     return (
-      <div className="p-4 md:p-6" data-testid="ficha-fallo">
-        <div className="max-w-lg mx-auto py-16">
+      <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-fallo">
+        <BackButton
+          href="/panel/inmobiliaria/inmuebles"
+          label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
+        />
+        {/* «Inmueble», no la clave `portafolio.detail.title` («Detalle de
+            Propiedad»): el menú dice Inmuebles y el producto no llama
+            «propiedad» a nada. */}
+        <h1 className="text-h2 text-fg">Inmueble</h1>
+        <div className="max-w-2xl">
           <FalloDeCarga
             error={errorConsignacion}
             queEs="el inmueble"
@@ -553,6 +615,22 @@ function ConsignacionDetailContent() {
             />
           </motion.div>
 
+          {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
+              quién son los intereses de mora. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.21 }}
+          >
+            <ModalidadDelMandato
+              consignacionId={consignacion.id}
+              esVenta={consignacion.listingType === 'sale'}
+              terminada={terminada}
+            />
+          </motion.div>
+
+          {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
+
           {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
               pasa mientras el inmueble está disponible. */}
           <motion.div
@@ -607,6 +685,17 @@ function ConsignacionDetailContent() {
           >
             <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
           </motion.div>
+
+          {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
+              en el back —el inmueble (`/properties/:id`: fotos, datos,
+              ubicación) y su mandato (`/inmobiliaria/consignaciones/:id`:
+              estado, canon, terminación)— y aquí se leen como una sola lista. */}
+          <BitacoraDelRecurso
+            recursos={[
+              { tipo: 'inmueble', id: consignacion.propertyId },
+              { tipo: 'consignacion', id: consignacion.id },
+            ]}
+          />
         </div>
 
         {/* Right Column - Sidebar (1/3) */}
@@ -616,12 +705,26 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <InventarioDeLaConsignacion
+            {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
+                por versiones; sin la migración del back monta la tarjeta de siempre. */}
+            <InventarioDelInmueble
               consignacion={consignacion}
               puedeEditar={puedeEditarInventario}
               copiaLocal={copiaLocal}
               sinSenal={sinSenal}
               onActualizada={setConsignacionData}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+          >
+            <MandatoDelInmueble
+              consignacionId={consignacion.id}
+              propietarioNombre={propietario?.name ?? null}
+              puedeEditar={puedeEditarInventario}
             />
           </motion.div>
 
@@ -672,7 +775,10 @@ function ConsignacionDetailContent() {
       <AlertDialog
         open={showTerminateDialog}
         onOpenChange={(open) => {
-          if (!open && !isTerminating) setShowTerminateDialog(false);
+          if (!open && !isTerminating) {
+            setShowTerminateDialog(false);
+            setMotivoAlTerminar([]);
+          }
         }}
       >
         <AlertDialogContent>
@@ -686,6 +792,23 @@ function ConsignacionDetailContent() {
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {motivoAlTerminar.length > 0 && (
+            <div
+              role="alert"
+              data-testid="terminar-rechazo"
+              className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+            >
+              {motivoAlTerminar.length === 1 ? (
+                motivoAlTerminar[0]
+              ) : (
+                <ul className="list-disc space-y-1 pl-4">
+                  {motivoAlTerminar.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isTerminating}>
               {t('common.cancel')}
@@ -700,6 +823,19 @@ function ConsignacionDetailContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RetiroDeLaAdministracionDialog
+        consignacionId={consignacion.id}
+        titulo={consignacion.propertyTitle}
+        abierto={showRetiro}
+        onCerrar={() => setShowRetiro(false)}
+        onRetirado={() => {
+          setShowRetiro(false);
+          // Relee el mandato: el back lo dejó terminado.
+          setConsignacionData(null);
+          void recargarConsignacion();
+        }}
+      />
 
       <PedirCitaModal
         isOpen={showCitaModal}

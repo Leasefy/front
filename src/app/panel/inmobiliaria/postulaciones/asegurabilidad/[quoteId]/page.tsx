@@ -6,7 +6,7 @@
 // D-33-10 / D-33-11: Phase 33 wires the two header actions ("Pedir explicación"
 // + "Re-cotizar con cambios") and the ReQuoteOfBadge subtitle.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -226,7 +226,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
       {/* Main content — ficha del caso en 3 columnas (visión #14):
           contexto (izq) | comparación + acciones (centro) | recomendación (der). */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <div className="px-4 py-6">
         {/* ARIA live region — announces carrier verdict transitions to SR */}
         <div
           role="status"
@@ -426,7 +426,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             />
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Phase 33 counterfactual modal — mounted at root so portal stacking
           is unaffected by the sticky header z-index. codeudores: 0 is the
@@ -452,11 +452,8 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 // Default export — wrapped with PageGuard
 // ---------------------------------------------------------------------------
 
-export default function QuoteDetailPage({
-  params,
-}: {
-  params: { quoteId: string }
-}) {
+export default function QuoteDetailPage(props: { params: Promise<{ quoteId: string }> }) {
+  const params = use(props.params)
   return (
     <PageGuard module="cotizador" action="view">
       <QuoteDetailContent quoteId={params.quoteId} />

@@ -31,6 +31,12 @@ interface Props {
   /** `true` cuando el navegador dice que no hay red. */
   sinSenal: boolean;
   onPreparar: () => void;
+  /**
+   * 🔴 `true` cuando va DENTRO de la tarjeta del inventario, que ya tiene
+   * borde: dos rectángulos concéntricos era exactamente la queja de Nico
+   * («¿por qué no unificaste estas dos cards?»).
+   */
+  sinMarco?: boolean;
 }
 
 /** «12 de septiembre, 9:19 p. m.» */
@@ -49,12 +55,17 @@ export function PrepararParaSinSenal({
   ultimaPreparacion,
   sinSenal,
   onPreparar,
+  sinMarco = false,
 }: Props) {
   const { t } = useI18n();
 
   return (
     <div
-      className="rounded-md border border-border bg-surface p-3 flex flex-col gap-2"
+      className={
+        sinMarco
+          ? 'flex flex-col gap-2'
+          : 'rounded-md border border-border bg-surface p-3 flex flex-col gap-2'
+      }
       data-testid="preparar-sin-senal"
     >
       <div className="flex items-start gap-2">

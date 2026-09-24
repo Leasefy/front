@@ -8,6 +8,7 @@ import {
   esAprobarPorLote,
   esAprobadorYEjecutor,
   leerLiquidacionFrenada,
+  loteQueTieneLaDispersion,
   motivoLegible,
   RUTA_INMUEBLES,
 } from './dispersiones-errores';
@@ -93,5 +94,25 @@ describe('motivoLegible', () => {
     expect(motivoLegible(new ApiError(500, 'Internal server error'))).toBeNull();
     expect(motivoLegible(new ApiError(0, 'No pudimos conectarnos'))).toBeNull();
     expect(motivoLegible(new Error('x'))).toBeNull();
+  });
+});
+
+describe('loteQueTieneLaDispersion (23-09)', () => {
+  it('🔴 el 409 DISPERSION_EN_UN_LOTE lleva al lote que la tiene, con el mensaje del back', () => {
+    const e = new ApiError(409, 'Está en un lote.', 'DISPERSION_EN_UN_LOTE', {
+      code: 'DISPERSION_EN_UN_LOTE',
+      loteId: 'lote-9',
+    });
+    expect(loteQueTieneLaDispersion(e)).toEqual({
+      href: '/panel/inmobiliaria/pagos/dispersiones/lotes/lote-9',
+      mensaje: 'Está en un lote.',
+    });
+  });
+
+  it('sin id en el cuerpo, a la lista de lotes; otro código, null', () => {
+    expect(
+      loteQueTieneLaDispersion(new ApiError(409, 'x', 'DISPERSION_EN_UN_LOTE'))?.href,
+    ).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes');
+    expect(loteQueTieneLaDispersion(new ApiError(409, 'x', 'APROBAR_POR_LOTE'))).toBeNull();
   });
 });

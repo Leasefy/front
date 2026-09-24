@@ -102,7 +102,7 @@ export function VisorDeFotos({ fotos, indice, onCerrar, onCambiar, titulo }: Vis
         >
           <DialogPrimitive.Title className="sr-only">{nombre}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Foto {actual + 1} de {total}. Usá las flechas para pasar de foto y Escape para cerrar.
+            Foto {actual + 1} de {total}. Usa las flechas para pasar de foto y Escape para cerrar.
           </DialogPrimitive.Description>
 
           {/* Barra superior: contador y cerrar */}

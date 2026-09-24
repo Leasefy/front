@@ -29,8 +29,17 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
 }))
 
 const createCitaMock = vi.fn()
+// A5: el modal pregunta qué modalidades acepta el inmueble al elegirlo. Por
+// defecto responde con las dos, que es el caso de hoy; cada prueba que quiera
+// otro inmueble cambia este mock.
+const disponibilidadMock = vi.fn((_propertyId: string) =>
+  Promise.resolve({ windows: [], agendas: {}, visitTypes: ['IN_PERSON', 'VIRTUAL'] }),
+)
 vi.mock('@/lib/api/agenda.service', () => ({
-  agendaApi: { createCita: (dto: unknown) => createCitaMock(dto) },
+  agendaApi: {
+    createCita: (dto: unknown) => createCitaMock(dto),
+    getDisponibilidad: (id: string) => disponibilidadMock(id),
+  },
 }))
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
@@ -258,5 +267,71 @@ describe('A7 — un doble clic no agenda dos citas', () => {
     })
 
     expect(createCitaMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * A5 — la modalidad tenía que tener respaldo.
+ *
+ * El selector ofrecía «Presencial» y «Virtual» siempre, sin mirar qué acepta el
+ * inmueble. Ahora pregunta al elegirlo y ofrece sólo lo aceptado; si la
+ * consulta no responde (o el inmueble no tiene horarios), ofrece las dos, que
+ * es lo que hacía antes: una lectura que falló no puede quitarle opciones a
+ * nadie, y el back sigue teniendo la última palabra.
+ */
+describe('A5 — sólo se ofrece la modalidad que el inmueble acepta', () => {
+  it('un inmueble que sólo acepta virtual: la cita se manda VIRTUAL sin tocar el selector', async () => {
+    createCitaMock.mockResolvedValue(undefined)
+    disponibilidadMock.mockResolvedValue({
+      windows: [],
+      agendas: {},
+      visitTypes: ['VIRTUAL'],
+    })
+    await montar()
+    await llenar()
+    await agendar()
+
+    expect(createCitaMock).toHaveBeenCalledWith(
+      expect.objectContaining({ visitType: 'VIRTUAL' }),
+    )
+  })
+
+  it('un inmueble sin horarios cargados: ofrece las dos y lo dice', async () => {
+    createCitaMock.mockResolvedValue(undefined)
+    disponibilidadMock.mockResolvedValue({ windows: [], agendas: {}, visitTypes: [] })
+    await montar()
+    await llenar()
+
+    expect(container.textContent).toContain('todavía no tiene horarios de visita cargados')
+    await agendar()
+    expect(createCitaMock).toHaveBeenCalledWith(
+      expect.objectContaining({ visitType: 'IN_PERSON' }),
+    )
+  })
+
+  it('si la consulta falla no se quita ninguna opción ni se muestra un error', async () => {
+    createCitaMock.mockResolvedValue(undefined)
+    disponibilidadMock.mockRejectedValue(new Error('se cayó'))
+    await montar()
+    await llenar()
+
+    expect(container.textContent).not.toContain('todavía no tiene horarios')
+    await agendar()
+    expect(createCitaMock).toHaveBeenCalledWith(
+      expect.objectContaining({ visitType: 'IN_PERSON' }),
+    )
+  })
+
+  it('el 409 del back va al lado del selector de modalidad, no arriba del pie', () => {
+    const r = rechazoDeCita(
+      new ApiError(
+        409,
+        'Ese inmueble no se muestra por videollamada. Cambia la modalidad o ajusta sus horarios de visita.',
+        'MODALIDAD_NO_ACEPTADA',
+      ),
+      'genérico',
+    )
+    expect(r?.campo).toBe('modalidad')
+    expect(r?.mensaje).toContain('videollamada')
   })
 })

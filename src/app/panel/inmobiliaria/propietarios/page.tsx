@@ -54,6 +54,7 @@ import {
 } from '@/lib/propietarios/errores-del-propietario';
 import {
   FILTROS_INICIALES,
+  conteosDePropietarios,
   filtrarPropietarios,
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
@@ -280,6 +281,11 @@ function PropietariosContent() {
     () => filtrarPropietarios(propietarios, filtros),
     [propietarios, filtros],
   );
+  /* Los números de los chips salen de la lista COMPLETA, no de la página. */
+  const conteos = useMemo(
+    () => conteosDePropietarios(propietarios, filtros),
+    [propietarios, filtros],
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -434,10 +440,27 @@ function PropietariosContent() {
     });
   };
 
-  const handleEdit = (propietario: Propietario) => {
+  /*
+   * 🔴 El modal de editar se llena con la FICHA, no con la fila de la lista
+   * (23-09, datos personales). La lista ya no trae el número de cuenta —sólo
+   * sus 4 últimos dígitos— y llenar el formulario con ella lo dejaba en blanco:
+   * guardar habría mandado una cuenta vacía. La ficha (`GET :id`) trae la
+   * cuenta entera a quien la puede ver, y a quien no, `datosBancariosOcultos`,
+   * con lo que el formulario esconde el bloque bancario.
+   */
+  const [abriendoEdicion, setAbriendoEdicion] = useState<string | null>(null);
+  const handleEdit = async (propietario: Propietario) => {
     if (!puedeEditar) return avisarSinPermiso('editar');
+    if (abriendoEdicion) return;
     setErrorAlEditar(null);
-    setEditingPropietario(propietario);
+    setAbriendoEdicion(propietario.id);
+    try {
+      setEditingPropietario(await propietariosApi.getById(propietario.id));
+    } catch {
+      toast.error(t('inmobiliaria.propietarios.toasts.loadForEditError'));
+    } finally {
+      setAbriendoEdicion(null);
+    }
   };
 
   const handleDelete = (propietario: Propietario) => {
@@ -757,6 +780,7 @@ function PropietariosContent() {
                 totalFiltrado={paginationData.totalItems}
                 total={propietarios.length}
                 filtros={filtros}
+                conteos={conteos}
                 onFiltros={(nuevos) => {
                   setFiltros(nuevos);
                   // Filtrar desde la página 3 dejaba la tabla en blanco.

@@ -8,6 +8,12 @@
  * `/configuracion/ia` y el legado `?tab=`) no puedan divergir.
  */
 
+import { SeccionAvisos } from './SeccionAvisos';
+import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
+import { SeccionBitacora } from './SeccionBitacora';
+import { SeccionMovimientos } from './SeccionMovimientos';
+import { SeccionProteccionDeDatos } from './SeccionProteccionDeDatos';
+import type { AgencyRole } from '@/lib/auth/agency-roles';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -16,7 +22,11 @@ import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
+import { SeccionMandato } from './SeccionMandato';
+import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
+import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
+import { SeccionSedes } from './SeccionSedes';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
 import { SeccionPermisos } from './SeccionPermisos';
@@ -38,10 +48,32 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionPermisos />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
+    case 'medios-de-recibo':
+      return <SeccionMediosDeRecibo />;
+    case 'costos-de-la-plata':
+      return <SeccionCostosDeLaPlata />;
+    case 'sedes':
+      return <SeccionSedes />;
+    case 'mandato':
+      return <SeccionMandato />;
     case 'migracion':
       return <SeccionMigracion />;
     case 'integraciones':
       return <SeccionIntegraciones />;
+    // 🔴 18-09-2026: qué le llega SOLO a tus clientes. Todo arranca apagado.
+    // 🔴 18-09-2026: quién movió plata. Sólo lectura, para el dueño.
+    case 'bitacora':
+      return <SeccionBitacora />;
+    // 🔴 22-09-2026: quién hizo qué en TODO el panel, con su rol.
+    case 'movimientos':
+      return <SeccionMovimientos />;
+    // 🔴 23-09-2026: las solicitudes de habeas data de los titulares (Ley 1581).
+    case 'proteccion-de-datos':
+      return <SeccionProteccionDeDatos />;
+    case 'avisos':
+      return <SeccionAvisos />;
+    case 'sla-de-pqrs':
+      return <SeccionSlaDePqrs />;
     case 'notificaciones':
       return <SeccionNotificaciones />;
     case 'preferencias':
@@ -60,6 +92,7 @@ export function GuardaDeSeccion({ id, children }: { id: SeccionId; children: Rea
   const { gate } = seccionPorId(id);
   if (gate.tipo === 'todos') return <>{children}</>;
   if (gate.tipo === 'admin') return <PageGuard adminOnly>{children}</PageGuard>;
+  if (gate.tipo === 'roles') return <PageGuard roles={gate.roles as AgencyRole[]}>{children}</PageGuard>;
   return <PageGuard module={gate.module}>{children}</PageGuard>;
 }
 

@@ -140,7 +140,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
           </DialogHeader>
 
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Inmueble</label>
+            <label className="text-caption text-muted-foreground">Inmueble</label>
             {consignaciones === null ? (
               <p className="text-sm text-muted-foreground">Cargando inmuebles…</p>
             ) : opciones.length === 0 && !error ? (

@@ -137,6 +137,89 @@ describe('Resumen del negocio — inmobiliaria en cero', () => {
   });
 });
 
+/**
+ * 🔴 «1 DISPONIBLES» (21-09-2026). El subtítulo de la tarjeta de propiedades
+ * salía de una clave de i18n con el plural clavado.
+ */
+describe('🔴 el plural del subtítulo', () => {
+  it('con UN inmueble disponible dice «1 disponible», no «1 disponibles»', async () => {
+    datos.kpis = enCero({
+      totalProperties: 108,
+      propertiesInCatalog: 6,
+      propertiesOutOfCatalog: 102,
+      propertiesRented: 5,
+      propertiesAvailable: 1,
+    });
+    await montar();
+    const cuerpo = document.body.textContent ?? '';
+    // El positivo va con el separador pegado, porque «1 disponible» es un
+    // prefijo de «1 disponibles» y solo pasaría en los dos casos.
+    expect(cuerpo).toContain('1 disponible ·');
+    expect(cuerpo).not.toContain('1 disponibles');
+  });
+
+  it('con una sola arrendada, lo mismo del otro lado', async () => {
+    datos.kpis = enCero({
+      totalProperties: 3,
+      propertiesRented: 1,
+      propertiesAvailable: 2,
+    });
+    await montar();
+    const cuerpo = document.body.textContent ?? '';
+    expect(cuerpo).toContain('1 arrendada ·');
+    expect(cuerpo).not.toContain('1 arrendadas');
+    expect(cuerpo).toContain('2 disponibles');
+  });
+});
+
+/**
+ * 🔴 EL «+100%» QUE NADIE MIDIÓ (21-09-2026).
+ *
+ * Abrir esta pantalla en la inmobiliaria migrada mostró
+ * «RECAUDO DEL MES $8.200.000 · +100% vs mes anterior» con el mes anterior en
+ * CERO. Quien lo lee entiende que el recaudo se duplicó; lo que pasó es que
+ * pasó de nada a algo, y eso no tiene porcentaje. El back devolvía 100 por
+ * `curr > 0 ? 100 : 0`; ahora devuelve `null` y la pantalla calla.
+ */
+describe('🔴 sin mes anterior no hay porcentaje', () => {
+  it('con recaudo y `collectionTrend` en null NO dice «+100%» ni pinta flecha', async () => {
+    datos.kpis = enCero({
+      collectedRevenue: 8_200_000,
+      collectionTrend: null,
+      totalCommissions: 33_416_000,
+      commissionsTrend: null,
+    });
+    await montar();
+    const cuerpo = document.body.textContent ?? '';
+    expect(cuerpo).toContain('$8.200.000');
+    expect(cuerpo).not.toContain('vs mes anterior');
+    expect(cuerpo).not.toContain('100%');
+  });
+
+  it('pero una variación de verdad SÍ se muestra, aunque sea del 100 %', async () => {
+    // Un mes anterior de $1M y uno actual de $2M sí es +100 %, y eso se dice.
+    datos.kpis = enCero({ collectedRevenue: 2_000_000, collectionTrend: 100 });
+    await montar();
+    expect(document.body.textContent).toContain('vs mes anterior');
+    expect(document.body.textContent).toContain('100%');
+  });
+
+  it('una respuesta vieja en caché con 0 contra 0 sigue sin pintar flecha', async () => {
+    datos.kpis = enCero({ collectedRevenue: 0, collectionTrend: 0 });
+    await montar();
+    expect(document.body.textContent).not.toContain('vs mes anterior');
+  });
+
+  it('una caída también se muestra, con su signo', async () => {
+    datos.kpis = enCero({ collectedRevenue: 500_000, collectionTrend: -40 });
+    await montar();
+    const cuerpo = document.body.textContent ?? '';
+    expect(cuerpo).toContain('vs mes anterior');
+    expect(cuerpo).toContain('40%');
+    expect(cuerpo).not.toContain('+40%');
+  });
+});
+
 describe('Resumen del negocio — con operación de verdad', () => {
   it('mide ocupación y recaudo, y muestra la variación contra el mes anterior', async () => {
     datos.kpis = enCero({
@@ -186,6 +269,41 @@ describe('Resumen del negocio — con operación de verdad', () => {
     datos.kpis = enCero({ totalProperties: 10, propertiesRented: 8 });
     await montar();
     expect(tarjeta('Ocupación').textContent).toContain('80.0%');
+  });
+
+  it('🔴 la tasa dice con qué fórmula se midió, y es la que mandó el back', async () => {
+    /*
+     * La agencia de QA eligió medir sobre lo emitido: el Resumen tiene que
+     * decir 43,6 % «Pagado de lo emitido», no rehacer la cuenta con lo causado
+     * (8,2 M de 364,8 M = 2,2 %) y rotularla igual.
+     */
+    datos.kpis = enCero({
+      totalProperties: 4,
+      expectedRevenue: 364_795_650,
+      collectedRevenue: 8_200_000,
+      collectionRate: 43.62,
+      tasaDeRecaudo: {
+        base: 'EMITIDO',
+        porDefecto: false,
+        rotulo: 'Pagado de lo emitido',
+        definicion: '',
+        numeradorCop: 8_200_000,
+        denominadorCop: 18_800_000,
+        pct: 43.617,
+      },
+    });
+    await montar();
+    expect(texto('resumen-tasa-de-recaudo')).toBe('43.6%');
+    expect(texto('resumen-rotulo-de-la-tasa')).toBe('Pagado de lo emitido');
+    expect(texto('resumen-cifras-de-la-tasa')).toContain('pagados de');
+    expect(tarjeta('Recaudo del Mes').textContent).toContain('43.6% · Pagado de lo emitido');
+  });
+
+  it('una respuesta de antes, sin la tasa, se lee como lo que era: sobre lo causado', async () => {
+    datos.kpis = enCero({ expectedRevenue: 10_000_000, collectedRevenue: 9_000_000, collectionRate: 90 });
+    await montar();
+    expect(texto('resumen-tasa-de-recaudo')).toBe('90.0%');
+    expect(texto('resumen-rotulo-de-la-tasa')).toBe('Recaudo sobre lo causado');
   });
 
   it('un recaudo MEDIDO en cero no es una raya: se esperaba plata y no entró', async () => {

@@ -183,4 +183,18 @@ describe('POST /api/inquilino/pagos/wompi-session — auth / config / validation
     expect(res.status).toBe(502)
     expect(json.error).toBe('invalid_amount')
   })
+
+  // Auditoría de seguridad 23-09: el leaseId iba tal cual dentro de la ruta
+  // del back; `fetch` normaliza `../` y la petición llegaba a OTRA ruta, cuya
+  // respuesta se tomaba como el monto a firmar.
+  it.each([['../../otra/ruta?'], ['lease-1/../../x'], ['lease-1#'], ['lease 1']])(
+    'rejects a leaseId that changes the backend path (%s) without calling the backend',
+    async (leaseId) => {
+      const f = vi.fn()
+      globalThis.fetch = f
+      const res = await POST(makeReq({ leaseId }))
+      expect(res.status).toBe(400)
+      expect(f).not.toHaveBeenCalled()
+    },
+  )
 })

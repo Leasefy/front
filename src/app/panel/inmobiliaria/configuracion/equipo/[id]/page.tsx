@@ -1,12 +1,11 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { motion } from 'framer-motion';
-import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui';
 import {
   CaretLeft,
@@ -22,9 +21,12 @@ import {
 // Components
 import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
 import { AgenteMetrics } from '@/components/inmobiliaria/AgenteMetrics';
+import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
+import { EditarPerfilDelAsesor } from '@/components/inmobiliaria/EditarPerfilDelAsesor';
+import { AsignarInmuebleAlAsesor } from '@/components/inmobiliaria/AsignarInmuebleAlAsesor';
 
 /**
  * Agente Detail Page
@@ -36,22 +38,17 @@ function AgenteDetailContent() {
   const agenteId = params.id as string;
 
   // Fetch data
-  const { agente } = useAgente(agenteId);
-  const { consignaciones } = useAgenteConsignaciones(agenteId);
+  const { agente, refetch: recargarAgente } = useAgente(agenteId);
+  const { consignaciones, refetch: recargarConsignaciones } =
+    useAgenteConsignaciones(agenteId);
   const { pipelineItems } = useAgentePipeline(agenteId);
 
-  // Handlers
-  const handleEdit = useCallback(() => {
-    toast.info(t('inmobiliaria.agentes.detail.editComingSoon'), {
-      description: t('inmobiliaria.agentes.detail.editComingSoonDesc'),
-    });
-  }, [t]);
-
-  const handleAssignProperty = useCallback(() => {
-    toast.info(t('inmobiliaria.agentes.detail.assignComingSoon'), {
-      description: t('inmobiliaria.agentes.detail.assignComingSoonDesc'),
-    });
-  }, [t]);
+  /* 🔴 Acá había dos avisos de «próximamente» sobre dos rutas que el back ya
+     publicaba —`PATCH /inmobiliaria/agency/members/:memberId/profile` y
+     `PUT /inmobiliaria/consignaciones/:id/assign-agent`— y con el servicio del
+     front ya escrito para las dos. Lo que faltaba eran los diálogos. */
+  const [editando, setEditando] = useState(false);
+  const [asignando, setAsignando] = useState(false);
 
   // 404 if not found
   if (!agente) {
@@ -114,7 +111,7 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <AgenteProfile agente={agente} onEdit={handleEdit} />
+            <AgenteProfile agente={agente} onEdit={() => setEditando(true)} />
           </motion.div>
 
           {/* Metrics Section */}
@@ -135,7 +132,7 @@ function AgenteDetailContent() {
           >
             <AgentePropertyList
               consignaciones={consignaciones}
-              onAssignProperty={handleAssignProperty}
+              onAssignProperty={() => setAsignando(true)}
             />
           </motion.div>
 
@@ -160,37 +157,34 @@ function AgenteDetailContent() {
             <AgentePipeline pipelineItems={pipelineItems} />
           </motion.div>
 
-          {/* Commission History Placeholder */}
+          {/* 🔴 17-09: acá había un «Historial de comisiones — próximamente».
+              La comisión del asesor se liquida por fuera de Leasefy, así que
+              esa pantalla no va a existir; lo que sí es un hecho —qué captó y
+              qué arrendó— es esto. */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-lg border border-border bg-card overflow-hidden"
+            className="rounded-lg border border-border bg-card p-5"
           >
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
-                <Clock className="w-4 h-4 text-fg-muted" />
-              </div>
-              <h3 className="text-base font-semibold text-fg">
-                {t('inmobiliaria.agentes.detail.commissions')}
-              </h3>
-            </div>
-            <div className="flex flex-col items-center p-8 text-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-surface-muted flex items-center justify-center">
-                <Clock weight="duotone" className="w-6 h-6 text-fg-muted" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-fg">
-                  {t('inmobiliaria.agentes.detail.comingSoon')}
-                </p>
-                <p className="text-xs text-fg-muted">
-                  {t('inmobiliaria.agentes.detail.commissionsDesc')}
-                </p>
-              </div>
-            </div>
+            <CaptacionesYArriendos userId={agente.userId} />
           </motion.div>
         </div>
       </div>
+
+      <EditarPerfilDelAsesor
+        abierto={editando}
+        onCerrar={() => setEditando(false)}
+        agente={agente}
+        onGuardado={recargarAgente}
+      />
+      <AsignarInmuebleAlAsesor
+        abierto={asignando}
+        onCerrar={() => setAsignando(false)}
+        agenteUserId={agente.userId}
+        agenteNombre={agente.name}
+        onAsignado={recargarConsignaciones}
+      />
     </div>
   );
 }

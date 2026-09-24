@@ -118,12 +118,12 @@ const PENDIENTES = {
 let container: HTMLDivElement;
 let root: Root | null = null;
 
-async function pintar() {
+async function pintar(sinPaso5 = false) {
   container = document.createElement('div');
   document.body.appendChild(container);
   await act(async () => {
     root = createRoot(container);
-    root.render(<PlanDeCuentas />);
+    root.render(<PlanDeCuentas sinPaso5={sinPaso5} />);
   });
   await act(async () => {});
 }
@@ -236,6 +236,35 @@ describe('la semilla', () => {
     // Y el mapeo de los asientos automáticos vive en este mismo paso.
     expect(q('puc-mapeo')).not.toBeNull();
     expect(q('mapeo-contable-embebido')).not.toBeNull();
+  });
+
+  /**
+   * 🔴 20-09 · EL DEFECTO QUE SÓLO SE VIO ABRIENDO `/contabilidad/puc`.
+   *
+   * Esa ruta monta este mismo componente con `sinPaso5`, y traía la pantalla
+   * de `/contabilidad/mapeo` ENTERA incrustada: los mismos nueve eventos, los
+   * mismos selectores que ESCRIBEN. Y «Mapeo contable» tiene su propia
+   * tarjeta en el hub de Contabilidad. Dos lugares para hacer lo mismo, con la
+   * misma tabla editable y sin forma de saber cuál manda — el mismo defecto
+   * que tenía la portada con sus dos navegaciones.
+   *
+   * Dentro de la migración SÍ va junto (es una secuencia: cargas el plan y
+   * mapeas sin cambiar de pantalla). Fuera de ella, un enlace.
+   */
+  it('🔴 fuera de la migración NO incrusta la pantalla de mapeo: la enlaza', async () => {
+    pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    await pintar(true);
+
+    expect(q('puc-mapeo')).toBeNull();
+    expect(q('mapeo-contable-embebido')).toBeNull();
+
+    const enlace = q('ir-al-mapeo-desde-el-puc');
+    expect(enlace).not.toBeNull();
+    expect(enlace!.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contabilidad/mapeo',
+    );
+    // Y tampoco el pie que manda al paso 5: fuera de la migración no hay secuencia.
+    expect(q('puc-continuar')).toBeNull();
   });
 
   it('dice qué pasó con el mapeo que se sembró junto con el plan', async () => {
@@ -435,5 +464,86 @@ describe('editar dos cuentas seguidas', () => {
       expect(q('puc-continuar')).not.toBeNull();
       expect(q('puc-falta-mapeo')).toBeNull();
     });
+  });
+});
+
+/**
+ * «No deducible» en la cuenta (contrato del 19-09, §3).
+ *
+ * 🔴 Lo que se protege acá: sin la migración 70 la clave NO viaja. Si viajara
+ * —aunque fuera en `false`—, el back respondería 503 `NO_DEDUCIBLE_SIN_MIGRAR`
+ * y se perdería la edición entera de la cuenta (nombre, naturaleza, activa)
+ * por un campo que nadie tocó.
+ */
+describe('la casilla «No deducible»', () => {
+  const editar = (codigo: string) =>
+    Array.from(container.querySelectorAll('button')).find((b) =>
+      b.getAttribute('aria-label')?.startsWith(`Editar ${codigo} `),
+    ) as HTMLButtonElement;
+
+  /** Un árbol con la columna presente: `noDeducible` viene, aunque sea `null`. */
+  const CON_COLUMNA: CuentaEnArbol[] = [
+    cuenta('5', 'Gastos', { noDeducible: null }, [
+      cuenta('5195', 'Diversos', { noDeducible: null }, [
+        cuenta('519595', 'Otros', { noDeducible: true }),
+        cuenta('519510', 'Libros y suscripciones', { noDeducible: null }),
+      ]),
+    ]),
+  ];
+
+  beforeEach(() => {
+    pucMock.semillaPendientes.mockResolvedValue({ total: 0, cuentas: [] });
+    pucMock.actualizar.mockReset().mockImplementation(
+      async (id: string, cambios: Record<string, unknown>) => ({ id, ...cambios }),
+    );
+  });
+
+  it('🔴 lo marcado se ve en el ÁRBOL, no sólo dentro del formulario', async () => {
+    pucMock.arbol.mockResolvedValue(CON_COLUMNA);
+    await pintar();
+
+    expect(q('puc-no-deducible-519595')).not.toBeNull();
+    // Y lo que no está marcado no lleva distintivo: `null` no es «sí».
+    expect(q('puc-no-deducible-519510')).toBeNull();
+  });
+
+  it('marcar una cuenta manda `noDeducible: true` en el PATCH', async () => {
+    pucMock.arbol.mockResolvedValue(CON_COLUMNA);
+    await pintar();
+
+    await act(async () => editar('519510').click());
+    const casilla = q('puc-no-deducible') as HTMLButtonElement;
+    expect(casilla.hasAttribute('disabled')).toBe(false);
+
+    await act(async () => casilla.click());
+    await act(async () => (q('puc-guardar') as HTMLButtonElement).click());
+
+    const [, cambios] = pucMock.actualizar.mock.calls[0] as [string, Record<string, unknown>];
+    expect(cambios.noDeducible).toBe(true);
+  });
+
+  it('una cuenta ya marcada abre el formulario con la casilla puesta', async () => {
+    pucMock.arbol.mockResolvedValue(CON_COLUMNA);
+    await pintar();
+
+    await act(async () => editar('519595').click());
+    expect((q('puc-no-deducible') as HTMLButtonElement).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('🔴 sin la columna la casilla se apaga CON explicación y la clave no viaja', async () => {
+    // El back omite `no_deducible` en toda lectura mientras falte la migración:
+    // la clave sencillamente no viene.
+    pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    await pintar();
+
+    await act(async () => editar('511580').click());
+    const casilla = q('puc-no-deducible') as HTMLButtonElement;
+    expect(casilla.hasAttribute('disabled')).toBe(true);
+    expect((q('puc-formulario') as HTMLElement).textContent).not.toContain('Víctor');
+
+    await act(async () => (q('puc-guardar') as HTMLButtonElement).click());
+
+    const [, cambios] = pucMock.actualizar.mock.calls[0] as [string, Record<string, unknown>];
+    expect('noDeducible' in cambios).toBe(false);
   });
 });

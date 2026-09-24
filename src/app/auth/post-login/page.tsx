@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 
 /**
  * Post-login resolver for the OAuth (Google) flow.
@@ -32,6 +33,7 @@ function PostLoginResolver() {
     needsOnboarding,
     perfilElegido,
     mfaRequired,
+    mfaEnrollRequired,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
@@ -53,8 +55,13 @@ function PostLoginResolver() {
   React.useEffect(() => {
     if (authLoading) return;
     // MFA gate first (security): never bypass a pending second factor.
+    // T-0099: enroll-pending takes priority — same order as ProtectedRoute.
+    if (mfaEnrollRequired) {
+      router.replace('/auth/mfa-enroll');
+      return;
+    }
     if (mfaRequired) {
-      router.replace('/auth/mfa-verify');
+      router.replace(rutaAlSegundoFactor(returnUrl));
       return;
     }
     // Honor an invitation returnUrl before the generic onboarding redirect —
@@ -101,6 +108,7 @@ function PostLoginResolver() {
     needsOnboarding,
     perfilElegido,
     mfaRequired,
+    mfaEnrollRequired,
     returnUrl,
     agencyRole,
     agencyMembershipChecked,

@@ -143,7 +143,7 @@ function CeldaEditable({
       )}
 
       {columna.ayuda ? (
-        <span id={idAyuda} className="block text-xs text-fg-subtle">
+        <span id={idAyuda} className="block text-caption text-fg-subtle">
           {columna.ayuda}
         </span>
       ) : null}
@@ -302,14 +302,14 @@ export function FilaDeTercero({
     <div className="space-y-3 rounded-lg border border-border bg-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium text-fg">
-          <span className="font-mono text-xs tabular-nums text-fg-subtle">
+          <span className="font-mono text-caption tabular-nums text-fg-subtle">
             {/* El número que la persona ve en SU archivo: el back lo guarda
                 1-based en `_fila`, no hay que sumarle nada. */}
             Fila {fila.datos._fila}
           </span>{' '}
           · {nombre}
         </p>
-        <p className="font-mono text-xs tabular-nums text-fg-subtle">
+        <p className="font-mono text-caption tabular-nums text-fg-subtle">
           {valorEditable(fila.datos.documento)}
         </p>
       </div>
@@ -417,7 +417,7 @@ export function FilaDeTercero({
           size="sm"
           variant="link"
           hideArrow
-          className="text-xs"
+          className="text-caption"
           onClick={() => setVerTodo((v) => !v)}
         >
           {verTodo ? 'Ver sólo lo que falta' : 'Ver todos los campos'}

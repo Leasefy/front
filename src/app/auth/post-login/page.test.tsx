@@ -12,8 +12,9 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, authState } = vi.hoisted(() => ({
+const { replaceMock, authState, barra } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
+  barra: { query: '' },
   authState: {
     user: null as Record<string, unknown> | null,
     isAuthenticated: false,
@@ -21,6 +22,7 @@ const { replaceMock, authState } = vi.hoisted(() => ({
     needsOnboarding: false,
     perfilElegido: null as string | null,
     mfaRequired: false,
+    mfaEnrollRequired: false,
     agencyRole: null as string | null,
     agencyMembershipChecked: true,
     hasActiveAgencyMembership: false,
@@ -29,7 +31,7 @@ const { replaceMock, authState } = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => new URLSearchParams(barra.query),
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -47,6 +49,9 @@ beforeEach(() => {
   authState.isAuthenticated = false
   authState.needsOnboarding = false
   authState.perfilElegido = null
+  authState.mfaRequired = false
+  authState.mfaEnrollRequired = false
+  barra.query = ''
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -62,6 +67,30 @@ async function render() {
     root.render(<PostLoginPage />)
   })
 }
+
+describe('post-login — T-0099: MFA gate first, enroll-pending before verify-pending', () => {
+  it('mfaEnrollRequired=true → /auth/mfa-enroll, ahead of the onboarding/role checks', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaEnrollRequired = true
+    authState.mfaRequired = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+
+  it('mfaRequired=true (has a factor, aal1) → /auth/mfa-verify', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaRequired = true
+    authState.mfaEnrollRequired = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+})
 
 describe('post-login — retomar donde lo dejó', () => {
   it('sin registro en el back y sin perfil elegido → el selector', async () => {
@@ -109,5 +138,18 @@ describe('post-login — retomar donde lo dejó', () => {
     await render()
 
     expect(replaceMock).toHaveBeenCalledWith('/inquilino')
+  })
+})
+
+describe('post-login — el segundo factor conserva el destino (QA 23-09)', () => {
+  it('con segundo factor pendiente, /auth/mfa-verify lleva el returnUrl', async () => {
+    authState.mfaRequired = true
+    barra.query = 'returnUrl=%2Fpanel%2Finmobiliaria%2Fdispersiones%2Flotes%2Fabc'
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith(
+      '/auth/mfa-verify?returnUrl=%2Fpanel%2Finmobiliaria%2Fdispersiones%2Flotes%2Fabc',
+    )
   })
 })

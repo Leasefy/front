@@ -16,7 +16,14 @@ const { listarMock, crearMock, actualizarMock, reordenarMock, toastMock, estado 
   actualizarMock: vi.fn(),
   reordenarMock: vi.fn(),
   toastMock: { success: vi.fn(), error: vi.fn() },
-  estado: { permisos: { canAccess: () => true, isLoading: false } as { canAccess: () => boolean; isLoading: boolean } },
+  estado: {
+    permisos: { canAccess: () => true, isLoading: false } as { canAccess: () => boolean; isLoading: boolean },
+    /** Lo que la inmobiliaria apagó (`GET /inmobiliaria/finanzas/medios`). */
+    apagados: [] as string[],
+  },
+}));
+vi.mock('@/lib/api/finanzas.service', () => ({
+  finanzasApi: { medios: () => Promise.resolve({ medios: [], apagados: estado.apagados, esElPreset: false }) },
 }));
 vi.mock('@/lib/api/medios-de-pago.service', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/lib/api/medios-de-pago.service')>();
@@ -204,6 +211,15 @@ describe('MediosDePago — la lista', () => {
 });
 
 describe('MediosDePago — el estado vacío y las sugerencias', () => {
+  it('🔴 con el efectivo apagado (preset de Portofino) no se sugiere crearlo (QA 22-09)', async () => {
+    estado.apagados = ['EFECTIVO', 'CHEQUE'];
+    listarMock.mockResolvedValueOnce([]);
+    await montar();
+    expect(document.body.querySelector('[data-testid="sugerencia-efectivo"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="sugerencia-transferencia"]')).not.toBeNull();
+    estado.apagados = [];
+  });
+
   it('«Efectivo en la oficina» se crea de un clic con el cuerpo exacto', async () => {
     listarMock.mockResolvedValueOnce([]);
     crearMock.mockResolvedValueOnce(medio({ id: 'm-ef', tipo: 'EFECTIVO', nombre: 'Efectivo en la oficina' }));

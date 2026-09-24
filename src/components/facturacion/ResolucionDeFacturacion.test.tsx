@@ -57,6 +57,9 @@ function respuesta(
         numero: '18764003394379',
         fechaResolucion: '2026-01-15T00:00:00.000Z',
         prefijo: 'FE',
+        // `null` = numera cualquier tipo, que es lo de hoy (17-09-2026).
+        tipoDeDocumento: null,
+        tipoNombre: 'Cualquier tipo de documento',
         desde: 1,
         hasta: 5000,
         vigenteDesde: '2026-01-15T00:00:00.000Z',
@@ -83,6 +86,23 @@ function respuesta(
       disponibles: 3801,
       siguiente: 'FE-1200',
     },
+    porTipoDisponible: true,
+    porTipo: [
+      {
+        tipo: 'CANON_INQUILINO',
+        nombre: 'Canon del inquilino',
+        resolucionId: 'res-1',
+        resolucionNumero: '18764003394379',
+        prefijo: 'FE',
+        puedeNumerar: true,
+        porLaGeneral: true,
+        disponibles: 3801,
+        siguiente: 'FE-1200',
+        explicacion: null,
+      },
+    ],
+    umbrales: { numeros: 100, dias: 30 },
+    avisos: [],
     ...over,
   };
 }
@@ -99,8 +119,14 @@ async function montar() {
   });
 }
 
+/**
+ * 🔴 Todo lo del formulario se busca en `document`, no en `host`: desde el
+ * 21-09 «Cargar una resolución» vive en el cajón de la casa, que Radix monta
+ * en un PORTAL colgado de `document.body`. Buscando sólo dentro de `host` los
+ * campos «no existen» y la prueba pasaría por la razón errada.
+ */
 function escribir(testid: string, valor: string) {
-  const input = host.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement;
+  const input = document.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement;
   const setter = Object.getOwnPropertyDescriptor(
     window.HTMLInputElement.prototype,
     'value',
@@ -122,7 +148,35 @@ afterEach(() => {
   host.remove();
 });
 
-const q = (s: string) => host.querySelector(s);
+const q = (s: string) => document.querySelector(s);
+
+/**
+ * 🔴 «Anular» vive en el kebab de la fila desde el 21-09: escrito al lado del
+ * estado, la tabla no cabía y la pantalla avisaba «se corre a los lados».
+ * El disparador de Radix abre con `pointerdown`, NO con `click`, y el menú se
+ * monta en un portal colgado de `document.body`.
+ */
+async function abrirAcciones(id: string) {
+  const kebab = q(`[data-testid="acciones-${id}"]`) as HTMLButtonElement;
+  await act(async () => {
+    kebab.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        pointerId: 1,
+      }),
+    );
+  });
+}
+
+/** El formulario ya no está puesto en la pantalla: lo abre su CTA. */
+async function abrirCarga() {
+  const boton = q('[data-testid="resolucion-abrir-carga"]') as HTMLButtonElement;
+  await act(async () => {
+    boton.click();
+  });
+}
 
 describe('ResolucionDeFacturacion', () => {
   it('lo primero que dice es si hoy se puede facturar y con qué número sigue', async () => {
@@ -171,6 +225,7 @@ describe('ResolucionDeFacturacion', () => {
 
   it('🔴 el botón no deja mandar una resolución a medias', async () => {
     await montar();
+    await abrirCarga();
     const boton = q('[data-testid="resolucion-guardar"]') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
 
@@ -192,6 +247,7 @@ describe('ResolucionDeFacturacion', () => {
 
   it('el prefijo puede ir vacío: hay resoluciones sin prefijo', async () => {
     await montar();
+    await abrirCarga();
     escribir('resolucion-campo-numero', '999');
     escribir('resolucion-campo-fecha', '2026-01-15');
     escribir('resolucion-campo-desde', '1');
@@ -234,8 +290,9 @@ describe('ResolucionDeFacturacion', () => {
     }
 
     async function abrirDialogo() {
+      await abrirAcciones('res-1');
       await act(async () => {
-        (q('[data-testid="anular-res-1"]') as HTMLButtonElement).click();
+        (q('[data-testid="anular-res-1"]') as HTMLElement).click();
       });
     }
 
@@ -327,9 +384,38 @@ describe('ResolucionDeFacturacion', () => {
     });
   });
 
+  /**
+   * 🔴 Nico, 21-09: «no entiendo esos filtros por allá abajo. Eso de carga
+   * resolución ni se entiende, creo que eso debería ser un CTA». Este guardián
+   * no deja que el formulario vuelva a quedar puesto en la pantalla: nueve
+   * campos con fechas y rangos debajo de una tabla SE LEEN como sus filtros.
+   */
+  it('🔴 el formulario no está puesto en la pantalla: lo saca un CTA', async () => {
+    await montar();
+    expect(q('[data-testid="resolucion-campo-numero"]')).toBeNull();
+    expect(q('[data-testid="resolucion-guardar"]')).toBeNull();
+    // Y el vacío no manda «abajo», que era donde estaba.
+    expect(q('[data-testid="resolucion-abrir-carga"]')).not.toBeNull();
+
+    await abrirCarga();
+    expect(q('[data-testid="resolucion-campo-numero"]')).not.toBeNull();
+    expect(q('[data-testid="resolucion-guardar"]')).not.toBeNull();
+  });
+
+  it('🔴 «Nueva factura» manda acá con el cajón ya abierto, no a buscar el botón', async () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<ResolucionDeFacturacion abrirCarga onCargaAbierta={() => {}} />);
+    });
+    expect(q('[data-testid="resolucion-campo-numero"]')).not.toBeNull();
+  });
+
   it('un fallo al cargar se dice y no se pinta como éxito', async () => {
     crearMock.mockRejectedValue(new Error('Esa resolución ya está cargada.'));
     await montar();
+    await abrirCarga();
     escribir('resolucion-campo-numero', '999');
     escribir('resolucion-campo-fecha', '2026-01-15');
     escribir('resolucion-campo-desde', '1');
@@ -341,5 +427,69 @@ describe('ResolucionDeFacturacion', () => {
     });
     expect(toastErr).toHaveBeenCalledWith('Esa resolución ya está cargada.');
     expect(toastOk).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 🔴 F5 (auditoría 13-09): lo que está mal se dice AL LADO DEL CAMPO. El toast
+ * del back se iba solo a los cinco segundos, justo cuando la persona baja la
+ * vista al formulario para corregir, y nunca decía cuál de los seis campos era.
+ */
+describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () => {
+  async function llenar(over: Record<string, string> = {}) {
+    await montar();
+    await abrirCarga();
+    const valores: Record<string, string> = {
+      'resolucion-campo-numero': '18764003394379',
+      'resolucion-campo-fecha': '2026-01-15',
+      'resolucion-campo-desde': '1',
+      'resolucion-campo-hasta': '5000',
+      'resolucion-campo-vigente-desde': '2026-01-15',
+      'resolucion-campo-vigente-hasta': '2028-01-15',
+      ...over,
+    };
+    for (const [testid, valor] of Object.entries(valores)) {
+      if (document.querySelector(`[data-testid="${testid}"]`)) {
+        await act(async () => escribir(testid, valor));
+      }
+    }
+  }
+
+  it('🔴 un rango que termina antes de empezar se dice en el campo y NO se manda', async () => {
+    await llenar({ 'resolucion-campo-desde': '5000', 'resolucion-campo-hasta': '10' });
+
+    const error = q('[data-testid="resolucion-error-hasta"]');
+    expect(error).not.toBeNull();
+    expect(error?.textContent).toContain('termina antes de empezar');
+    expect(error?.getAttribute('role')).toBe('alert');
+    expect(
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
+    ).toBe(true);
+
+    await act(async () => {
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.click();
+    });
+    // No se gastó un viaje al back para recibir un aviso que se borra solo.
+    expect(crearMock).not.toHaveBeenCalled();
+  });
+
+  it('🔴 una vigencia que termina antes de empezar, igual', async () => {
+    await llenar({
+      'resolucion-campo-vigente-desde': '2028-01-15',
+      'resolucion-campo-vigente-hasta': '2026-01-15',
+    });
+    expect(q('[data-testid="resolucion-error-vigente-hasta"]')?.textContent).toContain(
+      'La vigencia termina antes de empezar',
+    );
+    expect(crearMock).not.toHaveBeenCalled();
+  });
+
+  it('bien escrita, no hay ningún aviso y el botón deja guardar', async () => {
+    await llenar();
+    expect(q('[data-testid="resolucion-error-hasta"]')).toBeNull();
+    expect(q('[data-testid="resolucion-error-vigente-hasta"]')).toBeNull();
+    expect(
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
+    ).toBe(false);
   });
 });

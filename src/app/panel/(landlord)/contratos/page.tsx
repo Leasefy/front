@@ -11,6 +11,10 @@ import { useContracts } from '@/lib/hooks/useContracts';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import {
+  ContratosConLaInmobiliaria,
+  useContratosAdministrados,
+} from '@/components/landlord/ContratosConLaInmobiliaria';
 
 // ============================================================================
 // TextTs
@@ -29,6 +33,9 @@ interface TabConfig {
 export default function ContratosPage() {
   const { t } = useI18n();
   const { contracts: allContracts, isLoading, error, errorCrudo, refetch } = useContracts();
+  // Los contratos que le administra una inmobiliaria no salen por `landlordId`
+  // (QA 22-09: «TOTAL CONTRATOS 0» con cuatro contratos en su estado de cuenta).
+  const administrados = useContratosAdministrados();
 
   const pendingContracts = useMemo(() =>
     allContracts.filter(c => c.status === 'pending_landlord' || c.status === 'pending_tenant' || c.status === 'draft'),
@@ -67,7 +74,7 @@ export default function ContratosPage() {
     { id: 'active', label: t('landlord.contracts.tabActive'), count: activeContracts.length },
   ];
 
-  if (isLoading) {
+  if (isLoading || (allContracts.length === 0 && administrados.cargando)) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" variant="muted" />
@@ -84,6 +91,22 @@ export default function ContratosPage() {
             queEs="tus contratos"
             onReintentar={refetch}
           />
+        </div>
+      </div>
+    );
+  }
+
+  // Sin contratos propios pero con contratos de inmobiliaria: se dicen ésos,
+  // no «0 contratos» ni «Firma tu primer contrato».
+  if (allContracts.length === 0 && administrados.doc) {
+    return (
+      <div className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+          <PageHeader
+            title={t('landlord.contracts.title')}
+            subtitle={t('landlord.contracts.subtitle')}
+          />
+          <ContratosConLaInmobiliaria doc={administrados.doc} />
         </div>
       </div>
     );

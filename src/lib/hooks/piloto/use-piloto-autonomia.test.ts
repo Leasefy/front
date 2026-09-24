@@ -3,18 +3,15 @@ import * as React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { usePilotoAutonomia } from './use-piloto-autonomia'
+import es from '@/lib/i18n/locales/es.json'
+import en from '@/lib/i18n/locales/en.json'
 
 void React
 
 /**
- * T-0082 WU-3b: `usePilotoAutonomia` disparaba 12 GETs por agente con
- * `Promise.allSettled(...)` (T-0076 lo acotó a 4 en vuelo, nunca lo eliminó).
- * El contrato (`contract.md` §3.1/§3.2 Surface B) agrega
- * `GET /api/agency/{agencyId}/ai-hub/agentes/autonomia` — la MISMA lectura
- * batcheada que ya usa la píldora de la flota — y este hook pasa a hacer UNA
- * sola llamada, indexando el array de respuesta por `agente`. Reemplaza
- * enteramente el test T-0076 (fan-out acotado), que testeaba un
- * comportamiento que este cambio elimina.
+ * T-0076 decía «nunca más de 4 peticiones de autonomía en vuelo». Desde la
+ * auditoría del Piloto (23-09-2026) es una sola: la de la flota, que trae
+ * los doce agentes (y el chat) con todo lo que el panel necesita.
  */
 
 // ── Auth mock ────────────────────────────────────────────────────────────────
@@ -31,7 +28,6 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 const AGENT_URL = 'http://localhost:4000'
-const ROSTER_PATH = '/api/agency/AGY-TEST/ai-hub/agentes/autonomia'
 
 type HookResult = ReturnType<typeof usePilotoAutonomia>
 
@@ -42,38 +38,12 @@ function makeOkResponse(body: unknown): Response {
   })
 }
 
-function make500Response(): Response {
-  return new Response(null, { status: 500 })
+function make404Response(): Response {
+  return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 })
 }
 
-/** Roster fixture — los 12 agentes de PILOTO_AGENTES, en orden arbitrario. */
-function rosterFixture(overrides: { omit?: string[] } = {}) {
-  const TODOS = [
-    'cobranza',
-    'retencion',
-    'prospectos',
-    'pagos',
-    'calidad',
-    'aprobaciones',
-    'mantenimiento',
-    'cotizador',
-    'conciliacion',
-    'estudio',
-    'matching',
-    'avaluos',
-  ]
-  const omitidos = new Set(overrides.omit ?? [])
-  return {
-    agentes: TODOS.filter((a) => !omitidos.has(a)).map((agente) => ({
-      agente,
-      modo: 'copiloto' as const,
-      modosDisponibles: ['sombra', 'copiloto', 'autonomo'] as const,
-      valla: [{ id: 'v1', label: 'Valla', value: 'x', estado: 'activo' }],
-      t323: agente === 'cobranza',
-      origen: 'default' as const,
-      efectoReal: `efecto de ${agente}`,
-    })),
-  }
+function make500Response(): Response {
+  return new Response(null, { status: 500 })
 }
 
 let container: HTMLDivElement
@@ -107,62 +77,115 @@ async function mount() {
   })
 }
 
-describe('usePilotoAutonomia — roster batcheado (T-0082 WU-3b)', () => {
-  it('(a) hace exactamente UN GET al roster y expone los mismos datos por agente que el fan-out de 12', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-      const url = String(input)
-      expect(url).toContain(ROSTER_PATH)
-      return makeOkResponse(rosterFixture())
-    })
+const flota = {
+  activo: true,
+  modo: 'copiloto',
+  distintos: [],
+  actuan: 2,
+  resumen: { sombra: 0, copiloto: 2, autonomo: 0 },
+  enVivo: { llamadas: 0, conciliando: 0, esperando: 0 },
+  tomadoAt: '2026-09-23T10:00:00.000-05:00',
+  agentes: [
+    {
+      agente: 'cobranza',
+      modo: 'copiloto',
+      origen: 'piloto',
+      corre: true,
+      porQueNoCorre: null,
+      gobierna: true,
+      actua: true,
+      efectoReal: 'Laura prepara cada llamada…',
+      valla: [{ id: 'ley2300', label: 'Ley 2300', value: 'x', estado: 'regla' }],
+      t323: true,
+    },
+    {
+      agente: 'chat',
+      modo: 'copiloto',
+      origen: 'default',
+      corre: true,
+      porQueNoCorre: null,
+      gobierna: false,
+      actua: false,
+      efectoReal: 'El chat todavía no lee esta perilla…',
+      valla: [],
+      t323: false,
+    },
+    {
+      agente: 'pagos',
+      modo: 'copiloto',
+      origen: 'default',
+      corre: false,
+      porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.',
+      gobierna: true,
+      actua: false,
+      efectoReal: 'Payu prepara el cobro…',
+      valla: [],
+      t323: true,
+    },
+  ],
+}
 
+describe('🔴 usePilotoAutonomia — UNA petición para toda la flota (auditoría del Piloto, 23-09)', () => {
+  it('lee la flota con un solo GET (antes eran 12 GET por agente)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(flota))
     await mount()
-
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(result?.isLoading).toBe(false)
-    expect(result?.error).toBeNull()
-    expect(result?.totalRoster).toBe(12)
-    expect(result?.rows).toHaveLength(12)
-
-    const cobranza = result?.rows.find((r) => r.agente === 'cobranza')
-    expect(cobranza?.modo).toBe('copiloto')
-    expect(cobranza?.modosDisponibles).toEqual(['sombra', 'copiloto', 'autonomo'])
-    expect(cobranza?.valla).toEqual([{ id: 'v1', label: 'Valla', value: 'x', estado: 'activo' }])
-    expect(cobranza?.t323).toBe(true)
-    expect(cobranza?.efectoReal).toBe('efecto de cobranza')
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/ai-hub/autonomia')
+    expect(String(fetchSpy.mock.calls[0]![0])).not.toContain('/agentes/')
   })
 
-  it('(b) un agente ausente del array se omite sin marcar error (mismo fail-soft que el 404 por agente de antes)', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      makeOkResponse(rosterFixture({ omit: ['matching'] })),
-    )
-
+  it('trae la frase de la tabla de verdad, si corre y si el modo lo gobierna — y el chat', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(flota))
     await mount()
-
     expect(result?.isLoading).toBe(false)
-    expect(result?.error).toBeNull()
-    expect(result?.rows).toHaveLength(11)
-    expect(result?.rows.find((r) => r.agente === 'matching')).toBeUndefined()
-    expect(result?.totalRoster).toBe(12) // el roster DECLARADO no cambia, solo quién contestó
+    expect(result?.rows.map((r) => r.agente)).toEqual(['cobranza', 'chat', 'pagos'])
+    const chat = result?.rows.find((r) => r.agente === 'chat')
+    expect(chat).toMatchObject({ gobierna: false, corre: true })
+    expect(chat?.efectoReal).toContain('todavía no lee esta perilla')
+    const pagos = result?.rows.find((r) => r.agente === 'pagos')
+    expect(pagos).toMatchObject({ corre: false, porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.' })
+    expect(result?.rows.find((r) => r.agente === 'cobranza')?.valla).toHaveLength(1)
   })
 
-  it('la llamada entera falla (503/500) ⇒ cero filas y error visible (contract.md §3.3: no hay degradación parcial)', async () => {
+  it('lista a Contabilidad con su propio modo (Nico, 24-09), después de los dueños de la operación', async () => {
+    const conContabilidad = {
+      ...flota,
+      agentes: [
+        ...flota.agentes,
+        {
+          agente: 'contabilidad',
+          modo: 'sombra',
+          origen: 'piloto',
+          corre: true,
+          porQueNoCorre: null,
+          gobierna: true,
+          actua: true,
+          efectoReal: 'No hace nada solo: cada paso te lo propone…',
+          valla: [],
+          t323: false,
+        },
+      ],
+    }
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(conContabilidad))
+    await mount()
+    expect(result?.rows.map((r) => r.agente)).toEqual(['cobranza', 'chat', 'contabilidad', 'pagos'])
+    expect(result?.rows.find((r) => r.agente === 'contabilidad')).toMatchObject({ modo: 'sombra', gobierna: true, corre: true })
+    expect(es.inmobiliaria.ai.workspace.agente.contabilidad).toBe('Contabilidad')
+    expect(en.inmobiliaria.ai.workspace.agente.contabilidad).toBe('Accounting')
+  })
+
+  it('si la flota no contesta, error queda seteado y no se inventan filas', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(make500Response())
-
     await mount()
-
     expect(result?.isLoading).toBe(false)
     expect(result?.rows).toHaveLength(0)
     expect(result?.error).toBeTruthy()
   })
 
-  it('sin agencyId no dispara ningún fetch', async () => {
-    mockAgency.id = null
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
-
+  it('404 (micro viejo): sin filas y sin error inventado', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(make404Response())
     await mount()
-
-    expect(fetchSpy).not.toHaveBeenCalled()
-    expect(result?.isLoading).toBe(false)
     expect(result?.rows).toHaveLength(0)
+    expect(result?.error).toBeNull()
   })
 })

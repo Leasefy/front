@@ -44,8 +44,11 @@
  *     la resuelve el back al mandar (no hay ruta que la adelante), y se
  *     confirma en el aviso de después.
  *   · E3 — «Enlaces compartidos…» lista los abiertos y los revoca.
- *   · E4 — Con un filtro puesto, el PDF sale filtrado pero el enlace muestra
- *     el documento ENTERO. Los ítems y el diálogo lo dicen.
+ *   · E4 — Con un filtro puesto, el enlace muestra EXACTAMENTE la vista
+ *     filtrada: el recorte viaja con el enlace y el back se lo aplica a quien
+ *     lo abra. Antes se avisaba que iba entero, que es documentar la fuga en
+ *     vez de cerrarla. Si el back responde que no lo pudo guardar (su migración
+ *     todavía sin aplicar), el aviso posterior lo dice — `usar-compartir.ts`.
  *
  * La REGLA de cada acción vive en `usar-compartir.ts`; acá sólo está el menú.
  * Los textos nuevos van escritos acá y no en `textos.ts`, que está en manos de
@@ -81,7 +84,10 @@ import {
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
-import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
+import type {
+  EstadoDeCuenta,
+  FiltrosDelEstadoDeCuenta,
+} from '@/lib/types/estado-de-cuenta';
 import { EnlacesCompartidos } from './EnlacesCompartidos';
 import { useTextoDelEstado } from './textos';
 import { useCompartirEstado } from './usar-compartir';
@@ -102,10 +108,16 @@ export interface CompartirProps {
   personaId?: string | null;
   /** Los filtros puestos, en palabras: viajan al PDF para que diga qué muestra. */
   nota?: string;
+  /**
+   * El recorte que hay en pantalla. VIAJA con el enlace (E4): el back lo guarda
+   * y se lo aplica a quien lo abra, así que el cliente ve lo mismo que la
+   * inmobiliaria está mirando.
+   */
+  filtros?: FiltrosDelEstadoDeCuenta;
 }
 
 /** E4: lo que se dice bajo los ítems que comparten el enlace, con filtros. */
-const VA_ENTERO = 'Va el documento entero, sin tus filtros';
+const VA_FILTRADO = 'Va con el filtro que tienes puesto';
 
 /** Un ítem del menú con su línea de aclaración, si la tiene. */
 function Rotulo({ texto, aclaracion }: { texto: string; aclaracion?: string }) {
@@ -124,6 +136,7 @@ export function CompartirEstadoDeCuenta({
   id,
   personaId,
   nota,
+  filtros,
 }: CompartirProps) {
   const t = useTextoDelEstado();
   const {
@@ -134,7 +147,7 @@ export function CompartirEstadoDeCuenta({
     cancelarEnvio,
     confirmarEnvio,
     olvidarEnlace,
-  } = useCompartirEstado({ tipo, id });
+  } = useCompartirEstado({ tipo, id, filtros });
   // El PDF lo arma el hook compartido: el mismo archivo, con el mismo nombre,
   // sale del panel, del enlace público y de los dos portales.
   const { descargar: descargarPDF, armando } = useDescargarPdfDelEstado(doc, hoy, nota);
@@ -153,7 +166,7 @@ export function CompartirEstadoDeCuenta({
     : 'Tu rol no puede compartir este documento';
 
   const conFiltros = Boolean(nota);
-  const aclaracionDelEnlace = sinPermiso ?? (conFiltros ? VA_ENTERO : undefined);
+  const aclaracionDelEnlace = sinPermiso ?? (conFiltros ? VA_FILTRADO : undefined);
 
   const cliente = doc.cliente.nombre;
   const documento = doc.cliente.documento;
@@ -241,11 +254,11 @@ export function CompartirEstadoDeCuenta({
           </AlertDialogHeader>
           {conFiltros ? (
             <p
-              className="rounded-md bg-warning-soft px-3 py-2 text-body-sm text-fg"
+              className="rounded-md bg-surface-muted px-3 py-2 text-body-sm text-fg"
               data-testid="confirmar-envio-filtros"
             >
-              El enlace muestra el estado de cuenta entero, no la vista filtrada que tienes en
-              pantalla.
+              El enlace muestra la MISMA vista filtrada que tienes en pantalla, no el estado de
+              cuenta entero.
             </p>
           ) : null}
           <AlertDialogFooter>

@@ -13,13 +13,20 @@
  * la decisión de la fila: cuál de los cobros con saldo es este movimiento.
  */
 
-import { ArrowCounterClockwise, CheckCircle, Prohibit, ShieldCheck } from '@phosphor-icons/react';
+import {
+  ArrowCounterClockwise,
+  CheckCircle,
+  ClockClockwise,
+  Prohibit,
+  ShieldCheck,
+  User,
+} from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conciliacion-bancaria.types';
-import { diaLegible, mesLegible, plata } from './formato';
+import { diaLegible, mesesLegibles, plata } from './formato';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -27,6 +34,8 @@ interface Props {
   puedeConciliar: boolean;
   puedeEditar: boolean;
   onConciliar: (movimiento: MovimientoBancario, candidato: CandidatoDeConciliacion) => void;
+  /** Conciliar contra la cartera ENTERA de un cliente, sin elegir cobro. */
+  onConciliarConCliente: (movimiento: MovimientoBancario) => void;
   onIgnorar: (movimiento: MovimientoBancario) => void;
   onReabrir: (movimiento: MovimientoBancario) => void;
 }
@@ -37,6 +46,7 @@ export function MovimientoFila({
   puedeConciliar,
   puedeEditar,
   onConciliar,
+  onConciliarConCliente,
   onIgnorar,
   onReabrir,
 }: Props) {
@@ -85,28 +95,59 @@ export function MovimientoFila({
       <TableCell className="max-w-[460px]">
         {esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
-            <p className="text-caption text-fg-muted">
-              Ningún cobro con saldo se parece a este movimiento. Si es un pago, registralo a mano
-              desde el cobro; si no lo es, ignoralo.
-            </p>
+            /*
+             * 🔴 Antes acá decía «ningún cobro con saldo se parece», y eso
+             * describía mal el mundo: la deuda nace con el contrato, no con el
+             * cobro del mes, y en la inmobiliaria migrada no hay un solo cobro
+             * emitido contra 30.951 cuotas pendientes. Si ninguna cuota calza,
+             * la salida es el cliente: el back reparte la plata sobre su deuda
+             * más vieja, y lo que sobre abona a los meses que siguen.
+             */
+            <div className="space-y-1.5">
+              <p className="text-caption text-fg-muted">
+                Ninguna cuota pendiente se parece a este movimiento. Concilia contra el cliente y la
+                plata se reparte sobre su deuda más vieja.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                hideArrow
+                disabled={!puedeConciliar || ocupado}
+                onClick={() => onConciliarConCliente(m)}
+                data-testid={`conciliar-cliente-${m.id}`}
+              >
+                <User className="h-4 w-4" aria-hidden="true" />
+                Conciliar con un cliente
+              </Button>
+            </div>
           ) : (
-            <ul className="flex flex-col gap-1.5" aria-label="Cobros que se parecen">
+            <ul className="flex flex-col gap-1.5" aria-label="Cuotas que se parecen">
               {m.candidatos.map((c) => (
                 <li
-                  key={c.cobroId}
+                  key={c.contractId}
                   className={cn(
                     'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between',
                     c.seguro ? 'border-primary bg-primary-soft' : 'border-border bg-surface-muted',
                   )}
-                  data-testid={`candidato-${m.id}-${c.cobroId}`}
+                  data-testid={`candidato-${m.id}-${c.contractId}`}
                   data-seguro={c.seguro}
+                  data-adelanto={c.adelanto}
                 >
                   <div className="min-w-0 space-y-0.5">
                     <p className="flex flex-wrap items-center gap-x-2 text-body-sm">
-                      <span className="tabular-nums font-medium text-fg">{plata(c.saldoCop)}</span>
+                      <span className="tabular-nums font-medium text-fg">
+                        {plata(c.pendienteCop)}
+                      </span>
                       <span className="text-fg">· {c.tenantName ?? 'Sin nombre'}</span>
                       <span className="text-fg-muted">· {c.propertyTitle}</span>
-                      <span className="text-fg-muted">· {mesLegible(c.month)}</span>
+                      <span className="text-fg-muted">· {mesesLegibles(c.meses)}</span>
+                      {/* Un tramo que todavía no vence no es una deuda atrasada:
+                          es plata adelantada, y quien concilia tiene que verlo. */}
+                      {c.adelanto && (
+                        <span className="inline-flex items-center gap-1 text-caption font-medium text-fg-muted">
+                          <ClockClockwise className="h-3.5 w-3.5" aria-hidden="true" /> Adelanto
+                        </span>
+                      )}
                       {c.seguro && (
                         <span className="inline-flex items-center gap-1 text-caption font-medium text-primary">
                           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Seguro
@@ -129,11 +170,26 @@ export function MovimientoFila({
                   </Button>
                 </li>
               ))}
+              {/* Ninguno de los candidatos es: la plata igual puede ir contra
+                  la cartera del cliente, que es el camino completo. */}
+              <li>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={!puedeConciliar || ocupado}
+                  onClick={() => onConciliarConCliente(m)}
+                  data-testid={`conciliar-cliente-${m.id}`}
+                >
+                  <User className="h-4 w-4" aria-hidden="true" />
+                  Ninguno: conciliar con un cliente
+                </Button>
+              </li>
             </ul>
           )
         ) : esPendiente && esSalida ? (
           <p className="text-caption text-fg-muted">
-            Una salida no se concilia contra un cobro; se puede ignorar.
+            Una salida no se concilia contra una cuota; se puede ignorar.
           </p>
         ) : m.estado === 'IGNORADO' && m.motivoIgnorado ? (
           <p className="text-caption text-fg-muted">Motivo: {m.motivoIgnorado}</p>

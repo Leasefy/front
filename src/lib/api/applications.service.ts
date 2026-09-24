@@ -3,7 +3,7 @@
  * Wraps apiClient for application-specific operations
  */
 
-import { apiClient, getAccessToken, ApiError } from './client';
+import { apiClient, getAccessToken, ApiError, errorDeDemasiadasSolicitudes } from './client';
 import type {
   BackendApplication,
   BackendDocument,
@@ -183,8 +183,16 @@ export const applicationsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    // 23-09: `POST /applications/guest` tiene su propio límite (10 por hora
+    // por IP). Este `fetch` es a mano, así que el 429 se traduce acá igual que
+    // en `apiClient`: con cuánto esperar, no «Error 429».
+    if (res.status === 429) {
+      throw await errorDeDemasiadasSolicitudes(res);
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      // 409 `INICIA_SESION` (23-09): el correo ya tiene cuenta. Lo reconoce
+      // `ApplicationContext` por el `code` y ofrece iniciar sesión.
       // contract.md T-0038 §3.3 (WU-2) — the SALE-listing postulación gate
       // sits outside `enforceEligibilityGate`, so this @Public() guest path
       // 409s with `code: 'PROPIEDAD_EN_VENTA'` too. Forward `code` (this
@@ -232,13 +240,13 @@ export const applicationsApi = {
     return mapToTenantView(ba);
   },
 
-  /** Get applications for a property (landlord view) */
-  async getByProperty(propertyId: string): Promise<Application[]> {
-    const result = await apiClient.get<BackendApplication[]>(
-      `/applications/property/${propertyId}`
-    );
-    return result.map(mapBackendApplication);
-  },
+  /**
+   * 🔴 Acá vivía `getByProperty`, un `GET /applications/property/:id` que el
+   * back no expone (404). Su hook —`usePropertyApplications`— no lo usaba
+   * ninguna pantalla, así que nunca se vio. Cuando haya que listarle al
+   * propietario las postulaciones de un inmueble, la ruta hay que pedirla:
+   * `@Controller('applications')` sólo tiene `mine`, `prefill` y `:id`.
+   */
 
   /**
    * Update a single step of an application (NEEDS_INFO / DRAFT flow)

@@ -35,8 +35,10 @@ describe('reconciliarLoteCompleto — una vuelta completa por cursor', () => {
 
     const r = await reconciliarLoteCompleto('lote-1', reconciliar);
 
+    // 🔴 QA 22-09: la primera vuelta va SIN cursor. Con `0`, el back
+    // (`fila > 0`) se saltaba la fila 0 del lote en cada cruce.
     expect(reconciliar.mock.calls).toEqual([
-      ['lote-1', 0],
+      ['lote-1', undefined],
       ['lote-1', 30],
       ['lote-1', 61],
     ]);

@@ -25,7 +25,7 @@ export interface AgenteFiltersState {
   search: string;
   role: AgenteRole | 'all';
   status: AgenteStatus | 'all';
-  sortBy: 'name' | 'closedThisMonth' | 'commissionsThisMonth';
+  sortBy: 'name' | 'closedThisMonth' | 'closedThisYear';
 }
 
 interface AgenteFiltersProps {
@@ -37,7 +37,7 @@ interface AgenteFiltersProps {
 // Role/status/sort option values - labels are translated in component
 const ROLE_VALUES: (AgenteRole | 'all')[] = ['all', 'agent', 'coordinator', 'director'];
 const STATUS_VALUES: (AgenteStatus | 'all')[] = ['all', 'active', 'invited', 'inactive', 'on_leave'];
-const SORT_VALUES: AgenteFiltersState['sortBy'][] = ['name', 'closedThisMonth', 'commissionsThisMonth'];
+const SORT_VALUES: AgenteFiltersState['sortBy'][] = ['name', 'closedThisMonth', 'closedThisYear'];
 
 /**
  * AgenteFilters - Filter bar for agentes page
@@ -69,7 +69,7 @@ export function AgenteFilters({
   const SORT_OPTIONS: { value: AgenteFiltersState['sortBy']; label: string }[] = [
     { value: 'name', label: t('inmobiliaria.agente.name') },
     { value: 'closedThisMonth', label: t('inmobiliaria.agente.closingsMonth') },
-    { value: 'commissionsThisMonth', label: t('inmobiliaria.agente.commissions') },
+    { value: 'closedThisYear', label: t('inmobiliaria.agente.closingsThisYear') },
   ];
 
   // Count active filters

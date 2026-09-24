@@ -190,7 +190,7 @@ export function FilaDeRevision({
         <div className="flex items-center gap-3">
           {/* `formatCurrency(undefined)` pinta «$ 0», que acá se leería como
               un canon de cero en vez de un canon que el archivo no traía. */}
-          <p className="font-mono text-xs tabular-nums text-fg-subtle">
+          <p className="font-mono text-caption tabular-nums text-fg-subtle">
             {fila.datos.monthlyRent
               ? formatCurrency(fila.datos.monthlyRent)
               : "Sin canon"}
@@ -199,7 +199,7 @@ export function FilaDeRevision({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         {fila.datos.direccion || "Sin dirección en el archivo"}
       </p>
 
@@ -213,7 +213,7 @@ export function FilaDeRevision({
 
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <div>
-          <p className="mb-1 text-xs text-muted-foreground">Propietario</p>
+          <p className="mb-1 text-caption text-muted-foreground">Propietario</p>
           {sinInmueble ? (
             /*
              * La consignación es del INMUEBLE. Sin inmueble resuelto no hay a
@@ -222,7 +222,7 @@ export function FilaDeRevision({
              * de verdad desbloquea.
              */
             <p
-              className="rounded-md border border-dashed border-border px-2.5 py-1.5 text-xs text-muted-foreground"
+              className="rounded-md border border-dashed border-border px-2.5 py-1.5 text-caption text-muted-foreground"
               data-testid="propietario-sin-inmueble"
             >
               Primero hay que resolver el inmueble — la consignación es del
@@ -240,7 +240,7 @@ export function FilaDeRevision({
         </div>
 
         <div className="w-28">
-          <p className="mb-1 text-xs text-muted-foreground">Comisión %</p>
+          <p className="mb-1 text-caption text-muted-foreground">Comisión %</p>
           <CampoComision
             valor={fila.comisionPorcentaje ?? null}
             deshabilitado={!editable || !consignada || guardando}
@@ -251,6 +251,25 @@ export function FilaDeRevision({
       </div>
 
       {/*
+        🔴 QA 22-09: un contrato terminado de cuando el inmueble era de OTRO.
+        Antes la tarjeta mostraba al dueño de hoy sin avisar y el contrato
+        histórico quedaba a su nombre.
+      */}
+      {fila.propietarioDelHistorico ? (
+        <p
+          className="text-caption text-warning"
+          data-testid="propietario-del-historico"
+        >
+          Este contrato terminado es de cuando el inmueble era de{" "}
+          {fila.propietarioDelHistorico.nombre} (
+          <span className="font-mono">{fila.propietarioDelHistorico.documento}</span>
+          ), según el archivo. El inmueble hoy es de{" "}
+          {fila.propietario?.nombre ?? "otro propietario"}: el contrato queda a
+          nombre de quien dice el archivo.
+        </p>
+      ) : null}
+
+      {/*
         Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el
         mandato, dueño por dueño, ANTES de activar. Lo arma el back de la
         plata de «Valor Canon» (o en partes iguales si el archivo no la trae);
@@ -259,24 +278,24 @@ export function FilaDeRevision({
       <RepartoEntreDuenos reparto={fila.asociacion?.propietario?.reparto} />
 
       {!consignada && !sinInmueble && editable ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           El porcentaje se puede poner cuando el inmueble esté consignado.
         </p>
       ) : null}
 
       {activadaSinPropietario ? (
         <p
-          className="text-xs text-warning"
+          className="text-caption text-warning"
           data-testid="activada-sin-propietario"
         >
           Este contrato ya está activo y no tiene propietario: no genera cobros
           hasta que el inmueble quede consignado. Elígelo acá, o selecciona
-          varias filas y usá «Mismo propietario».
+          varias filas y usa «Mismo propietario».
         </p>
       ) : null}
 
       {error ? (
-        <p className="text-xs text-destructive" data-testid="error-de-fila">
+        <p className="text-caption text-destructive" data-testid="error-de-fila">
           {error}
         </p>
       ) : null}
@@ -406,7 +425,7 @@ function ComoQuedoElInmueble({
 
   return (
     <p
-      className="text-xs text-fg-subtle"
+      className="text-caption text-fg-subtle"
       data-testid={`asociacion-${inmueble.asociadoPor}`}
     >
       {dice}
@@ -432,7 +451,7 @@ function RepartoEntreDuenos({
   if (!reparto || reparto.duenos.length < 2) return null;
   return (
     <div className="space-y-1" data-testid="reparto-de-duenos">
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         {reparto.duenos.length} dueños
         {reparto.problema
           ? " · el reparto no cuadra"
@@ -444,7 +463,7 @@ function RepartoEntreDuenos({
         {reparto.duenos.map((d, i) => (
           <li
             key={`${d.documento ?? d.nombre ?? i}`}
-            className="flex items-baseline justify-between gap-3 text-xs"
+            className="flex items-baseline justify-between gap-3 text-caption"
             data-testid="dueno-del-reparto"
           >
             <span className="min-w-0 truncate text-foreground">

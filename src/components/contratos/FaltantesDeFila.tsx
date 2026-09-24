@@ -105,6 +105,11 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Sin él no se puede programar el cobro ni los recordatorios de vencimiento.",
   },
+  cartera_antes_del_inicio: {
+    titulo: "La fecha de cartera es anterior al inicio",
+    porque:
+      "Se cobra desde que el inquilino recibe el inmueble, y eso no pasa antes de que arranque el contrato. Corrige la fecha de cartera (o la de inicio) en el archivo y vuelve a subirlo.",
+  },
   reparto_del_canon: {
     titulo: "La plata por dueño no cuadra",
     porque:
@@ -217,13 +222,13 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             {EXPLICACION[f]?.titulo ?? f}
           </p>
           {EXPLICACION[f]?.porque ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-caption text-muted-foreground">
               {EXPLICACION[f].porque}
             </p>
           ) : null}
           {celdaDelFaltante(fila, f) ? (
             <p
-              className="mt-1 text-xs text-muted-foreground"
+              className="mt-1 text-caption text-muted-foreground"
               data-testid={`celda-de-${f}`}
             >
               El archivo dice:{" "}
@@ -373,14 +378,14 @@ function ElegirInmueble({
        * decía lo contrario. No hay tercer botón: es puramente informativo,
        * la fila se queda pendiente hasta que se le elija o cree el inmueble.
        */}
-      <p className="text-xs text-muted-foreground">
+      <p className="text-caption text-muted-foreground">
         Sin inmueble el contrato no se activa: no tendría consignación ni
         generaría cobros. Elige uno de los candidatos o créalo desde la
         dirección del archivo.
       </p>
       {fila.candidatos.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {fila.candidatos.length === 1
               ? "¿Es este?"
               : `Hay ${fila.candidatos.length} parecidos. ¿Cuál es?`}
@@ -420,7 +425,7 @@ function ElegirInmueble({
        * crear el inmueble otra vez, duplicándolo. Esto abre la lista entera.
        */}
       <div className="space-y-1.5">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {fila.candidatos.length > 0
             ? "¿Ninguno es? Búscalo entre todos tus inmuebles:"
             : "Búscalo entre todos tus inmuebles:"}
@@ -437,7 +442,7 @@ function ElegirInmueble({
         />
         {portafolio.error ? (
           <p
-            className="flex flex-wrap items-center gap-2 text-xs text-destructive"
+            className="flex flex-wrap items-center gap-2 text-caption text-destructive"
             data-testid={`portafolio-fallo-${fila.id}`}
           >
             {portafolio.error}
@@ -457,7 +462,7 @@ function ElegirInmueble({
           </p>
         ) : null}
         {portafolio.recortado ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             La lista muestra los {portafolio.inmuebles.length} más recientes.
           </p>
         ) : null}
@@ -466,11 +471,11 @@ function ElegirInmueble({
       {creando ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px] flex-1">
-            <label className="text-xs text-muted-foreground">Dirección</label>
+            <label className="text-caption text-muted-foreground">Dirección</label>
             <Input defaultValue={direccion} id={`dir-${fila.id}`} />
           </div>
           <div className="w-40">
-            <label className="text-xs text-muted-foreground">Ciudad</label>
+            <label className="text-caption text-muted-foreground">Ciudad</label>
             <Input value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
           </div>
           <Button
@@ -640,7 +645,7 @@ function RegistrarPropietario({
                   className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-surface-muted"
                 >
                   <span className="truncate">{p.name}</span>
-                  <span className="shrink-0 font-mono text-xs text-fg-subtle">
+                  <span className="shrink-0 font-mono text-caption text-fg-subtle">
                     {p.documentNumber}
                   </span>
                 </button>
@@ -650,7 +655,7 @@ function RegistrarPropietario({
         ) : null}
       </div>
       {fallaLaBusqueda ? (
-        <p className="text-xs text-warning" data-testid="busqueda-fallida">
+        <p className="text-caption text-warning" data-testid="busqueda-fallida">
           No pudimos buscar entre los que ya existen. Prueba de nuevo en un
           momento — si escribes el documento a mano, igual se enlaza al que ya
           está en vez de duplicarlo.
@@ -658,20 +663,20 @@ function RegistrarPropietario({
       ) : null}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-[160px] flex-1">
-          <label className="text-xs text-muted-foreground">
+          <label className="text-caption text-muted-foreground">
             Nombre del propietario
           </label>
           <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </div>
         <div className="w-36">
-          <label className="text-xs text-muted-foreground">Documento</label>
+          <label className="text-caption text-muted-foreground">Documento</label>
           <Input
             value={documento}
             onChange={(e) => setDocumento(e.target.value)}
           />
         </div>
         <div className="w-24">
-          <label className="text-xs text-muted-foreground">Comisión %</label>
+          <label className="text-caption text-muted-foreground">Comisión %</label>
           <Input
             type="number"
             value={comision}
@@ -717,7 +722,7 @@ function Fechas({
   return (
     <div className="flex flex-wrap items-end gap-2">
       <div>
-        <label className="text-xs text-muted-foreground">Inicio</label>
+        <label className="text-caption text-muted-foreground">Inicio</label>
         <Input
           type="date"
           value={inicio}
@@ -725,7 +730,7 @@ function Fechas({
         />
       </div>
       <div>
-        <label className="text-xs text-muted-foreground">Fin</label>
+        <label className="text-caption text-muted-foreground">Fin</label>
         <Input
           type="date"
           value={fin}
@@ -819,7 +824,7 @@ function CampoSimple({
   return (
     <div className="flex flex-wrap items-end gap-2">
       <div className="min-w-[200px] flex-1">
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <label className="flex items-center gap-1.5 text-caption text-muted-foreground">
           {Icono ? <Icono className="h-3.5 w-3.5" /> : null}
           {etiqueta}
         </label>

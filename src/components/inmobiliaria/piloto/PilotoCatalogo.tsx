@@ -302,6 +302,13 @@ function FilaDeProceso({ proceso: p }: { proceso: ProcesoDelCatalogo }) {
             {t(k('modoNoManda'))}
           </p>
         )}
+        {/* Qué hace el modo, con la MISMA frase de la píldora y del panel
+            (tabla de verdad del micro; auditoría del Piloto, 23-09-2026). */}
+        {p.modo && p.modoGobierna && p.efectoDelModo && (
+          <p className="mt-1 max-w-[240px] text-caption text-fg-subtle" data-testid="catalogo-efecto-del-modo">
+            {p.efectoDelModo}
+          </p>
+        )}
         {!p.corre && p.porQueNoCorre && (
           <p className="mt-1 max-w-[240px] text-caption text-fg-subtle">{p.porQueNoCorre}</p>
         )}

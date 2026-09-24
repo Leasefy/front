@@ -38,6 +38,8 @@ describe('agendaApi.getAgenda', () => {
         tareas: 0,
       },
       eventos: [],
+      page: 1,
+      pageSize: 10,
       total: 0,
     })
   })

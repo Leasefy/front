@@ -89,10 +89,17 @@ export { DispersionTable } from './DispersionTable';
 export { DispersionFilters } from './DispersionFilters';
 export type { DispersionFiltersState } from './DispersionFilters';
 export { DispersionDetail } from './DispersionDetail';
+export { CaptacionesYArriendos } from './CaptacionesYArriendos';
 export { ComisionDesglose, ComisionDesgloseCompact } from './ComisionDesglose';
 export { ExtractoPropietario } from './ExtractoPropietario';
 export { DispersionResumen, DispersionResumenCompact } from './DispersionResumen';
-export { DispersionWizard } from './DispersionWizard';
+/*
+ * `DispersionWizard` se fue el 21-09: eran seis pasos (Mes · Cuotas ·
+ * Comisiones · Netos · A quién · Confirmar) para UNA decisión. Ahora es una sola
+ * pantalla, `dispersion/GenerarDispersion`, que además deja elegir a qué
+ * inmuebles de cada propietario se le gira. Sus pruebas se mudaron, no se
+ * borraron: ver `dispersion/GenerarDispersion.test.tsx`.
+ */
 
 // Reportes (Reports - Phase 8) Components
 export { ReporteCard, ReporteCardCompact } from './ReporteCard';
@@ -102,8 +109,6 @@ export { ReporteViewer } from './ReporteViewer';
 
 // Report Visualization Components (Phase 8 - Plan 02)
 export { OcupacionChart } from './OcupacionChart';
-export { ComisionesTable } from './ComisionesTable';
-export { VencimientosTable } from './VencimientosTable';
 export { FlujoCajaChart } from './FlujoCajaChart';
 
 // Report Export Components (Phase 8 - Plan 03)
@@ -134,6 +139,7 @@ export type { AgregarCotizacionDialogProps } from './AgregarCotizacionDialog';
 // Configuracion - Company Profile & Branding (Phase 10)
 export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
 export { ConfigExtractoMensual } from './ConfigExtractoMensual';
+export { ConfigTasaDeRecaudo } from './ConfigTasaDeRecaudo';
 export { ConfigRenovacionAutomatica } from './ConfigRenovacionAutomatica';
 export { ConfigBranding } from './ConfigBranding';
 
@@ -146,8 +152,6 @@ export { ConfigIntegraciones } from './ConfigIntegraciones';
 export { ConfigFacturacion } from './ConfigFacturacion';
 
 // Documentos - Templates & Manager (Phase 10 - Plan 04)
-export { DocumentoTemplates } from './DocumentoTemplates';
-export { DocumentoManager } from './DocumentoManager';
 
 // Documentos - Actas de Entrega (Phase 10 - Plan 05)
 export { ActaEntregaForm } from './ActaEntregaForm';

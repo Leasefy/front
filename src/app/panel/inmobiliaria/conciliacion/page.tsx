@@ -42,6 +42,11 @@
  *     (leyendo o falló), y el `title` dice por qué.
  *   · K3 — El sondeo de la corrida corta al primer fallo de lectura y lo avisa
  *     UNA vez, en vez de seguir girando en silencio.
+ *   · K4 — «sigue procesando» ya no se confunde con «falló»: la corrida
+ *     tiene cuatro estados (`corriendo`, `lista`, `sinCambios`, `sinLectura`)
+ *     y cada uno dice lo que se sabe. No se declara fracaso de la corrida
+ *     porque el resumen no se haya movido en 30 s, ni porque no se pudiera
+ *     leer: son hechos distintos y ninguno significa que falló.
  *
  * Sigue siendo fail-soft para la ruta NO desplegada (404): eso no es un fallo
  * de hoy sino una función que todavía no existe en ese entorno.
@@ -50,7 +55,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
-import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
+import { ArrowsClockwise, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import {
@@ -66,9 +71,12 @@ import {
 } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
+import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
+import type { ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
   ConciliacionResumen,
@@ -204,8 +212,38 @@ function ConciliacionSala() {
 
   const movimientos = summary?.totals.movimientos ?? null
   const conciliados = summary?.totals.conciliados ?? null
-  // Sin movimientos cargados no hay nada que cruzar: el extracto va primero.
+
+  /*
+   * 🔴 20-09 · El extracto lo sabe el BACK, no el agente.
+   *
+   * Esta pestaña —la primera, la que se abre al entrar al módulo— decía
+   * «Todavía no cargaste ningún extracto, así que no hay movimientos que
+   * cruzar» mirando los totales del AGENTE. Con la pestaña «Movimientos»
+   * abierta al lado, el back decía: último extracto del 2 de septiembre,
+   * `movimientos-bancolombia-2026-09.csv`, TRES movimientos pendientes de
+   * conciliar. Dos pestañas del mismo módulo, el mismo momento, dos verdades
+   * opuestas — y la que se ve primero es la que afirma que no hay nada que
+   * hacer.
+   *
+   * Son dos motores: el del agente (`NEXT_PUBLIC_AGENT_URL`) y el del back
+   * (`/inmobiliaria/conciliacion-bancaria`). El que sabe si hay un extracto
+   * cargado es el segundo, porque es el que lo recibe. Acá se lee de ahí.
+   */
+  /*
+   * 🔴 21-09: esto era un `useEffect` propio de esta pantalla. La MISMA
+   * pregunta —«¿hay extracto?»— se la hace ahora también «Por revisar», que
+   * hasta hoy le pedía a la gente subir el extracto que ya había subido. Un
+   * defecto en dos pantallas es del primitivo: vive en el hook.
+   */
+  const { delBack, leyendo: leyendoElBack, sinExtracto } = useExtractoDelBack()
+  /**
+   * El agente no tiene movimientos suyos que cruzar. Es lo que apaga
+   * «Conciliar ahora» —esa corrida la hace el agente sobre SU copia— y es
+   * distinto de «no hay extracto», que es lo que la frase decía mal.
+   */
   const sinMovimientos = movimientos === 0
+  /** Hay extracto y quedan líneas esperando: eso NO es «nada que cruzar». */
+  const pendientesEnElBack = delBack?.pendientes ?? 0
 
   // K1/K2: «no sé» tiene dos formas, y ninguna es «no hay nada».
   const leyendoResumen = summaryLoading && !summary
@@ -289,8 +327,20 @@ function ConciliacionSala() {
 
   const feed = overview?.feed ?? []
 
+  /*
+   * 🔴 El botón se apaga por el BACK, no por el agente. Con el agente en cero
+   * pero tres movimientos esperando en el back, «Conciliar ahora» quedaba
+   * muerto diciendo «sube el extracto primero» sobre un extracto ya subido.
+   */
   const porQueNoSePuedeConciliar = sinMovimientos
-    ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
+    ? sinExtracto || leyendoElBack
+      ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
+      : /*
+         * 🔴 Hay extracto en el back y el agente no tiene nada: eso no es «sube
+         * el extracto», es que el agente todavía no lo leyó. Decir lo primero
+         * manda a cargar de nuevo un archivo ya cargado.
+         */
+        `El agente todavía no tiene estos movimientos. Los ${pendientesEnElBack} que esperan se concilian en Movimientos.`
     : leyendoResumen
       ? 'Todavía estoy leyendo el resumen: en un momento sabes qué hay para conciliar.'
       : resumenCaido
@@ -324,9 +374,11 @@ function ConciliacionSala() {
               {/* El aviso de «todavía no cargaste nada» ocupa esta línea cuando
                   aplica, en vez de flotar suelto debajo de la tarjeta. */}
               <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
-                {sinMovimientos
+                {sinExtracto
                   ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
-                  : t(`${PAGES_NS}.accionDesc`)}
+                  : pendientesEnElBack > 0
+                    ? `Hay ${pendientesEnElBack} ${pendientesEnElBack === 1 ? 'movimiento del banco esperando' : 'movimientos del banco esperando'} en Movimientos.`
+                    : t(`${PAGES_NS}.accionDesc`)}
               </p>
             </div>
           </div>
@@ -437,21 +489,19 @@ function ConciliacionSala() {
         </section>
       )}
 
-      {/* 6. ¿Cómo funciona? — ayuda, no dato: plegada y al final. */}
-      <details
-        className="group rounded-lg border border-border bg-surface"
-        data-testid="conciliacion-como-funciona"
+      {/* 6. ¿Cómo funciona? — ayuda, no dato. Estaba plegada al final de la
+          pantalla; desde el 21-09 se abre ENCIMA: un `<details>` abierto crece
+          dentro de la pantalla y empuja las sugerencias que la persona vino a
+          revisar. El `data-testid` se conserva en el contenido para que las
+          pruebas sigan buscando lo mismo. */}
+      <ParaEntenderMas
+        etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+        ancho="ancho"
       >
-        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 [&::-webkit-details-marker]:hidden">
-          <CaretRight
-            className="h-4 w-4 shrink-0 text-fg-muted transition-transform group-open:rotate-90"
-            aria-hidden="true"
-          />
-          <span className="text-body-sm font-medium text-fg">
-            {t(`${PAGES_NS}.comoFunciona.title`)}
-          </span>
-        </summary>
-        <ol className="grid grid-cols-1 gap-4 border-t border-border p-4 sm:grid-cols-3">
+        <ol
+          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+          data-testid="conciliacion-como-funciona"
+        >
           {COMO_FUNCIONA_STEPS.map((step, i) => {
             const StepIcon = step.icon
             return (
@@ -470,7 +520,7 @@ function ConciliacionSala() {
             )
           })}
         </ol>
-      </details>
+      </ParaEntenderMas>
 
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

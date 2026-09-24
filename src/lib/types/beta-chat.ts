@@ -137,6 +137,15 @@ export interface TurnStep {
    * borrar las repeticiones sería mentir por omisión. Se cuentan.
    */
   repeticiones?: number;
+  /**
+   * Lo que el paso está haciendo AHORA, en presente («Leyendo contratos…»,
+   * «Leí 29 filas de contratos»). Llega por el evento `progreso` del micro y
+   * se reemplaza con cada aviso. Nico (23-09): «se queda ahí sólo con un texto
+   * y sin cargas, no se sabe si sí está funcionando».
+   */
+  actividad?: string;
+  /** Sub-avance medible del paso activo (llega con `progreso` cuando hay total). */
+  avance?: { hechos: number; total: number };
   status: TurnStepStatus;
   startedAt?: Date;
   completedAt?: Date;
@@ -159,10 +168,11 @@ export interface ResponseAction {
    */
   prompt?: string;
   /**
-   * Sección de la app relacionada. Deja de ser lo que hace el botón y pasa a
-   * ser una salida SECUNDARIA, para cuando de verdad quieres ir a la pantalla.
+   * Lo que pide el botón, con forma (23-09, «todo en el chat»): viaja con el
+   * mensaje para que el micro lo atienda sin adivinar el texto. Ya no hay
+   * `href`: ningún botón del chat saca de la conversación (Nico, 23-09).
    */
-  href?: string;
+  intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
   /** Phosphor icon name */
   icon: string;
   /** Visual variant */
@@ -256,6 +266,9 @@ export interface ChatSnapshot {
   llamadasHoy: number;
   escalacionesPendientes: number;
   enPrejuridico: number;
+  /** La cartera del ERP (Pagos → Cartera). Falta con un micro anterior al 23-09. */
+  carteraCop?: number;
+  contratosEnCartera?: number;
 }
 
 /**
@@ -271,6 +284,17 @@ export interface AccionEnHilo {
   resultado?: import('@/lib/api/ai-hub-acciones').ResultadoDeAccion | null;
   /** Por qué no se pudo ni intentar (venció, la cancelaron, sin permiso). */
   error?: string | null;
+}
+
+/**
+ * Por qué y qué consulta del turno falló, tal como lo dice el micro en el
+ * `done`. Valores del contrato: `motivo` = 'tiempo' | 'red' | 'servidor';
+ * `que` = 'busqueda' | 'cartera' | 'ficha' | 'cifras'. Se guardan como texto:
+ * el botón no depende del valor, y uno nuevo del micro no debe esconderlo.
+ */
+export interface Reintentable {
+  motivo: string;
+  que: string;
 }
 
 export interface ChatMessage {
@@ -296,6 +320,57 @@ export interface ChatMessage {
   actionProposals?: ActionProposal[];
   /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
   snapshot?: ChatSnapshot;
+  /**
+   * La parte de la respuesta con FORMA (tabla, cifra, aviso) y las entidades
+   * de la búsqueda. Llegan en el `done`; el texto sigue siendo el respaldo.
+   * Ver `src/lib/chat/bloques.ts`.
+   */
+  bloques?: import('@/lib/chat/bloques').BloqueDeRespuesta[];
+  entidades?: import('@/lib/chat/bloques').EntidadDelChat[];
+  /**
+   * «Todo en el chat» (Nico, 23-09): en un mensaje de la PERSONA, lo que pidió
+   * con un botón del hilo (la intención viaja con el texto). En uno del
+   * asistente, lo que se puede hacer (`acciones`), la tarjeta de «¿Lo hago?»
+   * (`confirmacion`), lo que pasó (`resultado`) y los datos que faltan
+   * (`formulario`). Ver `src/lib/chat/acciones-del-hilo.ts`.
+   */
+  intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
+  acciones?: import('@/lib/chat/acciones-del-hilo').AccionDelHilo[];
+  confirmacion?: import('@/lib/chat/acciones-del-hilo').ConfirmacionEnElHilo;
+  resultado?: import('@/lib/chat/acciones-del-hilo').ResultadoEnElHilo;
+  formulario?: import('@/lib/chat/acciones-del-hilo').FormularioEnElHilo;
+  /**
+   * La tarjeta del EJECUTOR (24-09): propuesta, en curso, resultado (con la
+   * gracia de «Deshacer» de P-10), programada o error. Con ella a la vista,
+   * `confirmacion` y `resultado` (la misma ejecución, para un panel viejo) no
+   * se pintan. Se pone al día con `GET …/ejecuciones/{id}` en su mismo mensaje.
+   * Ver `src/lib/chat/tarjetas-de-ejecucion.ts`.
+   */
+  ejecucion?: import('@/lib/chat/tarjetas-de-ejecucion').TarjetaDeEjecucion;
+  /**
+   * (24-09, paquete H) La tarjeta del PLAN: varias acciones del registro
+   * pedidas en una frase, con UNA confirmación y el avance paso a paso. Ver
+   * `src/lib/chat/plan-del-chat.ts`.
+   */
+  plan?: import('@/lib/chat/plan-del-chat').TarjetaDePlan;
+  /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
+  ensayo?: boolean;
+  /**
+   * El id de ESTE turno en el cerebro del micro (23-09), acuñado por el
+   * servidor: llega en el `done` del stream y en la respuesta del POST. Con él
+   * viajan las señales que sólo ve la pantalla (`src/lib/chat/senales.ts`) y
+   * el 👍/👎, que así se asocian EXACTO al turno en vez de buscarlo por el
+   * texto de la pregunta. Falta en los mensajes de antes del 23-09 y con un
+   * micro viejo: entonces no sale ninguna señal.
+   */
+  turnoId?: string;
+  /**
+   * El micro NO PUDO hacer una consulta de este turno y vale la pena volver a
+   * preguntar (contrato fijo con el micro, 23-09: llega en el `done`). Con él
+   * la respuesta lleva un botón «Reintentar» a la vista. Sin él no se pinta
+   * nada: el front no adivina fallos leyendo el texto.
+   */
+  reintentable?: Reintentable;
   /**
    * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
    *
@@ -423,7 +498,26 @@ export interface DailyBriefing {
 // ============================================================================
 
 /** Autonomy level for each agent type */
+/**
+ * 🔴 LOS TRES NIVELES DE AUTONOMÍA (Nico, 17/18-09-2026): «tenemos 3 niveles:
+ * SOMBRA, COPILOT y AUTOMÁTICO; el usuario define», con SOMBRA por defecto.
+ *
+ * Los identificadores siguen siendo `manual` / `ask_first` / `auto` a
+ * propósito: son lo que ya está guardado en las preferencias de la gente y en
+ * `agent.agency_settings`. Renombrar el VALOR obligaría a migrar lo guardado y
+ * dejaría a quien no migre en un nivel que el código no reconoce — y el que no
+ * se reconoce nunca puede resolverse como «automático».
+ *
+ * Lo que cambia son los NOMBRES que se ven y el orden en que se ofrecen:
+ *
+ *   · `manual`    → **Sombra**: analiza y propone, no escribe ni llama.
+ *   · `ask_first` → **Copilot**: prepara y una persona aprueba antes de salir.
+ *   · `auto`      → **Automático**: actúa solo, dentro de la política.
+ */
 export type AutonomyLevel = 'auto' | 'ask_first' | 'manual';
+
+/** El nivel por defecto: SOMBRA. «Sin elección del usuario, nunca automático.» */
+export const NIVEL_POR_DEFECTO: AutonomyLevel = 'manual';
 
 /** Communication tone preference */
 export type CommunicationTone = 'formal' | 'professional' | 'casual';

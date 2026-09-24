@@ -23,12 +23,13 @@ import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { LeasefyLogotype } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { PasosDelArriendo } from '@/components/aprobacion/PasosDelArriendo';
+import { ConfirmarSalidaDelArriendo } from '@/components/aprobacion/ConfirmarSalidaDelArriendo';
 import { formatCurrency } from '@/lib/format';
 import { enlaceAlEstudio } from '@/lib/aprobacion/estimado-de-arriendo';
 import { leerArriendoEnCurso, nombreDelTipo, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
 
 interface Props {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function celebrar() {
@@ -47,7 +48,7 @@ function celebrar() {
 }
 
 export default function ArrendarPage({ params }: Props) {
-  const { id } = params instanceof Promise ? use(params) : params;
+  const { id } = use(params);
   const router = useRouter();
   const [arriendo, setArriendo] = useState<ArriendoEnCurso | null | undefined>(undefined);
 
@@ -69,6 +70,13 @@ export default function ArrendarPage({ params }: Props) {
   const margen = arriendo ? Math.max(0, arriendo.canonMaximo - arriendo.canon) : 0;
   const fichaHref = `/propiedades/${id}`;
 
+  /*
+   * Cerrar pregunta antes, igual que en el paso 2 (Nico, 2026-09-15): acá se
+   * acaba de saber que le alcanza para ESTE inmueble, y quien cierra en la
+   * celebración casi nunca vuelve a empezar el recorrido.
+   */
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
+
   return (
     <div className="min-h-screen bg-surface-muted">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
@@ -76,14 +84,28 @@ export default function ArrendarPage({ params }: Props) {
           <BrandHomeLink aria-label="Leasefy — inicio" className="text-fg">
             <LeasefyLogotype size={24} />
           </BrandHomeLink>
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href={fichaHref}>
-              <X className="h-4 w-4" aria-hidden="true" />
-              Cerrar
-            </Link>
+          <Button
+            variant="secondary"
+            size="sm"
+            hideArrow
+            onClick={() => setConfirmandoSalida(true)}
+            data-testid="cerrar-arrendar"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+            Cerrar
           </Button>
         </div>
       </header>
+
+      <ConfirmarSalidaDelArriendo
+        abierto={confirmandoSalida}
+        onAbiertoChange={setConfirmandoSalida}
+        tituloDelInmueble={arriendo?.titulo}
+        onSalir={() => {
+          setConfirmandoSalida(false);
+          router.push(fichaHref);
+        }}
+      />
 
       <main id="main-content" className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 md:py-12">
         {arriendo === undefined ? (

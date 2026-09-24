@@ -21,6 +21,14 @@
  * Honestidad: si `PILOTO_ENABLED` está apagado en el micro, la píldora dice
  * «apagado» y los modos se ven pero no se ofrecen — elegir un modo para una
  * flota que no corre sería teatro.
+ *
+ * ── P-1 y la auditoría del Piloto (23-09-2026, hallazgo 11) ───────────────
+ *   · Los modos son Manual / Copiloto / Automático. «Mixto» se eliminó: la
+ *     píldora dice el modo de la mayoría de los agentes que actúan y, si
+ *     alguno usa otro, lo cuenta; al abrirla se ve el modo de cada uno.
+ *   · «12 agentes corriendo» contaba agentes apagados en el servidor y
+ *     perillas que no mueven nada. Ahora cuenta los que ACTÚAN (corren y el
+ *     modo los gobierna) y nombra aparte los que todavía no actúan solos.
  */
 
 import { useState } from 'react'
@@ -45,6 +53,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { useI18n } from '@/lib/i18n'
+import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
 import { cn } from '@/lib/utils'
 import type { AutonomiaModo, ModoDeLaFlota } from '@/lib/api/piloto'
 
@@ -61,7 +70,8 @@ const PUNTO: Record<ModoDeLaFlota, string> = {
   sombra: 'bg-fg-muted',
   copiloto: 'bg-primary',
   autonomo: 'bg-success',
-  mixto: 'bg-warning',
+  // Sólo por compatibilidad con un micro viejo que todavía mande «mixto».
+  mixto: 'bg-primary',
 }
 
 export const RUTA_PROCESOS = '/panel/inmobiliaria/piloto/procesos'
@@ -86,7 +96,10 @@ export function PilotoModoHeader() {
   const puedeCambiar = isAdmin && activo && !flota.busy
 
   const etiquetaModo = (m: ModoDeLaFlota | null) =>
-    m ? t(`inmobiliaria.piloto.flota.modo.${m}`) : '…'
+    m && m !== 'mixto' ? t(`inmobiliaria.piloto.flota.modo.${m}`) : '…'
+  const distintos = data?.distintos ?? []
+  const agentesQueActuan = (data?.agentes ?? []).filter((a) => a.actua ?? a.corre)
+  const todaviaNo = (data?.agentes ?? []).filter((a) => a.gobierna === false)
 
   const aplicar = async (nuevo: AutonomiaModo) => {
     setConfirmando(null)
@@ -99,7 +112,7 @@ export function PilotoModoHeader() {
       toast.warning(
         t('inmobiliaria.piloto.flota.toastParcial', {
           modo: etiquetaModo(nuevo).toLowerCase(),
-          agentes: res.fallidos.join(', '),
+          agentes: res.fallidos.map((a) => workspaceVocab(t, 'agente', a)).join(', '),
         }),
       )
     } else {
@@ -134,7 +147,9 @@ export function PilotoModoHeader() {
           data-modo={modo ?? 'cargando'}
           aria-label={t('inmobiliaria.piloto.flota.aria', { modo: etiquetaModo(modo) })}
           className={cn(
-            'inline-flex h-9 max-w-[240px] items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm',
+            // A 390 px la píldora se compacta a punto + modo (sin flecha): el
+            // encabezado desbordaba y la página medía 446–463 px de ancho (24-09).
+            'inline-flex h-9 max-w-[240px] items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm sm:gap-2 sm:px-3 lg:max-w-[320px]',
             'text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             !activo && data && 'text-fg-muted',
           )}
@@ -154,12 +169,18 @@ export function PilotoModoHeader() {
             <span className="text-fg-muted">{t('inmobiliaria.piloto.flota.piloto')}</span>
             <span className="text-fg-muted"> · </span>
             <span className="font-medium">{data ? (activo ? etiquetaModo(modo) : t('inmobiliaria.piloto.flota.apagado')) : '…'}</span>
+            {activo && distintos.length > 0 && (
+              <span className="text-fg-muted" data-testid="piloto-modo-distintos">
+                {' '}
+                {t('inmobiliaria.piloto.flota.distintosCorto', { n: String(distintos.length) })}
+              </span>
+            )}
           </span>
           <span className="truncate font-medium sm:hidden">{data ? (activo ? etiquetaModo(modo) : t('inmobiliaria.piloto.flota.apagado')) : '…'}</span>
           {hayVivo && activo && (
             <span
               data-testid="piloto-modo-vivo"
-              className="hidden items-center gap-1 rounded-full bg-success-soft px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-success md:inline-flex"
+              className="hidden items-center gap-1 rounded-full bg-success-soft px-1.5 py-0.5 font-mono text-caption tabular-nums text-success md:inline-flex"
             >
               {vivo.llamadas > 0 ? (
                 <>
@@ -174,11 +195,11 @@ export function PilotoModoHeader() {
               )}
             </span>
           )}
-          <CaretDown className="h-3.5 w-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <CaretDown className="hidden h-3.5 w-3.5 shrink-0 text-fg-muted sm:block" aria-hidden="true" />
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" sideOffset={8} className="w-[340px] p-0">
+      <PopoverContent align="end" sideOffset={8} className="w-[min(340px,calc(100vw-2rem))] p-0">
         <div className="flex items-start gap-3 border-b border-faint px-4 py-3">
           <AirTrafficControl weight="duotone" className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0">
@@ -186,13 +207,18 @@ export function PilotoModoHeader() {
             <p className="text-caption text-fg-muted">
               {data
                 ? activo
-                  ? modo === 'mixto'
-                    ? t('inmobiliaria.piloto.flota.mixtoHint', {
-                        autonomo: String(data.resumen.autonomo),
-                        copiloto: String(data.resumen.copiloto),
-                        sombra: String(data.resumen.sombra),
+                  ? distintos.length > 0
+                    ? // «7 agentes actúan con este modo» cuando 3 de esos 7
+                      // están en otro era falso (visto el 24-09): se dice
+                      // cuántos en este y cuántos en otro, y abajo cuáles.
+                      t('inmobiliaria.piloto.flota.corriendoConDistintos', {
+                        n: String(data.actuan ?? agentesQueActuan.length),
+                        enEste: String(Math.max(0, (data.actuan ?? agentesQueActuan.length) - distintos.length)),
+                        otros: String(distintos.length),
                       })
-                    : t('inmobiliaria.piloto.flota.corriendo', { n: String(data.agentes.filter((a) => a.corre).length) })
+                    : t('inmobiliaria.piloto.flota.corriendo', {
+                        n: String(data.actuan ?? agentesQueActuan.length),
+                      })
                   : t('inmobiliaria.piloto.flota.apagadoHint')
                 : t('inmobiliaria.piloto.flota.cargando')}
             </p>
@@ -258,6 +284,33 @@ export function PilotoModoHeader() {
 
         {!isAdmin && activo && (
           <p className="px-4 pb-2 text-caption text-fg-subtle">{t('inmobiliaria.piloto.autonomia.soloAdmin')}</p>
+        )}
+
+        {/* P-1: al abrirla se ve el modo de CADA agente que actúa, y quiénes
+            todavía no actúan solos (su modo queda registrado, nada más). */}
+        {activo && data && agentesQueActuan.length > 0 && (
+          <div className="border-t border-faint px-4 py-2.5" data-testid="piloto-modo-por-agente">
+            <p className="text-label font-medium uppercase tracking-wide text-fg-subtle">
+              {t('inmobiliaria.piloto.flota.cadaAgente')}
+            </p>
+            <ul className="mt-1 space-y-0.5 text-caption">
+              {agentesQueActuan.map((a) => (
+                <li key={a.agente} className="flex items-center justify-between gap-2">
+                  <span className="text-fg">{workspaceVocab(t, 'agente', a.agente)}</span>
+                  <span className={cn('font-medium', distintos.includes(a.agente) ? 'text-warning' : 'text-fg-muted')}>
+                    {etiquetaModo(a.modo)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {todaviaNo.length > 0 && (
+              <p className="mt-1.5 text-caption text-fg-subtle" data-testid="piloto-modo-todavia-no">
+                {t('inmobiliaria.piloto.flota.todaviaNo', {
+                  agentes: todaviaNo.map((a) => workspaceVocab(t, 'agente', a.agente)).join(', '),
+                })}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Ahora mismo: solo si pasa algo. Vacío que no aporta, no se pinta. */}

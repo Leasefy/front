@@ -135,7 +135,7 @@ export default function AseguradorasPage() {
   )
 
   return (
-    <main className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa; la única acción de la pantalla, a la derecha. */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1.5">
@@ -170,6 +170,6 @@ export default function AseguradorasPage() {
         onSaveOverride={handleSave}
         onResetOverride={handleReset}
       />
-    </main>
+    </div>
   )
 }

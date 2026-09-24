@@ -174,7 +174,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
       {modo === 'uso' ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px]">
-            <label className="text-xs text-muted-foreground">
+            <label className="text-caption text-muted-foreground">
               Uso para las {ids.length}
             </label>
             <Select value={uso} onValueChange={(v) => setUso(v as 'VIVIENDA' | 'COMERCIAL')}>
@@ -193,7 +193,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
       {modo === 'propietario' ? (
         <div className="space-y-3">
           {sinInmueble > 0 ? (
-            <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5 text-xs text-foreground">
+            <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5 text-caption text-foreground">
               <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
               {sinInmueble} de las seleccionadas todavía no tienen inmueble. La
               consignación es del inmueble, así que esas van a quedar sin
@@ -202,15 +202,15 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
           ) : null}
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[160px] flex-1">
-              <label className="text-xs text-muted-foreground">Nombre del propietario</label>
+              <label className="text-caption text-muted-foreground">Nombre del propietario</label>
               <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
             <div className="w-36">
-              <label className="text-xs text-muted-foreground">Documento</label>
+              <label className="text-caption text-muted-foreground">Documento</label>
               <Input value={documento} onChange={(e) => setDocumento(e.target.value)} />
             </div>
             <div className="w-24">
-              <label className="text-xs text-muted-foreground">Comisión %</label>
+              <label className="text-caption text-muted-foreground">Comisión %</label>
               <Input
                 type="number"
                 value={comision}
@@ -237,7 +237,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
           con 1.365 filas en 14 requests, un botón que gira sin decir nada es
           indistinguible de uno colgado. */}
       {corriendo ? (
-        <p className="text-xs text-muted-foreground" data-testid="progreso-masivo">
+        <p className="text-caption text-muted-foreground" data-testid="progreso-masivo">
           Aplicando {hechas}/{ids.length}…
         </p>
       ) : null}
@@ -264,17 +264,17 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
                   return acc
                 }, {}),
               ).map(([motivo, n]) => (
-                <p key={motivo} className="text-xs text-muted-foreground" data-testid="omitidas-masivo">
+                <p key={motivo} className="text-caption text-muted-foreground" data-testid="omitidas-masivo">
                   {n} {n === 1 ? 'fila' : 'filas'} — {motivo}
                 </p>
               ))
             : null}
           {resultado.fallidas.length > 0 ? (
             <>
-              <p className="text-xs font-medium text-destructive">
+              <p className="text-caption font-medium text-destructive">
                 {resultado.fallidas.length} no se pudieron:
               </p>
-              <ul className="space-y-1 text-xs text-muted-foreground">
+              <ul className="space-y-1 text-caption text-muted-foreground">
                 {resultado.fallidas.map((f) => (
                   <li key={f.id}>
                     {/* +2: en el archivo la primera fila de datos es la 2. */}

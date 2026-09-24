@@ -17,8 +17,26 @@ vi.mock('node:dns/promises', () => {
   return { lookup, default: { lookup } };
 });
 
+// La sesión (auditoría de seguridad 23-09): `getClaims` de Supabase se dobla
+// para que sólo el token de prueba sea válido. La ruta ya no atiende a nadie
+// sin sesión.
+const TOKEN_VALIDO = 'jwt-de-prueba';
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: {
+      getClaims: vi.fn(async (jwt: string) =>
+        jwt === TOKEN_VALIDO
+          ? { data: { claims: { exp: Math.floor(Date.now() / 1000) + 3600 } }, error: null }
+          : { data: null, error: new Error('invalid JWT') },
+      ),
+    },
+  }),
+}));
+
 import { lookup } from 'node:dns/promises';
 import { GET } from './route';
+import { _olvidarSesionesVerificadas } from '@/lib/api/sesion-de-la-ruta';
+import { _olvidarCuentas } from '@/lib/api/limite-de-la-ruta';
 
 function streamDe(bytes: Uint8Array): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -38,8 +56,10 @@ function respuestaDe(bytes: Uint8Array, contentType: string): Response {
   } as unknown as Response;
 }
 
-function requestPara(url: string) {
-  return new NextRequest(`http://localhost:3001/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`);
+function requestPara(url: string, token: string | null = TOKEN_VALIDO) {
+  return new NextRequest(`http://localhost:3001/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`, {
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
 }
 
 // Los 12 bytes reales de la foto de portofinopr.arrendasoft.co que el
@@ -50,6 +70,10 @@ const WEBP = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x5
 const HTML = new TextEncoder().encode('<!DOCTYPE html><html><body>No soy una foto</body></html>');
 
 beforeEach(() => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://proyecto.supabase.co';
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'sb_publishable_prueba';
+  _olvidarCuentas();
+  _olvidarSesionesVerificadas();
   vi.mocked(lookup).mockResolvedValue([{ address: '203.0.113.10' }] as never);
 });
 
@@ -127,10 +151,31 @@ describe('GET /api/inmuebles/imagen-remota', () => {
   });
 
   it('devuelve falta_url cuando no llega el parámetro', async () => {
-    const res = await GET(new NextRequest('http://localhost:3001/api/inmuebles/imagen-remota'));
+    const res = await GET(
+      new NextRequest('http://localhost:3001/api/inmuebles/imagen-remota', {
+        headers: { authorization: `Bearer ${TOKEN_VALIDO}` },
+      }),
+    );
 
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe('falta_url');
+  });
+
+  // Auditoría de seguridad 23-09: sin sesión, cualquiera en internet usaba
+  // esta ruta de proxy para bajar lo que quisiera desde nuestro servidor.
+  it.each([
+    ['sin Authorization', null],
+    ['con un token inventado', 'cualquier-cosa'],
+  ])('no baja nada %s (401)', async (_caso, token) => {
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    vi.mocked(lookup).mockClear();
+
+    const res = await GET(requestPara('https://cdn.example.com/foto.jpg', token));
+
+    expect(res.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(lookup).not.toHaveBeenCalled();
   });
 });

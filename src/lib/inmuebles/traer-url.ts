@@ -53,7 +53,24 @@ export class FalloAlTraer extends Error {
  */
 export function esDireccionPrivada(ip: string): boolean {
   // IPv4 mapeada en IPv6: ::ffff:10.0.0.1 es 10.0.0.1.
-  const limpia = ip.replace(/^::ffff:/i, '').toLowerCase();
+  let limpia = ip.replace(/^::ffff:/i, '').toLowerCase();
+
+  // La misma IPv4 puede venir escrita en hexadecimal —`::ffff:a9fe:a9fe` es
+  // 169.254.169.254— o envuelta en el prefijo de NAT64 (`64:ff9b::`) o en el
+  // viejo «compatible con IPv4» (`::7f00:1`). Escrita así no la reconocía
+  // ninguna regla de abajo y pasaba como pública (auditoría de seguridad
+  // 23-09). Se traduce a la forma con puntos y se juzga como IPv4.
+  const envuelta = /^(?:::ffff:|::|64:ff9b::)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(
+    ip.toLowerCase(),
+  );
+  if (envuelta && ip.includes('::')) {
+    const alto = parseInt(envuelta[1], 16);
+    const bajo = parseInt(envuelta[2], 16);
+    limpia = [alto >> 8, alto & 255, bajo >> 8, bajo & 255].join('.');
+  } else {
+    const conPuntos = /^(?:::|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(limpia);
+    if (conPuntos) limpia = conPuntos[1];
+  }
 
   if (/^\d+\.\d+\.\d+\.\d+$/.test(limpia)) {
     const [a, b] = limpia.split('.').map(Number);

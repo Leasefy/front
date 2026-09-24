@@ -8,13 +8,27 @@
  * constante con un badge «Ejemplo», y la tabla de egresos con un `EmptyState`
  * fijo — cero `fetch`. El back ya calculaba exactamente esto y nadie lo
  * llamaba: `GET /inmobiliaria/dispersiones/preview` devuelve, propietario por
- * propietario, canon recaudado, comisión, conceptos a favor y a cargo, y el
+ * propietario, el canon, la comisión, los conceptos a favor y a cargo, y el
  * neto a girar. Es la MISMA cuenta que `generate`, así que lo que se ve acá es
  * lo que se va a girar en Dispersiones — no una fórmula parecida.
+ *
+ * 🔴 El canon decía «Canon recibido», y con la base por defecto (CAUSADO) es lo
+ * que los contratos cobran en el mes, haya pagado el inquilino o no: se puede
+ * girar más de lo recaudado. El rótulo sigue a `vista.base` —«Canon causado» o
+ * «Canon recaudado»— y ningún número cambia (`lib/propietarios/base-del-canon`).
  *
  * El desglose de IVA no se muestra: el back lo devuelve dentro de los conceptos
  * y separarlo acá sería una cuenta distinta de la del giro. La columna «IVA
  * com.» se retiró en vez de rellenarse con un cálculo del navegador.
+ *
+ * 🔴 Deducciones (2026-09-16): la liquidación del propietario es lo que el
+ * contrato cobra MENOS sus deducciones (reparaciones a su cargo, descuentos con
+ * soporte, saldo en contra del mes anterior). El back manda el bloque
+ * `conDeducciones` con la regla única; acá se pinta: una columna con lo que se
+ * descuenta y el neto que de verdad se gira, entero o nada. Si las deducciones
+ * superan el neto, se gira $0 y se dice cuánto pasa al mes siguiente — no
+ * «queda debiendo»: no hay cuenta de cobro. Con un back anterior, sin el
+ * bloque, la pantalla es la de siempre.
  *
  * Un solo estado a la vez (auditoría 2026-09-13, L1): con el back caído la
  * pantalla decía TRES cosas juntas —el cartel de error, «este mes todavía no
@@ -24,10 +38,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, CalendarBlank } from '@phosphor-icons/react';
+import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
+import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
+import { CajonDeLaLiquidacion } from '@/components/liquidaciones/CajonDeLaLiquidacion';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import {
@@ -37,6 +53,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -48,9 +73,19 @@ import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { baseDeLaLiquidacion } from '@/lib/propietarios/base-del-canon';
 
+/**
+ * Las columnas de la tabla de egresos.
+ *
+ * 🔴 `colComprobante` salió de acá el 21-09: era una columna entera para un
+ * botón «Ver dispersiones», y la tabla ya no cabía a lo ancho («Esta tabla no
+ * cabe entera: se corre a los lados»). La acción se fue al kebab de la fila,
+ * que es donde Nico pidió que vivan las acciones — y de paso el nombre del
+ * propietario recuperó el ancho que se partía en tres renglones.
+ */
 const COLUMNS = [
-  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
+  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colDeducciones', 'colNeto', 'colCuenta', 'colEstado',
 ];
 
 /** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
@@ -123,25 +158,91 @@ function TesoreriaContent() {
   const frenada = leerLiquidacionFrenada(error);
 
   const propietarios: Propietario[] = vista?.propietarios ?? [];
+  // Con qué regla liquidó el back: decide el rótulo del canon, nada más.
+  const base = baseDeLaLiquidacion(vista);
+
+  /*
+   * 🔴 BUSCADOR Y PAGINACIÓN (21-09). Nico: «eso con scroll infinito es
+   * horrible». Eran los 50 propietarios del mes —518 en la agencia migrada— en
+   * una sola tabla sin cortar y sin manera de encontrar a uno.
+   *
+   * El resumen de arriba sigue hablando del MES COMPLETO, no de lo filtrado: es
+   * la cuenta que tiene que cuadrar con lo que se va a girar.
+   */
+  const [busqueda, setBusqueda] = useState('');
+  /** La fila abre su cajón (el molde, regla 5); el kebab sigue actuando. */
+  const [abierta, setAbierta] = useState<Propietario | null>(null);
+  const visibles = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return propietarios;
+    return propietarios.filter(
+      (x) =>
+        x.propietarioName.toLowerCase().includes(q) ||
+        (x.propietarioBankAccount ?? '').toLowerCase().includes(q),
+    );
+  }, [propietarios, busqueda]);
+  const paginado = useTablePagination(visibles, { resetKey: `${month}|${busqueda}` });
   const suma = (campo: keyof Propietario) =>
-    propietarios.reduce((s, p) => s + (p[campo] as number), 0);
+    propietarios.reduce((s, p) => s + ((p[campo] as number | undefined) ?? 0), 0);
+  /*
+   * 🔴 22-09 (Nico: «no estás teniendo en cuenta el IVA en la comisión»): el
+   * IVA de la comisión y lo que el propietario le retiene a la comisión tienen
+   * su propia línea entre la comisión y el neto. El back dejó de esconderlos en
+   * los conceptos, así que sin estas líneas la cuenta no cerraría a la vista.
+   */
+  const ivaDelMes = suma('totalIvaComision');
+  const retenidoDelMes = suma('totalRetencionesComision');
 
   // La fórmula, sobre la plata de VERDAD del mes. Las cuatro filas cierran
   // contra el neto por construcción: el back lo calcula igual.
   const resumen = [
-    { labelKey: 'fCanon', value: suma('totalCollected'), sign: '', tone: 'text-fg' },
+    {
+      labelKey: base === 'RECAUDADO' ? 'fCanonRecaudado' : 'fCanonCausado',
+      value: suma('totalCollected'),
+      sign: '',
+      tone: 'text-fg',
+    },
     { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
+    ...(ivaDelMes > 0
+      ? [{ labelKey: 'fIva', value: ivaDelMes, sign: '−', tone: 'text-danger' }]
+      : []),
+    ...(retenidoDelMes > 0
+      ? [{ labelKey: 'fRetencionesComision', value: retenidoDelMes, sign: '+', tone: 'text-fg' }]
+      : []),
     { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
-  const neto = suma('netToPropietario');
+  /*
+   * 🔴 QA 22-09: con deducciones, `netToPropietario` ya viene RESTADO y la
+   * pantalla las restaba otra vez debajo: «Neto $329.220.440 · Deducciones
+   * −$2.000.000 · A girar $329.932.440» no sumaba. El neto de esta fila es el
+   * del mes ANTES de deducciones (`conDeducciones.netoDelMesCop`); sin bloque,
+   * el de siempre.
+   */
+  const neto = propietarios.reduce(
+    (s, p) => s + (p.conDeducciones ? p.conDeducciones.netoDelMesCop : p.netToPropietario),
+    0,
+  );
+  /*
+   * Con deducciones el back manda el bloque de cada propietario. Lo que se
+   * SUMA acá son totales de varios propietarios; lo que se gira a cada uno
+   * (`aGirarCop`) y lo que le queda en contra ya vienen calculados.
+   */
+  const conDeducciones = propietarios.some((p) => p.conDeducciones);
+  const sumaDelBloque = (campo: 'deduccionesCop' | 'aGirarCop' | 'saldoEnContraCop') =>
+    propietarios.reduce((s, p) => s + (p.conDeducciones?.[campo] ?? 0), 0);
+  const deduccionesDelMes = sumaDelBloque('deduccionesCop');
+  const aGirarDelMes = sumaDelBloque('aGirarCop');
+  const enContraDelMes = sumaDelBloque('saldoEnContraCop');
+  const quedanEnCero = propietarios.filter((p) => (p.conDeducciones?.saldoEnContraCop ?? 0) > 0).length;
   /*
    * El back reparte en negativo cuando lo que paga el propietario (predial,
-   * reparaciones) supera lo recaudado: el propietario queda DEBIENDO. Antes el
+   * reparaciones) supera su canon del mes: el propietario queda DEBIENDO. Antes el
    * neto se pintaba siempre en verde, y un «−$300.000» verde se lee como plata
-   * a favor.
+   * a favor. Con deducciones esto ya no es «deuda»: pasa a la siguiente
+   * liquidación (`quedanEnCero`).
    */
-  const quedanDebiendo = propietarios.filter((p) => p.netToPropietario < 0).length;
+  const quedanDebiendo = conDeducciones ? 0 : propietarios.filter((p) => p.netToPropietario < 0).length;
 
   const vacio = !cargando && !error && propietarios.length === 0;
   // El fallo y el vacío no traen tarjeta propia (van dentro del hueco de
@@ -166,24 +267,6 @@ function TesoreriaContent() {
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
             Acá se lee el neto de cada propietario, no se crean documentos. */}
-        <div className="shrink-0">
-          <label className="block text-xs font-medium text-fg-muted mb-1.5" id="liquidaciones-mes">
-            Mes
-          </label>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="gap-2 min-w-[200px]" aria-labelledby="liquidaciones-mes">
-              <CalendarBlank className="w-4 h-4 text-fg-muted shrink-0" aria-hidden="true" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {meses.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </header>
 
       {frenada ? (
@@ -194,15 +277,34 @@ function TesoreriaContent() {
           data-testid="liquidaciones-hueco"
         >
           <EstadoDeDatos
-            cargando={cargando}
+            /* `&& !vista`: un cambio de mes refresca por debajo sin borrar lo
+               que se está mirando. Sin esto, al cambiar de mes desaparecían las
+               pestañas y el propio selector de mes — el control que acabás de
+               tocar se va de la pantalla. */
+            cargando={cargando && !vista}
             error={error}
             vacio={vacio}
             queEs="las liquidaciones del mes"
             onReintentar={cargar}
             esqueleto={
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="liquidaciones-cargando">
-                <EsqueletoIndicadores cantidad={1} className="sm:grid-cols-1 lg:grid-cols-1" />
-                <EsqueletoTabla columnas={COLUMNS.length} className="lg:col-span-2" />
+              /* 🔴 El esqueleto tiene que dibujar la disposición que va a
+                 llegar. Éste seguía en el grid de 1/3 + 2/3 después de que la
+                 pantalla pasó a una columna (Nico, 21-09: «esto cambió la
+                 disposición y el skeleton sigue siendo el viejo»): la página
+                 saltaba al cargar, que es justo lo que un esqueleto viene a
+                 evitar. */
+              <div className="space-y-6" data-testid="liquidaciones-cargando">
+                <EsqueletoIndicadores cantidad={4} />
+                {/* La fila de pestañas y mes también se dibuja: si el esqueleto
+                    no la tiene, la tarjeta crece de golpe cuando llegan los
+                    datos y la página salta. */}
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+                    <div className="h-9 w-64 animate-pulse rounded-md bg-surface-muted" />
+                    <div className="h-9 w-48 animate-pulse rounded-md bg-surface-muted" />
+                  </div>
+                  <EsqueletoTabla columnas={COLUMNS.length} className="border-0" />
+                </div>
               </div>
             }
             cuandoVacio={
@@ -210,27 +312,57 @@ function TesoreriaContent() {
                 queSon="liquidaciones"
                 icono={Wallet}
                 titulo={t(k('emptyTitle'))}
-                descripcion={t(k('emptyDesc'))}
+                descripcion={t(k(base === 'RECAUDADO' ? 'emptyDescRecaudado' : 'emptyDesc'))}
               />
             }
           >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 🔴 UNA COLUMNA (21-09). Era un grid de 1/3 + 2/3: el resumen se
+                quedaba con un tercio del ancho y la tabla de DIEZ columnas con
+                los dos tercios, así que no cabía y corría a los lados. Nico:
+                «esta página también tiene unas cosas por un lado otras por
+                otro… eso con scroll infinito es horrible». El resumen del mes
+                va arriba, ancho, y la tabla se queda con la pantalla entera. */}
+            <div className="space-y-6">
               {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
-              <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
+              <section className="rounded-lg border border-border bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
                   <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
                 </div>
-                <div className="space-y-2.5">
-                  {resumen.map((row) => (
-                    <div key={row.labelKey} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
-                      <span className={cn('font-mono tabular-nums', row.tone)}>
-                        {row.sign}{formatCurrency(row.value)}
-                      </span>
+                {/* En una fila cuando hay ancho: son los pasos de UNA cuenta
+                    (canon − comisión + a favor − a cargo = neto), y en columna
+                    ocupaban media pantalla de alto. */}
+                <div
+                  className={cn(
+                    'space-y-2.5 lg:grid lg:gap-x-8 lg:gap-y-2 lg:space-y-0',
+                    // Con el IVA de la comisión (y lo retenido) la cuenta tiene
+                    // más pasos: siguen en UNA fila.
+                    resumen.length <= 4 ? 'lg:grid-cols-4' : resumen.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-6',
+                  )}
+                >
+                  {resumen.map((row, i) => (
+                    <div key={row.labelKey}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span
+                          className="text-muted-foreground"
+                          data-testid={i === 0 ? 'tesoreria-rotulo-canon' : undefined}
+                        >
+                          {t(k(row.labelKey))}
+                        </span>
+                        <span className={cn('font-mono tabular-nums', row.tone)}>
+                          {row.sign}{formatCurrency(row.value)}
+                        </span>
+                      </div>
+                      {/* Qué es ese canon, en una línea: «causado» no se
+                          entiende solo, y es la diferencia con lo recaudado. */}
+                      {i === 0 && (
+                        <p className="mt-0.5 text-xs text-fg-muted" data-testid="tesoreria-que-es-el-canon">
+                          {t(k(base === 'RECAUDADO' ? 'fCanonQueEsRecaudado' : 'fCanonQueEsCausado'))}
+                        </p>
+                      )}
                     </div>
                   ))}
-                  <div className="border-t border-border pt-2.5 flex items-center justify-between">
+                  <div className="border-t border-border pt-2.5 flex items-center justify-between lg:col-span-full">
                     <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
                       <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
                       {t(k('fNeto'))}
@@ -245,58 +377,194 @@ function TesoreriaContent() {
                       {formatCurrency(neto)}
                     </span>
                   </div>
+                  {deduccionesDelMes > 0 && (
+                    <div className="flex items-center justify-between text-sm" data-testid="tesoreria-deducciones-total">
+                      <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
+                      <span className="font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
+                    </div>
+                  )}
+                  {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
+                        <span className="font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
+                          {formatCurrency(aGirarDelMes)}
+                        </span>
+                      </div>
+                      {enContraDelMes > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{t(k('fSaldoEnContra'))}</span>
+                          <span className="font-mono tabular-nums text-warning">{formatCurrency(enContraDelMes)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {quedanEnCero > 0 && (
+                    <p className="text-xs text-warning" data-testid="tesoreria-quedan-en-cero">
+                      {quedanEnCero === 1
+                        ? t('inmobiliaria.deducciones.liquidacion.quedanEnContraUno')
+                        : t('inmobiliaria.deducciones.liquidacion.quedanEnContraVarios', { cuantos: quedanEnCero })}
+                    </p>
+                  )}
                   {quedanDebiendo > 0 && (
                     <p className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                      {/* Con base CAUSADO no se compara contra lo recaudado:
+                          contra el canon del mes, pagado o no. */}
                       {quedanDebiendo === 1
-                        ? '1 propietario queda debiendo este mes: lo que paga supera lo recaudado.'
-                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera lo recaudado.`}
+                        ? `1 propietario queda debiendo este mes: lo que paga supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`
+                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`}
                     </p>
                   )}
                 </div>
               </section>
 
-              {/* Egresos table */}
-              <section className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex items-center gap-3 p-5 border-b border-border">
-                  <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
-                    <Wallet className="w-[18px] h-[18px] text-fg-muted" />
+              {/* 🔴 UNA SOLA COSA (Nico, 21-09): «de verdad eso del mes, switch
+                  tab, y la tabla deberían ser una sola cosa, una sola tabla, y
+                  por fuera esto [el resumen del mes]». Eran tres bloques
+                  sueltos —las pestañas flotando bajo el título, el mes en la
+                  esquina del encabezado y la tabla en su tarjeta—, y ninguno
+                  decía que gobernaba a los otros dos.
+                  Ahora la primera fila de la tarjeta de la tabla son las
+                  pestañas y el mes: lo que cambia la lista vive pegado a la
+                  lista. El resumen del mes se queda afuera, que es lo que él
+                  pidió: es un resumen, no un filtro. */}
+              <section className="rounded-lg border border-border bg-card overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+                  <PestanasDeLiquidaciones />
+                  {/* `w-56` y no `min-w`: el trigger del DS es `w-full`, así que
+                      con sólo un mínimo se estiraba a todo el renglón y el mes
+                      quedaba de banda, peor que antes. */}
+                  <Select value={month} onValueChange={setMonth}>
+                    <SelectTrigger className="w-56 gap-2" aria-label="Mes de la liquidación">
+                      <CalendarBlank className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meses.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* El buscador DENTRO de la tarjeta de la tabla, con el alcance
+                    a su lado: suelto arriba no diría qué está filtrando. */}
+                <div className="flex flex-col gap-2 border-b border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative w-full sm:max-w-sm">
+                    <MagnifyingGlass
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      className="pl-9"
+                      placeholder="Propietario o cuenta"
+                      aria-label="Buscar un propietario en las liquidaciones del mes"
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      data-testid="buscar-liquidacion"
+                    />
                   </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-fg">{t(k('egresosTitle'))}</h2>
-                    <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
-                  </div>
+                  <p className="text-xs text-fg-muted" data-testid="alcance-de-liquidaciones">
+                    {visibles.length} de {propietarios.length}{' '}
+                    {propietarios.length === 1 ? 'propietario' : 'propietarios'} de{' '}
+                    {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
+                  </p>
                 </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {COLUMNS.map((c) => (
-                          <TableHead key={c} className="whitespace-nowrap">
+                          <TableHead
+                            key={c}
+                            className={cn(
+                              'whitespace-nowrap',
+                              // El nombre no se parte en tres renglones.
+                              c === 'colPropietario' && 'min-w-[13rem]',
+                            )}
+                          >
                             {t(k(c))}
                           </TableHead>
                         ))}
+                        {/* La del kebab. Sin rótulo: el icono ya lo dice. */}
+                        <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {propietarios.map((p) => (
-                        <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
+                      {paginado.pageItems.map((p) => (
+                        <TableRow
+                          key={p.propietarioId}
+                          data-testid="tesoreria-fila"
+                          onClick={() => setAbierta(p)}
+                          className="cursor-pointer"
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Ver la liquidación de ${p.propietarioName}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setAbierta(p);
+                            }
+                          }}
+                        >
                           <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
                           <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
-                          <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
-                          <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
-                          <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
-                          <TableCell
-                            className={cn(
-                              'font-mono tabular-nums font-semibold',
-                              p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                          <TableCell className="font-mono tabular-nums text-danger">
+                            −{formatCurrency(p.totalCommission)}
+                            {/* El IVA de la comisión debajo, no en una columna
+                                más: la tabla ya no cabía a lo ancho (21-09). */}
+                            {(p.totalIvaComision ?? 0) > 0 && (
+                              <span className="block text-caption" data-testid="tesoreria-iva-fila">
+                                {t(k('colIva'))} −{formatCurrency(p.totalIvaComision ?? 0)}
+                              </span>
                             )}
-                            data-testid="tesoreria-neto-fila"
-                          >
-                            {formatCurrency(p.netToPropietario)}
-                            {p.netToPropietario < 0 && (
-                              <span className="block text-[11px] font-normal font-sans">Queda debiendo</span>
+                            {(p.totalRetencionesComision ?? 0) > 0 && (
+                              <span className="block text-caption text-fg-muted">
+                                {t(k('fRetencionesComision'))} +{formatCurrency(p.totalRetencionesComision ?? 0)}
+                              </span>
                             )}
                           </TableCell>
+                          <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-danger" data-testid="tesoreria-deducciones-fila">
+                            {p.conDeducciones && p.conDeducciones.deduccionesCop > 0
+                              ? `−${formatCurrency(p.conDeducciones.deduccionesCop)}`
+                              : '—'}
+                          </TableCell>
+                          {p.conDeducciones ? (
+                            /* Lo que se gira de verdad: entero o $0. Si queda en
+                               contra no es «queda debiendo»: pasa al mes siguiente. */
+                            <TableCell
+                              className={cn(
+                                'font-mono tabular-nums font-semibold',
+                                p.conDeducciones.aGirarCop > 0 ? 'text-success' : 'text-fg-muted',
+                              )}
+                              data-testid="tesoreria-neto-fila"
+                            >
+                              {formatCurrency(p.conDeducciones.aGirarCop)}
+                              {p.conDeducciones.saldoEnContraCop > 0 && (
+                                <span className="block text-[11px] font-normal font-sans text-warning" data-testid="tesoreria-en-contra-fila">
+                                  {t('inmobiliaria.deducciones.liquidacion.enContraFila', {
+                                    valor: formatCurrency(p.conDeducciones.saldoEnContraCop),
+                                  })}
+                                </span>
+                              )}
+                            </TableCell>
+                          ) : (
+                            <TableCell
+                              className={cn(
+                                'font-mono tabular-nums font-semibold',
+                                p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                              )}
+                              data-testid="tesoreria-neto-fila"
+                            >
+                              {formatCurrency(p.netToPropietario)}
+                              {p.netToPropietario < 0 && (
+                                <span className="block text-[11px] font-normal font-sans">Queda debiendo</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="text-xs text-fg-muted whitespace-nowrap">
                             {p.propietarioBankAccount
                               ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
@@ -307,21 +575,68 @@ function TesoreriaContent() {
                               {t(k(p.yaExiste ? 'estadoGenerada' : 'estadoPendiente'))}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Button asChild variant="ghost" hideArrow className="h-8 px-2 text-xs">
-                              <Link href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}>{t(k('verDispersiones'))}</Link>
-                            </Button>
+                          {/* 🔴 Las acciones, en el kebab de la derecha (Nico,
+                              21-09). Era un botón de texto ocupando una columna
+                              entera en una tabla que ya no cabía. */}
+                          {/* El kebab actúa; el clic no sube a la fila. */}
+                          <TableCell className="w-10" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                            <DropdownList>
+                              <DropdownListTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8"
+                                  aria-label={`Acciones de la liquidación de ${p.propietarioName}`}
+                                  data-testid="liquidacion-kebab"
+                                >
+                                  <DotsThreeVertical
+                                    className="h-4 w-4"
+                                    weight="bold"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </DropdownListTrigger>
+                              <DropdownListContent align="end" className="w-52">
+                                <DropdownListItem asChild>
+                                  <Link
+                                    href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}
+                                    data-testid="liquidacion-ver-dispersiones"
+                                  >
+                                    {t(k('verDispersiones'))}
+                                  </Link>
+                                </DropdownListItem>
+                              </DropdownListContent>
+                            </DropdownList>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+                {paginado.shouldPaginate && (
+                  <div className="border-t border-border px-5 py-3">
+                    <TablePagination
+                      total={paginado.total}
+                      page={paginado.page}
+                      pageSize={paginado.pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={paginado.setPage}
+                      onPageSizeChange={paginado.setPageSize}
+                    />
+                  </div>
+                )}
               </section>
             </div>
           </EstadoDeDatos>
         </div>
       )}
+      <CajonDeLaLiquidacion
+        propietario={abierta}
+        mes={mesEnTitulo(month)}
+        base={base === 'RECAUDADO' ? 'RECAUDADO' : 'CAUSADO'}
+        onCerrar={() => setAbierta(null)}
+      />
     </div>
   );
 }

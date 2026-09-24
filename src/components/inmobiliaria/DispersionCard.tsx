@@ -24,6 +24,7 @@ import {
   getDispersionStatusColor,
   getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
+import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -218,13 +219,22 @@ export function DispersionCard({
         {/* Breakdown */}
         <div className="space-y-1.5 text-sm">
           <div className="flex items-center justify-between text-fg-muted dark:text-fg-subtle">
-            <span>Total recaudado</span>
+            {/* 🔴 Decía «Total recaudado» siempre, y la dispersión gira por
+                defecto con base CAUSADO: el canon del mes, pagado o no. */}
+            <span data-testid="tarjeta-rotulo-canon">{ROTULO_DEL_CANON[dispersion.baseDelCanon ?? 'CAUSADO']}</span>
             <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
           <div className="flex items-center justify-between text-warning">
             <span>Comision agencia</span>
             <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
+          {/* 🔴 22-09: el IVA de la comisión, en su línea (antes no se nombraba). */}
+          {(dispersion.totalIvaComision ?? 0) > 0 && (
+            <div className="flex items-center justify-between text-warning" data-testid="tarjeta-iva-comision">
+              <span>IVA de la comisión</span>
+              <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalIvaComision ?? 0)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -268,7 +278,7 @@ export function DispersionCard({
               <div className="mt-3 space-y-2 border-t border-border dark:border-border-strong pt-3">
                 {dispersion.items.map((item) => (
                   <div
-                    key={item.cobroId}
+                    key={item.cuotaId ?? item.cobroId}
                     className="flex items-center justify-between text-sm"
                   >
                     <span className="text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">

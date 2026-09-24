@@ -193,6 +193,16 @@ export interface AuthState {
   isLoading: boolean
   mfaRequired: boolean
   /**
+   * T-0099: `true` when the back's `segundoFactor.exigido` (contract.md
+   * T-0099 §3) says this role requires the second factor AND the session has
+   * NO verified TOTP factor enrolled yet (`supabase.auth.mfa.listFactors`).
+   * Distinct from `mfaRequired`, which only covers "has a factor, hasn't
+   * stepped up this session yet" — this one covers "nothing to step up to".
+   * Takes priority: an enrolling user is sent to `/auth/mfa-enroll`, not
+   * `/auth/mfa-verify`.
+   */
+  mfaEnrollRequired: boolean
+  /**
    * True when Supabase Auth has a valid JWT but the backend returned 401
    * "User not found" — meaning the user hasn't completed onboarding yet.
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.

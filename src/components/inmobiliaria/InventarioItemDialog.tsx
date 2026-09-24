@@ -60,6 +60,15 @@ export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
  * rechazada 40 minutos después —ya fuera del apartamento— no se puede volver
  * a tomar.
  */
+/**
+ * Cuánto puede medir la URL de la foto. 2048 y no 500 (23-09-2026): la foto
+ * del inventario viene del back como URL FIRMADA del bucket privado —≈550
+ * caracteres con su token— y cortarla a 500 le arrancaba el token (el back
+ * igual saca la ruta, pero la vista previa quedaba rota). Es el mismo tope del
+ * back (`ItemDeInventarioDto.photoUrl`).
+ */
+export const LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO = 2048;
+
 export function revisarFoto(archivo: File): string | null {
   if (!FOTO_TIPOS.includes(archivo.type)) return 'La foto tiene que ser JPG, PNG o WebP.';
   if (archivo.size > FOTO_MAX_BYTES) return 'La foto no puede pesar más de 5 MB.';
@@ -76,6 +85,11 @@ interface Props {
   onCerrar: () => void;
   /** `foto` viaja aparte del ítem: todavía no tiene URL, es un archivo. */
   onGuardar: (item: ItemDeInventarioBorrador, foto?: Blob | null) => void;
+  /**
+   * Muestra «Espacio». Sólo en el inventario por versiones: la lista vieja de
+   * la consignación rechaza campos que no conoce.
+   */
+  conEspacio?: boolean;
 }
 
 function nuevoId(): string {
@@ -91,12 +105,14 @@ export function InventarioItemDialog({
   vistaPreviaDeLaFoto,
   onCerrar,
   onGuardar,
+  conEspacio = false,
 }: Props) {
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [condition, setCondition] = useState<InventoryItem['condition']>('good');
   const [notes, setNotes] = useState('');
+  const [espacio, setEspacio] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [foto, setFoto] = useState<File | null>(null);
   const [errores, setErrores] = useState<{ name?: string; quantity?: string; foto?: string }>({});
@@ -109,6 +125,7 @@ export function InventarioItemDialog({
     setQuantity(String(item?.quantity ?? 1));
     setCondition(item?.condition ?? 'good');
     setNotes(item?.notes ?? '');
+    setEspacio(item?.espacio ?? '');
     setPhotoUrl(item?.photoUrl ?? '');
     setFoto(null);
     setErrores({});
@@ -161,7 +178,10 @@ export function InventarioItemDialog({
         quantity: cantidad,
         condition,
         ...(notes.trim() ? { notes: notes.trim().slice(0, 500) } : {}),
-        ...(photoUrl.trim() ? { photoUrl: photoUrl.trim().slice(0, 500) } : {}),
+        ...(photoUrl.trim()
+          ? { photoUrl: photoUrl.trim().slice(0, LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO) }
+          : {}),
+        ...(conEspacio && espacio.trim() ? { espacio: espacio.trim().slice(0, 80) } : {}),
       },
       foto,
     );
@@ -224,6 +244,22 @@ export function InventarioItemDialog({
               </Select>
             </div>
           </div>
+
+          {conEspacio && (
+            <div className="space-y-1.5">
+              <label htmlFor="inv-espacio" className="text-sm font-medium text-fg">
+                {t('inmobiliaria.inventarioDelInmueble.espacio')}
+              </label>
+              <input
+                id="inv-espacio"
+                value={espacio}
+                onChange={(e) => setEspacio(e.target.value)}
+                placeholder={t('inmobiliaria.inventarioDelInmueble.espacioPlaceholder')}
+                maxLength={80}
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label htmlFor="inv-notes" className="text-sm font-medium text-fg">
@@ -311,7 +347,7 @@ export function InventarioItemDialog({
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
               placeholder={t('inmobiliaria.acta.itemDialog.photoUrlPlaceholder')}
-              maxLength={500}
+              maxLength={LARGO_MAXIMO_DE_LA_URL_DE_LA_FOTO}
               aria-label={t('inmobiliaria.acta.itemDialog.photoUrl')}
             />
           </div>

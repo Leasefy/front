@@ -8,17 +8,17 @@ import { BarraDePestanas, type PestanaDeBarra } from '@/components/inmobiliaria/
 
 /**
  * WorkspaceNav — la PROFUNDIDAD de un agente de IA: sus funciones internas
- * como pestañas subrayadas, debajo de las secciones del módulo:
+ * como pestañas subrayadas, debajo del header:
  *
- *   [Inmuebles] [Avalúos IA]                 ← SeccionesDelModulo (cards)
+ *   Agentes IA › Avalúos                      ← breadcrumb (AgentHeaderBreadcrumb)
  *   Resumen · Mis solicitudes · Configuración ← esta barra (pestañas)
  *
  * Se monta UNA vez en `app/panel/inmobiliaria/layout.tsx` y se esconde sola
  * fuera de un agente conocido (`findAgentWorkspace` → null). Va SIEMPRE debajo
- * de las secciones —también cuando el agente es una sección anidada (Cobros →
- * Cobranza)—: por eso su `top` suma el alto que aquéllas publican en
- * `--secciones-h`. Cuando el módulo no tiene secciones que mostrar
- * (Conciliación) la variable vale 0 y la barra queda pegada al header.
+ * de las secciones del módulo, por eso su `top` suma el alto que aquéllas
+ * publican en `--secciones-h`. Desde que los agentes son módulos propios de
+ * «Agentes IA» (2026-09-16) ninguno tiene secciones hermanas: la variable vale
+ * 0 y la barra queda pegada al header.
  *
  * Los gates espejan el sidebar (PermissionsContext): nadie ve una pestaña que
  * no puede abrir. La mecánica de scroll, flechas y medida vive en

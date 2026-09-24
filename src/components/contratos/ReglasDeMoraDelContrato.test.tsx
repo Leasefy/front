@@ -100,10 +100,26 @@ describe('<ReglasDeMoraDelContrato>', () => {
 
     expect(delContrato).toHaveBeenCalledWith('c-1')
     expect(container.textContent).toContain('Honorario de cobranza')
-    expect(container.textContent).toContain('Se dispara el día 15 de cada mes y cobra 10 % del canon, sin tope.')
+    expect(container.textContent).toContain('Se dispara a los 15 días de mora y cobra 10 % del canon, sin tope.')
     const sw = container.querySelector('[data-testid="aplica-honorario"]')!
     expect(sw.getAttribute('aria-checked')).toBe('true')
     expect(container.querySelector('[data-testid="propio-honorario"]')).toBeNull()
+  })
+
+  it('🔴 D9: sin gastos de cobranza pactados lo dice, y un ajuste no borra la marca', async () => {
+    delContrato.mockResolvedValue([fila({ noPactada: true })])
+    // El PUT del ajuste no trae la marca: la pantalla no la puede perder.
+    ajustar.mockResolvedValue(fila({ aplica: false, esPropio: true }))
+    await render()
+
+    expect(container.querySelector('[data-testid="no-pactada-honorario"]')?.textContent).toContain(
+      'no pacta gastos de cobranza',
+    )
+    const sw = container.querySelector<HTMLButtonElement>('[data-testid="aplica-honorario"]')!
+    await act(async () => {
+      sw.click()
+    })
+    expect(container.querySelector('[data-testid="no-pactada-honorario"]')).not.toBeNull()
   })
 
   it('apagar el interruptor manda aplica: false y la fila lo dice', async () => {
@@ -178,7 +194,7 @@ describe('<ReglasDeMoraDelContrato>', () => {
     const vacio = container.querySelector('[data-testid="reglas-vacio"]')!
     expect(vacio.textContent).toContain('todavía no tiene reglas de mora')
     expect(vacio.querySelector('a')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+      '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
     )
   })
 
@@ -190,7 +206,7 @@ describe('<ReglasDeMoraDelContrato>', () => {
       a.textContent?.includes('Ver las de la inmobiliaria'),
     )
     expect(enlace?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+      '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
     )
   })
 

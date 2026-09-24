@@ -118,7 +118,7 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
    */
   return (
     <Link
-      href="/panel/inmobiliaria/cobros/cobranza/compliance/opt-out"
+      href="/panel/inmobiliaria/pagos/cobranza/compliance/opt-out"
       data-color={color}
       data-event-id={request.id}
       className={[

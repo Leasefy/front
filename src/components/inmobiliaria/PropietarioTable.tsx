@@ -43,10 +43,35 @@ import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type {
   CampoDeOrden,
+  ConteosDePropietarios,
   FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 
 type SortField = CampoDeOrden;
+
+const NUMERO = new Intl.NumberFormat('es-CO');
+
+/**
+ * Una etiqueta de filtro con su número al lado.
+ *
+ * Mismo patrón que los chips de Renovaciones (`RenovacionesTable`): el número
+ * en una pastilla `tabular-nums` pegada a la derecha del texto. Un cero se
+ * dice igual que cualquier otro número — «Empresa 0» es la respuesta a por qué
+ * la lista está vacía, y esconderlo devuelve el defecto.
+ */
+function ConChip({ etiqueta, cuantos }: { etiqueta: string; cuantos: number }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {etiqueta}
+      <span
+        className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums"
+        data-testid={`conteo-${etiqueta.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {NUMERO.format(cuantos)}
+      </span>
+    </span>
+  );
+}
 
 interface PropietarioTableProps {
   /**
@@ -63,6 +88,12 @@ interface PropietarioTableProps {
   /** Cuántas hay sin filtro ninguno. */
   total: number;
   filtros: FiltrosDePropietarios;
+  /**
+   * Cuántos hay detrás de cada chip. Los calcula quien llama porque necesita
+   * la lista COMPLETA: la tabla sólo tiene la página. Ver
+   * `conteosDePropietarios` para la regla del número.
+   */
+  conteos: ConteosDePropietarios;
   onFiltros: (filtros: FiltrosDePropietarios) => void;
   onView: (propietario: Propietario) => void;
   onEdit: (propietario: Propietario) => void;
@@ -79,6 +110,7 @@ export function PropietarioTable({
   totalFiltrado,
   total,
   filtros,
+  conteos,
   onFiltros,
   onView,
   onEdit,
@@ -179,13 +211,30 @@ export function PropietarioTable({
         {/* Row 2: Inline Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Type Filter Tabs */}
+          {/* 🔴 20-09 · Con número. Sin él, para saber si hay empresas entre
+              los 1.733 propietarios había que clickear cada chip y leer el
+              contador del otro extremo de la barra. Ver
+              `conteosDePropietarios`: cada número es lo que verías al
+              clickear, no el total de la inmobiliaria. */}
           <SegmentedControl<FiltrosDePropietarios['tipo']>
             value={filterType}
             onChange={setFilterType}
             options={[
-              { value: 'all', label: t('inmobiliaria.propietario.table.all') },
-              { value: 'person', label: t('inmobiliaria.propietario.table.person') },
-              { value: 'company', label: t('inmobiliaria.propietario.table.company') },
+              {
+                value: 'all',
+                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.all')} cuantos={conteos.todos} />,
+                ariaLabel: `${t('inmobiliaria.propietario.table.all')}: ${conteos.todos}`,
+              },
+              {
+                value: 'person',
+                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.person')} cuantos={conteos.persona} />,
+                ariaLabel: `${t('inmobiliaria.propietario.table.person')}: ${conteos.persona}`,
+              },
+              {
+                value: 'company',
+                label: <ConChip etiqueta={t('inmobiliaria.propietario.table.company')} cuantos={conteos.empresa} />,
+                ariaLabel: `${t('inmobiliaria.propietario.table.company')}: ${conteos.empresa}`,
+              },
             ]}
           />
 
@@ -199,7 +248,10 @@ export function PropietarioTable({
             onClick={() => setFilterPending(!filterPending)}
             aria-pressed={filterPending}
           >
-            {t('inmobiliaria.propietario.table.withPendingBalance')}
+            <ConChip
+              etiqueta={t('inmobiliaria.propietario.table.withPendingBalance')}
+              cuantos={conteos.conSaldo}
+            />
           </Chip>
 
           {/* Clear Filters */}

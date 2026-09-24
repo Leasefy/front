@@ -27,8 +27,10 @@ function inquilino(p: Partial<InquilinoEnCartera>): InquilinoEnCartera {
       abonadoCop: 0,
       saldoCop: 1,
       enMoraCop: 0,
+      vencidaEnPlazoCop: 0,
       porVencerCop: 1,
       enSiniestroCop: 0,
+      cuotas: 1,
       cobros: 1,
     },
     ...p,
@@ -57,14 +59,21 @@ describe('conceptos de la cartera', () => {
         contratos: [{ contractId: 'd', contrato: '#94', inmueble: 'Casa en Laureles' }],
       }),
     ]
-    expect(filtrarInquilinos(lista, 'nicolas', false).map((i) => i.clave)).toEqual(['a'])
-    expect(filtrarInquilinos(lista, '43111', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, '#94', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, 'LAURELES', false).map((i) => i.clave)).toEqual(['b'])
-    expect(filtrarInquilinos(lista, '', false)).toHaveLength(2)
+    expect(filtrarInquilinos(lista, 'nicolas').map((i) => i.clave)).toEqual(['a'])
+    expect(filtrarInquilinos(lista, '43111').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '#94').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, 'LAURELES').map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '')).toHaveLength(2)
   })
 
-  it('«sólo en mora» deja afuera a quien sólo tiene cobros por vencer', () => {
+  /*
+   * 🔴 ACTUALIZADO EL 21-09: el interruptor «Sólo cartera» se volvió un cajón
+   * de cuatro. Nico: «¿para qué es ese toggle de sólo cartera jaja». Un
+   * interruptor sólo puede expresar dos estados de cuatro, y la deuda pasa por
+   * tres momentos que no son sinónimos. Lo que la prueba cuida es lo mismo:
+   * quien está dentro de su plazo NO es cartera.
+   */
+  it('el cajón CARTERA deja afuera a quien sólo tiene cuotas por vencer', () => {
     const lista = [
       inquilino({ clave: 'a' }),
       inquilino({
@@ -72,7 +81,52 @@ describe('conceptos de la cartera', () => {
         totales: { ...inquilino({}).totales, enMoraCop: 100, porVencerCop: 0 },
       }),
     ]
-    expect(filtrarInquilinos(lista, '', true).map((i) => i.clave)).toEqual(['b'])
+    expect(filtrarInquilinos(lista, '', 'CARTERA').map((i) => i.clave)).toEqual(['b'])
+  })
+
+  it('cada cajón mira su propia cifra, y son tres momentos distintos', () => {
+    const base = inquilino({}).totales
+    const lista = [
+      inquilino({
+        clave: 'futura',
+        totales: { ...base, porVencerCop: 500, vencidaEnPlazoCop: 0, enMoraCop: 0 },
+      }),
+      inquilino({
+        clave: 'en-plazo',
+        totales: { ...base, porVencerCop: 0, vencidaEnPlazoCop: 500, enMoraCop: 0 },
+      }),
+      inquilino({
+        clave: 'cartera',
+        totales: { ...base, porVencerCop: 0, vencidaEnPlazoCop: 0, enMoraCop: 500 },
+      }),
+    ]
+
+    expect(filtrarInquilinos(lista, '', 'POR_VENCER').map((i) => i.clave)).toEqual(['futura'])
+    expect(filtrarInquilinos(lista, '', 'VENCIDA_EN_PLAZO').map((i) => i.clave)).toEqual([
+      'en-plazo',
+    ])
+    expect(filtrarInquilinos(lista, '', 'CARTERA').map((i) => i.clave)).toEqual(['cartera'])
+    expect(filtrarInquilinos(lista, '', 'TODAS')).toHaveLength(3)
+  })
+
+  /* El cajón y el texto se aplican los DOS: filtrar por cartera y buscar un
+     nombre no puede devolver a alguien que no está en cartera. */
+  it('el cajón y la búsqueda se aplican juntos', () => {
+    const base = inquilino({}).totales
+    const lista = [
+      inquilino({
+        clave: 'a',
+        nombre: 'Marta Gómez',
+        totales: { ...base, porVencerCop: 0, enMoraCop: 100 },
+      }),
+      inquilino({
+        clave: 'b',
+        nombre: 'Marta Ochoa',
+        totales: { ...base, porVencerCop: 100, enMoraCop: 0 },
+      }),
+    ]
+
+    expect(filtrarInquilinos(lista, 'marta', 'CARTERA').map((i) => i.clave)).toEqual(['a'])
   })
 
   it('las columnas de una fila tienen que explicar su saldo', () => {
@@ -97,8 +151,10 @@ describe('conceptos de la cartera', () => {
         facturadoCop: 105,
         abonadoCop: 0,
         saldoCop: 105,
-        enMoraCop: 105,
+        enMoraCop: 100,
+        vencidaEnPlazoCop: 5,
         porVencerCop: 0,
+        cuotas: 1,
         cobros: 1,
       },
     })
@@ -112,7 +168,9 @@ describe('conceptos de la cartera', () => {
         abonadoCop: 0,
         saldoCop: 57,
         enMoraCop: 0,
+        vencidaEnPlazoCop: 0,
         porVencerCop: 57,
+        cuotas: 2,
         cobros: 2,
       },
     })
@@ -120,7 +178,17 @@ describe('conceptos de la cartera', () => {
     expect(total.saldoPorConcepto).toEqual({ CANON: 150, INTERES_DE_MORA: 5, GASTO_ADMINISTRATIVO: 7 })
     expect(total.saldoCop).toBe(162)
     expect(saldoReconstruido(total.saldoPorConcepto)).toBe(total.saldoCop)
-    expect(total.enMoraCop + total.porVencerCop).toBe(total.saldoCop)
+    /*
+     * 🔴 Los TRES cajones son una partición y tienen que cerrar contra el saldo.
+     * Con dos —el invariante viejo— una cartera con algo vencido dentro del
+     * plazo no cuadraba, y la diferencia se iba a parar a la cifra equivocada.
+     */
+    expect(total.enMoraCop + total.vencidaEnPlazoCop + total.porVencerCop).toBe(total.saldoCop)
+    expect(total.enMoraCop).toBe(100)
+    expect(total.vencidaEnPlazoCop).toBe(5)
+    expect(total.porVencerCop).toBe(57)
+    expect(total.cuotas).toBe(3)
+    // El alias deprecado sigue la misma cuenta mientras el front se renombra.
     expect(total.cobros).toBe(3)
     // Sin nadie en pantalla el pie es cero, no el total general.
     expect(sumarTotales([]).saldoCop).toBe(0)

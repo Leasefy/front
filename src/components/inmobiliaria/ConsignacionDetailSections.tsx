@@ -678,7 +678,11 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
               variant="secondary"
               hideArrow
               disabled
-              title={t('inmobiliaria.consignaciones.header.comingSoon')}
+              /* No es «próximamente»: la pantalla del contrato existe y el
+                 botón de al lado lleva a ella. Lo que falta es el CONTRATO, y
+                 el aviso tiene que decir eso — culpar al producto de un estado
+                 del dato manda a la gente a esperar una función que ya está. */
+              title={t('inmobiliaria.consignaciones.detail.sinContratoTodavia')}
               className="w-full"
             >
               <FileText className="w-4 h-4" />
@@ -812,16 +816,21 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
             <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
               <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
             </div>
+            {/* 🔴 SIN texto de acción (Nico, 18-09-2026: «quita ese texto azul
+                de adjuntar el PDF firmado, porque la acción es la misma card»).
+                El renglón ENTERO es el botón; el subtítulo dice el estado y el
+                ícono de la derecha anuncia qué pasa al tocarlo. Nombrar la
+                acción otra vez adentro la hacía parecer un enlace aparte.
+                Mientras sube sí se dice, porque eso es estado, no acción. */}
             <div className="flex-1 min-w-0">
               <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
               <p className="text-xs text-fg-muted">
-                {t(k('consignmentContractMissing'))} ·{' '}
-                <span className="text-primary">
-                  {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractAttach'))}
-                </span>
+                {subiendo
+                  ? t(k('consignmentContractUploading'))
+                  : t(k('consignmentContractMissing'))}
               </p>
             </div>
-            <UploadSimple className="w-4 h-4 text-fg-subtle" />
+            <UploadSimple className="w-4 h-4 shrink-0 text-fg-subtle" />
           </button>
         )}
         <input
@@ -854,11 +863,10 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
             <p className="text-xs text-fg-muted">
-              {t(k('inventoryItemsCount'), { count: itemsDeInventario })} ·{' '}
-              <span className="text-primary">{t(k('handoverReportOpen'))}</span>
+              {t(k('inventoryItemsCount'), { count: itemsDeInventario })}
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 text-fg-subtle" />
+          <ArrowRight className="w-4 h-4 shrink-0 text-fg-subtle" />
         </Link>
 
         {/* Photos Gallery */}

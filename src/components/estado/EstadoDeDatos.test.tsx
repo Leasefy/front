@@ -95,6 +95,14 @@ describe('<EstadoDeDatos>', () => {
   })
 
   it('con contenido ya mostrado, un fallo de refresco no lo borra', () => {
+    // Primero se muestra bien —esto es lo que la prueba anterior NO hacía—…
+    render(
+      <EstadoDeDatos cargando={false} conservarContenido>
+        {contenido}
+      </EstadoDeDatos>,
+    )
+    expect(container.textContent).toContain('una fila')
+    // …y recién entonces falla el refresco.
     render(
       <EstadoDeDatos cargando={false} error={new ApiError(500, 'boom')} conservarContenido>
         {contenido}
@@ -102,5 +110,20 @@ describe('<EstadoDeDatos>', () => {
     )
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
     expect(container.textContent).toContain('una fila')
+  })
+
+  it('🔴 pero en la PRIMERA carga sí muestra el fallo, aunque conserve', () => {
+    // El defecto (Nico, 18-09-2026: «¿esto realmente sí está conectado?»):
+    // `conservarContenido` se tragaba el error SIEMPRE, incluso cuando no había
+    // nada que conservar. La pantalla pintaba la lista vacía y quedaba una
+    // tarjeta en blanco, sin mensaje y sin «Intentar de nuevo». Un fallo que se
+    // ve idéntico a «no hay nada» es peor que un error: nadie lo reporta.
+    // Son 20 pantallas con la bandera puesta.
+    render(
+      <EstadoDeDatos cargando={false} error={new ApiError(500, 'boom')} conservarContenido>
+        {contenido}
+      </EstadoDeDatos>,
+    )
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
   })
 })

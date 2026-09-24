@@ -410,6 +410,52 @@ describe('ApplicationContext — guest submit with authorizationVersion', () => 
     expect(payload.authorizationVersion).toBe('habeas-data-centrales-v1');
   });
 
+  /*
+   * 🔴 Auditoría de seguridad (23-09): con el correo de una cuenta existente,
+   * `POST /applications/guest` ahora responde 409 `INICIA_SESION` (antes
+   * radicaba la postulación a nombre de esa cuenta ajena). La pantalla tiene
+   * que decirlo y ofrecer entrar volviendo a ESTA postulación.
+   */
+  it('409 INICIA_SESION: muestra el mensaje y un enlace a iniciar sesión que vuelve a la postulación', async () => {
+    _isAuthenticated = false;
+    mockGetConsentText.mockResolvedValueOnce(SAMPLE_CONSENT);
+    mockCreateGuest.mockRejectedValueOnce(
+      new ApiError(
+        409,
+        'Ya tienes una cuenta con ese correo: inicia sesión para postularte.',
+        'INICIA_SESION',
+      ),
+    );
+    window.history.pushState({}, '', '/aplicar/prop-test?ref=AG-7');
+
+    const { getCtx } = await renderProvider({ mode: 'create' });
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(getCtx().submissionError).toBe(
+      'Ya tienes una cuenta con ese correo: inicia sesión para postularte.',
+    );
+    expect(getCtx().submissionLoginHref).toBe(
+      `/auth?returnUrl=${encodeURIComponent('/aplicar/prop-test?ref=AG-7')}`,
+    );
+    window.history.pushState({}, '', '/');
+  });
+
+  it('cualquier otro error no ofrece iniciar sesión', async () => {
+    _isAuthenticated = false;
+    mockGetConsentText.mockResolvedValueOnce(SAMPLE_CONSENT);
+    mockCreateGuest.mockRejectedValueOnce(new ApiError(400, 'Datos inválidos'));
+
+    const { getCtx } = await renderProvider({ mode: 'create' });
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(getCtx().submissionError).toBe('Datos inválidos');
+    expect(getCtx().submissionLoginHref).toBeNull();
+  });
+
   it('blocks the guest submit when authorized but consent text failed to load', async () => {
     _isAuthenticated = false;
     mockGetConsentText.mockRejectedValueOnce(new Error('down'));

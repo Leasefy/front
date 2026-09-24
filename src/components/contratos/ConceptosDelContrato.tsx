@@ -49,6 +49,7 @@ import {
   contractsApi,
   type ConceptoDelContrato,
 } from '@/lib/api/contracts.service'
+import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/ComisionableDelConcepto'
 import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -233,7 +234,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           {noLosPagaElInquilino > 0 ? (
             // Lo que pone el propietario o la inmobiliaria NO entra en el cobro
             // del inquilino. Sumarlo ahí le cobraría la plata de otro.
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Otros {formatCurrency(noLosPagaElInquilino)} los pone el
               propietario o la inmobiliaria: no entran en el cobro del inquilino.
             </p>
@@ -242,7 +243,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           {deUnaSolaVez > 0 ? (
             // Los de una sola vez no se repiten: decir sólo el total mensual
             // haría creer que se cobran todos los meses.
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Hay {formatCurrency(deUnaSolaVez)} en conceptos de una sola vez,
               que no se repiten.
             </p>
@@ -253,7 +254,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       {agregando ? (
         <div className="space-y-3 rounded-lg border border-border p-3">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Concepto</label>
+            <label className="text-caption text-muted-foreground">Concepto</label>
             <Select value={elegido} onValueChange={setElegido}>
               <SelectTrigger>
                 <SelectValue placeholder="Elige del catálogo" />
@@ -269,7 +270,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">
+            <label className="text-caption text-muted-foreground">
               Valor mensual (antes de impuestos)
             </label>
             {/* Agrupa de a miles mientras se escribe: «5.678.888» se lee;
@@ -290,7 +291,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             />
             <span>
               Se cobra todos los meses
-              <span className="block text-xs text-muted-foreground">
+              <span className="block text-caption text-muted-foreground">
                 Desmarca si es por una sola vez, como una reparación.
               </span>
             </span>
@@ -427,7 +428,7 @@ function ConceptoEnLista({
           onClick={() => setAbierto((v) => !v)}
         >
           {concepto.nombre}
-          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+          <span className="ml-1.5 text-caption font-normal text-muted-foreground">
             {/* Quién lo paga decide si entra en el cobro del inquilino.
                 Deducirlo del nombre es justo lo que hace que se cuele. */}
             · lo paga {QUIEN_PAGA[concepto.paga]}
@@ -455,7 +456,7 @@ function ConceptoEnLista({
       {abierto ? (
         <div className="mt-2 space-y-1.5 border-t border-border pt-2">
           {!uso ? (
-            <p className="flex items-start gap-1.5 text-xs text-warning">
+            <p className="flex items-start gap-1.5 text-caption text-warning">
               <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
               No se puede liquidar: falta el uso del inmueble, que es lo que
               decide si hay IVA. Defínelo arriba, en Administración.
@@ -463,7 +464,7 @@ function ConceptoEnLista({
           ) : liquidacion ? (
             <>
               {liquidacion.renglones.map((r) => (
-                <div key={r.concepto} className="flex justify-between text-xs">
+                <div key={r.concepto} className="flex justify-between text-caption">
                   <span className="text-muted-foreground">
                     {NOMBRE_DE_RENGLON[r.concepto]} ({r.porcentaje}%)
                   </span>
@@ -478,7 +479,7 @@ function ConceptoEnLista({
                   </span>
                 </div>
               ))}
-              <div className="flex justify-between border-t border-border pt-1.5 text-xs font-medium">
+              <div className="flex justify-between border-t border-border pt-1.5 text-caption font-medium">
                 <span className="text-foreground">Neto que recibe</span>
                 <span className="tabular-nums text-foreground">
                   {formatCurrency(liquidacion.netoQueRecibeCop)}
@@ -493,6 +494,14 @@ function ConceptoEnLista({
                   </li>
                 ))}
               </ul>
+              {/* 17-09: qué entra en la base de la comisión de administración. */}
+              <div className="pt-1">
+                <ComisionableDelConcepto
+                  contractId={contract.id}
+                  concepto={concepto}
+                  puedeEditar={puedeEditar}
+                />
+              </div>
               {esSupuesto(concepto, perfiles) ? (
                 <p className="pt-1 text-[11px] text-muted-foreground">
                   Alguna de las dos partes no tiene el perfil tributario

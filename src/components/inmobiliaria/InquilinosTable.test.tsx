@@ -31,15 +31,26 @@ vi.mock('next/link', () => ({
 import {
   BarraDeInquilinos,
   InquilinosTable,
+  RenglonDeArriendo,
   canonVigente,
   arriendoPrincipal,
+  diaDeVigencia,
   ordenarInquilinos,
 } from './InquilinosTable'
 
 function arriendo(p: Partial<ArriendoDeInquilino> = {}): ArriendoDeInquilino {
+  const leaseId = p.leaseId === undefined ? 'l1' : p.leaseId
   return {
-    leaseId: 'l1',
-    contractId: 'c1',
+    leaseId,
+    /*
+     * El `contractId` sigue al `leaseId` del fixture. Antes era fijo en 'c1',
+     * y los tests que arman dos arriendos variando sólo el `leaseId` dejaban
+     * dos hermanos con la MISMA llave de React (el despliegue key-ea por
+     * contrato). Salía una advertencia de llaves duplicadas en cada corrida —
+     * ruido sobre algo que en producción no puede pasar, porque el
+     * `contractId` es la PK del contrato.
+     */
+    contractId: leaseId ? `c-${leaseId}` : 'c1',
     estado: 'ACTIVE',
     desde: '2025-09-04',
     hasta: '2026-09-04',
@@ -139,6 +150,62 @@ describe('<InquilinosTable>', () => {
     expect(texto).toContain('2025-09-04')
     // Con un solo arriendo no hay nada que desplegar.
     expect(filas()[0].querySelector('[data-testid="inquilino-desplegar"]')).toBeNull()
+  })
+
+  /*
+   * El back manda la vigencia a medianoche UTC (así serializa Prisma un
+   * `@db.Date`). Formateada como instante, en Bogotá salía el día anterior:
+   * «4 de jun» en la lista y en el cajón para un arriendo que empieza el 5.
+   * A `formatDate` tiene que llegarle sólo el día.
+   */
+  /*
+   * 🔴 20-09 · Desde que los arriendos salen del CONTRATO y no del `Lease`,
+   * las dos fechas pueden faltar: en `Lease` eran NOT NULL, en `Contract` son
+   * opcionales y un contrato a término indefinido no tiene hasta cuándo.
+   * `formatDate(null)` pinta «Invalid Date» en la tabla, que es peor que no
+   * saber: hace creer que el dato está y salió mal.
+   */
+  it('🔴 un arriendo sin fecha de fin dice «—», no «Invalid Date»', () => {
+    expect(diaDeVigencia(null)).toBeNull()
+
+    montar([persona({ arriendos: [arriendo({ desde: '2025-09-05', hasta: null })] })])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('2025-09-05')
+    expect(fila).toContain('—')
+    expect(fila).not.toContain('Invalid')
+  })
+
+  it('🔴 un arriendo sin `Lease` se pinta igual: el arriendo lo dice el CONTRATO', () => {
+    /*
+     * Los 11 contratos migrados de la agencia de QA: tienen inmueble, canon y
+     * fechas, y `leaseId` en null porque nunca se les creó el `Lease`. Antes
+     * del 20-09 esas personas no salían en la pantalla en ninguna parte.
+     */
+    montar([
+      persona({
+        arriendos: [arriendo({ leaseId: null, contractId: 'c-mig', canonCop: 10_950_000 })],
+      }),
+    ])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('10.950.000')
+  })
+
+  it('la vigencia llega a formatDate como DÍA, aunque el back la mande a medianoche UTC', () => {
+    expect(diaDeVigencia('2026-06-05T00:00:00.000Z')).toBe('2026-06-05')
+    expect(diaDeVigencia('2026-06-05')).toBe('2026-06-05')
+
+    montar([persona({ arriendos: [arriendo({ desde: '2026-06-05T00:00:00.000Z', hasta: '2027-06-05T00:00:00.000Z' })] })])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('2026-06-05')
+    expect(fila).toContain('2027-06-05')
+    expect(fila).not.toContain('T00:00')
+  })
+
+  it('el renglón del arriendo (el del cajón del inquilino) también pinta el día', () => {
+    montarEn(<RenglonDeArriendo arriendo={arriendo({ desde: '2026-05-20T00:00:00.000Z', hasta: '2027-05-20T00:00:00.000Z' })} />)
+    const texto = container!.textContent ?? ''
+    expect(texto).toContain('2026-05-20 — 2027-05-20')
+    expect(texto).not.toContain('T00:00')
   })
 
   it('con varios arriendos la fila resume y el despliegue los muestra TODOS', () => {
@@ -309,5 +376,49 @@ describe('InquilinosTable — la persona sin arriendo', () => {
     expect(
       container!.querySelector('[data-testid="inquilino-crear-contrato"]'),
     ).toBeNull()
+  })
+})
+
+describe('<BarraDeInquilinos> · el número de cada pestaña', () => {
+  it('🔴 con conteos, cada pestaña dice cuántas personas hay detrás', () => {
+    montarEn(
+      <BarraDeInquilinos
+        buscar=""
+        onBuscar={vi.fn()}
+        estado="activos"
+        onEstado={vi.fn()}
+        conteos={{ activos: 1192, terminados: 644, todos: 1733 }}
+      />,
+    )
+    const texto = container!.textContent ?? ''
+    expect(texto).toContain('1.192')
+    expect(texto).toContain('644')
+    expect(texto).toContain('1.733')
+  })
+
+  it('un CERO se dice: es la respuesta a por qué la pestaña está vacía', () => {
+    montarEn(
+      <BarraDeInquilinos
+        buscar=""
+        onBuscar={vi.fn()}
+        estado="activos"
+        onEstado={vi.fn()}
+        conteos={{ activos: 5, terminados: 0, todos: 5 }}
+      />,
+    )
+    const terminados = Array.from(container!.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('inquilinos.filtros.terminados'),
+    )
+    expect(terminados!.textContent).toContain('0')
+  })
+
+  it('🔴 sin conteos (o si el conteo falló) las pestañas van SIN número, no con un cero falso', () => {
+    montarEn(
+      <BarraDeInquilinos buscar="" onBuscar={vi.fn()} estado="activos" onEstado={vi.fn()} />,
+    )
+    const activos = Array.from(container!.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('inquilinos.filtros.activos'),
+    )
+    expect(activos!.textContent?.trim()).toBe('inquilinos.filtros.activos')
   })
 })

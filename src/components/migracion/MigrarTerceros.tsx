@@ -577,13 +577,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
    * no a la hora de migrar, de enviar todos los correos de invitación de los
    * inquilinos en ese momento; que lo pueda hacer en otro momento».
    *
-   * Arranca en `true` porque es lo que la pantalla hacía hasta hoy y lo que
-   * espera quien migra para empezar a operar. Lo que cambia es que ahora se
-   * puede decir que no —son correos a personas de verdad y una invitación no
-   * se des-envía— sin perder a nadie: las cuentas quedan pendientes y se
-   * mandan desde Inquilinos cuando quiera.
+   * 🔴 Arranca en `false` (QA 22-09). Son correos a personas de verdad y una
+   * invitación no se des-envía: tiene que ser una decisión, no lo que pasa
+   * por no desmarcar una casilla. Las cuentas quedan pendientes y se mandan
+   * desde Inquilinos cuando quiera — nadie se pierde.
    */
-  const [invitarAlCrear, setInvitarAlCrear] = useState(true);
+  const [invitarAlCrear, setInvitarAlCrear] = useState(false);
 
   const aplicar = useCallback(async () => {
     if (!loteAbierto) return;
@@ -777,7 +776,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     rato, y retomarla parece «seguir con lo mío»: Nico
                     (2026-09-08) terminó revisando 170 filas de dos cargas del 2
                     de septiembre cuyas personas ya había creado después. */}
-                <p className="text-xs text-fg-subtle">
+                <p className="text-caption text-fg-subtle">
                   Última actividad: {fechaDeLote(l.actualizado)}
                 </p>
               </div>
@@ -801,7 +800,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               </div>
             </div>
           ))}
-          <p className="text-xs text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             Si vuelves a subir el mismo archivo con otro nombre, las personas se duplican y hay
             que resolver el duplicado una por una.
           </p>
@@ -922,7 +921,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 Hay columnas nuevas que esta pantalla todavía no sabe mandar
               </p>
               <p className="mt-0.5 text-sm text-fg-muted">
-                {noSoportadas.map((c) => c.titulo).join(' · ')} — se van a ignorar. Avisale al
+                {noSoportadas.map((c) => c.titulo).join(' · ')} — se van a ignorar. Avísale al
                 equipo antes de seguir para no perder ese dato.
               </p>
             </div>
@@ -945,7 +944,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             <DownloadSimple className="mr-1.5 h-4 w-4" />
             Descargar la plantilla
           </Button>
-          <p className="text-xs text-fg-subtle">
+          <p className="text-caption text-fg-subtle">
             O sube el archivo que ya tienes: abajo se muestra cómo entendimos tus columnas.
           </p>
         </div>
@@ -1013,7 +1012,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
                     : 'Preparando la pantalla: leyendo las columnas esperadas…'}
               </p>
-              <p className="text-xs text-fg-subtle">
+              <p className="text-caption text-fg-subtle">
                 Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
               </p>
             </div>
@@ -1049,7 +1048,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h2 className="text-sm font-medium text-fg">Así entendimos tus columnas</h2>
-              <p className="text-xs text-fg-muted">
+              <p className="text-caption text-fg-muted">
                 <span className="font-mono tabular-nums">{filas.length}</span> filas en el
                 archivo. Revisa el mapeo antes de seguir: lo que se mapea mal no falla, se guarda
                 en el campo de al lado.
@@ -1059,7 +1058,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               variant="link"
               size="sm"
               hideArrow
-              className="shrink-0 text-xs"
+              className="shrink-0 text-caption"
               onClick={() => setMapeo(mapearColumnas(columnas, encabezados))}
             >
               Restablecer
@@ -1120,7 +1119,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-fg-muted">
+                    <TableCell className="text-caption text-fg-muted">
                       {/* Tres estados distintos, y decirlos importa: el empate
                           por parecido es el que se equivoca. */}
                       {m.isManual
@@ -1196,7 +1195,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               onChange={(e) => setLote(e.target.value)}
               data-testid="nombre-del-lote"
             />
-            <span className="block text-xs text-fg-subtle">
+            <span className="block text-caption text-fg-subtle">
               Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
             </span>
           </label>
@@ -1335,7 +1334,7 @@ function ListaDeTrabajo({
                   <span className="block text-sm font-medium text-fg">
                     Mandarles la invitación al portal ahora
                   </span>
-                  <span className="block text-xs text-fg-muted">
+                  <span className="block text-caption text-fg-muted">
                     {invitarAlCrear
                       ? 'A cada inquilino con correo le llega el enlace para poner su contraseña. Sale por tandas, no todo de golpe.'
                       : 'Las cuentas se crean igual, sin mandar nada. Las invitaciones quedan pendientes en Inquilinos y las mandas cuando quieras.'}
@@ -1374,7 +1373,7 @@ function ListaDeTrabajo({
               </p>
             ) : null}
 
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Se crean sólo las que no les falta nada. Las demás quedan acá esperando.
             </p>
           </>
@@ -1702,7 +1701,7 @@ function ResolucionMasiva({
        */}
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <span id="masivo-campo-etiqueta" className="block text-xs text-fg-muted">
+          <span id="masivo-campo-etiqueta" className="block text-caption text-fg-muted">
             Ponerles el mismo
           </span>
           <Select
@@ -1732,7 +1731,7 @@ function ResolucionMasiva({
 
         {columna ? (
           <div className="space-y-1">
-            <span id="masivo-valor-etiqueta" className="block text-xs text-fg-muted">
+            <span id="masivo-valor-etiqueta" className="block text-caption text-fg-muted">
               Valor
             </span>
             {columna.opciones ? (
@@ -1815,14 +1814,14 @@ function ResolucionMasiva({
           No traer ninguna de estas
         </Button>
         {cargando && enVuelo ? (
-          <p className="basis-full text-xs text-fg-muted" data-testid="masivo-progreso">
+          <p className="basis-full text-caption text-fg-muted" data-testid="masivo-progreso">
             {enVuelo === 'vincular'
               ? `Vinculando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'} con las personas que ya existen… al terminar salen de esta lista y quedan listas para crear.`
               : `Descartando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'}…`}
           </p>
         ) : null}
         <span className="flex-1" />
-        <Button size="sm" variant="link" hideArrow className="text-xs" onClick={onLimpiar}>
+        <Button size="sm" variant="link" hideArrow className="text-caption" onClick={onLimpiar}>
           Quitar la selección
         </Button>
       </div>
@@ -1841,7 +1840,7 @@ function Dato({
 }) {
   return (
     <div className="rounded-md border border-border p-3">
-      <p className="text-xs text-fg-muted">{etiqueta}</p>
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
       <p
         className={`font-mono text-xl font-semibold tabular-nums ${
           tono === 'ok' && valor > 0

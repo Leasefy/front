@@ -78,10 +78,9 @@ describe('motivoDeBloqueo', () => {
     expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 2_000_000 })).toBeNull()
   })
 
-  it('por encima del tope bloquea con su motivo', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 2_000_001 })).toBe(
-      'sobre_tope',
-    )
+  it('por encima del tope NO bloquea: el tope es informativo y la inmobiliaria decide (D13)', () => {
+    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 2_000_001 })).toBeNull()
+    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 9_000_000 })).toBeNull()
   })
 
   it('sin tope conocido NO bloquea — no se niega por un dato que falta', () => {

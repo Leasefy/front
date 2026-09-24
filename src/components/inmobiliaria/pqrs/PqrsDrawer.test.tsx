@@ -76,6 +76,45 @@ function pintar(props: { pqrs: Pqrs | null; open: boolean }) {
   })
 }
 
+/*
+ * 🔴 19-09-2026 · Visto en una captura de Nico: el cajón decía «RESPONSABLE ·
+ * victor ortiz» y tres renglones más abajo, en el control del MISMO campo,
+ * «Sin agentes activos». El `Combobox` recibía un `value` que no existía entre
+ * sus opciones —porque quien responde ya no está entre los agentes activos—,
+ * no sabía cómo rotularlo y caía al placeholder. Dos afirmaciones contrarias
+ * sobre el mismo dato, a treinta píxeles, y gana la que parece un control.
+ */
+describe('PqrsDrawer — quien ya responde no desaparece del selector', () => {
+  const ASIGNADA = {
+    ...SOLICITUD,
+    estado: 'RESUELTA',
+    asignadoAUserId: 'u-viejo',
+    asignadoANombre: 'victor ortiz',
+  } as unknown as Pqrs
+
+  /*
+   * El `Combobox` del DS no lleva su `data-testid` al DOM, así que no hay cómo
+   * apuntarle al control. Se mide lo que se ve: el nombre del responsable
+   * aparece DOS veces —el dato de arriba y el control de abajo—, y la
+   * contradicción «Sin agentes activos» no aparece. Antes del arreglo salía
+   * una sola vez y la frase contraria sí estaba.
+   */
+  const cuantasVeces = (aguja: string) =>
+    (document.body.textContent ?? '').split(aguja).length - 1
+
+  it('🔴 el nombre del responsable actual se ve aunque no esté entre los activos', () => {
+    // El falso de `useAgentes` devuelve una lista VACÍA, que es justo el caso.
+    pintar({ pqrs: ASIGNADA, open: true })
+    expect(cuantasVeces('victor ortiz')).toBe(2)
+    expect(document.body.textContent).not.toContain('Sin agentes activos')
+  })
+
+  it('sin responsable sigue diciendo que no hay a quién asignar', () => {
+    pintar({ pqrs: SOLICITUD, open: true })
+    expect(document.body.textContent).toContain('Sin agentes activos')
+  })
+})
+
 describe('PqrsDrawer — cierre', () => {
   it('el cuerpo sobrevive a que la solicitud se vuelva null', () => {
     pintar({ pqrs: SOLICITUD, open: true })

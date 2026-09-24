@@ -16,7 +16,13 @@ import type { Consignacion } from '@/lib/types/inmobiliaria'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { consignacionesMock } = vi.hoisted(() => ({ consignacionesMock: vi.fn() }))
+const { consignacionesMock, sinMandatoMock, filtrosSpy } = vi.hoisted(() => ({
+  consignacionesMock: vi.fn(),
+  /** La SEGUNDA fuente del portafolio: los inmuebles que aún no tienen mandato. */
+  sinMandatoMock: vi.fn(),
+  /** Con qué conteo se llama a la franja de filtros. */
+  filtrosSpy: vi.fn(),
+}))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -46,7 +52,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 }))
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignaciones: () => consignacionesMock(),
-  useInmueblesSinConsignacion: () => ({ inmuebles: [], errorCrudo: null, refetch: vi.fn() }),
+  useInmueblesSinConsignacion: () => sinMandatoMock(),
   usePropietarios: () => ({ propietarios: [] }),
   useAgentes: () => ({ agentes: [] }),
 }))
@@ -57,12 +63,24 @@ vi.mock('@leasefy/cadence', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   SegmentedControl: () => null,
 }))
-vi.mock('@/components/ui/pagination', () => ({ TablePagination: () => null }))
+/* El doble DEJA UNA MARCA: con `() => null` la prueba de «con la lista caída
+   tampoco pagina» pasaba sin probar nada, porque el paginador no se veía
+   nunca. */
+vi.mock('@/components/ui/pagination', () => ({
+  TablePagination: ({ total }: { total: number }) => (
+    <div data-testid="paginador">Mostrando de {total}</div>
+  ),
+}))
 vi.mock('@/components/inmobiliaria/ConsignacionTable', () => ({ ConsignacionTable: () => null }))
 vi.mock('@/components/inmobiliaria/ConsignacionCard', () => ({ ConsignacionCard: () => null }))
 vi.mock('@/components/inmobiliaria/InmuebleSinMandatoCard', () => ({ InmuebleSinMandatoCard: () => null }))
 vi.mock('@/components/inmobiliaria/DisponiblesSinSenal', () => ({ DisponiblesSinSenal: () => null }))
-vi.mock('@/components/inmobiliaria/ConsignacionFilters', () => ({ ConsignacionFilters: () => null }))
+vi.mock('@/components/inmobiliaria/ConsignacionFilters', () => ({
+  ConsignacionFilters: (props: Record<string, unknown>) => {
+    filtrosSpy(props)
+    return null
+  },
+}))
 vi.mock('@/components/inmobiliaria/agenda/PedirCitaModal', () => ({ PedirCitaModal: () => null }))
 vi.mock('@/components/inmobiliaria/CompletarMandatoDialog', () => ({ CompletarMandatoDialog: () => null }))
 
@@ -94,7 +112,7 @@ function consignacion(id: string, extra: Partial<Consignacion> = {}): Consignaci
   }
 }
 
-describe('Portafolio — los tiles no dicen «0» cuando no saben (L1)', () => {
+describe('Portafolio — los conteos que la franja recibe', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -102,33 +120,51 @@ describe('Portafolio — los tiles no dicen «0» cuando no saben (L1)', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    filtrosSpy.mockClear()
+    sinMandatoMock.mockReturnValue({ inmuebles: [], errorCrudo: null, refetch: vi.fn() })
   })
 
   afterEach(() => {
     act(() => root.unmount())
     container.remove()
     consignacionesMock.mockReset()
+    sinMandatoMock.mockReset()
   })
 
-  function tiles() {
-    return Array.from(container.querySelectorAll('[data-testid="kpi-valor"]')) as HTMLElement[]
-  }
-
+  /*
+   * 🔴 19-09 · Los cinco números vivían en fichas de sólo lectura ENCIMA de la
+   * tabla, y el filtro era otro control con otra cuenta. Eso produjo tres
+   * defectos a la vez, vistos en el navegador con los 133 de la agencia de QA:
+   * la franja decía «133 Total» y las cuatro fichas sumaban 109; un inmueble
+   * arrendado Y en mantenimiento se contaba dos veces; y la ficha
+   * «Arrendadas 105» no coincidía con el chip «Arrendado 104».
+   *
+   * Ahora el número y la forma de ver ese número son el MISMO control —es lo
+   * que Nico ya pidió dos veces este mes: «esto tiene que hacer parte de la
+   * tabla»— y salen de una partición exhaustiva (`cajon-del-inmueble.ts`).
+   * Lo que se mira acá es lo que la PÁGINA calcula; que los chips lo pinten
+   * bien lo fija `ConsignacionFilters.test.tsx`.
+   */
   function montar() {
     act(() => {
       root.render(<PortafolioPage />)
     })
   }
 
-  it('mientras carga, los cinco tiles son un hueco, no un 0 que después salta', () => {
+  const ultimo = () =>
+    filtrosSpy.mock.calls.at(-1)![0] as {
+      conteo: Record<string, number> | null
+      total: number | null
+    }
+
+  it('🔴 mientras carga, el conteo es `null`: un cero es un dato, «no sé» no es cero', () => {
     consignacionesMock.mockReturnValue({ consignaciones: [], isLoading: true, errorCrudo: null, refetch: vi.fn() })
     montar()
-
-    expect(tiles()).toHaveLength(5)
-    expect(tiles().every((t) => t.dataset.estado === 'cargando')).toBe(true)
+    expect(ultimo().conteo).toBeNull()
+    expect(ultimo().total).toBeNull()
   })
 
-  it('con la carga caída, los cinco tiles dicen «—» y no afirman ningún número', () => {
+  it('🔴 con la carga caída tampoco se afirma ningún número', () => {
     consignacionesMock.mockReturnValue({
       consignaciones: [],
       isLoading: false,
@@ -136,15 +172,94 @@ describe('Portafolio — los tiles no dicen «0» cuando no saben (L1)', () => {
       refetch: vi.fn(),
     })
     montar()
-
-    expect(tiles()).toHaveLength(5)
-    expect(tiles().every((t) => t.dataset.estado === 'fallo')).toBe(true)
-    expect(tiles().some((t) => /\d/.test(t.textContent ?? ''))).toBe(false)
+    expect(ultimo().conteo).toBeNull()
     // Y la tabla, en el mismo hueco, dice lo mismo: no se pudo cargar.
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
   })
 
-  it('con datos, los tiles cuentan: el arrendado lo dice el contrato, no la disponibilidad', () => {
+  /*
+   * 🔴 21-09, visto en el navegador: con `/inmobiliaria/consignaciones` en 500
+   * (P2022 — falta la migración de copropiedades) el encabezado decía «25
+   * inmuebles» al lado de un «No pudimos cargar esto». Los 25 eran reales: los
+   * sin mandato, que cargan por OTRA ruta. Una parte con cara de total miente
+   * igual que un número inventado, y encima es más creíble.
+   */
+  it('🔴 con la lista caída, el encabezado no afirma cuántos inmuebles hay', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: [{ id: 'p-1' }, { id: 'p-2' }],
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('propertyCountSinContar')
+  })
+
+  it('🔴 con la lista caída tampoco pagina: no hay páginas 2 y 3 de nada', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: new ApiError(503, 'falta una migración', 'FALTA_UNA_MIGRACION'),
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: Array.from({ length: 25 }, (_, i) => ({ id: `p-${i}` })),
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.querySelector('[data-testid="paginador"]')).toBeNull()
+  })
+
+  it('y con las dos fuentes arriba sí pagina (el control positivo)', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: Array.from({ length: 25 }, (_, i) => consignacion(`c-${i}`)),
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.querySelector('[data-testid="paginador"]')).not.toBeNull()
+  })
+
+  /* El control positivo del de arriba: sin esto, un encabezado que nunca
+     dijera el número también pasaría la prueba. */
+  it('con las dos fuentes arriba sí dice cuántos hay', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(container.textContent).toContain('portafolio.stats.propertyCount')
+    expect(container.textContent).not.toContain('propertyCountSinContar')
+  })
+
+  it('🔴 si falla la SEGUNDA fuente tampoco se dice el total, aunque la lista cargue', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [consignacion('c-1')],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    sinMandatoMock.mockReturnValue({
+      inmuebles: [],
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch: vi.fn(),
+    })
+    montar()
+    expect(ultimo().conteo).toBeNull()
+    expect(ultimo().total).toBeNull()
+    expect(container.textContent).toContain('propertyCountSinContar')
+  })
+
+  it('🔴 el arrendado lo dice el CONTRATO, no la disponibilidad del mandato', () => {
     consignacionesMock.mockReturnValue({
       consignaciones: [
         consignacion('a', { availability: 'available', arrendado: false }),
@@ -157,15 +272,47 @@ describe('Portafolio — los tiles no dicen «0» cuando no saben (L1)', () => {
       refetch: vi.fn(),
     })
     montar()
+    expect(ultimo().conteo).toEqual({
+      disponible: 1,
+      arrendado: 1,
+      enProceso: 0,
+      mantenimiento: 1,
+      sinMandato: 0,
+    })
+    expect(ultimo().total).toBe(3)
+  })
 
-    expect(tiles().every((t) => t.dataset.estado === 'ok')).toBe(true)
-    expect(tiles().map((t) => t.textContent)).toEqual(['3', '1', '1', '0', '1'])
+  it('🔴 LOS CINCO CAJONES SUMAN EL TOTAL: se puede conciliar a ojo', () => {
+    consignacionesMock.mockReturnValue({
+      consignaciones: [
+        consignacion('a', { availability: 'available', arrendado: false }),
+        consignacion('b', { availability: 'available', arrendado: true }),
+        // Arrendado Y en mantenimiento: antes sumaba en las DOS fichas y
+        // hacía que 3 + 105 + 0 + 1 diera 109 sobre 108 mandatos.
+        consignacion('c', { availability: 'maintenance', arrendado: true }),
+      ],
+      isLoading: false,
+      errorCrudo: null,
+      refetch: vi.fn(),
+    })
+    montar()
+    const { conteo, total } = ultimo()
+    const suma = Object.values(conteo!).reduce((s, n) => s + n, 0)
+    expect(suma).toBe(total)
+    expect(conteo!.arrendado).toBe(2)
+    expect(conteo!.mantenimiento).toBe(0)
   })
 
   it('una cartera que de verdad está vacía sí dice 0: ese cero es un dato', () => {
     consignacionesMock.mockReturnValue({ consignaciones: [], isLoading: false, errorCrudo: null, refetch: vi.fn() })
     montar()
-
-    expect(tiles().map((t) => t.textContent)).toEqual(['0', '0', '0', '0', '0'])
+    expect(ultimo().total).toBe(0)
+    expect(ultimo().conteo).toEqual({
+      disponible: 0,
+      arrendado: 0,
+      enProceso: 0,
+      mantenimiento: 0,
+      sinMandato: 0,
+    })
   })
 })

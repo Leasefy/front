@@ -35,7 +35,7 @@
  *   · lo que no llegó a salir → `sinEnviar`.
  */
 
-import type { ResultadoDeGeneracion } from '@/lib/api/facturacion-por-mes.service'
+import type { ResultadoDeGeneracion, TandaDeLaCorrida } from '@/lib/api/facturacion-por-mes.service'
 
 /**
  * Cuántas claves por request. Dos transacciones del back (`FACTURAS_POR_TANDA
@@ -71,6 +71,18 @@ export interface InformeDeFacturas {
   totalCop: number
   /** Los motivos del back, sin repetir. */
   motivos: string[]
+  /**
+   * 🔴 Las facturas que salieron EN ESTA corrida, con su id y su número (Nico,
+   * 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote»). Es lo
+   * que baja el botón «Descargar» del informe. Las que el back no devolvió con
+   * id (un back viejo) no entran: sin id no hay PDF que pedir.
+   */
+  documentos: { facturaId: string; numero: string | null }[]
+  /**
+   * Los procesos del centro que están armando el ZIP de cada tanda (22-09).
+   * Con UNA sola tanda, ese ZIP es el lote entero y se baja de ahí.
+   */
+  procesosConZip: string[]
 }
 
 /** Por qué terminó la corrida. */
@@ -110,9 +122,18 @@ function trozos<T>(todo: readonly T[], tamano: number): T[][] {
 export async function generarPorTandas(
   mes: string,
   claves: readonly string[],
-  generar: (mes: string, claves: string[]) => Promise<ResultadoDeGeneracion>,
+  generar: (mes: string, claves: string[], corrida?: TandaDeLaCorrida) => Promise<ResultadoDeGeneracion>,
   onProgreso?: (p: ProgresoDeFacturas) => void,
-  opciones: { debeParar?: () => boolean; tamano?: number } = {},
+  opciones: {
+    debeParar?: () => boolean
+    tamano?: number
+    /**
+     * El proceso del centro que junta la corrida, apenas el back lo devuelve
+     * (tras la primera tanda). Es con lo que la pantalla le presta su
+     * «Detener» a la fila del centro (`detener-en-el-navegador.ts`).
+     */
+    onProceso?: (procesoId: string) => void
+  } = {},
 ): Promise<ResultadoDeLaCorrida> {
   const tamano = Math.max(1, opciones.tamano ?? FACTURAS_POR_TANDA)
   const partes = trozos(claves, tamano)
@@ -128,15 +149,45 @@ export async function generarPorTandas(
     sinEnviar: 0,
     totalCop: 0,
     motivos: [],
+    documentos: [],
+    procesosConZip: [],
   }
+  let agrupar = partes.length > 1
+  let procesoDeLaCorrida: string | null = null
   let corte: CorteDeLaCorrida = 'completa'
   let error: unknown = null
   let enviadas = 0
+  /** El proceso de la corrida quedó cerrado por una tanda `ultimaTanda`. */
+  let cerrado = !agrupar
 
   for (const [i, parte] of partes.entries()) {
     let r: ResultadoDeGeneracion
     try {
-      r = await generar(mes, parte)
+      /*
+       * 🔴 Una emisión = UN proceso del centro (23-09). Con más de una tanda,
+       * cada una le dice al back a qué proceso suma y si es la última (la que
+       * cierra y arma el único ZIP con los ids de TODA la corrida). «Detener»
+       * apretado durante la tanda anterior vuelve última a ésta.
+       */
+      const ultima = i === partes.length - 1 || opciones.debeParar?.() === true
+      const corrida: TandaDeLaCorrida | undefined = agrupar
+        ? {
+            ...(procesoDeLaCorrida ? { procesoId: procesoDeLaCorrida } : {}),
+            yaEnviadas: enviadas,
+            totalDeLaCorrida: claves.length,
+            ultimaTanda: ultima,
+            ...(ultima && informe.documentos.length > 0
+              ? { idsDeLaCorrida: informe.documentos.map((d) => d.facturaId) }
+              : {}),
+          }
+        : undefined
+      r = await generar(mes, parte, corrida)
+      if (agrupar && !r.corridaAgrupable) agrupar = false
+      if (!agrupar || ultima) cerrado = true
+      if (agrupar && !ultima && r.procesoId && r.procesoId !== procesoDeLaCorrida) {
+        opciones.onProceso?.(r.procesoId)
+      }
+      procesoDeLaCorrida = r.procesoId ?? procesoDeLaCorrida
     } catch (e) {
       corte = 'fallo'
       error = e
@@ -155,6 +206,10 @@ export async function generarPorTandas(
       parte.length - r.emitidas - r.yaEstaban - r.sinNumero,
     )
     if (r.motivo && !informe.motivos.includes(r.motivo)) informe.motivos.push(r.motivo)
+    for (const f of r.facturas ?? []) {
+      if (f.facturaId) informe.documentos.push({ facturaId: f.facturaId, numero: f.numeroDian })
+    }
+    if (r.zipEnElCentro && r.procesoId) informe.procesosConZip.push(r.procesoId)
 
     onProgreso?.({ hechas: enviadas, total: claves.length, tanda: i + 1, tandas: partes.length })
 
@@ -177,6 +232,37 @@ export async function generarPorTandas(
       corte = 'detenida'
       informe.sinEnviar = quedan
       break
+    }
+  }
+
+  /*
+   * 🔴 Detenida o sin números a mitad de la corrida: la última tanda que salió
+   * iba con `ultimaTanda: false`, así que el proceso del centro quedaba
+   * «En curso» para siempre —hasta que el back lo diera por «interrumpido»—,
+   * sin su resumen y sin el ZIP de lo que SÍ salió. Con «Detener» viviendo en
+   * el centro (23-09) eso es lo primero que la persona mira después.
+   *
+   * Se cierra con una llamada más que no emite nada: la primera clave de la
+   * corrida ya pasó por el back, así que o salió (ya no está «por emitir» y el
+   * back la ignora) o se quedó sin número (y vuelve a quedarse sin número, que
+   * es lo que el resumen tiene que decir). Una tanda caída NO se cierra acá:
+   * de eso se encarga el back, que ya la marcó `FALLO`.
+   */
+  if (!cerrado && procesoDeLaCorrida && (corte === 'detenida' || corte === 'rangoAgotado')) {
+    try {
+      await generar(mes, [claves[0]], {
+        procesoId: procesoDeLaCorrida,
+        yaEnviadas: enviadas,
+        totalDeLaCorrida: claves.length,
+        ultimaTanda: true,
+        ...(informe.documentos.length > 0
+          ? { idsDeLaCorrida: informe.documentos.map((d) => d.facturaId) }
+          : {}),
+      }).then((r) => {
+        if (r.zipEnElCentro && r.procesoId) informe.procesosConZip.push(r.procesoId)
+      })
+    } catch {
+      /* el proceso queda como estaba; lo emitido, emitido */
     }
   }
 

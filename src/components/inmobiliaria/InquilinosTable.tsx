@@ -67,6 +67,7 @@ import { useI18n } from '@/lib/i18n';
 import {
   arriendosVigentes,
   type ArriendoDeInquilino,
+  type ConteosDeInquilinos,
   type EstadoDeArriendo,
   type FiltroDeEstado,
   type Inquilino,
@@ -110,6 +111,34 @@ export function arriendoPrincipal(persona: Inquilino): ArriendoDeInquilino | und
   return arriendosVigentes(persona)[0] ?? persona.arriendos[0];
 }
 
+/**
+ * El DÍA de una vigencia, listo para `formatDate`.
+ *
+ * `desde` y `hasta` son días (`@db.Date`), pero `/inmobiliaria/inquilinos` los
+ * manda a medianoche UTC (`2026-06-05T00:00:00.000Z`). `formatDate` sólo arma
+ * en el calendario local un `YYYY-MM-DD` suelto; con hora lo toma por instante,
+ * y en Bogotá eso es el 4 a las 19:00. La lista y el cajón decían «4 de jun» de
+ * un arriendo que la ficha del contrato —bien— dice que empieza el 5.
+ */
+export function diaDeVigencia(fecha: string | null): string | null {
+  return fecha === null ? null : fecha.slice(0, 10);
+}
+
+/**
+ * Una fecha de vigencia, o un «—» si el contrato no la dice.
+ *
+ * 🔴 Desde el 20-09 los arriendos salen del CONTRATO y no del `Lease`: ahí las
+ * dos fechas son opcionales —un contrato a término indefinido no tiene hasta
+ * cuándo— y `formatDate(null)` pintaría «Invalid Date» en la tabla.
+ */
+function fechaOGuion(
+  fecha: string | null,
+  formatDate: (f: string | Date) => string,
+): string {
+  const dia = diaDeVigencia(fecha);
+  return dia === null ? '—' : formatDate(dia);
+}
+
 /** Ordena sin mutar. El nombre con `localeCompare` es-CO: «Ñ» va donde debe. */
 export function ordenarInquilinos(
   inquilinos: readonly Inquilino[],
@@ -134,6 +163,33 @@ export interface BarraDeInquilinosProps {
   onBuscar: (valor: string) => void;
   estado: FiltroDeEstado;
   onEstado: (estado: FiltroDeEstado) => void;
+  /**
+   * Cuántas personas hay detrás de cada pestaña. `null` = sin número (todavía
+   * no llegaron, o el conteo falló): un número equivocado es peor que ninguno.
+   */
+  conteos?: ConteosDeInquilinos | null;
+}
+
+const NUMERO = new Intl.NumberFormat('es-CO');
+
+/**
+ * Una pestaña con su número al lado.
+ *
+ * 🔴 20-09 · Sin número, para saber si hay inquilinos terminados había que
+ * clickear —lo que dispara otra consulta— y si no había ninguno la pantalla
+ * quedaba vacía sin decir que esa pestaña nunca tuvo a nadie. El cero se dice
+ * igual que cualquier otro número: es la respuesta a por qué está vacío.
+ */
+function ConNumero({ etiqueta, cuantos }: { etiqueta: string; cuantos?: number }) {
+  if (cuantos === undefined) return <>{etiqueta}</>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {etiqueta}
+      <span className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+        {NUMERO.format(cuantos)}
+      </span>
+    </span>
+  );
 }
 
 /**
@@ -144,7 +200,13 @@ export interface BarraDeInquilinosProps {
  * —si desaparece con el último resultado, la persona se queda encerrada en
  * una búsqueda que ya no puede borrar—. La página la pone arriba del vacío.
  */
-export function BarraDeInquilinos({ buscar, onBuscar, estado, onEstado }: BarraDeInquilinosProps) {
+export function BarraDeInquilinos({
+  buscar,
+  onBuscar,
+  estado,
+  onEstado,
+  conteos = null,
+}: BarraDeInquilinosProps) {
   const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -162,9 +224,39 @@ export function BarraDeInquilinos({ buscar, onBuscar, estado, onEstado }: BarraD
         onChange={onEstado}
         aria-label={t('inquilinos.filtroEstado')}
         options={[
-          { value: 'activos', label: t('inquilinos.filtros.activos') },
-          { value: 'terminados', label: t('inquilinos.filtros.terminados') },
-          { value: 'todos', label: t('inquilinos.filtros.todos') },
+          {
+            value: 'activos',
+            label: (
+              <ConNumero
+                etiqueta={t('inquilinos.filtros.activos')}
+                cuantos={conteos?.activos}
+              />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.activos')}: ${conteos.activos}`
+              : t('inquilinos.filtros.activos'),
+          },
+          {
+            value: 'terminados',
+            label: (
+              <ConNumero
+                etiqueta={t('inquilinos.filtros.terminados')}
+                cuantos={conteos?.terminados}
+              />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.terminados')}: ${conteos.terminados}`
+              : t('inquilinos.filtros.terminados'),
+          },
+          {
+            value: 'todos',
+            label: (
+              <ConNumero etiqueta={t('inquilinos.filtros.todos')} cuantos={conteos?.todos} />
+            ),
+            ariaLabel: conteos
+              ? `${t('inquilinos.filtros.todos')}: ${conteos.todos}`
+              : t('inquilinos.filtros.todos'),
+          },
         ]}
       />
     </div>
@@ -439,8 +531,8 @@ function FilaDeInquilino({
                2027» son ~230 px y empujaban la última columna fuera de la
                pantalla. */
             <div className="whitespace-nowrap font-mono text-xs tabular-nums text-fg-muted">
-              <div>{formatDate(principal.desde)}</div>
-              <div className="text-fg-subtle">→ {formatDate(principal.hasta)}</div>
+              <div>{fechaOGuion(principal.desde, formatDate)}</div>
+              <div className="text-fg-subtle">→ {fechaOGuion(principal.hasta, formatDate)}</div>
             </div>
           )}
         </TableCell>
@@ -452,7 +544,10 @@ function FilaDeInquilino({
           <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
-                <li key={a.leaseId}>
+                /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09
+                   un arriendo migrado puede no tener `Lease`, y dos `null`
+                   como llave de React son la misma llave. */
+                <li key={a.contractId}>
                   <RenglonDeArriendo arriendo={a} />
                 </li>
               ))}
@@ -493,7 +588,7 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
         {formatCurrency(arriendo.canonCop)}
       </span>
       <span className="font-mono text-xs tabular-nums text-fg-muted">
-        {formatDate(arriendo.desde)} — {formatDate(arriendo.hasta)}
+        {fechaOGuion(arriendo.desde, formatDate)} — {fechaOGuion(arriendo.hasta, formatDate)}
       </span>
     </div>
   );

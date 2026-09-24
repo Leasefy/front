@@ -21,14 +21,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
-import { ChartBar, Trophy, UsersThree } from '@phosphor-icons/react';
+import { ChartBar, Handshake, Trophy, UsersThree } from '@phosphor-icons/react';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
+import { PermisosDeLaPersona } from '@/components/inmobiliaria/PermisosDeLaPersona';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
+import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
@@ -36,7 +38,7 @@ import type { AgencyInviteResult, AgencyRole, AgencyUser, UserInvite } from '@/l
 import { EsqueletoDeSeccion } from './piezas';
 import { RAIZ_CONFIGURACION } from './secciones';
 
-type Vista = 'miembros' | 'ranking' | 'carga';
+type Vista = 'miembros' | 'ranking' | 'carga' | 'captaciones';
 
 export function SeccionEquipo() {
   const { t } = useI18n();
@@ -45,6 +47,9 @@ export function SeccionEquipo() {
   const { canAccess, isAdmin } = usePermissions();
 
   const [vista, setVista] = useState<Vista>('miembros');
+  // 🔴 22-09 noche · «Permisos de esta persona». Las rutas del back son sólo
+  // del ADMIN (`ensureAdmin`), así que el gate es `isAdmin` y no el de invitar.
+  const [personaDePermisos, setPersonaDePermisos] = useState<AgencyUser | null>(null);
 
   const { users, isLoading, errorCrudo, refetch } = useAgencyUsers();
   // Sólo para Ranking y Carga: métricas por agente activo. No es un padrón, y
@@ -54,7 +59,7 @@ export function SeccionEquipo() {
     isLoading: agentesCargando,
     errorCrudo: agentesError,
     refetch: recargarAgentes,
-  } = useAgentes({ skip: vista === 'miembros' });
+  } = useAgentes({ skip: vista === 'miembros' || vista === 'captaciones' });
 
   /**
    * `?invitar=1` abre el formulario de una: es la puerta que ofrece el diálogo
@@ -83,6 +88,9 @@ export function SeccionEquipo() {
       { id: 'miembros', label: t('inmobiliaria.config.tabs.miembros'), icon: UsersThree },
       { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
       { id: 'carga', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
+      // 17-09: quién captó y quién arrendó. Reemplaza a las comisiones por
+      // asesor, que se liquidan por fuera de Leasefy.
+      { id: 'captaciones', label: 'Captaciones y arriendos', icon: Handshake },
     ],
     [t],
   );
@@ -259,7 +267,9 @@ export function SeccionEquipo() {
         })}
       />
 
-      {vista === 'miembros' ? (
+      {vista === 'captaciones' ? (
+        <CaptacionesYArriendos />
+      ) : vista === 'miembros' ? (
         <EstadoDeDatos
           cargando={isLoading}
           error={errorCrudo}
@@ -275,7 +285,15 @@ export function SeccionEquipo() {
             onResendInvite={puedeAdministrarEquipo ? reenviarInvitacion : undefined}
             onDelete={puedeAdministrarEquipo ? eliminar : undefined}
             onVerFicha={verFicha}
+            onPermisos={setPersonaDePermisos}
+            permisosApagadoPorque={
+              isAdmin ? null : 'Sólo un administrador cambia los permisos de una persona.'
+            }
             abrirInvitacion={invitarAlMontar}
+          />
+          <PermisosDeLaPersona
+            persona={personaDePermisos}
+            onCerrar={() => setPersonaDePermisos(null)}
           />
         </EstadoDeDatos>
       ) : (

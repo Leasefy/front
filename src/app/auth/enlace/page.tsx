@@ -24,17 +24,19 @@
  * propio `onAuthStateChange` al montar y las dos llamadas se traban.
  */
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils'
+import { tomarTokensDelFragmento } from '@/lib/auth/credenciales-en-la-url'
 
 function EnlaceContent() {
   const sp = useSearchParams()
   const [error, setError] = useState<string | null>(null)
+  const fragmentoRef = useRef<URLSearchParams | null | undefined>(undefined)
 
   useEffect(() => {
     const sb = getSupabase()
@@ -52,9 +54,12 @@ function EnlaceContent() {
       window.location.href = destino
     }
 
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const crudo = window.location.hash.replace(/^#/, '')
-      const params = new URLSearchParams(crudo)
+    // Los tokens salen de la barra y del historial ANTES de usarlos (ver
+    // `tomarTokensDelFragmento`). En un ref: el efecto corre dos veces en
+    // desarrollo (StrictMode) y la segunda ya no encontraría el fragmento.
+    if (fragmentoRef.current === undefined) fragmentoRef.current = tomarTokensDelFragmento()
+    const params = fragmentoRef.current
+    if (params) {
 
       // Un error explícito viaja en el mismo fragmento (enlace vencido o ya
       // usado). Decirlo es mejor que quedarse girando.

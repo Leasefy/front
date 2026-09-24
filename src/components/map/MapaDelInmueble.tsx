@@ -22,6 +22,7 @@
 import { useMemo } from 'react';
 import Map, { AttributionControl, Marker, NavigationControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import './trabajador-de-maplibre';
 import { useTheme } from 'next-themes';
 import { ArrowSquareOut, MapPin, NavigationArrow } from '@phosphor-icons/react';
 import { MAP_STYLES, ZOOM_LEVELS } from '@/lib/constants/map';
@@ -48,9 +49,9 @@ export function urlDeComoLlegar(lat: number, lng: number): string {
 
 // Textos de los gestos cooperativos de MapLibre, en español.
 const LOCALE_MAPA = {
-  'CooperativeGesturesHandler.WindowsHelpText': 'Usá Ctrl + rueda para hacer zoom en el mapa',
-  'CooperativeGesturesHandler.MacHelpText': 'Usá ⌘ + rueda para hacer zoom en el mapa',
-  'CooperativeGesturesHandler.MobileHelpText': 'Usá dos dedos para mover el mapa',
+  'CooperativeGesturesHandler.WindowsHelpText': 'Usa Ctrl + rueda para hacer zoom en el mapa',
+  'CooperativeGesturesHandler.MacHelpText': 'Usa ⌘ + rueda para hacer zoom en el mapa',
+  'CooperativeGesturesHandler.MobileHelpText': 'Usa dos dedos para mover el mapa',
 };
 
 export function MapaDelInmueble({ latitude, longitude, titulo, direccion, className }: MapaDelInmuebleProps) {

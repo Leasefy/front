@@ -29,7 +29,7 @@ import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
 // ============================================================================
 
 interface AplicarPageProps {
-  params: Promise<{ propertyId: string }> | { propertyId: string };
+  params: Promise<{ propertyId: string }>;
 }
 
 // ============================================================================
@@ -41,8 +41,7 @@ interface AplicarPageProps {
  * Route: /aplicar/[propertyId]
  */
 export default function AplicarPage({ params }: AplicarPageProps) {
-  // Handle both Promise and direct params (Next.js version compatibility)
-  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const resolvedParams = use(params);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { property, isLoading, error, errorCrudo } = useProperty(resolvedParams.propertyId);

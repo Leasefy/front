@@ -345,10 +345,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   }, [puesto, refrescar]);
 
   /*
-   * `inert` como atributo crudo: React 18 no lo tipa como prop booleana (sí
-   * lo hace React 19), y pasarlo como booleano imprime `inert="false"`, que
-   * el navegador lee como PRESENTE. Un string vacío es la forma correcta, y
-   * sólo cuando el muro está puesto.
+   * `inert` es prop BOOLEANA desde React 19 (subida del 23-09): `true` pinta
+   * `inert=""` y `false` no pinta nada. 🔴 El truco de React 18 —pasar el
+   * atributo crudo como string vacío— en React 19 se lee como FALSO y el
+   * atributo desaparece sin error: el muro quedaba dibujado y la navegación de
+   * atrás seguía viva. Lo atrapó `MuroDeMigracion.test.tsx`.
    *
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
@@ -405,9 +406,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
-  const inerte = tapado
-    ? ({ inert: "" } as unknown as Record<string, string>)
-    : {};
+  const inerte = { inert: tapado };
 
   return (
     <MigracionContext.Provider value={contexto}>
@@ -1025,7 +1024,7 @@ function BarraDePasos({
               <span
                 data-testid={`muro-barra-${paso.id}`}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-caption font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
                   hecho
                     ? "border-2 border-primary bg-primary text-primary-fg"
                     : habilitado
@@ -1059,7 +1058,7 @@ function BarraDePasos({
             <div className="mt-2.5 hidden min-w-0 pr-3 text-left sm:block">
               <p
                 className={cn(
-                  "truncate text-xs font-medium",
+                  "truncate text-caption font-medium",
                   elegido
                     ? "text-primary"
                     : hecho || habilitado
@@ -1217,7 +1216,7 @@ function PasoEnFoco({
         </p>
         {hecho ? (
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs tabular-nums text-success"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-caption tabular-nums text-success"
             data-testid="muro-paso-listo"
           >
             <Check className="h-3.5 w-3.5" weight="bold" />
@@ -1242,7 +1241,7 @@ function PasoEnFoco({
            * que todo lo que sigue es un faltante.
            */
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-caption tabular-nums text-warning"
             data-testid="muro-paso-falta"
           >
             {t("migracion.muro.falta", { detalle: paso.detalle })}
@@ -1285,8 +1284,8 @@ function PasoEnFoco({
             data-ocupado={ocupado ? "" : undefined}
             aria-busy={ocupado || undefined}
             /*
-             * `inert` crudo por la misma razón que arriba: React 18 no lo tipa
-             * como booleano. Congela clicks, foco y teclado de TODO el paso.
+             * `inert` booleano (React 19, ver arriba). Congela clicks, foco y
+             * teclado de TODO el paso.
              *
              * 🔴 Salvo cuando el paso se congela SOLO. `inert` no se puede
              * desactivar en un descendiente, así que un paso con una espera
@@ -1295,9 +1294,7 @@ function PasoEnFoco({
              * única forma de que viva EN SU SITIO es que el `inert` lo ponga
              * quien conoce la tarjeta. Ver `seCongelaSolo`.
              */
-            {...(ocupado && !seCongelaSolo
-              ? ({ inert: "" } as unknown as Record<string, string>)
-              : {})}
+            inert={ocupado && !seCongelaSolo}
             className={ocupado && !seCongelaSolo ? "cursor-progress" : undefined}
           >
             <ContenidoDelPaso
@@ -1440,7 +1437,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
             {conteos.map((c) => (
               <li
                 key={c}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-xs tabular-nums text-fg-muted"
+                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted"
               >
                 {c}
               </li>

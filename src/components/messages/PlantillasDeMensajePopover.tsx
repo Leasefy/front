@@ -126,7 +126,7 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
             <p className="text-sm font-semibold text-fg">
               {es ? 'Plantillas' : 'Templates'}
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">
+            <p className="mt-0.5 text-caption text-fg-muted">
               {es
                 ? 'Se escribe en el campo para que la revises. No se manda sola.'
                 : 'It fills the field for you to review. Nothing is sent on its own.'}
@@ -210,7 +210,7 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
                     <span className="block text-sm font-medium text-fg">
                       {plantilla.titulo}
                     </span>
-                    <span className="mt-0.5 line-clamp-2 block text-xs text-fg-muted">
+                    <span className="mt-0.5 line-clamp-2 block text-caption text-fg-muted">
                       {plantilla.cuerpo}
                     </span>
                   </button>

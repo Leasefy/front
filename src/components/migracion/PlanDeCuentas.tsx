@@ -13,6 +13,16 @@
  * por el contador, así que se le muestra bien arriba, no escondida en el
  * árbol.
  *
+ * ── «No deducible», el 19-09 ───────────────────────────────────────────────
+ *
+ * Nico: «todo deducible salvo lo marcado». La casilla vive en la cuenta —el
+ * contador lo sabe una vez y sirve para todos los años— y lo marcado sale en el
+ * árbol con su distintivo, porque una decisión tributaria escondida detrás del
+ * lápiz de edición no la ve nadie. Sin la migración 70 la columna no existe:
+ * ahí la casilla no se apaga en silencio, se explica, y sobre todo la clave NO
+ * viaja en el PATCH — mandarla sería un 503 que tumbaría la edición entera de
+ * la cuenta por un campo que nadie tocó (`lib/contabilidad/no-deducible.ts`).
+ *
  * ── Lo que esta pantalla NO hace ───────────────────────────────────────────
  *
  * No cambia códigos (el DTO de actualizar no lo admite: un código es una
@@ -33,10 +43,17 @@ import {
   MagnifyingGlass,
   PencilSimple,
   Plus,
+  Receipt,
   Warning,
   X,
 } from '@phosphor-icons/react';
 
+import {
+  cambiosDeLaCuenta,
+  estaMarcadaNoDeducible,
+  frasesDeLoNoDeducible,
+  soportaNoDeducible,
+} from '@/lib/contabilidad/no-deducible';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -368,7 +385,7 @@ export function PlanDeCuentas({
         />
       ) : null}
 
-      {hayCuentas ? (
+      {hayCuentas && !sinPaso5 ? (
         /*
          * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
          * PUC, porque es lo que le falta al plan para que el motor asiente:
@@ -378,6 +395,19 @@ export function PlanDeCuentas({
          * Va ANTES del árbol de cuentas: es lo que decide si el paso está
          * hecho, y debajo de 99 cuentas nadie lo encontraba — Nico se quedó
          * en el paso 5 sin saber por qué no avanzaba (2026-09-02 12:42).
+         *
+         * 🔴 20-09 · `!sinPaso5`: SÓLO dentro de la migración. Abriendo
+         * `/contabilidad/puc` en el navegador apareció la pantalla de
+         * `/contabilidad/mapeo` ENTERA incrustada acá —los mismos nueve
+         * eventos, los mismos selectores que escriben— y esa pantalla tiene su
+         * propia tarjeta en el hub. Dos lugares para hacer lo mismo, con la
+         * misma tabla editable, y nadie sabe cuál manda: es el mismo defecto
+         * que tenía la portada con sus dos navegaciones.
+         *
+         * Dentro de la migración SÍ va junto, porque ahí es una secuencia:
+         * cargas el plan y, sin cambiar de pantalla, dices a qué cuenta va
+         * cada asiento. Fuera de ella son dos tareas distintas y basta con el
+         * enlace de abajo.
          */
         <section
           ref={mapeoRef}
@@ -396,6 +426,21 @@ export function PlanDeCuentas({
           </div>
           <MapeoContable onEstado={setMapeo} />
         </section>
+      ) : null}
+
+      {hayCuentas && sinPaso5 ? (
+        /* Fuera de la migración, el mapeo es su propia pantalla: acá va el
+           camino, no la tabla. */
+        <p className="text-sm text-fg-muted" data-testid="ir-al-mapeo-desde-el-puc">
+          A qué cuenta va cada asiento automático se decide en{' '}
+          <Link
+            href="/panel/inmobiliaria/contabilidad/mapeo"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            Contabilidad → Mapeo contable
+          </Link>
+          . Sin ese mapeo el plan existe pero nada se asienta solo.
+        </p>
       ) : null}
 
       {hayCuentas ? (
@@ -673,11 +718,11 @@ function PendientesDelContador({
                   <span className="font-mono tabular-nums">{p.codigo}</span> · {p.nombre}
                 </p>
                 {p.nota ? <p className="mt-0.5 text-sm text-fg-muted">{p.nota}</p> : null}
-                {p.uso ? <p className="mt-0.5 text-xs text-fg-subtle">{p.uso}</p> : null}
+                {p.uso ? <p className="mt-0.5 text-caption text-fg-subtle">{p.uso}</p> : null}
                 {!cargada ? (
-                  <p className="mt-1 text-xs text-fg-subtle">No está en tu plan.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">No está en tu plan.</p>
                 ) : !cargada.activa ? (
-                  <p className="mt-1 text-xs text-fg-subtle">Desactivada.</p>
+                  <p className="mt-1 text-caption text-fg-subtle">Desactivada.</p>
                 ) : null}
               </div>
               {cargada && cargada.activa ? (
@@ -766,6 +811,18 @@ function Nodo({
             Imputable
           </span>
         ) : null}
+        {/* 🔴 Visible en el árbol: una cuenta marcada cambia el 1001 de la
+            exógena, y eso no puede vivir sólo dentro del formulario. */}
+        {estaMarcadaNoDeducible(nodo) ? (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] text-warning"
+            data-testid={`puc-no-deducible-${nodo.codigo}`}
+            title="El gasto de esta cuenta va a la columna «Pago o abono no deducible» del formato 1001."
+          >
+            <Receipt className="h-3 w-3" aria-hidden="true" />
+            No deducible
+          </span>
+        ) : null}
         {!nodo.activa ? (
           <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-subtle">
             Inactiva
@@ -834,6 +891,14 @@ function FormularioDeCuenta({
   const [padreId, setPadreId] = useState<string>(padreInicial?.id ?? SIN_PADRE);
   const [imputable, setImputable] = useState(editando?.imputable ?? true);
   const [activa, setActiva] = useState(editando?.activa ?? true);
+  const [noDeducible, setNoDeducible] = useState(estaMarcadaNoDeducible(editando));
+  /*
+   * ¿Esta base tiene la columna? Se sabe porque el back la OMITE cuando falta.
+   * Decide si la clave viaja: sin ella el PATCH sería 503 y se perdería el
+   * nombre, la naturaleza y el activa junto con ella.
+   */
+  const soportaLoNoDeducible = soportaNoDeducible(editando);
+  const frasesNoDeducible = frasesDeLoNoDeducible(soportaLoNoDeducible);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -857,12 +922,13 @@ function FormularioDeCuenta({
     setError(null);
     try {
       if (editando) {
-        await contabilidadApi.puc.actualizar(editando.id, {
-          nombre: nombre.trim(),
-          naturaleza,
-          imputable,
-          activa,
-        });
+        await contabilidadApi.puc.actualizar(
+          editando.id,
+          cambiosDeLaCuenta(
+            { nombre, naturaleza, imputable, activa, noDeducible },
+            soportaLoNoDeducible,
+          ),
+        );
       } else {
         await contabilidadApi.puc.crear({
           codigo,
@@ -927,7 +993,7 @@ function FormularioDeCuenta({
             aria-describedby="puc-codigo-ayuda"
             data-testid="puc-codigo"
           />
-          <p id="puc-codigo-ayuda" className="text-xs text-fg-subtle">
+          <p id="puc-codigo-ayuda" className="text-caption text-fg-subtle">
             {fueraDelArbol
               ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
               : sugerido
@@ -950,7 +1016,7 @@ function FormularioDeCuenta({
             aria-invalid={nombre.length > 0 && !nombreValido}
             data-testid="puc-nombre"
           />
-          <p className="text-xs text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
+          <p className="text-caption text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
         </div>
 
         <div className="space-y-1">
@@ -986,7 +1052,7 @@ function FormularioDeCuenta({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-fg-subtle">
+            <p className="text-caption text-fg-subtle">
               Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas.
             </p>
           </div>
@@ -1002,7 +1068,7 @@ function FormularioDeCuenta({
           />
           <span>
             Recibe movimientos
-            <span className="block text-xs text-fg-subtle">
+            <span className="block text-caption text-fg-subtle">
               Las cuentas con subcuentas no: los movimientos van en la subcuenta.
             </span>
           </span>
@@ -1012,8 +1078,26 @@ function FormularioDeCuenta({
             <Checkbox checked={activa} onCheckedChange={(c) => setActiva(c === true)} />
             <span>
               Activa
-              <span className="block text-xs text-fg-subtle">
+              <span className="block text-caption text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
+              </span>
+            </span>
+          </label>
+        ) : null}
+        {/* 🔴 Sólo al editar: `CrearCuentaDto` no admite `noDeducible`, y
+            mandarlo al crear sería un 400 por `forbidNonWhitelisted`. */}
+        {editando ? (
+          <label className="flex items-start gap-2 text-sm text-fg">
+            <Checkbox
+              checked={noDeducible}
+              disabled={!soportaLoNoDeducible}
+              onCheckedChange={(c) => setNoDeducible(c === true)}
+              data-testid="puc-no-deducible"
+            />
+            <span>
+              {frasesNoDeducible.titulo}
+              <span className="block max-w-prose text-caption text-fg-subtle">
+                {frasesNoDeducible.explicacion}
               </span>
             </span>
           </label>

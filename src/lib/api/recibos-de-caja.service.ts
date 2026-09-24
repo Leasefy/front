@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import { normalizeCobro } from './inmobiliaria.service';
 import type {
+  AnticipoDelContrato,
   CarteraDelCliente,
   CobroConDesglose,
   ConciliacionDePagoAnterior,
@@ -31,6 +32,8 @@ import type {
   ReciboDeCaja,
   RespuestaDeRecibo,
   RespuestaDeReciboPorCliente,
+  ResultadoDeAplicarAnticipos,
+  SaldoAFavorDelCliente,
 } from './recibos-de-caja.types';
 
 const BASE = '/inmobiliaria/recibos-de-caja';
@@ -42,6 +45,11 @@ const BASE = '/inmobiliaria/recibos-de-caja';
 function comoLista(res: ReciboDeCaja[] | { data: ReciboDeCaja[] } | null): ReciboDeCaja[] {
   if (Array.isArray(res)) return res;
   return res?.data ?? [];
+}
+
+/** `?fecha=YYYY-MM-DD` de la vista previa del recibo, o nada. */
+function conFecha(fecha?: string): string {
+  return fecha ? `?${new URLSearchParams({ fecha }).toString()}` : '';
 }
 
 /** El cobro recompuesto llega con los enums en mayúscula, como toda fila del back. */
@@ -106,6 +114,18 @@ export const recibosDeCajaApi = {
     // Sin esta línea la llave del formulario se perdía acá y el reintento
     // volvía a emitir (R1).
     if (datos.idempotencyKey) cuerpo.idempotencyKey = datos.idempotencyKey;
+    // La forma del adelanto (2026-09-16). Sin ella el back abona a las cuotas.
+    if (datos.formaDelAdelanto) cuerpo.formaDelAdelanto = datos.formaDelAdelanto;
+    // D11 (17-09-2026): la aseguradora que paga un siniestro. Sin esto pagó el cliente.
+    if (datos.pagador) {
+      cuerpo.pagador = {
+        tipo: datos.pagador.tipo,
+        aseguradoraId: datos.pagador.aseguradoraId,
+        ...(datos.pagador.siniestroReferencia
+          ? { siniestroReferencia: datos.pagador.siniestroReferencia }
+          : {}),
+      };
+    }
 
     const res = await apiClient.post<RespuestaDeReciboPorCliente>(`${BASE}/por-cliente`, cuerpo);
     invalidar('cobros');
@@ -115,11 +135,54 @@ export const recibosDeCajaApi = {
     };
   },
 
-  /** Lo que debe una persona AHORA, del período más viejo al más nuevo. */
-  async cartera(tenantId: string): Promise<CarteraDelCliente> {
+  /**
+   * Lo que debe una persona, del período más viejo al más nuevo.
+   *
+   * 🔴 `fecha` (`YYYY-MM-DD`) es la VISTA PREVIA del recibo fechado ese día: el
+   * back liquida el interés de mora hasta ahí, con la misma regla que al
+   * emitir. Sin fecha, hoy. Cualquier día pasado vale; puede fallar con 400
+   * `FECHA_FUTURA` o `FECHA_NO_VALIDA`.
+   */
+  async cartera(tenantId: string, fecha?: string): Promise<CarteraDelCliente> {
     return apiClient.get<CarteraDelCliente>(
-      `${BASE}/cartera/${encodeURIComponent(tenantId)}`,
+      `${BASE}/cartera/${encodeURIComponent(tenantId)}${conFecha(fecha)}`,
     );
+  },
+
+  /**
+   * El saldo a favor de un cliente y de dónde salió.
+   *
+   * `disponible: false` quiere decir que esta base todavía no tiene la
+   * migración del anticipo: la pantalla no debe ofrecer aplicarlo.
+   */
+  async anticipos(tenantId: string): Promise<SaldoAFavorDelCliente> {
+    return apiClient.get<SaldoAFavorDelCliente>(
+      `${BASE}/anticipos/${encodeURIComponent(tenantId)}`,
+    );
+  },
+
+  /**
+   * 🔴 El ANTICIPO del inquilino sobre un contrato (2026-09-16): lo que queda,
+   * lo que entró, lo que se descontó y cada movimiento con el mes que pagó y
+   * su recibo. `disponible: false` = la base no tiene la migración.
+   */
+  async anticipoDelContrato(contractId: string): Promise<AnticipoDelContrato> {
+    return apiClient.get<AnticipoDelContrato>(
+      `${BASE}/anticipos/contrato/${encodeURIComponent(contractId)}`,
+    );
+  },
+
+  /**
+   * Gasta el saldo a favor contra la cartera de hoy, de la deuda más vieja a
+   * la más nueva. Nadie elige el mes: lo decide la imputación del back.
+   */
+  async aplicarAnticipos(tenantId: string): Promise<ResultadoDeAplicarAnticipos> {
+    const res = await apiClient.post<ResultadoDeAplicarAnticipos>(
+      `${BASE}/anticipos/${encodeURIComponent(tenantId)}/aplicar`,
+      {},
+    );
+    invalidar('cobros');
+    return res;
   },
 
   /**
@@ -128,9 +191,9 @@ export const recibosDeCajaApi = {
    * Devuelve TODO lo que esa persona debe, no sólo ese cobro: la plata puede
    * tener que ir a un período más viejo, y eso hay que verlo antes de recibir.
    */
-  async carteraPorCobro(cobroId: string): Promise<CarteraDelCliente> {
+  async carteraPorCobro(cobroId: string, fecha?: string): Promise<CarteraDelCliente> {
     return apiClient.get<CarteraDelCliente>(
-      `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}`,
+      `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}${conFecha(fecha)}`,
     );
   },
 
@@ -194,9 +257,13 @@ export const recibosDeCajaApi = {
 };
 
 export type {
+  AnticipoDelContrato,
+  AnticipoDeUnContrato,
   CarteraDelCliente,
+  FormaDelAdelanto,
+  MovimientoDelAnticipoDelContrato,
   CobroConDesglose,
-  CobroEnCartera,
+  PeriodoEnDeuda,
   ConceptoDelCobro,
   ConciliacionDePagoAnterior,
   FiltrosDeRecibos,

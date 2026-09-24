@@ -330,3 +330,191 @@ describe('L3 — el 400 de copropietarios dice cuál inmueble y a dónde ir', ()
     expect(q('reintentar')).toBeNull();
   });
 });
+
+/**
+ * Deducciones (Nico y Juan Camilo, 2026-09-16): la liquidación es lo que el
+ * contrato cobra MENOS sus deducciones. El back manda el bloque con la regla
+ * única; la pantalla pinta lo que se descuenta y lo que se gira, entero o $0.
+ */
+describe('Deducciones del mes', () => {
+  function bloque(p: {
+    netoDelMesCop: number;
+    deduccionesCop: number;
+    aGirarCop: number;
+    saldoEnContraCop: number;
+  }) {
+    return {
+      ...p,
+      deducciones: [],
+      saldoAnteriorCop: 0,
+      netoCop: p.netoDelMesCop - p.deduccionesCop,
+      compensadoCop: p.netoDelMesCop - p.aGirarCop,
+      renglones: [],
+    };
+  }
+
+  it('la columna dice lo descontado y el neto es lo que se gira; deducciones mayores que el neto: $0 y la diferencia pasa, sin «queda debiendo»', async () => {
+    const base = vistaPrevia();
+    const [jorge, marcela] = base.propietarios as Array<Record<string, unknown>>;
+    preview.mockResolvedValue(
+      vistaPrevia({
+        propietarios: [
+          {
+            ...jorge,
+            netToPropietario: 240_000,
+            conDeducciones: bloque({
+              netoDelMesCop: 540_000,
+              deduccionesCop: 300_000,
+              aGirarCop: 240_000,
+              saldoEnContraCop: 0,
+            }),
+          },
+          {
+            ...marcela,
+            netToPropietario: -140_000,
+            conDeducciones: bloque({
+              netoDelMesCop: 360_000,
+              deduccionesCop: 500_000,
+              aGirarCop: 0,
+              saldoEnContraCop: 140_000,
+            }),
+          },
+        ],
+      }),
+    );
+    await montar();
+
+    const deducciones = Array.from(host.querySelectorAll('[data-testid="tesoreria-deducciones-fila"]'));
+    expect(deducciones.map((d) => d.textContent)).toEqual([
+      expect.stringContaining('300.000'),
+      expect.stringContaining('500.000'),
+    ]);
+
+    const netos = Array.from(host.querySelectorAll('[data-testid="tesoreria-neto-fila"]'));
+    expect(netos[0].textContent).toContain('240.000');
+    expect(netos[1].textContent).toContain('0');
+    expect(netos[1].className).not.toContain('text-danger');
+    expect(netos[1].textContent).not.toContain('Queda debiendo');
+    expect(netos[1].querySelector('[data-testid="tesoreria-en-contra-fila"]')).not.toBeNull();
+
+    // 🔴 QA 22-09: el neto del mes es ANTES de deducciones (540.000 + 360.000),
+    // no la suma de netToPropietario (que ya las trae restadas).
+    expect(q('tesoreria-neto-total')?.textContent).toContain('900.000');
+    expect(q('tesoreria-deducciones-total')?.textContent).toContain('800.000');
+    // Lo que sale del banco: 240.000 + 0.
+    expect(q('tesoreria-a-girar-total')?.textContent).toContain('240.000');
+    expect(q('tesoreria-quedan-en-cero')).not.toBeNull();
+    expect(q('tesoreria-quedan-debiendo')).toBeNull();
+  });
+});
+
+/*
+ * 🔴 BUSCADOR Y PAGINACIÓN (21-09). Nico: «eso con scroll infinito es
+ * horrible». Eran los propietarios del mes en una sola tabla sin cortar —50 en
+ * la agencia de QA, 518 en la migrada— y sin manera de encontrar a uno.
+ *
+ * Lo que estas pruebas cuidan, además de que corte y busque: que el RESUMEN de
+ * arriba siga hablando del mes completo. Si el resumen siguiera al filtro, el
+ * total dejaría de cuadrar con lo que se va a girar, y esa cuenta es la que se
+ * defiende delante del propietario.
+ */
+describe('buscar y paginar en vez de un scroll infinito', () => {
+  /** N propietarios con un neto distinto cada uno. */
+  function conMuchos(cuantos: number) {
+    return vistaPrevia({
+      propietarios: Array.from({ length: cuantos }, (_, i) => ({
+        propietarioId: `p-${i}`,
+        propietarioName: `Propietario ${String(i).padStart(2, '0')}`,
+        propietarioBankName: 'Bancolombia',
+        propietarioBankAccount: `cuenta-${i}`,
+        yaExiste: false,
+        totalCollected: 1_000_000,
+        totalCommission: 100_000,
+        totalConceptosAFavor: 0,
+        totalConceptosACargo: 0,
+        totalDeTerceros: 0,
+        netToPropietario: 900_000,
+        items: [],
+      })),
+    });
+  }
+
+  async function escribir(texto: string) {
+    const input = q('buscar-liquidacion') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    await act(async () => {
+      setter.call(input, texto);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await asentar();
+  }
+
+  it('con doce propietarios se ven diez, y el pie de la tabla aparece', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+
+    expect(filas()).toHaveLength(10);
+    expect(q('alcance-de-liquidaciones')?.textContent).toContain('12 de 12');
+  });
+
+  it('el buscador encuentra por nombre', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+    await escribir('Propietario 07');
+
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]!.textContent).toContain('Propietario 07');
+  });
+
+  /*
+   * 🔴 La cuenta de arriba NO sigue al filtro. Con «Propietario 07» buscado, el
+   * neto del mes sigue siendo el de los doce: es lo que se va a girar, y un
+   * resumen que cambia con la búsqueda deja de ser conciliable.
+   */
+  it('el resumen del mes no cambia con la búsqueda, y se dice', async () => {
+    preview.mockResolvedValue(conMuchos(12));
+    await montar();
+    const netoAntes = q('tesoreria-neto-total')?.textContent;
+
+    await escribir('Propietario 07');
+
+    expect(q('tesoreria-neto-total')?.textContent).toBe(netoAntes);
+    expect(q('alcance-de-liquidaciones')?.textContent).toContain(
+      'las del mes completo',
+    );
+  });
+});
+
+/*
+ * 🔴 EL MOLDE (regla 5): la fila abre cajón, el kebab actúa. La fila de
+ * Liquidaciones no hacía nada (coordinador, 22-09). El cajón pinta lo que la
+ * fila ya trae: no se le pide nada nuevo al back.
+ */
+describe('la fila abre el cajón de la liquidación', () => {
+  it('clic en la fila: desglose del mes de ese propietario, sin otra llamada al back', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    const llamadas = preview.mock.calls.length;
+    const fila = host.querySelector<HTMLElement>('[data-testid="tesoreria-fila"]')!;
+    await act(async () => {
+      fila.click();
+    });
+    const cajon = document.body.querySelector('[data-testid="cajon-liquidacion"]');
+    expect(cajon).not.toBeNull();
+    expect(cajon!.textContent).toContain('El mes, en plata');
+    expect(document.body.querySelector('[data-testid="cajon-liquidacion-neto"]')).not.toBeNull();
+    expect(preview.mock.calls.length).toBe(llamadas);
+  });
+
+  it('el kebab no abre el cajón', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    await act(async () => {
+      host.querySelector<HTMLElement>('[data-testid="liquidacion-kebab"]')!.click();
+    });
+    expect(document.body.querySelector('[data-testid="cajon-liquidacion"]')).toBeNull();
+  });
+});

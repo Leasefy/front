@@ -46,9 +46,11 @@ const extracto: Extracto = {
   month: '2026-09',
   generatedAt: '2026-09-02T18:00:00.000Z',
   lineItems: [],
+  sinMovimiento: null,
   totals: {
     totalRent: 0, totalAdmin: 0, totalPaid: 0, totalCommission: 0, totalNet: 0,
     totalConceptosAFavor: 0, totalConceptosACargo: 0, totalDeTerceros: 0,
+    totalGirado: 0, totalEnGiro: 0, totalPorGirar: 0,
   },
   bankInfo: { bankName: 'Banco Caja Social', bankAccountType: 'Corriente', bankAccountNumber: '36500386693', bankAccountHolder: 'Rentas' },
 };
@@ -85,10 +87,13 @@ async function clickTestId(id: string) {
 
 /** Una línea del extracto con los campos que pinta la tabla. */
 const linea = (over: Partial<Extracto['lineItems'][number]> = {}): Extracto['lineItems'][number] => ({
-  cobroId: 'cob-1', consignacionId: 'c-1', propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
+  cuotaId: 'q-1', cobroId: null, contractId: 'ct-1', consignacionId: 'c-1',
+  propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
   tenantName: 'Mónica', rentAmount: 720_000, adminAmount: 0, totalAmount: 720_000, paidAmount: 720_000,
   status: 'PAID', commissionPercent: 0, commissionAmount: 0, netAmount: 720_000, rentCollected: 720_000,
-  conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0, renglones: [], ...over,
+  conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0,
+  dispersionId: null, giradoCop: 0, enGiroCop: 0, porGirarCop: 720_000,
+  estadoDelGiro: 'POR_GIRAR', renglones: [], ...over,
 });
 
 describe('<ExtractoPropietario>', () => {
@@ -156,5 +161,85 @@ describe('<ExtractoPropietario>', () => {
     expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.emailError', {
       description: 'El propietario no tiene correo registrado',
     });
+  });
+});
+
+/**
+ * Un extracto sin líneas tiene que decir POR QUÉ.
+ *
+ * «Este dueño no tiene inmuebles» y «este mes no se movió nada» se leen igual
+ * —en blanco— y se arreglan distinto: la primera es un mandato que falta, la
+ * segunda es un mes sin actividad. El back manda cuál es; la pantalla la pinta.
+ */
+describe('extracto sin movimiento', () => {
+  it('dice el motivo que mandó el back en vez de quedarse en blanco', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [],
+        sinMovimiento: {
+          codigo: 'SIN_MOVIMIENTO_DEL_MES',
+          mensaje: 'Este mes no tuvo movimiento en ninguno de sus inmuebles.',
+        },
+      },
+    });
+    expect(container.textContent).toContain(
+      'Este mes no tuvo movimiento en ninguno de sus inmuebles.',
+    );
+  });
+});
+
+describe('extracto con deducciones', () => {
+  const conDeducciones = {
+    netoDelMesCop: 720_000,
+    deducciones: [
+      {
+        id: 'ded-1', propietarioId: 'p1', origen: 'SALDO_ANTERIOR' as const, motivo: 'Saldo en contra de agosto',
+        valorCop: 300_000, mesDesde: '2026-09', fecha: '2026-09-01', grupoId: 'g-1', valorTotalCop: 300_000,
+        participacionBps: 10_000, consignacionId: null, solicitudMantenimientoId: null,
+        tieneSoporte: false, soporteNombre: null, estado: 'EN_LIQUIDACION' as const,
+      },
+      {
+        id: 'ded-2', propietarioId: 'p1', origen: 'MANUAL' as const, motivo: 'Predial 2026',
+        valorCop: 600_000, mesDesde: '2026-09', fecha: '2026-09-02', grupoId: 'g-2', valorTotalCop: 600_000,
+        participacionBps: 10_000, consignacionId: null, solicitudMantenimientoId: null,
+        tieneSoporte: true, soporteNombre: 'predial.pdf', estado: 'EN_LIQUIDACION' as const,
+      },
+    ],
+    deduccionesCop: 900_000,
+    saldoAnteriorCop: 300_000,
+    netoCop: -180_000,
+    aGirarCop: 0,
+    saldoEnContraCop: 180_000,
+    compensadoCop: 720_000,
+    renglones: [
+      { concepto: 'Saldo en contra del mes anterior', valorCop: -300_000, motivo: 'Saldo en contra de agosto' },
+      { concepto: 'Descuento: Predial 2026', valorCop: -600_000, motivo: 'Predial 2026' },
+    ],
+  };
+
+  it('🔴 lo que recibe es el neto a girar del back, y el bloque dice el saldo en contra del mes anterior y el que pasa', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [linea()],
+        totals: { ...extracto.totals, totalNet: 720_000 },
+        conDeducciones,
+      },
+    });
+
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$0');
+    const bloque = container.querySelector('[data-testid="bloque-de-deducciones"]');
+    expect(bloque?.textContent).toContain('Saldo en contra del mes anterior');
+    expect(bloque?.textContent).toContain('Descuento: Predial 2026');
+    expect(container.querySelector('[data-testid="bloque-saldo-en-contra"]')).not.toBeNull();
+    // El soporte se puede abrir desde el extracto.
+    expect(container.querySelector('[data-testid="soporte-ded-2"]')).not.toBeNull();
+  });
+
+  it('sin deducciones el extracto se lee como siempre', async () => {
+    await render({ extracto: { ...extracto, totals: { ...extracto.totals, totalNet: 720_000 } } });
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$720.000');
+    expect(container.querySelector('[data-testid="bloque-de-deducciones"]')).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { User, Sparkle, ArrowUpRight, Scales, X as XIcon } from '@phosphor-icons/react';
+import { User, Sparkle, ArrowUpRight, Scales } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
@@ -13,6 +13,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/comparacion';
+import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
@@ -356,12 +357,18 @@ function CandidatosContent() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton href="/panel/inmobiliaria/inmuebles" label="Inmuebles" />
+        <h1 className="text-h2 text-fg">Candidatos</h1>
         <FalloDeCarga
           error={error}
-          queEs="esa propiedad"
+          queEs="ese inmueble"
           onReintentar={fetchData}
-          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
+          volverA={{ label: 'Inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
         />
       </div>
     );
@@ -410,7 +417,12 @@ function CandidatosContent() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div
+        /* 🔴 `overflow-x-clip`, NO `overflow-hidden`: con `hidden` esta
+           tarjeta se vuelve el contenedor de desplazamiento más cercano y el
+           pie pegajoso de adentro deja de medirse contra la ventana. */
+        className="rounded-lg border border-border bg-card overflow-x-clip"
+      >
         {candidates.length === 0 ? (
           <EmptyState
             icon={User}
@@ -550,57 +562,56 @@ function CandidatosContent() {
             )}
           </div>
         )}
+        {/* 🔴 19-09 · La barra de comparación, en la MISMA pieza que el resto
+            del panel (`BarraDeAccionesMasivas`). Tenía la intuición correcta
+            —abajo, porque la decisión se toma después de recorrer la lista— con
+            dos defectos:
+
+            · era `fixed inset-x-0`, o sea que cruzaba la pantalla ENTERA, por
+              debajo de la barra lateral, y su contenido se centraba contra la
+              ventana en vez de contra la columna de contenido;
+            · sólo existía con algo marcado, así que quien no tildara nunca
+              sabría que se puede comparar. Ahora está siempre y lo dice. */}
+        {totalCandidatos > 0 && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="barra-comparar"
+            marcadas={paraComparar.size}
+            queSon={['candidato', 'candidatos']}
+            onQuitar={() => setParaComparar(new Set())}
+            cuandoNoHayNada={`Marca ${MINIMO_A_COMPARAR} o más candidatos para verlos lado a lado.`}
+            nota={
+              paraComparar.size > 0 && paraComparar.size < MINIMO_A_COMPARAR ? (
+                <p className="text-caption text-fg-muted">
+                  Falta al menos {MINIMO_A_COMPARAR - paraComparar.size} más: comparar de a uno
+                  no compara nada.
+                </p>
+              ) : paraComparar.size >= MAXIMO_A_COMPARAR ? (
+                <p className="text-caption text-fg-muted">
+                  Es el máximo: {MAXIMO_A_COMPARAR} caben lado a lado sin tener que desplazarse.
+                </p>
+              ) : null
+            }
+          >
+              <Button
+                size="sm"
+                hideArrow
+                disabled={paraComparar.size < MINIMO_A_COMPARAR}
+                onClick={() =>
+                  router.push(
+                    `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
+                  )
+                }
+                className="gap-1.5"
+                data-testid="ir-a-comparar"
+              >
+                <Scales className="h-4 w-4" />
+                Comparar
+              </Button>
+          </BarraDeAccionesMasivas>
+        )}
       </div>
 
-      {/* Barra de comparación — sólo existe cuando hay algo que comparar.
-          Fija abajo porque la decisión se toma después de recorrer la lista,
-          y para entonces el encabezado ya no está en pantalla. */}
-      {paraComparar.size > 0 && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-4 py-3 shadow-overlay md:px-6"
-          role="region"
-          aria-label="Comparar candidatos"
-          data-testid="barra-comparar"
-        >
-          <div className="mx-auto flex max-w-5xl items-center gap-4">
-            <p className="min-w-0 flex-1 text-sm text-fg">
-              <span className="font-medium tabular-nums">{paraComparar.size}</span>{' '}
-              {paraComparar.size === 1 ? 'seleccionado' : 'seleccionados'}
-              {paraComparar.size < MINIMO_A_COMPARAR && (
-                <span className="text-fg-muted"> · elige al menos {MINIMO_A_COMPARAR}</span>
-              )}
-              {paraComparar.size >= MAXIMO_A_COMPARAR && (
-                <span className="text-fg-muted"> · es el máximo</span>
-              )}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              hideArrow
-              onClick={() => setParaComparar(new Set())}
-              className="gap-1.5"
-            >
-              <XIcon className="h-3.5 w-3.5" />
-              Quitar
-            </Button>
-            <Button
-              size="sm"
-              hideArrow
-              disabled={paraComparar.size < MINIMO_A_COMPARAR}
-              onClick={() =>
-                router.push(
-                  `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
-                )
-              }
-              className="gap-1.5"
-              data-testid="ir-a-comparar"
-            >
-              <Scales className="h-4 w-4" />
-              Comparar
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* El cajón con el análisis, las cuatro acciones y el paso 10 */}
       {cajon}

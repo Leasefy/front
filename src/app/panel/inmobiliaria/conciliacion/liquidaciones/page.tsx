@@ -27,6 +27,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
 import { Receipt, ShieldCheck } from '@phosphor-icons/react'
 
@@ -328,6 +329,24 @@ function ConciliacionLiquidaciones() {
             comisión y otros descuentos. Aquí solo se registra y aprueba — el pago real lo hace
             pagos.
           </p>
+          {/*
+            🔴 21-09-2026: hay DOS pantallas llamadas «Liquidaciones». Ésta es
+            la del AGENTE, con su propio registro; las del mes —las que salen
+            de las cuotas del contrato y se giran— viven en Pagos. Sin decirlo,
+            esta pantalla vacía afirma «no hay liquidaciones a propietario»
+            mientras al lado están las del mes, y eso es falso.
+          */}
+          <p className="text-caption text-fg-muted max-w-2xl">
+            Éste es el registro del agente. Las liquidaciones del mes —las que
+            salen de los contratos y se giran— están en{' '}
+            <Link
+              href="/panel/inmobiliaria/pagos/liquidaciones"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Pagos · Liquidaciones
+            </Link>
+            .
+          </p>
         </div>
 
         {/* Acción principal. El «en bandeja» que vivía acá se fue: lo dice el
@@ -400,7 +419,7 @@ function ConciliacionLiquidaciones() {
                       queSon="registros"
                       icono={Receipt}
                       titulo="Sin liquidaciones"
-                      descripcion="Aún no hay liquidaciones a propietario. Generá la primera con las cifras del periodo."
+                      descripcion="El agente todavía no tiene ninguna registrada acá. Las del mes están en Pagos · Liquidaciones."
                       crear={{
                         label: 'Generar liquidación',
                         onClick: () => {

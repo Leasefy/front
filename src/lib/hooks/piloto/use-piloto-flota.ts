@@ -106,6 +106,7 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
           ? {
               ...cur,
               modo,
+              distintos: [],
               agentes: cur.agentes.map((a) => ({ ...a, modo, origen: 'piloto' as const })),
               resumen: { sombra: 0, copiloto: 0, autonomo: 0, [modo]: cur.agentes.length },
             }

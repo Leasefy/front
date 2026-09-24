@@ -24,7 +24,7 @@
  */
 
 /** Política de tratamiento de datos personales publicada en `/privacidad`. */
-export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v2.0';
+export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v3.0';
 
 /** Términos y condiciones publicados en `/terminos`. */
 export const VERSION_TERMINOS = 'terminos-v2.0';

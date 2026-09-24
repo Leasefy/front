@@ -133,7 +133,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                     {asiento.movimientos.map((m) => (
                       <TableRow key={m.id}>
                         <TableCell>
-                          <span className="font-mono text-xs tabular-nums text-fg-muted">
+                          <span className="font-mono text-caption tabular-nums text-fg-muted">
                             {m.cuenta?.codigo ?? '—'}
                           </span>
                           <span className="block text-sm text-fg">{m.cuenta?.nombre ?? m.cuentaId}</span>
@@ -141,7 +141,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                         <TableCell muted>
                           <span className="block text-sm">{m.descripcion ?? ''}</span>
                           {m.terceroTipo ? (
-                            <span className="block font-mono text-xs text-fg-subtle">
+                            <span className="block font-mono text-caption text-fg-subtle">
                               {m.terceroTipo} · {m.terceroId}
                             </span>
                           ) : null}
@@ -172,7 +172,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
               </div>
 
               {asiento.origenId ? (
-                <p className="font-mono text-xs text-fg-subtle" data-testid="origen-del-asiento">
+                <p className="font-mono text-caption text-fg-subtle" data-testid="origen-del-asiento">
                   {asiento.origen === 'RECIBO_DE_CAJA' ? (
                     <>Generado por el recibo de caja · {asiento.origenId}</>
                   ) : asiento.origen === 'DISPERSION' ? (
@@ -292,7 +292,7 @@ function ReversarDialogo({
               onChange={(e) => setFecha(e.target.value)}
               disabled={enviando}
             />
-            <p className="text-xs text-fg-muted">
+            <p className="text-caption text-fg-muted">
               Si el período del original ya está cerrado, la reversa va con una fecha posterior.
             </p>
           </div>
@@ -308,7 +308,7 @@ function ReversarDialogo({
               disabled={enviando}
               data-testid="reversa-motivo"
             />
-            <p className="font-mono text-xs tabular-nums text-fg-subtle">
+            <p className="font-mono text-caption tabular-nums text-fg-subtle">
               {motivo.length}/{LARGO_MAXIMO_DEL_MOTIVO}
             </p>
           </div>

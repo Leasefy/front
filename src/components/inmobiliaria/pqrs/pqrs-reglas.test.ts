@@ -13,17 +13,38 @@ const ahora = new Date('2026-09-03T15:00:00Z')
 const en = (dias: number) => new Date(ahora.getTime() + dias * DIA).toISOString()
 
 describe('validarPqrs', () => {
-  it('vacío: faltan el nombre y el asunto', () => {
-    expect(Object.keys(validarPqrs(PQRS_FORMULARIO_VACIO)).sort()).toEqual(['asunto', 'solicitanteNombre'])
+  it('vacío: faltan el nombre, el asunto y quién responde', () => {
+    expect(Object.keys(validarPqrs(PQRS_FORMULARIO_VACIO)).sort()).toEqual([
+      'asignadoAUserId',
+      'asunto',
+      'solicitanteNombre',
+    ])
   })
   it('los espacios no cuentan como escrito', () => {
     expect(validarPqrs({ ...PQRS_FORMULARIO_VACIO, solicitanteNombre: '   ', asunto: ' ' })).toHaveProperty('asunto')
   })
-  it('con nombre y asunto se puede radicar; lo demás es opcional', () => {
-    expect(validarPqrs({ ...PQRS_FORMULARIO_VACIO, solicitanteNombre: 'Camila', asunto: 'Gotera' })).toEqual({})
+  it('con nombre, asunto y responsable se puede radicar; lo demás es opcional', () => {
+    expect(
+      validarPqrs({
+        ...PQRS_FORMULARIO_VACIO,
+        solicitanteNombre: 'Camila',
+        asunto: 'Gotera',
+        asignadoAUserId: 'u-1',
+      }),
+    ).toEqual({})
+  })
+  it('sin responsable no se radica: una PQRS no puede quedar sin quien responda', () => {
+    // Decisión de negocio de Nico (2026-09-15), caso N5 de la auditoría.
+    const form = { ...PQRS_FORMULARIO_VACIO, solicitanteNombre: 'Camila', asunto: 'Gotera' }
+    expect(validarPqrs(form)).toHaveProperty('asignadoAUserId')
+  })
+  it('sin ningún agente en la lista la regla no traba la pantalla', () => {
+    // El back deja respondiendo a quien radica; exigirlo acá sería un muro.
+    const form = { ...PQRS_FORMULARIO_VACIO, solicitanteNombre: 'Camila', asunto: 'Gotera' }
+    expect(validarPqrs(form, false)).toEqual({})
   })
   it('topa el asunto en 200 y la descripción en 2000', () => {
-    const base = { ...PQRS_FORMULARIO_VACIO, solicitanteNombre: 'C' }
+    const base = { ...PQRS_FORMULARIO_VACIO, solicitanteNombre: 'C', asignadoAUserId: 'u-1' }
     expect(validarPqrs({ ...base, asunto: 'x'.repeat(201) })).toHaveProperty('asunto')
     expect(validarPqrs({ ...base, asunto: 'x'.repeat(200) })).toEqual({})
     expect(validarPqrs({ ...base, asunto: 'ok', descripcion: 'x'.repeat(2001) })).toHaveProperty('descripcion')
@@ -31,6 +52,12 @@ describe('validarPqrs', () => {
 })
 
 describe('estadosSiguientes', () => {
+  it('🔴 «En cotización» sólo para el tipo SOLICITUD (QA 22-09: se le ofrecía a una queja)', () => {
+    expect(estadosSiguientes('EN_PROCESO', 'QUEJA')).not.toContain('EN_COTIZACION')
+    expect(estadosSiguientes('RECIBIDA', 'PETICION')).not.toContain('EN_COTIZACION')
+    expect(estadosSiguientes('EN_PROCESO', 'SOLICITUD')).toContain('EN_COTIZACION')
+  })
+
   it('desde los estados abiertos se puede ir a proceso, cotización, resuelta o cerrada (menos a sí mismo)', () => {
     expect(estadosSiguientes('RECIBIDA')).toEqual(['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'])
     expect(estadosSiguientes('ASIGNADA')).toEqual(['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'])

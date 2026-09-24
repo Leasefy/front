@@ -1,150 +1,41 @@
 'use client';
 
 /**
- * Los textos del estado de cuenta, en un solo lugar.
+ * Los textos del estado de cuenta, en un solo lugar: `locales/es.json` y
+ * `locales/en.json`, bloque `estadoDeCuenta` (guardia:
+ * `src/lib/i18n/claves-estado-de-cuenta.test.ts`).
  *
- * Van acá y no en `locales/es.json` por la misma razón que los de
- * `CuentaDeCobro`: es un documento que se ENTREGA, sus palabras son las que la
- * inmobiliaria ya conoce de su formato de siempre, y `t()` devuelve la clave
- * cuando no la encuentra — un documento con `estadoDeCuenta.titulo` impreso
- * encima sería peor que no tenerlo.
- *
- * El porqué de no pasar por `useI18n` está en `useTextoDelEstado`, abajo.
+ * Se leen ESTÁTICOS, del diccionario en castellano, y no con `t()`: es un
+ * documento que se ENTREGA, sus palabras son las que la inmobiliaria ya conoce
+ * de su formato de siempre, y `t()` devuelve la clave cuando no la encuentra —
+ * un documento con `estadoDeCuenta.titulo` impreso encima sería peor que no
+ * tenerlo—. El porqué de no pasar por `useI18n` está en `useTextoDelEstado`,
+ * abajo. El inglés ya está en `en.json`: el día que el documento se traduzca,
+ * se cambia `useTextoDelEstado` y nada más.
  */
 
-export const TEXTO: Record<string, string> = {
-  'estadoDeCuenta.titulo': 'Estado de cuenta',
-  'estadoDeCuenta.de': 'Estado de cuenta de',
-  'estadoDeCuenta.nit': 'NIT',
-  'estadoDeCuenta.matricula': 'Matrícula inmobiliaria',
-  'estadoDeCuenta.telefono': 'Teléfono',
-  'estadoDeCuenta.ciudadYFecha': '{{ciudad}}, {{fecha}}',
-  'estadoDeCuenta.sinEmisor': 'Inmobiliaria sin datos de contacto cargados',
+import es from '@/lib/i18n/locales/es.json';
 
-  'estadoDeCuenta.restaPorPagar': 'Resta por pagar',
-  'estadoDeCuenta.cancelado': 'Cancelado',
-  'estadoDeCuenta.pendiente': 'Pendiente',
-  'estadoDeCuenta.totalesDelContrato': 'Totales del contrato {{numero}}',
-  'estadoDeCuenta.totalGeneral': 'Total en todos sus contratos',
+/** `{ a: { b: 'x' } }` → `{ 'prefijo.a.b': 'x' }`. */
+function aplanar(
+  bloque: Record<string, unknown>,
+  prefijo: string,
+  salida: Record<string, string> = {},
+): Record<string, string> {
+  for (const [clave, valor] of Object.entries(bloque)) {
+    const ruta = `${prefijo}.${clave}`;
+    if (typeof valor === 'string') salida[ruta] = valor;
+    else if (valor && typeof valor === 'object') {
+      aplanar(valor as Record<string, unknown>, ruta, salida);
+    }
+  }
+  return salida;
+}
 
-  'estadoDeCuenta.proximaCuota': 'Próxima cuota',
-  'estadoDeCuenta.sinProxima': 'No queda ninguna cuota por vencer',
-  'estadoDeCuenta.estado': 'Estado',
-  'estadoDeCuenta.alDia': 'Al día',
-  'estadoDeCuenta.enMoraDias': 'En mora · {{dias}} días',
-  'estadoDeCuenta.cuotasVencidas': '{{n}} cuotas vencidas',
-  'estadoDeCuenta.unaCuotaVencida': '1 cuota vencida',
-  'estadoDeCuenta.cuotasDe': '{{pagadas}} de {{total}} cuotas',
-  'estadoDeCuenta.delSistemaAnterior': '{{n}} del sistema anterior',
-
-  'estadoDeCuenta.compartir': 'Compartir',
-  'estadoDeCuenta.porCorreo': 'Enviar por correo',
-  'estadoDeCuenta.porWhatsapp': 'Enviar por WhatsApp',
-  'estadoDeCuenta.copiarEnlace': 'Copiar enlace',
-  'estadoDeCuenta.enlaceCopiado': 'Enlace copiado',
-  'estadoDeCuenta.enlaceVence': 'Vence el {{fecha}}',
-  'estadoDeCuenta.copialoAMano': 'Cópialo a mano',
-  'estadoDeCuenta.armandoEnlace': 'Armando el enlace…',
-  'estadoDeCuenta.falloEnlace': 'No se pudo armar el enlace para compartir.',
-  'estadoDeCuenta.correoEnviado': 'Estado de cuenta enviado a {{correo}}',
-  'estadoDeCuenta.whatsappEnviado': 'Estado de cuenta enviado por WhatsApp a {{telefono}}',
-  'estadoDeCuenta.falloCorreo': 'No se pudo enviar el correo.',
-  'estadoDeCuenta.sinWhatsapp':
-    'Este cliente no autorizó WhatsApp o no tiene teléfono cargado.',
-  'estadoDeCuenta.mensajeParaCompartir':
-    'Hola {{nombre}}, este es tu estado de cuenta con {{inmobiliaria}}: {{url}}',
-
-  'estadoDeCuenta.verEstadoDeCuenta': 'Ver estado de cuenta',
-  'estadoDeCuenta.miEstadoDeCuenta': 'Mi estado de cuenta',
-  'estadoDeCuenta.enlaceVencido': 'Este enlace ya venció',
-  'estadoDeCuenta.enlaceVencidoDetalle':
-    'Pídele a tu inmobiliaria uno nuevo: los enlaces vencen para que tu información no quede abierta en internet.',
-
-  'estadoDeCuenta.contrato': 'Contrato {{numero}}',
-  'estadoDeCuenta.numeroDeLeasefy': 'Leasefy #{{numero}}',
-  'estadoDeCuenta.comoInquilino': 'Inquilino del inmueble en {{direccion}}',
-  'estadoDeCuenta.comoPropietario': 'Propietario del inmueble en {{direccion}}',
-  'estadoDeCuenta.vigente': 'Vigente',
-  'estadoDeCuenta.terminado': 'Terminado',
-
-  'estadoDeCuenta.arriendos': 'Arriendos',
-  'estadoDeCuenta.otrosConceptos': 'Otros conceptos',
-  'estadoDeCuenta.sinOtrosConceptos': 'Este contrato no tiene otros conceptos.',
-  'estadoDeCuenta.sinArriendos': 'Ninguna cuota de arriendo con estos filtros.',
-
-  'estadoDeCuenta.colConcepto': 'Concepto',
-  'estadoDeCuenta.colEstado': 'Estado',
-  'estadoDeCuenta.colPagado': 'Fecha de pago',
-  'estadoDeCuenta.colBruto': 'Valor bruto',
-  'estadoDeCuenta.colNeto': 'Valor neto',
-  'estadoDeCuenta.colVence': 'Vence',
-  'estadoDeCuenta.colDocumento': 'Documento de pago',
-  'estadoDeCuenta.sinPago': 'Sin pago',
-  'estadoDeCuenta.vencida': 'vencida',
-  'estadoDeCuenta.saldoDe': 'Saldo pendiente',
-  'estadoDeCuenta.columnasOmitidas':
-    'No se muestran {{columnas}}: son cero en todas las filas de este contrato.',
-
-  'estadoDeCuenta.quiebre': '{{motivo}} · {{fecha}}',
-  'estadoDeCuenta.quiebreDeA': 'de {{anterior}} a {{nueva}}',
-
-  'estadoDeCuenta.filtros': 'Filtros',
-  'estadoDeCuenta.soloPendientes': 'Sólo lo pendiente',
-  'estadoDeCuenta.todo': 'Todo',
-  'estadoDeCuenta.pendientes': 'Pendiente',
-  'estadoDeCuenta.queMostrar': 'Qué mostrar',
-  'estadoDeCuenta.periodo': 'Período',
-  'estadoDeCuenta.periodoTodo': 'Todo el período',
-  'estadoDeCuenta.periodoDesde': 'desde {{desde}}',
-  'estadoDeCuenta.periodoHasta': 'hasta {{hasta}}',
-  'estadoDeCuenta.esteMes': 'Este mes',
-  'estadoDeCuenta.ultimosTresMeses': 'Últimos 3 meses',
-  'estadoDeCuenta.proximosTresMeses': 'Próximos 3 meses',
-  'estadoDeCuenta.esteAnio': 'Este año',
-  'estadoDeCuenta.quitarPeriodo': 'Quitar el período',
-  'estadoDeCuenta.fechasExactas': 'Fechas exactas…',
-  'estadoDeCuenta.desde': 'Desde',
-  'estadoDeCuenta.hasta': 'Hasta',
-  'estadoDeCuenta.todosLosContratos': 'Todos los contratos',
-  'estadoDeCuenta.limpiar': 'Limpiar',
-  'estadoDeCuenta.viendoFilas': '{{visibles}} de {{total}} filas',
-  'estadoDeCuenta.filtrado':
-    'Los totales son de lo que estás viendo, no de todo el contrato.',
-
-  'estadoDeCuenta.volver.contrato': 'Volver al contrato',
-  'estadoDeCuenta.volver.inmueble': 'Volver al inmueble',
-  'estadoDeCuenta.volver.cobro': 'Volver a cobros',
-  'estadoDeCuenta.volver.propietario': 'Volver al propietario',
-  'estadoDeCuenta.volver.dispersiones': 'Volver a dispersiones',
-  'estadoDeCuenta.volver.lista': 'Volver a la lista',
-  'estadoDeCuenta.volver.otro': 'Volver',
-
-  'estadoDeCuenta.contratoPalabra': 'Contrato',
-  'estadoDeCuenta.colPago': 'Pago',
-  'estadoDeCuenta.pagadasDe': 'Pagadas {{pagadas}} de {{total}} cuotas',
-  'estadoDeCuenta.deLoPactado': '{{pagado}} de {{pactado}}',
-  'estadoDeCuenta.leyendaPagadas': 'Pagadas en Leasefy',
-  'estadoDeCuenta.leyendaAnteriores': 'Del sistema anterior',
-  'estadoDeCuenta.leyendaPorPagar': 'Por pagar',
-  'estadoDeCuenta.unaFila': '1 fila',
-  'estadoDeCuenta.nFilas': '{{n}} filas',
-  'estadoDeCuenta.totalDelContrato': 'Total del contrato',
-  'estadoDeCuenta.vencido': 'Vencido',
-
-  'estadoDeCuenta.descargarPDF': 'Descargar PDF',
-  'estadoDeCuenta.imprimir': 'Imprimir',
-  'estadoDeCuenta.generando': 'Armando el PDF…',
-  'estadoDeCuenta.falloPDF': 'No se pudo armar el PDF. Vuelve a intentarlo.',
-
-  'estadoDeCuenta.sinContratos': 'Este cliente no tiene contratos',
-  'estadoDeCuenta.sinContratosDetalle':
-    'Sin contrato no hay cuotas que diferir, así que no hay estado de cuenta que mostrar.',
-  'estadoDeCuenta.sinResultados': 'Ninguna fila con estos filtros',
-  'estadoDeCuenta.sinResultadosDetalle':
-    'Quita los filtros para volver a ver el estado de cuenta completo.',
-  'estadoDeCuenta.pie': 'Generado por Leasefy el {{fecha}}',
-  'estadoDeCuenta.pagina': 'Página {{n}} de {{total}}',
-};
+export const TEXTO: Record<string, string> = aplanar(
+  es.estadoDeCuenta as Record<string, unknown>,
+  'estadoDeCuenta',
+);
 
 export function interpolar(
   texto: string,
@@ -163,6 +54,23 @@ export function texto(
 ): string {
   const propio = TEXTO[clave];
   return propio ? interpolar(propio, params) : clave;
+}
+
+/**
+ * La clave del rótulo según el LADO del documento.
+ *
+ * 🔴 QA 22-09: el estado de cuenta del PROPIETARIO decía «Resta por pagar ·
+ * En mora · 260 días» en rojo — las palabras del inquilino—. Para el
+ * propietario ese número es lo que la inmobiliaria le tiene que girar
+ * (definición del CEO: «estado de cuenta a favor del propietario, que es lo que
+ * yo le debo pagar»); leído con el rótulo del inquilino, el moroso parecía él.
+ * Si la clave tiene su versión en el bloque delPropietario, el lado
+ * PROPIETARIO la usa; si no, se queda con la común.
+ */
+export function claveDelLado(clave: string, rol: 'INQUILINO' | 'PROPIETARIO' | null | undefined): string {
+  if (rol !== 'PROPIETARIO') return clave;
+  const propia = clave.replace(/^estadoDeCuenta\./, 'estadoDeCuenta.delPropietario.');
+  return TEXTO[propia] ? propia : clave;
 }
 
 /**

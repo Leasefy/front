@@ -5,8 +5,8 @@
  * pantalla, no el diseño:
  *
  *  1. **Cero botones muertos.** El botón de acción sólo existe si el micro
- *     declaró la acción (`acciones[]`), y nunca para un VIEWER — a quien el
- *     micro le respondería 403.
+ *     declaró la acción (`acciones[]`); si el micro dice que ESTE rol no la
+ *     puede ejecutar (`permitida: false`, P-9), se ve apagada con el porqué.
  *  2. **«No se pudo consultar» NO es «no hay nada».** Un 404 se dice con
  *     palabras; jamás con un cajón vacío que parezca un caso sin información.
  *  3. **Una alerta del tablero no se le pide al micro.** Es una regla sobre
@@ -150,11 +150,67 @@ describe('PilotoCajon — modo ítem', () => {
     expect(document.querySelector('[data-testid="piloto-cajon-accion-0"]')).toBeNull()
   })
 
-  it('a un VIEWER no se le dibuja la acción (el micro le daría 403)', () => {
+  it('🔴 un hecho ya ocurrido (sin nada que decidir) NO dice «esperando»; una decisión sí', () => {
+    // Visto en el navegador el 24-09: los cobros de un día decían «esperando hace 1d».
+    estado.detalle = { ...DETALLE, id: 'dia:cobro.vencido:2026-09-22', acciones: [], enlaces: [] }
+    render({ tipo: 'item', id: 'dia:cobro.vencido:2026-09-22' })
+    const desde = () => document.querySelector('[data-testid="piloto-cajon-desde"]')?.textContent ?? ''
+    expect(desde()).toBe('hace 2 h')
+    expect(desde()).not.toContain('esperando')
+    act(() => root.unmount())
+    container.remove()
+
     estado.detalle = DETALLE
-    estado.rol = 'VIEWER'
     render({ tipo: 'item', id: 'esc:e-1' })
-    expect(document.querySelector('[data-testid="piloto-cajon-accion-0"]')).toBeNull()
+    expect(desde()).toContain('inmobiliaria.piloto.cajon.esperando')
+    act(() => root.unmount())
+    container.remove()
+
+    // Una decisión que se toma en otra pantalla también espera.
+    estado.detalle = { ...DETALLE, acciones: [], enlaces: [{ label: 'Abrir', href: '/x', razon: 'Se decide en Cobranza.' }] }
+    render({ tipo: 'item', id: 'plan:p-1' })
+    expect(desde()).toContain('inmobiliaria.piloto.cajon.esperando')
+  })
+
+  it('🔴 P-9: si el micro dice que ESTE rol no puede, la acción se ve apagada y con el porqué', () => {
+    // Antes el front comparaba el rol del ERP con `!== 'VIEWER'` y un AGENTE
+    // veía botones que el micro contestaba con 403. Ahora manda el micro.
+    estado.detalle = {
+      ...DETALLE,
+      acciones: [
+        {
+          ...(DETALLE as { acciones: Array<Record<string, unknown>> }).acciones[0],
+          permitida: false,
+          porQueNo: 'Tu rol puede ver esta decisión, pero no tomarla.',
+        },
+      ],
+    }
+    render({ tipo: 'item', id: 'esc:e-1' })
+    const boton = document.querySelector('[data-testid="piloto-cajon-accion-0"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    expect(document.querySelector('[data-testid="piloto-cajon-porqueno"]')?.textContent).toContain(
+      'no tomarla',
+    )
+  })
+
+  it('🔴 abierto desde el botón de la fila, la acción que pregunta queda lista para confirmar', () => {
+    estado.detalle = {
+      ...DETALLE,
+      acciones: [
+        {
+          label: 'Aprobar y llamar',
+          method: 'POST',
+          path: '/api/agency/a/ai-hub/retenidos/r/aprobar',
+          body: {},
+          confirmacion: 'Laura va a llamar a Ana, que debe $1.430.502 hoy.',
+        },
+      ],
+    }
+    render({ tipo: 'item', id: 'hold:r', accion: 'Aprobar y llamar' })
+    // El formulario (con la advertencia) ya está abierto, sin otro clic.
+    expect(document.querySelector('[data-testid="piloto-cajon-formulario"]')).not.toBeNull()
+    expect(document.body.textContent).toContain('que debe $1.430.502 hoy')
+    expect(estado.accionesCorridas).toHaveLength(0)
   })
 
   it('ejecuta la acción VERBATIM: método, path y cuerpo salen del micro', async () => {
@@ -193,7 +249,7 @@ describe('PilotoCajon — modo alerta', () => {
     severidad: 'alta' as const,
     titulo: '3 promesas de pago vencidas',
     detalle: 'El deudor se comprometió y la fecha pasó.',
-    href: '/panel/inmobiliaria/cobros/cobranza/pagos',
+    href: '/panel/inmobiliaria/pagos/cobranza/pagos',
     items: [
       { id: 'prom:p-1', titulo: '$250.000 — Ana R.', desde: '2026-08-25T10:00:00-05:00' },
       { id: 'prom:p-2', titulo: '$800.000 — Luis M.' },
@@ -241,7 +297,7 @@ describe('PilotoCajon — una carta se lee acá mismo', () => {
     fuente: 'carta',
     enlaces: [
       { label: 'Leer el PDF antes de aprobar', href: 'https://demo.leasefy.co/cartas/2.pdf' },
-      { label: 'Abrir la carta', href: '/panel/inmobiliaria/cobros/cobranza/cartas/carta-9' },
+      { label: 'Abrir la carta', href: '/panel/inmobiliaria/pagos/cobranza/cartas/carta-9' },
     ],
   }
 

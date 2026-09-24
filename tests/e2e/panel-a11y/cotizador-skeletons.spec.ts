@@ -174,7 +174,7 @@ test.describe('Cobranza configuración — Phase 38-04b skeleton', () => {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/pagos/cobranza/configuracion', { waitUntil: 'domcontentloaded' })
     const skeleton = page.getByTestId('cobranza-configuracion-skeleton')
 
 

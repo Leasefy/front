@@ -10,7 +10,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  aplicarFiltros,
   columnasDeImpuestos,
   columnasOmitidas,
   comoSeLlamaElRol,
@@ -28,7 +27,6 @@ import {
   rangoPreestablecido,
   SIN_FILTROS,
   sumarTotales,
-  totalesDeFilas,
 } from './filas';
 import {
   contrato,
@@ -68,14 +66,11 @@ describe('atajos del período', () => {
     });
   });
 
-  it('un atajo aplicado deja filas que el filtro cuenta contra el total del documento', () => {
-    const doc = estadoDeCuenta({ contratos: [contrato()] });
+  it('un atajo es un rango que se manda al back, no un recorte de acá', () => {
+    // El atajo sólo produce `desde`/`hasta`; quien corta filas es el back.
     const rango = rangoPreestablecido('esteAnio', '2024-06-01');
-    const filtrado = aplicarFiltros(doc, { ...SIN_FILTROS, ...rango });
-    expect(cuantasFilasDelDocumento(filtrado)).toBeLessThanOrEqual(
-      cuantasFilasDelDocumento(doc),
-    );
-    expect(cuantasFilasDelDocumento(doc)).toBe(cuantasFilas(contrato()));
+    expect(hayFiltros({ ...SIN_FILTROS, ...rango })).toBe(true);
+    expect(rango).toEqual({ desde: '2024-01-01', hasta: '2024-12-31' });
   });
 });
 
@@ -221,16 +216,6 @@ describe('puntos de quiebre', () => {
 });
 
 describe('totales', () => {
-  it('cuentan lo cancelado y lo pendiente; lo anulado y lo del sistema anterior, no', () => {
-    const t = totalesDeFilas([
-      fila({ estado: 'CANCELADA', valorNeto: 100 }),
-      fila({ estado: 'PENDIENTE', valorNeto: 50 }),
-      fila({ estado: 'ANULADA', valorNeto: 999 }),
-      fila({ estado: 'ANTERIOR', valorNeto: 777 }),
-    ]);
-    expect(t).toEqual({ cancelado: 100, pendiente: 50, restaPorPagar: 50 });
-  });
-
   it('se suman entre contratos', () => {
     expect(
       sumarTotales([
@@ -246,39 +231,32 @@ describe('totales', () => {
 });
 
 describe('filtros', () => {
-  it('sin nada puesto, el documento sale TAL CUAL del back', () => {
-    const doc = estadoDeCuenta();
+  /*
+   * 🔴 La REGLA del filtro —qué fila pasa, qué contrato desaparece, cómo se
+   * recalculan los totales— se mudó al back (auditoría 13-09, E4) y se fija
+   * allá, en `back-erp/src/inmobiliaria/estado-de-cuenta/
+   * filtrar-el-estado-de-cuenta.spec.ts`. Tenerla probada de los dos lados
+   * sería tenerla escrita de los dos lados, que es justo lo que produjo el
+   * defecto: el enlace entregaba el documento entero mientras la pantalla
+   * mostraba una vista recortada.
+   *
+   * Acá queda lo que sigue siendo de la pantalla: el estado del filtro.
+   */
+  it('sin nada puesto no hay filtro que mandar', () => {
     expect(hayFiltros(SIN_FILTROS)).toBe(false);
-    expect(aplicarFiltros(doc, SIN_FILTROS)).toBe(doc);
   });
 
-  it('«sólo pendientes» deja lo que se debe y RECALCULA los totales', () => {
-    const doc = estadoDeCuenta({ contratos: [contrato()] });
-    const r = aplicarFiltros(doc, { ...SIN_FILTROS, soloPendientes: true });
-    const filas = r.contratos[0]!.secciones.arriendos;
-    expect(filas).toHaveLength(2);
-    expect(filas.every((f) => f.estado === 'PENDIENTE')).toBe(true);
-    // El total del back decía 808.902 cancelado; sobre lo visible es cero.
-    expect(r.contratos[0]!.totales.cancelado).toBe(0);
-    expect(r.totales.restaPorPagar).toBe(299_098 + 1_108_000);
+  it('cualquiera de los cuatro campos cuenta como filtro', () => {
+    expect(hayFiltros({ ...SIN_FILTROS, soloPendientes: true })).toBe(true);
+    expect(hayFiltros({ ...SIN_FILTROS, desde: '2026-01-01' })).toBe(true);
+    expect(hayFiltros({ ...SIN_FILTROS, hasta: '2026-12-31' })).toBe(true);
+    expect(hayFiltros({ ...SIN_FILTROS, contrato: '1659' })).toBe(true);
   });
 
-  it('el rango de fechas corta por vencimiento', () => {
-    const doc = estadoDeCuenta({ contratos: [contrato()] });
-    const r = aplicarFiltros(doc, { ...SIN_FILTROS, desde: '2026-01-01' });
-    // La cuota de 2022 (sistema anterior) queda afuera.
-    expect(r.contratos[0]!.secciones.arriendos).toHaveLength(3);
-  });
-
-  it('un contrato que se queda sin filas DESAPARECE: una sección vacía miente', () => {
-    const doc = estadoDeCuenta();
-    const r = aplicarFiltros(doc, { ...SIN_FILTROS, desde: '2030-01-01' });
-    expect(r.contratos).toHaveLength(0);
-  });
-
-  it('filtrar por contrato deja sólo ese', () => {
-    const r = aplicarFiltros(estadoDeCuenta(), { ...SIN_FILTROS, contrato: '1659' });
-    expect(r.contratos.map((c) => c.numero)).toEqual(['1659']);
+  it('cuenta las filas del documento entero, para el «N de M»', () => {
+    expect(cuantasFilasDelDocumento(estadoDeCuenta({ contratos: [contrato()] }))).toBe(
+      cuantasFilas(contrato()),
+    );
   });
 });
 

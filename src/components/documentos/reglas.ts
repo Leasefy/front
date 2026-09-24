@@ -15,6 +15,7 @@ import type {
   CampoDeDocumento,
   PlantillaLegalDelSistema,
   RevisionDelIncremento,
+  RevisionDelCertificado,
 } from '@/lib/api/documentos.service';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 
@@ -72,21 +73,19 @@ export function etiquetaDelContratoParaElCombo(c: {
 }): string {
   const numero = numeroDelContrato({ code: c.code ?? undefined, externalId: c.externalId });
   return (
-    [numero.principal, numero.secundario, c.propertyAddress || null, c.tenantName || null]
+    [numero.principal, c.propertyAddress || null, c.tenantName || null]
       .filter(Boolean)
       .join(' · ') || c.id
   );
 }
 
-/** «Contrato 1686 · Leasefy #111» / «Contrato #111»: el rótulo de la preparación. */
+/** «Contrato 1686» / «Contrato #111»: el rótulo de la preparación. Sin el número de Leasefy (16-09). */
 export function rotuloDelContratoPreparado(c: {
   codigo: number;
   numeroExterno?: string | null;
 }): string {
   const numero = numeroDelContrato({ code: c.codigo, externalId: c.numeroExterno });
-  return numero.secundario
-    ? `Contrato ${numero.principal} · ${numero.secundario}`
-    : `Contrato ${numero.principal}`;
+  return `Contrato ${numero.principal}`;
 }
 
 /** Entre quiénes es. Sale del contrato, que es el único que las tiene juntas. */
@@ -271,9 +270,21 @@ export function puedeGenerar(entrada: {
   campos: readonly CampoDeDocumento[];
   valores: Record<string, string>;
   incremento: RevisionDelIncremento | null;
+  certificado?: RevisionDelCertificado | null;
 }): boolean {
   if (!puedePreparar(entrada.plantilla, entrada)) return false;
   if (camposFaltantes(entrada.campos, entrada.valores).length > 0) return false;
+
+  /*
+   * Los dos certificados los decide el LIBRO, no el formulario: con un
+   * impedimento el botón no se puede apretar aunque todos los campos estén
+   * llenos. Y cuando el back todavía no mandó el veredicto (`undefined`) el
+   * botón tampoco: afirmarlo sin saber es lo que hace que alguien prometa un
+   * paz y salvo por teléfono.
+   */
+  if (esCertificado(entrada.plantilla?.codigo)) {
+    if (!entrada.certificado?.puedeEmitirse) return false;
+  }
 
   if (entrada.plantilla?.codigo === 'CARTA_INCREMENTO') {
     const propuesto =
@@ -287,6 +298,13 @@ export function puedeGenerar(entrada: {
   return true;
 }
 
+/** Las dos plantillas cuyas cifras las pone el libro y no una persona. */
+export function esCertificado(
+  codigo: CodigoDeDocumentoLegal | null | undefined,
+): boolean {
+  return codigo === 'PAZ_Y_SALVO' || codigo === 'CERTIFICADO_ESTAR_AL_DIA';
+}
+
 /** Los códigos que la pantalla sabe ordenar, por si el backend suma otro. */
 export const ORDEN_DE_TIPOS: CodigoDeDocumentoLegal[] = [
   'CONTRATO_VIVIENDA',
@@ -295,6 +313,8 @@ export const ORDEN_DE_TIPOS: CodigoDeDocumentoLegal[] = [
   'ACTA_DEVOLUCION',
   'INVENTARIO',
   'CARTA_INCREMENTO',
+  'PAZ_Y_SALVO',
+  'CERTIFICADO_ESTAR_AL_DIA',
 ];
 
 // ─── Ciudad ──────────────────────────────────────────────────────────────────

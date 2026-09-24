@@ -8,6 +8,7 @@ import {
   hayCierrePorInactividad,
   topeDeInactividadMs,
   minutosDeInactividad,
+  MINUTOS_DE_INACTIVIDAD_POR_DEFECTO,
   CLAVE_ULTIMA_ACTIVIDAD,
   AVISO_MS,
 } from './idle-timeout'
@@ -92,9 +93,11 @@ describe('evaluarInactividad', () => {
 })
 
 describe('configuración', () => {
-  it('sin la variable, la función está apagada', () => {
-    expect(hayCierrePorInactividad()).toBe(false)
-    expect(topeDeInactividadMs()).toBe(0)
+  it('sin la variable, la sesión inactiva se cierra igual a las 4 horas (antes quedaba abierta para siempre)', () => {
+    vi.stubEnv('NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES', undefined as unknown as string)
+    expect(minutosDeInactividad()).toBe(MINUTOS_DE_INACTIVIDAD_POR_DEFECTO)
+    expect(MINUTOS_DE_INACTIVIDAD_POR_DEFECTO).toBe(240)
+    expect(hayCierrePorInactividad()).toBe(true)
   })
 
   it('con 10 minutos, el tope son 600000 ms', () => {
@@ -104,15 +107,21 @@ describe('configuración', () => {
     expect(hayCierrePorInactividad()).toBe(true)
   })
 
+  it('apagarla es explícito: sólo con 0', () => {
+    vi.stubEnv('NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES', '0')
+    expect(hayCierrePorInactividad()).toBe(false)
+    expect(topeDeInactividadMs()).toBe(0)
+  })
+
   /**
-   * Un typo en el .env no puede convertirse en una expulsión masiva: cualquier
-   * valor ilegible apaga la función, nunca la deja en "tope de 0 minutos".
+   * Un typo en el .env no puede convertirse en una expulsión masiva ni en
+   * sesiones eternas: cualquier valor ilegible cae al valor por defecto.
    */
-  it.each(['', '0', 'diez', '-5', 'NaN'])(
-    'un valor inválido (%p) apaga la función',
+  it.each(['', 'diez', '-5', 'NaN'])(
+    'un valor inválido (%p) usa el valor por defecto',
     (valor) => {
       vi.stubEnv('NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES', valor)
-      expect(hayCierrePorInactividad()).toBe(false)
+      expect(minutosDeInactividad()).toBe(MINUTOS_DE_INACTIVIDAD_POR_DEFECTO)
     },
   )
 })

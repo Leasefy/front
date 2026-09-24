@@ -27,7 +27,7 @@ import { TablePagination } from "@/components/ui/pagination";
 import { MonoLabel } from "@leasefy/cadence";
 import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
-import { faltantesParaElBack } from "../lib/requisitosDelBack";
+import { faltantesParaElBack, tipoEfectivo } from "../lib/requisitosDelBack";
 import { toImportarInmuebleDto } from "../lib/toImportarInmuebleDto";
 import { resumenDeLecturaDeInmuebles } from "../lib/resumenDeLectura";
 import type { ImportProperty } from "../lib/importTypes";
@@ -94,6 +94,26 @@ import {
  */
 
 const POR_PAGINA = 25;
+
+/**
+ * Lo que la pantalla de cierre puede afirmar de la comisión: sólo lo que el
+ * archivo traía. Exportada para probarla sin montar el paso.
+ */
+export function fraseDeLaComision(
+  enviadas: ReadonlyArray<ImportProperty>,
+): string {
+  const deArriendo = enviadas.filter((p) => tipoEfectivo(p) !== "sale");
+  const sinComision = deArriendo.filter(
+    (p) => typeof p.commissionPercent !== "number" || !Number.isFinite(p.commissionPercent),
+  ).length;
+  if (deArriendo.length === 0 || sinComision === 0) {
+    return "El propietario y la comisión salieron del archivo, inmueble por inmueble.";
+  }
+  if (sinComision === deArriendo.length) {
+    return "El propietario salió del archivo, inmueble por inmueble. La comisión no venía en el archivo: queda vacía hasta que la traiga el contrato vigente o la escribas.";
+  }
+  return `El propietario salió del archivo, inmueble por inmueble. La comisión también, salvo en ${sinComision} ${sinComision === 1 ? "inmueble que no la traía: queda vacía" : "inmuebles que no la traían: quedan vacías"} hasta que la traiga el contrato vigente o la escribas.`;
+}
 export function StepConfirmImport({
   state,
   updateState,
@@ -107,17 +127,31 @@ export function StepConfirmImport({
   const ranuraDelPie = useContext(RanuraDelPie);
 
   const properties = state.properties;
+  /*
+   * 🔴 QUÉ VIAJA AL BACK (QA 22-09: 14 de 145 inmuebles desaparecían).
+   *
+   * La revisión deja DESELECCIONADA sola toda fila con un error (sin precio,
+   * sin dirección) y su casilla ni siquiera se puede marcar
+   * (`AISuggestionCard`): nadie la excluyó, la excluyó la pantalla. Filtrar
+   * acá por `selected` las tiraba en silencio mientras el resumen decía
+   * «se importan igual y se completan en la revisión».
+   *
+   * Ahora: lo que la persona dejó marcado, MÁS toda fila con un error, que
+   * entra PENDIENTE con su faltante a la vista. Excluida es sólo la que la
+   * persona desmarcó teniendo cómo marcarla.
+   */
   const selectedProperties = properties.filter(
-    (p) => p.selected && !p.hasErrors,
+    (p) => p.hasErrors || p.selected,
   );
-  const excludedCount = properties.filter((p) => !p.selected).length;
+  const excludedCount = properties.filter(
+    (p) => !p.selected && !p.hasErrors,
+  ).length;
   const acceptedSuggestionsCount = properties.reduce(
     (sum, p) => sum + p.suggestions.filter((s) => s.accepted === true).length,
     0,
   );
-  const remainingErrorsCount = properties.filter(
-    (p) => p.selected && p.hasErrors,
-  ).length;
+  // Las que entran PENDIENTES: van al back con lo que les falta a la vista.
+  const remainingErrorsCount = properties.filter((p) => p.hasErrors).length;
 
   // Las que el back va a rechazar, separadas ANTES de empezar.
   const bloqueadas = selectedProperties
@@ -784,7 +818,7 @@ export function StepConfirmImport({
     } catch (e) {
       if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
         setError(
-          "El lote todavía se está procesando — esperá a que termine antes de descartarlo.",
+          "El lote todavía se está procesando — espera a que termine antes de descartarlo.",
         );
       } else {
         setError(
@@ -1186,10 +1220,17 @@ export function StepConfirmImport({
             repetir un trabajo hecho. Los que quedaron sin dueño los nombra el
             aviso de arriba (`aviso-sin-mandato`), uno por uno.
           */}
+          {/*
+            🔴 QA 22-09: decía «la comisión salió del archivo» sobre 280
+            inmuebles cuya comisión era el 10 % por defecto de la agencia. La
+            frase ahora dice lo que el archivo traía, contado: la comisión que
+            no venía queda VACÍA («no venía en el archivo») y la llena el
+            contrato vigente al activarlo, o una persona en la ficha.
+          */}
           {onSalir && (state.importedCount ?? 0) > 0 && (
             <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
-              El propietario y la comisión salieron del archivo, inmueble por inmueble.
-              Los puedes cambiar cuando quieras desde la ficha de cada inmueble.
+              {fraseDeLaComision(aEnviar)} Los puedes cambiar cuando quieras
+              desde la ficha de cada inmueble.
             </p>
           )}
         </div>

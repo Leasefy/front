@@ -4,9 +4,14 @@
  * IMPORTANT: this hits our own Next.js Route Handler
  * (`/api/geocode/autocomplete`), never LocationIQ directly — the API key is
  * server-only and must never reach the browser.
+ *
+ * Desde la auditoría de seguridad del 23-09 la ruta exige sesión (gastaba la
+ * cuota de LocationIQ de cualquiera en internet): por eso va `fetchConSesion`,
+ * que pone el token y lo renueva una vez si acaba de vencer.
  */
 
 import type { GeocodeSuggestion } from './geocode.normalize';
+import { fetchConSesion } from './client';
 
 export type { GeocodeSuggestion };
 
@@ -33,7 +38,7 @@ interface ReverseResponseBody {
 export const geocodeApi = {
   /** Autocomplete a partial Colombian address via the internal proxy. */
   async autocomplete(query: string, signal?: AbortSignal): Promise<GeocodeSuggestion[]> {
-    const res = await fetch(`/api/geocode/autocomplete?q=${encodeURIComponent(query)}`, { signal });
+    const res = await fetchConSesion(`/api/geocode/autocomplete?q=${encodeURIComponent(query)}`, { signal });
 
     if (!res.ok) {
       const body: AutocompleteResponseBody = await res.json().catch(() => ({}));
@@ -51,7 +56,7 @@ export const geocodeApi = {
    * (fail-closed, same contract as `autocomplete`).
    */
   async reverse(lat: number, lon: number, signal?: AbortSignal): Promise<GeocodeSuggestion | null> {
-    const res = await fetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`, { signal });
+    const res = await fetchConSesion(`/api/geocode/reverse?lat=${lat}&lon=${lon}`, { signal });
 
     if (!res.ok) {
       const body: ReverseResponseBody = await res.json().catch(() => ({}));

@@ -44,6 +44,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
 import { ExtractosEnviadosDelPropietario } from '@/components/inmobiliaria/ExtractosEnviadosDelPropietario';
+import { DeduccionesDelPropietario } from '@/components/inmobiliaria/deducciones/DeduccionesDelPropietario';
+import { CambioDeCuentaBancaria } from '@/components/inmobiliaria/mandato/CambioDeCuentaBancaria';
 import {
   DropdownList,
   DropdownListContent,
@@ -75,6 +77,8 @@ import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos'
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
 
@@ -253,7 +257,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
                 <div className="h-8 w-px bg-border" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {consignacion.commissionPercent}%
+                    {textoDeLaComision(consignacion)}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
                 </div>
@@ -349,6 +353,7 @@ function FilaDeContacto({
   onCopiar,
   copiado,
   etiquetaCopiar,
+  etiquetaCopiado,
   mono,
 }: {
   etiqueta: string;
@@ -356,7 +361,13 @@ function FilaDeContacto({
   href?: string;
   onCopiar?: () => void;
   copiado?: boolean;
+  /** Lo que HACE el botón («Copiar el correo»). */
   etiquetaCopiar?: string;
+  /**
+   * Lo que pasó, sólo después de copiar. 🔴 23-09 (QA): el botón se anunciaba
+   * «Copiado al portapapeles» antes de que nadie copiara nada.
+   */
+  etiquetaCopiado?: string;
   mono?: boolean;
 }) {
   const texto = valor && valor.trim() ? valor : null;
@@ -380,7 +391,7 @@ function FilaDeContacto({
             variant="ghost"
             size="sm"
             onClick={onCopiar}
-            aria-label={etiquetaCopiar ?? 'Copiar'}
+            aria-label={(copiado ? etiquetaCopiado : etiquetaCopiar) ?? etiquetaCopiar ?? 'Copiar'}
             icon={copiado ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
           />
         ) : null}
@@ -412,7 +423,7 @@ function PropietarioDetailContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
-  const [activeTab, setTab] = useState<'properties' | 'payments' | 'notes'>('properties');
+  const [activeTab, setTab] = useState<'properties' | 'payments' | 'deducciones' | 'notes'>('properties');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
@@ -427,6 +438,13 @@ function PropietarioDetailContent() {
   const { canAccess } = usePermissions();
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
+  /*
+   * 🔴 La PLATA del propietario (su cuenta, sus giros, sus deducciones y su
+   * extracto) pide `dispersiones:view` desde el 17-09-2026. El asesor comercial
+   * capta al propietario pero no ve su plata (Nico: «nada de operaciones»): la
+   * ficha no le ofrece lo que el back le va a negar.
+   */
+  const veLaPlata = canAccess('dispersiones', 'view');
 
   // Fetch propietario and keep local state for updates
   const {
@@ -678,9 +696,11 @@ function PropietarioDetailContent() {
             </div>
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
               {[
+                // 🔴 23-09 (QA): quitarle la «s» a «Propiedades» daba «1 propiedade».
+                // El singular y el plural son claves, no una regla sobre la palabra.
                 propietario.propertyCount === 1
-                  ? `1 ${t('inmobiliaria.propietario.stats.properties').toLowerCase().replace(/s$/, '')}`
-                  : `${propietario.propertyCount} ${t('inmobiliaria.propietario.stats.properties').toLowerCase()}`,
+                  ? t('inmobiliaria.propietario.stats.unaPropiedad')
+                  : t('inmobiliaria.propietario.stats.nPropiedades', { n: propietario.propertyCount }),
                 // Sus copropiedades, aparte: el minoritario también es dueño.
                 (propietario.copropiedadesCount ?? 0) > 0
                   ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
@@ -728,10 +748,12 @@ function PropietarioDetailContent() {
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-52">
-              <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
-                <FileText className="w-4 h-4" />
-                <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
-              </DropdownListItem>
+              {veLaPlata && (
+                <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
+                  <FileText className="w-4 h-4" />
+                  <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
+                </DropdownListItem>
+              )}
               <DropdownListItem onSelect={() => void handleExport()} disabled={isExporting} data-testid="accion-exportar">
                 <Download className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
@@ -797,7 +819,8 @@ function PropietarioDetailContent() {
                 href={email ? `mailto:${email}` : undefined}
                 onCopiar={email ? () => handleCopy(email, 'email') : undefined}
                 copiado={copiedEmail}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarCorreo')}
+                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
               />
               <FilaDeContacto
                 etiqueta={t('inmobiliaria.propietarios.phone')}
@@ -805,7 +828,8 @@ function PropietarioDetailContent() {
                 href={phone ? `tel:${phone}` : undefined}
                 onCopiar={phone ? () => handleCopy(phone, 'phone') : undefined}
                 copiado={copiedPhone}
-                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copiarTelefono')}
+                etiquetaCopiado={t('inmobiliaria.propietarios.detail.copied')}
               />
               <FilaDeContacto
                 etiqueta={t('inmobiliaria.propietarios.detail.address')}
@@ -847,14 +871,38 @@ function PropietarioDetailContent() {
             }}
           />
 
-          {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
-          <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
+          {veLaPlata ? (
+            <>
+              {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
+              <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
 
-          {/* Bank Info */}
-          <PropietarioBankInfo
-            bankAccount={propietario.bankAccount}
-            onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
-          />
+              {/* Bank Info */}
+              <PropietarioBankInfo
+                bankAccount={propietario.bankAccount}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
+                onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
+              />
+
+              {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
+                  confirmación del propietario y aprobación de un administrador.
+                  Va dentro de `veLaPlata`: es la cuenta bancaria del propietario. */}
+              <CambioDeCuentaBancaria
+                propietarioId={propietario.id}
+                tieneCuenta={!!propietario.bankAccount?.accountNumber}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
+                puedeEditar={puedeEditar}
+                onCuentaCambiada={() => void refetch()}
+              />
+            </>
+          ) : (
+            <div
+              className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+              data-testid="propietario-plata-oculta"
+            >
+              La cuenta bancaria, los giros, las deducciones y el extracto de este propietario no hacen parte de
+              tu rol. Si los necesitas, pídele a un administrador el permiso de ver dispersiones.
+            </div>
+          )}
         </div>
 
         {/* Right Column - Properties & Payments */}
@@ -879,18 +927,26 @@ function PropietarioDetailContent() {
                   </span>
                 ),
               },
-              {
-                value: 'payments',
-                ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
-                label: (
-                  <span className="flex items-center gap-2">
-                    {t('inmobiliaria.propietarios.detail.payments')}
-                    {!cargandoDispersiones && !errorDispersiones && (
-                      <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
-                    )}
-                  </span>
-                ),
-              },
+              ...(veLaPlata
+                ? [
+                    {
+                      value: 'payments' as const,
+                      ariaLabel: t('inmobiliaria.propietarios.detail.payments'),
+                      label: (
+                        <span className="flex items-center gap-2">
+                          {t('inmobiliaria.propietarios.detail.payments')}
+                          {!cargandoDispersiones && !errorDispersiones && (
+                            <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                          )}
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'deducciones' as const,
+                      label: t('inmobiliaria.deducciones.tab'),
+                    },
+                  ]
+                : []),
               {
                 value: 'notes',
                 label: t('inmobiliaria.propietarios.detail.notes'),
@@ -940,7 +996,7 @@ function PropietarioDetailContent() {
               </motion.div>
             )}
 
-            {activeTab === 'payments' && (
+            {veLaPlata && activeTab === 'payments' && (
               <motion.div
                 key="payments"
                 initial={{ opacity: 0, y: 10 }}
@@ -971,6 +1027,25 @@ function PropietarioDetailContent() {
                     <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
                   ))}
                 </EstadoDeDatos>
+              </motion.div>
+            )}
+
+            {veLaPlata && activeTab === 'deducciones' && (
+              <motion.div
+                key="deducciones"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {/* Los inmuebles salen de las consignaciones ya leídas: el
+                    descuento puede quedar atado a uno o a ninguno. */}
+                <DeduccionesDelPropietario
+                  propietarioId={propietario.id}
+                  inmuebles={consignaciones.map((c) => ({
+                    consignacionId: c.id,
+                    titulo: c.propertyTitle,
+                  }))}
+                />
               </motion.div>
             )}
 
@@ -1016,6 +1091,11 @@ function PropietarioDetailContent() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* 🔴 22-09: quién tocó a este propietario, con su rol —crearlo,
+          editarlo, cambiarle la cuenta, bajar su extracto— y lo que se intentó
+          sin permiso. Debajo de las pestañas: vale para todas. */}
+      <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
       {/* Edit Modal */}
       <Modal

@@ -1,4 +1,5 @@
 'use client';
+import type { JSX } from 'react';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
@@ -75,9 +76,11 @@ import {
   apruebaPorLote as apruebaPorLoteSegun,
   esAprobadorYEjecutor,
   esAprobarPorLote,
+  loteQueTieneLaDispersion,
   motivoLegible,
 } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { SegmentedControl } from '@leasefy/cadence';
 
 // View modes
@@ -295,6 +298,21 @@ function DispersionesContent() {
   const porLote = loteConfirmadoPorElBack || apruebaPorLoteSegun(agencia);
 
   /** El 409 de aprobar por lote: se dice qué pasó y a dónde ir, no «Error». */
+  /** 409 `DISPERSION_EN_UN_LOTE`: el mensaje del back y el enlace al lote que la tiene. */
+  const avisarQueEstaEnUnLote = useCallback(
+    (enLote: { href: string; mensaje: string }, id?: string) => {
+      toast.error(t('inmobiliaria.dispersiones.enUnLote.titulo'), {
+        id,
+        description: enLote.mensaje,
+        action: {
+          label: t('inmobiliaria.dispersiones.enUnLote.irAlLote'),
+          onClick: () => router.push(enLote.href),
+        },
+      });
+    },
+    [router, t],
+  );
+
   const avisarQueEsPorLote = useCallback(
     (error: ApiError, id?: string) => {
       setLoteConfirmadoPorElBack(true);
@@ -417,12 +435,17 @@ function DispersionesContent() {
         avisarQueEsPorLote(error, id);
         return;
       }
+      const enLote = loteQueTieneLaDispersion(error);
+      if (enLote) {
+        avisarQueEstaEnUnLote(enLote, id);
+        return;
+      }
       toast.error('No se pudo aprobar la dispersión', {
         id,
         description: motivoDeLaAccion(error),
       });
     }
-  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote]);
+  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
 
   /**
    * El botón de la fila (tabla y tarjeta).
@@ -449,12 +472,17 @@ function DispersionesContent() {
    * banco. Por eso la referencia es obligatoria (el back la exige) y el texto
    * dejó de prometer «Transferencia enviada».
    */
-  const handleProcessDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
+  const handleProcessDispersion = useCallback(async (
+    dispersion: Dispersion,
+    transferReference: string,
+    // Desde qué cuenta salió (23-09): el «Desde» del correo al propietario.
+    origen?: OrigenPedido | null,
+  ) => {
     const id = `process-${dispersion.id}`;
     try {
       toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), { id });
 
-      await dispersionesApi.process(dispersion.id, transferReference);
+      await dispersionesApi.process(dispersion.id, transferReference, origen);
       await refetchDispersiones();
       void cargarResumen();
 
@@ -470,6 +498,11 @@ function DispersionesContent() {
         avisarQueEsPorLote(error, id);
         return;
       }
+      const enLote = loteQueTieneLaDispersion(error);
+      if (enLote) {
+        avisarQueEstaEnUnLote(enLote, id);
+        return;
+      }
       toast.error(
         esAprobadorYEjecutor(error)
           ? 'El giro lo anota otra persona'
@@ -477,11 +510,15 @@ function DispersionesContent() {
         { id, description: motivoDeLaAccion(error) },
       );
     }
-  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote]);
+  }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
 
   // Reintentar una fallida es el mismo camino: la referencia sigue siendo del banco.
-  const handleRetryDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
-    await handleProcessDispersion(dispersion, transferReference);
+  const handleRetryDispersion = useCallback(async (
+    dispersion: Dispersion,
+    transferReference: string,
+    origen?: OrigenPedido | null,
+  ) => {
+    await handleProcessDispersion(dispersion, transferReference, origen);
   }, [handleProcessDispersion]);
 
   /*
@@ -824,7 +861,7 @@ function DispersionesContent() {
                 queSon={hayFiltros ? 'resultados' : 'dispersiones'}
                 icono={PaperPlaneTilt}
                 titulo={`Todavía no hay dispersiones de ${monthDisplay}`}
-                descripcion="Se arman con los cobros pagados del mes. Genéralas desde el asistente cuando el mes tenga recaudo."
+                descripcion="Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente."
                 crear={{
                   label: t('inmobiliaria.dispersiones.wizard.title'),
                   href: '/panel/inmobiliaria/pagos/dispersiones/generar',

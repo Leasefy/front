@@ -8,6 +8,8 @@ import {
   setTokenRefresher,
   getAccessToken,
   clearInFlightGets,
+  setMfaPendingFlag,
+  estaMfaPendiente,
 } from './client'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
@@ -317,13 +319,28 @@ describe('ApiError — 400 con message: string[] (contract.md §3.3)', () => {
 
 /**
  * T-0012 WU-5 — the generic non-2xx branch only ever forwarded `message`,
- * never `code`. That's fine for statuses the client special-cases (401/402/403,
- * which already read `code` themselves), but any OTHER status that starts
- * carrying a machine-readable `code` (e.g. the back's 409
- * PENDING_CHARGE_ALREADY_PAID / 503 payment_verification_unavailable on
- * select-plan) silently lost it — callers could only pattern-match on
- * `.message`, a human string never meant to be parsed. This is general
- * plumbing, not a special case for one endpoint.
+ * never `code`, so any status carrying a machine-readable `code` (e.g. the
+ * back's 409 PENDING_CHARGE_ALREADY_PAID / 503
+ * payment_verification_unavailable on select-plan) silently lost it — callers
+ * could only pattern-match on `.message`, a human string never meant to be
+ * parsed. This is general plumbing, not a special case for one endpoint.
+ *
+ * 🔴 CORRECCIÓN DEL 21-09-2026. Este comentario decía que reenviar el código
+ * sólo hacía falta para los status «genéricos», porque «401/402/403 ya leen
+ * `code` ellos mismos». Era falso y nadie lo comprobó: el 401 sí, el 402 y el
+ * 403 NO — sus ramas construían el `ApiError` con `message` y nada más, y al
+ * estar ANTES de la rama general nunca llegaban a ella.
+ *
+ * Lo que costó: el back manda `SEGUNDO_FACTOR_REQUERIDO` en un 403 desde el
+ * 18-09 y `clasificar.ts` sabía reconocerlo desde entonces. No podía, porque
+ * el código moría acá. A un administrador al que sólo le falta activar su
+ * segundo factor el panel le decía, en las 25 secciones, «tu rol no incluye
+ * esta sección, pídele a un administrador que te lo habilite» — a la persona
+ * que ES el administrador. Nico lo preguntó el 21-09: «¿por qué no me das
+ * acceso a todo?».
+ *
+ * Los dos tests de abajo son los que faltaban: una suposición escrita en un
+ * comentario no es una prueba.
  */
 describe('ApiError — `code` forwarding on the generic non-2xx branch', () => {
   it('forwards `code` from the response body on a 409', async () => {
@@ -339,6 +356,49 @@ describe('ApiError — `code` forwarding on the generic non-2xx branch', () => {
     expect(err.status).toBe(409)
     expect(err.code).toBe('PENDING_CHARGE_ALREADY_PAID')
     expect(err.message).toBe('ya pagado')
+  })
+
+  it('🔴 reenvía `code` en un 403: era el único status donde decidía el mensaje', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(403, {
+        message: 'Tu rol exige segundo factor.',
+        code: 'SEGUNDO_FACTOR_REQUERIDO',
+      }),
+    )
+
+    const err = (await apiClient.get('/inmobiliaria/pipeline').catch((e) => e)) as ApiError
+    expect(err.status).toBe(403)
+    expect(err.code).toBe('SEGUNDO_FACTOR_REQUERIDO')
+  })
+
+  it('🔴 y también el CUERPO del 403: sin `module` el cartel no nombra la sección', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(403, {
+        message: 'No tienes permiso para view en pipeline',
+        code: 'SIN_PERMISO_DE_MODULO',
+        module: 'pipeline',
+        action: 'view',
+        role: 'AGENTE',
+      }),
+    )
+
+    const err = (await apiClient.get('/inmobiliaria/pipeline').catch((e) => e)) as ApiError
+    expect(err.code).toBe('SIN_PERMISO_DE_MODULO')
+    expect(err.detalle?.module).toBe('pipeline')
+    expect(err.detalle?.action).toBe('view')
+  })
+
+  it('reenvía `code` en un 402, por el mismo motivo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(402, { message: 'Se requiere un plan activo', code: 'PLAN_VENCIDO' }),
+    )
+
+    const err = (await apiClient.get('/otra/cosa').catch((e) => e)) as ApiError
+    expect(err.status).toBe(402)
+    expect(err.code).toBe('PLAN_VENCIDO')
   })
 
   it('forwards `code` from the response body on a 503', async () => {
@@ -506,6 +566,23 @@ describe('apiClient.get — explicit-token GETs share the in-flight request', ()
     const [a, b] = await Promise.all([pendingA, pendingB])
     expect(a).toEqual({ id: 'user-A' })
     expect(b).toEqual({ id: 'user-B' })
+  })
+})
+
+describe('T-0099: mfa-pending flag mirror (non-React consumers, e.g. clasificar.ts)', () => {
+  afterEach(() => {
+    setMfaPendingFlag(false)
+  })
+
+  it('defaults to false — no session has ever reported a pending second factor', () => {
+    expect(estaMfaPendiente()).toBe(false)
+  })
+
+  it('reflects the last value AuthProvider pushed via setMfaPendingFlag', () => {
+    setMfaPendingFlag(true)
+    expect(estaMfaPendiente()).toBe(true)
+    setMfaPendingFlag(false)
+    expect(estaMfaPendiente()).toBe(false)
   })
 })
 

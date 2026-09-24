@@ -20,8 +20,9 @@
  * correcta con cero elementos. Va con <EmptyState>.
  */
 
-import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
+import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 
 export type TipoDeFallo =
   | 'noExiste'
@@ -32,8 +33,28 @@ export type TipoDeFallo =
   | 'limitado'
   /** 402: el plan se quedó sin créditos de IA. Reintentar no compra créditos. */
   | 'sinCreditos'
+  /**
+   * 403 marcado `SEGUNDO_FACTOR_REQUERIDO`: el rol exige segundo factor y esta
+   * sesión entró sólo con contraseña. No es «no tienes acceso»: la persona SÍ
+   * tiene el permiso, le falta un paso que puede dar ella misma.
+   */
+  | 'sinSegundoFactor'
+  /**
+   * T-0099: el mismo 403, pero mientras la sesión YA sabe que está esperando
+   * el paso a aal2 (`mfaRequired` / `estaMfaPendiente()`) — el TOTP está
+   * activo, sólo falta terminar de entrar el código de ESTA sesión. Distinto
+   * de `sinSegundoFactor`: ahí no hay nada que "activar", así que no se
+   * manda a Configuración → Seguridad, que sería falso.
+   */
+  | 'segundoFactorPendiente'
   /** El pedido se cortó por tiempo (o se abortó) antes de que hubiera respuesta. */
   | 'tardo'
+  /**
+   * 503 marcado `FALTA_UNA_MIGRACION`: esta base está atrás del código. No es
+   * un fallo del servidor ni algo que la persona pueda resolver — es un
+   * despliegue a medias.
+   */
+  | 'baseAtrasada'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -51,6 +72,14 @@ export interface FalloDeCarga {
 export interface Contexto {
   /** «la propiedad», «el contrato», «la postulación»… con artículo. */
   queEs?: string
+  /**
+   * ¿El FRONT cree que esta persona sí tiene acceso? Lo sabe por
+   * `my-permissions`, que es otra fuente distinta de la que decide cada
+   * llamada. Cuando las dos no coinciden —el panel te deja entrar y el
+   * servidor te cierra la puerta— el cartel tiene que decir que el problema
+   * es nuestro, no mandarte a pedir un permiso que ya tienes.
+   */
+  creoQueTengoAcceso?: boolean
 }
 
 /**
@@ -132,6 +161,107 @@ function statusDe(error: unknown): number | null {
 }
 
 /**
+ * ¿El fallo es «te falta el segundo factor»?
+ *
+ * Se mira el `code` en cualquier forma que llegue —instancia de `ApiError`,
+ * objeto plano, o el cuerpo del back pegado al error— porque el discriminante
+ * es el código, no la clase de JavaScript que lo envuelve.
+ */
+/**
+ * Lo que el back mandó en el cuerpo del «no»: su código y, si lo trae, qué
+ * módulo y qué acción negó.
+ *
+ * Se mira en los tres sitios donde puede aparecer —el `ApiError`, el objeto
+ * plano, y el `body` de un error re-envuelto— por la misma razón que lo hacía
+ * `esSegundoFactor`: un error que cruzó un servicio que lo re-empaqueta deja
+ * de ser `ApiError` aunque traiga el mismo código, y el 20-09 eso dejó MUERTO
+ * en media aplicación el aviso del segundo factor.
+ */
+export interface CuerpoDelNo {
+  code?: string
+  module?: string
+  action?: string
+  role?: string
+}
+
+export function cuerpoDelNo(error: unknown): CuerpoDelNo {
+  const leer = (o: unknown): CuerpoDelNo => {
+    if (!o || typeof o !== 'object') return {}
+    const e = o as Record<string, unknown>
+    const texto = (v: unknown) => (typeof v === 'string' ? v : undefined)
+    return {
+      code: texto(e.code),
+      module: texto(e.module),
+      action: texto(e.action),
+      role: texto(e.role),
+    }
+  }
+  /*
+   * Los dos sitios se MEZCLAN, no se elige uno. `ApiError` sube el `code` a una
+   * propiedad suya y deja el resto del cuerpo en `body`, así que quedarse con
+   * el primero que tuviera código perdía el `module` — y sin módulo el cartel
+   * no puede nombrar la sección, que es justo lo que se agregó hoy.
+   */
+  const directo = leer(error)
+  const otros =
+    error && typeof error === 'object'
+      ? [
+          // `body` es como viene un error re-envuelto por un servicio…
+          leer((error as { body?: unknown }).body),
+          // …y `detalle` es como lo guarda `ApiError`, que sube `code` a una
+          // propiedad suya y deja el resto del cuerpo acá. Los dos nombres
+          // existen de verdad en este repo; leer sólo uno pierde el módulo.
+          leer((error as { detalle?: unknown }).detalle),
+        ]
+      : []
+  const primero = (campo: keyof CuerpoDelNo) =>
+    directo[campo] ?? otros.map((o) => o[campo]).find((v) => v !== undefined)
+  return {
+    code: primero('code'),
+    module: primero('module'),
+    action: primero('action'),
+    role: primero('role'),
+  }
+}
+
+export function esSegundoFactor(error: unknown): boolean {
+  const CODIGO = 'SEGUNDO_FACTOR_REQUERIDO'
+  if (error instanceof ApiError && error.code === CODIGO) return true
+  return cuerpoDelNo(error).code === CODIGO
+}
+
+/**
+ * Cómo se llama en pantalla el módulo que el back nombró. Sin esto el cartel
+ * diría «pipeline» —una llave interna— o, peor, no diría cuál.
+ */
+const NOMBRE_DEL_MODULO: Record<string, string> = {
+  pipeline: 'Pipeline',
+  inmuebles: 'Inmuebles',
+  propietarios: 'Propietarios',
+  contratos: 'Contratos',
+  cobros: 'Cobros',
+  dispersiones: 'Dispersiones',
+  conciliacion: 'Conciliación',
+  contabilidad: 'Contabilidad',
+  portafolio: 'Portafolio',
+  documentos: 'Documentos',
+  postulaciones: 'Postulaciones',
+  mantenimiento: 'Mantenimientos',
+  agentes: 'Equipo',
+  analytics: 'Reportes',
+  operaciones: 'Operación',
+  // QA 22-09 (P2): el cartel decía «No tienes acceso a configuracion», la llave
+  // interna. Son los módulos que el back nombra y faltaban acá.
+  configuracion: 'Configuración',
+  reportes: 'Reportes',
+  clientes: 'Clientes',
+  dashboard: 'Inicio',
+  subscription: 'Suscripción',
+  avaluos: 'Avalúos',
+  nomina: 'Nómina',
+}
+
+/**
  * ¿El pedido se cortó por tiempo antes de tener respuesta?
  *
  * `AbortSignal.timeout()` rechaza con un `TimeoutError`; un `AbortController`
@@ -152,6 +282,28 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   const status = statusDe(error)
   const mensajeOriginal = textoDe(error)
   const eso = ctx.queEs ?? 'esto'
+
+  /*
+   * 🔴 La base atrasada va PRIMERO, antes de cualquier status (21-09-2026).
+   *
+   * Llega como 503 y sin esta rama caería en «servidor» — «fue un problema
+   * nuestro, prueba de nuevo en un momento»—, que es exactamente lo que no
+   * hay que decir: reintentar no aplica una migración, y el cartel genérico
+   * hizo que veinte pantallas rotas por LA MISMA columna se vieran como
+   * veinte problemas distintos.
+   */
+  if (cuerpoDelNo(error).code === 'FALTA_UNA_MIGRACION') {
+    return {
+      tipo: 'baseAtrasada',
+      titulo: `No podemos mostrar ${eso} ahora mismo`,
+      descripcion:
+        'Es algo nuestro y ya sabemos qué es: quedó una actualización del sistema a medio terminar. No se arregla reintentando; se resuelve del lado nuestro.',
+      // Reintentar no cambia nada hasta que alguien aplique la migración.
+      sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
 
   if (status === 404) {
     return {
@@ -181,6 +333,135 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   }
 
   if (status === 403) {
+    // 🔴 El asesor comercial abriendo un inmueble ARRENDADO (17-09-2026): no es
+    // «no tienes acceso a esto» en general, es que la operación de ese
+    // inmueble no es de su rol. El back lo marca con su propio código.
+    if (error instanceof ApiError && error.code === 'INMUEBLE_ARRENDADO') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Este inmueble está arrendado',
+        descripcion:
+          'Su operación —el contrato, los cobros, el inventario de la entrega— no hace parte de tu rol. Si la necesitas, pídele a un administrador el permiso de ver contratos.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+    // 🔴 EL ADMINISTRADOR AL QUE LE DECÍAMOS QUE LE PIDIERA A UN ADMINISTRADOR
+    // (18-09-2026). Cuando el back exige segundo factor, el 403 cubre TODO el
+    // panel menos `users/me`, `auth/`, `health` y `config/`. Pintado como el
+    // 403 genérico de abajo, la pantalla le dice a quien manda en la
+    // inmobiliaria que le pida permiso a alguien más — y no hay a quién: el
+    // permiso lo tiene, lo que le falta es activar el TOTP, que es algo que
+    // hace él mismo en dos minutos. Un cartel sin salida repetido en las 25
+    // secciones del panel.
+    /* 🔴 20-09 · Este arreglo del 18-09 estaba MUERTO en la mitad de las
+       pantallas. Exigía `instanceof ApiError`, y un error que cruzó un
+       servicio que lo re-envuelve —o que llegó como objeto plano— deja de
+       serlo aunque traiga el mismo `code`. Medido con «Deterioro de cartera»
+       abierta: arriba salía «No tienes acceso a esto · Pídele a un
+       administrador que te lo habilite» y ABAJO, en letra chica, el motivo de
+       verdad. El administrador leía primero que le pidiera permiso a alguien
+       que es él mismo.
+
+       Se reconoce por el `code`, venga en lo que venga. */
+    if (esSegundoFactor(error)) {
+      // T-0099: si la sesión YA sabe que está esperando el paso a aal2
+      // (mirrored en apiClient vía `setMfaPendingFlag` — este archivo no
+      // puede leer el contexto de React), este 403 es una petición que salió
+      // justo antes del redirect a /auth/mfa-verify, no "nunca lo activó".
+      // El TOTP está activo; mandarla a Configuración → Seguridad acá sería
+      // falso, y la persona ya está por llegar a la pantalla que hace
+      // exactamente lo que le pediríamos.
+      if (estaMfaPendiente()) {
+        return {
+          tipo: 'segundoFactorPendiente',
+          titulo: 'Verificando tu segundo factor',
+          descripcion: 'Ya casi. Termina de ingresar el código de tu app de autenticación para continuar.',
+          sePuedeReintentar: false,
+          status,
+          mensajeOriginal,
+        }
+      }
+      return {
+        tipo: 'sinSegundoFactor',
+        titulo: 'Activa tu segundo factor para seguir',
+        descripcion:
+          'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo una vez en Configuración → Seguridad y vuelve a entrar: son dos minutos.',
+        // Reintentar no cambia nada: el token de esta sesión ya nació sin el
+        // segundo factor. Hay que activarlo y volver a entrar.
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+    /*
+     * 🔴 Los otros tres «no» del panel (21-09-2026). Hasta hoy los tres caían
+     * en el cartel genérico de abajo, que le echa la culpa a tu ROL. Nico lo
+     * preguntó mirando el Pipeline: «¿por qué no me das acceso a todo?» — y la
+     * respuesta no era su rol.
+     */
+    const cuerpo = cuerpoDelNo(error)
+
+    if (cuerpo.code === 'SIN_MEMBRESIA_ACTIVA') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Tu cuenta no está activa en ninguna inmobiliaria',
+        descripcion:
+          'No es un permiso que falte: es la membresía. Si te acaban de invitar, acepta la invitación desde el correo; si trabajabas acá, pídele a un administrador que te reactive.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    if (cuerpo.code === 'INMOBILIARIA_NO_ES_TUYA') {
+      return {
+        tipo: 'sinPermiso',
+        titulo: 'Esa inmobiliaria no es tuya',
+        descripcion:
+          'Estás pidiendo datos de una inmobiliaria en la que no eres miembro. Vuelve a entrar y elige la tuya en el selector de arriba.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    if (cuerpo.code === 'SIN_PERMISO_DE_MODULO') {
+      const seccion = cuerpo.module
+        ? (NOMBRE_DEL_MODULO[cuerpo.module] ?? cuerpo.module)
+        : null
+      /*
+       * El desacuerdo. El panel te dejó entrar porque `my-permissions` dijo
+       * que sí, y la llamada la negó el servidor. Echarle la culpa al rol acá
+       * es mandar a alguien —muchas veces al administrador mismo— a pedirle
+       * un permiso que ya tiene, y a no encontrarlo nunca.
+       */
+      if (ctx.creoQueTengoAcceso) {
+        return {
+          tipo: 'sinPermiso',
+          titulo: seccion
+            ? `No pudimos abrir ${seccion}, y no es por tus permisos`
+            : 'No pudimos abrir esto, y no es por tus permisos',
+          descripcion:
+            'Tu cuenta figura con acceso a esta sección y aun así el servidor la negó. Es un problema nuestro, no tuyo: escríbenos con la referencia de abajo y lo miramos.',
+          sePuedeReintentar: false,
+          status,
+          mensajeOriginal,
+        }
+      }
+      return {
+        tipo: 'sinPermiso',
+        titulo: seccion ? `No tienes acceso a ${seccion}` : 'No tienes acceso a esto',
+        descripcion: seccion
+          ? `Tu rol en la inmobiliaria no incluye ${seccion}. Pídele a un administrador que te lo habilite.`
+          : 'Tu rol en la inmobiliaria no incluye esta sección. Pídele a un administrador que te lo habilite.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
     return {
       tipo: 'sinPermiso',
       titulo: 'No tienes acceso a esto',
@@ -241,11 +522,20 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   // como un 500 genérico invita a machacar «Intentar de nuevo», que es
   // exactamente lo que agravó el burst original (ver ledger de la tarea).
   if (status === 429) {
+    // 23-09: el limitador del back dice cuánto falta (`reintentarEnSegundos`,
+    // lo pone `client.ts`). Con el número, la persona sabe cuándo volver en
+    // vez de machacar «Intentar de nuevo».
+    const espera =
+      error instanceof ApiError &&
+      typeof error.detalle?.reintentarEnSegundos === 'number'
+        ? (error.detalle.reintentarEnSegundos as number)
+        : null
     return {
       tipo: 'limitado',
       titulo: 'Estamos recibiendo muchas solicitudes',
-      descripcion:
-        'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
+      descripcion: espera
+        ? `Espera ${cuantoEsperar(espera)} y vuelve a intentar — no es un error, es el sistema protegiéndose de una ráfaga.`
+        : 'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,

@@ -44,6 +44,32 @@ export interface DocumentoDePago {
   /** «INGRESO» para el inquilino, «EGRESO» para el propietario. */
   tipo: string;
   descripcion: string;
+  /**
+   * 🔴 D11 (17-09-2026): quién pagó, cuando NO fue el cliente. Ausente = pagó
+   * el cliente. Hoy sólo una aseguradora que pagó un siniestro.
+   */
+  pagador?: {
+    tipo: 'ASEGURADORA';
+    nombre: string;
+    nit: string;
+    siniestroReferencia: string | null;
+  };
+}
+
+/**
+ * 🔴 D11: la deuda SUBROGADA a una aseguradora. Las cuotas que ella pagó
+ * quedan canceladas para la inmobiliaria y el propietario, pero el inquilino le
+ * debe ese valor a ella (C.Co. art. 1096): va aparte, nunca sumado a lo
+ * pendiente con la inmobiliaria.
+ */
+export interface Subrogacion {
+  aseguradoras: {
+    nombre: string;
+    nit: string;
+    valorCop: number;
+    siniestros: string[];
+  }[];
+  totalCop: number;
 }
 
 /**
@@ -73,6 +99,8 @@ export interface FilaDelEstadoDeCuenta {
   reteIcaComision?: number;
   /** Lo que efectivamente se paga o se gira por esta fila. */
   valorNeto: number;
+  /** 🔴 D11: la pagó una aseguradora; el inquilino se la debe a ella. */
+  subrogadaA?: { nombre: string; nit: string };
   /** `YYYY-MM-DD`. Es la fecha por la que se filtra y se ordena. */
   fechaVencimiento: string;
   documentoDePago: DocumentoDePago | null;
@@ -87,6 +115,17 @@ export interface FilaDelEstadoDeCuenta {
    */
   periodoDesde?: string | null;
   periodoHasta?: string | null;
+  /**
+   * 🔴 Dónde está la fila HOY, con la regla única del back (`cuotaEsCartera`:
+   * vencimiento MÁS los días de plazo del contrato). `VENCIDA_EN_PLAZO` se lee
+   * «Vencido, en plazo» y NO es mora; `CARTERA` sí. Es lo que la ficha y la
+   * cartera dicen de la misma cuota: el front no vuelve a contar días.
+   *
+   * Opcional sólo porque un back anterior no lo manda.
+   */
+  cajon?: 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA' | 'SIN_DEUDA';
+  /** Días de mora DESPUÉS del plazo. `0` mientras el plazo corre. */
+  diasDeMora?: number;
 }
 
 /**
@@ -144,7 +183,71 @@ export interface ContratoDelEstadoDeCuenta {
     otrosConceptos: FilaDelEstadoDeCuenta[];
   };
   totales: TotalesDelEstadoDeCuenta;
+  /** 🔴 D11: lo que el inquilino le debe a una aseguradora. Ausente si no hay. */
+  subrogacion?: Subrogacion | null;
+  /**
+   * El interés de mora del contrato, APARTE del capital. Sólo del lado
+   * INQUILINO; ausente o `null` en el del propietario y con un back anterior.
+   */
+  intereses?: InteresesDelContrato | null;
   cortes: PuntoDeQuiebre[];
+}
+
+// ══ Intereses de mora ═══════════════════════════════════════════════════════
+//
+// La prefactura le cobraba al inquilino un interés que ni la cartera ni el
+// estado de cuenta mostraban. El back manda, por contrato, un bloque
+// `intereses` liquidado con la MISMA regla que la prefactura y la cartera.
+// Arriendos y Otros conceptos no cambian: siguen siendo lo pactado. Ausente no
+// es «cero intereses»: es «no hay nada que decir de mora».
+
+/** Un renglón de interés: el de UNA cuota. */
+export interface FilaDeInteres {
+  cuotaId: string;
+  /** `YYYY-MM`. */
+  mes: string;
+  /** «Intereses de mora sobre Canon de arrendamiento. De … hasta …». */
+  concepto: string;
+  /** `YYYY-MM-DD`: el vencimiento de la cuota. */
+  fechaVencimiento: string;
+  /** Hasta hoy, o hasta el último abono si la cuota ya se pagó. */
+  diasDeMora: number;
+  liquidado: number;
+  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
+  abonado: number;
+  /** 🔴 Lo que falta. */
+  pendiente: number;
+  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
+  origen: 'COBRO' | 'CUOTA' | null;
+  /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
+  pagadaEnMora: boolean;
+}
+
+export interface InteresesDelContrato {
+  filas: FilaDeInteres[];
+  liquidado: number;
+  abonado: number;
+  /** 🔴 El interés que falta hoy. */
+  pendiente: number;
+  /** Lo vencido del contrato, con su mora. */
+  pendienteConIntereses: number;
+  /** Todo lo que falta del contrato, con la mora. */
+  restaPorPagarConIntereses: number;
+  /**
+   * Cuotas en mora que NO llevan interés, y por qué. `null` cuando no hay
+   * ninguna. Un cero sin esto se leería «no hay mora».
+   */
+  sinInteres: { cuotas: number; motivo: string; sinReglas: boolean } | null;
+}
+
+export interface TotalesDeInteres {
+  liquidado: number;
+  abonado: number;
+  pendiente: number;
+  pendienteConIntereses: number;
+  restaPorPagarConIntereses: number;
+  /** Algún contrato tiene mora sin interés porque la agencia no tiene reglas. */
+  sinReglas: boolean;
 }
 
 export interface ClienteDelEstadoDeCuenta {
@@ -170,6 +273,41 @@ export interface EstadoDeCuenta {
   fecha: string;
   contratos: ContratoDelEstadoDeCuenta[];
   totales: TotalesDelEstadoDeCuenta;
+  /**
+   * Con qué recorte lo armó el back, cuando lo armó con uno. Ausente o `null`
+   * es el documento entero.
+   *
+   * 🔴 Lo DICE el back porque es el back quien recorta (auditoría 13-09, E4):
+   * ni la pantalla ni el PDF tienen que adivinarlo, y en el enlace público es
+   * la única forma de que quien lo abre sepa que está viendo una vista parcial
+   * y no su cuenta entera.
+   */
+  filtro?: FiltrosDelEstadoDeCuenta | null;
+  /** Los intereses de todo el documento. `null`/ausente si no hay nada de mora. */
+  intereses?: TotalesDeInteres | null;
+  /** 🔴 D11: la deuda subrogada de todos los contratos. Ausente si no hay. */
+  subrogacion?: Subrogacion | null;
+}
+
+/**
+ * EL FILTRO del estado de cuenta, y es parte del CONTRATO con el back: viaja
+ * por query en las lecturas del panel y en el cuerpo al compartir, y queda
+ * guardado con el enlace.
+ *
+ * 🔴 Vive acá y no en `filas.ts` porque la REGLA —qué fila pasa, qué contrato
+ * desaparece, cómo se recalculan los totales— ya no vive en el front: la aplica
+ * el back (`filtrar-el-estado-de-cuenta.ts`), que es el único lugar donde puede
+ * ser una garantía para quien abre un enlace y no un recorte de píxeles. Acá
+ * queda sólo la FORMA.
+ */
+export interface FiltrosDelEstadoDeCuenta {
+  /** Deja sólo lo que todavía se debe (`PENDIENTE`). */
+  soloPendientes: boolean;
+  /** `YYYY-MM-DD` o cadena vacía. Se compara contra `fechaVencimiento`. */
+  desde: string;
+  hasta: string;
+  /** El número del contrato, o `''` para todos. */
+  contrato: string;
 }
 
 // ══ Compartir ═══════════════════════════════════════════════════════════════
@@ -192,6 +330,15 @@ export interface EnlaceCompartido {
   venceEl: string;
   /** Para poder revocarlo después. */
   id?: string;
+  /**
+   * El recorte que quedó GUARDADO con el enlace y que ve quien lo abra. `null`
+   * es el documento entero.
+   *
+   * 🔴 Se lee de acá y no se asume: puede NO haberse guardado (la migración
+   * del back todavía sin aplicar), y entonces el enlace sale entero. Prometer
+   * en pantalla un filtro que no viajó es justo el defecto E4 al revés.
+   */
+  filtro?: FiltrosDelEstadoDeCuenta | null;
 }
 
 /** Lo que devuelve un envío por correo o por WhatsApp. */
@@ -220,55 +367,11 @@ export interface ResumenDelEstadoDeCuenta {
   contratos: number;
 }
 
-// ══ Prefacturas ═════════════════════════════════════════════════════════════
-
-/**
- * Una cuota por facturar (`PrefacturaDto` en el back).
- *
- * «Si quiero mirar qué facturas tengo por generar hasta el 31 de diciembre,
- * revisa los estados de cuenta de los contratos y muestra todas las posibles
- * facturas hasta esa fecha; los contratos que finalicen antes se van eliminando
- * de la prefactura. Lo que NO se puede es enviarlas todas en un solo mes.»
- * (CEO, 2026-09-13)
- *
- * Por eso esto LISTA y no emite: emitir sigue siendo por mes, en
- * `POST /inmobiliaria/facturacion/generar`.
+/*
+ * Las prefacturas vivían acá, espejando `GET /estado-de-cuenta/prefacturas`.
+ * Esa ruta se borró el 16-09: era una SEGUNDA regla para la misma plata —no
+ * cuadraba contra el neto de la cuota, dejaba fuera las cuotas ya pagadas (que
+ * también se facturan), no sabía de la resolución de la DIAN, no distinguía
+ * mostrar de emitir y no llevaba intereses—. La única prefactura es la de
+ * `GET /inmobiliaria/facturacion/por-generar`, en `facturacion-por-mes.service`.
  */
-export interface PrefacturaDelMes {
-  cuotaId: string;
-  contratoId: string;
-  /** El número que la inmobiliaria reconoce (`externalId ?? code`). */
-  contratoNumero: string;
-  lado: RolEnElContrato;
-  /** `YYYY-MM` del período. */
-  mes: string;
-  /** `YYYY-MM-DD`. */
-  desde: string;
-  /** `YYYY-MM-DD`. */
-  hasta: string;
-  /** `YYYY-MM-DD`: el día de cartera del período. */
-  vencimiento: string;
-  clienteNombre: string;
-  clienteDocumento: string | null;
-  inmueble: string;
-  /** Base gravable (canon + conceptos que se facturan). */
-  baseCop: number;
-  ivaCop: number;
-  totalCop: number;
-  /** `true` si esa cuota ya tiene factura emitida. Se ve, y no se vuelve a contar. */
-  yaFacturada: boolean;
-}
-
-export interface PrefacturasHasta {
-  /** `YYYY-MM-DD` hasta donde se miró. */
-  hasta: string;
-  prefacturas: PrefacturaDelMes[];
-  /** Cuántas por mes, para que la pantalla muestre la carga de cada mes. */
-  porMes: { mes: string; cantidad: number; totalCop: number }[];
-  totales: {
-    cantidad: number;
-    baseCop: number;
-    ivaCop: number;
-    totalCop: number;
-  };
-}

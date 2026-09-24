@@ -94,7 +94,31 @@ interface EnrollData {
   secret: string;
 }
 
-export function MfaSetupSection() {
+export interface MfaSetupSectionProps {
+  /**
+   * T-0099: called once a verified TOTP factor exists — either because this
+   * screen just finished the enroll+verify flow, or because the on-mount
+   * check found one already (defensive: `/auth/mfa-enroll` shouldn't be
+   * reachable with a factor already enrolled, but this component doesn't
+   * assume its caller got that gating right). `/auth/mfa-enroll` uses this
+   * to move on to `/auth/mfa-verify` for the SDK-recognized step-up — this
+   * screen's own verify goes over raw REST (see the module doc comment
+   * above), which doesn't update the Supabase JS client's cached session.
+   * Optional — Settings' usage doesn't pass it and behaves exactly as before.
+   */
+  onEnrolled?: () => void;
+  /**
+   * Quedó inscrito y verificado, con el `factorId` a mano. 🔴 Ojo: la
+   * inscripción va por HTTP, fuera del SDK, así que la sesión del SDK sigue
+   * en `aal1`; quien necesite `aal2` (el panel de administración, 23-09) pide
+   * enseguida un código con el SDK. Sólo se dispara desde el flujo de
+   * inscripción fresca (`handleVerifyCode`), no desde el chequeo al montar —
+   * ahí no hay `factorId` recién generado que ofrecer.
+   */
+  onActivado?: (factorId: string) => void;
+}
+
+export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps = {}) {
   const [state, setState] = useState<MfaState>('idle');
   const [enrollData, setEnrollData] = useState<EnrollData | null>(null);
   const [code, setCode] = useState('');
@@ -132,6 +156,7 @@ export function MfaSetupSection() {
         if (totp) {
           setState('enrolled');
           setFactorId(totp.id);
+          onEnrolled?.();
         }
       } catch {
         // MFA no disponible: se queda en 'idle', que ofrece activarlo.
@@ -148,6 +173,9 @@ export function MfaSetupSection() {
       cancelled = true;
       clearTimeout(timeout);
     };
+    // Mount-only check by design (same as the rest of this effect) — a
+    // changing `onEnrolled` identity must not re-run the factor lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStartEnroll = useCallback(async () => {
@@ -230,6 +258,8 @@ export function MfaSetupSection() {
       setEnrollData(null);
       setCode('');
       toast.success('Autenticación de dos factores activada');
+      onEnrolled?.();
+      onActivado?.(currentEnroll.factorId);
     } catch (err) {
       const msg = (err as Error).message || '';
       if (msg.includes('invalid') || msg.includes('expired')) {

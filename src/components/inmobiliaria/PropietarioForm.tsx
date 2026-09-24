@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 import {
@@ -36,6 +37,14 @@ import {
   type BankCode,
   type AccountType,
 } from '@/lib/types/payment-accounts';
+import { revisarDocumentoDelTitular, titularInicial } from '@/lib/propietarios/titular-de-la-cuenta';
+import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
+import {
+  TitularDeLaCuentaCampos,
+  erroresDelTitular,
+  type ErroresDelTitular,
+  type ValorDelTitular,
+} from './TitularDeLaCuentaCampos';
 
 /** Un `SelectItem` no puede valer '' (Radix lo rechaza): esta es la opción que vacía el departamento. */
 const SIN_DEPARTAMENTO = '__sin_departamento__';
@@ -70,6 +79,7 @@ const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
   { value: 'TI', hint: 'Ej: 1.023.456.789' },
   { value: 'NIT', hint: 'Ej: 900.456.789-1' },
   { value: 'PASSPORT', hint: 'Ej: AB123456' },
+  { value: 'PPT', hint: 'Ej: 4829107' },
 ];
 
 const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
@@ -78,6 +88,7 @@ const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
   TI: 'inmobiliaria.propietario.form.docTI',
   NIT: 'inmobiliaria.propietario.form.docNIT',
   PASSPORT: 'inmobiliaria.propietario.form.docPassport',
+  PPT: 'inmobiliaria.propietario.form.docPPT',
 };
 
 const ACCOUNT_TYPE_VALUES: AccountType[] = ['savings', 'checking'];
@@ -136,6 +147,33 @@ export function PropietarioForm({
   serverError,
 }: PropietarioFormProps) {
   const { t } = useI18n();
+  /*
+   * 🔴 23-09 (auditoría de seguridad): el correo de un propietario es por
+   * donde confirma los cambios de su cuenta bancaria y con el que entra a su
+   * portal, así que cambiar uno que YA estaba es cosa de un administrador (el
+   * back lo exige: `CORREO_SOLO_ADMINISTRADOR`). Registrar el primero de una
+   * ficha que no tenía sigue abierto. Fuera del proveedor de permisos no se
+   * sabe el rol y se deja editable: decide el back.
+   */
+  const permisos = usePermissionsContextSafe();
+  const correoBloqueado =
+    mode === 'edit' && !!initialData?.email?.trim() && permisos !== null && !permisos.isAdmin;
+  /*
+   * 🔴 23-09 (datos personales): quien no ve la plata del propietario (sin
+   * `dispersiones:view`, el asesor comercial) no ve ni llena su cuenta. La
+   * ficha le llega con la cuenta en `null` y `datosBancariosOcultos`; antes el
+   * formulario la pintaba vacía y la EXIGÍA, así que el asesor no podía ni
+   * corregir un teléfono, y si escribía un número chocaba con el cambio
+   * controlado de cuenta. Ahora el bloque no se muestra, no se valida y
+   * guardar no manda ningún campo de la cuenta: el back la deja como estaba.
+   * Fuera del proveedor de permisos no se sabe el rol: se muestra, decide el back.
+   */
+  const sinDatosBancarios =
+    initialData?.datosBancariosOcultos === true ||
+    (permisos !== null &&
+      !permisos.isLoading &&
+      !permisos.isAdmin &&
+      !permisos.canAccess('dispersiones', 'view'));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -177,6 +215,38 @@ export function PropietarioForm({
     setErrors((prev) => ({ ...prev, [serverError.field]: serverError.message }));
     setTouched((prev) => ({ ...prev, [serverError.field]: true }));
   }, [serverError]);
+
+  /*
+   * 🔴 «¿A quién pertenece la cuenta?» (22-09). La respuesta arranca en lo que
+   * la ficha ya tiene: una cuenta con el documento de otra persona abre en «De
+   * otra persona» con sus datos, para no borrárselos a nadie al editar.
+   */
+  const [titular, setTitular] = useState<ValorDelTitular>(() => {
+    const nombre = initialFormData?.accountHolder ?? initialData?.bankAccount.accountHolder ?? '';
+    const numero = initialFormData?.accountHolderDocument ?? initialData?.bankAccount.accountHolderDocument ?? '';
+    const tipo =
+      initialFormData?.accountHolderDocumentType ?? initialData?.bankAccount.accountHolderDocumentType ?? '';
+    const elegido =
+      initialFormData?.titularDeLaCuenta ??
+      titularInicial({
+        nombreDelPropietario: formData.name,
+        documentoDelPropietario: formData.documentNumber,
+        nombreDelTitular: nombre,
+        documentoDelTitular: numero,
+      });
+    return elegido === 'TERCERO'
+      ? { titular: 'TERCERO', nombre, tipo, numero }
+      : { titular: 'PROPIETARIO', nombre: '', tipo: '', numero: '' };
+  });
+  const [titularTocado, setTitularTocado] = useState(false);
+  const [erroresTitular, setErroresTitular] = useState<ErroresDelTitular>({});
+  /*
+   * Al EDITAR una cuenta que ya existe sin tocar la pregunta, el titular viaja
+   * tal cual estaba (el camino de siempre): así una ficha vieja con el titular
+   * a medias —la migración dejó nombres sin documento— no bloquea cambiar un
+   * teléfono. Al crear, o apenas alguien toca la pregunta, se exige completo.
+   */
+  const exigeTitular = mode === 'create' || titularTocado || !initialData?.bankAccount.accountNumber;
 
   const isCompany = formData.documentType === 'NIT';
   const selectedBank = COLOMBIAN_BANKS.find((b) => b.code === formData.bankCode);
@@ -230,7 +300,12 @@ export function PropietarioForm({
       }
     }
 
-    // Bank account validation
+    // Bank account validation (sólo si quien llena el formulario ve la cuenta)
+    if (sinDatosBancarios) {
+      setErroresTitular({});
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
     if (!formData.bankCode) {
       newErrors.bankCode = t('inmobiliaria.propietario.form.errBankRequired');
     }
@@ -242,16 +317,33 @@ export function PropietarioForm({
     } else if (!/^[0-9]{10,20}$/.test(formData.accountNumber.replace(/[.\s-]/g, ''))) {
       newErrors.accountNumber = t('inmobiliaria.propietario.form.errAccountNumInvalid');
     }
-    if (!formData.accountHolder.trim()) {
-      newErrors.accountHolder = t('inmobiliaria.propietario.form.errHolderRequired');
-    }
-    // Un documento del titular sin tipo no sirve para el archivo del banco.
-    if ((formData.accountHolderDocument ?? '').trim() && !formData.accountHolderDocumentType) {
-      newErrors.accountHolderDocumentType = t('inmobiliaria.propietario.form.errHolderDocTypeRequired');
-    }
+    const deTitular = exigeTitular
+      ? erroresDelTitular(t, titular, (tipo, numero) =>
+          revisarDocumentoDelTitular(tipo, numero, formData.documentNumber),
+        )
+      : {};
+    setErroresTitular(deTitular);
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 0 && Object.keys(deTitular).length === 0;
+  };
+
+  /**
+   * Lo que se manda: con la pregunta contestada, `titularDeLaCuenta` y los datos
+   * de la otra persona (vacíos si es del propietario: el back los limpia). Sin
+   * exigirla (editar sin tocarla), el titular tal como se cargó.
+   */
+  const conElTitular = (): PropietarioFormData => {
+    if (sinDatosBancarios) return sinLaCuenta(formData);
+    if (!exigeTitular) return formData;
+    const tercero = titular.titular === 'TERCERO';
+    return {
+      ...formData,
+      titularDeLaCuenta: titular.titular,
+      accountHolder: tercero ? titular.nombre.replace(/\s+/g, ' ').trim() : '',
+      accountHolderDocumentType: tercero ? titular.tipo : '',
+      accountHolderDocument: tercero ? titular.numero.trim() : '',
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -269,7 +361,7 @@ export function PropietarioForm({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      await onSubmit(conElTitular());
     } catch (err) {
       console.error('Form submission error:', err);
     } finally {
@@ -365,11 +457,14 @@ export function PropietarioForm({
             label="Email"
             required
             error={touched.email ? errors.email : undefined}
+            hint={correoBloqueado ? t('inmobiliaria.propietario.form.emailSoloAdministrador') : undefined}
           >
             <div className="relative">
               <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
                 type="email"
+                disabled={correoBloqueado}
+                data-testid="correo-del-propietario"
                 value={formData.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
@@ -447,6 +542,18 @@ export function PropietarioForm({
       </div>
 
       {/* Bank Account */}
+      {sinDatosBancarios ? (
+        <div
+          className="space-y-2 pt-4 border-t border-border-faint dark:border-border-strong"
+          data-testid="cuenta-oculta-por-rol"
+        >
+          <div className="flex items-center gap-2 text-fg">
+            <Bank className="w-5 h-5 text-fg-subtle" />
+            <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+          </div>
+          <p className="text-sm text-fg-muted">{t('inmobiliaria.propietario.form.bankDataHidden')}</p>
+        </div>
+      ) : (
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg">
           <Bank className="w-5 h-5 text-success" />
@@ -461,6 +568,18 @@ export function PropietarioForm({
             </p>
           </div>
         </div>
+
+        {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
+        <TitularDeLaCuentaCampos
+          valor={titular}
+          onCambiar={(v) => {
+            setTitular(v);
+            setTitularTocado(true);
+            setErroresTitular({});
+          }}
+          errores={erroresTitular}
+          nombreDelPropietario={formData.name}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Bank */}
@@ -532,69 +651,8 @@ export function PropietarioForm({
             )}
           />
         </InputWrapper>
-
-        {/* Account Holder */}
-        <InputWrapper
-          label={t('inmobiliaria.propietario.form.accountHolder')}
-          required
-          error={touched.accountHolder ? errors.accountHolder : undefined}
-          hint={t('inmobiliaria.propietario.form.hintMatchBank')}
-        >
-          <Input
-            type="text"
-            value={formData.accountHolder}
-            onChange={(e) => updateField('accountHolder', e.target.value)}
-            onBlur={() => setTouched((prev) => ({ ...prev, accountHolder: true }))}
-            placeholder={formData.name || 'Nombre del titular'}
-            className={cn(touched.accountHolder && errors.accountHolder && 'border-danger/30')}
-          />
-        </InputWrapper>
-
-        {/*
-          Documento del titular, sólo cuando la cuenta es de otra persona
-          (2026-09-07). El archivo de dispersión de Bancolombia lo exige por
-          beneficiario; vacío, el lote usa el documento del propietario. Hasta
-          hoy sólo entraba por la migración de terceros.
-        */}
-        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,180px)_1fr] gap-4">
-          <InputWrapper
-            label={t('inmobiliaria.propietario.form.holderDocumentType')}
-            error={touched.accountHolderDocumentType ? errors.accountHolderDocumentType : undefined}
-          >
-            <Select
-              value={formData.accountHolderDocumentType || undefined}
-              onValueChange={(value) => updateField('accountHolderDocumentType', value as DocumentType)}
-            >
-              <SelectTrigger
-                data-testid="titular-tipo-documento"
-                className={cn(touched.accountHolderDocumentType && errors.accountHolderDocumentType && 'border-danger/30')}
-              >
-                <SelectValue placeholder={t('inmobiliaria.propietario.form.holderDocumentTypePlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPE_VALUES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.value === 'PASSPORT' ? t('inmobiliaria.propietario.form.docPassport') : type.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </InputWrapper>
-          <InputWrapper
-            label={t('inmobiliaria.propietario.form.holderDocument')}
-            hint={t('inmobiliaria.propietario.form.hintHolderDocument')}
-          >
-            <Input
-              type="text"
-              value={formData.accountHolderDocument ?? ''}
-              onChange={(e) => updateField('accountHolderDocument', e.target.value)}
-              placeholder="Solo si es otra persona"
-              className="font-mono"
-              data-testid="titular-documento"
-            />
-          </InputWrapper>
-        </div>
       </div>
+      )}
 
       {/* Notes */}
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">

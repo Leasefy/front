@@ -99,7 +99,7 @@ vi.mock('@/lib/hooks/use-estado-de-lote-inmuebles', () => ({
   useEstadoDeLoteInmuebles: () => estadoLoteState,
 }));
 
-import { StepConfirmImport } from './StepConfirmImport';
+import { StepConfirmImport, fraseDeLaComision } from './StepConfirmImport';
 import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
 import { RanuraDelPie } from '../ImportWizard';
 import { ApiError } from '@/lib/api/client';
@@ -255,6 +255,39 @@ describe('<StepConfirmImport> — preparar() replaces the client-side POST /prop
       longitude: -74.1,
     });
     expect('propertyType' in dtos[0]).toBe(false);
+  });
+
+  it('🔴 QA 22-09: las filas con error (sin precio) que la revisión dejó desmarcadas VIAJAN igual — antes 14 de 145 desaparecían', async () => {
+    inmueblesImportacionApiMock.preparar.mockResolvedValue({
+      lote: 'lote-1', estado: 'ENCOLADO', total: 3, procesadas: 0, pendientes: 0,
+      listos: 0, activados: 0, descartados: 0, jobId: 'job-1', error: null, creadoEn: '2026-08-29T00:00:00.000Z',
+    });
+    render(
+      baseState({
+        properties: [
+          makeProperty({ _rowIndex: 0 }),
+          // Así la deja la revisión: con error, deseleccionada y sin casilla.
+          makeProperty({
+            _rowIndex: 1,
+            propertyAddress: 'Cra 11 #94-46',
+            monthlyRent: undefined,
+            selected: false,
+            hasErrors: true,
+            errorMessages: ['Falta canon.'],
+          }),
+          // Ésta sí la desmarcó la persona: es la única excluida.
+          makeProperty({ _rowIndex: 2, propertyAddress: 'Cra 11 #94-47', selected: false }),
+        ],
+      }),
+    );
+    await clickImportar();
+
+    const [dtos] = inmueblesImportacionApiMock.preparar.mock.calls[0];
+    expect(dtos).toHaveLength(2);
+    expect(dtos.map((d: { address?: string }) => d.address)).toEqual([
+      'Cra 11 #94-45',
+      'Cra 11 #94-46',
+    ]);
   });
 
   it('shows the "still processing" screen while ENCOLADO/PROCESANDO, never claims completion', async () => {
@@ -926,7 +959,7 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
 
     expect(inmueblesImportacionApiMock.descartarLote).toHaveBeenCalledTimes(1);
     expect(pushMock).not.toHaveBeenCalled();
-    expect(container.textContent).toContain('esperá a que termine');
+    expect(container.textContent).toContain('espera a que termine');
   });
 });
 
@@ -1148,7 +1181,10 @@ describe('<StepConfirmImport> — el dueño de cada inmueble después de activar
 
     expect(inmobiliariaApiMock.getSinConsignacion).not.toHaveBeenCalled();
     const aviso = container.querySelector('[data-testid="aviso-propietario-en-contratos"]');
-    expect(aviso?.textContent).toContain('salieron del archivo');
+    // El inmueble de la prueba NO trae comisión: la frase ya no puede decir
+    // que «salió del archivo» (QA 22-09: 280 inmuebles con un 10 % inventado).
+    expect(aviso?.textContent).toContain('El propietario salió del archivo');
+    expect(aviso?.textContent).toContain('La comisión no venía en el archivo');
     expect(aviso?.textContent).not.toContain('paso Contratos');
     expect(aviso?.textContent).not.toContain('contrato por contrato');
     expect(container.querySelector('[data-testid="aviso-sin-mandato"]')).toBeNull();
@@ -1331,5 +1367,38 @@ describe('<StepConfirmImport> — se puede detener la búsqueda de direcciones',
     expect(vueltas).toBeLessThan(muchas.length);
     expect(inmueblesImportacionApiMock.preparar).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="geo-cancelada"]')).toBeTruthy();
+  });
+});
+
+describe('fraseDeLaComision — sólo afirma lo que el archivo traía (QA 22-09)', () => {
+  it('todas con comisión: salieron del archivo', () => {
+    expect(
+      fraseDeLaComision([makeProperty({ commissionPercent: 8 })]),
+    ).toBe('El propietario y la comisión salieron del archivo, inmueble por inmueble.');
+  });
+
+  it('ninguna con comisión: lo dice, y dice que queda vacía', () => {
+    expect(fraseDeLaComision([makeProperty(), makeProperty()])).toContain(
+      'La comisión no venía en el archivo: queda vacía',
+    );
+  });
+
+  it('algunas sin comisión: las cuenta', () => {
+    expect(
+      fraseDeLaComision([
+        makeProperty({ commissionPercent: 8 }),
+        makeProperty(),
+        makeProperty(),
+      ]),
+    ).toContain('salvo en 2 inmuebles que no la traían');
+  });
+
+  it('una venta no cuenta como comisión de arriendo que falte', () => {
+    expect(
+      fraseDeLaComision([
+        makeProperty({ commissionPercent: 8 }),
+        makeProperty({ listingType: 'Venta', monthlyRent: undefined, salePrice: 300_000_000 }),
+      ]),
+    ).toBe('El propietario y la comisión salieron del archivo, inmueble por inmueble.');
   });
 });

@@ -38,8 +38,21 @@ import { haySenal } from '@/lib/inventario/hay-senal';
 import { subirBorrador, type AvanceDeSubida } from '@/lib/inventario/subir-borrador';
 import type { Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
 
+/**
+ * A dónde sube el borrador. Por defecto, la lista de la consignación (lo de
+ * siempre); con el inventario por versiones, el borrador del inmueble. El
+ * borrador LOCAL es el mismo en los dos casos (llaveado por consignación), así
+ * que lo que quedó sin subir antes del cambio sube al destino nuevo.
+ */
+export interface DestinoDelBorrador {
+  subirFoto: (consignacionId: string, itemId: string, foto: Blob) => Promise<string>;
+  guardar: (consignacionId: string, items: InventoryItem[]) => Promise<void>;
+}
+
 interface Opciones {
   consignacionId: string | undefined;
+  /** Sin esto, sube a la consignación como siempre. */
+  destino?: DestinoDelBorrador;
   /** El inventario tal como lo tiene el back ahora. */
   itemsDelBack: InventoryItem[] | undefined;
   /** Desde qué contrato se abrió, si se abrió desde uno. */
@@ -70,6 +83,7 @@ export interface EstadoDelBorrador {
 
 export function useBorradorDeInventario({
   consignacionId,
+  destino,
   itemsDelBack,
   contratoId,
   alSubir,
@@ -145,8 +159,14 @@ export function useBorradorDeInventario({
         await subirBorrador({
           borrador: deBorrador,
           subirFoto: (id, itemId, foto) =>
-            consignacionesApi.subirFotoDeInventario(id, itemId, foto),
+            destino
+              ? destino.subirFoto(id, itemId, foto)
+              : consignacionesApi.subirFotoDeInventario(id, itemId, foto),
           guardarInventario: async (id, items) => {
+            if (destino) {
+              await destino.guardar(id, items);
+              return;
+            }
             const actualizada = await consignacionesApi.actualizarInventario(id, items);
             alSubir?.(actualizada);
           },
@@ -170,7 +190,7 @@ export function useBorradorDeInventario({
         subiendoRef.current = false;
       }
     },
-    [alSubir, revisarSenal],
+    [alSubir, destino, revisarSenal],
   );
 
   /** Guardar en el teléfono y, si hay señal, subir en el mismo gesto. */

@@ -171,9 +171,7 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/ActaEntregaView.tsx',
   'components/inmobiliaria/ActaEntregaViewer.tsx',
   'components/inmobiliaria/ActaEntregaForm.tsx',
-  'components/inmobiliaria/ComisionesTable.tsx',
   'components/inmobiliaria/ComisionDesglose.tsx',
-  'components/inmobiliaria/VencimientosTable.tsx',
   'components/inmobiliaria/DispersionCard.tsx',
   'components/inmobiliaria/CobroTable.tsx',
   'components/inmobiliaria/ReciboPorCliente.tsx',
@@ -206,19 +204,19 @@ const COBERTURA: string[] = [
   'app/panel/inmobiliaria/documentos/page.tsx',
   'app/panel/inmobiliaria/reportes/resumen/page.tsx',
   // — cobros / cobranza ————————————————————————————————————————
-  'app/panel/inmobiliaria/cobros/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/DeudoresListClient.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorActionRail.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorSidebar.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/AccionesTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/MemosTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/CompromisosTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/LlamadasTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/TimelineTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/llamadas/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/escalaciones/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/reportes-propietarios/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/configuracion/page.tsx',
+  'app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/DeudoresListClient.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorActionRail.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorSidebar.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/AccionesTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/MemosTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/CompromisosTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/LlamadasTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/TimelineTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/llamadas/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/escalaciones/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/reportes-propietarios/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/configuracion/page.tsx',
   'components/inmobiliaria/cobranza/AcuerdosGeneralesTabla.tsx',
   'components/inmobiliaria/cobranza/AcuerdosTabla.tsx',
   'components/inmobiliaria/cobranza/CobranzaNextActionsPanel.tsx',
@@ -380,10 +378,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Miniatura de foto clickeable entera.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     'Paso del stepper: la celda entera es el control.',
-  'components/inmobiliaria/ComisionesTable.tsx':
-    'Disparador de orden en `<TableHead>`: envuelve la celda de cabecera y no tiene ' +
-    'chrome de botón. Cadence no tiene primitiva de sort header.',
-  'components/inmobiliaria/VencimientosTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/CobroTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/PropietarioTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/AgenteTable.tsx': 'Disparador de orden en `<TableHead>`.',
@@ -401,22 +395,22 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/VisitasDelInmueble.tsx':
     'Uno es `role="checkbox"` (tarjeta seleccionable entera) y el otro `role="tab"` ' +
     'dentro de un `role="tablist"`.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/DeudoresListClient.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/DeudoresListClient.tsx':
     'Tarjeta-fila de deudor en móvil: el equivalente exacto del `TableRow` de ≥md.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorActionRail.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorActionRail.tsx':
     'Tarjeta de acción a lo ancho (`border` + `bg-card` + `rounded-md`): chrome de ' +
     'tarjeta, no de botón. Y convertirla ROMPERÍA algo real: el `title` que explica ' +
     'por qué está deshabilitada por RBAC dejaría de verse, porque el `Button` del DS ' +
     'trae `disabled:pointer-events-none` y el navegador no dibuja tooltip sobre un ' +
     'elemento sin eventos de puntero.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/AccionesTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/AccionesTab.tsx':
     'Mismas tarjetas de acción en grilla 2×2, con el mismo problema del tooltip en ' +
     '`disabled`.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/LlamadasTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/LlamadasTab.tsx':
     'Tarjeta-fila de móvil, equivalente del `TableRow` de escritorio.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/TimelineTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/TimelineTab.tsx':
     'Fila del timeline: el borde lo pone el `<li>`, el botón no tiene chrome propio.',
-  'app/panel/inmobiliaria/cobros/cobranza/reportes-propietarios/page.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/reportes-propietarios/page.tsx':
     'Ítem seleccionable de una `<ul>` (`aria-pressed`, tres líneas con ícono).',
   'components/inmobiliaria/cobranza/CobranzaNextActionsPanel.tsx':
     'Fila de lista, sin fondo ni borde propios.',
@@ -500,7 +494,7 @@ describe('pantallas de uso diario — colores por token', () => {
     if (rel in COLOR_CRUDO_JUSTIFICADO) return
     expect(
       encontrados,
-      `Colores crudos: ${[...new Set(encontrados)].join(', ')}. Usá los tokens de ` +
+      `Colores crudos: ${[...new Set(encontrados)].join(', ')}. Usa los tokens de ` +
         'Cadence (bg-surface / text-fg / text-fg-muted / border-border / bg-primary-soft ' +
         '/ bg-success-soft / bg-warning-soft / bg-danger-soft / bg-info-soft). Si el caso ' +
         'es legítimo, agrega el archivo a COLOR_CRUDO_JUSTIFICADO **con su motivo**.',
@@ -525,7 +519,7 @@ describe('pantallas de uso diario — controles por primitiva', () => {
     if (rel in CONTROL_A_MANO_JUSTIFICADO) return
     expect(
       encontrados,
-      `Controles a mano: ${[...new Set(encontrados)].join(', ')}. Usá Button / ` +
+      `Controles a mano: ${[...new Set(encontrados)].join(', ')}. Usa Button / ` +
         'IconButton / Input / Select / Textarea de @/components/ui. Si el caso es ' +
         'legítimo (fila clickeable, disparador de popover con estado, input de archivo ' +
         'escondido), agrega el archivo a CONTROL_A_MANO_JUSTIFICADO **con su motivo**.',

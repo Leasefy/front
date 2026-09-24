@@ -56,14 +56,115 @@ afterEach(() => {
 });
 
 describe('lotesDeDispersionApi.armar', () => {
-  it('POST a la base con SÓLO `month`', async () => {
+  it('POST a la base con SÓLO `month` cuando no se eligió a nadie', async () => {
     const fetchMock = mockFetch({ lote: LOTE, excluidos: [] });
 
-    const r = await lotesDeDispersionApi.armar('2026-08');
+    const r = await lotesDeDispersionApi.armar({ month: '2026-08' });
 
     expect(r.lote.id).toBe(ID);
     expect(fetchMock).toHaveBeenCalledWith(BASE, expect.objectContaining({ method: 'POST' }));
+    // 🔴 Clave por clave: el back valida con `forbidNonWhitelisted` y un
+    // `dispersionIds: undefined` en el cuerpo también sería un 400.
     expect(cuerpoDe(fetchMock)).toEqual({ month: '2026-08' });
+  });
+
+  it('manda a quiénes, en qué orden y hasta qué monto cuando se eligieron', async () => {
+    const fetchMock = mockFetch({ lote: LOTE, excluidos: [] });
+
+    await lotesDeDispersionApi.armar({
+      month: '2026-09',
+      dispersionIds: ['d-1', 'd-2'],
+      orden: 'MENOR_A_MAYOR',
+      topeCop: 100_000_000,
+    });
+
+    expect(cuerpoDe(fetchMock)).toEqual({
+      month: '2026-09',
+      dispersionIds: ['d-1', 'd-2'],
+      orden: 'MENOR_A_MAYOR',
+      topeCop: 100_000_000,
+    });
+  });
+
+  it('🔴 una lista VACÍA no viaja: el back la rechaza y «ninguno» no es «todos»', async () => {
+    const fetchMock = mockFetch({ lote: LOTE, excluidos: [] });
+
+    await lotesDeDispersionApi.armar({ month: '2026-09', dispersionIds: [] });
+
+    expect(cuerpoDe(fetchMock)).toEqual({ month: '2026-09' });
+  });
+});
+
+describe('lotesDeDispersionApi — el banco desde el que se gira', () => {
+  it('armar manda el banco y la cuenta de origen, clave por clave', async () => {
+    const fetchMock = mockFetch({ lote: LOTE, excluidos: [] });
+
+    await lotesDeDispersionApi.armar({
+      month: '2026-09',
+      origen: { banco: 'BANCO_BOGOTA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '123-45678-9' },
+    });
+
+    expect(cuerpoDe(fetchMock)).toEqual({
+      month: '2026-09',
+      origen: { banco: 'BANCO_BOGOTA', tipoDeCuenta: 'AHORROS', numeroDeCuenta: '123-45678-9' },
+    });
+  });
+
+  it('GET a `/bancos`, una ruta que el back SÍ tiene', async () => {
+    const fetchMock = mockFetch({ disponible: true, motivo: null, bancos: [], cuentas: [], ultima: null });
+
+    await lotesDeDispersionApi.bancos();
+
+    expect(fetchMock).toHaveBeenCalledWith(`${BASE}/bancos`, expect.anything());
+  });
+});
+
+describe('lotesDeDispersionApi.candidatos', () => {
+  it('GET a `/candidatos` con el orden y el tope en la query', async () => {
+    const fetchMock = mockFetch({
+      orden: 'MENOR_A_MAYOR',
+      plata: {
+        corte: '2026-09-15',
+        entradasCop: 0,
+        comprometidoCop: 0,
+        disponibleCop: 0,
+        hayExtracto: false,
+        ultimoMovimiento: null,
+      },
+      candidatos: [],
+      sugeridos: [],
+      totalCop: 0,
+      cantidad: 0,
+    });
+
+    await lotesDeDispersionApi.candidatos({
+      month: '2026-09',
+      orden: 'MAYOR_A_MENOR',
+      topeCop: 5_000_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/candidatos?month=2026-09&orden=MAYOR_A_MENOR&topeCop=5000000`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+});
+
+describe('lotesDeDispersionApi.marcarPagado', () => {
+  it('sin decisión de factura manda sólo la referencia', async () => {
+    const fetchMock = mockFetch(LOTE);
+
+    await lotesDeDispersionApi.marcarPagado(ID, '  BC-1  ');
+
+    expect(cuerpoDe(fetchMock)).toEqual({ referenciaBanco: 'BC-1' });
+  });
+
+  it('registra «facturar después» sin emitir nada', async () => {
+    const fetchMock = mockFetch(LOTE);
+
+    await lotesDeDispersionApi.marcarPagado(ID, 'BC-2', false);
+
+    expect(cuerpoDe(fetchMock)).toEqual({ referenciaBanco: 'BC-2', facturarAhora: false });
   });
 });
 
@@ -230,5 +331,25 @@ describe('lotesDeDispersionApi.anular', () => {
     await expect(lotesDeDispersionApi.anular(ID, 'porque sí, cinco')).rejects.toThrow(
       'El lote ya está pagado',
     );
+  });
+});
+
+describe('lotesDeDispersionApi.anular — el archivo que pudo llegar al banco (23-09)', () => {
+  it('🔴 con la confirmación, el cuerpo lleva `confirmoQueElArchivoPudoLlegarAlBanco: true`', async () => {
+    const f = mockFetch();
+    await lotesDeDispersionApi.anular(ID, '  El banco rechazó el archivo ', true);
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE}/${ID}/anular`);
+    expect(init.method).toBe('POST');
+    expect(cuerpoDe(f)).toEqual({
+      motivo: 'El banco rechazó el archivo',
+      confirmoQueElArchivoPudoLlegarAlBanco: true,
+    });
+  });
+
+  it('sin confirmación el cuerpo es el de siempre: sólo el motivo', async () => {
+    const f = mockFetch();
+    await lotesDeDispersionApi.anular(ID, 'Mes equivocado');
+    expect(cuerpoDe(f)).toEqual({ motivo: 'Mes equivocado' });
   });
 });

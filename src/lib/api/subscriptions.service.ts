@@ -8,12 +8,13 @@ import type {
   BackendSubscription,
   BackendSubscriptionMeResponse,
   BackendSubscriptionPlan,
-  CreateSubscriptionDto,
   ValidateCouponDto,
   BackendCouponValidationResult,
   DisplaySubscription,
-  SubscribeWithPSEDto,
-  PSEBank,
+  SubscriptionPseCheckoutDto,
+  SubscriptionPseCheckoutResponse,
+  PuedePagarElPlan,
+  EstadoDelPagoPse,
 } from './subscriptions.types';
 import type { PlanId, BillingCycle, SubscriptionStatus } from '@/lib/types/subscription';
 import type { Coupon, CouponValidationResult, CouponDiscount } from '@/lib/types/coupon';
@@ -184,29 +185,46 @@ export const subscriptionsApi = {
   },
 
   /**
-   * Create a new subscription
+   * 🔴 Acá vivía `createSubscription`, un `POST /subscriptions` que el back no
+   * expone (404 «Cannot POST», medido). El controlador de suscripciones no
+   * tiene raíz: se entra por `trial`, por `subscribe` —que es la que usa
+   * `subscribeWithPSE`, acá abajo— o por `change-plan`. Nadie la llamaba.
    */
-  async createSubscription(dto: CreateSubscriptionDto): Promise<DisplaySubscription> {
-    const backend = await apiClient.post<BackendSubscription>('/subscriptions', dto);
-    return mapSubscription(backend);
+
+  /**
+   * 🔴 Acá vivía `subscribeWithPSE` (`POST /subscriptions/subscribe` con datos
+   * de un PSE SIMULADO). Sólo la llamaba la página pública `/pse-mock`, que se
+   * borró el 23-09: era un formulario de pago PSE con nuestra marca que tomaba
+   * el plan y el MONTO de la URL, o sea, una plantilla lista para suplantar un
+   * cobro de Leasefy. Además, en producción el back rechaza ese riel simulado
+   * (503), así que el propietario que pagaba por ahí nunca terminaba.
+   *
+   * El pago de verdad del plan del propietario es este: el back crea la
+   * suscripción PENDIENTE y una transacción PSE en Wompi, y devuelve la URL del
+   * banco. El monto lo calcula el back con el plan y el cupón; el front no lo
+   * manda. La suscripción se activa cuando llega el webhook de Wompi.
+   */
+  async startPseCheckout(
+    dto: SubscriptionPseCheckoutDto,
+  ): Promise<SubscriptionPseCheckoutResponse> {
+    return apiClient.post<SubscriptionPseCheckoutResponse>('/subscriptions/pse/checkout', dto);
   },
 
   /**
-   * Subscribe to a plan with PSE payment data.
-   * POST /subscriptions/subscribe
-   * Mock is deterministic by last digit of documentNumber.
+   * ¿Puede pagar el plan del propietario? El panel independiente puede estar
+   * en pausa (409 `PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO` en el checkout):
+   * el front lo pregunta ANTES de ofrecer el pago (QA 23-09).
    */
-  async subscribeWithPSE(dto: SubscribeWithPSEDto): Promise<DisplaySubscription> {
-    const backend = await apiClient.post<BackendSubscription>('/subscriptions/subscribe', dto);
-    return mapSubscription(backend);
+  async puedePagarElPlanDelPropietario(): Promise<PuedePagarElPlan> {
+    return apiClient.get<PuedePagarElPlan>('/subscriptions/pse/puede-pagar');
   },
 
   /**
-   * Get available PSE banks for the mock.
-   * GET /pse-mock/banks — public, no auth required
+   * Cómo terminó UN pago PSE del plan: la página a la que vuelve la persona
+   * después del banco (`/panel/checkout?resultado=pse&pago=<id>`).
    */
-  async getPSEBanks(): Promise<PSEBank[]> {
-    return apiClient.get<PSEBank[]>('/pse-mock/banks');
+  async estadoDelPagoPse(pagoId: string): Promise<EstadoDelPagoPse> {
+    return apiClient.get<EstadoDelPagoPse>(`/subscriptions/pse/pagos/${encodeURIComponent(pagoId)}`);
   },
 
   /**

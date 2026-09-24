@@ -7,8 +7,6 @@ vi.mock('@/lib/api/agent-auth', () => ({
 
 import {
   backendAgentToFrontType,
-  targetToHref,
-  targetTienePantalla,
   suggestedActionToResponseAction,
   dispatchToAgentExecution,
   splitSSEEvents,
@@ -28,60 +26,43 @@ describe('backendAgentToFrontType', () => {
   });
 });
 
-describe('targetToHref', () => {
-  it('routes known targets and falls back to the hub for the rest', () => {
-    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/cobros/cobranza');
-    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad');
-    expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/pagos');
-    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/cobros/cobranza');
-    // Evaluación de candidatos está oculta (Nico, 2026-09-08): sin workspace,
-    // el target cae al Piloto como cualquier meta sin pantalla.
-    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/piloto');
-    expect(targetToHref('conciliacion')).toBe('/panel/inmobiliaria/conciliacion');
-  });
-});
-
 describe('suggestedActionToResponseAction', () => {
-  it('first is primary, rest secondary; carries href + icon', () => {
-    const first = suggestedActionToResponseAction(
-      { label: 'Ver cobranza', target: 'cobranza' },
+  it('first is primary, rest secondary; carries icon', () => {
+    const first = suggestedActionToResponseAction({ label: 'Ver cobranza', target: 'cobranza' }, 0);
+    expect(first).toMatchObject({ label: 'Ver cobranza', variant: 'primary' });
+    expect(first.icon.length).toBeGreaterThan(0);
+    expect(suggestedActionToResponseAction({ label: 'x', target: 'pagos' }, 1).variant).toBe('secondary');
+  });
+
+  // 🔴 Nico, 23-09 (22:51), con la captura de «Ver contrato 24» y «Gestionar
+  // cobranza de Mateo Pérez» sacándolo del chat: «Debe todo funcionar dentro
+  // del chat». Hasta ese día una sugerencia con pantalla NAVEGABA; ahora
+  // ninguna: todas son un mensaje de la persona.
+  it('ninguna sugerencia navega: todas preguntan en el chat, con o sin pantalla en el panel', () => {
+    const metas = ['cobranza', 'cotizador', 'estudio', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
+    for (const t of metas) {
+      const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
+      expect(a.prompt, t).toBe(`ir a ${t}`);
+      expect('href' in a, t).toBe(false);
+    }
+  });
+
+  it('lleva la intención que el micro le pegó (el siguiente clic no adivina el texto)', () => {
+    const a = suggestedActionToResponseAction(
+      {
+        label: 'Ver contrato 24',
+        target: 'cartera',
+        intencion: { accion: 'ver', entidad: { tipo: 'contrato', id: '24' } },
+      },
       0,
     );
-    expect(first).toMatchObject({
-      label: 'Ver cobranza',
-      href: '/panel/inmobiliaria/cobros/cobranza',
-      variant: 'primary',
-    });
-    expect(first.icon.length).toBeGreaterThan(0);
-    expect(
-      suggestedActionToResponseAction({ label: 'x', target: 'pagos' }, 1).variant,
-    ).toBe('secondary');
-  });
-
-  // 🔴 Medido en vivo: «Ver inmuebles disponibles» mandaba su texto como un
-  // mensaje nuevo y dejaba al operador otros ~25 s esperando por una lista que
-  // el panel ya muestra. Sin `prompt` = el botón navega.
-  it('una acción con pantalla en el panel NAVEGA (no manda un prompt)', () => {
-    const a = suggestedActionToResponseAction({ label: 'Ver inmuebles disponibles', target: 'matching' }, 0);
-    expect(targetTienePantalla('matching')).toBe(true);
-    expect(a.prompt).toBeUndefined();
-    expect(a.href).toBe(targetToHref('matching'));
-  });
-
-  it('las metas del contrato con pantalla navegan; Evaluación de candidatos está oculta y pregunta', () => {
-    const conPantalla = ['cobranza', 'cotizador', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
-    for (const t of conPantalla) {
-      const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
-      expect(targetTienePantalla(t), t).toBe(true);
-      expect(a.prompt).toBeUndefined();
-    }
-    // `estudio` sigue en el contrato del micro, pero su sección está oculta
-    // (Nico, 2026-09-08): sin workspace no hay pantalla que abrir, así que el
-    // botón le pregunta al asistente en vez de mandar a una puerta que
-    // devuelve a Postulaciones.
-    const oculta = suggestedActionToResponseAction({ label: 'ir a estudio', target: 'estudio' }, 0);
-    expect(targetTienePantalla('estudio')).toBe(false);
-    expect(oculta.prompt).toBe('ir a estudio');
+    expect(a.intencion).toEqual({ accion: 'ver', entidad: { tipo: 'contrato', id: '24' } });
+    // Una intención mal formada se descarta: el botón manda sólo su texto.
+    const b = suggestedActionToResponseAction(
+      { label: 'x', target: 'pagos', intencion: { accion: 'ver', entidad: { tipo: 'agencia', id: 'otra' } } },
+      0,
+    );
+    expect(b.intencion).toBeUndefined();
   });
 });
 
@@ -164,10 +145,27 @@ describe('handleSSEEvent', () => {
       onToolStep: (p) => calls.push(`tool:${p.agent}:${p.tool}:${p.label}`),
       onPendingApproval: (a) => calls.push(`approval:${a.id}:${a.options.length}`),
       onDone: (f) => calls.push(`done:${f.dispatches.length}`),
-      onError: (m) => calls.push(`error:${m}`),
+      onError: (m, meta) => calls.push(`error:${m}:${meta?.status ?? '-'}:${meta?.code ?? '-'}`),
     };
     return { calls, handlers };
   }
+
+  it('🔴 el error del stream conserva su código: sin créditos no es «no pude conectarme»', () => {
+    // B2 de la auditoría del 13-09. La respuesta HTTP del stream ya salió con
+    // 200, así que el único lugar donde puede viajar el 402 es este evento.
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: error\ndata: {"error":"La cuenta de IA se quedó sin créditos.","status":402,"code":"sin_creditos_ia"}',
+      handlers,
+    );
+    expect(calls).toEqual(['error:La cuenta de IA se quedó sin créditos.:402:sin_creditos_ia']);
+  });
+
+  it('un error sin código sigue llegando, sin inventarle uno', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent('event: error\ndata: {"error":"boom"}', handlers);
+    expect(calls).toEqual(['error:boom:-:-']);
+  });
 
   it('dispatches message with text + actions', () => {
     const { calls, handlers } = collect();
@@ -235,7 +233,68 @@ describe('handleSSEEvent', () => {
     );
     handleSSEEvent('event: error\ndata: {"error":"boom"}', handlers);
     handleSSEEvent('event: message\ndata: {bad json', handlers);
-    expect(calls).toEqual(['done:1', 'error:boom']);
+    expect(calls).toEqual(['done:1', 'error:boom:-:-']);
+  });
+
+  // ── Nico, 23-09: «se queda ahí sólo con un texto y sin cargas» ─────────────
+  it('entrega el `progreso` del paso activo (evento aditivo del micro)', () => {
+    const vistos: unknown[] = [];
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":"Leyendo contratos…"}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":" Revisando 29 filas ","hechos":29,"total":40}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    // Un aviso vacío no borra la línea viva del paso.
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":"  "}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    expect(vistos).toEqual([
+      { texto: 'Leyendo contratos…' },
+      { texto: 'Revisando 29 filas', hechos: 29, total: 40 },
+    ]);
+  });
+
+  it('el `done` trae la parte con FORMA (bloques y entidades); lo que no se entiende se descarta', () => {
+    let final: Parameters<NonNullable<ChatStreamHandlers['onDone']>>[0] | null = null;
+    const done = {
+      responseText: 'Tienes 2 contratos que vencen en octubre.',
+      suggestedActions: [],
+      dispatches: [],
+      generatedAt: 'now',
+      bloques: [
+        {
+          tipo: 'tabla',
+          titulo: 'contratos',
+          columnas: [
+            { clave: 'codigo', titulo: 'Código', formato: 'numero' },
+            { clave: 'canon', titulo: 'Canon', formato: 'moneda' },
+          ],
+          filas: [{ codigo: 101, canon: 2500000 }],
+          total: 1,
+          truncada: false,
+        },
+        { tipo: 'metrica', titulo: 'Contratos', valor: 2, formato: 'numero' },
+        { tipo: 'grafica', puntos: [] },
+        { tipo: 'metrica', titulo: 'roto', valor: 'dos' },
+      ],
+      entidades: [
+        { tipo: 'inquilino', id: 'p-1', titulo: 'Juan Camilo López', motivo: 'nombre', contratos: [] },
+        { tipo: 'marciano', id: 'x' },
+      ],
+    };
+    handleSSEEvent(`event: done\ndata: ${JSON.stringify(done)}`, { onDone: (f) => (final = f) });
+    expect(final!.bloques.map((b) => b.tipo)).toEqual(['tabla', 'metrica']);
+    expect(final!.entidades.map((e) => e.titulo)).toEqual(['Juan Camilo López']);
+  });
+
+  it('un micro viejo (sin `bloques` ni `entidades`) deja las dos listas vacías, no `undefined`', () => {
+    let final: Parameters<NonNullable<ChatStreamHandlers['onDone']>>[0] | null = null;
+    handleSSEEvent('event: done\ndata: {"responseText":"x","suggestedActions":[],"dispatches":[]}', {
+      onDone: (f) => (final = f),
+    });
+    expect(final!.bloques).toEqual([]);
+    expect(final!.entidades).toEqual([]);
   });
 });
 
@@ -347,16 +406,17 @@ describe('mapBackendBriefing (tolerant)', () => {
  * transporte rechaza con `ApiError`, que `clasificarFallo` sabe leer.
  */
 describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', () => {
-  const respuesta = (status: number, cuerpo: unknown) =>
+  const respuesta = (status: number, cuerpo: unknown, cabeceras: Record<string, string> = {}) =>
     ({
       ok: false,
       status,
       body: null,
+      headers: new Headers(cabeceras),
       json: async () => cuerpo,
       text: async () => JSON.stringify(cuerpo),
     }) as unknown as Response;
 
-  it.each([402, 429, 503])('POST con %i rechaza con ApiError y ese status', async (status) => {
+  it.each([402, 503])('POST con %i rechaza con ApiError y ese status', async (status) => {
     process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
     const { postChatTurn } = await import('./ai-hub-chat');
     const { ApiError } = await import('@/lib/api/client');
@@ -366,6 +426,39 @@ describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', 
       expect(err).toBeInstanceOf(ApiError);
       expect(err.status).toBe(status);
       expect(err.code).toBe('X');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  /**
+   * 23-09 — el 429 del micro se dice IGUAL que el del back: con cuánto
+   * esperar. Antes llegaba a la burbuja el `message` crudo del micro («Too
+   * many requests») o «ai-hub chat 429», sin plazo.
+   */
+  it('un 429 del micro dice cuánto esperar, con el mismo mensaje que el del back', async () => {
+    process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
+    const { postChatTurn, streamChatTurn } = await import('./ai-hub-chat');
+    const { ApiError } = await import('@/lib/api/client');
+    const { mensajeDeDemasiadasSolicitudes, CODIGO_DEMASIADAS_SOLICITUDES } = await import(
+      '@/lib/api/demasiadas-solicitudes'
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respuesta(429, { message: 'Too many requests' }, { 'Retry-After': '45' })),
+    );
+    try {
+      for (const intento of [
+        () => postChatTurn({ agencyId: 'ag-1', message: 'hola' }),
+        () => streamChatTurn({ agencyId: 'ag-1', message: 'hola', handlers: {} }),
+      ]) {
+        const err = await intento().catch((e) => e);
+        expect(err).toBeInstanceOf(ApiError);
+        expect(err.status).toBe(429);
+        expect(err.code).toBe(CODIGO_DEMASIADAS_SOLICITUDES);
+        expect(err.message).toBe(mensajeDeDemasiadasSolicitudes(45));
+        expect(err.detalle.reintentarEnSegundos).toBe(45);
+      }
     } finally {
       vi.unstubAllGlobals();
     }

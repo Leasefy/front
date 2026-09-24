@@ -16,6 +16,9 @@ const { crearMock, toastMock } = vi.hoisted(() => ({
 }))
 vi.mock('sonner', () => ({ toast: toastMock }))
 vi.mock('@/lib/api/pqrs-agencia.service', () => ({ pqrsApi: { crear: crearMock } }))
+// El responsable viene preelegido con quien radica: acá la sesión es de otra
+// persona (`u-otro`), así que la preelección no aplica y el campo arranca vacío.
+vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'u-otro' } }) }))
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignaciones: () => ({ consignaciones: [] }),
   useAgentes: () => ({
@@ -132,7 +135,9 @@ describe('NuevaPqrsDrawer', () => {
     act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-nombre"]')!, '  Camila Ríos '))
     expect(radicar.disabled).toBe(true)
     act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-asunto"]')!, 'Gotera en el baño'))
-    expect(radicar.disabled).toBe(false)
+    // Todavía falta el responsable: una PQRS no puede quedar sin quien
+    // responda (Nico, 2026-09-15), así que «Radicar» sigue apagado.
+    expect(radicar.disabled).toBe(true)
 
     act(() => q<HTMLButtonElement>('[data-testid="solicitante-PROPIETARIO"]')!.click())
 
@@ -140,6 +145,7 @@ describe('NuevaPqrsDrawer', () => {
     const asignado = q<HTMLSelectElement>('[data-testid="pqrs-asignado"]')!
     expect([...asignado.options].map((o) => o.value)).toEqual(['', 'u1'])
     act(() => elegir(asignado, 'u1'))
+    expect(radicar.disabled).toBe(false)
 
     // Sin inmuebles consignados el buscador queda deshabilitado, no vacío.
     expect(q<HTMLSelectElement>('[data-testid="pqrs-inmueble"]')!.disabled).toBe(true)
@@ -173,6 +179,7 @@ describe('NuevaPqrsDrawer', () => {
     })
     act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-nombre"]')!, 'Camila'))
     act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-asunto"]')!, 'Gotera'))
+    act(() => elegir(q<HTMLSelectElement>('[data-testid="pqrs-asignado"]')!, 'u1'))
     await act(async () => {
       q<HTMLFormElement>('[data-testid="nueva-pqrs-form"]')!.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),

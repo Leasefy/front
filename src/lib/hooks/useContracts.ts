@@ -161,7 +161,8 @@ export function useContractByApplication(applicationId: string | null | undefine
  * `sinDocumento` NO es un error: es el contrato migrado, que se cargó desde el
  * archivo de la inmobiliaria y nunca tuvo documento en Leasefy. Va aparte de
  * `error` para que la pantalla pueda contarlo en tono neutro en vez de pintar
- * un cartel rojo (ver `esContratoSinDocumento`).
+ * un cartel rojo. El back lo dice con `origin: 'SIN_DOCUMENTO'`; un back sin
+ * desplegar todavía lo manda como 400 (ver `esContratoSinDocumento`).
  *
  * `errorCrudo` es el error entero —no su texto— porque `<FalloDeCarga>`
  * clasifica por status, no por mensaje. Mismo par que en `useContracts`.
@@ -182,6 +183,7 @@ export function useContractPreview(id: string | null) {
     try {
       const p = await contractsApi.getPreview(id);
       setPreview(p);
+      setSinDocumento(p.origin === 'SIN_DOCUMENTO');
     } catch (err) {
       if (esContratoSinDocumento(err)) {
         setSinDocumento(true);

@@ -20,9 +20,18 @@ const { api, toastMock, permisos } = vi.hoisted(() => ({
     reabrir: vi.fn(),
     conciliarSeguros: vi.fn(),
     cargarExtracto: vi.fn(),
+    loteActual: vi.fn(),
+    armarLote: vi.fn(),
+    aprobarLote: vi.fn(),
+    reversarLote: vi.fn(),
   },
   toastMock: { success: vi.fn(), error: vi.fn() },
-  permisos: { canAccess: vi.fn((_modulo: string, _accion: string) => true), isLoading: false },
+  permisos: {
+    canAccess: vi.fn((_modulo: string, _accion: string) => true),
+    isLoading: false,
+    isAdmin: true,
+    agencyRole: 'ADMIN' as string | null,
+  },
 }));
 
 vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({ conciliacionBancariaApi: api }));
@@ -34,6 +43,19 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
   ),
 }));
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({ parseSpreadsheetFile: vi.fn() }));
+/*
+ * El combobox de clientes es del design system (Radix) y elegir dentro de él
+ * desde este DOM de prueba mide a Radix, no a esta pantalla. Lo que acá importa
+ * es el CABLEADO: que al elegir a alguien se mande `tenantId` y que el aviso
+ * diga a dónde fue la plata. `ElegirCliente` tiene sus propias pruebas.
+ */
+vi.mock('@/components/inmobiliaria/ReciboPorCliente', () => ({
+  ElegirCliente: ({ onChange }: { onChange: (id: string | null) => void }) => (
+    <button data-testid="elegir-cliente" onClick={() => onChange('u-9')}>
+      Elegir a Laura
+    </button>
+  ),
+}));
 
 import { ExtractoBancario } from './ExtractoBancario';
 
@@ -56,23 +78,31 @@ function movimiento(sobre: Partial<MovimientoBancario> = {}): MovimientoBancario
     createdAt: '2026-09-07T00:00:00.000Z',
     candidatos: [
       {
-        cobroId: 'c-1',
+        contractId: 'ct-1',
+        tenantId: 'u-laura',
         tenantName: 'Laura Pérez Gómez',
         propertyTitle: 'Apto 301',
-        month: '2026-09',
-        saldoCop: 1800000,
+        meses: ['2026-09'],
+        pendienteCop: 1800000,
+        cuotaIds: ['q-1'],
+        cobroId: null,
+        adelanto: false,
         puntaje: 100,
-        porQue: ['El valor es igual al saldo del cobro.', '«perez» aparece en la descripción.'],
+        porQue: ['El valor es igual a lo pendiente de la cuota.', '«perez» aparece en la descripción.'],
         seguro: true,
       },
       {
-        cobroId: 'c-2',
+        contractId: 'ct-2',
+        tenantId: 'u-carlos',
         tenantName: 'Carlos Ramírez',
         propertyTitle: 'Casa 12',
-        month: '2026-09',
-        saldoCop: 1800000,
+        meses: ['2026-09'],
+        pendienteCop: 1800000,
+        cuotaIds: ['q-2'],
+        cobroId: null,
+        adelanto: false,
         puntaje: 70,
-        porQue: ['El valor es igual al saldo del cobro.'],
+        porQue: ['El valor es igual a lo pendiente de la cuota.'],
         seguro: false,
       },
     ],
@@ -153,6 +183,7 @@ beforeEach(() => {
   permisos.isLoading = false;
   api.resumen.mockResolvedValue(RESUMEN);
   api.listar.mockResolvedValue({ data: [movimiento()], total: 1, limite: 50, desplazamiento: 0 });
+  api.loteActual.mockResolvedValue({ disponible: true, propuesto: null, recientes: [] });
 });
 
 afterEach(async () => {
@@ -175,27 +206,102 @@ describe('ExtractoBancario — pendientes', () => {
     const fila = $('[data-testid="movimiento-m-1"]');
     expect(fila.textContent).toContain('TRANSFERENCIA PEREZ GOMEZ');
     expect(fila.textContent).toContain('$ 1.800.000');
-    const seguro = $('[data-testid="candidato-m-1-c-1"]');
+    const seguro = $('[data-testid="candidato-m-1-ct-1"]');
     expect(seguro.getAttribute('data-seguro')).toBe('true');
     expect(seguro.textContent).toContain('Seguro');
     expect(seguro.textContent).toContain('«perez» aparece en la descripción.');
-    expect($('[data-testid="candidato-m-1-c-2"]').getAttribute('data-seguro')).toBe('false');
-    expect($('[data-testid="conciliar-seguros"]').textContent).toContain('(1)');
+    expect($('[data-testid="candidato-m-1-ct-2"]').getAttribute('data-seguro')).toBe('false');
+    // 🔴 Ya no hay «Conciliar los seguros»: lo exacto va en lote y la tabla es la cola manual.
+    expect(document.querySelector('[data-testid="conciliar-seguros"]')).toBeNull();
+    expect($('[data-testid="cola-manual"]').textContent).toContain('Cola manual');
+    expect($('[data-testid="lote-exacto"]').textContent).toContain('Lote de lo que calza exacto');
   });
 
   it('«Conciliar» manda el movimiento y el cobro, avisa con el número del recibo y recarga', async () => {
     api.conciliar.mockResolvedValue({ recibo: { id: 'r-1', numero: 41 }, movimiento: {}, cobro: {} });
     await montar();
-    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')));
-    expect(api.conciliar).toHaveBeenCalledWith('m-1', 'c-1');
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-laura' });
     expect(toastMock.success).toHaveBeenCalledWith('Recibo N.º 41 emitido a Laura Pérez Gómez.');
     expect(api.listar).toHaveBeenCalledTimes(2);
+  });
+
+  /*
+   * 🔴 El caso que destrabó el extracto (15-09): los cobros con saldo eran
+   * todos de octubre y el extracto era de septiembre, así que NINGÚN cobro se
+   * parecía. Antes esto era un callejón sin salida.
+   */
+  it('sin candidatos ofrece conciliar contra un cliente, y manda tenantId', async () => {
+    api.listar.mockResolvedValue({
+      data: [movimiento({ candidatos: [] })],
+      total: 1,
+      limite: 50,
+      desplazamiento: 0,
+    });
+    api.conciliar.mockResolvedValue({
+      movimiento: {},
+      recibo: { id: 'r-9', numero: 77 },
+      cobro: { id: 'c-9' },
+      pago: {
+        recibos: [{ id: 'r-9', numero: 77, valorCop: 1000000 }],
+        imputacion: [],
+        totalCop: 1800000,
+        deudaRestante: 0,
+        anticipoCop: 800000,
+      },
+    });
+    await montar();
+
+    await clic($('[data-testid="conciliar-cliente-m-1"]'));
+    await clic($('[data-testid="elegir-cliente"]'));
+    await clic($('[data-testid="confirmar-conciliar-cliente"]'));
+
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-9' });
+    // El aviso dice QUÉ pasó con la plata, no «listo».
+    expect(toastMock.success).toHaveBeenCalledWith(
+      '1 recibo emitido y $ 800.000 a favor del cliente.',
+    );
+    expect(api.listar).toHaveBeenCalledTimes(2);
+  });
+
+  /*
+   * El cliente no debía nada: el pago entero quedó a su favor y NO hay recibo.
+   * Pintar `recibo.numero` sin guardia reventaría justo acá.
+   */
+  it('un pago que queda entero a favor no rompe la pantalla y lo dice', async () => {
+    api.listar.mockResolvedValue({
+      data: [movimiento({ candidatos: [] })],
+      total: 1,
+      limite: 50,
+      desplazamiento: 0,
+    });
+    api.conciliar.mockResolvedValue({
+      movimiento: {},
+      recibo: null,
+      cobro: null,
+      pago: {
+        recibos: [],
+        imputacion: [],
+        totalCop: 1800000,
+        deudaRestante: 0,
+        anticipoCop: 1800000,
+      },
+    });
+    await montar();
+
+    await clic($('[data-testid="conciliar-cliente-m-1"]'));
+    await clic($('[data-testid="elegir-cliente"]'));
+    await clic($('[data-testid="confirmar-conciliar-cliente"]'));
+
+    expect(toastMock.success).toHaveBeenCalledWith(
+      'Quedaron $ 1.800.000 a favor del cliente: no debía nada.',
+    );
   });
 
   it('el error del back sale en palabras por toast y la fila sigue', async () => {
     api.conciliar.mockRejectedValue(new Error('El movimiento ($ 1.800.000) supera lo que falta por pagar.'));
     await montar();
-    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')));
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
     expect(toastMock.error).toHaveBeenCalledWith('El movimiento ($ 1.800.000) supera lo que falta por pagar.');
     expect(document.querySelector('[data-testid="movimiento-m-1"]')).not.toBeNull();
   });
@@ -216,14 +322,31 @@ describe('ExtractoBancario — pendientes', () => {
     expect(toastMock.success).toHaveBeenCalledWith('Movimiento ignorado.');
   });
 
-  it('«Conciliar los seguros» confirma con la cantidad y llama al lote', async () => {
-    api.conciliarSeguros.mockResolvedValue({ conciliados: 1, sinCandidatoSeguro: 0, errores: [] });
+  it('aprobar el lote desde la pantalla recarga la cola manual', async () => {
+    api.loteActual.mockResolvedValue({
+      disponible: true,
+      propuesto: {
+        id: 'l-1',
+        estado: 'PROPUESTO',
+        armadoPor: 'extracto',
+        cantidad: 1,
+        totalCop: 1800000,
+        armadoAt: '2026-09-17T10:00:00.000Z',
+        aprobadoAt: null,
+        conciliados: null,
+        fallidos: null,
+        reversadoAt: null,
+        motivoDeReversa: null,
+        movimientos: [],
+      },
+      recientes: [],
+    });
+    api.aprobarLote.mockResolvedValue({ conciliados: 1, fallidos: 0 });
     await montar();
-    await clic($('[data-testid="conciliar-seguros"]'));
-    expect(document.body.textContent).toContain('Conciliar 1 movimiento seguro');
-    await clic($('[data-testid="confirmar-seguros"]'));
-    expect(api.conciliarSeguros).toHaveBeenCalledTimes(1);
-    expect(toastMock.success).toHaveBeenCalledWith('1 conciliado · 0 sin candidato seguro', { description: undefined });
+    await clic($('[data-testid="aprobar-lote"]'));
+    await clic($('[data-testid="confirmar-aprobar-lote"]'));
+    expect(api.aprobarLote).toHaveBeenCalledWith('l-1');
+    expect(api.listar).toHaveBeenCalledTimes(2);
   });
 
   it('una salida no ofrece candidatos ni conciliar, sólo ignorar', async () => {
@@ -238,14 +361,13 @@ describe('ExtractoBancario — pendientes', () => {
     expect(fila.textContent).toContain('Salida');
     expect(fila.textContent).toContain('−$ 45.000');
     expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Ignorar']);
-    expect(($('[data-testid="conciliar-seguros"]') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('sin permiso de crear no se puede conciliar ni cargar; sin editar no se ignora', async () => {
     permisos.canAccess.mockImplementation((_m: string, a: string) => a === 'view');
     await montar();
     expect(document.querySelector('[data-testid="cargar-extracto"]')).toBeNull();
-    expect(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')).disabled).toBe(true);
+    expect(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')).disabled).toBe(true);
     expect(botonConTexto('Ignorar', $('[data-testid="movimiento-m-1"]')).disabled).toBe(true);
   });
 });

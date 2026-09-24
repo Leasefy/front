@@ -30,6 +30,7 @@
  */
 
 import { apiClient } from './client';
+import { anunciarProceso } from './procesos.service';
 
 // ============================================================================
 // Types — contract.md §3.8, wu-4-report.md §6
@@ -342,6 +343,8 @@ export const inmueblesImportacionApi = {
     inmuebles: ImportarInmuebleDto[],
     idempotencyKey?: string,
   ): Promise<EstadoDeLoteInmuebles> {
+    // La carga aparece en el centro de procesos del header (22-09).
+    anunciarProceso();
     return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar`, {
       inmuebles,
       ...(idempotencyKey ? { idempotencyKey } : {}),

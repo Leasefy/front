@@ -22,6 +22,7 @@ import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
+import { BotonDelCentroDeProcesos } from '@/components/procesos/BotonDelCentroDeProcesos';
 import { TourDelPanel } from '@/components/tour/TourDelPanel';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
 import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
@@ -78,7 +79,7 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus, modulosPagos } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   const router = useRouter();
   // Upgrade CTA only when the agency is NOT on a paid plan (i.e. on the
@@ -131,11 +132,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     canAccess,
     isAdmin,
     agencyRole,
+    // 🔴 Los módulos de PAGO (Nómina, hoy). No son un permiso: es si la
+    // inmobiliaria los compró. Vacío mientras no llegue la respuesta — el gate
+    // falla cerrado, ver `agency-nav-filter.ts`.
+    modulosPagos,
     // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
     // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
     // reintentar. Borrarlos se lee como «esto no existe».
     agentUnverified: agentAccessStatus === 'sin-verificar',
-  }), [canAccess, isAdmin, agencyRole, agentAccessStatus]);
+  }), [canAccess, isAdmin, agencyRole, agentAccessStatus, modulosPagos]);
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
@@ -193,15 +198,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // `exact` para que no quede resaltado en cada subruta.
     { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
 
-    // ── LOS MÓDULOS ── por ciclo de vida del contrato.
+    // ── LOS MÓDULOS ── los agentes arriba, y después el ciclo de vida del contrato.
     //
-    // Captación y arriendo → Operación → Dinero → Directorio → (pie) Reportes y
-    // Configuración. La estructura vive como DATOS en
+    // Agentes IA → Captación y arriendo → Operación → Dinero → Directorio →
+    // (pie) Reportes. La estructura vive como DATOS en
     // src/lib/nav/arquitectura-del-panel.ts (grupos → módulos → pantallas) y
     // sidebar-del-panel.ts la vuelve filas: una por módulo, con la cabecera de
-    // su grupo. Las pantallas de cada módulo (Cobranza, Cartera, Renovaciones,
-    // Avalúos…) ya no son filas del sidebar: son las cards de SeccionesDelModulo,
-    // y si son un agente traen adentro su propio WorkspaceNav. 38 filas → 21.
+    // su grupo. Las pantallas de cada módulo (Cartera, Renovaciones, Soportes…)
+    // no son filas del sidebar: son las cards de SeccionesDelModulo. Los agentes
+    // (Cobranza, Avalúos…) sí son filas, en «Agentes IA», con su WorkspaceNav
+    // adentro (Nico, 2026-09-16). La fila marcada es UNA, la más específica
+    // (PlanSidebar → fila-activa-del-menu.ts): las salas conservan su URL.
     //
     // Los gates NO cambian: cada fila conserva el module/roles/scope que tenía,
     // y si la raíz de un módulo no pasa pero una de sus pantallas sí, la fila
@@ -298,19 +305,47 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* La píldora del Piloto («Piloto · Copiloto») va en `actions`, a la
               izquierda de la campana: en cada pantalla se ve en qué modo está
               la flota y se cambia con un clic (Nico, 2026-09-02). */}
+          {/* 🔴 El CENTRO DE PROCESOS va a la DERECHA de la píldora del
+              Piloto (Nico, 22-09-2026; primero la pidió a la izquierda y
+              después la movió): las cargas, descargas y procesos largos
+              —reprocesar asientos, el archivo del lote, la emisión del mes,
+              la migración— se ven y se bajan desde ahí, en cualquier pantalla. */}
           <PlanHeader
             showMagnifyingGlass={false}
             leftSlot={<AgentHeaderBreadcrumb />}
-            actions={<PilotoModoHeader />}
+            actions={
+              <>
+                <PilotoModoHeader />
+                <BotonDelCentroDeProcesos />
+              </>
+            }
           />
           {/* Las dos capas de navegación debajo del header, montadas UNA vez y
               auto-ocultas fuera de su contexto, cada una con su cara:
               SeccionesDelModulo (las secciones del módulo como cards:
-              [Cobros] [Recaudo] [Cartera] [Cobranza]) y, DEBAJO, dentro de un
+              [Pagos] [Recaudo] [Cartera]) y, DEBAJO, dentro de un
               agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
               Las secciones no se esconden al entrar en el agente: la card
               sigue marcada y sus pestañas cuelgan de ella. */}
-          <main id="main-content" tabIndex={-1}>
+          {/* 🔴 20-09 · EL TOPE DE ANCHO, medido en 3840.
+              Nico pidió que el panel funcionara en 1024, 1140, 1440, 1920,
+              2560 y 3840. En los chicos el defecto es desbordar; en los
+              grandes es el contrario, y medido en la tabla de Contratos a
+              3840 px: el `main` llegaba a 3.600 px y la tabla a 3.534, con la
+              columna «Vigencia» en 949 px y «Inquilino» en 830. Una fila
+              obliga a barrer tres metros y medio de pantalla, y ningún dato
+              queda cerca del siguiente.
+
+              El tope va en 1.920 y no en 1.280: esto es un ERP con tablas de
+              siete columnas, y recortarlo como si fuera un blog desperdiciaría
+              el monitor de quien lo tiene. Hasta 1920 no cambia NADA —el
+              `main` allá mide 1.680, por debajo del tope— y de ahí para
+              arriba el contenido deja de crecer y se centra. */}
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-[1920px]"
+          >
             <SeccionesDelModulo />
             <CabeceraDelAgente />
             {children}

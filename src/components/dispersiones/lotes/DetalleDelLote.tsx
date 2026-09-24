@@ -10,11 +10,18 @@
  *    `accionesPara(estado)`, calcada de los `if` del servicio, y del permiso
  *    de cada una. Un botón que siempre falla enseña a ignorar los errores.
  * 2. **Dejar que quien armó el lote crea que puede aprobarlo.** El back lo
- *    prohíbe; acá se dice antes de que gaste un clic.
- * 3. **Entregar el archivo sin el aviso.** Mientras el layout no esté cotejado
- *    contra un archivo real del banco, el nombre lleva `SIN-VERIFICAR` y acá
- *    se muestra ANTES de guardar. Un giro de mil millones con el layout
- *    equivocado no se corrige después.
+ *    prohíbe; acá se dice antes de que gaste un clic. Salvo P-4 (aclarado por
+ *    Nico el 24-09): el ADMINISTRADOR no se confirma a sí mismo. Lo que arma
+ *    vuelve del back ya aprobado y acá lo dice («Aprobado por ti como
+ *    administrador (P-4)»); un lote suyo que quedó esperando se aprueba con
+ *    un clic, sin código, en vez de un «Aprobar» apagado.
+ * 3. **Entregar el archivo sin el aviso.** Mientras nadie haya subido un
+ *    archivo de ese formato al banco y visto que lo acepta, el nombre lleva
+ *    `SIN-VERIFICAR` y acá se muestra ANTES de guardar. Un giro de mil
+ *    millones con el layout equivocado no se corrige después.
+ * 5. **Dejar elegir el formato al final.** Es el del banco elegido al armar
+ *    el lote (Nico, 22-09): el archivo de un lote que otra persona aprobó para
+ *    girar desde Bancolombia no puede salir con el layout de otro banco.
  * 4. **Reescribir el error del back.** Sus mensajes dicen por qué y qué hacer
  *    («Código incorrecto. 3 intentos antes de que el lote se bloquee»). Van
  *    tal cual.
@@ -39,6 +46,7 @@ import { Banner } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,8 +75,10 @@ import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
   lotesDeDispersionApi,
   type ArchivoGenerado,
-  type FormatoArchivoDePagos,
+  type ExtractosDeLosCompensados,
+  type FacturacionDelLote,
   type LoteDeDispersion,
+  type OrigenDelLote,
   type SolicitudDeAprobacion,
   type VistaDelLote,
 } from '@/lib/api/lotes-de-dispersion.service';
@@ -81,10 +91,10 @@ import {
   CAMINO_DEL_LOTE,
   codigoValido,
   esSinVerificar,
-  FORMATOS,
   guardarArchivo,
   motivoValido,
   NOMBRE_DEL_ESTADO,
+  NOMBRE_DEL_FORMATO,
   pasoAlcanzado,
   PERMISO_DE_LA_ACCION,
   QUE_SIGUE,
@@ -92,15 +102,170 @@ import {
   type AccionDelLote,
 } from './estado-del-lote';
 import { useNombresDelEquipo } from './use-nombres-del-equipo';
+import { ArchivoDelLote, useArchivoDelLote } from './ArchivoDelLote';
+import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso';
+import {
+  AccionesDelGiro,
+  MarcarDevueltoDialog,
+  RegirarDialog,
+  useGirosDevueltos,
+} from './GirosDevueltos';
+import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
+import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
+import { AvisoDeArchivoAnulado } from './AvisoDeArchivoAnulado';
+import { useI18n } from '@/lib/i18n';
+import {
+  APROBADO_POR_TI,
+  loApruebaElQueLoArmo,
+  notaDelLote,
+} from '@/lib/doble-control/el-administrador';
 
 type Dialogo =
   | 'pedirAprobacion'
   | 'aprobar'
   | 'generarArchivo'
-  | 'descargarArchivo'
   | 'marcarPagado'
   | 'anular'
   | null;
+
+/**
+ * 🔴 QUÉ PASÓ CON LA FACTURA AL PROPIETARIO.
+ *
+ * El CEO (2026-09-15): «archivo plano por banco, egreso, **factura ahora o
+ * después**, correo al propietario». Hasta la segunda vuelta la casilla
+ * guardaba un booleano y no emitía nada; ahora emite de verdad, y el resultado
+ * tiene que verse acá y no en otra pantalla.
+ *
+ * Dos cosas que este bloque dice en voz alta y no se pueden suavizar:
+ *
+ *  · **Un fallo NO deshace el pago.** La plata ya salió del banco; el lote
+ *    quedó PAGADO. Lo que falta es emitir, y se reintenta desde Facturación.
+ *  · **«Ya estaban» no es un error.** Es la llave única de facturas haciendo
+ *    su trabajo: nadie facturó dos veces la misma comisión.
+ */
+function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
+  if (!r.pedida) {
+    if (r.candidatas === 0) return null;
+    return (
+      <Banner variant="info" title="La factura al propietario queda para después">
+        <span data-testid="facturacion-del-lote-despues">
+          {r.candidatas}{' '}
+          {r.candidatas === 1 ? 'prefactura queda' : 'prefacturas quedan'}{' '}
+          esperando en Facturación: es la comisión de la inmobiliaria sobre lo
+          que este lote giró. Se emiten desde{' '}
+          <Link
+            href="/panel/inmobiliaria/facturacion"
+            className="underline underline-offset-2"
+          >
+            Facturación
+          </Link>
+          .
+        </span>
+      </Banner>
+    );
+  }
+
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'El lote quedó pagado; falta emitir parte de la facturación'
+          : 'Facturación al propietario emitida'
+      }
+    >
+      <span className="block space-y-1" data-testid="facturacion-del-lote">
+        <span className="block">
+          {r.emitidas}{' '}
+          {r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} por{' '}
+          {formatCurrency(r.totalCop)}
+          {r.yaEstaban > 0 &&
+            ` · ${r.yaEstaban} ya ${r.yaEstaban === 1 ? 'estaba' : 'estaban'} emitida${r.yaEstaban === 1 ? '' : 's'}`}
+          {r.sinNumero > 0 && ` · ${r.sinNumero} sin número`}
+          {r.candidatas > 0 && ` · de ${r.candidatas}`}
+        </span>
+        {r.numeros.length > 0 && (
+          <span className="block font-mono text-xs text-fg-muted">
+            {r.numeros.slice(0, 8).join(' · ')}
+            {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
+          </span>
+        )}
+        {hayFallas && (
+          <span role="list" className="block space-y-0.5">
+            {r.fallas.map((f) => (
+              <span role="listitem" className="block" key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
+                {nombreDelMes(f.mes)}: {f.motivo}
+              </span>
+            ))}
+          </span>
+        )}
+        {hayFallas && (
+          <span className="block text-fg-muted">
+            La plata ya salió del banco y el lote quedó PAGADO: lo que falta es
+            emitir, y se reintenta desde{' '}
+            <Link
+              href="/panel/inmobiliaria/facturacion"
+              className="underline underline-offset-2"
+            >
+              Facturación
+            </Link>
+            .
+          </span>
+        )}
+      </span>
+    </Banner>
+  );
+}
+
+/**
+ * 🔴 EL EXTRACTO A LOS QUE SE CERRARON EN $0.
+ *
+ * Nico y Juan Camilo (2026-09-16): el mes en que no se le gira nada, al
+ * propietario se le factura la administración igual y se le manda su extracto
+ * con las deducciones. Si alguno no salió, se dice a quién y por qué: el lote
+ * quedó pagado y el extracto se reenvía desde su ficha.
+ */
+function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
+  if (r.compensados === 0) return null;
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'No a todos los que quedaron en $0 les salió el extracto'
+          : r.enviados === 1
+            ? 'Al propietario que quedó en $0 le salió su extracto'
+            : `A los ${r.enviados} propietarios que quedaron en $0 les salió su extracto`
+      }
+    >
+      <span className="block space-y-1" data-testid="extractos-de-compensados">
+        <span className="block">
+          {r.enviados} de {r.compensados}{' '}
+          {r.compensados === 1 ? 'extracto enviado' : 'extractos enviados'}, con
+          el detalle de las deducciones que explican por qué este mes no se les
+          giró nada.
+        </span>
+        {hayFallas && (
+          <span role="list" className="block space-y-0.5">
+            {r.fallas.map((f) => (
+              <span role="listitem" className="block" key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
+                <span className="font-medium">{f.nombre}</span>: {f.motivo}
+              </span>
+            ))}
+          </span>
+        )}
+        {hayFallas && (
+          <span className="block text-fg-muted">
+            El lote quedó PAGADO igual. El extracto se reenvía desde la ficha de
+            cada propietario.
+          </span>
+        )}
+      </span>
+    </Banner>
+  );
+}
 
 function mensajeDe(error: unknown, siNo: string): string {
   return error instanceof Error && error.message ? error.message : siNo;
@@ -129,9 +294,22 @@ export interface DetalleDelLoteProps {
 
 export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteProps) {
   const { vista, cargando, error, refetch, setVista } = useLoteDeDispersion(id);
-  const { canAccess } = usePermissions();
+  const { canAccess, isAdmin } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
+  const { t } = useI18n();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
+  /*
+   * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
+   * plata que YA salió, así que la columna aparece cuando el lote está PAGADO.
+   * La lectura falla abierto: si no hay migración o la petición se cae, el
+   * detalle del lote se ve entero y sin la columna.
+   */
+  const [giroEnDialogo, setGiroEnDialogo] = useState<{
+    accion: 'devolver' | 'regirar';
+    dispersionId: string;
+    nombreTitular: string;
+    valorCop: number;
+  } | null>(null);
 
   const puede = useCallback(
     (accion: AccionDelLote) => canAccess('dispersiones', PERMISO_DE_LA_ACCION[accion]),
@@ -144,11 +322,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const aplicarLote = useCallback(
     (lote: LoteDeDispersion) => {
       if (!vista) return;
+      // Las compensadas no cambian dentro de un lote: se reconocen por la
+      // dispersión, no por el texto del motivo.
+      const compensadas = new Set((vista.compensados ?? []).map((c) => c.dispersionId));
       setVista({
         ...vista,
         lote,
         excluidos: lote.items
-          .filter((i) => i.motivoDeExclusion !== null)
+          .filter((i) => i.motivoDeExclusion !== null && !compensadas.has(i.dispersionId))
           .map((i) => ({
             propietarioId: i.propietarioId,
             nombre: i.nombreTitular,
@@ -166,6 +347,27 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * tempranos— porque no se puede llamar condicionalmente.
    */
   const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
+
+  /*
+   * 🔴 El archivo vive en el CENTRO DE PROCESOS (Nico, 22-09: «ese diseño de
+   * carga de lotes es horrible»). «Descargar archivo» ya no abre un diálogo
+   * con un spinner: baja la copia del centro, y si no la hay la vuelve a
+   * preparar —cotejando el hash— como un proceso más. Antes de los returns
+   * tempranos: es un hook.
+   */
+  const archivoDelLote = useArchivoDelLote(id, vista?.lote.estado ?? 'BORRADOR', guardar);
+
+  // Igual que el de arriba: antes de los returns tempranos, porque un hook no
+  // se puede llamar condicionalmente.
+  const lotePagado = vista?.lote.estado === 'PAGADO';
+  const giros = useGirosDevueltos(lotePagado);
+  /*
+   * 🔴 Wompi · Pagos a terceros (23-09). Falla abierto: si la lectura falla,
+   * `wompi.vista` queda en `null` y el lote sigue por archivo como siempre.
+   */
+  const wompi = useLoteEnWompi(id, vista?.lote.estado ?? 'BORRADOR');
+  // El contrato pide `dispersiones:edit` para marcar devuelto y para regirar.
+  const puedeTocarGiros = canAccess('dispersiones', 'edit');
 
   if (cargando && !vista) {
     return (
@@ -189,8 +391,27 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   if (!vista) return null;
 
   const { lote, excluidos, intentosRestantes, bloqueado } = vista;
+  const compensados = vista.compensados ?? [];
+  const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
+  /*
+   * 🔴 P-4 aclarado (Nico, 24-09): el ADMINISTRADOR que armó el lote no se
+   * confirma a sí mismo. «Pedir aprobación» se lo deja aprobado en ese paso y
+   * «Aprobar» no le pide código (lo hace el back). El botón no se le apaga.
+   */
+  const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin);
+  /** Lo armó y lo aprobó la misma persona (sólo un administrador, P-4). */
+  const notaP4 = notaDelLote(lote, yo);
+  /*
+   * 🔴 Nico, 23-09: el giro que vuelve a salir no lo aprueba quien registró su
+   * devolución (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
+   * Se apaga «Aprobar» con el porqué antes del clic.
+   */
+  const registreUnaDevolucion =
+    // P-4: al administrador el back también le deja aprobar el regiro de la
+    // devolución que registró (y lo deja en la bitácora).
+    !isAdmin && yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
 
   return (
@@ -233,11 +454,43 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           Se agotaron los intentos del código de aprobación. Hay que anularlo y armarlo de nuevo.
         </Banner>
       )}
-      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
+      {/* 🔴 Sólo aparece después de marcar pagado en esta sesión: `facturacion`
+          viene únicamente en la respuesta de `POST /:id/pagado`, nunca en el
+          `ver`. Que no esté no significa que no se facturó — significa que esta
+          pantalla no lo presenció. */}
+      {lote.facturacion && (
+        <ResultadoDeLaFacturacion r={lote.facturacion} />
+      )}
+      {lote.extractosDeCompensados && (
+        <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
+      )}
+      {lote.estado === 'ESPERANDO_APROBACION' && registreUnaDevolucion && !soyElCreador && !bloqueado && (
+        <Banner variant="info" data-testid="registre-una-devolucion">
+          {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
+        </Banner>
+      )}
+      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !loApruebaAlPedir && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
+      )}
+      {(lote.estado === 'BORRADOR' || lote.estado === 'ESPERANDO_APROBACION') &&
+        loApruebaAlPedir &&
+        !bloqueado && (
+          <Banner variant="info" title="Lo armaste tú y eres administrador" data-testid="lo-apruebas-tu">
+            No se te pide que lo confirmes con otra persona ni con un código: con «Aprobar» queda
+            aprobado en un solo paso (P-4). En la bitácora queda que fuiste la misma persona.
+          </Banner>
+        )}
+      {lote.estado === 'APROBADO' && notaP4 && (
+        <Banner variant="success" title={notaP4.titulo} data-testid="aprobado-por-la-misma-persona">
+          {notaP4.detalle}
+        </Banner>
+      )}
+
+      {lote.estado !== 'ANULADO' && (
+        <AvisoDeArchivoAnulado pagos={vista.salieronEnUnArchivoAnulado} />
       )}
 
       {/* ── Línea de tiempo ────────────────────────────────────────────── */}
@@ -254,9 +507,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         />
         <Cifra
           etiqueta="Aprobado por"
-          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId) : 'Nadie todavía'}
+          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
           mono={false}
-          detalle={lote.aprobadoAt ? formatDateTime(lote.aprobadoAt) : undefined}
+          detalle={
+            lote.aprobadoAt
+              ? `${notaP4 ? 'Como administrador, en el mismo paso (P-4) · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              : undefined
+          }
         />
       </section>
 
@@ -268,22 +525,34 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         >
           {acciones.includes('pedirAprobacion') && (
             <Button onClick={() => setDialogo('pedirAprobacion')} hideArrow disabled={bloqueado}>
-              <PaperPlaneTilt className="h-4 w-4" />
-              Pedir aprobación
+              {loApruebaAlPedir ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <PaperPlaneTilt className="h-4 w-4" />
+              )}
+              {/* P-4: al administrador que lo armó, pedir la aprobación ES aprobar. */}
+              {loApruebaAlPedir ? 'Aprobar' : 'Pedir aprobación'}
             </Button>
           )}
           {acciones.includes('aprobar') && (
             <Button
               onClick={() => setDialogo('aprobar')}
               hideArrow
-              disabled={soyElCreador || bloqueado}
-              title={soyElCreador ? 'Quien arma el lote no puede aprobarlo' : undefined}
+              disabled={(soyElCreador && !loApruebaAlPedir) || registreUnaDevolucion || bloqueado}
+              title={
+                soyElCreador && !loApruebaAlPedir
+                  ? 'Quien arma el lote no puede aprobarlo'
+                  : registreUnaDevolucion
+                    ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
+                    : undefined
+              }
             >
               <ShieldCheck className="h-4 w-4" />
               Aprobar
             </Button>
           )}
-          {acciones.includes('reenviarCodigo') && (
+          {/* A quien lo aprueba él mismo no le sale un código: no hay qué reenviar. */}
+          {acciones.includes('reenviarCodigo') && !loApruebaAlPedir && (
             <Button
               variant="secondary"
               hideArrow
@@ -294,13 +563,23 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             </Button>
           )}
           {acciones.includes('generarArchivo') && (
-            <Button onClick={() => setDialogo('generarArchivo')} hideArrow>
+            /* Con Wompi listo para este lote, la acción principal es «Enviar a
+               Wompi» (abajo) y el archivo queda como alternativa. */
+            <Button
+              variant={wompi.vista?.sePuedeEnviar ? 'secondary' : 'default'}
+              onClick={() => setDialogo('generarArchivo')}
+              hideArrow
+            >
               <FileText className="h-4 w-4" />
-              Generar archivo
+              {wompi.vista?.sePuedeEnviar ? 'Usar el archivo del banco' : 'Generar archivo'}
             </Button>
           )}
           {acciones.includes('descargarArchivo') && (
-            <Button onClick={() => setDialogo('descargarArchivo')} hideArrow>
+            <Button
+              onClick={() => void archivoDelLote.descargar()}
+              isLoading={archivoDelLote.preparando}
+              hideArrow
+            >
               <DownloadSimple className="h-4 w-4" />
               Descargar archivo
             </Button>
@@ -325,14 +604,36 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </section>
       )}
 
+      {/* ── Wompi · Pagos a terceros ─────────────────────────────────────── */}
+      <LoteEnWompi
+        loteId={lote.id}
+        estado={lote.estado}
+        vista={wompi.vista}
+        puedeEditar={canAccess('dispersiones', 'edit')}
+        onCambio={(v) => {
+          wompi.setVista(v);
+          void refetch();
+        }}
+      />
+
       {/* ── Datos del cierre ────────────────────────────────────────────── */}
-      {(lote.formatoArchivo || lote.referenciaBanco) && (
+      {(vista.origen || lote.formatoArchivo || lote.referenciaBanco) && (
         <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 text-sm shadow-sm sm:grid-cols-3">
+          {vista.origen && (
+            <div data-testid="origen-del-lote">
+              <p className="text-caption text-fg-muted">Se gira desde</p>
+              <p className="text-fg">{vista.origen.nombreDelBanco}</p>
+              <p className="text-caption text-fg-muted">
+                {vista.origen.tipoDeCuenta === 'CORRIENTE' ? 'Corriente' : 'Ahorros'}{' '}
+                <span className="font-mono">{vista.origen.cuenta}</span>
+              </p>
+            </div>
+          )}
           {lote.formatoArchivo && (
             <div>
               <p className="text-xs text-fg-muted">Formato del archivo</p>
               <p className="font-mono text-fg">
-                {FORMATOS.find((f) => f.codigo === lote.formatoArchivo)?.nombre ?? lote.formatoArchivo}
+                {NOMBRE_DEL_FORMATO[lote.formatoArchivo] ?? lote.formatoArchivo}
               </p>
               {lote.archivoGeneradoAt && (
                 <p className="text-xs text-fg-muted">{formatDateTime(lote.archivoGeneradoAt)}</p>
@@ -359,6 +660,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </section>
       )}
+
+      {/* ── El archivo al banco, con el componente del centro de procesos ── */}
+      <ArchivoDelLote archivo={archivoDelLote} generadoAt={lote.archivoGeneradoAt} />
 
       {/* ── Excluidos ───────────────────────────────────────────────────── */}
       {excluidos.length > 0 && (
@@ -392,6 +696,43 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </section>
       )}
 
+      {/* ── Compensados: se cierran en $0 ───────────────────────────────── */}
+      {compensados.length > 0 && (
+        <section className="space-y-3" data-testid="compensados-del-lote">
+          <Banner
+            variant="info"
+            title={`${compensados.length} ${compensados.length === 1 ? 'propietario se cierra' : 'propietarios se cierran'} en $0`}
+          >
+            Sus deducciones cubren el neto del mes: no se les gira nada y no van en el archivo del banco.
+            Al marcar el lote pagado su liquidación se cierra, las deducciones quedan aplicadas y lo que
+            falte pasa solo a su siguiente liquidación. La administración se les factura igual y a cada
+            uno le sale su extracto con el detalle de las deducciones.
+          </Banner>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Propietario</TableHead>
+                  <TableHead className="text-right">Se gira</TableHead>
+                  <TableHead className="text-right">Pasa al mes siguiente</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {compensados.map((c) => (
+                  <TableRow key={c.dispersionId}>
+                    <TableCell className="font-medium text-fg">{c.nombre}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatCurrency(0)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-warning">
+                      {formatCurrency(c.saldoEnContraCop)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
@@ -411,6 +752,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                   <TableHead>Cuenta</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Entra</TableHead>
+                  {lotePagado ? <TableHead>Giro</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -433,12 +775,42 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="h-3.5 w-3.5" /> Sí
                         </span>
+                      ) : idsCompensados.has(item.dispersionId) ? (
+                        <span className="text-fg-muted">Se cierra en $0</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-warning">
                           <X className="h-3.5 w-3.5" /> No
                         </span>
                       )}
                     </TableCell>
+                    {lotePagado ? (
+                      <TableCell>
+                        <AccionesDelGiro
+                          dispersionId={item.dispersionId}
+                          nombreTitular={item.nombreTitular}
+                          valorCop={item.valorCop}
+                          giro={giros.porDispersion.get(item.dispersionId)}
+                          puedeEditar={puedeTocarGiros}
+                          disponible={giros.disponible}
+                          onDevolver={() =>
+                            setGiroEnDialogo({
+                              accion: 'devolver',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                          onRegirar={() =>
+                            setGiroEnDialogo({
+                              accion: 'regirar',
+                              dispersionId: item.dispersionId,
+                              nombreTitular: item.nombreTitular,
+                              valorCop: item.valorCop,
+                            })
+                          }
+                        />
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
@@ -458,35 +830,44 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </div>
         <p className="text-xs text-fg-muted">
-          Armado por {nombreDe(lote.creadoPorUserId)} · {lote.items.length}{' '}
+          Armado por {nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
         </p>
       </section>
+
+      {/* ── Movimientos: quién lo armó, aprobó, bajó el archivo, lo marcó
+          pagado — con su rol, y también quién lo intentó sin permiso. ──── */}
+      <BitacoraDelRecurso tipo="lote" id={lote.id} />
 
       {/* ── Diálogos ────────────────────────────────────────────────────── */}
       <PedirAprobacionDialog
         abierto={dialogo === 'pedirAprobacion'}
         lote={lote}
-        reenvio={lote.estado === 'ESPERANDO_APROBACION'}
+        reenvio={lote.estado === 'ESPERANDO_APROBACION' && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         onCerrar={cerrar}
         onListo={(r) => aplicarLote({ ...lote, ...r.lote, items: lote.items })}
       />
       <AprobarDialog
         abierto={dialogo === 'aprobar'}
         lote={lote}
-        exigeCodigo={exigeCodigo}
+        exigeCodigo={exigeCodigo && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         intentosRestantes={intentosRestantes}
         onCerrar={cerrar}
         onListo={aplicarLote}
         onFallo={() => void refetch()}
       />
       <ArchivoDialog
-        abierto={dialogo === 'generarArchivo' || dialogo === 'descargarArchivo'}
-        modo={dialogo === 'descargarArchivo' ? 'descargar' : 'generar'}
+        abierto={dialogo === 'generarArchivo'}
         lote={lote}
+        origen={vista.origen}
         guardar={guardar}
         onCerrar={cerrar}
-        onGenerado={() => void refetch()}
+        onGenerado={() => {
+          void refetch();
+          void archivoDelLote.refetch();
+        }}
       />
       <MarcarPagadoDialog
         abierto={dialogo === 'marcarPagado'}
@@ -495,6 +876,25 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         onListo={aplicarLote}
       />
       <AnularDialog abierto={dialogo === 'anular'} lote={lote} onCerrar={cerrar} onListo={aplicarLote} />
+
+      {/* ── Giros devueltos (17-09) ─────────────────────────────────────── */}
+      <MarcarDevueltoDialog
+        abierto={giroEnDialogo?.accion === 'devolver'}
+        dispersionId={giroEnDialogo?.dispersionId ?? null}
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        valorCop={giroEnDialogo?.valorCop ?? 0}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
+      <RegirarDialog
+        abierto={giroEnDialogo?.accion === 'regirar'}
+        giro={
+          giroEnDialogo ? (giros.porDispersion.get(giroEnDialogo.dispersionId) ?? null) : null
+        }
+        nombreTitular={giroEnDialogo?.nombreTitular ?? ''}
+        onCerrar={() => setGiroEnDialogo(null)}
+        onListo={() => void giros.recargar()}
+      />
     </div>
   );
 }
@@ -541,6 +941,8 @@ function Cifra({
 function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
   const alcanzado = pasoAlcanzado(lote);
   const anulado = lote.estado === 'ANULADO';
+  // Un lote que salió por Wompi no tuvo archivo: ese paso fue Wompi.
+  const porWompi = lote.estado === 'EN_WOMPI' || (lote.referenciaBanco ?? '').startsWith('Wompi ');
   const fechas: Record<string, string | null> = {
     BORRADOR: lote.createdAt,
     ESPERANDO_APROBACION: null,
@@ -586,7 +988,7 @@ function LineaDeTiempo({ lote }: { lote: LoteDeDispersion }) {
                 actual || hecho ? 'font-medium text-fg' : 'text-fg-muted',
               )}
             >
-              {NOMBRE_DEL_ESTADO[estado]}
+              {porWompi && estado === 'ARCHIVO_GENERADO' ? 'En Wompi' : NOMBRE_DEL_ESTADO[estado]}
             </span>
             {(hecho || (actual && !anulado)) && fecha && (
               <span className="font-mono text-[10px] text-fg-muted">{formatDateTime(fecha)}</span>
@@ -610,9 +1012,15 @@ function PedirAprobacionDialog({
   abierto,
   lote,
   reenvio,
+  comoAdministrador = false,
   onCerrar,
   onListo,
-}: DialogoBase & { reenvio: boolean; onListo: (r: SolicitudDeAprobacion) => void }) {
+}: DialogoBase & {
+  reenvio: boolean;
+  /** P-4: lo armó quien mira y es administrador: este paso lo deja aprobado. */
+  comoAdministrador?: boolean;
+  onListo: (r: SolicitudDeAprobacion) => void;
+}) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<SolicitudDeAprobacion | null>(null);
@@ -631,7 +1039,13 @@ function PedirAprobacionDialog({
       const r = await lotesDeDispersionApi.solicitarAprobacion(lote.id);
       setResultado(r);
       onListo(r);
-      toast.success(reenvio ? 'Código reenviado' : 'Lote enviado a aprobación');
+      toast.success(
+        r.lote.estado === 'APROBADO'
+          ? 'Lote aprobado'
+          : reenvio
+            ? 'Código reenviado'
+            : 'Lote enviado a aprobación',
+      );
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo mandar el lote a aprobación.'));
     } finally {
@@ -643,7 +1057,9 @@ function PedirAprobacionDialog({
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-lg" data-testid="dialogo-pedir-aprobacion">
         <DialogHeader>
-          <DialogTitle>{reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}</DialogTitle>
+          <DialogTitle>
+            {comoAdministrador ? 'Aprobar el lote' : reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}
+          </DialogTitle>
           <DialogDescription>
             {resultado
               ? 'Listo. Esto es lo que pasó.'
@@ -656,16 +1072,28 @@ function PedirAprobacionDialog({
         <div className="space-y-3 px-6 py-4 text-sm">
           {!resultado ? (
             <>
-              <p className="text-fg-muted">
-                Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
-                el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
-                le llega un código de 6 dígitos por correo que vence a los 10 minutos.
-              </p>
+              {comoAdministrador ? (
+                <p className="text-fg-muted">
+                  Lo armaste tú y eres administrador: queda aprobado en este paso, sin código y sin
+                  pedírselo a otra persona (P-4). En la bitácora queda que fuiste la misma persona.
+                </p>
+              ) : (
+                <p className="text-fg-muted">
+                  Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
+                  el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
+                  le llega un código de 6 dígitos por correo que vence a los 10 minutos.
+                </p>
+              )}
               {error && <Banner variant="danger">{error}</Banner>}
             </>
           ) : (
             <div className="space-y-3" data-testid="resultado-de-aprobacion">
-              {resultado.exigeCodigo ? (
+              {resultado.lote.estado === 'APROBADO' ? (
+                <Banner variant="success" title={APROBADO_POR_TI}>
+                  {resultado.mismoPaso?.nota ??
+                    'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
+                </Banner>
+              ) : resultado.exigeCodigo ? (
                 <>
                   <Banner variant="info" title="El código salió por correo">
                     {resultado.motivoDelCodigo}
@@ -702,7 +1130,7 @@ function PedirAprobacionDialog({
                 Cancelar
               </Button>
               <Button onClick={() => void pedir()} isLoading={enviando} hideArrow>
-                {reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
+                {comoAdministrador ? 'Aprobar' : reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
               </Button>
             </>
           ) : (
@@ -720,12 +1148,15 @@ function AprobarDialog({
   abierto,
   lote,
   exigeCodigo,
+  comoAdministrador = false,
   intentosRestantes,
   onCerrar,
   onListo,
   onFallo,
 }: DialogoBase & {
   exigeCodigo: boolean;
+  /** P-4: lo armó quien mira y es administrador: sin código, en un paso. */
+  comoAdministrador?: boolean;
   intentosRestantes: number;
   onListo: (lote: LoteDeDispersion) => void;
   /** Un código incorrecto gasta un intento: hay que volver a leer cuántos quedan. */
@@ -799,6 +1230,11 @@ function AprobarDialog({
                 {intentosRestantes === 1 ? 'intento' : 'intentos'} antes de que el lote se bloquee.
               </p>
             </div>
+          ) : comoAdministrador ? (
+            <p className="text-fg-muted">
+              Lo armaste tú y eres administrador: se aprueba sin código y sin otra persona (P-4). En
+              la bitácora queda que fuiste la misma persona.
+            </p>
           ) : (
             <p className="text-fg-muted">
               Este lote no exige código: está por debajo del monto que pide doble control. Tu
@@ -822,28 +1258,29 @@ function AprobarDialog({
 }
 
 /**
- * Generar (desde APROBADO) o descargar (desde ARCHIVO_GENERADO) el archivo.
+ * Generar el archivo (desde APROBADO).
  *
- * Las dos puntas pasan por el POST del back, que devuelve JSON con el aviso
- * del layout, los excluidos y las advertencias — eso se ve ANTES de guardar.
- * Al descargar, el POST además coteja el hash: si el contenido cambió por
- * debajo de un lote cerrado, el back no lo entrega y lo dice.
+ * El POST del back devuelve JSON con el aviso del layout, los excluidos y las
+ * advertencias — eso se ve ANTES de guardar. Volver a bajarlo (desde
+ * ARCHIVO_GENERADO) ya no pasa por acá: es la sección «El archivo al banco»,
+ * con el centro de procesos (`ArchivoDelLote.tsx`).
  */
 function ArchivoDialog({
   abierto,
-  modo,
   lote,
+  origen,
   guardar,
   onCerrar,
   onGenerado,
 }: DialogoBase & {
-  modo: 'generar' | 'descargar';
+  /**
+   * El banco elegido al armar. `null` = el lote se armó sin preguntarlo y su
+   * archivo no puede salir; `undefined` = un back anterior que no lo manda.
+   */
+  origen?: OrigenDelLote | null;
   guardar: (contenido: Blob | string, nombre: string) => void;
   onGenerado: () => void;
 }) {
-  const [formato, setFormato] = useState<FormatoArchivoDePagos>(
-    lote.formatoArchivo ?? 'BANCOLOMBIA_PAB',
-  );
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [archivo, setArchivo] = useState<ArchivoGenerado | null>(null);
@@ -852,10 +1289,8 @@ function ArchivoDialog({
     setTrabajando(true);
     setError(null);
     try {
-      const r = await lotesDeDispersionApi.generarArchivo(
-        lote.id,
-        modo === 'generar' ? formato : undefined,
-      );
+      // Sin formato: sale en el del banco elegido al armar el lote.
+      const r = await lotesDeDispersionApi.generarArchivo(lote.id);
       setArchivo(r);
       if (!r.reenvio) onGenerado();
     } catch (e) {
@@ -863,25 +1298,30 @@ function ArchivoDialog({
     } finally {
       setTrabajando(false);
     }
-  }, [formato, lote.id, modo, onGenerado]);
+  }, [lote.id, onGenerado]);
 
   useEffect(() => {
     if (!abierto) {
       setError(null);
       setArchivo(null);
       setTrabajando(false);
-      return;
     }
-    // Al descargar no hay nada que elegir: se pide el archivo de una.
-    if (modo === 'descargar') void pedirAlBack();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [abierto, modo]);
+  }, [abierto]);
 
   const guardarEnElEscritorio = async () => {
     if (!archivo) return;
     setTrabajando(true);
     try {
-      // Tal cual se sube al banco: los bytes del GET, no el JSON.
+      // Del centro de procesos si el back lo dejó ahí (22-09); si no, tal cual
+      // se sube al banco: los bytes del GET, no el JSON.
+      if (archivo.procesoId) {
+        try {
+          await descargarArchivoDelProceso(archivo.procesoId);
+          return;
+        } catch {
+          /* la copia no quedó en el storage: por el GET del lote */
+        }
+      }
       const blob = await lotesDeDispersionApi.descargarArchivo(lote.id);
       guardar(blob, archivo.nombreArchivo);
       toast.success('Archivo guardado', { description: archivo.nombreArchivo });
@@ -892,13 +1332,20 @@ function ArchivoDialog({
     }
   };
 
-  const sinVerificar = archivo ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
+  const esPlanilla = archivo?.entrega === 'PLANILLA';
+  const deTercero = archivo?.entrega === 'ARCHIVO_DE_TERCERO';
+  const sinVerificar =
+    archivo && !esPlanilla ? esSinVerificar(archivo.nombreArchivo) || !archivo.layoutVerificado : false;
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
         <DialogHeader>
-          <DialogTitle>{modo === 'generar' ? 'Generar el archivo plano' : 'Descargar el archivo'}</DialogTitle>
+          <DialogTitle>
+            {origen?.formato === 'PLANILLA_MANUAL'
+              ? 'Generar la planilla para cargar a mano'
+              : 'Generar el archivo plano'}
+          </DialogTitle>
           <DialogDescription>
             Lote de {nombreDelMes(lote.month)} · {lote.cantidad} {lote.cantidad === 1 ? 'pago' : 'pagos'} por{' '}
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
@@ -906,62 +1353,76 @@ function ArchivoDialog({
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4 text-sm">
-          {!archivo && modo === 'generar' && (
-            <div role="radiogroup" aria-label="Formato del archivo" className="space-y-2">
-              {FORMATOS.map((f) => {
-                const elegido = formato === f.codigo;
-                return (
-                  <button
-                    key={f.codigo}
-                    type="button"
-                    role="radio"
-                    aria-checked={elegido}
-                    disabled={!f.disponible}
-                    data-testid={`formato-${f.codigo}`}
-                    onClick={() => setFormato(f.codigo)}
-                    className={cn(
-                      'flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors',
-                      elegido ? 'border-primary bg-primary-soft/40' : 'border-border',
-                      f.disponible ? 'hover:border-primary/40' : 'cursor-not-allowed opacity-60',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                        elegido ? 'border-primary' : 'border-border',
-                      )}
-                      aria-hidden="true"
-                    >
-                      {elegido && <span className="h-2 w-2 rounded-full bg-primary" />}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-medium text-fg">{f.nombre}</span>
-                      <span className="block text-xs text-fg-muted">{f.descripcion}</span>
-                      {!f.disponible && (
-                        <span className="mt-1 block text-xs text-warning">{f.porQueNo}</span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          {!archivo && origen && origen.formato !== 'PLANILLA_MANUAL' && (
+            <p className="text-fg" data-testid="archivo-del-banco">
+              Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
+              {NOMBRE_DEL_FORMATO[origen.formato] ?? origen.formato}), girando desde la cuenta{' '}
+              {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
+              <span className="font-mono">{origen.cuenta}</span>. Es el banco que se eligió al armar el lote.
+            </p>
           )}
 
-          {!archivo && modo === 'descargar' && !error && (
-            <p className="flex items-center gap-2 text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Pidiendo el archivo y cotejando el hash…
+          {!archivo && origen?.formato === 'PLANILLA_MANUAL' && (
+            <p className="text-fg" data-testid="archivo-del-banco">
+              Sale la <span className="font-medium">planilla para cargar a mano</span> en{' '}
+              <span className="font-medium">{origen.nombreDelBanco}</span>, girando desde la cuenta{' '}
+              {origen.tipoDeCuenta === 'CORRIENTE' ? 'corriente' : 'de ahorros'}{' '}
+              <span className="font-mono">{origen.cuenta}</span>. No es un archivo para subir al banco: trae los
+              datos de cada pago para digitarlos en su portal.
             </p>
+          )}
+
+          {!archivo && origen === null && (
+            <Banner variant="warning" title="Este lote no dice desde qué banco sale la plata">
+              Se armó antes de que se preguntara el banco, y el archivo de cada banco lleva la cuenta desde
+              la que se gira. Anúlalo y ármalo otra vez eligiendo el banco.
+            </Banner>
           )}
 
           {archivo && (
             <div className="space-y-3" data-testid="archivo-listo">
-              {sinVerificar ? (
+              {esPlanilla ? (
+                <div data-testid="es-planilla">
+                  <Banner variant="info" title="Es una planilla para cargar a mano, no el archivo del banco">
+                    {archivo.pendienteDeConfirmar.join(' ')}
+                  </Banner>
+                </div>
+              ) : sinVerificar ? (
                 <div className="space-y-2">
-                  <Banner variant="danger" title="Este layout no se verificó contra un archivo real del banco">
-                    Revísalo antes de subirlo. El nombre del archivo lleva{' '}
-                    <span className="font-mono">SIN-VERIFICAR</span> para que el aviso viaje hasta el
-                    escritorio.
+                  <Banner variant="warning" title="Este layout no se verificó contra un archivo real del banco">
+                    {deTercero && archivo.fuente ? (
+                      <>
+                        Formato tomado de{' '}
+                        <a
+                          href={archivo.fuente.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {archivo.fuente.documento}
+                        </a>
+                        , no de un documento del banco. Sube primero un archivo de prueba al portal y revisa que lo
+                        valide sin errores antes de autorizar el pago.
+                      </>
+                    ) : archivo.fuente ? (
+                      <>
+                        Está armado campo por campo con{' '}
+                        <a
+                          href={archivo.fuente.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          el instructivo oficial del banco
+                        </a>{' '}
+                        ({archivo.fuente.version}), pero todavía nadie ha subido uno al portal. La primera vez,
+                        revisa que el banco lo valide sin errores antes de autorizar el pago.
+                      </>
+                    ) : (
+                      'Revísalo antes de subirlo.'
+                    )}{' '}
+                    El nombre del archivo lleva <span className="font-mono">SIN-VERIFICAR</span> para que el aviso
+                    viaje hasta el escritorio.
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
                     <div className="rounded-lg border border-border bg-surface-muted p-3">
@@ -1039,8 +1500,13 @@ function ArchivoDialog({
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={trabajando}>
             {archivo ? 'Cerrar' : 'Cancelar'}
           </Button>
-          {!archivo && modo === 'generar' && (
-            <Button onClick={() => void pedirAlBack()} isLoading={trabajando} hideArrow>
+          {!archivo && (
+            <Button
+              onClick={() => void pedirAlBack()}
+              isLoading={trabajando}
+              hideArrow
+              disabled={origen === null}
+            >
               <FileText className="h-4 w-4" />
               Generar
             </Button>
@@ -1064,12 +1530,24 @@ function MarcarPagadoDialog({
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
   const [referencia, setReferencia] = useState('');
+  /**
+   * El CEO (2026-09-15): «Con factura: se le puede facturar en ese momento o
+   * después».
+   *
+   * 🔴 Tildado EMITE de verdad las facturas del lado propietario (la comisión
+   * de la inmobiliaria y sus impuestos) de las cuotas que este lote giró. Sin
+   * tildar quedan como prefactura pendiente en Facturación. Arranca apagado a
+   * propósito: emitir consume números de la resolución de la DIAN y no se
+   * deshace — una factura emitida se anula con nota crédito, no se borra.
+   */
+  const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setReferencia('');
+      setFacturarAhora(false);
       setError(null);
     }
   }, [abierto]);
@@ -1082,9 +1560,26 @@ function MarcarPagadoDialog({
     setEnviando(true);
     setError(null);
     try {
-      const pagado = await lotesDeDispersionApi.marcarPagado(lote.id, referencia);
+      const pagado = await lotesDeDispersionApi.marcarPagado(
+        lote.id,
+        referencia,
+        facturarAhora,
+      );
       onListo(pagado);
-      toast.success('Lote marcado como pagado');
+      /*
+       * El detalle pinta el resultado completo (`ResultadoDeLaFacturacion`);
+       * el toast sólo resume, y NUNCA dice «emitidas» cuando hubo un fallo: la
+       * plata salió igual, pero la factura no.
+       */
+      const f = pagado.facturacion;
+      toast.success('Lote marcado como pagado', {
+        description:
+          f?.pedida === true
+            ? f.fallas.length > 0
+              ? `Se emitieron ${f.emitidas} facturas y ${f.fallas.length === 1 ? 'quedó 1 mes' : `quedaron ${f.fallas.length} meses`} sin facturar: mira el detalle.`
+              : `${f.emitidas} ${f.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} al propietario.`
+            : undefined,
+      });
       onCerrar();
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo marcar el lote como pagado.'));
@@ -1118,6 +1613,31 @@ function MarcarPagadoDialog({
           <p className="text-xs text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
           </p>
+
+          <label className="flex items-start gap-2 pt-1" htmlFor="facturar-ahora">
+            <Checkbox
+              id="facturar-ahora"
+              data-testid="facturar-ahora"
+              checked={facturarAhora}
+              onCheckedChange={(v) => setFacturarAhora(v === true)}
+            />
+            <span className="text-xs text-fg-muted">
+              Facturarle ahora a los propietarios: se emite la comisión de la
+              inmobiliaria sobre lo que este lote cierra —también a los que
+              quedan en $0—, con su IVA y sus retenciones.{' '}
+              <strong className="font-medium">
+                Consume números de la resolución de la DIAN y no se deshace: una
+                factura emitida se anula con nota crédito, no se borra.
+              </strong>{' '}
+              Sin tildar queda «después» y se emite desde Facturación.
+            </span>
+          </label>
+
+          <p className="text-xs text-fg-muted">
+            Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
+            el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. A los que quedan en $0
+            les sale su extracto. Su estado de cuenta queda con la dispersión descontada.
+          </p>
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
@@ -1140,14 +1660,25 @@ function AnularDialog({
   onCerrar,
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
+  const { t } = useI18n();
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
+   * procesó en el banco (back, 23-09-2026: 409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin la confirmación). Sin
+   * esta casilla el botón mandaba el cuerpo de siempre y el lote no se podía
+   * anular nunca.
+   */
+  const conArchivo = lote.estado === 'ARCHIVO_GENERADO';
+  const [confirmo, setConfirmo] = useState(false);
 
   useEffect(() => {
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setConfirmo(false);
     }
   }, [abierto]);
 
@@ -1156,10 +1687,14 @@ function AnularDialog({
       setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
+    if (conArchivo && !confirmo) {
+      setError(t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar'));
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
-      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo);
+      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
       toast.success('Lote anulado', {
         description: 'Sus dispersiones quedaron libres para entrar en otro lote.',
@@ -1194,13 +1729,34 @@ function AnularDialog({
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          {conArchivo && (
+            <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
+              <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  data-testid="casilla-archivo-del-banco"
+                  checked={confirmo}
+                  onCheckedChange={(v) => setConfirmo(v === true)}
+                />
+                <span>{t('inmobiliaria.dispersiones.lote.anular.confirmaArchivo')}</span>
+              </label>
+            </div>
+          )}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={() => void anular()} isLoading={enviando} hideArrow>
+          <Button
+            variant="destructive"
+            onClick={() => void anular()}
+            isLoading={enviando}
+            disabled={conArchivo && !confirmo}
+            title={conArchivo && !confirmo ? t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar') : undefined}
+            hideArrow
+            data-testid="boton-anular-lote"
+          >
             <Prohibit className="h-4 w-4" />
             Anular lote
           </Button>

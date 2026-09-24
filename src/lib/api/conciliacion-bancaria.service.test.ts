@@ -58,9 +58,19 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
     await conciliacionBancariaApi.resumen();
     expect(getMock).toHaveBeenCalledWith(`${BASE}/resumen`);
 
-    await conciliacionBancariaApi.conciliar('m-1', 'c-1');
+    await conciliacionBancariaApi.conciliar('m-1', { cobroId: 'c-1' });
     expect(postMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-1/conciliar`, { cobroId: 'c-1' });
     expect(invalidarMock).toHaveBeenCalledWith('cobros');
+
+    /*
+     * 🔴 Va UNA sola clave. El back valida con `forbidNonWhitelisted`: mandar
+     * `cobroId: undefined` junto a `tenantId` es un 400 de la petición entera,
+     * y es exactamente lo que produciría un spread del destino.
+     */
+    await conciliacionBancariaApi.conciliar('m-2', { tenantId: 'u-9' });
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/movimientos/m-2/conciliar`, {
+      tenantId: 'u-9',
+    });
 
     await conciliacionBancariaApi.ignorar('m-1', 'Nómina');
     expect(postMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-1/ignorar`, { motivo: 'Nómina' });
@@ -70,5 +80,26 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
 
     await conciliacionBancariaApi.conciliarSeguros();
     expect(postMock).toHaveBeenCalledWith(`${BASE}/conciliar-seguros`, {});
+  });
+});
+
+describe('conciliacionBancariaApi — el lote de lo que calza exacto (17-09)', () => {
+  it('leer, armar, aprobar y reversar pegan a sus rutas con el cuerpo exacto', async () => {
+    await conciliacionBancariaApi.loteActual();
+    expect(getMock).toHaveBeenCalledWith(`${BASE}/lotes/actual`);
+
+    await conciliacionBancariaApi.armarLote();
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes`, {});
+
+    await conciliacionBancariaApi.aprobarLote('l-1');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes/l-1/aprobar`, {});
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+
+    invalidarMock.mockReset();
+    await conciliacionBancariaApi.reversarLote('l-1', 'Extracto de otra cuenta');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/lotes/l-1/reversar`, {
+      motivo: 'Extracto de otra cuenta',
+    });
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
   });
 });

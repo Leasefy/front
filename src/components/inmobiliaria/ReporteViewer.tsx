@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
-import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
+import type { CarteraReport, ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
   formatCurrency,
@@ -93,6 +93,12 @@ function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: 
 
 /**
  * Comisiones Agente Preview
+ *
+ * 🔴 17-09: la comisión es de la INMOBILIARIA, no de cada asesor —la de los
+ * asesores se liquida por fuera de Leasefy—. Antes esta vista repartía pesos
+ * por persona y los ordenaba por «quién comisionó más». Ahora: un total de la
+ * casa y, por asesor, los arriendos que cerró. Sin plata y sin tendencias
+ * inventadas.
  */
 function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const { report: data } = useComisionesReport(new Date().toISOString().slice(0, 7));
@@ -103,14 +109,14 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 rounded-md bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalCommissions')}</p>
+          <p className="text-xs text-muted-foreground">Comisión de la inmobiliaria</p>
           <p className="text-lg font-bold text-success">
-            {formatCurrency(data.totalCommissions)}
+            {formatCurrency(data.comisionDeLaAgenciaCop)}
           </p>
         </div>
         <div className="p-3 rounded-md bg-muted/50 text-center">
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.agentsLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{data.agentes.length}</p>
+          <p className="text-xs text-muted-foreground">Contratos con comisión</p>
+          <p className="text-lg font-bold text-foreground">{data.contratosConComision}</p>
         </div>
         <div className="p-3 rounded-md bg-muted/50 text-center">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.closings')}</p>
@@ -118,58 +124,38 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
         </div>
       </div>
 
-      {/* Top Performers */}
+      {/* Arriendos cerrados por asesor — sin un peso atribuido. */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.topAgents')}</h4>
         <div className="space-y-2">
-          {data.agentes
-            .sort((a, b) => b.totalCommission - a.totalCommission)
-            .slice(0, 5)
-            .map((agente, index) => (
-              <div
-                key={agente.agenteId}
-                className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      index === 0
-                        ? 'bg-warning-soft text-warning'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {agente.agenteName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {agente.closedDeals} {t('inmobiliaria.reporte.closings')}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-success">
-                    {formatCurrency(agente.totalCommission)}
-                  </p>
-                  <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                    {agente.trend === 'up' && (
-                      <ArrowUp className="w-3 h-3 text-success" />
-                    )}
-                    {agente.trend === 'down' && (
-                      <ArrowDown className="w-3 h-3 text-danger" />
-                    )}
-                    {agente.trend === 'stable' && (
-                      <Minus className="w-3 h-3" />
-                    )}
-                    {t('inmobiliaria.reporte.vsPrevPeriod')}
-                  </div>
-                </div>
+          {data.agentes.slice(0, 5).map((agente, index) => (
+            <div
+              key={agente.userId}
+              className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                    index === 0 && agente.closedDeals > 0
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <p className="text-sm font-medium text-foreground font-mono">{agente.userId}</p>
               </div>
-            ))}
+              <p className="text-sm font-semibold text-foreground">
+                {agente.closedDeals} {t('inmobiliaria.reporte.closings')}
+              </p>
+            </div>
+          ))}
         </div>
+        <p className="text-xs text-muted-foreground">
+          La comisión de los asesores se liquida por fuera de Leasefy. Quién captó y quién
+          arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
+        </p>
       </div>
     </div>
   );
@@ -417,61 +403,93 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
 }
 
 /**
+ * Los tramos del informe «Cartera por Edades», con el siniestro como el quinto.
+ *
+ * 🔴 Bug B de la prueba en navegador (16-09): el total decía $3.003.910.850
+ * (la cartera, siniestro incluido) y los cuatro tramos sumaban $364.795.650
+ * (sólo la cartera viva). Con el siniestro a los 30 días, los tramos de más de
+ * 30 daban siempre $0 y nadie sabía dónde estaba el resto. El back ya separa
+ * la cobranza viva (`bucket*`) del siniestro (`enSiniestroCop`); acá se
+ * muestran los cinco, y los cinco suman `carteraCop`. Pura para fijarla con
+ * una prueba.
+ */
+export function tramosDelInformeDeEdades(summary: CarteraReport['summary']): {
+  clave: 'days0to30' | 'days31to60' | 'days61to90' | 'days90plus' | 'claimsBucket';
+  monto: number;
+}[] {
+  return [
+    { clave: 'days0to30', monto: summary.bucket0to30 },
+    { clave: 'days31to60', monto: summary.bucket31to60 },
+    { clave: 'days61to90', monto: summary.bucket61to90 },
+    { clave: 'days90plus', monto: summary.bucket90plus },
+    { clave: 'claimsBucket', monto: summary.enSiniestroCop },
+  ];
+}
+
+const TONO_DEL_TRAMO: Record<ReturnType<typeof tramosDelInformeDeEdades>[number]['clave'], string> = {
+  days0to30: 'bg-success-soft text-success',
+  days31to60: 'bg-warning-soft text-warning',
+  days61to90: 'bg-warning-soft text-warning',
+  days90plus: 'bg-danger-soft text-danger',
+  claimsBucket: 'bg-danger-soft text-danger',
+};
+
+/**
  * Cartera Edades Preview
  */
-function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
+export function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const { report: data } = useCarteraReport();
   if (!data) return null;
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards.
+
+          🔴 La cifra grande es la CARTERA (lo que pasó el plazo del contrato),
+          no toda la deuda: la deuda total de la inmobiliaria migrada es 12,9
+          veces mayor, y ponerla acá bajo el rótulo «cartera vencida» mandaría
+          a la cobranza a perseguir plata que nadie debe todavía. */}
       <div className="p-4 rounded-lg bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
-        <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-        <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
+        <p className="text-2xl font-bold">{formatCurrency(data.summary.carteraCop)}</p>
+        {/* La unidad es la CUOTA, no el cobro: el informe sale de las cuotas
+            del contrato y la mayoría no tiene cobro emitido. */}
+        <p className="text-xs text-danger mt-1" data-testid="edades-cuotas">
+          {t('inmobiliaria.reporte.cuotasEnCartera', { count: data.summary.cuotasEnCartera })}
+        </p>
       </div>
 
-      {/* Bucket Summary */}
-      <div className="grid grid-cols-4 gap-2">
-        <div className="p-3 rounded-md bg-success-soft text-center">
-          <p className="text-lg font-bold text-success">
-            {formatCurrency(data.summary.bucket0to30)}
-          </p>
-          <p className="text-xs text-success">{t('inmobiliaria.reporte.days0to30')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-warning-soft text-center">
-          <p className="text-lg font-bold text-warning">
-            {formatCurrency(data.summary.bucket31to60)}
-          </p>
-          <p className="text-xs text-warning">{t('inmobiliaria.reporte.days31to60')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-warning-soft text-center">
-          <p className="text-lg font-bold text-warning">
-            {formatCurrency(data.summary.bucket61to90)}
-          </p>
-          <p className="text-xs text-warning">{t('inmobiliaria.reporte.days61to90')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-danger-soft text-center">
-          <p className="text-lg font-bold text-danger">
-            {formatCurrency(data.summary.bucket90plus)}
-          </p>
-          <p className="text-xs text-danger">{t('inmobiliaria.reporte.days90plus')}</p>
-        </div>
+      {/* Los cinco tramos: la cobranza viva por días de mora y el siniestro.
+          Suman la cifra de arriba. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" data-testid="edades-tramos">
+        {tramosDelInformeDeEdades(data.summary).map((tramo) => (
+          <div
+            key={tramo.clave}
+            className={cn('p-3 rounded-md text-center', TONO_DEL_TRAMO[tramo.clave])}
+            data-testid={`edades-tramo-${tramo.clave}`}
+          >
+            <p className="text-lg font-bold">{formatCurrency(tramo.monto)}</p>
+            <p className="text-xs">{t(`inmobiliaria.reporte.${tramo.clave}`)}</p>
+          </div>
+        ))}
       </div>
+      <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.bucketsAddUp')}</p>
 
       {/* Top Deudores */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">
-          {t('inmobiliaria.reporte.topDebtors')} ({data.items.length})
+          {t('inmobiliaria.reporte.topDebtors')} ({data.summary.cuotasEnCartera})
         </h4>
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {data.items
+            // Los peores deudores son los de la CARTERA: una cuota que todavía
+            // no vence no es un deudor moroso.
+            .filter((item) => item.cajon === 'CARTERA')
             .sort((a, b) => b.pendingAmount - a.pendingAmount)
             .slice(0, 8)
             .map((item) => (
               <div
-                key={item.cobroId}
+                key={item.cuotaId}
                 className="flex items-center justify-between p-3 rounded-md border border-border"
               >
                 <div className="min-w-0 flex-1">
@@ -487,7 +505,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
                     {formatCurrency(item.pendingAmount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t('inmobiliaria.reporte.nDays', { count: item.daysLate })}
+                    {t('inmobiliaria.reporte.nDays', { count: item.diasDeMora })}
                   </p>
                 </div>
               </div>

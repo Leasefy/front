@@ -77,6 +77,6 @@ describe('ConfigUsuarios — incomplete member data', () => {
 
     expect(container.textContent).toContain('Ana Pérez')
     // Friendly role label from getRoleLabel('agente').
-    expect(container.textContent).toContain('Agente')
+    expect(container.textContent).toContain('Asesor comercial')
   })
 })

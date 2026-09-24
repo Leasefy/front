@@ -34,7 +34,7 @@ import {
   type AcuerdoRow,
 } from '@/lib/cobranza/acuerdo-vocab'
 
-const BASE = '/panel/inmobiliaria/cobros/cobranza'
+const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const VACIO = '—'
 
 export interface AcuerdoDetalleSheetProps {

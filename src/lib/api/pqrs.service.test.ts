@@ -193,3 +193,32 @@ describe('pqrsApi.approveCotizacion', () => {
     await expect(pqrsApi.approveCotizacion('pqrs-1')).rejects.toBeInstanceOf(PqrsUnavailableError);
   });
 });
+
+/*
+ * 🔴 QA 22-09: la lista tiene que decir si se PUEDE radicar. Con `[]` a secas la
+ * pantalla dejaba llenar la solicitud entera para contestar al final «estamos
+ * habilitando las solicitudes».
+ */
+describe('pqrsApi.listMineConDisponibilidad', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it('con la ruta viva: las solicitudes y disponible', async () => {
+    globalThis.fetch = mockFetch(200, [ROW]);
+    const r = await pqrsApi.listMineConDisponibilidad();
+    expect(r.disponible).toBe(true);
+    expect(r.items).toHaveLength(1);
+  });
+
+  it('404 (la ruta no existe): lista vacía y NO disponible', async () => {
+    globalThis.fetch = mockFetch(404, { message: 'not found' });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false });
+  });
+
+  it('un 500 no se disfraza de «no disponible»: se propaga', async () => {
+    globalThis.fetch = mockFetch(500, { message: 'boom' });
+    await expect(pqrsApi.listMineConDisponibilidad()).rejects.toThrow();
+  });
+});

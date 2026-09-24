@@ -51,7 +51,7 @@ export function RangoDeFechas({ desde, hasta, onChange, disabled }: RangoDeFecha
         />
       </div>
       {invertido ? (
-        <p className="col-span-2 text-xs text-danger" role="alert">
+        <p className="col-span-2 text-caption text-danger" role="alert">
           «Desde» es posterior a «hasta».
         </p>
       ) : null}

@@ -115,7 +115,9 @@ describe('useCompartirEstado', () => {
     await montar();
     await apretar('enlace');
 
-    expect(compartir).toHaveBeenCalledWith('inquilino', 'tenant-1');
+    // El cuarto argumento es el FILTRO: sin filtro puesto viaja `undefined`
+    // y el enlace entrega el documento entero, como siempre (E4).
+    expect(compartir).toHaveBeenCalledWith('inquilino', 'tenant-1', undefined);
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(ENLACE.url);
     expect(String(exito.mock.calls[0]![1]?.description)).toContain('13 oct 2026');
   });
@@ -143,7 +145,7 @@ describe('useCompartirEstado', () => {
     await montar();
     await apretar('correo');
 
-    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'CORREO');
+    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'CORREO', undefined);
     expect(String(exito.mock.calls[0]![0])).toContain('papas@jyc.co');
   });
 
@@ -157,7 +159,7 @@ describe('useCompartirEstado', () => {
     await montar();
     await apretar('whatsapp');
 
-    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'WHATSAPP');
+    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'WHATSAPP', undefined);
     expect(String(exito.mock.calls[0]![0])).toContain('+57 310');
   });
 
@@ -218,7 +220,7 @@ describe('E2 — un envío real se confirma antes de salir', () => {
     await apretar('confirmar');
 
     expect(enviar).toHaveBeenCalledTimes(1);
-    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'CORREO');
+    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'CORREO', undefined);
     expect(host.querySelector('[data-testid="por-confirmar"]')!.textContent).toBe('');
   });
 

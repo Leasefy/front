@@ -236,33 +236,6 @@ export function fetchAgentAutonomia(
   )
 }
 
-// ── Roster de autonomía (T-0082, contract Surface B) ────────────────────────
-
-/**
- * `GET /api/agency/{agencyId}/ai-hub/agentes/autonomia` — la MISMA lectura
- * batcheada que ya usa la píldora de la flota (`leerAutonomiaDeLaFlota` en el
- * micro), pero con el shape por-ítem BYTE-IDÉNTICO al GET por agente de
- * arriba (`AgentAutonomiaResponse`) — reemplaza las 12 llamadas que
- * `use-piloto-autonomia.ts` hacía con `Promise.allSettled` por UNA sola.
- * Contrato: `.orchestration/tasks/T-0082-login-bootstrap-fanout/contract.md`
- * §3.2 "Surface B". Es un array, no un mapa: cada fila trae `agente` como
- * campo, así que "keyed by agent id" se resuelve en el consumidor, no en el
- * wire (contract.md §3.1).
- */
-export interface AiHubAutonomiaRosterResponse {
-  agentes: AgentAutonomiaResponse[]
-}
-
-export function fetchAgentAutonomiaRoster(
-  agencyId: string,
-  signal?: AbortSignal,
-): Promise<AgentWorkspaceFetchResult<AiHubAutonomiaRosterResponse>> {
-  return getJson<AiHubAutonomiaRosterResponse>(
-    `/api/agency/${agencyId}/ai-hub/agentes/autonomia`,
-    signal,
-  )
-}
-
 export function fetchAiHubResumen(
   agencyId: string,
   signal?: AbortSignal,

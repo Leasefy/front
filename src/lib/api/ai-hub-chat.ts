@@ -15,16 +15,36 @@
  * exported for unit testing without a browser/network.
  */
 
+import { leerBloques, leerEntidades, type BloqueDeRespuesta, type EntidadDelChat } from '@/lib/chat/bloques';
+import {
+  leerAcciones,
+  leerConfirmacion,
+  leerFormulario,
+  leerIntencion,
+  leerResultado,
+  type AccionDelHilo,
+  type ConfirmacionEnElHilo,
+  type FormularioEnElHilo,
+  type IntencionDelChat,
+  type ResultadoEnElHilo,
+} from '@/lib/chat/acciones-del-hilo';
+import {
+  leerEventoProcesoIniciado,
+  leerTarjetaDeEjecucion,
+  type EventoProcesoIniciado,
+  type TarjetaDeEjecucion,
+} from '@/lib/chat/tarjetas-de-ejecucion';
+import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
-import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
   AgentType,
   AgentExecution,
   ResponseAction,
   DailyBriefing,
   BriefingSection,
+  Reintentable,
 } from '@/lib/types/beta-chat';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub-chat[-stream]) ──────
@@ -72,6 +92,12 @@ export type BackendActionTarget =
 export interface BackendSuggestedAction {
   label: string;
   target: BackendActionTarget;
+  /**
+   * Lo que pide el botón, con forma (23-09, «todo en el chat»): el micro la
+   * pega cuando la lee sin duda («Ver contrato 24» → ver el contrato 24).
+   * Opcional: sin ella el botón manda su texto y lo contesta el modelo.
+   */
+  intencion?: unknown;
 }
 
 /**
@@ -113,6 +139,9 @@ export interface BackendSnapshot {
   escalacionesPendientes: number;
   enPrejuridico: number;
   generatedAt: string;
+  /** La cartera del ERP (Pagos → Cartera). Opcional: un micro viejo no la manda. */
+  carteraCop?: number;
+  contratosEnCartera?: number;
 }
 
 export interface BackendChatResponse {
@@ -136,6 +165,13 @@ export interface BackendChatResponse {
    * Opcional porque un agente viejo no las manda.
    */
   accionesPropuestas?: BackendAccionPropuesta[];
+  /**
+   * El id de este turno en el cerebro del micro (23-09). Opcional porque un
+   * micro viejo no lo manda; sin él no salen las señales de la pantalla.
+   */
+  turnoId?: string;
+  /** Una consulta del turno falló y vale reintentar (ver `leerReintentable`). */
+  reintentable?: unknown;
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -155,48 +191,6 @@ export function backendAgentToFrontType(agent: BackendDispatchAgent): AgentType 
   return agent;
 }
 
-/**
- * Wire target → slug del workspace en `agentWorkspaceNav.ts`. Los agentes ya
- * no viven en `/ai/*`: cada uno está dentro del módulo que automatiza, y su
- * ruta la sabe UNA sola tabla. `cartera` sigue apuntando al agente de cobranza
- * (el back habla de la cartera del agente, no de la pantalla Cartera de Cobros).
- */
-const TARGET_SLUG: Record<BackendActionTarget, string> = {
-  cobranza: 'cobranza',
-  cotizador: 'asegurabilidad', // wire target stays 'cotizador'; the route is /asegurabilidad
-  estudio: 'estudio',
-  matching: 'matching',
-  pagos: 'pagos',
-  conciliacion: 'conciliacion',
-  avaluo: 'avaluos',
-  cartera: 'cobranza',
-};
-
-/**
- * Front route for a suggested-action target. Unknown or unregistered targets
- * fall back to Inicio (el Piloto, la torre de control de los agentes) — never
- * a dead/404 link.
- */
-export function targetToHref(target: BackendActionTarget): string {
-  const slug = TARGET_SLUG[target];
-  const ws = slug ? AGENT_WORKSPACES.find((w) => w.slug === slug) : undefined;
-  return ws?.basePath ?? '/panel/inmobiliaria/piloto';
-}
-
-/**
- * 🔴 ¿Este target tiene una PANTALLA de verdad en el panel?
- *
- * Medido en vivo: «Ver inmuebles disponibles» no llevaba a la lista —mandaba
- * el texto como un mensaje nuevo y dejaba al operador otros ~25 s esperando
- * por algo que el panel ya tiene a un clic—. Cuando la acción existe como
- * pantalla, el botón navega; cuando no (y `targetToHref` cae al Piloto),
- * sigue preguntándole al asistente, que es lo único que puede responderla.
- */
-export function targetTienePantalla(target: BackendActionTarget): boolean {
-  const slug = TARGET_SLUG[target];
-  return Boolean(slug && AGENT_WORKSPACES.some((w) => w.slug === slug));
-}
-
 const TARGET_ICON: Record<BackendActionTarget, string> = {
   cobranza: 'CurrencyDollar',
   cotizador: 'ShieldCheck',
@@ -208,19 +202,29 @@ const TARGET_ICON: Record<BackendActionTarget, string> = {
   cartera: 'ChartBar',
 };
 
+/**
+ * 🔴 Una sugerencia del asistente es un MENSAJE DE LA PERSONA, nunca un enlace.
+ *
+ * Nico, 23-09 (22:51), con la captura de «Ver contrato 24» y «Gestionar
+ * cobranza de Mateo Pérez» sacándolo del chat: «Debe todo funcionar dentro del
+ * chat: si le digo "ver contrato", es como un mensaje de la persona y tú traes
+ * acá el contrato». Hasta ese día, una sugerencia con pantalla en el panel
+ * navegaba (`href`) porque preguntarle al asistente tardaba ~25 s; ahora el
+ * micro la contesta por su camino directo, con la ficha, en ~2 s.
+ *
+ * Por eso ya no hay `href`: el botón manda la etiqueta como mensaje, con la
+ * intención que el micro le pegó cuando la pudo leer sin duda.
+ */
 export function suggestedActionToResponseAction(
   action: BackendSuggestedAction,
   index: number,
 ): ResponseAction {
-  const tienePantalla = targetTienePantalla(action.target);
+  const intencion = leerIntencion(action.intencion);
   return {
     id: `act_${index}_${action.target}`,
     label: action.label,
-    // Sin `prompt` = el botón NAVEGA a la pantalla (`href`). Con `prompt` = le
-    // pregunta al asistente, que es lo correcto cuando no hay pantalla que
-    // abrir: el label del back ya viene redactado como petición.
-    ...(tienePantalla ? {} : { prompt: action.label }),
-    href: targetToHref(action.target),
+    prompt: action.label,
+    ...(intencion ? { intencion } : {}),
     icon: TARGET_ICON[action.target] ?? 'ArrowRight',
     variant: index === 0 ? 'primary' : 'secondary',
   };
@@ -240,6 +244,20 @@ export function dispatchToAgentExecution(
     completedAt: new Date(),
     ...(dispatch.status === 'failed' ? { error: dispatch.summary } : {}),
   };
+}
+
+/**
+ * `reintentable` del `done` (contrato fijo con el micro, 23-09): la consulta
+ * del turno no respondió (`motivo`: tiempo/red/servidor; `que`:
+ * busqueda/cartera/ficha/cifras) y vale la pena volver a preguntar. Vale
+ * cualquier objeto con los dos textos; lo demás es «no llegó» → `null`, y la
+ * respuesta no lleva el botón. Nunca se deduce del texto de la respuesta.
+ */
+export function leerReintentable(v: unknown): Reintentable | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const { motivo, que } = v as Record<string, unknown>;
+  if (typeof motivo !== 'string' || !motivo || typeof que !== 'string' || !que) return null;
+  return { motivo, que };
 }
 
 // ── SSE parsing (pure, testable) ──────────────────────────────────────────────
@@ -276,13 +294,66 @@ export interface ChatStreamHandlers {
    * del `done` para que el front reconcilie igual que con las aprobaciones.
    */
   onAccionPropuesta?: (propuesta: BackendAccionPropuesta) => void;
+  /**
+   * Qué está haciendo AHORA el paso activo (evento aditivo `progreso`, 23-09):
+   * «Leyendo contratos…», «Leí 29 filas de contratos». Un micro viejo no lo
+   * manda y el paso se queda con su indicador animado.
+   */
+  onProgreso?: (p: { texto: string; hechos?: number; total?: number }) => void;
+  /**
+   * La acción arrancó un PROCESO LARGO en el back (SSE `proceso_iniciado`,
+   * 24-09). Sale antes del `done`: el chat lo sigue con el Centro de procesos
+   * (con su propio JWT) y, cuando termina, pide la tarjeta al día al micro.
+   */
+  onProcesoIniciado?: (evento: EventoProcesoIniciado) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
     dispatches: BackendDispatch[];
     generatedAt: string;
+    /** Tablas/cifras/avisos con forma. Vacío si el micro no los manda. */
+    bloques: BloqueDeRespuesta[];
+    /** Las tarjetas de la búsqueda en la plataforma. */
+    entidades: EntidadDelChat[];
+    /** El id del turno en el cerebro del micro. Falta con un micro viejo. */
+    turnoId?: string;
+    /** Una consulta del turno falló y vale reintentar. Falta con un micro viejo. */
+    reintentable?: Reintentable;
+    /** «Todo en el chat» (23-09): lo que se puede hacer, la tarjeta de «¿Lo hago?», el resultado, el formulario. */
+    acciones: AccionDelHilo[];
+    confirmacion: ConfirmacionEnElHilo | null;
+    resultado: ResultadoEnElHilo | null;
+    formulario: FormularioEnElHilo | null;
+    /**
+     * La tarjeta del ejecutor (24-09): propuesta, en curso, resultado (con la
+     * gracia de P-10), programada o error. `null` con un micro de antes: ahí
+     * mandan `confirmacion` y `resultado`, como siempre.
+     */
+    ejecucion: TarjetaDeEjecucion | null;
+    /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
+    ensayo: boolean;
+    /**
+     * (24-09, paquete H) La tarjeta del PLAN: varias acciones pedidas en una
+     * frase, con UNA confirmación. `null` si el turno no armó un plan o el
+     * micro es de antes.
+     */
+    plan: TarjetaDePlan | null;
+    /**
+     * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
+     * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
+     */
+    camino?: string;
   }) => void;
-  onError?: (message: string) => void;
+  /**
+   * Un fallo ANUNCIADO dentro del stream (evento `error`).
+   *
+   * 🔴 `status` y `code` viajan porque la respuesta HTTP ya salió con 200 —es
+   * un stream— así que sin ellos no queda NINGÚN código en ningún lado: el
+   * panel leía cualquier corte como «no pude conectarme», incluida la cuenta
+   * sin saldo, que es la única que se arregla recargando créditos (auditoría
+   * 13-09, caso B2).
+   */
+  onError?: (message: string, meta?: { status?: number; code?: string }) => void;
 }
 
 /**
@@ -395,16 +466,52 @@ export function handleSSEEvent(
       }
       break;
     }
-    case 'done':
+    case 'progreso': {
+      const texto = obj.texto;
+      if (typeof texto === 'string' && texto.trim()) {
+        handlers.onProgreso?.({
+          texto: texto.trim(),
+          ...(typeof obj.hechos === 'number' ? { hechos: obj.hechos } : {}),
+          ...(typeof obj.total === 'number' ? { total: obj.total } : {}),
+        });
+      }
+      break;
+    }
+    case 'proceso_iniciado': {
+      // Sin sus dos ids no hay qué seguir: se ignora sin romper el stream.
+      const evento = leerEventoProcesoIniciado(obj);
+      if (evento) handlers.onProcesoIniciado?.(evento);
+      break;
+    }
+    case 'done': {
+      const reintentable = leerReintentable(obj.reintentable);
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
         suggestedActions: (obj.suggestedActions as BackendSuggestedAction[]) ?? [],
         dispatches: (obj.dispatches as BackendDispatch[]) ?? [],
         generatedAt: String(obj.generatedAt ?? ''),
+        bloques: leerBloques(obj.bloques),
+        entidades: leerEntidades(obj.entidades),
+        ...(typeof obj.turnoId === 'string' && obj.turnoId ? { turnoId: obj.turnoId } : {}),
+        ...(reintentable ? { reintentable } : {}),
+        acciones: leerAcciones(obj.acciones),
+        confirmacion: leerConfirmacion(obj.confirmacion),
+        resultado: leerResultado(obj.resultado),
+        formulario: leerFormulario(obj.formulario),
+        // Aditivo (24-09): un `done` viejo no las trae → `null` / `false`.
+        ejecucion: leerTarjetaDeEjecucion(obj.ejecucion),
+        ensayo: obj.ensayo === true,
+        // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
+        plan: leerTarjetaDePlan(obj.plan),
+        ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
       });
       break;
+    }
     case 'error':
-      handlers.onError?.(String(obj.error ?? 'stream error'));
+      handlers.onError?.(String(obj.error ?? 'stream error'), {
+        ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
+        ...(typeof obj.code === 'string' ? { code: obj.code } : {}),
+      });
       break;
     default:
       break;
@@ -423,6 +530,13 @@ export function handleSSEEvent(
  * distingue.
  */
 async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+  // El 429 del micro (su limitador, o el `agents_limit` de NGINX) se dice
+  // IGUAL que el del back: «Espera 45 segundos y vuelve a intentar», con el
+  // número cuando viene en el cuerpo o en `Retry-After`. Antes pasaba el
+  // `message` crudo del micro (en inglés, o «ai-hub chat 429») y la burbuja
+  // decía «espera un momento» sin plazo, que invita a machacar el botón y
+  // alarga el bloqueo (auditoría de seguridad 23-09).
+  if (res.status === 429) return errorDeDemasiadasSolicitudes(res);
   let cuerpo: Record<string, unknown> | undefined;
   try {
     const json: unknown = await res.json();
@@ -454,10 +568,13 @@ export function isAgentConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_URL);
 }
 
-function buildBody(message: string, history?: ChatHistoryEntry[]): string {
+function buildBody(message: string, history?: ChatHistoryEntry[], intencion?: IntencionDelChat | null): string {
   return JSON.stringify({
     message,
     ...(history && history.length > 0 ? { history } : {}),
+    // Lo que pidió el botón, con forma: el micro lo atiende por su camino
+    // directo (la ficha) sin adivinar el texto.
+    ...(intencion ? { intencion } : {}),
   });
 }
 
@@ -466,13 +583,14 @@ export async function postChatTurn(args: {
   agencyId: string;
   message: string;
   history?: ChatHistoryEntry[];
+  intencion?: IntencionDelChat | null;
   signal?: AbortSignal;
 }): Promise<BackendChatResponse> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat`;
   const res = await fetch(url, {
     method: 'POST',
     headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-    body: buildBody(args.message, args.history),
+    body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat');
@@ -502,6 +620,39 @@ export async function resolveChatApproval(args: {
 }
 
 /**
+ * La tarjeta de HOY de una ejecución del chat (24-09):
+ * `GET /api/agency/:agencyId/ai-hub/chat/ejecuciones/:ejecucionId` → `{ tarjeta }`.
+ *
+ * 🔴 No es una lectura pasiva, y por eso sólo se llama en tres momentos: cuando
+ * termina la cuenta regresiva de la gracia de P-10, al volver a una programada
+ * cuya hora ya pasó y cuando el Centro de procesos ve terminar el proceso que
+ * arrancó la acción. Si lo programado ya tocaba, el micro lo manda AHORA con la
+ * sesión de la persona (una sola vez por ejecución); si había un proceso, lo
+ * cierra. Nunca en un bucle.
+ *
+ * `null` si el micro no la tiene (404: no es tuya, o falta su migración) o no
+ * se entiende; un fallo de red o un 5xx lanza (`ApiError`), para que quien la
+ * pidió decida si vuelve a preguntar.
+ */
+export async function fetchEjecucion(args: {
+  agencyId: string;
+  ejecucionId: string;
+  signal?: AbortSignal;
+}): Promise<TarjetaDeEjecucion | null> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/ejecuciones/${encodeURIComponent(args.ejecucionId)}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: agentAuthHeaders(),
+    ...(args.signal ? { signal: args.signal } : {}),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat ejecucion');
+  const cuerpo: unknown = await res.json().catch(() => null);
+  const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
+  return leerTarjetaDeEjecucion(tarjeta);
+}
+
+/**
  * Streaming turn over SSE. Calls the handlers in order as events arrive. Throws
  * if the request can't be opened (the caller falls back to postChatTurn).
  */
@@ -509,6 +660,7 @@ export async function streamChatTurn(args: {
   agencyId: string;
   message: string;
   history?: ChatHistoryEntry[];
+  intencion?: IntencionDelChat | null;
   signal?: AbortSignal;
   handlers: ChatStreamHandlers;
 }): Promise<void> {
@@ -519,7 +671,7 @@ export async function streamChatTurn(args: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
     }),
-    body: buildBody(args.message, args.history),
+    body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat stream');
@@ -557,8 +709,10 @@ export interface ExecuteActionArgs {
 }
 
 /**
- * Execute a confirmed action proposal. Throws on non-2xx (the caller shows an
- * inline error on the ActionProposalCard and offers retry).
+ * Execute a confirmed action proposal. Throws on non-2xx (the caller keeps the
+ * error on the message). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
+ * se retiró el 24-09: ninguna pantalla la montaba; lo que el chat ejecuta hoy
+ * se ve con `TarjetaDeEjecucion`.
  */
 export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/actions/execute`;

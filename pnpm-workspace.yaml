@@ -7,3 +7,26 @@ allowBuilds:
   protobufjs: true
   sharp: true
   unrs-resolver: true
+# @leasefy/cadence declara react ^18 como peer; el front subió a React 19 con
+# Next 15 (23-09, parches de seguridad de Next). Cadence sólo usa APIs estables
+# de React/Radix y se sirve con el React de la app: se acepta el 19 sin tocar
+# el paquete hasta que Cadence publique su propio peer ^18 || ^19.
+peerDependencyRules:
+  allowedVersions:
+    '@leasefy/cadence>react': '19'
+    '@leasefy/cadence>react-dom': '19'
+# Parches de seguridad de dependencias TRANSITIVAS que el padre fija en una
+# versión exacta vulnerable (pnpm audit --prod, 23-09):
+# - next 15.5 fija postcss 8.4.31 (lectura de archivos / path traversal con
+#   source maps previos, arreglados en 8.5.18+). Misma API 8.x.
+# - next acepta sharp ^0.34.3 || ^0.35.4 pero el lock quedaba en 0.34.5 (libvips
+#   y libheif vulnerables; sharp procesa las imágenes de next/image).
+# - mysql2 lo arrastra la CLI de prisma; no corre en el front, pero la versión
+#   parchada es del mismo major y no cuesta nada. (El override de
+#   @opentelemetry/propagator-jaeger se fue el 23-09 con el SDK de inngest, que
+#   era lo único que lo traía: el front no importaba ni inngest, ni
+#   @mastra/core, ni @anthropic-ai/sdk.)
+overrides:
+  'next>postcss': ^8.5.18
+  'next>sharp': ^0.35.4
+  'mysql2': ^3.22.0

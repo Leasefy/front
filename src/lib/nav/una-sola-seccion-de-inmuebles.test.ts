@@ -105,10 +105,17 @@ describe('una sola sección de inmuebles', () => {
   it('la lista abre mostrando TODOS, no sólo los disponibles', () => {
     // Este valor era la diferencia entera entre las dos pantallas: 6 filas
     // contra 10, con los mismos inmuebles detrás.
+    //
+    // 🔴 19-09 · El campo se llamaba `availability` y filtraba por la
+    // disponibilidad cruda del mandato. Ahora es `cajon` y filtra por
+    // `cajonDelInmueble`, que es la misma partición con la que se cuentan los
+    // chips —antes la ficha «Arrendadas» decía 105 y el chip «Arrendado»
+    // mostraba 104—. Lo que este test protege no cambió: la lista abre en
+    // «todos».
     const lista = readFileSync(
       join(RAIZ, 'app/panel/inmobiliaria/inmuebles/page.tsx'),
       'utf8',
     )
-    expect(lista).toMatch(/search: '',\s*\n\s*availability: 'all',/)
+    expect(lista).toMatch(/search: '',\s*\n\s*cajon: 'all',/)
   })
 })

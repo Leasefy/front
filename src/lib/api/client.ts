@@ -1,5 +1,10 @@
 import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import {
+  CODIGO_DEMASIADAS_SOLICITUDES,
+  mensajeDeDemasiadasSolicitudes,
+  segundosDeEspera,
+} from './demasiadas-solicitudes'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -44,6 +49,27 @@ export function getAccessToken(): string | null {
 /** ¿El AuthProvider ya dijo si hay sesión? `false` = todavía está resolviendo. */
 export function hayRespuestaDeSesion(): boolean {
   return _sesionResuelta
+}
+
+/**
+ * T-0099: mirror de `mfaRequired` (auth-context.tsx) para código que NO puede
+ * leer contexto de React — hoy sólo `clasificar.ts`, que reclasifica un 403
+ * `SEGUNDO_FACTOR_REQUERIDO` que llegue mientras la sesión está esperando el
+ * paso a aal2 (la persona YA tiene el factor activo, sólo le falta terminar
+ * de entrar el código) en vez de mandarla a activarlo en Configuración →
+ * Seguridad, que sería falso. Mismo patrón que `_accessToken`: lo escribe el
+ * AuthProvider, lo lee quien lo necesite.
+ */
+let _mfaPendiente = false
+
+/** Called by AuthProvider whenever `mfaRequired` changes. */
+export function setMfaPendingFlag(pending: boolean) {
+  _mfaPendiente = pending
+}
+
+/** ¿Está la sesión esperando que se pase de aal1 a aal2 (segundo factor)? */
+export function estaMfaPendiente(): boolean {
+  return _mfaPendiente
 }
 
 /**
@@ -192,6 +218,29 @@ async function renovarTokenVencido(usado: string | null): Promise<string | null>
   return esperarUnTokenDistinto(usado)
 }
 
+/**
+ * `fetch` a una ruta PROPIA del front (`/api/**`) con la sesión puesta.
+ *
+ * Las rutas que bajan URLs de afuera (`/api/inmuebles/desde-enlace`,
+ * `/api/inmuebles/imagen-remota`) exigen sesión desde la auditoría de seguridad
+ * del 23-09 —antes cualquiera en internet las usaba de proxy—. Un import largo
+ * cruza renovaciones del token (dura una hora), así que un 401 con el token que
+ * acaba de vencer se reintenta UNA vez con el nuevo, igual que `apiClient`.
+ */
+export async function fetchConSesion(input: string, init: RequestInit = {}): Promise<Response> {
+  await esperarRespuestaDeSesion()
+  const conToken = (token: string | null): RequestInit => {
+    const headers = new Headers(init.headers)
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+    return { ...init, headers }
+  }
+  const usado = _accessToken
+  const res = await fetch(input, conToken(usado))
+  if (res.status !== 401 || !usado) return res
+  const nuevo = await renovarTokenVencido(usado)
+  return nuevo ? fetch(input, conToken(nuevo)) : res
+}
+
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   _onUnauthorized = handler
 }
@@ -231,6 +280,23 @@ export class ApiError extends Error {
     this.name = 'ApiError'
     if (Array.isArray(message)) this.messages = message
   }
+}
+
+/**
+ * El 429 del limitador del back (o del proxy de adelante), convertido en un
+ * `ApiError` que dice CUÁNTO esperar. Va en todas las ramas que leen una
+ * respuesta —`request`, `requestBlob` y los `fetch` a mano que lo importen—
+ * para que ninguna pantalla muestre «Error 429». Ver `demasiadas-solicitudes.ts`.
+ */
+export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiError> {
+  const cuerpo: Record<string, unknown> = await res.json().catch(() => ({}))
+  const segundos = segundosDeEspera(res.headers, cuerpo)
+  return new ApiError(
+    429,
+    mensajeDeDemasiadasSolicitudes(segundos),
+    CODIGO_DEMASIADAS_SOLICITUDES,
+    { ...cuerpo, reintentarEnSegundos: segundos },
+  )
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -338,7 +404,34 @@ async function request<T>(
 
   if (res.status === 403) {
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(403, errorBody.message || 'No tienes permiso para realizar esta acción')
+    /*
+     * 🔴 ACÁ SE PERDÍA EL CÓDIGO DEL 403 (encontrado el 21-09-2026).
+     *
+     * Esta rama construía el error SIN `code` y SIN cuerpo, y como está antes
+     * de la rama general de abajo —la que sí los reenvía— nunca llegaba a
+     * ella. El resultado: de todos los status, justo el 403 —el único donde el
+     * código decide QUÉ decirle a la persona— era el que lo tiraba.
+     *
+     * Lo que costó: el back manda `SEGUNDO_FACTOR_REQUERIDO` desde el 18-09,
+     * y `clasificar.ts` sabe reconocerlo desde entonces (y se reforzó el
+     * 20-09 para leerlo en cualquier envoltorio). Nunca podía: el código no
+     * salía de acá. Así que a un ADMINISTRADOR al que sólo le falta activar su
+     * segundo factor —algo que hace él mismo en dos minutos— el panel le decía
+     * «Tu rol no incluye esta sección. Pídele a un administrador que te lo
+     * habilite», en las 25 secciones a la vez. Nico lo preguntó el 21-09
+     * mirando el Pipeline: «¿por qué no me das acceso a todo?».
+     *
+     * Se reenvían igual que en la rama general: `code` para decidir el
+     * mensaje, y el cuerpo entero para lo que `message` no alcanza a decir
+     * (`module`, `action`, `role` del 403 de permisos).
+     */
+    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    throw new ApiError(
+      403,
+      errorBody.message || 'No tienes permiso para realizar esta acción',
+      code,
+      errorBody as Record<string, unknown>,
+    )
   }
 
   if (res.status === 402) {
@@ -355,7 +448,19 @@ async function request<T>(
     ) {
       window.location.href = '/panel/inmobiliaria/upgrade'
     }
-    throw new ApiError(402, errorBody.message || 'Se requiere un plan activo para continuar')
+    // El mismo reenvío que el 403 y que la rama general: esta rama también
+    // devolvía el error pelado por estar antes de aquélla.
+    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    throw new ApiError(
+      402,
+      errorBody.message || 'Se requiere un plan activo para continuar',
+      code402,
+      errorBody as Record<string, unknown>,
+    )
+  }
+
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
   }
 
   if (!res.ok) {
@@ -449,6 +554,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
     }
 
     throw new ApiError(401, errorBody.message || 'No autorizado', code)
+  }
+
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
   }
 
   if (!res.ok) {

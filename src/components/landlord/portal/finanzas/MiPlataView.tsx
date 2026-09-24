@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Buildings, ChartPieSlice, CurrencyDollar, ChatCircleText, CaretRight } from '@phosphor-icons/react';
 import { PageHeader, KpiCard } from '@leasefy/cadence';
 import { Card } from '@/components/ui';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useI18n } from '@/lib/i18n';
 import type {
   FinanzasPortafolio,
@@ -19,6 +20,14 @@ interface MiPlataViewProps {
   inmuebles: FinanzasInmueble[];
   proyeccion: FinanzasProyeccion | null;
   recaudoAnual: FinanzasRecaudoAnual | null;
+  /**
+   * O3 (auditoría 13-09): por qué no llegó esa parte. Antes la tarjeta
+   * simplemente DESAPARECÍA, y «se cayó el servidor» quedaba indistinguible de
+   * «este año no has recaudado nada». En una pantalla de plata, esas dos cosas
+   * se arreglan distinto: una se reintenta, la otra se explica.
+   */
+  falloProyeccion?: string | null;
+  falloRecaudo?: string | null;
 }
 
 /**
@@ -26,7 +35,15 @@ interface MiPlataViewProps {
  * `formatCurrency` — el front no recompone totales. Vencimientos/preavisos son informativos
  * (sin countdown alarmista ni estilos destructivos — doctrina de v7).
  */
-export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recaudoAnual }: MiPlataViewProps) {
+export function MiPlataView({
+  agencyId,
+  portafolio,
+  inmuebles,
+  proyeccion,
+  recaudoAnual,
+  falloProyeccion = null,
+  falloRecaudo = null,
+}: MiPlataViewProps) {
   // Copy en español como el resto de la chrome del panel (labels del nav hardcodeados);
   // la i18n fina de estas vistas se alinea en la fase de polish.
   const { formatCurrency, formatDate } = useI18n();
@@ -52,7 +69,13 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
         <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-base font-semibold mb-4">Mis inmuebles</h2>
           {inmuebles.length === 0 ? (
-            <p className="text-sm text-fg-muted">Todavía no hay inmuebles para mostrar.</p>
+            /* O4: el vacío dice QUÉ falta y qué hacer, no «no hay datos». */
+            <SinDatos
+              queSon="inmuebles"
+              icono={Buildings}
+              titulo="Todavía no vemos inmuebles tuyos"
+              descripcion="Acá aparecen los inmuebles que tu inmobiliaria administra a tu nombre, con su canon y su inquilino. Si crees que falta alguno, escríbele a tu inmobiliaria: el portafolio lo arma ella."
+            />
           ) : (
             <ul className="divide-y divide-border">
               {inmuebles.map((inm) => (
@@ -116,8 +139,17 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Recaudo anual por concepto */}
-          {recaudoAnual && recaudoAnual.totals.length > 0 && (
+          {/* Recaudo anual por concepto — la tarjeta se dibuja SIEMPRE (O3). */}
+          {!recaudoAnual || recaudoAnual.totals.length === 0 ? (
+            <Card className="p-4 sm:p-6">
+              <h2 className="text-base font-semibold mb-2">Recaudo por concepto</h2>
+              <p className="text-sm text-fg-muted" data-testid="recaudo-sin-datos">
+                {falloRecaudo
+                  ? `No pudimos traer esta parte: ${falloRecaudo} Vuelve a cargar la página; el resto de tu plata sí está.`
+                  : 'Este año todavía no hay recaudo registrado a tu nombre.'}
+              </p>
+            </Card>
+          ) : (
             <Card className="p-4 sm:p-6">
               <h2 className="text-base font-semibold mb-4">Recaudo {recaudoAnual.year} por concepto</h2>
               <ul className="divide-y divide-border">
@@ -134,8 +166,17 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
             </Card>
           )}
 
-          {/* Proyección de ingresos */}
-          {proyeccion && proyeccion.months.length > 0 && (
+          {/* Proyección de ingresos — misma regla que arriba (O3). */}
+          {!proyeccion || proyeccion.months.length === 0 ? (
+            <Card className="p-4 sm:p-6">
+              <h2 className="text-base font-semibold mb-2">Proyección de ingresos</h2>
+              <p className="text-sm text-fg-muted" data-testid="proyeccion-sin-datos">
+                {falloProyeccion
+                  ? `No pudimos traer esta parte: ${falloProyeccion} Vuelve a cargar la página; el resto de tu plata sí está.`
+                  : 'La proyección aparece cuando tienes un contrato vigente con cuotas por venir.'}
+              </p>
+            </Card>
+          ) : (
             <Card className="p-4 sm:p-6">
               <h2 className="text-base font-semibold mb-4">Proyección de ingresos</h2>
               <ul className="divide-y divide-border">

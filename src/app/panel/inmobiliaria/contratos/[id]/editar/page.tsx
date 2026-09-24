@@ -1,5 +1,6 @@
 'use client';
 
+import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -36,6 +37,7 @@ import {
 } from '@/lib/hooks/useContracts';
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { mensajeDelFallo, isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { isoToInputDate } from './iso-to-input-date';
 import {
@@ -66,7 +68,7 @@ function EditarContratoContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const contractId = params.id;
-  const { contract, isLoading, error } = useContract(contractId);
+  const { contract, isLoading, error, refetch } = useContract(contractId);
   const { rejections } = useContractRejections(contractId);
   const actions = useContractActions();
 
@@ -235,10 +237,23 @@ function EditarContratoContent() {
    */
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+      <div className="space-y-6 p-6 lg:p-8">
+        {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
+            tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
+            parte del panel estás (Nico: «ni se entiende y no tiene navegación
+            para recuperarse»). Ver `el-fallo-de-una-ficha-tiene-salida`. */}
+        <BackButton href="/panel/inmobiliaria/contratos" label="Contratos" />
+        <h1 className="text-h2 text-fg">Editar el contrato</h1>
+        {/*
+          🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
+          dejaba «Volver» como única salida — se perdía el camino y había que
+          entrar de nuevo por el listado. `refetch` vuelve a pedir el contrato
+          sin moverse de la pantalla.
+        */}
         <FalloDeCarga
           error={error}
           queEs="este contrato"
+          onReintentar={refetch}
           volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
         />
       </div>
@@ -426,7 +441,7 @@ function EditarContratoContent() {
             >
               <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
             </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
+            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -440,7 +455,7 @@ function EditarContratoContent() {
             <Field
               label="Días de plazo antes de la mora"
               error={validation.diasDePlazo}
-              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+              hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
             >
               <Input
                 type="number"
@@ -476,11 +491,10 @@ function EditarContratoContent() {
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
             <div className="space-y-1">
               <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
-                Prorratear el primer mes
+                {PREGUNTA_DEL_PRORRATEO}
               </label>
-              <p className="text-xs text-muted-foreground">
-                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
-                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
+                {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
             </div>
             <Switch

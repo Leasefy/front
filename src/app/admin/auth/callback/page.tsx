@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
 import { Wordmark } from '@/components/admin/Wordmark'
 
 /**
@@ -34,7 +35,14 @@ function CallbackInner() {
 
   useEffect(() => {
     const sb = getSupabase()
-    const next = sp.get('next') ?? '/admin'
+    // 🔴 `next` viene de la URL y termina en `window.location.href`. Sin
+    // sanear, `?next=javascript:…` corría código en el origen de Leasefy con
+    // la sesión de quien abriera el enlace —y la sesión vive en cookies que JS
+    // puede leer—: un clic y la cuenta era del atacante. Y `?next=https://…`
+    // era una redirección abierta con la marca de leasefy.co. No hacía falta
+    // venir de un enlace mágico: con una sesión ya abierta, el
+    // `INITIAL_SESSION` navegaba al instante (auditoría de seguridad 23-09).
+    const next = sanitizeReturnUrl(sp.get('next'), '/admin')
 
     if (!sb) {
       setErr('Supabase no configurado.')

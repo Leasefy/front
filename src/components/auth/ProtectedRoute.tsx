@@ -48,7 +48,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const sinSenal = useSinSenal()
@@ -150,6 +150,15 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       return
     }
 
+    // T-0099: enroll-pending takes priority over verify-pending — a user with
+    // no factor to step up to must enroll one first (they're mutually
+    // exclusive states per contract.md T-0099 §3, but the check order still
+    // matters if that ever changes).
+    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+      router.replace('/auth/mfa-enroll')
+      return
+    }
+
     // If MFA is required, redirect to MFA verify page
     if (mfaRequired && !pathname.startsWith('/auth/mfa-verify')) {
       router.replace('/auth/mfa-verify')
@@ -191,7 +200,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, user, needsOnboarding, perfilElegido])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -244,6 +253,18 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">Redirigiendo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // T-0099: no factor enrolled yet - will redirect to the enroll page.
+  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
         </div>
       </div>
     )

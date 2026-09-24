@@ -10,10 +10,17 @@ import { cn } from '@/lib/utils';
 interface MobileNavSheetProps {
   open: boolean;
   items: NavItem[];
+  /**
+   * La fila marcada, calculada sobre el menú ENTERO (`hrefDeLaFilaActiva`).
+   * El cajón sólo recibe las filas que no entraron en la barra, así que no
+   * puede saber solo si una fila más específica quedó afuera. Sin esto marca
+   * por prefijo, como antes.
+   */
+  hrefActivo?: string | null;
   onClose: () => void;
 }
 
-export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
+export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSheetProps) {
   const pathname = usePathname();
   const { t } = useI18n();
 
@@ -51,9 +58,11 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
 
             return rows.map((row) => {
               const rowItem = row as NavItem;
-              const rowActive = rowItem.exact
-                ? pathname === rowItem.href
-                : pathname === rowItem.href || pathname.startsWith(`${rowItem.href}/`);
+              const rowActive = hrefActivo !== undefined && rowItem === item
+                ? rowItem.href === hrefActivo
+                : rowItem.exact
+                  ? pathname === rowItem.href
+                  : pathname === rowItem.href || pathname.startsWith(`${rowItem.href}/`);
               const RowIcon = rowItem.icon as React.ComponentType<{
                 className?: string;
                 weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';

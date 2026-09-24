@@ -184,8 +184,8 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                 data-testid="asiento-fecha"
               />
               {fechaCerrada ? (
-                <p className="text-xs text-danger" role="alert">
-                  La contabilidad está cerrada hasta el {cerradaHasta}. Usá una fecha posterior.
+                <p className="text-caption text-danger" role="alert">
+                  La contabilidad está cerrada hasta el {cerradaHasta}. Usa una fecha posterior.
                 </p>
               ) : null}
             </div>
@@ -266,7 +266,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
                       </Button>
                     </div>
                     {errorDeLinea ? (
-                      <p className="px-1 text-xs text-danger" role="alert">
+                      <p className="px-1 text-caption text-danger" role="alert">
                         {TEXTO_DE_ERROR_DE_LINEA[errorDeLinea]}
                       </p>
                     ) : null}

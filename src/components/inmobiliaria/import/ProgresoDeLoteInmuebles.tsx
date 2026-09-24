@@ -9,7 +9,9 @@
  * `PROPERTY_IMPORT_COMPLETED` server-side.
  */
 
-import { Clock, XCircle } from '@phosphor-icons/react';
+import { Queue, XCircle } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { abrirCentroDeProcesos } from '@/lib/api/procesos.service';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
 export function ProgresoDeLoteInmuebles({
@@ -34,29 +36,39 @@ export function ProgresoDeLoteInmuebles({
   }
 
   const total = estado?.total ?? 0;
-  const procesadas = estado?.procesadas ?? 0;
-  const porcentaje = total > 0 ? Math.round((procesadas / total) * 100) : 0;
 
+  /*
+   * 🔴 23-09 (Nico: «¿para qué muestras la carga también en la tabla? Ya
+   * tenemos centro de procesos, todas las cargas déjalas que sucedan allí»):
+   * sin barra ni «4 / 10 filas procesadas» propios — el centro ya los muestra.
+   * Queda lo que el centro NO dice: que la importación espera a que esto
+   * termine para seguir, y que irse es seguro.
+   */
   return (
     <div className="rounded-lg border border-border p-6 space-y-4" data-testid="lote-inmuebles-progreso">
       <div className="flex items-center gap-2">
-        <Clock className="h-5 w-5 animate-pulse text-primary" />
-        <p className="text-sm font-medium text-fg">Estamos preparando tu importación</p>
+        <Queue className="h-5 w-5 text-primary" aria-hidden="true" />
+        <p className="text-sm font-medium text-fg">
+          {total > 0
+            ? `Estamos preparando los ${total.toLocaleString('es-CO')} inmuebles de tu importación`
+            : 'Estamos preparando tu importación'}
+        </p>
       </div>
 
-      {total > 0 ? (
-        <div className="space-y-1.5">
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${porcentaje}%` }}
-            />
-          </div>
-          <p className="text-xs tabular-nums text-fg-muted">
-            {procesadas} / {total} filas procesadas
-          </p>
-        </div>
-      ) : null}
+      <p className="text-sm text-fg-muted">
+        El avance lo sigues en el centro de procesos, arriba a la derecha. Cuando termine, la revisión
+        aparece aquí.
+      </p>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        hideArrow
+        onClick={() => abrirCentroDeProcesos()}
+        data-testid="lote-inmuebles-ver-en-el-centro"
+      >
+        Ver en el centro de procesos
+      </Button>
 
       <p className="text-sm text-fg-muted">
         Puedes cerrar esta pestaña — seguimos trabajando igual, y te avisamos con

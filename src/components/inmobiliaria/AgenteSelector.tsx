@@ -12,6 +12,7 @@ import {
   Percent,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { textoDeTasa } from '@/lib/tasas';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -341,7 +342,8 @@ export function AgenteSelector({
                   <div className="flex items-center gap-1.5">
                     <ChartLineUp className="w-4 h-4 text-primary" />
                     <span className="text-fg font-mono tabular-nums font-medium">
-                      {Math.round(agente.metrics.conversionRate * 100)}%
+                      {/* Ya es un porcentaje (0–100): no se multiplica. */}
+                      {textoDeTasa(agente.metrics.conversionRate, 0)}
                     </span>
                   </div>
 

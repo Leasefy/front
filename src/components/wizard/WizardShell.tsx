@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Check, WarningCircle, Info, X } from '@phosphor-icons/react';
@@ -75,6 +75,7 @@ export function WizardShell({
     submitApplication,
     isLoading,
     submissionError,
+    submissionLoginHref,
     canSubmit,
     currentStepValidation,
     currentStepMissingFields,
@@ -129,11 +130,10 @@ export function WizardShell({
         {/* Mobile property summary */}
         <div className="px-4 pb-4 flex items-center gap-3">
           <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-surface-muted">
-            <Image
-              src={property.thumbnailUrl}
+            <PortadaDelInmueble
+              property={property}
               alt={property.title}
-              fill
-              className="object-cover"
+              compacta
             />
           </div>
           <div className="flex-1 min-w-0">
@@ -188,11 +188,10 @@ export function WizardShell({
             {/* Property card */}
             <div className="flex items-start gap-4">
               <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-muted">
-                <Image
-                  src={property.thumbnailUrl}
+                <PortadaDelInmueble
+                  property={property}
                   alt={property.title}
-                  fill
-                  className="object-cover"
+                  compacta
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -398,6 +397,19 @@ export function WizardShell({
                   className="mx-4 mb-3 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger lg:mx-6"
                 >
                   {submissionError}
+                  {/* 409 INICIA_SESION: el correo ya tiene cuenta. La salida
+                      es entrar y volver a esta misma postulación. */}
+                  {submissionLoginHref && (
+                    <>
+                      {' '}
+                      <Link
+                        href={submissionLoginHref}
+                        className="font-medium underline underline-offset-2"
+                      >
+                        Iniciar sesión
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
 

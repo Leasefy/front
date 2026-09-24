@@ -22,9 +22,13 @@
  *    presente pero de tamaño cero —el sidebar por debajo de `lg`— no se puede
  *    señalar. Si además desaparece a mitad del recorrido, su paso se salta
  *    solo. Nunca se señala un hueco.
- * 2. **Omitir está en todos los pasos** y cuenta como visto
- *    (`setTourDismissed(true)`), igual que llegar al final: es la misma
- *    preferencia que mueve el interruptor de Configuración → Preferencias.
+ * 2. **Omitir está en todos los pasos** y cuenta como visto, igual que llegar
+ *    al final — para TODA la inmobiliaria y una sola vez (Nico, 23-09: «si le
+ *    da omitir no vuelve a aparecer y si lo ve completo no vuelve a
+ *    aparecer»). Omitir, la ✕ y Esc guardan `omitido`; «Entendido» en el
+ *    cierre, `completo` (`cerrarRecorrido`, `PanelPrefsContext`). Mientras
+ *    no se sabe si la agencia ya lo vio (`tourDismissed === null`), no se
+ *    monta.
  * 3. **El velo NO se puede clickear para cerrar.** Cierran la ✕, «Omitir» y
  *    Esc, que son los tres caminos que un lector de pantalla también encuentra.
  *    Un botón invisible a pantalla completa se anunciaba como un control más y
@@ -81,6 +85,8 @@ const MIN_INTENTOS = 4;
 const INTENTOS = 20;
 /** Ancho de la tarjeta anclada; también su tope en pantallas chicas. */
 const ANCHO = 340;
+/** Hasta dónde llega la columna del sidebar (240 px + aire): lo que termina antes, se señala desde el costado. */
+const COLUMNA_LATERAL = 320;
 /** Ancho de la bienvenida y el cierre, que no anclan a nada. */
 const ANCHO_CENTRADO = 420;
 /**
@@ -116,13 +122,40 @@ function medir(selector: string): Recuadro | null {
   return { top: r.top, left: r.left, width: r.width, height: r.height };
 }
 
+/**
+ * Si el objetivo vive dentro de una sección PLEGADA del sidebar (secciones
+ * plegables, 22-09), la abre con su propio botón antes de medir: cerrada, la
+ * caja mide 0 de alto y el anillo rodearía una fila invisible. Devuelve true
+ * si tuvo que abrir, para que quien llama vuelva a medir cuando termine la
+ * animación de altura. Se aprieta el botón (y no se toca el estado por fuera)
+ * para que la sección quede abierta como si la persona la hubiera abierto:
+ * también se guarda así.
+ */
+export function abrirSuSeccion(selector: string): boolean {
+  if (typeof document === 'undefined') return false;
+  const el = document.querySelector(selector);
+  const caja = el?.closest<HTMLElement>('[data-abierta="false"]');
+  if (!caja?.id) return false;
+  const boton = document.querySelector<HTMLButtonElement>(`button[aria-controls="${caja.id}"]`);
+  if (!boton) return false;
+  boton.click();
+  return true;
+}
+
+/** Lo que dura la animación de altura de una sección, con un poco de margen. */
+const APERTURA_DE_SECCION = 260;
+
 /** Trae el elemento a la vista antes de señalarlo (el sidebar puede scrollear). */
 function acercar(selector: string, suave: boolean): void {
   if (typeof document === 'undefined') return;
   const el = document.querySelector(selector);
   if (!el || typeof (el as HTMLElement).scrollIntoView !== 'function') return;
   try {
-    (el as HTMLElement).scrollIntoView({ block: 'nearest', behavior: suave ? 'smooth' : 'auto' });
+    // `center` y no `nearest`: con `nearest` el ítem de abajo del menú
+    // (Reportes, paso 7) quedaba pegado al borde del área que scrollea, medio
+    // tapado por la tarjeta «Invita a tu equipo» del pie, y el anillo se veía
+    // cortado encima de ella (Nico, 22-09).
+    (el as HTMLElement).scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' });
   } catch {
     // Un navegador sin opciones de scroll no puede tumbar el recorrido.
   }
@@ -150,6 +183,23 @@ export function ubicarTarjeta(
     };
   }
 
+  // 🔴 Lo que vive en la columna de la izquierda (el sidebar: 240 px, o 64 el
+  // riel) se señala con la tarjeta AL LADO, a la derecha. Nico (22-09) vio los
+  // pasos 6 y 7 con la tarjeta debajo/encima del ítem, montada SOBRE el
+  // sidebar: tapaba justo lo que se estaba mostrando y las filas vecinas. A la
+  // derecha no tapa nada del menú; se centra en el alto del ítem y no sale de
+  // la ventana. Si no cabe al lado, vale lo de siempre (debajo, o encima).
+  const derecha = recuadro.left + recuadro.width + MARGEN * 2;
+  const esDeLaColumnaLateral = recuadro.left + recuadro.width <= COLUMNA_LATERAL;
+  if (esDeLaColumnaLateral && derecha + ANCHO + MARGEN <= ventana.width) {
+    const centradoEnAlto = recuadro.top + recuadro.height / 2 - alto / 2;
+    const top = Math.min(
+      Math.max(MARGEN, centradoEnAlto),
+      Math.max(MARGEN, ventana.height - alto - MARGEN),
+    );
+    return { top, left: derecha, ancho: ANCHO };
+  }
+
   const debajo = recuadro.top + recuadro.height + MARGEN * 2;
   const cabeDebajo = debajo + alto < ventana.height;
   const top = cabeDebajo
@@ -175,7 +225,7 @@ function focusables(caja: HTMLElement): HTMLElement[] {
 export function TourDelPanel() {
   const { t } = useI18n();
   const { user, agency } = useAuth();
-  const { tourDismissed, setTourDismissed } = usePanelPrefs();
+  const { tourDismissed, cerrarRecorrido } = usePanelPrefs();
   const reducirMovimiento = useReducedMotion();
   // Los permisos deciden qué filas del sidebar existen. Medir antes de que
   // resuelvan es medir el esqueleto. `…Safe` porque el recorrido tiene que
@@ -221,9 +271,11 @@ export function TourDelPanel() {
       yaArrancoRef.current = true;
       setPasos(visibles);
       setIndice(0);
-      // Nadie a quien señalar ⇒ el recorrido no arranca y la preferencia se
-      // apaga igual, para no reintentarlo en cada navegación.
-      if (visibles.length === 0) setTourDismissed(true);
+      // Nadie a quien señalar (p. ej. el panel en un teléfono, sin sidebar) ⇒
+      // el recorrido no arranca en esta sesión y NO se marca como visto: la
+      // inmobiliaria no lo vio, y marcarlo acá se lo quitaría a quien entre
+      // después desde un computador. `yaArrancoRef` evita reintentarlo en
+      // cada navegación.
     };
 
     const contar = () => {
@@ -255,7 +307,7 @@ export function TourDelPanel() {
       cancelado = true;
       clearTimeout(id);
     };
-  }, [activo, permisosListos, setTourDismissed]);
+  }, [activo, permisosListos]);
 
   const pantallas = useMemo<PantallaDelTour[]>(
     () => (pasos ? pantallasDelTour(pasos) : []),
@@ -272,6 +324,7 @@ export function TourDelPanel() {
       setRecuadro(null);
       return;
     }
+    const abrio = abrirSuSeccion(selectorActual);
     acercar(selectorActual, !reducirMovimiento);
     const medida = medir(selectorActual);
     if (!medida) {
@@ -292,14 +345,23 @@ export function TourDelPanel() {
     };
     window.addEventListener('scroll', remedir, true);
     window.addEventListener('resize', remedir);
+    // Recién abierta, la sección todavía está creciendo: se vuelve a acercar
+    // y a medir cuando termina (ni `scroll` ni `resize` avisan de eso).
+    const trasAbrir = abrio
+      ? setTimeout(() => {
+          acercar(selectorActual, false);
+          remedir();
+        }, APERTURA_DE_SECCION)
+      : undefined;
     return () => {
+      if (trasAbrir) clearTimeout(trasAbrir);
       window.removeEventListener('scroll', remedir, true);
       window.removeEventListener('resize', remedir);
     };
   }, [selectorActual, reducirMovimiento]);
 
-  const cerrar = useCallback(() => {
-    setTourDismissed(true);
+  const cerrar = useCallback((estado: 'completo' | 'omitido') => {
+    void cerrarRecorrido(estado);
     setPasos(null);
     setIndice(0);
     // El foco vuelve a donde estaba: cerrar una capa no puede dejar a quien
@@ -307,7 +369,7 @@ export function TourDelPanel() {
     const previo = focoPrevioRef.current;
     focoPrevioRef.current = null;
     if (previo && typeof previo.focus === 'function' && previo.isConnected) previo.focus();
-  }, [setTourDismissed]);
+  }, [cerrarRecorrido]);
 
   const abierto = activo && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
 
@@ -349,7 +411,7 @@ export function TourDelPanel() {
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        cerrar();
+        cerrar('omitido');
         return;
       }
       if (e.key === 'Tab') {
@@ -383,7 +445,7 @@ export function TourDelPanel() {
       const esUltimaPantalla = indice >= pantallas.length - 1;
       if (e.key === 'ArrowRight' || (e.key === 'Enter' && e.target === tarjetaRef.current)) {
         e.preventDefault();
-        if (esUltimaPantalla) cerrar();
+        if (esUltimaPantalla) cerrar('completo');
         else avanzar();
       }
     };
@@ -423,7 +485,14 @@ export function TourDelPanel() {
           el propio recorte con su `box-shadow`, y ponerlo dos veces oscurecería
           el doble. Sin `onClick`: se cierra por la ✕, «Omitir» o Esc. */}
       {anclada && recuadro ? (
+        // 🔴 Las dos ramas llevan `key` DISTINTA. Sin ella React reusaba el
+        // mismo nodo (las dos son `motion.div` en la misma posición) al pasar
+        // de un paso al cierre: el velo heredaba el `top/left/width/height` en
+        // línea que framer le había escrito al recorte y quedaba como un
+        // rectángulo gris sobre «Buscar», con el resto de la pantalla sin
+        // oscurecer (Nico, 22-09, «Eso es todo»).
         <motion.div
+          key="tour-foco"
           aria-hidden
           data-testid="tour-foco"
           className="pointer-events-none absolute rounded-lg"
@@ -454,7 +523,9 @@ export function TourDelPanel() {
         </motion.div>
       ) : (
         <motion.div
+          key="tour-velo"
           aria-hidden
+          data-testid="tour-velo"
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -524,7 +595,7 @@ export function TourDelPanel() {
                 variant="ghost"
                 size="icon"
                 hideArrow
-                onClick={cerrar}
+                onClick={() => cerrar('omitido')}
                 aria-label={t('inmobiliaria.tour.cerrar')}
                 className="-mr-2 -mt-2 h-8 w-8 shrink-0 text-fg-subtle hover:text-fg"
                 data-testid="tour-cerrar"
@@ -607,7 +678,7 @@ export function TourDelPanel() {
                 variant="link"
                 size="sm"
                 hideArrow
-                onClick={cerrar}
+                onClick={() => cerrar('omitido')}
                 className="h-auto px-0 text-fg-muted hover:text-fg"
                 data-testid="tour-saltar"
               >
@@ -629,7 +700,7 @@ export function TourDelPanel() {
                 <Button
                   size="sm"
                   hideArrow
-                  onClick={pantalla.tipo === 'cierre' ? cerrar : avanzar}
+                  onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
                   data-testid="tour-siguiente"
                 >
                   {t(

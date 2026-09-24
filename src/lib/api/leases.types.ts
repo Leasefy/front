@@ -20,7 +20,8 @@ export interface BackendLease {
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;
-  propertyThumbnail: string;
+  /** `null` cuando el inmueble no tiene fotos (todos los migrados). */
+  propertyThumbnail: string | null;
   tenantName: string;
   tenantEmail: string;
   tenantPhone: string;

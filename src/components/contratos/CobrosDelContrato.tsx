@@ -49,6 +49,9 @@ import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
 import type { Contract } from '@/lib/types/contract'
 
+/** Donde finanzas emite y lista los cobros: la pestaña «Cobros emitidos» de Cartera. */
+const CARTERA_COBROS_EMITIDOS = '/panel/inmobiliaria/pagos/cartera/cobros'
+
 export interface ResumenDeCobros {
   total: number
   saldo: number
@@ -148,9 +151,11 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
             </span>
           ) : null}
         </div>
+        {/* «Cobros» ya no es un módulo (2026-09-16): los cobros emitidos son
+            una pestaña de Pagos → Cartera, y de ahí se emiten. */}
         <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href="/panel/inmobiliaria/cobros">
-            Ir a Cobros
+          <Link href={CARTERA_COBROS_EMITIDOS} data-testid="ir-a-cartera">
+            Ver en Cartera
             <ArrowSquareOut className="ml-1 h-3.5 w-3.5" />
           </Link>
         </Button>
@@ -178,10 +183,18 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
               description="El cobro sale de la consignación del inmueble. Vincúlalo en la tarjeta Propiedad."
             />
           ) : (
+            /*
+              🔴 Decía «Los cobros se generan desde Cobros», un módulo que ya
+              no existe. La deuda nace con el contrato y vive en sus cuotas;
+              el cobro es el DOCUMENTO con que finanzas reclama una parte de
+              ella, y se emite desde Pagos → Cartera. Que no haya ninguno no
+              quiere decir que el inquilino no deba.
+            */
             <EmptyState
               icon={Receipt}
-              title="Todavía no se generó ningún cobro para este contrato"
-              description="Los cobros se generan desde Cobros, mes a mes; cuando salga el primero, aparece acá con su desglose."
+              title="Todavía no se emitió ningún cobro para este contrato"
+              description="El cobro es el documento con que finanzas le reclama al inquilino la deuda del contrato, y se emite desde Pagos → Cartera, en «Cobros emitidos». Cuando salga el primero, aparece acá con su desglose."
+              action={{ label: 'Ir a Cartera', href: CARTERA_COBROS_EMITIDOS }}
             />
           )}
         </div>
@@ -252,7 +265,7 @@ function FilaDeCobro({
 }) {
   const periodo = capitalizar(nombreDelMes(cobro.month))
   const vence = fechaCorta(cobro.dueDate)
-  const cuentaDeCobro = `/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent(volverA)}`
+  const cuentaDeCobro = `/panel/inmobiliaria/pagos/cartera/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent(volverA)}`
 
   return (
     <>

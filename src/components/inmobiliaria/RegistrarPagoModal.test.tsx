@@ -18,6 +18,13 @@
  *
  * 4. 🔴 El mensaje del back. El 400 del sobrepago trae el máximo; si se cambia
  *    por un «hubo un error», el usuario no sabe cuánto puede recibir.
+ *
+ * 5. 🔴 (2026-09-15) La DEUDA PARTIDA. «Desde que él comience el contrato ya
+ *    debe»: un contrato vigente sin nada vencido tiene que poder recibir plata,
+ *    y la pantalla tiene que llamarlo ADELANTO. «No debe nada» quedó reservado
+ *    para el caso en que de verdad no queda ninguna cuota. Un test que sólo
+ *    mire que el formulario se dibuja pasa en verde con los dos números
+ *    sumados en uno, que es exactamente lo que no se puede hacer.
  */
 
 import * as React from 'react';
@@ -27,7 +34,7 @@ import { act } from 'react';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   CarteraDelCliente,
-  CobroEnCartera,
+  PeriodoEnDeuda,
   RespuestaDeReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
 
@@ -53,13 +60,23 @@ vi.mock('@/lib/hooks/use-medios-de-pago', () => ({
 }));
 
 /** La cartera llega por HTTP; acá interesa la pantalla, no la petición. */
-const carteraPorCobro = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
-const cartera = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
+const carteraPorCobro = vi.fn<(id: string, fecha?: string) => Promise<CarteraDelCliente>>();
+const cartera = vi.fn<(id: string, fecha?: string) => Promise<CarteraDelCliente>>();
+/*
+ * La fecha se reenvía SÓLO cuando viene: sin fecha la llamada sigue siendo
+ * `(id)`, que es lo que el back entiende como «hoy».
+ */
 vi.mock('@/lib/api/recibos-de-caja.service', () => ({
   recibosDeCajaApi: {
-    carteraPorCobro: (id: string) => carteraPorCobro(id),
-    cartera: (id: string) => cartera(id),
+    carteraPorCobro: (...args: [string, string?]) => carteraPorCobro(...args),
+    cartera: (...args: [string, string?]) => cartera(...args),
   },
+}));
+
+/** Los tipos que la inmobiliaria apagó (`GET /inmobiliaria/finanzas/medios`). */
+let apagados: string[] = [];
+vi.mock('@/lib/api/finanzas.service', () => ({
+  finanzasApi: { medios: () => Promise.resolve({ medios: [], apagados, esElPreset: false }) },
 }));
 
 vi.mock('@/lib/api/inquilinos.service', () => ({
@@ -67,7 +84,8 @@ vi.mock('@/lib/api/inquilinos.service', () => ({
 }));
 
 import { ApiError } from '@/lib/api/client';
-import { RegistrarPagoModal } from './RegistrarPagoModal';
+import { RegistrarPagoModal, mesesEnPalabras } from './RegistrarPagoModal';
+import { ESPERA_DE_LA_FECHA_MS } from './ReciboPorCliente';
 
 const COBRO: Cobro = {
   id: 'c-ago',
@@ -102,31 +120,37 @@ function periodo(
   id: string,
   month: string,
   pendingAmount: number,
-  extra: Partial<CobroEnCartera> = {},
-): CobroEnCartera {
+  extra: Partial<PeriodoEnDeuda> = {},
+): PeriodoEnDeuda {
   return {
     id,
+    cuotaId: `q-${id}`,
+    // Sin cobro emitido: es el caso normal desde que la deuda se lee del
+    // contrato, y el de las 30.951 cuotas de la agencia migrada.
+    cobroId: null,
     month,
     dueDate: `${month}-05T00:00:00.000Z`,
     createdAt: `${month}-01T00:00:00.000Z`,
     consignacionId: 'cons1',
-    contractId: null,
+    contractId: 'ct1',
     leaseId: 'l1',
     propertyTitle: 'Apto 101',
     tenantName: 'Jose Lopez',
     totalWithFees: pendingAmount,
     paidAmount: 0,
     pendingAmount,
-    status: 'PENDING',
+    estado: 'PENDIENTE',
+    status: null,
     daysLate: 0,
     lateFee: 0,
+    vencida: true,
     sinRespaldo: 0,
     conceptos: [],
     ...extra,
   };
 }
 
-/** Debe tres meses de un millón: junio, julio y agosto. */
+/** Debe tres meses de un millón, los tres vencidos: junio, julio y agosto. */
 function debeTresMeses(extra: Partial<CarteraDelCliente> = {}): CarteraDelCliente {
   return {
     tenantId: 't1',
@@ -135,10 +159,34 @@ function debeTresMeses(extra: Partial<CarteraDelCliente> = {}): CarteraDelClient
     email: null,
     inmuebles: 1,
     total: 3_000_000,
-    cobros: [
+    vencidoCop: 3_000_000,
+    futuroCop: 0,
+    cuotas: [
       periodo('c-jun', '2026-06', 1_000_000),
       periodo('c-jul', '2026-07', 1_000_000),
       periodo('c-ago', '2026-08', 1_000_000),
+    ],
+    ...extra,
+  };
+}
+
+/**
+ * El caso que originó todo: contrato vigente, NADA vencido, y $2.000.000 de
+ * deuda futura contra la cual sólo se puede ADELANTAR.
+ */
+function soloDeudaFutura(extra: Partial<CarteraDelCliente> = {}): CarteraDelCliente {
+  return {
+    tenantId: 't1',
+    nombre: 'Jose Lopez',
+    documento: '1020304050',
+    email: null,
+    inmuebles: 1,
+    total: 2_000_000,
+    vencidoCop: 0,
+    futuroCop: 2_000_000,
+    cuotas: [
+      periodo('c-nov', '2026-11', 1_000_000, { vencida: false }),
+      periodo('c-dic', '2026-12', 1_000_000, { vencida: false }),
     ],
     ...extra,
   };
@@ -161,9 +209,11 @@ const RESPUESTA: RespuestaDeReciboPorCliente = {
   cobros: [],
   imputacion: [
     {
+      cuotaId: 'q-c-jun',
       cobroId: 'c-jun',
       month: '2026-06',
       propertyTitle: 'Apto 101',
+      vencida: true,
       valorCop: 1_000_000,
       aIntereses: 0,
       aCapital: 1_000_000,
@@ -270,7 +320,9 @@ describe('<RegistrarPagoModal> la cartera del cliente', () => {
       debeTresMeses({
         inmuebles: 2,
         total: 1_500_000,
-        cobros: [
+        vencidoCop: 1_500_000,
+        futuroCop: 0,
+        cuotas: [
           periodo('c-loc', '2026-06', 500_000, {
             consignacionId: 'cons2',
             propertyTitle: 'Local 5',
@@ -292,7 +344,7 @@ describe('<RegistrarPagoModal> la cartera del cliente', () => {
 
   it('un cliente que no debe nada no tiene formulario que llenar', async () => {
     carteraPorCobro.mockResolvedValue(
-      debeTresMeses({ total: 0, cobros: [] }),
+      debeTresMeses({ total: 0, vencidoCop: 0, futuroCop: 0, cuotas: [] }),
     );
     await abrir();
 
@@ -337,7 +389,9 @@ describe('<RegistrarPagoModal> a dónde va la plata', () => {
     carteraPorCobro.mockResolvedValue(
       debeTresMeses({
         total: 1_120_000,
-        cobros: [
+        vencidoCop: 1_120_000,
+        futuroCop: 0,
+        cuotas: [
           periodo('c-jun', '2026-06', 1_120_000, {
             lateFee: 120_000,
             conceptos: [
@@ -356,11 +410,55 @@ describe('<RegistrarPagoModal> a dónde va la plata', () => {
     expect(parte?.textContent).toContain('Canon');
   });
 
+  /*
+   * 🔴 La prueba del recibo con interés (2026-09-16), con el caso real de QA:
+   * contrato #69, enero de 2026, sin cobro emitido. Caja ve capital e interés
+   * por separado, el máximo ya los trae, y pagar exacto los dos no deja nada.
+   */
+  it('🔴 capital + interés de una cuota sin cobro: se ven aparte y pagarlos exacto no deja saldo', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        total: 1_962_429,
+        vencidoCop: 1_962_429,
+        futuroCop: 0,
+        interesCop: 412_429,
+        cuotas: [
+          periodo('q-ene', '2026-01', 1_962_429, {
+            capitalPendienteCop: 1_550_000,
+            interesPendienteCop: 412_429,
+          }),
+        ],
+      }),
+    );
+    const onSubmit = await abrir();
+
+    expect(
+      document.body.querySelector('[data-testid="periodo-capital-e-interes-2026-01"]'),
+    ).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="cartera-intereses"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="maximo-con-intereses"]')).toBeTruthy();
+
+    escribir('#monto-recibo', '1962429');
+    const parte = document.body.querySelector('[data-testid="plan-parte-2026-01"]');
+    expect(parte?.textContent).toContain('recibos.form.plan.intereses');
+    expect(document.body.querySelector('[data-testid="plan-queda-2026-01"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="plan-interes-primero"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-deuda-restante"]')?.textContent).toContain(
+      '0',
+    );
+
+    elegirMedio('efectivo');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 1_962_429 });
+  });
+
   it('avisa cuando un período tiene plata que ningún recibo respalda', async () => {
     carteraPorCobro.mockResolvedValue(
       debeTresMeses({
         total: 600_000,
-        cobros: [periodo('c-jun', '2026-06', 600_000, { paidAmount: 400_000, sinRespaldo: 400_000 })],
+        vencidoCop: 600_000,
+        futuroCop: 0,
+        cuotas: [periodo('c-jun', '2026-06', 600_000, { paidAmount: 400_000, sinRespaldo: 400_000 })],
       }),
     );
     await abrir();
@@ -399,7 +497,7 @@ describe('<RegistrarPagoModal> qué día entró', () => {
 });
 
 describe('<RegistrarPagoModal> el monto', () => {
-  it('🔴 manda TODA la deuda cuando no se toca el campo prellenado', async () => {
+  it('🔴 manda lo VENCIDO cuando no se toca el campo prellenado', async () => {
     const onSubmit = await abrir();
     elegirMedio('efectivo');
     await enviar();
@@ -479,7 +577,7 @@ describe('<RegistrarPagoModal> el monto', () => {
     'una deuda de %i se paga COMPLETA, no en su milésima parte',
     async (deuda) => {
       carteraPorCobro.mockResolvedValue(
-        debeTresMeses({ total: deuda, cobros: [periodo('c-jun', '2026-06', deuda)] }),
+        debeTresMeses({ total: deuda, vencidoCop: deuda, futuroCop: 0, cuotas: [periodo('c-jun', '2026-06', deuda)] }),
       );
       const onSubmit = await abrir();
       elegirMedio('efectivo');
@@ -579,10 +677,11 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'transferencia' });
   });
 
-  it('con medios configurados ofrece sólo los activos y manda el NOMBRE del medio', async () => {
+  it('🔴 con medios configurados ofrece los activos y manda el TIPO; el nombre va a las notas (QA 22-09)', async () => {
+    // Antes viajaba el NOMBRE: «Efectivo en la oficina» → EFECTIVO_EN_LA_OFICINA,
+    // que ninguna lista de apagados reconoce, y el efectivo entraba.
     mediosConfigurados = [
       { id: 'm1', nombre: 'Transferencia a Bancolombia', tipo: 'TRANSFERENCIA', activo: true },
-      { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
       { id: 'm3', nombre: 'Cuenta vieja', tipo: 'TRANSFERENCIA', activo: false },
     ];
     const onSubmit = await abrir();
@@ -590,18 +689,48 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
     expect(porTexto('Cuenta vieja')).toHaveLength(0);
     act(() => porTexto('Transferencia a Bancolombia')[0].click());
     await enviar();
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'Transferencia a Bancolombia' });
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      medio: 'TRANSFERENCIA',
+      notas: 'Medio: Transferencia a Bancolombia',
+    });
   });
 
-  it('un nombre más largo que el DTO viaja recortado a 40 caracteres', async () => {
+  it('🔴 un medio cuyo TIPO la inmobiliaria apagó no se ofrece, se llame como se llame', async () => {
+    apagados = ['EFECTIVO', 'CHEQUE'];
+    mediosConfigurados = [
+      { id: 'm1', nombre: 'Transferencia a Bancolombia', tipo: 'TRANSFERENCIA', activo: true },
+      { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
+    ];
+    await abrir();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(porTexto('Efectivo en la oficina')).toHaveLength(0);
+    expect(porTexto('Transferencia a Bancolombia')).toHaveLength(1);
+    apagados = [];
+  });
+
+  it('en la lista fija, lo apagado tampoco se ofrece', async () => {
+    apagados = ['EFECTIVO', 'CHEQUE'];
+    await abrir();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(porTexto('recibos.form.medios.efectivo')).toHaveLength(0);
+    expect(porTexto('recibos.form.medios.cheque')).toHaveLength(0);
+    expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(1);
+    apagados = [];
+  });
+
+  it('un nombre largo va a las notas recortado a 40, y el medio sigue siendo el tipo', async () => {
     const largo = 'Transferencia a la cuenta de ahorros número dos de Bancolombia';
     mediosConfigurados = [{ id: 'm1', nombre: largo, tipo: 'TRANSFERENCIA', activo: true }];
     const onSubmit = await abrir();
     act(() => porTexto(largo)[0].click());
     await enviar();
-    const medio = (onSubmit.mock.calls[0][0] as { medio: string }).medio;
-    expect(medio).toBe(largo.slice(0, 40));
-    expect(medio.length).toBe(40);
+    const enviado = onSubmit.mock.calls[0][0] as { medio: string; notas: string };
+    expect(enviado.medio).toBe('TRANSFERENCIA');
+    expect(enviado.notas).toBe(`Medio: ${largo.slice(0, 40)}`);
   });
 });
 
@@ -645,21 +774,844 @@ describe('<RegistrarPagoModal> la llave del recibo (R1)', () => {
   });
 });
 
+describe('<RegistrarPagoModal> la fecha del recibo', () => {
+  /*
+   * 🔴 Nico y Juan Camilo (2026-09-16): «¡No! El recibo de caja debe quedar con
+   * la fecha en la que se recibió». El campo tuvo un PISO (R4, auditoría
+   * 13-09): el 1.º del período vencido más viejo, o el 1.º de enero. Se quitó:
+   * queda sólo el techo, hoy.
+   */
+  it('no tiene piso: sin `min`, con techo en hoy', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses());
+    await abrir({});
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    expect(campo).toBeTruthy();
+    expect(campo!.hasAttribute('min')).toBe(false);
+    expect(campo!.getAttribute('max')).toBeTruthy();
+  });
+
+  it('con deuda sólo futura tampoco hay piso', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir({});
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    expect(campo!.hasAttribute('min')).toBe(false);
+  });
+});
+
 describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
-  it('lo dice con las palabras del servidor, no promete un anticipo y deja salir con «Cerrar»', async () => {
-    carteraPorCobro.mockResolvedValue(debeTresMeses({ total: 0, cobros: [] }));
+  /*
+   * 🔴 Sin la migración del saldo a favor (`anticipoDisponible: false`) esto
+   * sigue siendo un callejón: el back responde 400 a cualquier plata que no
+   * tenga contra qué ir, así que el formulario no se dibuja y el vacío explica
+   * POR QUÉ. La regla vieja era «no prometas un anticipo»; la de hoy es «no
+   * prometas uno que esta base no puede guardar».
+   */
+  it('sin saldo a favor disponible lo dice, no dibuja el formulario y deja salir con «Cerrar»', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, vencidoCop: 0, futuroCop: 0, cuotas: [], anticipoDisponible: false }),
+    );
     const onClose = vi.fn();
     await abrir({ onClose });
 
     const vacio = document.body.querySelector('[data-testid="cliente-sin-deuda"] [data-testid="sin-datos"]');
     expect(vacio).toBeTruthy();
     expect(vacio!.textContent).toContain('recibos.form.cartera.sinDeuda');
-    expect(vacio!.textContent).not.toMatch(/saldo a favor|anticipo/i);
+    // Y lo dice por lo que ES: no queda ninguna cuota, ni vencida ni futura.
+    expect(vacio!.textContent).toContain('ni vencida ni por vencer');
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeNull();
 
     const cerrar = document.body.querySelector<HTMLButtonElement>('[data-testid="cerrar-sin-deuda"]');
     expect(cerrar?.textContent).toBe('Cerrar');
     act(() => cerrar!.click());
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * Con la migración aplicada, el mismo cliente SÍ puede pagar por adelantado:
+   * es el pedido del CEO («no tengo que esperar que se cumpla la fecha»).
+   */
+  it('con saldo a favor disponible sí se le puede recibir plata por adelantado', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, vencidoCop: 0, futuroCop: 0, cuotas: [], anticipoDisponible: true }),
+    );
+    await abrir({});
+
+    expect(document.body.querySelector('[data-testid="cliente-sin-deuda"]')).toBeNull();
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
+  });
+});
+
+describe('<RegistrarPagoModal> pagar de más', () => {
+  /*
+   * 🔴 Pagar de más dejó de ser un error (CEO, 2026-09-15). Lo que NO puede
+   * pasar es que la plata desaparezca de la pantalla sin explicación: el
+   * excedente se nombra antes de emitir.
+   */
+  it('con saldo a favor disponible acepta más que la deuda y dice cuánto queda a favor', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+
+    // 5.000.000 pagados − 3.000.000 de deuda. El `formatCurrency` de este
+    // archivo no pone separadores: se afirma sobre la cifra, no sobre el
+    // formato, que es del design system y no de esta pantalla.
+    const aviso = document.body.querySelector('[data-testid="aviso-a-favor"]');
+    expect(aviso?.textContent).toContain('2000000');
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
+  });
+
+  it('🔴 lo que queda a favor se CONFIRMA antes de emitir (QA 22-09: un dedo de más y pasaba)', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    const onSubmit = await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+    elegirMedio('transferencia');
+
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    const casilla = document.body.querySelector<HTMLElement>('[data-testid="confirmar-a-favor-casilla"]');
+    expect(casilla).toBeTruthy();
+    await act(async () => {
+      casilla!.click();
+    });
+    await enviar();
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('con anticipo habilitado no lo llama «máximo»: es la deuda total', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    expect(document.body.textContent).toContain('recibos.form.deudaTotal');
+    expect(document.body.textContent).not.toContain('recibos.form.maximo');
+  });
+
+  it('sin saldo a favor disponible sigue topando el monto', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: false }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+
+    expect(document.body.querySelector('[data-testid="aviso-a-favor"]')).toBeNull();
+  });
+});
+
+describe('<RegistrarPagoModal> la deuda nace con el contrato (2026-09-15)', () => {
+  /*
+   * 🔴 El defecto que originó el cambio: contrato vigente, ninguna cuota
+   * vencida, y el diálogo decía «no debe nada» y no dejaba hacer nada. Nico:
+   * «Desde que él comience el contrato ya debe.»
+   */
+  it('🔴 sin NADA vencido dibuja el formulario y dice que lo que entre es un adelanto', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir();
+
+    expect(document.body.querySelector('[data-testid="cliente-sin-deuda"]')).toBeNull();
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="aviso-adelanto"]')?.textContent).toContain(
+      'recibos.form.cartera.soloAdelanto',
+    );
+    // El encabezado del diálogo deja de prometer un cobro.
+    expect(document.body.textContent).toContain('recibos.form.descripcionAdelanto');
+  });
+
+  it('🔴 muestra los dos números por separado y NO los suma en uno solo', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        total: 5_000_000,
+        vencidoCop: 3_000_000,
+        futuroCop: 2_000_000,
+        cuotas: [
+          periodo('c-jun', '2026-06', 1_000_000),
+          periodo('c-jul', '2026-07', 1_000_000),
+          periodo('c-ago', '2026-08', 1_000_000),
+          periodo('c-nov', '2026-11', 2_000_000, { vencida: false }),
+        ],
+      }),
+    );
+    await abrir();
+
+    expect(document.body.querySelector('[data-testid="cartera-vencido"]')?.textContent).toContain(
+      '3000000',
+    );
+    expect(document.body.querySelector('[data-testid="cartera-futuro"]')?.textContent).toContain(
+      '2000000',
+    );
+    expect(document.body.querySelector('[data-testid="cartera-total"]')?.textContent).toContain(
+      '5000000',
+    );
+    // Y el período futuro queda en su propio grupo, rotulado.
+    const futuro = document.body.querySelector('[data-testid="cartera-periodo-2026-11"]');
+    expect(futuro?.getAttribute('data-vencida')).toBe('no');
+    expect(futuro?.querySelector('[data-testid="periodo-futuro"]')).toBeTruthy();
+  });
+
+  /*
+   * 🔴 El campo arranca con lo VENCIDO, no con la deuda entera del contrato:
+   * prellenar $5.000.000 cuando lo que se reclama hoy son $3.000.000 es
+   * ofrecerle a caja un recibo que nadie pidió.
+   */
+  it('prellena lo vencido, no toda la deuda del contrato', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 5_000_000, vencidoCop: 3_000_000, futuroCop: 2_000_000 }),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 3_000_000 });
+  });
+
+  it('sin nada vencido el campo arranca VACÍO: el monto del adelanto lo dice quien trae la plata', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir();
+
+    const campo = document.body.querySelector<HTMLInputElement>('#monto-recibo');
+    expect(campo?.value ?? '').toBe('');
+    // Y no se puede emitir un recibo vacío.
+    expect(porTexto('recibos.form.emitir')[0].disabled).toBe(true);
+  });
+
+  it('«Paga toda la deuda» llena el total, incluyendo lo que no vence', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    const onSubmit = await abrir();
+    act(() => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click();
+    });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 2_000_000 });
+  });
+
+  it('🔴 el plan marca qué renglones son ADELANTO', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir();
+    escribir('#monto-recibo', '$ 1.500.000');
+
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-11"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-adelanto-2026-11"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-hay-adelanto"]')).toBeTruthy();
+  });
+
+  it('un renglón vencido NO se marca como adelanto', async () => {
+    await abrir();
+    escribir('#monto-recibo', '$ 1.000.000');
+
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-06"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-adelanto-2026-06"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="plan-hay-adelanto"]')).toBeNull();
+  });
+
+  /*
+   * 🔴 Con nada vencido, adelantar NO puede seguir topado por la deuda vencida:
+   * el máximo es toda la deuda del contrato.
+   */
+  it('adelantar hasta el total no es un sobrepago', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir();
+    escribir('#monto-recibo', '$ 2.000.000');
+    elegirMedio('efectivo');
+
+    expect(document.body.textContent).not.toContain('recibos.form.montoExcede');
+    expect(porTexto('recibos.form.emitir')[0].disabled).toBe(false);
+  });
+});
+
+describe('<RegistrarPagoModal> los tres conflictos del back no son el mismo', () => {
+  /*
+   * 🔴 Antes bastaba con que el error fuera 409 para caer en el panel de
+   * conciliación, usando el primer período sin conciliar que hubiera a mano.
+   * Desde el 2026-09-15 hay tres códigos distintos y dos de ellos NO se
+   * arreglan conciliando: mandarlos ahí es hacerle escribir al usuario el
+   * origen de una plata que nadie le está preguntando.
+   */
+  it('🔴 CONTRATO_SIN_MANDATO se dice con palabras, no manda a conciliar', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        cuotas: [periodo('c-jun', '2026-06', 1_000_000, { sinRespaldo: 500_000 })],
+        total: 1_000_000,
+        vencidoCop: 1_000_000,
+        futuroCop: 0,
+      }),
+    );
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError(
+        409,
+        'El contrato 1686 debe $1.000.000 de 2026-06, pero su inmueble no tiene mandato en esta inmobiliaria y el recibo necesita uno. Asigna el mandato y vuelve a intentarlo.',
+        'CONTRATO_SIN_MANDATO',
+        { contractId: 'ct1', month: '2026-06' },
+      ),
+    );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
+    const banner = document.body.querySelector('[data-testid="error-del-back"]');
+    expect(banner?.textContent).toContain('no tiene mandato en esta inmobiliaria');
+    expect(banner?.textContent).toContain('recibos.form.sinMandato');
+  });
+
+  /*
+   * 🔴 (2026-09-16) CUOTA_Y_COBRO_NO_CUADRAN: los documentos del mes no cuadran
+   * (dos cobros para el mismo mes, o el cobro es de otro contrato del inmueble).
+   * Dos trampas: trae `cobroId` en el cuerpo —sin exigir el código caería al
+   * panel de conciliación— y un título genérico «no se emitió» invita a
+   * reintentar, que no sirve. El texto del back ya viene escrito para caja.
+   */
+  it('🔴 CUOTA_Y_COBRO_NO_CUADRAN lleva su propio título y no manda a conciliar aunque traiga cobroId', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        cuotas: [periodo('c-jun', '2026-06', 1_000_000, { sinRespaldo: 500_000 })],
+        total: 1_000_000,
+        vencidoCop: 1_000_000,
+        futuroCop: 0,
+      }),
+    );
+    const mensaje =
+      'Hay dos cobros de junio de 2026 para Jose Lopez (Apto 101), y la cuota de ese mes ya está respaldada por el otro. ' +
+      'Revisa los dos en Cartera → Cobros emitidos y avísale a soporte cuál sobra: desde caja no se puede borrar un cobro.';
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError(409, mensaje, 'CUOTA_Y_COBRO_NO_CUADRAN', {
+        cobroId: 'c-jun',
+        cuotaId: 'q-c-jun',
+        month: '2026-06',
+      }),
+    );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
+    const banner = document.body.querySelector('[data-testid="error-del-back"]');
+    expect(banner?.textContent).toContain('recibos.form.cuotaYCobroNoCuadran');
+    expect(banner?.textContent).not.toContain('recibos.form.fallo');
+    expect(banner?.textContent).toContain('Cartera → Cobros emitidos');
+  });
+
+  it('un rechazo sin código conocido conserva el título genérico', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'Otro conflicto cualquiera', 'CODIGO_NUEVO', {}));
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const banner = document.body.querySelector('[data-testid="error-del-back"]');
+    expect(banner?.textContent).toContain('recibos.form.fallo');
+    expect(banner?.textContent).not.toContain('recibos.form.cuotaYCobroNoCuadran');
+    expect(banner?.textContent).not.toContain('recibos.form.sinMandato');
+  });
+
+  it('DEUDA_MAS_VIEJA tampoco: se muestra el mensaje que dice cuál va primero', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        cuotas: [periodo('c-jun', '2026-06', 1_000_000, { sinRespaldo: 500_000 })],
+        total: 1_000_000,
+        vencidoCop: 1_000_000,
+        futuroCop: 0,
+      }),
+    );
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError(
+        409,
+        'Jose Lopez debe $1.000.000 de junio de 2026 (Apto 101). La plata va primero a la deuda más vieja.',
+        'DEUDA_MAS_VIEJA',
+        { cuotaId: 'q-c-jun', cobroId: null, month: '2026-06' },
+      ),
+    );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
+    expect(document.body.textContent).toContain('va primero a la deuda más vieja');
+  });
+
+  it('PLATA_SIN_RECIBO sí abre la conciliación, como siempre', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(
+        new ApiError(409, 'plata sin recibo', 'PLATA_SIN_RECIBO', { cobroId: 'c-jun' }),
+      );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeTruthy();
+  });
+});
+
+describe('<RegistrarPagoModal> la vista previa sigue a la fecha', () => {
+  /*
+   * 🔴 Prueba en vivo en QA (2026-09-16, contrato #69): al cambiar la fecha
+   * del recibo a 2026-08-20 el diálogo seguía mostrando el interés de hoy
+   * ($2.588.062) y no salía ningún pedido nuevo. El back sí cobraba hasta la
+   * fecha, así que la pantalla mostraba más interés del que se iba a cobrar y
+   * «paga toda la deuda» mandaba de más.
+   *
+   * Hoy: 15-sep-2026. Debe junio, julio y agosto. A hoy el interés es 120.000;
+   * al 20-ago, 50.000.
+   */
+  const HOY = new Date('2026-09-15T17:00:00.000Z');
+
+  const aHoy = () =>
+    debeTresMeses({
+      total: 3_120_000,
+      vencidoCop: 3_120_000,
+      interesCop: 120_000,
+      liquidadoAl: '2026-09-15',
+    });
+  const al20DeAgosto = () =>
+    debeTresMeses({
+      total: 3_050_000,
+      vencidoCop: 3_050_000,
+      interesCop: 50_000,
+      liquidadoAl: '2026-08-20',
+    });
+  const al1DeSeptiembre = () =>
+    debeTresMeses({
+      total: 3_090_000,
+      vencidoCop: 3_090_000,
+      interesCop: 90_000,
+      liquidadoAl: '2026-09-01',
+    });
+
+  /** Una respuesta que se resuelve cuando la prueba dice. */
+  function diferida<T>() {
+    let resolver!: (v: T) => void;
+    let rechazar!: (e: unknown) => void;
+    const promesa = new Promise<T>((res, rej) => {
+      resolver = res;
+      rechazar = rej;
+    });
+    return { promesa, resolver, rechazar };
+  }
+
+  const total = () =>
+    document.body.querySelector('[data-testid="cartera-total"]')?.textContent ?? '';
+  const pedidosConFecha = () => carteraPorCobro.mock.calls.filter((c) => c.length > 1);
+
+  /** Deja pasar la espera de la fecha y las respuestas que ya estén listas. */
+  async function pasaLaEspera() {
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  async function resolverCon<T>(d: ReturnType<typeof diferida<T>>, valor: T) {
+    await act(async () => {
+      d.resolver(valor);
+      await d.promesa;
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    vi.setSystemTime(HOY);
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      Promise.resolve(fecha === '2026-08-20' ? al20DeAgosto() : aHoy()),
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('🔴 cambiar la fecha vuelve a pedir la cartera CON esa fecha, y «paga toda la deuda» sigue a la cartera nueva', async () => {
+    const onSubmit = await abrir();
+    expect(carteraPorCobro).toHaveBeenCalledTimes(1);
+    expect(carteraPorCobro).toHaveBeenCalledWith('c-ago');
+
+    act(() => document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click());
+    elegirMedio('efectivo');
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-08-20']]);
+    expect(total()).toContain('3050000');
+
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      fecha: '2026-08-20',
+      // El total AL 20 DE AGOSTO, no el de hoy (3.120.000): con el de hoy
+      // sobraban 70.000 que iban a dar 400 o a quedar a favor.
+      valorCop: 3_050_000,
+    });
+  });
+
+  it('escribir la fecha a mano no pide en cada tecla: una sola petición cuando se deja de escribir', async () => {
+    await abrir();
+    escribir('#fecha-recibo', '2026-08-01');
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS - 100);
+    });
+    escribir('#fecha-recibo', '2026-08-02');
+    await act(async () => {
+      vi.advanceTimersByTime(ESPERA_DE_LA_FECHA_MS - 100);
+    });
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-08-20']]);
+  });
+
+  it('🔴 la tabla no parpadea: mientras llega la cartera nueva se ve la anterior, se dice, y no se emite con ella', async () => {
+    const nueva = diferida<CarteraDelCliente>();
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha ? nueva.promesa : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    // La cartera anterior sigue ahí, sin el spinner de «cargando la cartera».
+    expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="cartera-cargando"]')).toBeNull();
+    expect(total()).toContain('3120000');
+    expect(document.body.querySelector('[data-testid="recalculando-interes"]')).toBeTruthy();
+    // Con números de otro día no se emite.
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await resolverCon(nueva, al20DeAgosto());
+    expect(total()).toContain('3050000');
+    expect(document.body.querySelector('[data-testid="recalculando-interes"]')).toBeNull();
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('🔴 la respuesta de una fecha VIEJA que llega tarde no pisa la de la fecha nueva', async () => {
+    const del20 = diferida<CarteraDelCliente>();
+    const del1 = diferida<CarteraDelCliente>();
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha === '2026-08-20'
+        ? del20.promesa
+        : fecha === '2026-09-01'
+          ? del1.promesa
+          : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    act(() => document.body.querySelector<HTMLButtonElement>('[data-testid="atajo-todo"]')!.click());
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    escribir('#fecha-recibo', '2026-09-01');
+    await pasaLaEspera();
+    expect(pedidosConFecha()).toEqual([
+      ['c-ago', '2026-08-20'],
+      ['c-ago', '2026-09-01'],
+    ]);
+
+    // Llega primero la nueva y DESPUÉS la vieja.
+    await resolverCon(del1, al1DeSeptiembre());
+    await resolverCon(del20, al20DeAgosto());
+
+    expect(total()).toContain('3090000');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      fecha: '2026-09-01',
+      valorCop: 3_090_000,
+    });
+  });
+
+  it('🔴 cambiar la fecha NO borra el formulario ni devuelve la fecha a hoy', async () => {
+    await abrir();
+    elegirMedio('efectivo');
+    escribir('#saludos-recibo', 'Gracias por el pago');
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(document.body.querySelector<HTMLInputElement>('#fecha-recibo')!.value).toBe('2026-08-20');
+    expect(document.body.querySelector<HTMLTextAreaElement>('#saludos-recibo')!.value).toBe(
+      'Gracias por el pago',
+    );
+    // Y no entró en un bucle de pedidos: uno de hoy y uno del 20.
+    await pasaLaEspera();
+    expect(carteraPorCobro).toHaveBeenCalledTimes(2);
+  });
+
+  it('un monto escrito a mano NO se mueve con la fecha; el prellenado con lo vencido sí', async () => {
+    // Los envíos fallan a propósito: uno que sale bien cierra el formulario.
+    const onSubmit = await abrir({
+      onSubmit: vi.fn().mockRejectedValue(new ApiError(500, 'caído')) as never,
+    });
+    elegirMedio('efectivo');
+
+    // Prellenado con lo vencido de hoy → sigue a lo vencido del 20.
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 3_050_000 });
+
+    // Escrito a mano → se queda.
+    escribir('#monto-recibo', '$ 1.000.000');
+    escribir('#fecha-recibo', '2026-09-15');
+    await pasaLaEspera();
+    await enviar();
+    expect(onSubmit.mock.calls[1][0]).toMatchObject({ valorCop: 1_000_000, fecha: '2026-09-15' });
+  });
+
+  /*
+   * 🔴 Sin piso (2026-09-16). Las cuotas empiezan en junio y antes el campo no
+   * dejaba fechar el 15 de mayo: «FECHA_ANTERIOR_A_LA_DEUDA». Ahora esa fecha
+   * se pide al back (el interés se liquida hasta ahí) y el recibo sale con ella.
+   */
+  it('🔴 un día anterior al período más viejo que se debe se pide al back y el recibo sale con esa fecha', async () => {
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      Promise.resolve(fecha ? { ...aHoy(), liquidadoAl: fecha } : aHoy()),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-05-15');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([['c-ago', '2026-05-15']]);
+    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')).toBeNull();
+    await enviar();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ fecha: '2026-05-15' });
+  });
+
+  it('una fecha futura no se pide ni se emite: el campo dice por qué', async () => {
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-09-16');
+    await pasaLaEspera();
+
+    expect(pedidosConFecha()).toEqual([]);
+    expect(document.body.querySelector('[data-testid="fecha-futura"]')).toBeTruthy();
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('🔴 el 400 del back sobre la fecha va al campo, tal cual, y la cartera anterior se queda', async () => {
+    /*
+     * El reloj del servidor puede ir detrás del navegador justo a medianoche:
+     * el campo dejó pasar el día y el back dice que todavía no llega.
+     */
+    const mensaje =
+      'El recibo no puede quedar fechado el 20 de agosto de 2026: todavía no llega ese día. Usa la fecha en la que se recibió la plata.';
+    carteraPorCobro.mockImplementation((_id: string, fecha?: string) =>
+      fecha
+        ? Promise.reject(
+            new ApiError(400, mensaje, 'FECHA_FUTURA', {
+              hoy: '2026-08-19',
+              fecha,
+            }),
+          )
+        : Promise.resolve(aHoy()),
+    );
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+
+    expect(document.body.querySelector('[data-testid="error-de-la-fecha"]')?.textContent).toBe(mensaje);
+    expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
+    expect(total()).toContain('3120000');
+    await enviar();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('🔴 R1: cambiar la fecha después de un fallo NO cambia la llave del recibo', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError(0, 'fetch failed'))
+      .mockResolvedValueOnce(RESPUESTA);
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar(); // se cae la red: pudo haber entrado
+
+    escribir('#fecha-recibo', '2026-08-20');
+    await pasaLaEspera();
+    await enviar();
+
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const llave = (i: number) =>
+      (onSubmit.mock.calls[i][0] as { idempotencyKey?: string }).idempotencyKey;
+    expect(llave(0)).toBeTruthy();
+    expect(llave(1)).toBe(llave(0));
+  });
+});
+
+describe('<RegistrarPagoModal> la forma del adelanto (2026-09-16)', () => {
+  /*
+   * Juan Camilo: cuando el monto alcanza cuotas que todavía no vencen, caja
+   * ELIGE: registrarlo todo ya, o dejarlo como anticipo del contrato y
+   * descontarlo mes a mes. Debe septiembre (vencido) y octubre a diciembre por
+   * vencer.
+   */
+  const conFuturo = (extra: Partial<CarteraDelCliente> = {}) =>
+    debeTresMeses({
+      total: 4_000_000,
+      vencidoCop: 1_000_000,
+      futuroCop: 3_000_000,
+      anticipoDelContratoDisponible: true,
+      cuotas: [
+        periodo('c-sep', '2026-09', 1_000_000),
+        periodo('c-oct', '2026-10', 1_000_000, { vencida: false }),
+        periodo('c-nov', '2026-11', 1_000_000, { vencida: false }),
+        periodo('c-dic', '2026-12', 1_000_000, { vencida: false }),
+      ],
+      ...extra,
+    });
+
+  it('con sólo lo vencido no pregunta nada ni manda la forma', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo());
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+
+    expect(document.body.querySelector('[data-testid="forma-del-adelanto"]')).toBeNull();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('formaDelAdelanto');
+  });
+
+  it('🔴 si el monto alcanza meses futuros pregunta, dice cuáles, y manda la forma elegida', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo());
+    const onSubmit = await abrir();
+    escribir('#monto-recibo', '$ 3.500.000');
+    elegirMedio('efectivo');
+
+    const forma = document.body.querySelector('[data-testid="forma-del-adelanto"]');
+    expect(forma).toBeTruthy();
+    const abonar = document.body.querySelector<HTMLButtonElement>('[data-testid="forma-ABONAR_A_LAS_CUOTAS"]')!;
+    const anticipo = document.body.querySelector<HTMLButtonElement>('[data-testid="forma-ANTICIPO_DEL_CONTRATO"]')!;
+    // Por defecto, lo de siempre.
+    expect(abonar.getAttribute('aria-checked')).toBe('true');
+    expect(anticipo.getAttribute('aria-checked')).toBe('false');
+    expect(document.body.querySelector('[data-testid="plan-adelanto-2026-10"]')).toBeTruthy();
+
+    act(() => anticipo.click());
+    expect(anticipo.getAttribute('aria-checked')).toBe('true');
+    // El plan lo dice: esos meses quedan como anticipo, no bajan hoy.
+    expect(document.body.querySelector('[data-testid="plan-anticipo-2026-10"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-anticipo-2026-12"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-deuda-restante"]')?.textContent).toBe('$3000000');
+
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      valorCop: 3_500_000,
+      formaDelAdelanto: 'ANTICIPO_DEL_CONTRATO',
+    });
+  });
+
+  it('sin la migración del anticipo no pregunta: el pago se registra como siempre', async () => {
+    carteraPorCobro.mockResolvedValue(conFuturo({ anticipoDelContratoDisponible: false }));
+    const onSubmit = await abrir();
+    escribir('#monto-recibo', '$ 3.500.000');
+    elegirMedio('efectivo');
+
+    expect(document.body.querySelector('[data-testid="forma-del-adelanto"]')).toBeNull();
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('formaDelAdelanto');
+  });
+});
+
+describe('mesesEnPalabras', () => {
+  it('nombra los meses y marca el último cuando no alcanza entero', () => {
+    const parteDe = (mes: string) => `parte de ${mes}`;
+    expect(
+      mesesEnPalabras(
+        [
+          { month: '2026-10', valorCop: 1, completo: true },
+          { month: '2026-11', valorCop: 1, completo: true },
+          { month: '2026-12', valorCop: 1, completo: false },
+        ],
+        'es',
+        parteDe,
+      ),
+    ).toBe('octubre de 2026, noviembre de 2026 y parte de diciembre de 2026');
+    expect(mesesEnPalabras([{ month: '2026-10', valorCop: 1, completo: true }], 'es', parteDe)).toBe(
+      'octubre de 2026',
+    );
+  });
+});
+
+describe('<RegistrarPagoModal> las facturas del pago (2026-09-16)', () => {
+  it('tras emitir, dice qué facturas quedaron al día y que están pendientes de emitir ante la DIAN', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({
+      ...RESPUESTA,
+      facturas: [
+        {
+          facturaId: 'f-1',
+          contractId: 'ct1',
+          mes: '2026-06',
+          estado: 'GENERADA',
+          numero: null,
+          totalCop: 1_000_000,
+          netoCop: 1_000_000,
+          abonadoCop: 1_000_000,
+          saldoCop: 0,
+          generadaAhora: true,
+        },
+      ],
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.facturasDelPago');
+    expect(descripcion).toContain('recibos.form.facturasSinEmitir');
+  });
+});
+
+describe('<RegistrarPagoModal> el ajuste al peso (2026-09-16)', () => {
+  it('un desfase de hasta $1.000 se dice en el aviso', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({ ...RESPUESTA, ajusteAlPesoCop: 10 });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.ajusteAlPeso');
+  });
+});
+
+describe('<RegistrarPagoModal> la factura de intereses aparte (2026-09-16)', () => {
+  it('si los intereses se facturaron aparte, el aviso lo dice', async () => {
+    const { toast } = await import('sonner');
+    const onSubmit = vi.fn().mockResolvedValue({
+      ...RESPUESTA,
+      facturas: [
+        {
+          facturaId: 'f-1',
+          contractId: 'ct1',
+          mes: '2026-06',
+          estado: 'EMITIDA',
+          numero: 41,
+          totalCop: 1_000_000,
+          netoCop: 1_000_000,
+          abonadoCop: 1_000_000,
+          saldoCop: 0,
+          generadaAhora: false,
+          facturasDeIntereses: [
+            { facturaId: 'fi-1', reciboDeCajaId: 'r-1', totalCop: 12_000, estado: 'GENERADA', generadaAhora: true },
+          ],
+        },
+      ],
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar();
+    const descripcion = (vi.mocked(toast.success).mock.calls.at(-1)?.[1] as { description?: string })
+      ?.description;
+    expect(descripcion).toContain('recibos.form.facturaDeIntereses');
   });
 });

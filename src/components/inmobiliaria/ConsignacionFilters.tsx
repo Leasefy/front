@@ -22,11 +22,22 @@ import {
   SelectTrigger,
 } from '@/components/ui/select';
 import { Chip, IconButton } from '@leasefy/cadence';
-import type { Consignacion, Propietario, Agente, PropertyAvailability } from '@/lib/types/inmobiliaria';
+import type { Consignacion, Propietario, Agente } from '@/lib/types/inmobiliaria';
+import {
+  CAJONES_DEL_INMUEBLE,
+  type CajonDelInmueble,
+} from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 export interface ConsignacionFiltersState {
   search: string;
-  availability: PropertyAvailability | 'all';
+  /**
+   * 🔴 Era `availability: PropertyAvailability | 'all'` y filtraba por el
+   * campo crudo del mandato. Eso hacía que la ficha «Arrendadas 105» y el chip
+   * «Arrendado 104» contaran cosas distintas: la ficha preguntaba por el
+   * CONTRATO y el chip por la disponibilidad. Ahora las dos leen
+   * `cajonDelInmueble`, que es una partición: los cinco cajones suman el total.
+   */
+  cajon: CajonDelInmueble | 'all';
   agenteId: string | 'all';
   propietarioId: string | 'all';
   city: string | 'all';
@@ -39,15 +50,24 @@ interface ConsignacionFiltersProps {
   consignaciones: Consignacion[];
   propietarios: Propietario[];
   agentes: Agente[];
+  /**
+   * Cuántos hay en cada cajón, y cuántos en total. Van EN EL CHIP: el número
+   * y la forma de ver ese número tienen que ser el mismo control, y de paso
+   * la franja se puede conciliar a ojo (los cinco suman el total).
+   */
+  conteo: Record<CajonDelInmueble, number> | null;
+  total: number | null;
 }
 
-const AVAILABILITY_OPTIONS: { value: PropertyAvailability | 'all'; labelKey: string }[] = [
-  { value: 'all', labelKey: 'inmobiliaria.consignaciones.filters.all' },
-  { value: 'available', labelKey: 'inmobiliaria.consignaciones.filters.available' },
-  { value: 'rented', labelKey: 'inmobiliaria.consignaciones.filters.rented' },
-  { value: 'in_process', labelKey: 'inmobiliaria.consignaciones.filters.inProcess' },
-  { value: 'maintenance', labelKey: 'inmobiliaria.consignaciones.filters.maintenance' },
-];
+const ROTULO_DEL_CAJON: Record<CajonDelInmueble, string> = {
+  disponible: 'inmobiliaria.consignaciones.filters.available',
+  arrendado: 'inmobiliaria.consignaciones.filters.rented',
+  enProceso: 'inmobiliaria.consignaciones.filters.inProcess',
+  mantenimiento: 'inmobiliaria.consignaciones.filters.maintenance',
+  // 🔴 El cajón que faltaba: 25 inmuebles cargados sin mandato que estaban en
+  // la tabla y en ningún número. Sin este chip no se podían mirar solos.
+  sinMandato: 'inmobiliaria.consignaciones.filters.sinMandato',
+};
 
 const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; labelKey: string; icon: React.ElementType }[] = [
   { value: 'all', labelKey: 'inmobiliaria.consignaciones.filters.allTypes', icon: Buildings },
@@ -71,6 +91,8 @@ export function ConsignacionFilters({
   consignaciones,
   propietarios,
   agentes,
+  conteo,
+  total,
 }: ConsignacionFiltersProps) {
   const { t } = useI18n();
 
@@ -90,7 +112,7 @@ export function ConsignacionFilters({
     return count;
   }, [filters]);
 
-  const hasAnyFilter = filters.search || filters.availability !== 'all' || activeFiltersCount > 0;
+  const hasAnyFilter = filters.search || filters.cajon !== 'all' || activeFiltersCount > 0;
 
   const updateFilter = <K extends keyof ConsignacionFiltersState>(
     key: K,
@@ -102,7 +124,7 @@ export function ConsignacionFilters({
   const clearAllFilters = () => {
     onFiltersChange({
       search: '',
-      availability: 'all',
+      cajon: 'all',
       agenteId: 'all',
       propietarioId: 'all',
       city: 'all',
@@ -160,15 +182,26 @@ export function ConsignacionFilters({
       {/* Row 2: Estado Tabs + Dropdowns */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Estado Tabs - Chip group */}
-        <div className="flex items-center gap-1.5">
-          {AVAILABILITY_OPTIONS.map((option) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Chip
+            selected={filters.cajon === 'all'}
+            onClick={() => updateFilter('cajon', 'all')}
+            className="whitespace-nowrap"
+            data-testid="cajon-all"
+          >
+            {t('inmobiliaria.consignaciones.filters.all')}
+            {total === null ? '' : ` ${total.toLocaleString('es-CO')}`}
+          </Chip>
+          {CAJONES_DEL_INMUEBLE.map((cajon) => (
             <Chip
-              key={option.value}
-              selected={filters.availability === option.value}
-              onClick={() => updateFilter('availability', option.value)}
+              key={cajon}
+              selected={filters.cajon === cajon}
+              onClick={() => updateFilter('cajon', cajon)}
               className="whitespace-nowrap"
+              data-testid={`cajon-${cajon}`}
             >
-              {t(option.labelKey)}
+              {t(ROTULO_DEL_CAJON[cajon])}
+              {conteo === null ? '' : ` ${conteo[cajon].toLocaleString('es-CO')}`}
             </Chip>
           ))}
         </div>

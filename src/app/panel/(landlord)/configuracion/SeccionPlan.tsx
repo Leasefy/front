@@ -13,9 +13,9 @@ import { ArrowUpRight, Crown, FileText, House } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
-import { getPlanById } from '@/lib/constants/subscription-plans';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
-import { formatCurrency } from '@/lib/format';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDeSeccion, FilaDeAjuste, TarjetaDeAjustes } from '@/components/configuracion/piezas';
 
@@ -24,12 +24,14 @@ export function SeccionPlan() {
   const { t, locale } = useI18n();
   const es = locale !== 'en';
   const { subscription, isLoading, error, refetch } = useMySubscription();
+  // El precio lo dice el back (QA 23-09), no `PLANS`.
+  const { planDe } = usePlanesDelPropietario();
 
   if (isLoading) return <EsqueletoDeSeccion filas={3} />;
   if (error) return <FalloDeCarga error={error} queEs="tu plan" onReintentar={refetch} />;
 
   const planId = subscription?.planId ?? 'starter';
-  const plan = getPlanById(planId);
+  const plan = planDe(planId);
   const limite = (featureId: string) => {
     const l = plan.features.find((f) => f.id === featureId)?.limit;
     if (l === 'unlimited') return es ? 'Sin límite' : 'Unlimited';
@@ -44,7 +46,7 @@ export function SeccionPlan() {
         descripcion={
           planId === 'starter'
             ? t('landlordSettings.subscription.freePlan')
-            : `${formatCurrency(plan.price.monthly)}/${t('landlordSettings.subscription.month')}`
+            : `${precioLegible(plan.price.monthly)}/${t('landlordSettings.subscription.month')}`
         }
       >
         {planId !== 'flex' && (

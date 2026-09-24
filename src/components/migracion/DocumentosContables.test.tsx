@@ -48,7 +48,7 @@ vi.mock('react-dropzone', () => ({
 const { api } = vi.hoisted(() => ({
   api: {
     migracion: {
-      documentos: { revisar: vi.fn(), migrar: vi.fn() },
+      documentos: { revisar: vi.fn(), migrar: vi.fn(), sinContrato: vi.fn() },
     },
   },
 }));
@@ -85,15 +85,18 @@ function archivoCon(filas: number): File {
   return new File([texto], 'Accounting Documents.csv', { type: 'text/csv' });
 }
 
-function revision(total: number, sinContrato: number) {
+function revision(total: number, sinContrato: number, porReferencia = 0) {
   return {
     total,
     listos: total,
     yaMigrados: 0,
     rechazados: 0,
     asociados: {
-      porDocumento: total - sinContrato,
+      porDocumento: total - sinContrato - 3 * porReferencia,
       porNombre: 0,
+      porNumeroDeContrato: porReferencia,
+      porCodigoDeInmueble: porReferencia,
+      soloInmueble: porReferencia,
       sinContrato,
     },
     motivos:
@@ -145,9 +148,34 @@ async function montar() {
   });
 }
 
+/** Lo guardado, vacío: el panel de «sin contrato» no se dibuja. */
+const NADA_GUARDADO = {
+  total: 0,
+  conContrato: 0,
+  sinContrato: 0,
+  porClase: Object.fromEntries(
+    ['ingreso', 'egreso', 'factura', 'otro'].map((c) => [
+      c,
+      {
+        total: 0,
+        conContrato: 0,
+        sinContrato: 0,
+        motivos: {
+          SOLO_INMUEBLE: 0,
+          EXPORT_SIN_TERCERO: 0,
+          REFERENCIA_SIN_RESOLVER: 0,
+          TERCERO_SIN_CONTRATO: 0,
+          CONCEPTO_SIN_TERCERO: 0,
+        },
+      },
+    ]),
+  ),
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   entregarArchivo.actual = null;
+  api.migracion.documentos.sinContrato.mockResolvedValue(NADA_GUARDADO);
 });
 
 afterEach(async () => {
@@ -204,6 +232,54 @@ describe('subir los comprobantes', () => {
     expect(
       contenedor.querySelector('[data-testid="documentos-motivos"]')?.textContent,
     ).toContain('El concepto no nombra a ningún tercero');
+  });
+
+  it('dice cuántos se colgaron por «CONTRATO N» y por el código del inmueble', async () => {
+    api.migracion.documentos.revisar.mockImplementation(
+      async (docs: unknown[]) => revision(docs.length, 0, 2),
+    );
+    await montar();
+
+    await subir(archivoCon(10));
+
+    expect(
+      contenedor.querySelector('[data-testid="documentos-por-numero-de-contrato"]')?.textContent,
+    ).toMatch(/^2 porque el concepto dice «CONTRATO N»/);
+    expect(
+      contenedor.querySelector('[data-testid="documentos-por-codigo-de-inmueble"]')?.textContent,
+    ).toMatch(/^2 porque el concepto dice el código del inmueble/);
+    expect(
+      contenedor.querySelector('[data-testid="documentos-solo-inmueble"]')?.textContent,
+    ).toMatch(/^2 quedaron colgados SÓLO de su inmueble/);
+    // «Con contrato» suma los cuatro caminos con contrato: 4 por documento + 2 + 2.
+    // Los colgados sólo del inmueble NO tienen contrato y no entran.
+    expect(contenedor.querySelector('[data-testid="documentos-resumen"]')?.textContent).toContain(
+      'Con contrato8',
+    );
+  });
+
+  it('al terminar de migrar vuelve a contar lo guardado sin contrato', async () => {
+    api.migracion.documentos.revisar.mockImplementation(
+      async (docs: unknown[]) => revision(docs.length, 0),
+    );
+    api.migracion.documentos.migrar.mockImplementation(async (docs: unknown[]) => ({
+      ...revision(docs.length, 0),
+      migrados: docs.length,
+      fallasAlEscribir: [],
+    }));
+    await montar();
+    await subir(archivoCon(10));
+    const antes = api.migracion.documentos.sinContrato.mock.calls.length;
+
+    await act(async () => {
+      (
+        contenedor.querySelector('[data-testid="documentos-migrar"]') as HTMLButtonElement
+      ).click();
+    });
+    await esperarAQueTermine();
+
+    expect(api.migracion.documentos.migrar).toHaveBeenCalled();
+    expect(api.migracion.documentos.sinContrato.mock.calls.length).toBeGreaterThan(antes);
   });
 
   it('una caída a mitad de camino conserva lo que ya entró y lo dice', async () => {

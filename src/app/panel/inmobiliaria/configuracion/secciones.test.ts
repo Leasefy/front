@@ -127,7 +127,7 @@ describe('URLs de las secciones', () => {
     // La ficha de un miembro sigue siendo Equipo.
     expect(seccionDeLaRuta(`${RAIZ_CONFIGURACION}/equipo/abc-123`)?.id).toBe('equipo');
     expect(seccionDeLaRuta(`${RAIZ_CONFIGURACION}/no-existe`)).toBeNull();
-    expect(seccionDeLaRuta('/panel/inmobiliaria/cobros')).toBeNull();
+    expect(seccionDeLaRuta('/panel/inmobiliaria/pagos/cartera/cobros')).toBeNull();
   });
 
   it('la ficha de un miembro se reconoce sola (ahí el marco se aparta)', () => {
@@ -203,4 +203,24 @@ describe('Configuración fuera del sidebar', () => {
     expect(moduloDeLaRuta(`${RAIZ_CONFIGURACION}/equipo`)).toBeNull();
     expect(moduloDeLaRuta(`${RAIZ_CONFIGURACION}/ia`)).toBeNull();
   });
+});
+
+describe('🔴 Protección de datos (23-09): ADMIN y CONTADOR, igual que el back', () => {
+  const seccion = seccionPorId('proteccion-de-datos');
+  const conRol = (agencyRole: string | null) => ({ ...ctx({ modulos: ['reportes', 'configuracion'] }), agencyRole });
+
+  it('la ve el contador', () => {
+    expect(puedeVerSeccion(seccion, conRol('CONTADOR'))).toBe(true);
+  });
+
+  it('la ve el administrador', () => {
+    expect(puedeVerSeccion(seccion, { ...ctx({ admin: true }), agencyRole: 'ADMIN' })).toBe(true);
+  });
+
+  it.each(['VIEWER', 'AGENTE', 'COORDINADOR', 'AUXILIAR_CARTERA', null])(
+    '%s no, aunque tenga reportes y configuración',
+    (rol) => {
+      expect(puedeVerSeccion(seccion, conRol(rol))).toBe(false);
+    },
+  );
 });

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/auth/post-login')
 
   if (code) {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
 
     // Collect cookies that need to be set on the redirect response
     const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = []

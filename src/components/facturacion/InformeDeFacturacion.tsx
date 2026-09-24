@@ -16,13 +16,14 @@
  * eso esas se dicen «sin confirmar», no «no emitidas».
  */
 
-import { CheckCircle, Warning, WarningCircle } from '@phosphor-icons/react'
+import { CheckCircle, DownloadSimple, Warning, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/format'
 import { mesLegible } from '@/lib/api/facturacion-por-mes.service'
 import { cn } from '@/lib/utils'
 import { quedaronPendientes, type ResultadoDeLaCorrida } from './facturasPorTandas'
+import { motivoParaNoDescargarLote, useDescargarFacturas, vaPorElCentro } from './useDescargarFacturas'
 
 const numero = (n: number) => n.toLocaleString('es-CO')
 const facturas = (n: number) => `${numero(n)} ${n === 1 ? 'factura' : 'facturas'}`
@@ -42,6 +43,14 @@ export function InformeDeFacturacion({
   onCerrar: () => void
 }) {
   const { informe, corte, error } = corrida
+  /*
+   * 🔴 Nico, 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote».
+   * El aviso decía «Se emitió 1 factura» y sólo ofrecía «Cerrar». Una → su PDF;
+   * varias → el ZIP de ESTA corrida; más del tope → apagado diciendo por qué.
+   */
+  const { descargarLote, descargando } = useDescargarFacturas()
+  const documentos = informe.documentos ?? []
+  const noSeDescarga = motivoParaNoDescargarLote(documentos.length)
   const pendientes = quedaronPendientes(informe)
   const nadaSalio = informe.emitidas === 0
 
@@ -98,7 +107,7 @@ export function InformeDeFacturacion({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+      className="border-b border-border px-4 py-4"
       role="status"
       data-testid="facturacion-informe"
       data-corte={corte}
@@ -108,7 +117,7 @@ export function InformeDeFacturacion({
         <div className="min-w-0 flex-1 space-y-1">
           <h3 className="font-medium text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted tabular-nums">
-            {mesLegible(informe.mes)} · {facturas(informe.pedidas)} elegidas
+            {mesLegible(informe.mes)} · {numero(informe.pedidas)} {informe.pedidas === 1 ? 'elegida' : 'elegidas'}
           </p>
           {lineas.length > 0 && (
             <ul className="mt-2 space-y-1 text-body-sm text-fg-muted">
@@ -119,15 +128,47 @@ export function InformeDeFacturacion({
               ))}
             </ul>
           )}
+          {/* Más de 50: el ZIP lo arma el centro de procesos (22-09). */}
+          {vaPorElCentro(documentos.length) && (
+            <p className="mt-2 text-body-sm text-fg-muted" data-testid="facturacion-informe-por-el-centro">
+              {/* Sin «100 de 450 PDF» acá (23-09): el avance es del centro. */}
+              {`Son ${numero(documentos.length)} facturas: el ZIP se arma en el centro de procesos y se baja de ahí.`}
+            </p>
+          )}
+          {documentos.length > 0 && noSeDescarga && (
+            <p className="mt-2 text-body-sm text-fg-muted" data-testid="facturacion-informe-sin-descarga">
+              {noSeDescarga}
+            </p>
+          )}
           {queHacer && (
             <p className="mt-2 text-body-sm font-medium text-fg" data-testid="facturacion-informe-que-hacer">
               {queHacer}
             </p>
           )}
         </div>
-        <Button variant="outline" size="sm" hideArrow onClick={onCerrar} className="shrink-0">
-          Cerrar
-        </Button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {documentos.length > 0 && (
+            <Button
+              size="sm"
+              hideArrow
+              disabled={noSeDescarga !== null || descargando !== null}
+              isLoading={descargando !== null}
+              title={noSeDescarga ?? undefined}
+              onClick={() =>
+                void descargarLote(documentos, `facturas-${informe.mes}-${documentos.length}.zip`, {
+                  procesosConZip: informe.procesosConZip ?? [],
+                })
+              }
+              data-testid="facturacion-informe-descargar"
+            >
+              <DownloadSimple className="h-4 w-4" weight="bold" aria-hidden="true" />
+              {documentos.length === 1 ? 'Descargar la factura' : 'Descargar las facturas'}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" hideArrow onClick={onCerrar}>
+            Cerrar
+          </Button>
+        </div>
       </div>
     </section>
   )

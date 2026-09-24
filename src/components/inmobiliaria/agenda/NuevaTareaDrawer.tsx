@@ -17,6 +17,7 @@ import { Button, Textarea } from '@/components/ui';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { loQueDiceUnSelector } from '@/lib/errores/lo-que-dice-un-selector';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
@@ -73,7 +74,13 @@ const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
   const [guardando, setGuardando] = useState(false);
-  const { consignaciones } = useConsignaciones();
+  /* El error se lee (21-09): sin esto, con la lectura caída el selector se
+     abría sobre una lista vacía sin decir por qué. */
+  const {
+    consignaciones,
+    isLoading: cargandoInmuebles,
+    errorCrudo: errorDeInmuebles,
+  } = useConsignaciones();
   const { agentes } = useAgentes({ skip: !abierto });
 
   useEffect(() => {
@@ -184,7 +191,14 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
                 value={form.consignacionId || undefined}
                 onChange={(v) => set('consignacionId', v ?? '')}
                 options={inmuebles}
-                placeholder="Busca por código, título o dirección"
+                placeholder={loQueDiceUnSelector({
+                  cargando: cargandoInmuebles,
+                  error: errorDeInmuebles,
+                  cuantos: inmuebles.length,
+                  queSon: 'los inmuebles',
+                  pista: 'Busca por código, título o dirección',
+                  cuandoNoHay: 'Todavía no tienes inmuebles',
+                })}
                 searchPlaceholder="Escribe #código, título o dirección"
                 contentClassName="z-[400]"
               />

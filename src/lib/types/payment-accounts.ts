@@ -20,7 +20,22 @@ export type BankCode =
   | 'itau'
   | 'avvillas'
   | 'bancoomeva'
-  | 'pichincha';
+  | 'pichincha'
+  | 'nu'
+  // 23-09: los del giro de la inmobiliaria que el propietario no podía escoger.
+  | 'agrario'
+  | 'finandina'
+  | 'bancamia'
+  | 'gnbsudameris'
+  | 'santander'
+  | 'serfinanza'
+  | 'coopcentral'
+  | 'mundomujer'
+  | 'ban100'
+  | 'btgpactual'
+  | 'jpmorgan'
+  | 'citibank'
+  | 'lulo';
 
 export type WalletCode = 'nequi' | 'daviplata' | 'dale' | 'movii' | 'rappipay';
 
@@ -126,6 +141,30 @@ export const COLOMBIAN_BANKS: BankInfo[] = [
   { code: 'avvillas', name: 'Banco AV Villas', shortName: 'AV Villas', color: '#C10230' },
   { code: 'bancoomeva', name: 'Bancoomeva', shortName: 'Bancoomeva', color: '#00A94F' },
   { code: 'pichincha', name: 'Banco Pichincha', shortName: 'Pichincha', color: '#FFD100' },
+  // 22-09 (el reparto de Nico: «otro 20 % en Nubank»). Ojo: Nu Colombia NO está
+  // en la tabla CENIT del Banco de la República, así que el archivo de pagos
+  // masivos no le gira; el back lo excluye del lote con ese motivo.
+  { code: 'nu', name: 'Nu Colombia (Nubank)', shortName: 'Nu', color: '#820AD1' },
+  /*
+   * 🔴 23-09 (QA del cambio de cuenta): «Marcar como girada» ofrecía 25 bancos
+   * y el propietario escogía entre 14. Un propietario recibe en CUALQUIER
+   * banco: estos son los del giro que faltaban, con los nombres del back
+   * (`BANK_DISPLAY_NAMES`, que es lo que se guarda en la ficha). Sólo se
+   * agregan: ningún valor guardado cambia.
+   */
+  { code: 'agrario', name: 'Banco Agrario', shortName: 'Agrario', color: '#00843D' },
+  { code: 'finandina', name: 'Banco Finandina', shortName: 'Finandina', color: '#0033A0' },
+  { code: 'bancamia', name: 'Bancamía', shortName: 'Bancamía', color: '#E4002B' },
+  { code: 'gnbsudameris', name: 'Banco GNB Sudameris', shortName: 'GNB Sudameris', color: '#004B87' },
+  { code: 'santander', name: 'Banco Santander', shortName: 'Santander', color: '#EC0000' },
+  { code: 'serfinanza', name: 'Banco Serfinanza', shortName: 'Serfinanza', color: '#00A3E0' },
+  { code: 'coopcentral', name: 'Banco Coopcentral', shortName: 'Coopcentral', color: '#007A33' },
+  { code: 'mundomujer', name: 'Banco Mundo Mujer', shortName: 'Mundo Mujer', color: '#E5007E' },
+  { code: 'ban100', name: 'Ban100', shortName: 'Ban100', color: '#FF6A13' },
+  { code: 'btgpactual', name: 'Banco BTG Pactual', shortName: 'BTG Pactual', color: '#001E62' },
+  { code: 'jpmorgan', name: 'Banco J.P. Morgan', shortName: 'J.P. Morgan', color: '#5F4B3A' },
+  { code: 'citibank', name: 'Citibank', shortName: 'Citibank', color: '#003B70' },
+  { code: 'lulo', name: 'Lulo Bank', shortName: 'Lulo', color: '#C4D600' },
 ];
 
 // ============================================================================

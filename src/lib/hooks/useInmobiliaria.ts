@@ -257,8 +257,6 @@ function invitacionComoAgente(m: AgencyUser): Agente {
       activeLeases: 0,
       closedThisMonth: 0,
       closedThisYear: 0,
-      totalCommissions: 0,
-      commissionsThisMonth: 0,
       avgDaysToClose: 0,
       conversionRate: 0,
     },
@@ -435,7 +433,7 @@ export function usePipelineItems(options?: { skip?: boolean }) {
 export function useCobros(params?: Parameters<typeof cobrosApi.getAll>[0], options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(
     () => cobrosApi.getAll(params),
-    [params?.month, params?.status, params?.propietarioId],
+    [params?.month, params?.status, params?.propietarioId, params?.anulados],
     options?.skip,
     0,
     ['cobros'],
@@ -542,8 +540,21 @@ export function useInmobiliariaDashboard(options?: { skip?: boolean; pollMs?: nu
 // Reportes
 // ============================================================================
 
+/**
+ * El informe de cartera por edades.
+ *
+ * 🔴 Desde el 2026-09-16 la deuda sale de `contrato_cuotas`, no de `Cobro`, y
+ * por eso el refresco ya no puede escuchar sólo a `cobros`: lo que mueve una
+ * cuota es un recibo de caja (la imputa) o un contrato (la crea al firmarse o
+ * la anula al terminarse). Con la lista vieja, registrar un recibo dejaba esta
+ * pantalla mostrando el saldo de antes hasta que alguien recargara.
+ */
 export function useCarteraReport() {
-  const { data, ...rest } = useApiData(() => reportesApi.getCartera(), [], false, 0, ['cobros']);
+  const { data, ...rest } = useApiData(() => reportesApi.getCartera(), [], false, 0, [
+    'cobros',
+    'recibos-de-caja',
+    'contracts',
+  ]);
   return { report: data, ...rest };
 }
 
@@ -634,15 +645,13 @@ export function useAnalyticsData(period?: string) {
   return { analyticsData: data, ...rest };
 }
 
-export function useTrendAnalysis() {
-  const { data, ...rest } = useApiData(() => analyticsApi.getTrends(), []);
-  return { trends: data ?? (SIN_DATOS as never[]), ...rest };
-}
-
-export function useForecastData() {
-  const { data, ...rest } = useApiData(() => analyticsApi.getForecasts(), []);
-  return { forecasts: data ?? (SIN_DATOS as never[]), ...rest };
-}
+/**
+ * 🔴 Acá vivían `useTrendAnalysis` y `useForecastData`. Ninguna pantalla los
+ * usaba, y los dos llamaban a `getTrends()` / `getForecasts()` SIN métrica
+ * contra una ruta que la exige en el camino: cualquiera que los hubiera
+ * enganchado habría pintado una tarjeta vacía sin saber por qué. Cuando exista
+ * la pantalla de analítica, el hook nace con su `metricId`.
+ */
 
 export function useAiMetrics(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData<AiMetricsResponse>(

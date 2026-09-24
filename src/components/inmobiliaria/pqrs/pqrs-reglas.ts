@@ -94,15 +94,21 @@ export const ESTADOS_TERMINALES: readonly PqrsEstado[] = ['RESUELTA', 'CERRADA']
 /**
  * A qué estados se puede mover desde cada uno. «Asignada» no se elige a mano:
  * la pone el back al asignar. «Cerrada» es el final: de ahí no se sale.
+ *
+ * 🔴 QA 22-09: a una QUEJA se le ofrecía «En cotización». Cotizar es para una
+ * reparación o un trámite sobre el inmueble —el tipo SOLICITUD—; una queja,
+ * una petición o un reclamo no se cotizan. Sin `tipo` (llamadas viejas) se
+ * ofrece como antes.
  */
-export function estadosSiguientes(estado: PqrsEstado): PqrsEstado[] {
+export function estadosSiguientes(estado: PqrsEstado, tipo?: PqrsTipo): PqrsEstado[] {
+  const cotizable = tipo === undefined || tipo === 'SOLICITUD'
   switch (estado) {
     case 'RECIBIDA':
     case 'ASIGNADA':
     case 'EN_PROCESO':
     case 'EN_COTIZACION':
       return (['EN_PROCESO', 'EN_COTIZACION', 'RESUELTA', 'CERRADA'] as PqrsEstado[]).filter(
-        (e) => e !== estado,
+        (e) => e !== estado && (e !== 'EN_COTIZACION' || cotizable),
       )
     case 'RESUELTA':
       return ['CERRADA']
@@ -156,10 +162,27 @@ export const PQRS_FORMULARIO_VACIO: PqrsFormulario = {
 export const ASUNTO_MAX = 200
 export const DESCRIPCION_MAX = 2000
 
-/** Campo → mensaje. Vacío = se puede radicar. */
-export function validarPqrs(form: PqrsFormulario): Record<string, string> {
+/**
+ * Campo → mensaje. Vacío = se puede radicar.
+ *
+ * 🔴 DECISIÓN DE NEGOCIO (Nico, 2026-09-15): una PQRS no puede quedar sin
+ * responsable, así que elegir quién responde es obligatorio para radicarla.
+ * El back tiene la misma regla y, si igual llega sin responsable, deja
+ * respondiendo a quien la radicó. Se cambia acá y en `pqrs.service.ts`.
+ *
+ * `hayAgentes` existe para el único caso en que la regla no se puede cumplir:
+ * una agencia sin ningún miembro en la lista. Ahí exigirlo dejaría la pantalla
+ * trabada sin salida, y el back pone de responsable a quien radica.
+ */
+export function validarPqrs(
+  form: PqrsFormulario,
+  hayAgentes = true,
+): Record<string, string> {
   const errores: Record<string, string> = {}
   if (!form.solicitanteNombre.trim()) errores.solicitanteNombre = 'Escribe quién la presenta.'
+  if (hayAgentes && !form.asignadoAUserId) {
+    errores.asignadoAUserId = 'Elige quién responde: una solicitud no puede quedar sin responsable.'
+  }
   const asunto = form.asunto.trim()
   if (!asunto) errores.asunto = 'Escribe de qué se trata.'
   else if (asunto.length > ASUNTO_MAX) errores.asunto = `Máximo ${ASUNTO_MAX} caracteres.`

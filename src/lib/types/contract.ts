@@ -397,6 +397,23 @@ export interface EscenarioTributarioDelContrato {
     retencionSobreLaComision: EjeDelEscenario;
   };
   fueraDelCatalogo: string[];
+  /**
+   * El escenario que el contrato MIGRADO trae de su sistema anterior (la nota
+   * «Escenario tributario (migrado)») y si quedó mandando. `null` = el
+   * contrato no lo trae. Opcional: un back anterior al 22-09 no lo manda.
+   */
+  delArchivo?: EscenarioDelArchivo | null;
+}
+
+export interface EscenarioDelArchivo {
+  /** El texto tal cual el archivo. */
+  texto: string;
+  /** El escenario del catálogo que es, o `null` si no es ninguno. */
+  codigo: Exclude<CodigoDeEscenario, 'SIN_DEFINIR'> | null;
+  /** `true` = sus impuestos son los que se facturan. */
+  aplicado: boolean;
+  /** Por qué no se aplicó. En español, se muestra tal cual. */
+  motivo: string | null;
 }
 
 // ============================================================================
@@ -444,6 +461,23 @@ export interface Contract {
   externalId?: string | null;
   status: ContractStatus;
 
+  // ── Terminación anticipada (back: migración 20260915170000) ──────────────
+  //
+  // 🔴 `status` NO distingue «lo terminaron antes de tiempo» de «se venció
+  // solo»: los dos son `expired`, porque en el back `EXPIRED` ya significa
+  // «terminado» y así están guardados los 1.145 contratos migrados como
+  // «Terminado». Quien los distingue es `terminadoEn`.
+  //
+  // `undefined` = la migración todavía no está aplicada en esa base y el
+  // back omite las columnas. Se lee igual que «no se terminó».
+  /** `'2026-09-30'` — el día en que se terminó antes de tiempo. */
+  terminadoEn?: string | null;
+  /** El código del motivo (`MUTUO_ACUERDO`, `VENTA_DEL_INMUEBLE`, …). */
+  motivoDeTerminacion?: string | null;
+  notaDeTerminacion?: string | null;
+  /** Hasta cuándo se había pactado, antes de que la terminación moviera `endDate`. */
+  finPactadoOriginal?: string | null;
+
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
   // Pueden venir '' cuando el backfill no encontró el dato original.
   propertyAddress: string;
@@ -474,8 +508,21 @@ export interface Contract {
    * Opcionales en el tipo para no obligar a cada fixture viejo a declararlos;
    * el mapper (`mapBackendContract`) los llena SIEMPRE.
    */
+  /**
+   * 🔴 LA REFERENCIA DE RECAUDO: el número con el que este inquilino paga y
+   * que el banco escribe en la línea del extracto. Es lo que deja que la
+   * conciliación reconozca el pago en vez de adivinar por apellido.
+   *
+   * `null`/ausente = la inmobiliaria no cargó ninguna (o el back es anterior a
+   * esta rama): se usa el consecutivo del contrato (`code`).
+   */
+  referenciaDeRecaudo?: string | null;
   prorratearPrimerMes?: boolean;
   diasDePlazo?: number | null;
+  /** Penalidad por terminación anticipada propia del contrato, en cánones. `null` = la de la inmobiliaria. */
+  penalidadTerminacionCanones?: number | null;
+  /** Desde qué día se cobra (`'YYYY-MM-DD'`). Nunca antes de `startDate`. */
+  fechaDeCartera?: string | null;
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.

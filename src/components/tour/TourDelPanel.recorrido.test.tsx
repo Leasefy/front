@@ -4,11 +4,12 @@
  * Lo que se protege acá, que es justo lo que se rompe solo:
  *  1. Abre por la bienvenida y termina por el cierre, con el número del paso
  *     contando SÓLO los pasos anclados.
- *  2. **Omitir está en todas las pantallas** y desde una intermedia apaga la
- *     preferencia (`setTourDismissed(true)`), igual que llegar al final.
+ *  2. **Omitir está en todas las pantallas** y desde una intermedia lo deja
+ *     visto para la inmobiliaria como `omitido` (igual la ✕ y Esc); llegar al
+ *     final lo deja `completo` (Nico, 23-09: una sola vez por inmobiliaria).
  *  3. El teclado: → avanza, ← retrocede, Esc omite.
  *  4. Un paso cuyo elemento no se puede señalar no aparece; sin ningún
- *     elemento el recorrido no se monta y la preferencia se apaga sola.
+ *     elemento el recorrido no se monta y NO se marca como visto (nadie lo vio).
  *
  * `framer-motion` va mockeado: `AnimatePresence mode="wait"` no monta la
  * pantalla nueva hasta que la vieja termina de salir, y en una prueba eso es
@@ -27,7 +28,7 @@ void React
 const { prefs } = vi.hoisted(() => ({
   prefs: {
     tourDismissed: false as boolean | null,
-    setTourDismissed: vi.fn(async (_v: boolean) => {}),
+    cerrarRecorrido: vi.fn(async (_estado: 'completo' | 'omitido') => {}),
   },
 }))
 
@@ -133,7 +134,7 @@ function tecla(key: string) {
 beforeEach(() => {
   vi.useFakeTimers()
   prefs.tourDismissed = false
-  prefs.setTourDismissed = vi.fn(async () => {})
+  prefs.cerrarRecorrido = vi.fn(async () => {})
   document.body.innerHTML = ''
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
@@ -166,6 +167,22 @@ describe('el recorrido, de punta a punta', () => {
     expect(q('[data-testid="tour-atras"]')).toBeNull()
   })
 
+  it('🔴 del último paso al cierre, el velo cubre TODA la pantalla (Nico, 22-09: quedaba un rectángulo sobre «Buscar»)', () => {
+    plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
+    pintar()
+    for (let i = 0; i <= PASOS_DEL_TOUR.length; i++) clic('[data-testid="tour-siguiente"]')
+    expect(q('[data-testid="tour-del-panel"]')?.getAttribute('data-pantalla')).toBe('cierre')
+    expect(q('[data-testid="tour-foco"]')).toBeNull()
+    const velo = q('[data-testid="tour-velo"]') as HTMLElement | null
+    expect(velo).toBeTruthy()
+    // Nada heredado del recorte: ni posición ni tamaño en línea. OJO: en
+    // happy-dom framer no escribe esos estilos, así que esta línea NO caza el
+    // defecto original (verificado revirtiendo la `key`); el defecto se midió
+    // y se cerró en el navegador (velo 0,0,1440×900 en el cierre). Queda para
+    // que el velo del cierre siga siendo su propio nodo, con su testid.
+    for (const prop of ['top', 'left', 'width', 'height'] as const) expect(velo!.style[prop]).toBe('')
+  })
+
   it('bienvenida → pasos → cierre, con el número contando sólo los pasos', () => {
     plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
     pintar()
@@ -186,10 +203,11 @@ describe('el recorrido, de punta a punta', () => {
     expect(txt()).toContain('inmobiliaria.tour.cierre.volver')
     expect(q('[data-testid="tour-siguiente"]')?.textContent).toContain('inmobiliaria.tour.entendido')
 
-    // Terminar cuenta como visto: la misma preferencia que Omitir.
-    expect(prefs.setTourDismissed).not.toHaveBeenCalled()
+    // 🔴 Terminar cuenta como visto, y se guarda que fue COMPLETO.
+    expect(prefs.cerrarRecorrido).not.toHaveBeenCalled()
     clic('[data-testid="tour-siguiente"]')
-    expect(prefs.setTourDismissed).toHaveBeenCalledWith(true)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledTimes(1)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('completo')
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
@@ -243,7 +261,8 @@ describe('omitir', () => {
     expect(txt()).toContain(`inmobiliaria.tour.paso(3,${PASOS_DEL_TOUR.length})`)
 
     clic('[data-testid="tour-saltar"]')
-    expect(prefs.setTourDismissed).toHaveBeenCalledWith(true)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledTimes(1)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('omitido')
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
@@ -252,7 +271,7 @@ describe('omitir', () => {
     pintar()
     clic('[data-testid="tour-siguiente"]')
     clic('[data-testid="tour-cerrar"]')
-    expect(prefs.setTourDismissed).toHaveBeenCalledWith(true)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('omitido')
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 })
@@ -283,7 +302,7 @@ describe('teclado', () => {
     pintar()
     tecla('ArrowRight')
     tecla('Escape')
-    expect(prefs.setTourDismissed).toHaveBeenCalledWith(true)
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('omitido')
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
@@ -341,10 +360,20 @@ describe('nunca se señala un hueco', () => {
     expect(txt()).toContain(PASOS_DEL_TOUR[2]!.tituloKey)
   })
 
-  it('sin ningún elemento no se monta nada y la preferencia se apaga', () => {
+  it('🔴 sin ningún elemento no se monta nada y NO se marca visto: nadie de la inmobiliaria lo vio', () => {
     pintar()
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
-    expect(prefs.setTourDismissed).toHaveBeenCalledWith(true)
+    expect(prefs.cerrarRecorrido).not.toHaveBeenCalled()
+  })
+
+  it('con → o Enter en el cierre también queda COMPLETO', () => {
+    plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
+    pintar()
+    for (let i = 0; i <= PASOS_DEL_TOUR.length; i++) tecla('ArrowRight')
+    expect(q('[data-testid="tour-del-panel"]')?.getAttribute('data-pantalla')).toBe('cierre')
+    tecla('ArrowRight')
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('completo')
+    expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
   it('con el muro de la puesta en marcha arriba no arranca, y la preferencia NO se toca', () => {
@@ -354,21 +383,21 @@ describe('nunca se señala un hueco', () => {
     document.body.appendChild(muro)
     pintar()
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
-    expect(prefs.setTourDismissed).not.toHaveBeenCalled()
+    expect(prefs.cerrarRecorrido).not.toHaveBeenCalled()
   })
 
-  it('con la preferencia ya apagada no se monta', () => {
+  it('si la inmobiliaria ya lo vio no se monta', () => {
     prefs.tourDismissed = true
     plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
     pintar()
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
-  it('mientras hidrata (null) tampoco', () => {
+  it('🔴 mientras no se sabe si la inmobiliaria ya lo vio (null) tampoco', () => {
     prefs.tourDismissed = null
     plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
     pintar()
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
-    expect(prefs.setTourDismissed).not.toHaveBeenCalled()
+    expect(prefs.cerrarRecorrido).not.toHaveBeenCalled()
   })
 })

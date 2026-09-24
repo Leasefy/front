@@ -61,7 +61,10 @@ export function EscenarioTributario({ contract }: Props) {
 
   return (
     <section
-      className="rounded-lg border border-border bg-card p-5 space-y-3"
+      // El ancla a la que lleva «Confirmar el escenario en el contrato» desde
+      // el cajón de una factura sin impuestos (QA 22-09).
+      id="escenario-tributario"
+      className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-3"
       data-testid="escenario-tributario"
     >
       <div className="flex items-center gap-2">
@@ -78,7 +81,7 @@ export function EscenarioTributario({ contract }: Props) {
          */
         <p className="text-sm text-muted-foreground" data-testid="escenario-sin-dato">
           Esta versión del servidor todavía no calcula el escenario de este
-          contrato. Recargá la página; si sigue igual, el back necesita
+          contrato. Recarga la página; si sigue igual, el back necesita
           actualizarse.
         </p>
       ) : (
@@ -94,6 +97,11 @@ function Contenido({
   escenario: EscenarioTributarioDelContrato
 }) {
   const sinDefinir = escenario.codigo === 'SIN_DEFINIR'
+  // El motivo del archivo ya va en su propio bloque, con el texto del archivo
+  // al lado: en la lista de lo que falta sería la misma frase dos veces.
+  const faltan = escenario.faltan.filter(
+    (f) => f !== escenario.delArchivo?.motivo,
+  )
 
   return (
     <>
@@ -108,6 +116,51 @@ function Contenido({
           {escenario.resumen}
         </p>
       </div>
+
+      {/* 🔴 De dónde salió (QA 22-09). Un contrato migrado trae el escenario
+          que la inmobiliaria usaba en su sistema anterior; cuando es uno de
+          los nueve del catálogo, ése es el que se factura, y la pantalla lo
+          tiene que decir — si no, «confirmado» parece salido de la nada. Y
+          cuando NO se pudo usar (un escenario con IVA en una vivienda), el
+          motivo va acá, con la salida. */}
+      {escenario.delArchivo && (
+        <div
+          className={
+            escenario.delArchivo.aplicado
+              ? 'rounded-lg bg-surface-muted p-3 space-y-1'
+              : 'rounded-lg border border-warning/40 bg-warning-soft p-3 space-y-1'
+          }
+          data-testid="escenario-del-archivo"
+        >
+          <p className="text-sm text-foreground">
+            {escenario.delArchivo.aplicado ? (
+              <>
+                <span className="font-medium">
+                  Confirmado por el sistema anterior
+                  {escenario.delArchivo.codigo
+                    ? ` (${etiqueta(escenario.delArchivo.codigo)})`
+                    : ''}
+                  .
+                </span>{' '}
+                Es el escenario que la inmobiliaria tenía para este contrato
+                antes de migrar, y con él se facturan los impuestos. Si cambió,
+                corrígelo en Administración del contrato.
+              </>
+            ) : (
+              <>
+                <span className="font-medium">
+                  El escenario del sistema anterior no se pudo usar.
+                </span>{' '}
+                {escenario.delArchivo.motivo}
+              </>
+            )}
+          </p>
+          <p className="text-caption text-muted-foreground">
+            En el archivo:{' '}
+            <span className="font-mono">{escenario.delArchivo.texto}</span>
+          </p>
+        </div>
+      )}
 
       {/* Qué genera. Si no genera nada se DICE, no se deja el hueco: un
           contrato sin impuestos y una tarjeta que se olvidó de listarlos se
@@ -129,10 +182,10 @@ function Contenido({
                   {porcentaje(i.porcentaje)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 {SOBRE[i.base]} · {A_CARGO[i.aCargoDe]}
               </p>
-              <p className="text-xs text-muted-foreground">{i.explicacion}</p>
+              <p className="text-caption text-muted-foreground">{i.explicacion}</p>
             </li>
           ))}
         </ul>
@@ -161,7 +214,7 @@ function Contenido({
               ['Retención sobre la comisión', escenario.ejes.retencionSobreLaComision],
             ] as const
           ).map(([titulo, eje]) => (
-            <li key={titulo} className="text-xs text-muted-foreground">
+            <li key={titulo} className="text-caption text-muted-foreground">
               <span className="font-medium text-foreground">{titulo}:</span>{' '}
               {eje.valor === null ? 'falta el dato' : eje.valor ? 'sí' : 'no'}
               {eje.origen === 'DEDUCIDO' ? ' (deducido)' : ''} — {eje.porque}
@@ -173,7 +226,7 @@ function Contenido({
       {/* Lo que falta. Enlaza a Administración del contrato, que es donde se
           corrigen el uso del inmueble y el perfil del inquilino, y a la ficha
           del propietario para lo suyo. */}
-      {escenario.faltan.length > 0 && (
+      {faltan.length > 0 && (
         <div
           className="rounded-lg border border-dashed border-border p-3 space-y-2"
           data-testid="escenario-faltan"
@@ -185,7 +238,7 @@ function Contenido({
                 Falta un dato para poder nombrar el escenario
               </p>
               <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
-                {escenario.faltan.map((f) => (
+                {faltan.map((f) => (
                   <li key={f}>{f}</li>
                 ))}
               </ul>
@@ -233,13 +286,13 @@ function Contenido({
           el nombre no la explica. Callarlo haría que la tarjeta pareciera
           completa cuando no lo es. */}
       {escenario.fueraDelCatalogo.map((f) => (
-        <p key={f} className="text-xs text-muted-foreground">
+        <p key={f} className="text-caption text-muted-foreground">
           {f}
         </p>
       ))}
 
-      {escenario.nombreEnNuby && (
-        <p className="text-xs text-muted-foreground" data-testid="escenario-nuby">
+      {escenario.nombreEnNuby && !escenario.delArchivo && (
+        <p className="text-caption text-muted-foreground" data-testid="escenario-nuby">
           En el sistema anterior:{' '}
           <span className="font-mono">{escenario.nombreEnNuby}</span>
         </p>

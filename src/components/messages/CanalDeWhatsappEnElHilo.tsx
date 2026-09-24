@@ -92,7 +92,7 @@ export function AvisoDeWhatsapp({
             ? `Esto NO le llega por WhatsApp a ${quien}`
             : `This does NOT reach ${quien} on WhatsApp`}
         </p>
-        {detalle !== '' && <p className="mt-0.5 text-xs text-muted-foreground">{detalle}</p>}
+        {detalle !== '' && <p className="mt-0.5 text-caption text-muted-foreground">{detalle}</p>}
       </div>
     </div>
   );

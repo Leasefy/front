@@ -231,4 +231,47 @@ describe('EscenarioTributario', () => {
       'VIVIENDA O LOCAL ENTRE PERSONAS NATURALES',
     )
   })
+
+  describe('🔴 el escenario que trae el contrato migrado (QA 22-09)', () => {
+    const E8 =
+      'Escenario 8. PROPIETARIO PN o PJ COBRA IVA - ARRENDATARIO PN o PJ HACE RETENCION EN LA FUENTE SOBRE EL CANON'
+
+    it('cuando se aplicó, dice que lo confirmó el sistema anterior y cita el texto', () => {
+      const c = pintar(
+        escenario({
+          codigo: 'E8',
+          delArchivo: { texto: E8, codigo: 'E8', aplicado: true, motivo: null },
+        }),
+      )
+      const bloque = c.querySelector('[data-testid="escenario-del-archivo"]')
+      expect(bloque?.textContent).toContain('Confirmado por el sistema anterior (Escenario 8)')
+      expect(bloque?.textContent).toContain(E8)
+      // El texto de Nuby no se repite abajo.
+      expect(c.querySelector('[data-testid="escenario-nuby"]')).toBeNull()
+    })
+
+    it('cuando NO se pudo usar, da el motivo una sola vez', () => {
+      const motivo =
+        'El archivo dice escenario 8, que cobra IVA sobre el canon, pero el inmueble es de VIVIENDA.'
+      const c = pintar(
+        escenario({
+          codigo: 'SIN_DEFINIR',
+          nombre: 'Escenario sin definir',
+          nombreEnNuby: null,
+          certeza: 'SIN_DEFINIR',
+          faltan: [motivo, 'Falta saber si el inquilino es agente de retención de IVA.'],
+          delArchivo: { texto: E8, codigo: 'E8', aplicado: false, motivo },
+        }),
+      )
+      expect(c.querySelector('[data-testid="escenario-del-archivo"]')?.textContent).toContain(
+        'no se pudo usar',
+      )
+      expect(c.textContent?.split(motivo).length).toBe(2)
+    })
+
+    it('la tarjeta es el ancla a la que lleva el cajón de la factura', () => {
+      const c = pintar(escenario())
+      expect(c.querySelector('#escenario-tributario')).not.toBeNull()
+    })
+  })
 })

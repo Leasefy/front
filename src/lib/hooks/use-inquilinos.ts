@@ -22,6 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   inquilinosApi,
+  type ConteosDeInquilinos,
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
@@ -38,6 +39,12 @@ export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado 
   const [inquilinos, setInquilinos] = useState<readonly Inquilino[]>(SIN_DATOS);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  /**
+   * Los números de las pestañas. `null` = todavía no llegaron o no se pudieron
+   * traer, y entonces las pestañas van SIN número: un número equivocado es
+   * peor que ninguno, y que falle el conteo no puede tumbar la lista.
+   */
+  const [conteos, setConteos] = useState<ConteosDeInquilinos | null>(null);
 
   /** Descarta la respuesta de una búsqueda que ya no es la vigente. */
   const pedido = useRef(0);
@@ -78,5 +85,29 @@ export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado 
     };
   }, [buscar, estado, recarga]);
 
-  return { inquilinos, cargando, error, refrescar };
+  /**
+   * Los conteos dependen de la búsqueda, NO de la pestaña: son los tres
+   * números a la vez. En un efecto propio para que cambiar de pestaña no
+   * vuelva a pedirlos —son los mismos— y con el mismo rebote que la lista.
+   */
+  useEffect(() => {
+    let vigente = true;
+    const espera = buscar ? REBOTE_MS : 0;
+    const timer = setTimeout(() => {
+      inquilinosApi
+        .conteos({ buscar })
+        .then((c) => {
+          if (vigente) setConteos(c);
+        })
+        .catch(() => {
+          if (vigente) setConteos(null);
+        });
+    }, espera);
+    return () => {
+      vigente = false;
+      clearTimeout(timer);
+    };
+  }, [buscar, recarga]);
+
+  return { inquilinos, cargando, error, refrescar, conteos };
 }

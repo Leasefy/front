@@ -20,6 +20,7 @@ import type {
   FlujoCajaReport,
 } from '@/lib/types/inmobiliaria';
 import { promedioMedido, tasaMedida } from '@/lib/tasas';
+import { BASE_POR_DEFECTO, tasaOLaDeAntes } from '@/lib/tasa-de-recaudo';
 import type {
   OccupancyData,
   CollectionsData,
@@ -103,11 +104,18 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
 export function adaptCollections(report: CarteraReport | null | undefined): CollectionsData | null {
   if (!report) return null;
 
-  const totalLate = report.summary.totalPending;
-  const lateItems = report.items.filter((i: CarteraItem) => i.daysLate > 0);
+  /*
+   * 🔴 «Atrasado» es CARTERA, no «vencido» (back, 2026-09-16): lo que venció
+   * dentro de los días de plazo del contrato sigue siendo deuda y la cobranza
+   * no lo toca. `carteraCop` incluye los siniestros, igual que la franja de
+   * las dos pantallas de cartera, así que este tablero no puede dar un número
+   * distinto del que se ve allá.
+   */
+  const totalLate = report.summary.carteraCop;
+  const lateItems = report.items.filter((i: CarteraItem) => i.cajon === 'CARTERA');
   // Sin un solo contrato atrasado no hay atraso que promediar. El 0 decía
   // «Prom. 0 días de atraso», que se lee como una cartera medida y sana.
-  const avgDaysLate = promedioMedido(lateItems.map((i: CarteraItem) => i.daysLate));
+  const avgDaysLate = promedioMedido(lateItems.map((i: CarteraItem) => i.diasDeMora));
 
   // Derive summary totals from byMonth[] (current period is last month in the series)
   const byMonth: CarteraMonthItem[] = report.byMonth ?? [];
@@ -116,12 +124,21 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
   const totalCollected = currentMonth?.collected ?? 0;
   const moraRate = tasaMedida(totalLate, totalExpected);
   /*
-   * `collectionRate` del mes ya viene del back en 0 cuando no hubo cobros, y
-   * un 0 acá caía en la banda verde «óptima» del gráfico: afirmaba una
-   * cartera sana sobre una cartera inexistente. Sin mes, no hay recuperación.
+   * 🔴 La tasa de recaudo del mes la mide el BACK, como la eligió la
+   * inmobiliaria, y viaja con su fórmula. Acá se dividía `collected / total`
+   * —siempre sobre lo causado— aunque la inmobiliaria midiera sobre lo emitido.
+   * Sin mes, o sin contra qué medir, no hay tasa: null, no la banda verde.
    */
-  const recoveryRate =
-    currentMonth === undefined ? null : tasaMedida(currentMonth.collected, currentMonth.total);
+  const tasaDelMes =
+    currentMonth === undefined
+      ? null
+      : tasaOLaDeAntes({
+          tasaDeRecaudo: currentMonth.tasaDeRecaudo,
+          pctViejo: currentMonth.collectionRate,
+          numeradorCop: currentMonth.collected,
+          denominadorCop: currentMonth.total,
+        });
+  const recoveryRate = tasaDelMes?.pct ?? null;
 
   return {
     summary: {
@@ -131,6 +148,7 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       moraRate: moraRate === null ? null : Math.round(moraRate * 10) / 10,
       avgDaysLate: avgDaysLate === null ? null : Math.round(avgDaysLate),
       recoveryRate: recoveryRate === null ? null : Math.round(recoveryRate * 10) / 10,
+      baseDeLaTasa: tasaDelMes?.base ?? BASE_POR_DEFECTO,
     },
     byMonth: byMonth.map((m: CarteraMonthItem) => ({
       month: formatMonthLabel(m.month),
@@ -145,7 +163,7 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       .map((item) => ({
         tenantName: item.tenantName ?? '',
         propertyTitle: item.propertyTitle,
-        daysLate: item.daysLate,
+        daysLate: item.diasDeMora,
         amount: item.pendingAmount,
         // Los recordatorios que se enviaron de verdad. Antes era un 0 fijo: la
         // columna «Intentos» afirmaba, para TODA la cartera, que nadie había
@@ -161,8 +179,12 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
 
 /**
  * Build agent performance data from the rendimiento-agentes endpoint (has
- * activeLeads / conversionRate / avgDaysToClose) and optionally enrich with
- * totalRevenue from the comisiones endpoint.
+ * activeLeads / conversionRate / avgDaysToClose).
+ *
+ * 🔴 17-09: ya no se le atribuyen pesos a ningún asesor —su comisión se
+ * liquida por fuera de Leasefy—. Lo único que queda del informe de comisiones
+ * es la comisión de la INMOBILIARIA, que va en el resumen del equipo como lo
+ * que es: plata de la casa, no de una persona.
  */
 export function adaptAgentPerformance(
   rendimiento: RendimientoAgentesReport | null | undefined,
@@ -170,22 +192,17 @@ export function adaptAgentPerformance(
 ): AgentPerformanceData | null {
   if (!rendimiento) return null;
 
-  const commissionByAgent = new Map<string, number>(
-    (comisiones?.agentes ?? []).map((c) => [c.agenteId, c.totalCommission]),
-  );
-
   const agents = rendimiento.agentes.map((a: RendimientoAgentesReport['agentes'][number]) => ({
     id: a.userId,
     name: a.agenteName ?? a.userId,
     closings: a.completedDeals,
     avgDaysToClose: a.avgDaysToClose,
     conversionRate: a.conversionRate,
-    totalRevenue: commissionByAgent.get(a.userId) ?? 0,
     activeLeads: a.activeLeads,
   }));
 
   const totalClosings = agents.reduce((sum: number, a) => sum + a.closings, 0);
-  const totalRevenue = agents.reduce((sum: number, a) => sum + a.totalRevenue, 0);
+  const comisionDeLaAgenciaCop = comisiones?.comisionDeLaAgenciaCop ?? 0;
   // Sin agentes no hay a quién promediarle nada: «0% de conversión» y «0d al
   // cierre» acusaban a un equipo que todavía no existe.
   const avgConversion = promedioMedido(agents.map((a) => a.conversionRate));
@@ -196,7 +213,7 @@ export function adaptAgentPerformance(
     teamSummary: {
       totalClosings,
       avgConversion: avgConversion === null ? null : Math.round(avgConversion * 10) / 10,
-      totalRevenue,
+      comisionDeLaAgenciaCop,
       avgDaysToClose: avgDaysToClose === null ? null : Math.round(avgDaysToClose),
     },
   };

@@ -52,7 +52,7 @@ export interface CuentaDeCobroProps {
  * el papel no tiene modo oscuro, y sin esto quien imprima desde el tema
  * oscuro se lleva texto gris claro sobre blanco.
  */
-const CSS_DE_IMPRESION = `
+export const CSS_DE_IMPRESION = `
 @media print {
   @page { size: A4 portrait; margin: 14mm; }
   aside,
@@ -247,12 +247,12 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
               <p className="text-sm text-fg-muted">{t('cuentaDeCobro.sinEmisor')}</p>
             )}
             {agencia?.nit ? (
-              <p className="font-mono text-xs tabular-nums text-fg-muted">
+              <p className="font-mono text-caption tabular-nums text-fg-muted">
                 {t('cuentaDeCobro.nit')} {agencia.nit}
               </p>
             ) : null}
-            {ubicacion ? <p className="text-xs text-fg-muted">{ubicacion}</p> : null}
-            {contacto ? <p className="text-xs text-fg-muted">{contacto}</p> : null}
+            {ubicacion ? <p className="text-caption text-fg-muted">{ubicacion}</p> : null}
+            {contacto ? <p className="text-caption text-fg-muted">{contacto}</p> : null}
           </div>
         </div>
 
@@ -263,7 +263,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
           <p className="font-mono text-sm tabular-nums text-fg">
             {periodoEnPalabras(cobro.month, idioma)}
           </p>
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {t('cuentaDeCobro.vence', { fecha: fechaEnPalabras(cobro.dueDate, idioma) })}
           </p>
           <span
@@ -286,7 +286,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
           </p>
           <p className="text-sm font-medium text-fg">{cobro.tenantName || '—'}</p>
           {cobro.tenantEmail ? (
-            <p className="text-xs text-fg-muted">{cobro.tenantEmail}</p>
+            <p className="text-caption text-fg-muted">{cobro.tenantEmail}</p>
           ) : null}
         </div>
         <div className="space-y-0.5">
@@ -295,7 +295,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
           </p>
           <p className="text-sm font-medium text-fg">{cobro.propertyTitle || '—'}</p>
           {cobro.propertyAddress ? (
-            <p className="text-xs text-fg-muted">{cobro.propertyAddress}</p>
+            <p className="text-caption text-fg-muted">{cobro.propertyAddress}</p>
           ) : null}
         </div>
       </section>
@@ -303,7 +303,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
       {/* Líneas */}
       <section className="py-6">
         {!cuenta.detallada ? (
-          <p className="mb-3 flex items-start gap-1.5 text-xs text-fg-muted">
+          <p className="mb-3 flex items-start gap-1.5 text-caption text-fg-muted">
             <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {t('cuentaDeCobro.sinDetalle')}
           </p>
@@ -357,14 +357,14 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
             {cuenta.descuentosCop > 0 ? (
               <>
                 <tr>
-                  <td className="pt-3 text-xs text-fg-muted">{t('cuentaDeCobro.subtotal')}</td>
-                  <td className="pt-3 text-right font-mono text-xs tabular-nums text-fg-muted">
+                  <td className="pt-3 text-caption text-fg-muted">{t('cuentaDeCobro.subtotal')}</td>
+                  <td className="pt-3 text-right font-mono text-caption tabular-nums text-fg-muted">
                     {formatCurrency(cuenta.subtotalCop)}
                   </td>
                 </tr>
                 <tr>
-                  <td className="pb-1 text-xs text-fg-muted">{t('cuentaDeCobro.descuentos')}</td>
-                  <td className="pb-1 text-right font-mono text-xs tabular-nums text-fg-muted">
+                  <td className="pb-1 text-caption text-fg-muted">{t('cuentaDeCobro.descuentos')}</td>
+                  <td className="pb-1 text-right font-mono text-caption tabular-nums text-fg-muted">
                     − {formatCurrency(cuenta.descuentosCop)}
                   </td>
                 </tr>
@@ -384,7 +384,7 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
 
         {cuenta.descuadra ? (
           <p
-            className="mt-3 flex items-start gap-1.5 rounded-md bg-danger-soft px-3 py-2 text-xs text-danger"
+            className="mt-3 flex items-start gap-1.5 rounded-md bg-danger-soft px-3 py-2 text-caption text-danger"
             role="alert"
           >
             <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -427,15 +427,15 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
             <tbody>
               {recibos.map((r) => (
                 <tr key={r.id} className="border-b border-border-faint" data-testid="abono">
-                  <td className="py-2 pr-3 font-mono text-xs tabular-nums text-fg">{String(r.numero)}</td>
-                  <td className="py-2 pr-3 font-mono text-xs tabular-nums text-fg-muted">
+                  <td className="py-2 pr-3 font-mono text-caption tabular-nums text-fg">{String(r.numero)}</td>
+                  <td className="py-2 pr-3 font-mono text-caption tabular-nums text-fg-muted">
                     {fechaEnPalabras(r.fecha, idioma)}
                   </td>
-                  <td className="py-2 pr-3 text-xs text-fg-muted">{r.medio || '—'}</td>
-                  <td className="py-2 pr-3 font-mono text-xs tabular-nums text-fg-muted">
+                  <td className="py-2 pr-3 text-caption text-fg-muted">{r.medio || '—'}</td>
+                  <td className="py-2 pr-3 font-mono text-caption tabular-nums text-fg-muted">
                     {r.referencia || '—'}
                   </td>
-                  <td className="py-2 text-right font-mono text-xs tabular-nums text-success">
+                  <td className="py-2 text-right font-mono text-caption tabular-nums text-success">
                     {formatCurrency(r.valorCop)}
                   </td>
                 </tr>

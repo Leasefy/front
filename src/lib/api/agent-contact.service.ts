@@ -1,5 +1,18 @@
 /**
- * Agent Contact-Ledger API service — CONTRACT ONLY (Ley 2300/2023 gate)
+ * Agent Contact-Ledger API service — la puerta de la Ley 2300/2023.
+ *
+ * 🔴 CORREGIDO EL 21-09-2026. Este archivo decía «CONTRACT ONLY» y «no HTTP
+ * contact endpoint is exposed yet», y era MENTIRA AL REVÉS: el back publica
+ * `GET /agent/contact/can-contact` desde T-0045 (`src/agent-contact/`), con la
+ * misma ruta y los mismos parámetros. O sea que la pantalla mantenía el botón
+ * en «Próximamente» sobre algo que ya funcionaba.
+ *
+ * Y había un defecto de cable: acá `leaseId` era OPCIONAL y en el back es
+ * `@IsUUID()` obligatorio, así que una conversación sin arriendo pedía sin él y
+ * el back respondía **400** — que no es ninguno de los tres códigos que
+ * `isEndpointUnavailable` perdona, así que la promesa se rechazaba sin que
+ * nadie la atrapara. Ahora `leaseId` es obligatorio también acá y quien no lo
+ * tenga no pregunta.
  *
  * ── The legal crux ──────────────────────────────────────────────────────────
  * This module is the frontend's ONLY interface to the Colombian contact cap
@@ -23,11 +36,10 @@
  * statutory cap out of the single central ledger and create a direct Ley 2300
  * risk (PITFALLS 3 — portal double-counting the contact cap).
  *
- * ── Default-gated today ──────────────────────────────────────────────────────
- * No HTTP contact endpoint is exposed yet, so every call DEFAULT-GATES: on
- * 404/403/0 (`isEndpointUnavailable`) it resolves `{ allowed: false, reason:
- * 'unavailable' }`. The UI therefore keeps the proactive affordance DISABLED
- * ("Próximamente", DESIGN.md §11) — never a fabricated "allowed".
+ ── Fail-closed, siempre ───────────────────────────────────────────────────
+ * Cualquier fallo (404/403/0, o el micro caído detrás del back) resuelve
+ * `{ allowed: false, reason: 'unavailable' }`: la única respuesta segura ante
+ * la duda es no contactar. Nunca un «allowed» inventado.
  */
 
 import { apiClient, ApiError } from './client';
@@ -87,11 +99,11 @@ export const agentContactApi = {
    */
   async canContact(
     channel: ContactChannel,
-    leaseId?: string,
+    leaseId: string,
   ): Promise<CanContactResult> {
     try {
       return await apiClient.get<CanContactResult>(
-        `/agent/contact/can-contact?channel=${channel}${leaseId ? `&leaseId=${leaseId}` : ''}`,
+        `/agent/contact/can-contact?channel=${channel}&leaseId=${encodeURIComponent(leaseId)}`,
       );
     } catch (err) {
       if (isEndpointUnavailable(err)) {

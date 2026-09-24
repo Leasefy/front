@@ -8141,7 +8141,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** El Piloto concilia un movimiento contra un cliente o un cobro */
+        /** Una PERSONA concilia desde el cajón del Piloto un movimiento contra un cobro o un cliente (con `actorUserId`; sin él, 409) */
         post: operations["InternalConciliacionController_conciliar"];
         delete?: never;
         options?: never;
@@ -12709,7 +12709,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Recordatorios por mandar y las que se vencieron (deja la constancia; NO envía) */
+        /** Recordatorios que tocan, las que tocan vencer y las que ya se vencieron. Sólo LEE: no envía ni vence (eso lo hace el Piloto según su modo) */
         get: operations["InvitacionAFirmarController_barrer"];
         put?: never;
         post?: never;
@@ -22484,6 +22484,11 @@ export interface components {
              */
             topeCop?: number;
             origen?: components["schemas"]["OrigenDelLoteDto"];
+            /**
+             * @description Girar desde la última cuenta de origen de la inmobiliaria. Se ignora si viene `origen`.
+             * @example true
+             */
+            usarLaUltimaCuenta?: boolean;
         };
         AprobarLoteDto: {
             /**
@@ -45728,7 +45733,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description { recordatorios, vencidas } */
+            /** @description { recordatorios, porVencer, vencidas } */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -50484,6 +50489,10 @@ export interface operations {
         parameters: {
             query: {
                 agencyId: string;
+                /** @description 2 = el micro entiende los tipos nuevos del 24-09-2026 (factura, recibo, lote, egreso, copropiedad, abogado, persona_de_nomina). Sin ella, la respuesta de siempre. */
+                version?: string;
+                /** @description `mencion`: la frase no pide buscar, nombra a alguien dentro de otra pregunta (basta con dos palabras seguidas del nombre). Por defecto, `busqueda`. */
+                modo?: "busqueda" | "mencion";
                 /** @description Correo de la sesión del chat (lo pone el micro). Decide si documento/teléfono/correo van completos, y queda en la bitácora. */
                 usuario?: unknown;
                 /** @description Lo que escribió el operador, tal cual */

@@ -3,42 +3,33 @@
 /**
  * use-piloto-autonomia.ts — autonomía POR AGENTE, escribible.
  *
- * GET por agente del roster de workspaces (los 7 `AgenteId` de work-item.ts —
- * es el vocabulario que el endpoint de autonomía ya acepta; el registro
- * `ai-agents.ts` usa otros ids que el micro no conoce):
+ *   GET /api/agency/{agencyId}/ai-hub/autonomia                     (la flota: UNA petición)
+ *   PUT /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia    {modo}
  *
- *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia   (ya existe)
- *   PUT /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia   {modo}
+ * ── Por qué una sola petición (auditoría del Piloto, 23-09-2026) ───────────
+ * La pantalla del Piloto disparaba 26 GET al micro por carga, doce de ellos
+ * `agentes/{x}/autonomia` (~2 s cada uno, de tres en tres), aunque
+ * `/ai-hub/autonomia` ya traía los doce agentes en una respuesta. Desde el
+ * 23-09 esa respuesta trae además, por agente, lo que el panel necesita: si
+ * CORRE (bandera del servidor incluida), si el modo lo GOBIERNA, la frase de
+ * lo que hace HOY (la misma de la píldora y del catálogo) y sus vallas. Una
+ * sola fuente: el panel y la píldora no pueden contar historias distintas.
  *
- * Fail-soft por agente: un agente cuyo GET da 404 simplemente no aparece —
- * no tumba a los demás. `setModo` es optimista: pinta el modo nuevo, hace el
- * PUT y ante error hace rollback y devuelve el error para el toast.
+ * `setModo` es optimista: pinta el modo nuevo, hace el PUT y ante error hace
+ * rollback y devuelve el error para el toast.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { fetchAgentAutonomia, type VallaItem } from '@/lib/api/agent-workspace'
-import { putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
+import type { VallaItem } from '@/lib/api/agent-workspace'
+import { fetchPilotoFlota, putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
 import type { AgenteId } from '@/lib/api/work-item'
-import { mapWithConcurrency } from '@/lib/utils/concurrency'
 
 /**
- * T-0076: los 12 agentes del roster se pedían con
- * `Promise.allSettled(PILOTO_AGENTES.map(...))` — 12 peticiones simultáneas,
- * el mayor contribuyente al burst que tumbaba `/panel/inmobiliaria/piloto`
- * contra `agents_limit` de NGINX (5 r/s, burst 10; ver ledger de la tarea).
- * `CONCURRENCIA_AUTONOMIA` acota cuántas van en vuelo a la vez; el resultado
- * —una fila por agente que contestó, fail-soft por agente— es idéntico.
- */
-const CONCURRENCIA_AUTONOMIA = 3
-
-/**
- * El roster del panel (work-item.ts, cerrado 2026-06-08) MÁS los agentes
- * GOBERNADOS por agencia (2026-08-31): desde que el gobierno dejó de ser
- * solo-cobranza, el endpoint de autonomía acepta también retención, calidad,
- * prospectos, aprobaciones y mantenimiento — y elegirles modo acá es
- * exactamente lo que gobierna su ejecución (piloto/gobierno.ts en el micro).
+ * El roster del panel (work-item.ts) MÁS los agentes GOBERNADOS por agencia
+ * (2026-08-31) MÁS el chat del panel (P-1, 23-09-2026: «una sola perilla que
+ * gobierna también el chat»).
  */
 export type AgentePiloto =
   | AgenteId
@@ -47,21 +38,26 @@ export type AgentePiloto =
   | 'prospectos'
   | 'aprobaciones'
   | 'mantenimiento'
+  | 'chat'
 
-const PILOTO_AGENTES: AgentePiloto[] = [
+/** El orden del panel: primero los que actúan en el día a día, al final los que todavía no. */
+const ORDEN: AgentePiloto[] = [
   'cobranza',
+  'conciliacion',
+  'chat',
+  'pagos',
+  'matching',
   'retencion',
   'prospectos',
-  'pagos',
   'calidad',
   'aprobaciones',
   'mantenimiento',
-  'cotizador',
-  'conciliacion',
   'estudio',
-  'matching',
+  'cotizador',
   'avaluos',
 ]
+
+const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
 
 export interface AutonomiaRow {
   agente: AgentePiloto
@@ -73,6 +69,11 @@ export interface AutonomiaRow {
   t323: boolean
   /** Qué significa HOY este modo para ESTE agente, en una frase (micro, honesto). */
   efectoReal: string | null
+  /** ¿El modo cambia lo que hace? `false` = «todavía no actúa solo». */
+  gobierna: boolean
+  /** ¿Corre para esta inmobiliaria? (bandera del servidor + lista de la agencia) */
+  corre: boolean
+  porQueNoCorre: string | null
 }
 
 export interface UsePilotoAutonomiaResult {
@@ -80,7 +81,7 @@ export interface UsePilotoAutonomiaResult {
   /** Cuántos agentes tiene el roster (no cuántos contestaron). */
   totalRoster: number
   isLoading: boolean
-  /** Solo cuando NINGÚN agente contestó bien y al menos uno falló de verdad. */
+  /** Sólo cuando no hay nada que mostrar y la petición falló de verdad. */
   error: string | null
   /** Agente cuyo PUT está en vuelo (deshabilita su control). */
   busyAgente: AgentePiloto | null
@@ -97,7 +98,7 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
   const [error, setError] = useState<string | null>(null)
   const [busyAgente, setBusyAgente] = useState<AgentePiloto | null>(null)
 
-  /** Guard de respuestas viejas: cada barrida aborta la anterior. */
+  /** Guard de respuestas viejas: cada lectura aborta la anterior. */
   const abortRef = useRef<AbortController | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -114,41 +115,35 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
     const controller = new AbortController()
     abortRef.current = controller
     setIsLoading(true)
-    const settled = await mapWithConcurrency(PILOTO_AGENTES, CONCURRENCIA_AUTONOMIA, (agente) =>
-      fetchAgentAutonomia(agencyId, agente, controller.signal),
-    )
-    if (controller.signal.aborted) return
-
-    const next: AutonomiaRow[] = []
-    let algunError: string | null = null
-    settled.forEach((result, i) => {
-      if (result.status === 'rejected') {
-        // Fail-soft por agente: se registra el primer error real, pero los
-        // demás agentes siguen rindiendo su fila.
-        if (!algunError) {
-          algunError =
-            result.reason instanceof Error ? result.reason.message : 'fetch_failed'
-        }
-        return
+    try {
+      const res = await fetchPilotoFlota(agencyId, controller.signal)
+      if (controller.signal.aborted) return
+      const agentes = res.data?.agentes ?? []
+      const porAgente = new Map(agentes.map((a) => [a.agente, a]))
+      const next: AutonomiaRow[] = []
+      for (const agente of ORDEN) {
+        const a = porAgente.get(agente)
+        if (!a) continue // el micro no lo publica: no se inventa su modo
+        next.push({
+          agente,
+          modo: a.modo,
+          modosDisponibles: MODOS,
+          valla: Array.isArray(a.valla) ? (a.valla as VallaItem[]) : [],
+          t323: Boolean(a.t323),
+          efectoReal: typeof a.efectoReal === 'string' ? a.efectoReal : null,
+          gobierna: a.gobierna !== false,
+          corre: a.corre,
+          porQueNoCorre: a.porQueNoCorre ?? null,
+        })
       }
-      const { data } = result.value
-      if (!data) return // 404: el agente aún no reporta autonomía — se omite.
-      next.push({
-        agente: PILOTO_AGENTES[i],
-        modo: data.modo,
-        modosDisponibles: data.modosDisponibles,
-        // Datos REALES que el API ya publicaba y este hook descartaba,
-        // mientras el panel explicaba las vallas con texto inventado.
-        valla: Array.isArray(data.valla) ? data.valla : [],
-        t323: Boolean(data.t323),
-        efectoReal: typeof data.efectoReal === 'string' ? data.efectoReal : null,
-      })
-    })
-    setRows(next)
-    // Error visible SOLO si no hay nada que mostrar: con filas en pantalla,
-    // un agente caído no debe pintar un banner encima de datos buenos.
-    setError(next.length === 0 && algunError ? algunError : null)
-    setIsLoading(false)
+      setRows(next)
+      setError(null)
+    } catch (err) {
+      if (controller.signal.aborted) return
+      setError(err instanceof Error ? err.message : 'fetch_failed')
+    } finally {
+      if (!controller.signal.aborted) setIsLoading(false)
+    }
   }, [agencyId])
 
   useEffect(() => {
@@ -177,21 +172,16 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
         setRows((cur) => cur.map((r) => (r.agente === agente ? { ...r, modo: previa } : r)))
         return { ok: false, error: res.error }
       }
-      // El backend es la autoridad: si respondió un modo distinto, gana él.
-      if (res.data && res.data.modo !== modo) {
-        const modoServidor = res.data.modo
-        setRows((cur) =>
-          cur.map((r) => (r.agente === agente ? { ...r, modo: modoServidor } : r)),
-        )
-      }
+      // El micro es la autoridad: se relee para traer la frase del modo nuevo.
+      void fetchData()
       return { ok: true }
     },
-    [agencyId, rows],
+    [agencyId, rows, fetchData],
   )
 
   return {
     rows,
-    totalRoster: PILOTO_AGENTES.length,
+    totalRoster: ORDEN.length,
     isLoading,
     error,
     busyAgente,

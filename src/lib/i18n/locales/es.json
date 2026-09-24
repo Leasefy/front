@@ -1045,6 +1045,8 @@
       },
       "bandeja": {
         "titulo": "Bandeja",
+        "queEs": "Las decisiones que los agentes dejaron esperando por ti, la que más espera primero.",
+        "contadorParcial": "Mostrando {{mostrando}} de {{total}}",
         "verCaso": "Ver caso",
         "vacia": "No hay nada esperando por ti",
         "vaciaHint": "Cuando un agente necesite tu decisión, aparece aquí.",
@@ -1076,26 +1078,27 @@
         "apagado": "Apagado",
         "apagadoHint": "El Piloto está apagado en el servidor (PILOTO_ENABLED). Lo enciende el equipo técnico.",
         "cargando": "Leyendo el estado de la flota…",
-        "corriendo": "{{n}} agentes corriendo con este modo.",
-        "mixtoHint": "Los agentes no comparten modo: {{autonomo}} en automático · {{copiloto}} en copiloto · {{sombra}} en sombra. Elige uno para toda la flota o ajusta por agente.",
+        "corriendo": "{{n}} agentes actúan con este modo.",
+        "distintosCorto": "({{n}} con otro modo)",
+        "cadaAgente": "Cada agente",
+        "todaviaNo": "Todavía no actúan solos (su modo queda guardado): {{agentes}}.",
         "aria": "Piloto automático: modo {{modo}}. Abrir para cambiarlo",
         "elegir": "Modo del Piloto",
         "modo": {
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
-          "autonomo": "Automático",
-          "mixto": "Mixto"
+          "autonomo": "Automático"
         },
         "que": {
-          "sombra": "Mira, registra y propone. No contacta a nadie ni firma nada, y no te interrumpe con avisos.",
-          "copiloto": "Prepara cada acción y te la deja en la bandeja: nada sale sin tu visto bueno.",
-          "autonomo": "Llama, escribe y emite recibos solo, dentro de la ley y de tus topes. Te cuenta lo que hizo."
+          "sombra": "Prepara cada acción y te la deja en la Bandeja con su botón. Nada sale sin ti, y no te interrumpe con avisos.",
+          "copiloto": "Prepara cada acción y te la deja en la Bandeja con su botón: nada sale sin tu visto bueno. Te avisa cuando algo te espera.",
+          "autonomo": "Los agentes que ya saben actuar solos lo hacen sin preguntarte, dentro del horario de cobranza (8 a. m.–7 p. m.); lo dudoso te lo siguen dejando en la Bandeja y te cuentan lo que hicieron."
         },
-        "confirmarAutonomo": "En automático el Piloto llama, escribe y emite recibos sin preguntarte. ¿Lo pasamos?",
-        "confirmarSi": "Sí, automático",
+        "confirmarAutonomo": "En Automático, los agentes que ya actúan solos llaman, escriben y concilian lo exacto sin preguntarte, dentro del horario de cobranza. ¿Lo pasamos?",
+        "confirmarSi": "Sí, Automático",
         "cancelar": "Cancelar",
-        "toastOk": "Piloto en modo {{modo}} para toda la flota",
-        "toastParcial": "Piloto en modo {{modo}}, salvo: {{agentes}}",
+        "toastOk": "Piloto en {{modo}} para todos los agentes",
+        "toastParcial": "Piloto en {{modo}}, salvo: {{agentes}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "ahora": "Ahora mismo",
         "llamadas": "{{n}} llamada(s) en curso",
@@ -1134,7 +1137,7 @@
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
         "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
-        "sinBack": "El ERP no está conectado al Piloto: los depósitos no se ven acá.",
+        "sinBack": "La conciliación del Piloto está apagada en el servidor: los depósitos del banco no se ven acá ni llegan a la Bandeja. La enciende el equipo técnico.",
         "contador": "{{visibles}} de {{total}}",
         "verPasos": "Ver pasos",
         "ocultarPasos": "Ocultar pasos",
@@ -1160,7 +1163,7 @@
       },
       "autonomia": {
         "titulo": "Autonomía",
-        "contadorTitulo": "{{n}} de {{total}} agentes pueden actuar solos, sin que nadie apruebe",
+        "contadorTitulo": "{{n}} de {{total}} agentes actúan solos, sin que nadie apruebe",
         "hint": "Define cuánto puede hacer cada agente sin ti.",
         "soloAdmin": "Solo un administrador puede cambiar el modo.",
         "vacia": "Ningún agente reporta su autonomía todavía",
@@ -1170,14 +1173,17 @@
         "toastOk": "{{agente}} ahora en modo {{modo}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "modo": {
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
-          "autonomo": "Autónomo"
+          "autonomo": "Automático"
         },
+        "noActuaSolo": "Todavía no actúa solo",
         "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
       },
       "pulso": {
-        "titulo": "Pulso del piloto",
+        "titulo": "Pulso del Piloto",
+        "midiendo": "Midiendo lo que pasa ahora: llamadas, conversaciones, promesas y decisiones que te esperan.",
+        "queEs": "el pulso del Piloto",
         "ahora": "En curso",
         "ahoraVacio": "No hay nada en curso en este momento.",
         "alertas": "Alertas",
@@ -1190,7 +1196,7 @@
           "ok": "Todo bajo control",
           "atencion": "Requiere tu atención",
           "critico": "Necesita acción ya",
-          "desconocido": "Estado no reconocido"
+          "desconocido": "Sin lectura"
         }
       },
       "cajon": {
@@ -1227,7 +1233,7 @@
       "gobierno": {
         "activo": "Activa",
         "inactivo": "Apagada para tu inmobiliaria",
-        "apagadoServidor": "Todavía no disponible en tu plan",
+        "apagadoServidor": "Apagado en el servidor: lo enciende el equipo técnico",
         "proximamente": "Próximamente",
         "switchAria": "Encender o apagar {{agente}} para tu inmobiliaria",
         "toastOn": "{{agente}} encendida para tu inmobiliaria",
@@ -1250,7 +1256,7 @@
         },
         "modo": {
           "todos": "Todos",
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
           "autonomo": "Automático",
           "sistema": "Sin modo"
@@ -7894,7 +7900,8 @@
           "calidad": "Calidad de publicación",
           "prospectos": "Prospectos",
           "aprobaciones": "Aprobaciones del propietario",
-          "mantenimiento": "Mantenimiento"
+          "mantenimiento": "Mantenimiento",
+          "chat": "El chat"
         },
         "rol": {
           "cobrador": "Cobrador",
@@ -7977,12 +7984,12 @@
           "vallaTitle": "Límites del agente",
           "vallaEmpty": "Aún no hay límites publicados para este agente.",
           "modo": {
-            "sombra": "Sombra",
-            "sombraHint": "Solo observa y sugiere en silencio",
+            "sombra": "Manual",
+            "sombraHint": "Prepara y te deja la decisión, sin avisarte",
             "copiloto": "Copiloto",
-            "copilotoHint": "Sugiere; nada se aplica sin un humano",
-            "autonomo": "Autónomo",
-            "autonomoHint": "Ejecuta dentro de los límites aprobados"
+            "copilotoHint": "Prepara; nada sale sin tu visto bueno",
+            "autonomo": "Automático",
+            "autonomoHint": "Actúa solo donde ya sabe hacerlo, dentro de la ley"
           },
           "modoTitle": "Cuánto decide el agente por su cuenta",
           "modoActivo": "Modo activo",
@@ -10145,7 +10152,7 @@
         },
         "piloto": {
           "titulo": "Tú decides cuánto hace la IA sola",
-          "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes.",
+          "cuerpo": "Manual y Copiloto te dejan cada acción lista en la Bandeja para tu visto bueno (Manual, sin avisarte). Automático deja actuar solos a los agentes que ya saben hacerlo, dentro de la ley.",
           "dato": "Desde esta píldora cambias el modo de toda la flota, o lo ajustas agente por agente."
         },
         "chat": {

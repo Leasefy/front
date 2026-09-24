@@ -73,9 +73,28 @@ export interface InboxAccion {
    * declaró, con los valores que el micro declaró.
    */
   campos?: AccionCampo[]
-  /** Advertencia que se muestra antes de ejecutar (efecto fuera del sistema). */
+  /**
+   * Advertencia que se muestra antes de ejecutar (efecto fuera del sistema).
+   * Si viene —o si hay `campos`—, el botón de la LISTA no ejecuta: abre el
+   * cajón, que pregunta. Un solo camino (auditoría del Piloto, hallazgo 9).
+   */
   confirmacion?: string
   tono?: 'normal' | 'peligro'
+  /** Roles del micro que la pueden ejecutar (los mismos del middleware de su ruta). */
+  roles?: string[]
+  /**
+   * P-9: ¿quien mira la puede ejecutar? Lo calcula el MICRO con el rol del
+   * token (`false` ⇒ el micro contestaría 403). Ausente = no se sabe; decide
+   * el micro al ejecutar.
+   */
+  permitida?: boolean
+  /** Si no está permitida, por qué, en palabras. */
+  porQueNo?: string
+}
+
+/** ¿Esta acción pide algo antes de ejecutarse (datos o una advertencia)? */
+export function accionPregunta(accion: InboxAccion): boolean {
+  return (accion.campos?.length ?? 0) > 0 || Boolean(accion.confirmacion)
 }
 
 export interface InboxItem {
@@ -95,6 +114,7 @@ export interface InboxItem {
 
 export interface PilotoInboxResponse {
   items: InboxItem[]
+  /** Cuántas esperan DE VERDAD (≥ items.length: el micro cuenta aparte lo que no cupo). */
   total: number
   porPrioridad: { alta: number; media: number; baja: number }
 }
@@ -143,13 +163,45 @@ export interface PilotoFetchResult<T> {
   notAvailable: boolean
 }
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<PilotoFetchResult<T>> {
+/**
+ * El error de una lectura que no contestó a tiempo. Contiene «timeout» para
+ * que `clasificarFallo` lo pinte como «Tardó demasiado en responder», con
+ * «Intentar de nuevo» (no como una falla del servidor).
+ */
+export const ERROR_SIN_RESPUESTA = 'timeout: el Piloto no contestó a tiempo'
+
+async function getJson<T>(
+  path: string,
+  signal?: AbortSignal,
+  /** Tope de espera (ms). Sin tope, una lectura colgada dejaba el esqueleto para siempre. */
+  topeMs?: number,
+): Promise<PilotoFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
+  let senal = signal
+  let reloj: ReturnType<typeof setTimeout> | undefined
+  let seVencio = false
+  if (topeMs) {
+    const tope = new AbortController()
+    reloj = setTimeout(() => {
+      seVencio = true
+      tope.abort()
+    }, topeMs)
+    signal?.addEventListener('abort', () => tope.abort(), { once: true })
+    senal = tope.signal
+  }
   // T-0076: un 429 de `agents_limit` (o el fallo de red que el mismo 429
   // parece cuando NGINX no manda CORS en su página de error) se reintenta
   // con backoff antes de rendirse — ver fetch-with-backoff.ts.
-  const res = await conBackoff(() => agentFetch(`${agentUrl}${path}`, { signal }), signal)
+  let res: Response
+  try {
+    res = await conBackoff(() => agentFetch(`${agentUrl}${path}`, { signal: senal }), senal)
+  } catch (err) {
+    if (seVencio) throw new Error(ERROR_SIN_RESPUESTA)
+    throw err
+  } finally {
+    if (reloj) clearTimeout(reloj)
+  }
   if (res.status === 404) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)
   return { data: (await res.json()) as T, notAvailable: false }
@@ -177,8 +229,11 @@ export function fetchPilotoInbox(
 
 // ── Pulso: el tablero vivo (contrato §4, ampliación 2026-08-30) ─────────────
 
-/** Estado general del piloto. Lo calcula el micro, no el front. */
-export type PulsoEstado = 'ok' | 'atencion' | 'critico'
+/**
+ * Estado general del piloto. Lo calcula el micro, no el front.
+ * `desconocido`: no se pudo leer nada — se pinta neutro, nunca «bajo control».
+ */
+export type PulsoEstado = 'ok' | 'atencion' | 'critico' | 'desconocido'
 
 export type PulsoSeveridad = 'critica' | 'alta' | 'media' | 'info'
 
@@ -226,13 +281,36 @@ export interface PulsoResponse {
     decisionesResueltas: number
     contactosPlaneados?: number
   }
+  /** Cuánto tardó el micro en medirlo (ms). */
+  tardoMs?: number
 }
+
+/**
+ * Tope de espera del pulso. Medido el 23-09-2026 (auditoría del Piloto,
+ * hallazgo 4): entre 4 y 13 s en serie; en paralelo, ~1–2 s. Pasado el tope
+ * la tarjeta dice que no contestó y ofrece reintentar, en vez de quedarse gris.
+ */
+export const TOPE_PULSO_MS = 20_000
 
 export function fetchPilotoPulso(
   agencyId: string,
   signal?: AbortSignal,
 ): Promise<PilotoFetchResult<PulsoResponse>> {
-  return getJson<PulsoResponse>(`/api/agency/${agencyId}/ai-hub/pulso`, signal)
+  return getJson<PulsoResponse>(`/api/agency/${agencyId}/ai-hub/pulso`, signal, TOPE_PULSO_MS)
+}
+
+/** El conteo del badge del menú: lee el resumen, no arma la bandeja entera. */
+export interface PilotoInboxConteo {
+  total: number
+  masVieja: string | null
+  viejas: number
+}
+
+export function fetchPilotoInboxConteo(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoInboxConteo>> {
+  return getJson<PilotoInboxConteo>(`/api/agency/${agencyId}/ai-hub/inbox/conteo`, signal)
 }
 
 // ── Preparación: ¿esta inmobiliaria puede operar sola? ─────────────────────
@@ -437,7 +515,7 @@ export async function runInboxAccion(
    * si no hay campos, esto va vacío y el comportamiento es el de siempre.
    */
   valores?: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; mensaje?: string; programadaPara?: string }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   const hayValores = valores !== undefined && Object.keys(valores).length > 0
@@ -459,7 +537,15 @@ export async function runInboxAccion(
       const errBody = (await res.json().catch(() => ({}))) as { error?: string }
       return { ok: false, error: errBody.error ?? `${res.status}` }
     }
-    return { ok: true }
+    // Lo que PASÓ, dicho por el micro («programé la llamada para mañana a las
+    // 8:00»). Sin esto el toast decía «Aprobar y llamar · listo» aunque la
+    // llamada no hubiera salido (auditoría del Piloto, hallazgo 2).
+    const cuerpoOk = (await res.json().catch(() => ({}))) as { mensaje?: unknown; programadaPara?: unknown }
+    return {
+      ok: true,
+      ...(typeof cuerpoOk.mensaje === 'string' ? { mensaje: cuerpoOk.mensaje } : {}),
+      ...(typeof cuerpoOk.programadaPara === 'string' ? { programadaPara: cuerpoOk.programadaPara } : {}),
+    }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'accion_failed' }
   }
@@ -467,20 +553,46 @@ export async function runInboxAccion(
 
 // ── La flota como UNA perilla (píldora del header, 2026-09-02) ──────────────
 
+/**
+ * El modo de la flota. En pantalla: Manual (`sombra`) / Copiloto / Automático
+ * (`autonomo`) — P-1. `mixto` ya no lo manda el micro (23-09-2026); queda en
+ * el tipo sólo para leer una respuesta vieja sin romperse.
+ */
 export type ModoDeLaFlota = AutonomiaModo | 'mixto'
+
+export interface VallaDeLaFlota {
+  id: string
+  label: string
+  value: string
+  estado: string
+}
 
 export interface AgenteDeLaFlota {
   agente: string
   modo: AutonomiaModo
   origen: 'piloto' | 'politica' | 'default'
+  /** Corre para esta inmobiliaria: bandera del servidor Y lista de la agencia. */
   corre: boolean
+  porQueNoCorre?: string | null
+  /** ¿El modo cambia lo que el agente hace? `false` = «todavía no actúa solo». */
+  gobierna?: boolean
+  /** Corre y el modo lo gobierna. */
+  actua?: boolean
+  /** Qué hace HOY el modo para este agente (la misma frase del catálogo). */
+  efectoReal?: string
+  valla?: VallaDeLaFlota[]
+  t323?: boolean
 }
 
 export interface PilotoFlotaResponse {
   /** `PILOTO_ENABLED` del micro: apagado, la flota no corre aunque tenga modo. */
   activo: boolean
-  /** El modo que comparten los agentes que corren, o `mixto`. */
+  /** El modo de la mayoría de los agentes que actúan (empate → el más cauto). */
   modo: ModoDeLaFlota
+  /** Los que actúan con OTRO modo: la píldora los nombra al abrirse. */
+  distintos?: string[]
+  /** Cuántos agentes actúan de verdad con su modo. */
+  actuan?: number
   agentes: AgenteDeLaFlota[]
   resumen: Record<AutonomiaModo, number>
   enVivo: { llamadas: number; conciliando: number; esperando: number }
@@ -628,6 +740,8 @@ export interface ProcesoDelCatalogo {
    * ejecución no lo consulta. La tabla lo dice en vez de fingir un control.
    */
   modoGobierna: boolean
+  /** Qué hace HOY el modo para el agente dueño (la misma frase de la píldora). */
+  efectoDelModo?: string | null
   corre: boolean
   porQueNoCorre: string | null
   disparador: string

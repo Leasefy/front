@@ -22,6 +22,20 @@
  * Estados: `EstadoDeDatos` (cargando → falló → vacío → datos) en vez de las
  * tres cajas artesanales que tenía antes. `SinDatos` distingue el vacío por
  * filtro del vacío de verdad.
+ *
+ * ── Lo que corrigió la auditoría del Piloto (23-09-2026) ─────────────────
+ *   · El botón de la fila se saltaba lo que el cajón pide: «Registrar el
+ *     envío» salía sin canal ni constancia (400) y «Aprobar y llamar» sin la
+ *     advertencia. Ahora, si la acción PREGUNTA algo (campos o
+ *     confirmación), el botón abre el cajón con esa acción lista: un solo
+ *     camino (hallazgo 9).
+ *   · El permiso lo dice el micro (`accion.permitida`, P-9): antes se
+ *     comparaba el rol del ERP con `!== 'VIEWER'` y un AGENTE veía botones
+ *     que terminaban en 403. Negada, se ve apagada y con el porqué.
+ *   · «100 en total» era el tope de la consulta: ahora el micro manda el
+ *     total real y se dice «Mostrando N de M» (hallazgo 6).
+ *   · El toast dice lo que pasó («programé la llamada para mañana a las
+ *     8:00»), no «listo» (hallazgo 2).
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -51,10 +65,9 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
-import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
-import { runInboxAccion, type InboxItem } from '@/lib/api/piloto'
+import { accionPregunta, runInboxAccion, type InboxItem } from '@/lib/api/piloto'
 
 const POR_PAGINA = 10
 
@@ -100,6 +113,11 @@ function tonoDeEspera(desde: string): string {
 export interface PilotoBandejaProps {
   items: InboxItem[]
   /**
+   * Cuántas esperan DE VERDAD, según el micro. Puede ser mayor que
+   * `items.length` cuando una fuente tocó su tope.
+   */
+  total?: number
+  /**
    * Cuántas de estas decisiones llevan más de una semana paradas. Vive acá
    * y no en un KPI aparte: es la única parte de aquel tile que no repetía un
    * número ya visible, y se lee mejor pegada a la lista sobre la que se
@@ -111,12 +129,17 @@ export interface PilotoBandejaProps {
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch: () => Promise<void>
-  /** Abre el cajón con el detalle del caso. */
-  onAbrir?: (itemId: string) => void
+  /**
+   * Abre el cajón con el detalle del caso. Con `accion`, el cajón abre ya
+   * con esa acción lista para confirmar (el botón de la fila no se salta lo
+   * que el cajón pregunta).
+   */
+  onAbrir?: (itemId: string, accion?: string) => void
 }
 
 export function PilotoBandeja({
   items,
+  total,
   atrasadas,
   isLoading,
   error,
@@ -125,12 +148,6 @@ export function PilotoBandeja({
   onAbrir,
 }: PilotoBandejaProps) {
   const { t } = useI18n()
-  // Las acciones de la bandeja (tomar el caso, aprobar) exigen
-  // OWNER/ADMIN/OPERATOR en el micro: a un VIEWER le devolverían 403. No se
-  // dibuja un botón que va a fallar — solo se niega cuando el rol se conoce
-  // de verdad (mientras resuelve, `agencyRole` es null y no se asume nada).
-  const { agencyRole } = usePermissionsContext()
-  const puedeActuar = agencyRole === null || agencyRole !== 'VIEWER'
   const [fuenteFiltro, setFuenteFiltro] = useState<string | null>(null)
   const [pagina, setPagina] = useState(1)
   const [enVuelo, setEnVuelo] = useState<string | null>(null)
@@ -161,7 +178,9 @@ export function PilotoBandeja({
       try {
         const res = await runInboxAccion(item.accion)
         if (res.ok) {
-          toast.success(t('inmobiliaria.piloto.bandeja.toastOk', { label: item.accion.label }))
+          toast.success(
+            res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: item.accion.label }),
+          )
           await onRefetch()
         } else {
           toast.error(
@@ -185,6 +204,10 @@ export function PilotoBandeja({
           <h2 className="text-subtitle font-semibold text-fg">
             {t('inmobiliaria.piloto.bandeja.titulo')}
           </h2>
+          {/* Qué es este bloque (EL MOLDE, regla 6). */}
+          <p className="mt-0.5 text-caption text-fg-muted">
+            {t('inmobiliaria.piloto.bandeja.queEs')}
+          </p>
           {!isLoading && !error && typeof atrasadas === 'number' && atrasadas > 0 && (
             <p className="mt-1 text-caption text-danger">
               {t('inmobiliaria.piloto.kpis.atrasadas', { n: String(atrasadas) })}
@@ -198,7 +221,12 @@ export function PilotoBandeja({
                   visibles: String(visibles.length),
                   total: String(items.length),
                 })
-              : t('inmobiliaria.piloto.bandeja.contador', { total: String(items.length) })}
+              : typeof total === 'number' && total > items.length
+                ? t('inmobiliaria.piloto.bandeja.contadorParcial', {
+                    mostrando: String(items.length),
+                    total: String(total),
+                  })
+                : t('inmobiliaria.piloto.bandeja.contador', { total: String(items.length) })}
           </span>
         )}
       </div>
@@ -311,11 +339,13 @@ export function PilotoBandeja({
                   <div className="flex items-baseline gap-2">
                     {/* La fila entera abre el cajón. El `after:` estira el
                         área clicable a toda la fila sin envolver el botón de
-                        acción en un <button> dentro de otro <button>. */}
+                        acción en un <button> dentro de otro <button>.
+                        `line-clamp-2`, no `truncate`: a 390 px el título se
+                        cortaba en «Aviso prev…» y se perdía A QUIÉN (24-09). */}
                     <button
                       type="button"
                       onClick={() => onAbrir?.(item.id)}
-                      className="truncate text-left text-body-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
+                      className="line-clamp-2 text-left text-body-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                       data-testid={`piloto-bandeja-fila-${item.id}`}
                     >
                       {item.titulo}
@@ -328,26 +358,50 @@ export function PilotoBandeja({
                       {relativeTime(item.desde, t)}
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-1 text-caption text-fg-muted">
+                  {/* El resumen ya trae el monto de HOY cuando lo hay (contactos
+                      retenidos): no se repite al lado. */}
+                  <p className="mt-1 line-clamp-2 text-caption text-fg-muted">
                     {item.resumen}
-                    {typeof item.montoCop === 'number' && (
+                    {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
                       <span className="ml-1 font-mono tabular-nums text-fg">
                         · {formatCurrency(item.montoCop)}
                       </span>
                     )}
                   </p>
+                  {item.accion?.permitida === false && item.accion.porQueNo && (
+                    <p
+                      className="mt-1 text-caption text-fg-subtle"
+                      id={`piloto-bandeja-porqueno-${item.id}`}
+                      data-testid={`piloto-bandeja-porqueno-${item.id}`}
+                    >
+                      {item.accion.porQueNo}
+                    </p>
+                  )}
                 </div>
 
                 {/* `relative z-10`: por encima del área clicable de la fila,
                     para que la acción rápida no abra además el cajón. */}
                 <div className="relative z-10 flex shrink-0 items-center gap-1.5 self-center">
-                  {item.accion && puedeActuar ? (
+                  {item.accion ? (
                     <Button
                       size="sm"
                       hideArrow
+                      variant={item.accion.tono === 'peligro' ? 'outline' : 'default'}
                       isLoading={ocupado}
+                      disabled={item.accion.permitida === false}
+                      {...(item.accion.permitida === false
+                        ? { 'aria-describedby': `piloto-bandeja-porqueno-${item.id}` }
+                        : {})}
+                      data-testid={`piloto-bandeja-accion-${item.id}`}
                       onClick={(e) => {
                         e.stopPropagation()
+                        if (!item.accion) return
+                        // Si la acción pregunta algo (datos o una advertencia),
+                        // se pregunta en el cajón: el mismo camino.
+                        if (accionPregunta(item.accion)) {
+                          onAbrir?.(item.id, item.accion.label)
+                          return
+                        }
                         void ejecutar(item)
                       }}
                     >

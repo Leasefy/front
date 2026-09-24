@@ -7,13 +7,9 @@ import { usePilotoAutonomia } from './use-piloto-autonomia'
 void React
 
 /**
- * T-0076: `usePilotoAutonomia` disparaba los 12 agentes del roster con
- * `Promise.allSettled(...)` — 12 peticiones simultáneas al agente en el
- * montaje de `/panel/inmobiliaria/piloto`, el mayor contribuyente al burst
- * que tumbaba la pantalla contra `agents_limit` (5 r/s, burst 10; ledger
- * §2.2). Esta prueba fija dos cosas: que nunca hay más de un puñado de
- * peticiones en vuelo a la vez, y que el resultado —filas, error,
- * fail-soft por agente— es EXACTAMENTE el mismo que con `allSettled`.
+ * T-0076 decía «nunca más de 4 peticiones de autonomía en vuelo». Desde la
+ * auditoría del Piloto (23-09-2026) es una sola: la de la flota, que trae
+ * los doce agentes (y el chat) con todo lo que el panel necesita.
  */
 
 // ── Auth mock ────────────────────────────────────────────────────────────────
@@ -79,56 +75,88 @@ async function mount() {
   })
 }
 
-describe('usePilotoAutonomia — fan-out acotado (T-0076)', () => {
-  it('nunca tiene más de 4 peticiones en vuelo a la vez para los 12 agentes del roster', async () => {
-    let enVuelo = 0
-    let picoDeVuelo = 0
+const flota = {
+  activo: true,
+  modo: 'copiloto',
+  distintos: [],
+  actuan: 2,
+  resumen: { sombra: 0, copiloto: 2, autonomo: 0 },
+  enVivo: { llamadas: 0, conciliando: 0, esperando: 0 },
+  tomadoAt: '2026-09-23T10:00:00.000-05:00',
+  agentes: [
+    {
+      agente: 'cobranza',
+      modo: 'copiloto',
+      origen: 'piloto',
+      corre: true,
+      porQueNoCorre: null,
+      gobierna: true,
+      actua: true,
+      efectoReal: 'Laura prepara cada llamada…',
+      valla: [{ id: 'ley2300', label: 'Ley 2300', value: 'x', estado: 'regla' }],
+      t323: true,
+    },
+    {
+      agente: 'chat',
+      modo: 'copiloto',
+      origen: 'default',
+      corre: true,
+      porQueNoCorre: null,
+      gobierna: false,
+      actua: false,
+      efectoReal: 'El chat todavía no lee esta perilla…',
+      valla: [],
+      t323: false,
+    },
+    {
+      agente: 'pagos',
+      modo: 'copiloto',
+      origen: 'default',
+      corre: false,
+      porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.',
+      gobierna: true,
+      actua: false,
+      efectoReal: 'Payu prepara el cobro…',
+      valla: [],
+      t323: true,
+    },
+  ],
+}
 
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
-      enVuelo += 1
-      picoDeVuelo = Math.max(picoDeVuelo, enVuelo)
-      await new Promise((r) => setTimeout(r, 5))
-      enVuelo -= 1
-      return makeOkResponse({
-        modo: 'copiloto',
-        modosDisponibles: ['sombra', 'copiloto', 'autonomo'],
-      })
-    })
-
+describe('🔴 usePilotoAutonomia — UNA petición para toda la flota (auditoría del Piloto, 23-09)', () => {
+  it('lee la flota con un solo GET (antes eran 12 GET por agente)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(flota))
     await mount()
-
-    // 12 agentes en el roster (PILOTO_AGENTES) — el pico nunca los alcanza.
-    expect(picoDeVuelo).toBeGreaterThan(0)
-    expect(picoDeVuelo).toBeLessThanOrEqual(4)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/ai-hub/autonomia')
+    expect(String(fetchSpy.mock.calls[0]![0])).not.toContain('/agentes/')
   })
 
-  it('sigue trayendo una fila por agente que respondió 200, en el mismo orden que antes', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-      const url = String(input)
-      if (url.includes('/agentes/cobranza/autonomia')) {
-        return makeOkResponse({ modo: 'autonomo', modosDisponibles: ['sombra', 'autonomo'] })
-      }
-      return make404Response()
-    })
-
+  it('trae la frase de la tabla de verdad, si corre y si el modo lo gobierna — y el chat', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(flota))
     await mount()
-
     expect(result?.isLoading).toBe(false)
-    const fila = result?.rows.find((r) => r.agente === 'cobranza')
-    expect(fila?.modo).toBe('autonomo')
-    // El resto del roster no reportó (404) — fail-soft por agente, no tumba
-    // la fila de cobranza.
-    expect(result?.rows).toHaveLength(1)
-    expect(result?.totalRoster).toBe(12)
+    expect(result?.rows.map((r) => r.agente)).toEqual(['cobranza', 'chat', 'pagos'])
+    const chat = result?.rows.find((r) => r.agente === 'chat')
+    expect(chat).toMatchObject({ gobierna: false, corre: true })
+    expect(chat?.efectoReal).toContain('todavía no lee esta perilla')
+    const pagos = result?.rows.find((r) => r.agente === 'pagos')
+    expect(pagos).toMatchObject({ corre: false, porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.' })
+    expect(result?.rows.find((r) => r.agente === 'cobranza')?.valla).toHaveLength(1)
   })
 
-  it('si NINGÚN agente contesta bien, error queda seteado (fail-soft agotado)', async () => {
+  it('si la flota no contesta, error queda seteado y no se inventan filas', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(make500Response())
-
     await mount()
-
     expect(result?.isLoading).toBe(false)
     expect(result?.rows).toHaveLength(0)
     expect(result?.error).toBeTruthy()
+  })
+
+  it('404 (micro viejo): sin filas y sin error inventado', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(make404Response())
+    await mount()
+    expect(result?.rows).toHaveLength(0)
+    expect(result?.error).toBeNull()
   })
 })

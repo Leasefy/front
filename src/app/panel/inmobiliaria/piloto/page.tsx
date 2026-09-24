@@ -97,7 +97,8 @@ function PilotoContent() {
   const [pila, setPila] = useState<PilotoApertura[]>([])
   const apertura = pila.length > 0 ? (pila[pila.length - 1] as PilotoApertura) : null
   const abrirItem = useCallback(
-    (id: string) => setPila((p) => [...p, { tipo: 'item', id }]),
+    (id: string, accion?: string) =>
+      setPila((p) => [...p, accion ? { tipo: 'item', id, accion } : { tipo: 'item', id }]),
     [],
   )
   /**
@@ -197,6 +198,7 @@ function PilotoContent() {
         <div className="min-w-0 lg:col-span-3">
           <PilotoBandeja
             items={inbox.items}
+            total={inbox.total}
             {...(typeof atrasadas === 'number' ? { atrasadas } : {})}
             isLoading={inbox.isLoading}
             error={inbox.error}

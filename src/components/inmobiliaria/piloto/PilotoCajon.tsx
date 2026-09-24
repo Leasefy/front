@@ -32,7 +32,7 @@
  *    caso no tiene nada adentro.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import {
@@ -66,7 +66,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
-import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
@@ -74,7 +73,12 @@ import { runInboxAccion, type InboxAccion, type PulsoAlerta } from '@/lib/api/pi
 
 /** Qué está abierto en el cajón. `null` = cerrado. */
 export type PilotoApertura =
-  | { tipo: 'item'; id: string }
+  /**
+   * `accion`: el rótulo de la acción con la que se abrió desde la fila de la
+   * bandeja. El cajón la deja lista para confirmar (auditoría del Piloto,
+   * hallazgo 9: el botón de la lista no se salta lo que el cajón pregunta).
+   */
+  | { tipo: 'item'; id: string; accion?: string }
   | { tipo: 'alerta'; alerta: PulsoAlerta }
 
 export interface PilotoCajonProps {
@@ -193,10 +197,6 @@ export function PilotoCajon({
   onAccionEjecutada,
 }: PilotoCajonProps) {
   const { t } = useI18n()
-  const { agencyRole } = usePermissionsContext()
-  // Mientras el rol resuelve (`null`) no se asume nada; a un VIEWER el micro
-  // le responde 403, así que no se le dibuja el botón.
-  const puedeActuar = agencyRole === null || agencyRole !== 'VIEWER'
 
   const itemId = apertura?.tipo === 'item' ? apertura.id : null
 
@@ -216,13 +216,33 @@ export function PilotoCajon({
   const [documento, setDocumento] = useState<string | null>(null)
   const artifactId = artifactIdDeCaso(itemId ?? undefined)
 
+  /**
+   * Abierto desde el botón de la fila: la acción queda lista para confirmar
+   * apenas llega el detalle. Una vez por apertura (si la persona cancela, no
+   * vuelve a abrirse sola).
+   */
+  const accionPedida = apertura?.tipo === 'item' ? apertura.accion : undefined
+  const pedidaAbiertaRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!accionPedida || !data || !itemId) return
+    const clave = `${itemId}|${accionPedida}`
+    if (pedidaAbiertaRef.current === clave) return
+    const accion = data.acciones.find((a) => a.label === accionPedida)
+    if (accion && accion.permitida !== false) {
+      pedidaAbiertaRef.current = clave
+      setAbierta(accion)
+    }
+  }, [accionPedida, data, itemId])
+
   const ejecutar = useCallback(
     async (accion: InboxAccion, valores?: Record<string, unknown>) => {
       setEnVuelo(accion.label)
       try {
         const res = await runInboxAccion(accion, valores)
         if (res.ok) {
-          toast.success(t('inmobiliaria.piloto.bandeja.toastOk', { label: accion.label }))
+          // Lo que PASÓ, dicho por el micro (p. ej. «la programé para mañana
+          // a las 8:00»); «listo» sólo si el micro no dijo nada.
+          toast.success(res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: accion.label }))
           setAbierta(null)
           await Promise.allSettled([refetch(), onAccionEjecutada?.() ?? Promise.resolve()])
         } else {
@@ -284,12 +304,16 @@ export function PilotoCajon({
               </SheetDescription>
               {data && !alerta && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-3 text-caption text-fg-subtle">
+                  {/* «esperando» sólo si hay algo que decidir (una acción, o
+                      un enlace que dice por qué se decide en otra pantalla):
+                      un hecho ya ocurrido (una llamada, los cobros de un día)
+                      no espera a nadie — decía «esperando hace 1d» (24-09). */}
                   {data.desde && (
-                    <span className="flex items-center gap-1 font-mono tabular-nums">
+                    <span className="flex items-center gap-1 font-mono tabular-nums" data-testid="piloto-cajon-desde">
                       <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
-                      {t('inmobiliaria.piloto.cajon.esperando', {
-                        tiempo: relativeTime(data.desde, t),
-                      })}
+                      {data.acciones.length > 0 || data.enlaces.some((e) => Boolean(e.razon))
+                        ? t('inmobiliaria.piloto.cajon.esperando', { tiempo: relativeTime(data.desde, t) })
+                        : relativeTime(data.desde, t)}
                     </span>
                   )}
                   {typeof data.montoCop === 'number' && (
@@ -508,7 +532,7 @@ export function PilotoCajon({
         </div>
 
         {/* Pie fijo con las acciones — solo si el micro declaró alguna */}
-        {!alerta && data && data.acciones.length > 0 && puedeActuar && (
+        {!alerta && data && data.acciones.length > 0 && (
           <footer className="shrink-0 border-t border-border bg-surface px-6 py-4">
             {abierta ? (
               /* Una acción que pide datos toma el pie entero: el formulario
@@ -543,7 +567,10 @@ export function PilotoCajon({
                           : 'secondary'
                     }
                     isLoading={enVuelo === accion.label}
-                    disabled={enVuelo !== null && enVuelo !== accion.label}
+                    // P-9: el micro dice si ESTE rol la puede ejecutar; negada,
+                    // se ve apagada y el porqué va debajo.
+                    disabled={accion.permitida === false || (enVuelo !== null && enVuelo !== accion.label)}
+                    {...(accion.permitida === false && accion.porQueNo ? { title: accion.porQueNo } : {})}
                     onClick={() => {
                       // Con campos o con advertencia, primero se pregunta.
                       // Sin nada de eso, sigue siendo un clic y se ejecuta.
@@ -558,6 +585,11 @@ export function PilotoCajon({
                     {accion.label}
                   </Button>
                 ))}
+                {data.acciones.some((a) => a.permitida === false && a.porQueNo) && (
+                  <p className="basis-full text-caption text-fg-subtle" data-testid="piloto-cajon-porqueno">
+                    {data.acciones.find((a) => a.permitida === false && a.porQueNo)?.porQueNo}
+                  </p>
+                )}
               </div>
             )}
           </footer>

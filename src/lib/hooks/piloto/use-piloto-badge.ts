@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { fetchPilotoInbox } from '@/lib/api/piloto'
+import { fetchPilotoInboxConteo } from '@/lib/api/piloto'
 
 const REFRESCO_MS = 60_000
 
@@ -30,7 +30,10 @@ export function usePilotoBadge(): { total: number | undefined } {
   const cargar = useCallback(async () => {
     if (!process.env.NEXT_PUBLIC_AGENT_URL || !agencyId) return
     try {
-      const res = await fetchPilotoInbox(agencyId)
+      // El conteo, no la bandeja entera: se pide cada minuto desde TODAS las
+      // pantallas del panel y armar la bandeja cuesta segundos (auditoría
+      // del Piloto, hallazgo 14).
+      const res = await fetchPilotoInboxConteo(agencyId)
       // 404 (endpoint aún no publicado) → data null → sin indicador.
       setTotal(res.data?.total ?? undefined)
     } catch {

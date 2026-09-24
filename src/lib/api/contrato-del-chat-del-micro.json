@@ -1,6 +1,6 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@e402f1ac/openapi-snapshot.json",
+  "sacadoDe": "micro@f92eae61/openapi-snapshot.json",
   "cuando": "2026-09-24",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {

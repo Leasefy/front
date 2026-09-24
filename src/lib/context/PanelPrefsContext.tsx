@@ -79,6 +79,13 @@ export const PREFIJO_DE_LA_CACHE = 'leasefy:onboarding-visto:v2:'
  */
 export const CLAVE_DE_LA_VERSION_ANTERIOR = 'leasefy_panel_tour_dismissed_v1'
 
+/**
+ * Cuánto esperar antes de volver a preguntar si la lectura FALLA (no si dice
+ * `disponible: false`, que es una respuesta). Se agota rápido a propósito:
+ * es para la carrera del token recién renovado, no para un back caído.
+ */
+export const ESPERAS_PARA_VOLVER_A_LEER_MS = [1500, 4000, 10000]
+
 function claveDeCache(agencyId: string, clave: string): string {
   return `${PREFIJO_DE_LA_CACHE}${agencyId}:${clave}`
 }
@@ -192,41 +199,60 @@ export function PanelPrefsProvider({ children }: ProviderProps) {
     setLocales(cache)
 
     let vigente = true
-    onboardingVistoApi
-      .leer()
-      .then((lectura) => {
-        if (!vigente) return
-        // Sin la migración el back no sabe: se queda en «no se sabe» y no
-        // se muestra nada solo (salvo lo que la caché ya daba por visto).
-        if (!lectura?.disponible || !Array.isArray(lectura.vistas)) return
-        const vistas: Record<string, OnboardingVisto> = {}
-        for (const v of lectura.vistas) {
-          vistas[v.clave] = v
-          guardarCache(agencyId, v.clave, v.estado)
-        }
-        setDelServidor(vistas)
-        // Lo que este navegador cerró y el servidor no tiene, se le sube.
-        for (const [clave, estado] of Object.entries(cache)) {
-          if (vistas[clave]) continue
-          onboardingVistoApi
-            .marcar(clave, estado)
-            .then((r) => {
-              if (!vigente) return
-              guardarCache(agencyId, clave, estado)
-              if (clave === CLAVE_DEL_RECORRIDO_DEL_PANEL) olvidarVersionAnterior()
-              setDelServidor((prev) => (prev ? { ...prev, [clave]: r } : prev))
-            })
-            .catch(() => {
-              // Se reintenta en la próxima carga; la caché lo sostiene acá.
-            })
-        }
-        if (vistas[CLAVE_DEL_RECORRIDO_DEL_PANEL]) olvidarVersionAnterior()
-      })
-      .catch(() => {
-        // No se sabe: no se muestra. Nada de adivinar «no visto».
-      })
+    let intento = 0
+    let reintento: ReturnType<typeof setTimeout> | undefined
+    const leer = () =>
+      onboardingVistoApi
+        .leer()
+        .then((lectura) => {
+          if (!vigente) return
+          // Sin la migración el back no sabe: se queda en «no se sabe» y no
+          // se muestra nada solo (salvo lo que la caché ya daba por visto).
+          if (!lectura?.disponible || !Array.isArray(lectura.vistas)) return
+          const vistas: Record<string, OnboardingVisto> = {}
+          for (const v of lectura.vistas) {
+            vistas[v.clave] = v
+            guardarCache(agencyId, v.clave, v.estado)
+          }
+          setDelServidor(vistas)
+          // Lo que este navegador cerró y el servidor no tiene, se le sube.
+          for (const [clave, estado] of Object.entries(cache)) {
+            if (vistas[clave]) continue
+            onboardingVistoApi
+              .marcar(clave, estado)
+              .then((r) => {
+                if (!vigente) return
+                guardarCache(agencyId, clave, estado)
+                if (clave === CLAVE_DEL_RECORRIDO_DEL_PANEL) olvidarVersionAnterior()
+                setDelServidor((prev) => (prev ? { ...prev, [clave]: r } : prev))
+              })
+              .catch(() => {
+                // Se reintenta en la próxima carga; la caché lo sostiene acá.
+              })
+          }
+          if (vistas[CLAVE_DEL_RECORRIDO_DEL_PANEL]) olvidarVersionAnterior()
+        })
+        .catch(() => {
+          // No se sabe: no se muestra. Nada de adivinar «no visto».
+          //
+          // Pero se vuelve a preguntar, pocas veces: un fallo suelto (la red,
+          // el token que se está renovando) no puede costar el recorrido de
+          // toda la sesión.
+          //
+          // ⚠️ Medido en el navegador de QA (23-09): recién pasado el segundo
+          // factor, TODO el panel —pipeline, consignaciones, agentes y esta
+          // lectura— respondió 403 `SEGUNDO_FACTOR_REQUERIDO` hasta recargar.
+          // Eso es de la sesión, no de esto, y los reintentos no lo cubren:
+          // mientras dure, el recorrido espera (no se muestra sin saber) y sale
+          // en la siguiente carga.
+          if (!vigente) return
+          const espera = ESPERAS_PARA_VOLVER_A_LEER_MS[intento++]
+          if (espera != null) reintento = setTimeout(() => void leer(), espera)
+        })
+    void leer()
     return () => {
       vigente = false
+      if (reintento) clearTimeout(reintento)
     }
   }, [agencyId])
 

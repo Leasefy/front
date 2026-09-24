@@ -46,6 +46,7 @@ import {
   usePanelPrefs,
   PREFIJO_DE_LA_CACHE,
   CLAVE_DE_LA_VERSION_ANTERIOR,
+  ESPERAS_PARA_VOLVER_A_LEER_MS,
   type PanelPrefsContextValue,
 } from './PanelPrefsContext'
 
@@ -91,6 +92,8 @@ function crearBackFalso() {
   const pedidos: Pedido[] = []
   let disponible = true
   let lecturaQueFalla = false
+  /** Las primeras N lecturas contestan como el back con el token de antes del segundo factor. */
+  let lecturasConTokenViejo = 0
   let lecturaRetenida: Promise<void> | null = null
 
   const responder = (status: number, cuerpo: unknown) =>
@@ -122,6 +125,10 @@ function crearBackFalso() {
     if (metodo === 'GET' && u.pathname === '/inmobiliaria/onboarding-visto') {
       if (lecturaRetenida) await lecturaRetenida
       if (lecturaQueFalla) return responder(500, { message: 'se cayó' })
+      if (lecturasConTokenViejo > 0) {
+        lecturasConTokenViejo -= 1
+        return responder(403, { code: 'SEGUNDO_FACTOR_REQUERIDO', message: 'Tu rol exige segundo factor.' })
+      }
       if (!disponible) return responder(200, { disponible: false, motivo: 'falta la migración', vistas: [] })
       return responder(200, { disponible: true, motivo: null, vistas: [...vistas.values()] })
     }
@@ -160,6 +167,9 @@ function crearBackFalso() {
     },
     lecturaQueFalla: () => {
       lecturaQueFalla = true
+    },
+    primeraLecturaConTokenViejo: () => {
+      lecturasConTokenViejo = 1
     },
     retenerLectura: () => {
       let soltar!: () => void
@@ -323,6 +333,18 @@ describe('no se muestra mientras no se sabe', () => {
     back.lecturaQueFalla()
     await abrirElPanel()
     expect(actual!.tourDismissed).toBeNull()
+  })
+
+  it('si la primera lectura falla (p. ej. un 403 con el token de antes del segundo factor), se vuelve a preguntar y el recorrido sale', async () => {
+    back.primeraLecturaConTokenViejo()
+    await abrirElPanel()
+    expect(actual!.tourDismissed).toBeNull()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, ESPERAS_PARA_VOLVER_A_LEER_MS[0]! + 300))
+    })
+    await esperar()
+    expect(actual!.tourDismissed).toBe(false)
+    expect(back.pedidos.filter((p) => p.metodo === 'GET' && p.url.includes('onboarding-visto'))).toHaveLength(2)
   })
 
   it('sin agencia en la sesión, no se sabe', async () => {

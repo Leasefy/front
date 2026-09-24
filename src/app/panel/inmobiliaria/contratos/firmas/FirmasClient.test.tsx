@@ -157,6 +157,29 @@ describe('FirmasClient', () => {
     expect($('[data-testid="fallo-de-carga"]')).toBeNull()
   })
 
+  it('🔴 la que se quedó sin firma y el Piloto todavía no venció se ve, con quién decide', async () => {
+    // 24-09-2026: abrir esta pantalla ya no vence nada (una lectura no
+    // escribe). Lo que tocaba vencer llega en `porVencer` y lo decide el modo
+    // del Piloto; la pantalla lo muestra en vez de esconderlo.
+    api.barrido = vi.fn(() =>
+      Promise.resolve({
+        ...BARRIDO,
+        recordatorios: [],
+        vencidas: [],
+        porVencer: [
+          { invitacionId: 'inv-9', contractId: 'ct-9', tenantName: 'Luisa Ramírez' },
+        ],
+      }),
+    )
+    await pintar()
+    const tarjeta = $('[data-testid="por-vencer"]')?.textContent ?? ''
+    expect(tarjeta).toContain('Luisa Ramírez')
+    expect(tarjeta).toContain('Piloto')
+    expect(tarjeta).toContain('Bandeja')
+    // No es «vacío»: hay algo que la inmobiliaria tiene que saber.
+    expect(contenedor.textContent).not.toContain('No hay nadie pendiente de firmar')
+  })
+
   it('sin permiso no ofrece cancelar', async () => {
     permisos.edit = false
     await pintar()

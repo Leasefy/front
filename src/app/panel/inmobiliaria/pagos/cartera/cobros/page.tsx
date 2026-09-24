@@ -516,7 +516,14 @@ function CobrosContent() {
             {t('inmobiliaria.cobros.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* 🔴 24-09-2026 (a 390 px desbordaba): en el teléfono las acciones
+            se parten en líneas; `shrink-0` sólo desde `sm`, donde el
+            encabezado ya es una fila. Juntas miden ≈531 px y a 390 quedan
+            358. */}
+        <div
+          className="flex flex-wrap items-center gap-2 sm:shrink-0"
+          data-testid="acciones-de-cobros"
+        >
           {/* El engranaje va PRIMERO y sin texto: es la acción que menos se
               usa y la que menos tiene que pesar (Nico, 2026-09-03). El
               extracto bancario ya no se enlaza desde acá — vive en
@@ -603,7 +610,14 @@ function CobrosContent() {
         className="rounded-lg border border-border bg-card"
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+        {/* 🔴 24-09-2026 (a 390 px desbordaba): la barra de la tarjeta se parte
+            en líneas —vista · mes y conteo · vigentes/anulados— como la de
+            `ListaDeLotes`. Sin `flex-wrap` medía ≈650 px en 324 útiles. La
+            tabla no hace falta tocarla: `Table` ya tiene su propio scroll. */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3"
+          data-testid="barra-de-la-tabla-de-cobros"
+        >
           <SegmentedControl
             aria-label={t('inmobiliaria.cobros.viewTable')}
             value={viewMode}
@@ -631,7 +645,10 @@ function CobrosContent() {
               },
             ]}
           />
-          <div className="flex items-center gap-3">
+          <div
+            className="flex flex-wrap items-center gap-3"
+            data-testid="mes-y-vigencia-de-cobros"
+          >
             <div className="flex items-center gap-1">
               <IconButton
                 variant="ghost"

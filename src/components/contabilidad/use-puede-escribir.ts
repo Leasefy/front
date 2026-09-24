@@ -52,6 +52,13 @@ export interface PuedeEscribir {
    * con `null` la comparación no se hace: decide el 409 del back.
    */
   usuarioId: string | null;
+  /**
+   * P-4 aclarado (Nico, 24-09): el ADMINISTRADOR no se confirma a sí mismo.
+   * Con esto la pantalla no le apaga «Aprobar» del lote que él armó (el back
+   * se lo deja aprobar, y lo que arma ya vuelve aprobado). Opcional: `false`
+   * cuando no se sabe (decide el back).
+   */
+  esAdministrador?: boolean;
 }
 
 export function usePuedeEscribir(): PuedeEscribir {
@@ -87,7 +94,7 @@ export function usePuedeEscribir(): PuedeEscribir {
 
   const { isAdmin, agencyRole } = permisos;
   if (isAdmin || (agencyRole !== null && ROLES_QUE_ESCRIBEN.includes(agencyRole))) {
-    return { puede: true, motivo: null, usuarioId };
+    return { puede: true, motivo: null, usuarioId, esAdministrador: isAdmin };
   }
 
   return {

@@ -54,9 +54,18 @@ export interface EntidadDeLaIntencion {
   id: string;
 }
 
+/**
+ * Lo que se hace sobre un PLAN (24-09, paquete H): «Hacer todo», «No» y
+ * «Reintentar / Seguir desde aquí». Lo que la persona llenó en la tarjeta del
+ * plan viaja en `datos` con la clave del campo tal cual (`p2_valorCop`).
+ */
+export type AccionSobreUnPlan = 'hacer_plan' | 'cancelar_plan' | 'seguir_plan';
+export const ACCIONES_SOBRE_UN_PLAN: AccionSobreUnPlan[] = ['hacer_plan', 'cancelar_plan', 'seguir_plan'];
+
 export type IntencionDelChat =
   | { accion: 'ver' | 'cobranza'; entidad: EntidadDeLaIntencion }
   | { accion: 'confirmar' | 'cancelar' | 'deshacer'; propuestaId: string }
+  | { accion: AccionSobreUnPlan; planId: string; datos?: Record<string, string | number> }
   | { accion: string; entidad: EntidadDeLaIntencion; datos?: Record<string, string | number> };
 
 function esObjeto(v: unknown): v is Record<string, unknown> {
@@ -71,12 +80,35 @@ export function leerEntidadDeLaIntencion(v: unknown): EntidadDeLaIntencion | nul
   return TIPOS_DE_FICHA.includes(tipo) && id ? { tipo, id } : null;
 }
 
+/** La clave de un dato del plan: `p<paso>_<dato>` (la misma regla del micro). */
+const CLAVE_DEL_PLAN = /^p[1-8]_[A-Za-z][A-Za-z0-9_]{0,35}$/;
+
+/** Los datos de una intención sobre un plan, sólo con claves `p<paso>_<dato>`. */
+export function datosDelPlan(v: unknown): Record<string, string | number> {
+  const datos: Record<string, string | number> = {};
+  if (!esObjeto(v)) return datos;
+  for (const [k, d] of Object.entries(v)) {
+    if (!CLAVE_DEL_PLAN.test(k)) continue;
+    if (typeof d === 'string' && d.length <= 1000) datos[k] = d;
+    else if (typeof d === 'number' && Number.isFinite(d)) datos[k] = d;
+  }
+  return datos;
+}
+
 export function leerIntencion(v: unknown): IntencionDelChat | null {
   if (!esObjeto(v) || typeof v.accion !== 'string') return null;
   const accion = v.accion;
   if (accion === 'confirmar' || accion === 'cancelar' || accion === 'deshacer') {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;
+  }
+  if ((ACCIONES_SOBRE_UN_PLAN as string[]).includes(accion)) {
+    const planId = texto(v.planId);
+    if (!planId) return null;
+    const datos = datosDelPlan(v.datos);
+    return Object.keys(datos).length > 0
+      ? { accion: accion as AccionSobreUnPlan, planId, datos }
+      : { accion: accion as AccionSobreUnPlan, planId };
   }
   const entidad = leerEntidadDeLaIntencion(v.entidad);
   if (!entidad || !/^[a-z][a-z_]{1,59}$/.test(accion)) return null;
@@ -259,13 +291,14 @@ export interface FormularioEnElHilo {
   errores: string[];
 }
 
-export function leerFormulario(v: unknown): FormularioEnElHilo | null {
-  if (!esObjeto(v) || !Array.isArray(v.campos)) return null;
-  const accion = texto(v.accion);
-  const entidad = leerEntidadDeLaIntencion(v.entidad);
-  if (!accion || !entidad) return null;
+/**
+ * Los campos que el micro pide en el hilo (el formulario de una acción, o lo
+ * que falta en un paso del plan). Lo que no cumple la forma se descarta.
+ */
+export function leerCampos(v: unknown): CampoDelFormulario[] {
+  if (!Array.isArray(v)) return [];
   const campos: CampoDelFormulario[] = [];
-  for (const c of v.campos) {
+  for (const c of v) {
     if (!esObjeto(c)) continue;
     const clave = texto(c.clave);
     const tipo = c.tipo as TipoDeCampo;
@@ -285,6 +318,15 @@ export function leerFormulario(v: unknown): FormularioEnElHilo | null {
       valor: typeof c.valor === 'string' ? c.valor : null,
     });
   }
+  return campos;
+}
+
+export function leerFormulario(v: unknown): FormularioEnElHilo | null {
+  if (!esObjeto(v) || !Array.isArray(v.campos)) return null;
+  const accion = texto(v.accion);
+  const entidad = leerEntidadDeLaIntencion(v.entidad);
+  if (!accion || !entidad) return null;
+  const campos = leerCampos(v.campos);
   if (campos.length === 0) return null;
   return {
     accion,
@@ -310,6 +352,22 @@ export function respuestaDeLaPropuesta(
   for (const m of posteriores) {
     const i = m.intencion;
     if (m.role === 'user' && i && 'propuestaId' in i && i.propuestaId === propuestaId) return i.accion;
+  }
+  return null;
+}
+
+/**
+ * ¿La persona ya respondió ESTA tarjeta del plan? Lo primero que dijo sobre
+ * ese plan DESPUÉS de la tarjeta. La respuesta del plan llega en un mensaje
+ * nuevo con su tarjeta al día; ésta queda como «respondida».
+ */
+export function respuestaDelPlan(
+  planId: string,
+  posteriores: ReadonlyArray<{ role: string; intencion?: IntencionDelChat }>,
+): AccionSobreUnPlan | null {
+  for (const m of posteriores) {
+    const i = m.intencion;
+    if (m.role === 'user' && i && 'planId' in i && i.planId === planId) return i.accion;
   }
   return null;
 }

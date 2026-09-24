@@ -5167,7 +5167,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Piloto — topes (P-3) y gracia (P-10) de la inmobiliaria, con sus rangos, el horario de ley y si puedes cambiarlos */
+        get: operations["getPilotoPreferencias"];
         /** Piloto — topes por acción (P-3) y gracia de «Deshacer» (P-10) de la inmobiliaria */
         put: operations["putPilotoPreferencias"];
         post?: never;
@@ -5228,6 +5229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/envios/{id}/deshacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — «Deshacer» un envío del micro (WhatsApp o correo de cobranza) durante su gracia (P-10) */
+        post: operations["pilotoEnvioDeshacer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/opera-sola": {
         parameters: {
             query?: never;
@@ -5237,6 +5255,23 @@ export interface paths {
         };
         /** Piloto — ¿opera sola? Lo que el Piloto hizo solo, con un clic, lo que espera y lo que falló, y Laura de hoy */
         get: operations["getPilotoOperaSola"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/opera-sola/que-falta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — ¿opera sola? Qué le falta a toda la inmobiliaria para operar en Automático, por agente y proceso, y quién lo destraba */
+        get: operations["getPilotoOperaSolaQueFalta"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8840,6 +8875,7 @@ export interface components {
         AiHubChatIntencionDelBoton: {
             accion: string;
             propuestaId?: string;
+            planId?: string;
             entidad?: {
                 tipo: string;
                 id: string;
@@ -8912,6 +8948,75 @@ export interface components {
             } | null;
         };
         AiHubChatTarjetaDeEjecucion: components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"];
+        AiHubChatCampoDelPlan: {
+            clave: string;
+            etiqueta: string;
+            /** @enum {string} */
+            tipo: "moneda" | "fecha" | "mes" | "numero" | "texto" | "texto_largo" | "opcion";
+            requerido: boolean;
+            opciones: {
+                valor: string;
+                etiqueta: string;
+            }[];
+            ayuda: string | null;
+            valor: string | null;
+        };
+        AiHubChatPasoDelPlan: {
+            n: number;
+            accion: string;
+            titulo: string;
+            frase: string;
+            riesgo: components["schemas"]["AiHubChatRiesgoDeLaAccion"];
+            /** @enum {string} */
+            estado: "pendiente" | "hecho" | "fallido" | "en_curso" | "omitido";
+            resumen: string | null;
+            ejecucionId: string | null;
+            deshacer: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            campos: components["schemas"]["AiHubChatCampoDelPlan"][];
+            dependeDe: number | null;
+        };
+        AiHubChatTarjetaPlan: {
+            /** @enum {string} */
+            tipo: "plan";
+            planId: string;
+            titulo: string;
+            cita: string;
+            /** @enum {string} */
+            estado: "propuesto" | "ejecutando" | "hecho" | "detenido" | "cancelado" | "vencido";
+            /** @enum {string} */
+            modo: "manual" | "copiloto" | "automatico";
+            pregunta: string;
+            porQue: string;
+            venceEn: string;
+            pasos: components["schemas"]["AiHubChatPasoDelPlan"][];
+            seDetieneAntesDe: {
+                n: number;
+                que: string;
+                porQue: string;
+            } | null;
+            detenido: {
+                n: number;
+                /** @enum {string} */
+                tipo: "fallo" | "en_curso" | "doble_control" | "faltan_datos" | "horario" | "no_disponible" | "referencia";
+                porQue: string;
+            } | null;
+            hacerTodo: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            cancelar: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            seguir: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            ensayo: boolean;
+        };
         AiHubChatEventoProcesoIniciado: {
             /** @enum {string} */
             type: "proceso_iniciado";
@@ -8921,6 +9026,7 @@ export interface components {
         AiHubChatPiezasNuevasDelDone: {
             ejecucion: Omit<components["schemas"]["AiHubChatTarjetaDeEjecucion"], "tipo"> & (components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"] | null);
             ensayo: boolean;
+            plan?: components["schemas"]["AiHubChatTarjetaPlan"] & (Record<string, never> | null);
         };
         DashboardSummaryResponse: {
             /** Format: uuid */
@@ -12250,6 +12356,33 @@ export interface components {
             error: string;
             code?: string;
         };
+        PilotoPantallaDePreferencias: {
+            preferencias: components["schemas"]["PilotoPreferencias"];
+            rangos: {
+                topeMontoCop: {
+                    min: number;
+                    max: number;
+                };
+                topeDestinatarios: {
+                    min: number;
+                    max: number;
+                };
+                graciaSegundos: {
+                    min: number;
+                    max: number;
+                };
+            };
+            ventanas: {
+                /** @enum {string} */
+                tipo: "cobranza" | "aviso";
+                nombre: string;
+            }[];
+            puedeEditar: boolean;
+            guardable: boolean | null;
+            porQueNo: string | null;
+            cambiadoPor: string | null;
+            cambiadoEn: string | null;
+        };
         PilotoPreferenciasPutBody: {
             topeMontoCop?: number;
             topeDestinatarios?: number;
@@ -12273,6 +12406,16 @@ export interface components {
             createdAt: string;
         };
         PilotoAccionError: {
+            error: string;
+            code?: string;
+        };
+        PilotoEnvioDeshecho: {
+            id: string;
+            /** @enum {string} */
+            estado: "deshecho";
+            mensaje: string;
+        };
+        PilotoEnvioError: {
             error: string;
             code?: string;
         };
@@ -12317,6 +12460,87 @@ export interface components {
         PilotoOperaSolaError: {
             error: string;
             code?: string;
+        };
+        PilotoQueFaltaFalta: {
+            id: string;
+            /** @enum {string} */
+            tipo: "interruptor" | "pases" | "migracion" | "agente_apagado" | "sin_modo" | "modo" | "delegacion" | "sin_cablear" | "laura" | "no_medido";
+            que: string;
+            /** @enum {string} */
+            quien: "leasefy" | "administrador" | "programar";
+            como: string;
+        };
+        PilotoQueFaltaProceso: {
+            id: string;
+            agente: string;
+            queHace: string;
+            /** @enum {string} */
+            estado: "opera_solo" | "siempre_humano" | "frenado" | "apagado";
+            faltas: components["schemas"]["PilotoQueFaltaFalta"][];
+            siempreHumano: string | null;
+            limites: string[];
+        };
+        PilotoQueFaltaAgente: {
+            agente: string;
+            nombre: string;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+            modoElegido: boolean;
+            corre: boolean;
+            delegacion: {
+                necesaria: boolean;
+                /** @enum {string} */
+                estado: "registrada" | "falta" | "no_medida" | "no_aplica";
+                quien: string | null;
+                desde: string | null;
+            };
+            /** @enum {string} */
+            estado: "listo" | "siempre_humano" | "frenado" | "apagado";
+            faltas: components["schemas"]["PilotoQueFaltaFalta"][];
+            procesos: components["schemas"]["PilotoQueFaltaProceso"][];
+        };
+        PilotoQueFalta: {
+            listo: boolean;
+            frase: string;
+            conteo: {
+                procesos: number;
+                operanSolos: number;
+                siempreHumanos: number;
+                frenados: number;
+                apagados: number;
+            };
+            pendientes: {
+                leasefy: number;
+                administrador: number;
+                programar: number;
+            };
+            interruptores: {
+                id: string;
+                nombre: string;
+                /** @enum {string} */
+                donde: "micro" | "back";
+                variables: string[];
+                queHabilita: string;
+                encendido: boolean | null;
+                detalle: string;
+                /** @enum {string} */
+                quien: "leasefy";
+            }[];
+            migraciones: {
+                id: string;
+                /** @enum {string} */
+                donde: "micro" | "back";
+                queHabilita: string;
+                aplicada: boolean | null;
+            }[];
+            topes: {
+                topeMontoCop: number;
+                topeDestinatarios: number;
+                graciaSegundos: number;
+                porDefecto: boolean;
+            };
+            agentes: components["schemas"]["PilotoQueFaltaAgente"][];
+            tomadoAt: string;
         };
         PilotoPulsoEnCurso: {
             id: string;
@@ -23973,6 +24197,46 @@ export interface operations {
             };
         };
     };
+    getPilotoPreferencias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Topes y gracia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPantallaDePreferencias"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+        };
+    };
     putPilotoPreferencias: {
         parameters: {
             query?: never;
@@ -23997,6 +24261,15 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoPreferencias"];
                 };
             };
+            /** @description Fuera de rango o sin nada que cambiar */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
             /** @description Sin JWT válido */
             401: {
                 headers: {
@@ -24015,7 +24288,7 @@ export interface operations {
                     "application/json": components["schemas"]["PilotoPerillaError"];
                 };
             };
-            /** @description Base de datos no disponible */
+            /** @description Sin la migración de la tabla o sin base */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -24284,6 +24557,74 @@ export interface operations {
             };
         };
     };
+    pilotoEnvioDeshacer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deshecho: no sale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioDeshecho"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso del ERP de este proceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description Ya salió (o ya estaba deshecho) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description La base no está disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+        };
+    };
     getPilotoOperaSola: {
         parameters: {
             query?: {
@@ -24304,6 +24645,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PilotoOperaSola"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoOperaSolaError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoOperaSolaError"];
+                };
+            };
+        };
+    };
+    getPilotoOperaSolaQueFalta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Qué falta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoQueFalta"];
                 };
             };
             /** @description Sin JWT válido */

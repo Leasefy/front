@@ -546,6 +546,9 @@
           "propuestaId": {
             "type": "string"
           },
+          "planId": {
+            "type": "string"
+          },
           "entidad": {
             "type": "object",
             "properties": {
@@ -848,6 +851,338 @@
           }
         }
       },
+      "AiHubChatCampoDelPlan": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "etiqueta": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "moneda",
+              "fecha",
+              "mes",
+              "numero",
+              "texto",
+              "texto_largo",
+              "opcion"
+            ]
+          },
+          "requerido": {
+            "type": "boolean"
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "valor": {
+                  "type": "string"
+                },
+                "etiqueta": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "valor",
+                "etiqueta"
+              ]
+            }
+          },
+          "ayuda": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "clave",
+          "etiqueta",
+          "tipo",
+          "requerido",
+          "opciones",
+          "ayuda",
+          "valor"
+        ]
+      },
+      "AiHubChatPasoDelPlan": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "riesgo": {
+            "$ref": "#/components/schemas/AiHubChatRiesgoDeLaAccion"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "pendiente",
+              "hecho",
+              "fallido",
+              "en_curso",
+              "omitido"
+            ]
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ejecucionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deshacer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatCampoDelPlan"
+            }
+          },
+          "dependeDe": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "n",
+          "accion",
+          "titulo",
+          "frase",
+          "riesgo",
+          "estado",
+          "resumen",
+          "ejecucionId",
+          "deshacer",
+          "campos",
+          "dependeDe"
+        ]
+      },
+      "AiHubChatTarjetaPlan": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "plan"
+            ]
+          },
+          "planId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cita": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "propuesto",
+              "ejecutando",
+              "hecho",
+              "detenido",
+              "cancelado",
+              "vencido"
+            ]
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "copiloto",
+              "automatico"
+            ]
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "venceEn": {
+            "type": "string"
+          },
+          "pasos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatPasoDelPlan"
+            }
+          },
+          "seDetieneAntesDe": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "n": {
+                "type": "integer"
+              },
+              "que": {
+                "type": "string"
+              },
+              "porQue": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "n",
+              "que",
+              "porQue"
+            ]
+          },
+          "detenido": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "n": {
+                "type": "integer"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "fallo",
+                  "en_curso",
+                  "doble_control",
+                  "faltan_datos",
+                  "horario",
+                  "no_disponible",
+                  "referencia"
+                ]
+              },
+              "porQue": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "n",
+              "tipo",
+              "porQue"
+            ]
+          },
+          "hacerTodo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "cancelar": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "seguir": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tipo",
+          "planId",
+          "titulo",
+          "cita",
+          "estado",
+          "modo",
+          "pregunta",
+          "porQue",
+          "venceEn",
+          "pasos",
+          "seDetieneAntesDe",
+          "detenido",
+          "hacerTodo",
+          "cancelar",
+          "seguir",
+          "ensayo"
+        ]
+      },
       "AiHubChatEventoProcesoIniciado": {
         "type": "object",
         "properties": {
@@ -904,6 +1239,19 @@
           },
           "ensayo": {
             "type": "boolean"
+          },
+          "plan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatTarjetaPlan"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -14839,22 +15187,144 @@
           "error"
         ]
       },
+      "PilotoPantallaDePreferencias": {
+        "type": "object",
+        "properties": {
+          "preferencias": {
+            "$ref": "#/components/schemas/PilotoPreferencias"
+          },
+          "rangos": {
+            "type": "object",
+            "properties": {
+              "topeMontoCop": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "topeDestinatarios": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "graciaSegundos": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "topeMontoCop",
+              "topeDestinatarios",
+              "graciaSegundos"
+            ]
+          },
+          "ventanas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "enum": [
+                    "cobranza",
+                    "aviso"
+                  ]
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "tipo",
+                "nombre"
+              ]
+            }
+          },
+          "puedeEditar": {
+            "type": "boolean"
+          },
+          "guardable": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "porQueNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cambiadoPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cambiadoEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "preferencias",
+          "rangos",
+          "ventanas",
+          "puedeEditar",
+          "guardable",
+          "porQueNo",
+          "cambiadoPor",
+          "cambiadoEn"
+        ]
+      },
       "PilotoPreferenciasPutBody": {
         "type": "object",
         "properties": {
           "topeMontoCop": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 10000000000
+            "maximum": 1000000000
           },
           "topeDestinatarios": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 100000
+            "maximum": 10000
           },
           "graciaSegundos": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 60,
             "maximum": 600
           }
         },
@@ -14943,6 +15413,42 @@
         ]
       },
       "PilotoAccionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PilotoEnvioDeshecho": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "deshecho"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "mensaje"
+        ]
+      },
+      "PilotoEnvioError": {
         "type": "object",
         "properties": {
           "error": {
@@ -15139,6 +15645,380 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "PilotoQueFaltaFalta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "interruptor",
+              "pases",
+              "migracion",
+              "agente_apagado",
+              "sin_modo",
+              "modo",
+              "delegacion",
+              "sin_cablear",
+              "laura",
+              "no_medido"
+            ]
+          },
+          "que": {
+            "type": "string"
+          },
+          "quien": {
+            "type": "string",
+            "enum": [
+              "leasefy",
+              "administrador",
+              "programar"
+            ]
+          },
+          "como": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "que",
+          "quien",
+          "como"
+        ]
+      },
+      "PilotoQueFaltaProceso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "queHace": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "opera_solo",
+              "siempre_humano",
+              "frenado",
+              "apagado"
+            ]
+          },
+          "faltas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaFalta"
+            }
+          },
+          "siempreHumano": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "agente",
+          "queHace",
+          "estado",
+          "faltas",
+          "siempreHumano",
+          "limites"
+        ]
+      },
+      "PilotoQueFaltaAgente": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "modoElegido": {
+            "type": "boolean"
+          },
+          "corre": {
+            "type": "boolean"
+          },
+          "delegacion": {
+            "type": "object",
+            "properties": {
+              "necesaria": {
+                "type": "boolean"
+              },
+              "estado": {
+                "type": "string",
+                "enum": [
+                  "registrada",
+                  "falta",
+                  "no_medida",
+                  "no_aplica"
+                ]
+              },
+              "quien": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "desde": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "necesaria",
+              "estado",
+              "quien",
+              "desde"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "listo",
+              "siempre_humano",
+              "frenado",
+              "apagado"
+            ]
+          },
+          "faltas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaFalta"
+            }
+          },
+          "procesos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaProceso"
+            }
+          }
+        },
+        "required": [
+          "agente",
+          "nombre",
+          "modo",
+          "modoElegido",
+          "corre",
+          "delegacion",
+          "estado",
+          "faltas",
+          "procesos"
+        ]
+      },
+      "PilotoQueFalta": {
+        "type": "object",
+        "properties": {
+          "listo": {
+            "type": "boolean"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "conteo": {
+            "type": "object",
+            "properties": {
+              "procesos": {
+                "type": "number"
+              },
+              "operanSolos": {
+                "type": "number"
+              },
+              "siempreHumanos": {
+                "type": "number"
+              },
+              "frenados": {
+                "type": "number"
+              },
+              "apagados": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "procesos",
+              "operanSolos",
+              "siempreHumanos",
+              "frenados",
+              "apagados"
+            ]
+          },
+          "pendientes": {
+            "type": "object",
+            "properties": {
+              "leasefy": {
+                "type": "number"
+              },
+              "administrador": {
+                "type": "number"
+              },
+              "programar": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "leasefy",
+              "administrador",
+              "programar"
+            ]
+          },
+          "interruptores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                },
+                "donde": {
+                  "type": "string",
+                  "enum": [
+                    "micro",
+                    "back"
+                  ]
+                },
+                "variables": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "queHabilita": {
+                  "type": "string"
+                },
+                "encendido": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "detalle": {
+                  "type": "string"
+                },
+                "quien": {
+                  "type": "string",
+                  "enum": [
+                    "leasefy"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "nombre",
+                "donde",
+                "variables",
+                "queHabilita",
+                "encendido",
+                "detalle",
+                "quien"
+              ]
+            }
+          },
+          "migraciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "donde": {
+                  "type": "string",
+                  "enum": [
+                    "micro",
+                    "back"
+                  ]
+                },
+                "queHabilita": {
+                  "type": "string"
+                },
+                "aplicada": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "donde",
+                "queHabilita",
+                "aplicada"
+              ]
+            }
+          },
+          "topes": {
+            "type": "object",
+            "properties": {
+              "topeMontoCop": {
+                "type": "number"
+              },
+              "topeDestinatarios": {
+                "type": "number"
+              },
+              "graciaSegundos": {
+                "type": "number"
+              },
+              "porDefecto": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "topeMontoCop",
+              "topeDestinatarios",
+              "graciaSegundos",
+              "porDefecto"
+            ]
+          },
+          "agentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaAgente"
+            }
+          },
+          "tomadoAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "listo",
+          "frase",
+          "conteo",
+          "pendientes",
+          "interruptores",
+          "migraciones",
+          "topes",
+          "agentes",
+          "tomadoAt"
         ]
       },
       "PilotoPulsoEnCurso": {
@@ -44414,6 +45294,62 @@
       }
     },
     "/api/agency/{agencyId}/piloto/preferencias": {
+      "get": {
+        "operationId": "getPilotoPreferencias",
+        "summary": "Piloto — topes (P-3) y gracia (P-10) de la inmobiliaria, con sus rangos, el horario de ley y si puedes cambiarlos",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Topes y gracia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPantallaDePreferencias"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "operationId": "putPilotoPreferencias",
         "summary": "Piloto — topes por acción (P-3) y gracia de «Deshacer» (P-10) de la inmobiliaria",
@@ -44458,6 +45394,16 @@
               }
             }
           },
+          "400": {
+            "description": "Fuera de rango o sin nada que cambiar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Sin JWT válido",
             "content": {
@@ -44479,7 +45425,7 @@
             }
           },
           "503": {
-            "description": "Base de datos no disponible",
+            "description": "Sin la migración de la tabla o sin base",
             "content": {
               "application/json": {
                 "schema": {
@@ -44842,6 +45788,103 @@
         }
       }
     },
+    "/api/agency/{agencyId}/piloto/envios/{id}/deshacer": {
+      "post": {
+        "operationId": "pilotoEnvioDeshacer",
+        "summary": "Piloto — «Deshacer» un envío del micro (WhatsApp o correo de cobranza) durante su gracia (P-10)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deshecho: no sale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioDeshecho"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso del ERP de este proceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya salió (o ya estaba deshecho)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "La base no está disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/piloto/opera-sola": {
       "get": {
         "operationId": "getPilotoOperaSola",
@@ -44883,6 +45926,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PilotoOperaSola"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/opera-sola/que-falta": {
+      "get": {
+        "operationId": "getPilotoOperaSolaQueFalta",
+        "summary": "Piloto — ¿opera sola? Qué le falta a toda la inmobiliaria para operar en Automático, por agente y proceso, y quién lo destraba",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Qué falta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoQueFalta"
                 }
               }
             }

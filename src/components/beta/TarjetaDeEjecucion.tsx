@@ -138,7 +138,7 @@ interface PropsComunes {
 
 // ── La cabecera: qué es y en qué estado está ────────────────────────────────
 
-function Estado({ tono, texto, pulso, ensayo }: { tono: SemanticTone; texto: string; pulso?: boolean; ensayo?: boolean }) {
+export function Estado({ tono, texto, pulso, ensayo }: { tono: SemanticTone; texto: string; pulso?: boolean; ensayo?: boolean }) {
   const { t } = useI18n();
   return (
     <span className="flex flex-wrap items-center justify-end gap-1.5">
@@ -152,7 +152,7 @@ function Estado({ tono, texto, pulso, ensayo }: { tono: SemanticTone; texto: str
 }
 
 /** El pie con alto fijo: cambiar la cuenta por «Enviándolo…» o quitar un botón no mueve lo de abajo. */
-function Pie({ children }: { children: ReactNode }) {
+export function Pie({ children }: { children: ReactNode }) {
   return <div className="flex min-h-9 w-full flex-wrap items-center gap-2">{children}</div>;
 }
 
@@ -263,7 +263,7 @@ const ICONO_DEL_RIESGO: Record<RiesgoNombrado, ReactNode> = {
   dobleControl: <UsersThree weight="duotone" className="size-4 shrink-0" aria-hidden />,
 };
 
-function RiesgosDeLaAccion({ riesgo }: { riesgo: RiesgoDeLaEjecucion }) {
+export function RiesgosDeLaAccion({ riesgo }: { riesgo: RiesgoDeLaEjecucion }) {
   const { t } = useI18n();
   const lista = riesgosNombrados(riesgo);
   if (lista.length === 0) return null;

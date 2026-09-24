@@ -34,6 +34,7 @@ import {
   type EventoProcesoIniciado,
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
+import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
@@ -332,6 +333,12 @@ export interface ChatStreamHandlers {
     /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
     ensayo: boolean;
     /**
+     * (24-09, paquete H) La tarjeta del PLAN: varias acciones pedidas en una
+     * frase, con UNA confirmación. `null` si el turno no armó un plan o el
+     * micro es de antes.
+     */
+    plan: TarjetaDePlan | null;
+    /**
      * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
      */
@@ -494,6 +501,8 @@ export function handleSSEEvent(
         // Aditivo (24-09): un `done` viejo no las trae → `null` / `false`.
         ejecucion: leerTarjetaDeEjecucion(obj.ejecucion),
         ensayo: obj.ensayo === true,
+        // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
+        plan: leerTarjetaDePlan(obj.plan),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
       });
       break;

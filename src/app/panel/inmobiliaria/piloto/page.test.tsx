@@ -65,6 +65,7 @@ vi.mock('@/lib/hooks/piloto/use-piloto-catalogo', () => ({ usePilotoCatalogo: h.
 vi.mock('@/components/inmobiliaria/piloto/PilotoPulso', () => ({ PilotoPulso: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoBandeja', () => ({ PilotoBandeja: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoAutonomia', () => ({ PilotoAutonomia: () => null }))
+vi.mock('@/components/inmobiliaria/piloto/PilotoOperaSola', () => ({ PilotoOperaSola: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoFeed', () => ({ PilotoFeed: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCajon', () => ({ PilotoCajon: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoProcesos', () => ({ PilotoProcesos: () => null }))

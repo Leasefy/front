@@ -1277,6 +1277,94 @@
         "vacioHint": "Prueba con otra área, otro modo o borrando la búsqueda.",
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya procesos corriendo."
+      },
+      "operaSola": {
+        "boton": "¿Opera sola?",
+        "pendientesAria": "Faltan {{n}} cosas para que opere sola en Automático",
+        "titulo": "¿Opera sola?",
+        "descripcion": "Qué le falta a toda tu inmobiliaria para operar sola en Automático, y quién lo destraba.",
+        "sinFuente": "No pude medir si tu inmobiliaria opera sola",
+        "sinFuenteHint": "No digo ni que sí ni que no: la medición no contestó. Vuelve a abrir esta pantalla en un momento.",
+        "estadoListo": "Opera sola en Automático",
+        "estadoNoListo": "Todavía no opera sola",
+        "nadaQueFalta": "Nada: todo lo que puede operar solo, opera solo.",
+        "afecta": "Afecta a: {{agentes}}",
+        "sinModoElegido": "nadie eligió su modo",
+        "verProcesos": "Ver sus {{n}} procesos",
+        "ocultarProcesos": "Ocultar sus procesos",
+        "interruptoresAyuda": "Los prende Leasefy en el servidor, nunca la inmobiliaria. Aquí sólo se dice si están prendidos, nunca su valor.",
+        "migraciones": "Migraciones que faltan (las aplica Leasefy)",
+        "migracionSinAplicar": "sin aplicar",
+        "migracionNoSe": "no se pudo comprobar",
+        "loQueHizoSinFuente": "No pude leer lo que hizo: el ERP no contestó.",
+        "secciones": {
+          "queFalta": "Qué falta, y quién lo destraba",
+          "porAgente": "Por agente",
+          "interruptores": "Interruptores del servidor",
+          "loQueHizo": "Lo que hizo en los últimos 30 días"
+        },
+        "quien": {
+          "leasefy": "Lo destraba Leasefy",
+          "administrador": "Lo destraba un administrador",
+          "programar": "Hay que programarlo"
+        },
+        "estadoAgente": {
+          "listo": "Opera solo",
+          "frenado": "Frenado",
+          "siempre_humano": "Pide un clic por regla",
+          "apagado": "Apagado"
+        },
+        "estadoProceso": {
+          "opera_solo": "Opera solo",
+          "siempre_humano": "Siempre pide un clic",
+          "frenado": "Frenado",
+          "apagado": "Apagado"
+        },
+        "delegacion": {
+          "registrada": "a nombre de {{quien}}",
+          "falta": "sin registrar a nombre de quién actúa",
+          "noMedida": "no pude comprobar a nombre de quién actúa"
+        },
+        "interruptor": {
+          "encendido": "Encendido",
+          "apagado": "Apagado",
+          "noSeVe": "No se ve desde aquí",
+          "donde": {
+            "micro": "En el Piloto",
+            "back": "En el ERP"
+          }
+        }
+      },
+      "topes": {
+        "titulo": "Tus topes en Automático",
+        "descripcion": "Hasta dónde el Piloto actúa solo. Por encima de un tope, aunque esté en Automático, te pide un clic.",
+        "sinFuente": "No pude leer tus topes: el Piloto no contestó.",
+        "fueraDeRango": "Tiene que estar entre {{min}} y {{max}}.",
+        "porDefecto": "Son los valores de Leasefy: nadie los ha cambiado todavía.",
+        "cambiadoPor": "Los cambió {{quien}} el {{fecha}}.",
+        "guardar": "Guardar los topes",
+        "guardado": "Topes guardados.",
+        "errorAlGuardar": "No se guardaron: {{error}}",
+        "topeMontoCop": {
+          "label": "Tope por acción",
+          "ayuda": "La plata de una sola acción (un recibo, un cobro). Con $0, toda acción con plata te pide un clic."
+        },
+        "topeDestinatarios": {
+          "label": "Personas por envío",
+          "ayuda": "A cuántas personas les puede salir algo en un solo envío. Con 0, todo envío te pide un clic."
+        },
+        "graciaSegundos": {
+          "label": "Segundos para deshacer",
+          "ayuda": "Lo que el Piloto manda solo espera este tiempo con «Deshacer» a la vista. El mínimo es un minuto."
+        },
+        "horario": {
+          "titulo": "Horario de ley",
+          "ayuda": "Lo pone la ley, no se edita: fuera de este horario, el Piloto lo programa para la próxima apertura."
+        },
+        "ventana": {
+          "cobranza": "Cobranza",
+          "aviso": "Avisos"
+        }
       }
     },
     "mobileNav": {
@@ -7905,7 +7993,8 @@
           "chat": "El chat",
           "contratos": "Contratos",
           "facturacion": "Facturación y caja",
-          "propietarios": "Propietarios"
+          "propietarios": "Propietarios",
+          "contabilidad": "Contabilidad"
         },
         "rol": {
           "cobrador": "Cobrador",
@@ -11525,6 +11614,51 @@
           "sinFactor": "Todavía no tienes el segundo factor activado en tu cuenta.",
           "codigoIncorrecto": "Ese código no era. Prueba con el siguiente.",
           "noPudeVerificar": "No pude verificar el código: {{motivo}}"
+        }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Espera tu respuesta",
+          "contestado": "Respondido",
+          "ejecutando": "Haciéndose",
+          "hecho": "Hecho",
+          "detenido": "Detenido",
+          "cancelado": "No se hizo",
+          "vencido": "Venció"
+        },
+        "loQuePediste": "Lo que pediste: «{{cita}}»",
+        "pasos": "Los pasos del plan",
+        "paso": {
+          "estado": {
+            "pendiente": "Pendiente",
+            "hecho": "Hecho",
+            "fallido": "No se pudo",
+            "en_curso": "Sigue corriendo",
+            "omitido": "No hizo falta"
+          },
+          "dependeDe": "Se puede cuando esté hecho el paso {{n}}.",
+          "pedisteDeshacer": "Pediste deshacerlo: la respuesta va abajo."
+        },
+        "seDetieneAntesDe": "El plan se detiene antes del paso {{n}} ({{que}}):",
+        "detenidoEn": "Se detuvo en el paso {{n}}:",
+        "hacerTodo": "Hacer todo",
+        "no": "No",
+        "noSeguir": "No seguir",
+        "reintentarDesde": "Reintentar desde el paso {{n}}",
+        "seguirDesde": "Seguir desde el paso {{n}}",
+        "llenaLoQueFalta": "Llena lo que falta en los pasos para poder hacerlo todo.",
+        "yaRespondiste": {
+          "hacer_plan": "Dijiste que sí: el avance va en la respuesta de abajo.",
+          "cancelar_plan": "Dijiste que no.",
+          "seguir_plan": "Pediste seguir: el avance va en la respuesta de abajo."
+        },
+        "vencido": "Este plan venció: pídemelo de nuevo y lo armo con los datos de ahora.",
+        "ensayo": "Ensayo: el plan está completo, pero nada se guarda ni se ejecuta.",
+        "mensaje": {
+          "hacerTodo": "Sí, hazlo todo",
+          "no": "No, no hagas el plan",
+          "seguir": "Sigue desde el paso {{n}}",
+          "noSeguir": "No sigas con el plan"
         }
       }
     }

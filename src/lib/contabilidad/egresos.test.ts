@@ -199,6 +199,15 @@ describe('🔴 la doble firma', () => {
     expect(p.aprobar.puede).toBe(true);
   });
 
+  it('🔴 P-4 aclarado (24-09): al ADMINISTRADOR que lo armó no se le apaga (no se confirma a sí mismo)', () => {
+    const p = permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo' }), 'u-yo', true);
+    expect(p.aprobar).toEqual({ puede: true, motivo: null });
+    // Y a quien no es administrador, el motivo lo dice.
+    expect(permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo' }), 'u-yo', false).aprobar.motivo).toContain(
+      'Sólo lo que arma un administrador queda aprobado por él mismo (P-4)',
+    );
+  });
+
   it('sin saber quién soy NO se bloquea: el 409 del back es la autoridad', () => {
     expect(permisosDelLote(lote('BORRADOR')).aprobar.puede).toBe(true);
     expect(permisosDelLote(lote('BORRADOR'), null).aprobar.puede).toBe(true);

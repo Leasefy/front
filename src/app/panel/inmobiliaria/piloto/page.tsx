@@ -64,6 +64,7 @@ import { usePilotoPulso } from '@/lib/hooks/piloto/use-piloto-pulso'
 import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
+import { PilotoOperaSola } from '@/components/inmobiliaria/piloto/PilotoOperaSola'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
 import {
   PilotoCajon,
@@ -164,8 +165,12 @@ function PilotoContent() {
             «Procesos» es la ventana por la que se ve trabajar al Piloto
             (process view, 2026-09-02): también va acá, no en el flujo diario.
             «Preparación» (T-0051) se sacó del render — hidden temporarily
-            as a product decision, not deleted; ver PilotoPreparacion.tsx. */}
-        <div className="flex shrink-0 items-center gap-2">
+            as a product decision, not deleted; ver PilotoPreparacion.tsx.
+            «¿Opera sola?» (24-09-2026) mide TODA la inmobiliaria (no sólo a
+            Laura) y trae los topes y la gracia: va primero porque es la
+            pregunta que Nico le hace al Piloto. */}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <PilotoOperaSola />
           <Button asChild variant="outline" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
               <ListChecks weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />

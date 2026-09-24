@@ -10,7 +10,11 @@
  *    `accionesPara(estado)`, calcada de los `if` del servicio, y del permiso
  *    de cada una. Un botón que siempre falla enseña a ignorar los errores.
  * 2. **Dejar que quien armó el lote crea que puede aprobarlo.** El back lo
- *    prohíbe; acá se dice antes de que gaste un clic.
+ *    prohíbe; acá se dice antes de que gaste un clic. Salvo P-4 (aclarado por
+ *    Nico el 24-09): el ADMINISTRADOR no se confirma a sí mismo. Lo que arma
+ *    vuelve del back ya aprobado y acá lo dice («Aprobado por ti como
+ *    administrador (P-4)»); un lote suyo que quedó esperando se aprueba con
+ *    un clic, sin código, en vez de un «Aprobar» apagado.
  * 3. **Entregar el archivo sin el aviso.** Mientras nadie haya subido un
  *    archivo de ese formato al banco y visto que lo acepta, el nombre lleva
  *    `SIN-VERIFICAR` y acá se muestra ANTES de guardar. Un giro de mil
@@ -110,6 +114,11 @@ import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso'
 import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
 import { AvisoDeArchivoAnulado } from './AvisoDeArchivoAnulado';
 import { useI18n } from '@/lib/i18n';
+import {
+  APROBADO_POR_TI,
+  loApruebaElQueLoArmo,
+  notaDelLote,
+} from '@/lib/doble-control/el-administrador';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -285,7 +294,7 @@ export interface DetalleDelLoteProps {
 
 export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteProps) {
   const { vista, cargando, error, refetch, setVista } = useLoteDeDispersion(id);
-  const { canAccess } = usePermissions();
+  const { canAccess, isAdmin } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
   const { t } = useI18n();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
@@ -387,12 +396,22 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
   /*
+   * 🔴 P-4 aclarado (Nico, 24-09): el ADMINISTRADOR que armó el lote no se
+   * confirma a sí mismo. «Pedir aprobación» se lo deja aprobado en ese paso y
+   * «Aprobar» no le pide código (lo hace el back). El botón no se le apaga.
+   */
+  const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin);
+  /** Lo armó y lo aprobó la misma persona (sólo un administrador, P-4). */
+  const notaP4 = notaDelLote(lote, yo);
+  /*
    * 🔴 Nico, 23-09: el giro que vuelve a salir no lo aprueba quien registró su
    * devolución (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
    * Se apaga «Aprobar» con el porqué antes del clic.
    */
   const registreUnaDevolucion =
-    yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
+    // P-4: al administrador el back también le deja aprobar el regiro de la
+    // devolución que registró (y lo deja en la bitácora).
+    !isAdmin && yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
 
   return (
@@ -450,10 +469,23 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
         </Banner>
       )}
-      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
+      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !loApruebaAlPedir && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
+        </Banner>
+      )}
+      {(lote.estado === 'BORRADOR' || lote.estado === 'ESPERANDO_APROBACION') &&
+        loApruebaAlPedir &&
+        !bloqueado && (
+          <Banner variant="info" title="Lo armaste tú y eres administrador" data-testid="lo-apruebas-tu">
+            No se te pide que lo confirmes con otra persona ni con un código: con «Aprobar» queda
+            aprobado en un solo paso (P-4). En la bitácora queda que fuiste la misma persona.
+          </Banner>
+        )}
+      {lote.estado === 'APROBADO' && notaP4 && (
+        <Banner variant="success" title={notaP4.titulo} data-testid="aprobado-por-la-misma-persona">
+          {notaP4.detalle}
         </Banner>
       )}
 
@@ -477,7 +509,11 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           etiqueta="Aprobado por"
           valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
           mono={false}
-          detalle={lote.aprobadoAt ? formatDateTime(lote.aprobadoAt) : undefined}
+          detalle={
+            lote.aprobadoAt
+              ? `${notaP4 ? 'Como administrador, en el mismo paso (P-4) · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              : undefined
+          }
         />
       </section>
 
@@ -489,17 +525,22 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         >
           {acciones.includes('pedirAprobacion') && (
             <Button onClick={() => setDialogo('pedirAprobacion')} hideArrow disabled={bloqueado}>
-              <PaperPlaneTilt className="h-4 w-4" />
-              Pedir aprobación
+              {loApruebaAlPedir ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <PaperPlaneTilt className="h-4 w-4" />
+              )}
+              {/* P-4: al administrador que lo armó, pedir la aprobación ES aprobar. */}
+              {loApruebaAlPedir ? 'Aprobar' : 'Pedir aprobación'}
             </Button>
           )}
           {acciones.includes('aprobar') && (
             <Button
               onClick={() => setDialogo('aprobar')}
               hideArrow
-              disabled={soyElCreador || registreUnaDevolucion || bloqueado}
+              disabled={(soyElCreador && !loApruebaAlPedir) || registreUnaDevolucion || bloqueado}
               title={
-                soyElCreador
+                soyElCreador && !loApruebaAlPedir
                   ? 'Quien arma el lote no puede aprobarlo'
                   : registreUnaDevolucion
                     ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
@@ -510,7 +551,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
               Aprobar
             </Button>
           )}
-          {acciones.includes('reenviarCodigo') && (
+          {/* A quien lo aprueba él mismo no le sale un código: no hay qué reenviar. */}
+          {acciones.includes('reenviarCodigo') && !loApruebaAlPedir && (
             <Button
               variant="secondary"
               hideArrow
@@ -801,14 +843,16 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <PedirAprobacionDialog
         abierto={dialogo === 'pedirAprobacion'}
         lote={lote}
-        reenvio={lote.estado === 'ESPERANDO_APROBACION'}
+        reenvio={lote.estado === 'ESPERANDO_APROBACION' && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         onCerrar={cerrar}
         onListo={(r) => aplicarLote({ ...lote, ...r.lote, items: lote.items })}
       />
       <AprobarDialog
         abierto={dialogo === 'aprobar'}
         lote={lote}
-        exigeCodigo={exigeCodigo}
+        exigeCodigo={exigeCodigo && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         intentosRestantes={intentosRestantes}
         onCerrar={cerrar}
         onListo={aplicarLote}
@@ -968,9 +1012,15 @@ function PedirAprobacionDialog({
   abierto,
   lote,
   reenvio,
+  comoAdministrador = false,
   onCerrar,
   onListo,
-}: DialogoBase & { reenvio: boolean; onListo: (r: SolicitudDeAprobacion) => void }) {
+}: DialogoBase & {
+  reenvio: boolean;
+  /** P-4: lo armó quien mira y es administrador: este paso lo deja aprobado. */
+  comoAdministrador?: boolean;
+  onListo: (r: SolicitudDeAprobacion) => void;
+}) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<SolicitudDeAprobacion | null>(null);
@@ -989,7 +1039,13 @@ function PedirAprobacionDialog({
       const r = await lotesDeDispersionApi.solicitarAprobacion(lote.id);
       setResultado(r);
       onListo(r);
-      toast.success(reenvio ? 'Código reenviado' : 'Lote enviado a aprobación');
+      toast.success(
+        r.lote.estado === 'APROBADO'
+          ? 'Lote aprobado'
+          : reenvio
+            ? 'Código reenviado'
+            : 'Lote enviado a aprobación',
+      );
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo mandar el lote a aprobación.'));
     } finally {
@@ -1001,7 +1057,9 @@ function PedirAprobacionDialog({
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-lg" data-testid="dialogo-pedir-aprobacion">
         <DialogHeader>
-          <DialogTitle>{reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}</DialogTitle>
+          <DialogTitle>
+            {comoAdministrador ? 'Aprobar el lote' : reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}
+          </DialogTitle>
           <DialogDescription>
             {resultado
               ? 'Listo. Esto es lo que pasó.'
@@ -1014,16 +1072,28 @@ function PedirAprobacionDialog({
         <div className="space-y-3 px-6 py-4 text-sm">
           {!resultado ? (
             <>
-              <p className="text-fg-muted">
-                Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
-                el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
-                le llega un código de 6 dígitos por correo que vence a los 10 minutos.
-              </p>
+              {comoAdministrador ? (
+                <p className="text-fg-muted">
+                  Lo armaste tú y eres administrador: queda aprobado en este paso, sin código y sin
+                  pedírselo a otra persona (P-4). En la bitácora queda que fuiste la misma persona.
+                </p>
+              ) : (
+                <p className="text-fg-muted">
+                  Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
+                  el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
+                  le llega un código de 6 dígitos por correo que vence a los 10 minutos.
+                </p>
+              )}
               {error && <Banner variant="danger">{error}</Banner>}
             </>
           ) : (
             <div className="space-y-3" data-testid="resultado-de-aprobacion">
-              {resultado.exigeCodigo ? (
+              {resultado.lote.estado === 'APROBADO' ? (
+                <Banner variant="success" title={APROBADO_POR_TI}>
+                  {resultado.mismoPaso?.nota ??
+                    'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
+                </Banner>
+              ) : resultado.exigeCodigo ? (
                 <>
                   <Banner variant="info" title="El código salió por correo">
                     {resultado.motivoDelCodigo}
@@ -1060,7 +1130,7 @@ function PedirAprobacionDialog({
                 Cancelar
               </Button>
               <Button onClick={() => void pedir()} isLoading={enviando} hideArrow>
-                {reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
+                {comoAdministrador ? 'Aprobar' : reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
               </Button>
             </>
           ) : (
@@ -1078,12 +1148,15 @@ function AprobarDialog({
   abierto,
   lote,
   exigeCodigo,
+  comoAdministrador = false,
   intentosRestantes,
   onCerrar,
   onListo,
   onFallo,
 }: DialogoBase & {
   exigeCodigo: boolean;
+  /** P-4: lo armó quien mira y es administrador: sin código, en un paso. */
+  comoAdministrador?: boolean;
   intentosRestantes: number;
   onListo: (lote: LoteDeDispersion) => void;
   /** Un código incorrecto gasta un intento: hay que volver a leer cuántos quedan. */
@@ -1157,6 +1230,11 @@ function AprobarDialog({
                 {intentosRestantes === 1 ? 'intento' : 'intentos'} antes de que el lote se bloquee.
               </p>
             </div>
+          ) : comoAdministrador ? (
+            <p className="text-fg-muted">
+              Lo armaste tú y eres administrador: se aprueba sin código y sin otra persona (P-4). En
+              la bitácora queda que fuiste la misma persona.
+            </p>
           ) : (
             <p className="text-fg-muted">
               Este lote no exige código: está por debajo del monto que pide doble control. Tu

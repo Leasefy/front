@@ -3,6 +3,8 @@ import * as React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { usePilotoAutonomia } from './use-piloto-autonomia'
+import es from '@/lib/i18n/locales/es.json'
+import en from '@/lib/i18n/locales/en.json'
 
 void React
 
@@ -143,6 +145,33 @@ describe('🔴 usePilotoAutonomia — UNA petición para toda la flota (auditor�
     const pagos = result?.rows.find((r) => r.agente === 'pagos')
     expect(pagos).toMatchObject({ corre: false, porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.' })
     expect(result?.rows.find((r) => r.agente === 'cobranza')?.valla).toHaveLength(1)
+  })
+
+  it('lista a Contabilidad con su propio modo (Nico, 24-09), después de los dueños de la operación', async () => {
+    const conContabilidad = {
+      ...flota,
+      agentes: [
+        ...flota.agentes,
+        {
+          agente: 'contabilidad',
+          modo: 'sombra',
+          origen: 'piloto',
+          corre: true,
+          porQueNoCorre: null,
+          gobierna: true,
+          actua: true,
+          efectoReal: 'No hace nada solo: cada paso te lo propone…',
+          valla: [],
+          t323: false,
+        },
+      ],
+    }
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => makeOkResponse(conContabilidad))
+    await mount()
+    expect(result?.rows.map((r) => r.agente)).toEqual(['cobranza', 'chat', 'contabilidad', 'pagos'])
+    expect(result?.rows.find((r) => r.agente === 'contabilidad')).toMatchObject({ modo: 'sombra', gobierna: true, corre: true })
+    expect(es.inmobiliaria.ai.workspace.agente.contabilidad).toBe('Contabilidad')
+    expect(en.inmobiliaria.ai.workspace.agente.contabilidad).toBe('Accounting')
   })
 
   it('si la flota no contesta, error queda seteado y no se inventan filas', async () => {

@@ -30,10 +30,10 @@ import {
 export default function ConfiguracionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAdmin, canAccess, isLoading } = usePermissions();
+  const { isAdmin, canAccess, isLoading, agencyRole } = usePermissions();
 
   const destinoViejo = destinoDeParametrosViejos(searchParams);
-  const ctx = { isAdmin, canAccess };
+  const ctx = { isAdmin, canAccess, agencyRole };
   const puedeVerPerfil = puedeVerSeccion(seccionPorId('perfil'), ctx);
   const alternativa = isLoading || puedeVerPerfil ? null : (seccionesVisibles(ctx)[0] ?? null);
 

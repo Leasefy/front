@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChatDataCard, type ChatDataTile } from '@leasefy/cadence';
-import type { ChatSnapshot } from '@/lib/types/beta-chat';
+import { ArrowDown } from '@phosphor-icons/react';
+import { ChatDataCard } from '@leasefy/cadence';
+import type { ChatMessage } from '@/lib/types/beta-chat';
+import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
+import { mosaicosDelEstado } from '@/lib/chat/tarjeta-del-estado';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { useScrollDelTurno } from '@/lib/hooks/use-scroll-del-turno';
+import { Button } from '@/components/ui/button';
 import { ChatMessageSkeleton } from './BetaSkeletons';
 import { BetaWelcome } from './BetaWelcome';
 import { UserBubble } from './UserBubble';
@@ -16,6 +21,8 @@ import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
+import { RespuestaConForma } from './RespuestaConForma';
+import { AccionesEnElHilo } from './AccionesEnElHilo';
 import { MessageActions } from './MessageActions';
 import { WorkspaceView } from './WorkspaceView';
 import { AccionPropuestaCard } from './AccionPropuestaCard';
@@ -52,34 +59,12 @@ function responseNeedsCard(message: {
   return meta.type === 'actionable' || (meta.actions?.length ?? 0) > 0 || !!message.decision;
 }
 
-/** Compact COP for a narrow mono tile, e.g. 8_420_000 → "$8,4 M". */
-function formatCopCompact(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount);
-}
-
 /**
- * The "estado de hoy" snapshot → ChatDataCard tiles. Always shows the 3 core
- * KPIs (deudores / pagado hoy / llamadas); appends escalaciones + prejurídico
- * only when > 0 so the glance stays clean when there's nothing pending.
+ * El texto de la respuesta sin la tabla que el modelo copió a mano, cuando la
+ * misma tabla viene como DATOS y la pinta Cadence (`RespuestaConForma`).
  */
-function snapshotTiles(s: ChatSnapshot): ChatDataTile[] {
-  const tiles: ChatDataTile[] = [
-    { label: 'Deudores activos', value: s.deudoresActivos },
-    { label: 'Pagado hoy', value: formatCopCompact(s.pagadoHoyCop) },
-    { label: 'Llamadas hoy', value: s.llamadasHoy },
-  ];
-  if (s.escalacionesPendientes > 0) {
-    tiles.push({ label: 'Escalaciones', value: s.escalacionesPendientes });
-  }
-  if (s.enPrejuridico > 0) {
-    tiles.push({ label: 'Prejurídico', value: s.enPrejuridico });
-  }
-  return tiles;
+function textoSinTablaRepetida(message: ChatMessage): string {
+  return tieneTabla(message.bloques) ? sinTablasDeMarkdown(message.content) : message.content;
 }
 
 /**
@@ -105,49 +90,35 @@ export function ChatContainer({ className }: ChatContainerProps) {
     selectDecisionOption,
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
+    activeConversationId,
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
-  // El contenedor de mensajes sólo existe con mensajes; el listener de scroll
-  // se engancha cuando aparece.
-  const hasMessagesForScroll = messages.length > 0;
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
   const lastWorkspaceTriggerId = useRef<string | null>(null);
 
-  // ── Auto-scroll que sigue la respuesta (patrón Claude / ChatGPT) ──────────
+  // ── El scroll del hilo ────────────────────────────────────────────────────
   //
   // Nico, 2026-08-27: «cuando llega algo nuevo le toca a uno hacer scroll
-  // down, y no debería: él debería ir haciendo el scroll».
-  //
-  // Lo que había medía «¿estás cerca del fondo?» DENTRO del efecto, o sea
-  // DESPUÉS de que el contenido nuevo ya se pintó. Un párrafo largo o un
-  // bloque de agentes hacía crecer `scrollHeight` más de 100px de golpe, la
-  // medición concluía «el usuario se alejó del fondo» y no bajaba — justo
-  // cuando más contenido llegaba. La pregunta correcta no es dónde está el
-  // scroll ahora, sino qué hizo el USUARIO: si él no se despegó del fondo,
-  // se lo sigue; si subió a leer algo, se lo respeta hasta que vuelva abajo.
-  // Eso se sabe escuchando el scroll, no midiendo después del render.
-  const siguiendo = useRef(true);
-  useEffect(() => {
-    const el = messagesAreaRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      siguiendo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [hasMessagesForScroll]);
-
-  useEffect(() => {
-    if (!siguiendo.current) return;
-    const el = messagesAreaRef.current;
-    if (!el) return;
-    // Directo, sin `smooth`: durante el streaming llegan varios cambios por
-    // segundo y una animación encadenada sobre otra tartamudea; el salto
-    // inmediato al fondo es lo que hacen Claude y ChatGPT.
-    el.scrollTop = el.scrollHeight;
-  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning]);
+  // down». Y el 23-09 (23:44), al revés: «no dejes en la parte de abajo de la
+  // respuesta, que el usuario haga el scroll para ver toda la respuesta». Las
+  // dos cosas a la vez: la pregunta queda arriba, la respuesta crece debajo y
+  // el hilo acompaña sólo hasta que el INICIO de la respuesta llega arriba.
+  // Toda la regla vive en `useScrollDelTurno` (antes: siempre al final).
+  const listaRef = useRef<HTMLDivElement>(null);
+  const espacioRef = useRef<HTMLDivElement>(null);
+  const ultimaPregunta = [...messages].reverse().find((m) => m.role === 'user')?.id ?? null;
+  const { verResto, irAlResto } = useScrollDelTurno({
+    hilo: messagesAreaRef,
+    lista: listaRef,
+    fin: scrollRef,
+    espacio: espacioRef,
+    conversacionId: activeConversationId,
+    hayHilo: messages.length > 0,
+    ultimaPregunta,
+    cambios: [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning, turnSteps],
+  });
 
   // Auto-enter workspace mode when an actionable response with steps completes
   useEffect(() => {
@@ -218,19 +189,25 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <div
             ref={messagesAreaRef}
             data-lenis-prevent
+            data-hilo
             className="relative flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-6 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-live="polite"
             aria-label={t('beta.a11y.newMessageRegion')}
           >
             {/* Center-constrain messages for wider screens */}
-            <div className="max-w-3xl mx-auto space-y-5">
+            <div ref={listaRef} className="max-w-3xl mx-auto space-y-5">
               {messages.map((message, index) => {
                 const isLastAssistant =
                   message.role === 'assistant' &&
                   index === messages.length - 1;
 
                 if (message.role === 'user') {
-                  return <UserBubble key={message.id} message={message} />;
+                  // `data-pregunta`: el ancla del scroll del turno.
+                  return (
+                    <div key={message.id} data-pregunta={message.id}>
+                      <UserBubble message={message} />
+                    </div>
+                  );
                 }
 
                 // Completed agent activity stored on the message (from previous turns)
@@ -256,10 +233,10 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 const snapshotEsNuevo =
                   message.snapshot &&
                   (!snapshotPrevio ||
-                    JSON.stringify(snapshotTiles(snapshotPrevio)) !==
-                      JSON.stringify(snapshotTiles(message.snapshot)));
+                    JSON.stringify(mosaicosDelEstado(snapshotPrevio, t)) !==
+                      JSON.stringify(mosaicosDelEstado(message.snapshot, t)));
                 const snapshotCard = snapshotEsNuevo && message.snapshot ? (
-                  <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
+                  <ChatDataCard tiles={mosaicosDelEstado(message.snapshot, t)} />
                 ) : null;
 
                 // For the last assistant message, use live activeAgentBlock if agents are running
@@ -271,7 +248,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 }
 
                 // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
-                // (filas planas + reloj vivo), en vez de la tarjeta con borde.
+                // (filas planas; el paso activo gira y dice qué hace), en vez de
+                // la tarjeta con borde.
                 if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
                     <div key={message.id} className="space-y-3 animate-fade-in">
@@ -292,7 +270,20 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         <>
                           <ResponseCard
                             meta={message.responseMeta}
-                            content={message.content}
+                            content={textoSinTablaRepetida(message)}
+                            turnoId={message.turnoId}
+                          />
+                          <RespuestaConForma
+                            bloques={message.bloques}
+                            entidades={message.entidades}
+                            turnoId={message.turnoId}
+                            conAcciones={(message.acciones?.length ?? 0) > 0}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                          />
+                          {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
+                          <AccionesEnElHilo
+                            message={message}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
@@ -340,7 +331,20 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         <>
                           <ResponseCard
                             meta={message.responseMeta}
-                            content={message.content}
+                            content={textoSinTablaRepetida(message)}
+                            turnoId={message.turnoId}
+                          />
+                          <RespuestaConForma
+                            bloques={message.bloques}
+                            entidades={message.entidades}
+                            turnoId={message.turnoId}
+                            conAcciones={(message.acciones?.length ?? 0) > 0}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                          />
+                          {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
+                          <AccionesEnElHilo
+                            message={message}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
@@ -383,9 +387,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
                       {responseNeedsCard(message) ? (
                         <ResponseCard
                           meta={message.responseMeta}
-                          content={message.content}
+                          content={textoSinTablaRepetida(message)}
                           isStreaming
-                          streamingContent={streamingContent}
+                          streamingContent={
+                            tieneTabla(message.bloques)
+                              ? sinTablasDeMarkdown(streamingContent, { parcial: true })
+                              : streamingContent
+                          }
                         />
                       ) : (
                         <AssistantBubble
@@ -454,12 +462,38 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   // El par pendiente (pregunta + placeholder) no es contexto leído.
                   historyCount={Math.max(0, messages.length - 2)}
                   snapshot={messages[messages.length - 1]?.snapshot ?? null}
+                  actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
                 />
               )}
 
-              {/* Scroll sentinel */}
-              <div ref={scrollRef} />
+              {/* Fin del contenido: hasta acá se mide (el espacio va después). */}
+              <div ref={scrollRef} data-fin-del-hilo />
             </div>
+            {/* El espacio que deja la pregunta arriba mientras la respuesta es
+                corta. Lo calcula `useScrollDelTurno`. */}
+            <div ref={espacioRef} aria-hidden data-espacio-del-hilo style={{ height: 0 }} />
+          </div>
+
+          {/* «Ver el resto»: flota sobre el borde de abajo del hilo mientras
+              quede respuesta debajo. Una caja de alto cero pegada al hilo le da
+              dónde anclarse sin envolver el hilo (y fuera de su `aria-live`,
+              para que el lector de pantalla no lo anuncie en cada cambio). */}
+          <div className="relative h-0">
+            {verResto && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                hideArrow
+                onClick={irAlResto}
+                // Discreto (contorno, chico) pero opaco: no se lee el texto de detrás.
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 gap-1.5 bg-surface shadow-md"
+                data-testid="ver-el-resto"
+              >
+                {t('beta.enElChat.verElResto')}
+                <ArrowDown className="size-4" aria-hidden />
+              </Button>
+            )}
           </div>
 
           {/* Chat input, con el progreso de la tarea FUSIONADO encima (patrón

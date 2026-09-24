@@ -24,18 +24,20 @@ import { notFound, redirect } from 'next/navigation'
 import { avaluoReportRedirectTarget } from '@/lib/avaluo/report-redirect'
 
 interface Props {
-  params: { slug: string }
-  searchParams?: { token?: string | string[] }
+  params: Promise<{ slug: string }>
+  searchParams?: Promise<{ token?: string | string[] }>
 }
 
-function readToken(searchParams: Props['searchParams']): string | null {
+function readToken(searchParams: Awaited<Props['searchParams']>): string | null {
   const value = searchParams?.token
   if (typeof value === 'string') return value
   if (Array.isArray(value)) return value[0] ?? null
   return null
 }
 
-export default function ReporteAvaluoRedirectPage({ params, searchParams }: Props) {
+export default async function ReporteAvaluoRedirectPage(props: Props) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const target = avaluoReportRedirectTarget(params.slug, readToken(searchParams))
   if (target === null) notFound()
   redirect(target)

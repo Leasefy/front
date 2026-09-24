@@ -106,3 +106,48 @@ describe('PilotoPulso — 429 / error visible (T-0076)', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
   })
 })
+
+describe('🔴 el pulso dice qué es y nunca pinta «bajo control» sin lectura (auditoría del Piloto, 23-09)', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('el esqueleto tiene rótulo y dice qué está midiendo (no un bloque gris mudo)', () => {
+    act(() => root.render(<PilotoPulso data={null} isLoading error={null} notAvailable={false} />))
+    const cargando = container.querySelector('[data-testid="piloto-pulso-cargando"]')
+    expect(cargando).not.toBeNull()
+    expect(cargando?.textContent).toContain('inmobiliaria.piloto.pulso.titulo')
+    expect(cargando?.textContent).toContain('inmobiliaria.piloto.pulso.midiendo')
+  })
+
+  it('el bloque cargado también dice qué es', () => {
+    act(() => root.render(<PilotoPulso data={DATA_OK} isLoading={false} error={null} notAvailable={false} />))
+    expect(container.textContent).toContain('inmobiliaria.piloto.pulso.titulo')
+  })
+
+  it('estado «desconocido» se pinta neutro: nunca «Todo bajo control»', () => {
+    act(() =>
+      root.render(
+        <PilotoPulso
+          data={{ ...DATA_OK, estado: 'desconocido', titular: 'No pude leer el estado del Piloto en este momento.' }}
+          isLoading={false}
+          error={null}
+          notAvailable={false}
+        />,
+      ),
+    )
+    expect(container.textContent).toContain('inmobiliaria.piloto.pulso.estado.desconocido')
+    expect(container.textContent).not.toContain('inmobiliaria.piloto.pulso.estado.ok')
+  })
+})

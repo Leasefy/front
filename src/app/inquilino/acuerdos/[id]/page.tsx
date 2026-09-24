@@ -22,7 +22,7 @@
  * panel never approves/sets terms, T-323/A5); es-CO dates; additive route only.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -357,7 +357,8 @@ function AcuerdoDetailView({
 // Page
 // ============================================================================
 
-export default function AcuerdoDetailPage({ params }: { params: { id: string } }) {
+export default function AcuerdoDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { locale } = useI18n();
   const { items, isLoading, error, refetch } = useTenantAcuerdos();
 

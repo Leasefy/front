@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
@@ -34,9 +34,9 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 // ============================================================================
 
 interface FirmarContractPageProps {
-  params: {
+  params: Promise<{
     contractId: string;
-  };
+  }>;
 }
 
 // ============================================================================
@@ -301,7 +301,8 @@ function ReadOnlyView({
 // Main Page
 // ============================================================================
 
-export default function FirmarContractPage({ params }: FirmarContractPageProps) {
+export default function FirmarContractPage(props: FirmarContractPageProps) {
+  const params = use(props.params);
   const { contractId } = params;
   const { locale } = useI18n();
   const router = useRouter();

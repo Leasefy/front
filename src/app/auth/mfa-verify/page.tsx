@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, SignOut } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
@@ -13,12 +13,36 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
+import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
+
+/**
+ * El `returnUrl` de la barra. Se lee de `window.location` y no con
+ * `useSearchParams` a propósito: éste obliga a envolver la página en
+ * `<Suspense>` y el valor sólo se necesita al irse. Se sanea al usarlo.
+ */
+function returnUrlDeLaBarra(): string | null {
+  if (typeof window === 'undefined') return null;
+  // Se sanea ACÁ, donde se lee (lo exige el guardián de destinos de la URL);
+  // `destinoTrasElSegundoFactor` vuelve a mirar, que no cuesta nada.
+  const crudo = new URLSearchParams(window.location.search).get('returnUrl');
+  const saneado = sanitizeReturnUrl(crudo, '/');
+  return saneado === '/' ? null : saneado;
+}
 
 export default function MfaVerifyPage() {
   const router = useRouter();
   const { user, setMfaVerified, signOut, mfaRequired, mfaEnrollRequired } = useAuth();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  /**
+   * 🔴 El candado de verdad contra el doble envío (Nico, 24-09: «cuando uno
+   * ponga el código debe bloquearse todo»). `isLoading` es estado de React y
+   * tarda un render en verse: un doble clic, o el envío automático del sexto
+   * dígito más un clic, alcanzaban a verificar dos veces el mismo código (y el
+   * segundo volvía como «código incorrecto»). Un ref se ve al instante.
+   */
+  const verificandoRef = useRef(false);
   const [factorId, setFactorId] = useState<string | null>(null);
   /**
    * 🔴 21-09-2026 · EL CANDADO CON LA LLAVE ADENTRO.
@@ -49,11 +73,12 @@ export default function MfaVerifyPage() {
   const [hayError, setHayError] = useState(false);
   const inscribiendo = tieneFactor === false || quiereInscribir;
 
-  // If MFA is not required, redirect to dashboard. T-0099: if enrollment
-  // turns out to be what's actually pending (defensive — these two states
-  // are meant to be mutually exclusive, see contract.md T-0099 §3), send to
-  // /auth/mfa-enroll instead of stranding on a verify screen with nothing to
-  // verify.
+  // If MFA is not required, redirect away. T-0099: if enrollment turns out to
+  // be what's actually pending (defensive — these two states are meant to be
+  // mutually exclusive, see contract.md T-0099 §3), send to /auth/mfa-enroll
+  // instead of stranding on a verify screen with nothing to verify. When
+  // nothing is pending, go to the destination the person was headed to (the
+  // saneado `returnUrl`) or the start of their panel.
   useEffect(() => {
     if (!user) return;
     if (mfaEnrollRequired) {
@@ -61,12 +86,7 @@ export default function MfaVerifyPage() {
       return;
     }
     if (!mfaRequired) {
-      const dashboardPath = user.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role));
     }
   }, [user, mfaRequired, mfaEnrollRequired, router]);
 
@@ -102,6 +122,8 @@ export default function MfaVerifyPage() {
   const handleVerify = useCallback(async (codigoExplicito?: string) => {
     const codigo = codigoExplicito ?? code;
     if (!factorId || codigo.length !== 6) return;
+    if (verificandoRef.current) return;
+    verificandoRef.current = true;
     setHayError(false);
     setIsLoading(true);
     try {
@@ -125,14 +147,14 @@ export default function MfaVerifyPage() {
       // Mark MFA as verified in context
       setMfaVerified();
 
-      // Redirect to dashboard
-      const dashboardPath = user?.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user?.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      // Al destino que traía la persona (QA 23-09), o al inicio de su panel.
+      // Si salió bien, la pantalla se QUEDA bloqueada hasta que cambie: antes
+      // el `finally` la soltaba mientras la navegación todavía estaba en
+      // camino y el botón volvía a «Verificar» con el código ya usado.
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
     } catch (err) {
+      verificandoRef.current = false;
+      setIsLoading(false);
       const msg = (err as Error).message || '';
       // 🔴 Las casillas se pintan en rojo además del aviso: el aviso se va solo
       // y el campo se queda vacío, así que sin esto no queda rastro de que lo
@@ -144,17 +166,15 @@ export default function MfaVerifyPage() {
         toast.error(msg || 'No se pudo verificar el código.');
       }
       setCode('');
-    } finally {
-      setIsLoading(false);
     }
   }, [factorId, code, setMfaVerified, user, router]);
 
   /** Seis dígitos y ya no hay nada más que preguntar: se envía solo. */
   const enviarSiSePuede = useCallback(
     (codigo: string) => {
-      if (!isLoading && factorId) void handleVerify(codigo);
+      if (!verificandoRef.current && factorId) void handleVerify(codigo);
     },
-    [isLoading, factorId, handleVerify],
+    [factorId, handleVerify],
   );
 
   const handleSignOut = useCallback(async () => {
@@ -231,7 +251,7 @@ export default function MfaVerifyPage() {
                   <MfaSetupSection />
                 </div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-5" aria-busy={isLoading}>
                   <CasillasDeCodigo
                     aria-label="Código de verificación de 6 dígitos"
                     value={code}
@@ -270,7 +290,8 @@ export default function MfaVerifyPage() {
                 <div className="border-t border-border-faint pt-5 text-center">
                   <button
                     onClick={() => setQuiereInscribir(true)}
-                    className="text-body-sm text-primary underline-offset-4 hover:underline"
+                    disabled={isLoading}
+                    className="text-body-sm text-primary underline-offset-4 hover:underline disabled:pointer-events-none disabled:opacity-50"
                     data-testid="no-tengo-la-app"
                   >
                     No tengo la app de autenticación — activarla ahora
@@ -281,7 +302,8 @@ export default function MfaVerifyPage() {
               <div className="text-center">
                 <button
                   onClick={handleSignOut}
-                  className="inline-flex items-center gap-1.5 text-body-sm text-fg-muted transition-colors hover:text-fg"
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-1.5 text-body-sm text-fg-muted transition-colors hover:text-fg disabled:pointer-events-none disabled:opacity-50"
                 >
                   <SignOut className="h-4 w-4" />
                   Cerrar sesión

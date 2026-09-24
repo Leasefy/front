@@ -244,6 +244,23 @@ export interface CambioDeCuenta {
   solicitadoPorUserId: string | null;
   createdAt: string;
   retieneElGiro: boolean;
+  /**
+   * 🔴 23-09: si QUIEN MIRA puede aprobarlo, y si no, por qué — la misma regla
+   * con la que el back decide (`reglaDeLaAprobacion`). Sólo en uno CONFIRMADO;
+   * `null`/ausente en los demás o con un back anterior.
+   *
+   * Quien pidió el cambio no lo aprueba si la inmobiliaria tiene otro
+   * administrador activo; con uno solo se permite (`mismaPersona`) y queda
+   * marcado en la bitácora.
+   */
+  aprobacion?: ReglaDeLaAprobacion | null;
+}
+
+export interface ReglaDeLaAprobacion {
+  puede: boolean;
+  codigo: 'SOLO_UN_ADMINISTRADOR' | 'APROBADOR_DISTINTO_AL_SOLICITANTE' | null;
+  motivo: string | null;
+  mismaPersona: boolean;
 }
 
 export interface CambiosDeCuentaDelPropietario {

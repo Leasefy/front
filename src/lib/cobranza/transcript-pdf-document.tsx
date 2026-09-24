@@ -17,6 +17,7 @@
 // Inline StyleSheet — NOT importing from cotizador/pdf-styles.ts (that file
 // belongs to the cotizador domain and is deleted in Task 38-07-02).
 
+import type { JSX } from 'react'
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 
 // ---------------------------------------------------------------------------

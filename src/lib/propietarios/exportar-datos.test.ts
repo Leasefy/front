@@ -178,9 +178,24 @@ describe('armarHojaDeLaLista', () => {
   it('sin cuenta bancaria deja las columnas del banco vacías, no «undefined»', () => {
     const sinCuenta = { ...propietario, bankAccount: undefined } as unknown as Propietario;
     const [encabezado, fila] = armarHojaDeLaLista([sinCuenta]).filas;
-    for (const col of ['Banco', 'Tipo de cuenta', 'Número de cuenta', 'Titular']) {
+    for (const col of ['Banco', 'Tipo de cuenta', 'Cuenta (últimos 4)', 'Titular']) {
       expect(fila[encabezado.indexOf(col)]).toBe('');
     }
+  });
+
+  it('🔴 la cuenta sale con sus 4 últimos dígitos, nunca entera (23-09, datos personales)', () => {
+    // Como la manda hoy la lista: número vacío, 4 dígitos aparte.
+    const deLaLista = {
+      ...propietario,
+      bankAccount: { ...propietario.bankAccount, accountNumber: '', ultimos4: '8989' },
+    } as Propietario;
+    const [encabezado, fila] = armarHojaDeLaLista([deLaLista, propietario]).filas.slice(0, 2);
+    expect(encabezado).not.toContain('Número de cuenta');
+    expect(fila[encabezado.indexOf('Cuenta (últimos 4)')]).toBe('•••• 8989');
+    // Aunque algún día llegara entera, el archivo de la lista no la lleva.
+    const [, , filaEntera] = armarHojaDeLaLista([deLaLista, propietario]).filas;
+    expect(filaEntera.join('|')).not.toContain('12348989');
+    expect(filaEntera[encabezado.indexOf('Cuenta (últimos 4)')]).toBe('•••• 8989');
   });
 
   it('con la lista vacía deja igual el encabezado (una hoja sin filas, no un archivo roto)', () => {

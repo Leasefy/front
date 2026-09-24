@@ -41,6 +41,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
+import { ComoSeFactura } from '@/components/facturacion/ComoSeFactura';
 import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
 import { ColaDeTransmision } from '@/components/facturacion/ColaDeTransmision';
 import { EntregasYAcuse } from '@/components/facturacion/EntregasYAcuse';
@@ -152,10 +153,18 @@ function FacturacionContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-2">
-        <SectionLabel>{t(k('label'))}</SectionLabel>
-        <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-        <p className="text-body text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
+      {/* «Cómo se factura» va a la derecha del título, donde iría la acción de
+          la pantalla (Nico, 23-09): dentro de la tarjeta ocupaba una fila entera
+          vacía a su izquierda. */}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <SectionLabel>{t(k('label'))}</SectionLabel>
+          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
+          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
+        </div>
+        <div className="shrink-0" data-testid="facturacion-como-funciona">
+          <ComoSeFactura />
+        </div>
       </header>
 
       {/* Banner del M2, tal cual estaba: no es de esta pantalla decidir cuándo

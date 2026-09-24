@@ -29,7 +29,7 @@ import { enlaceAlEstudio } from '@/lib/aprobacion/estimado-de-arriendo';
 import { leerArriendoEnCurso, nombreDelTipo, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
 
 interface Props {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function celebrar() {
@@ -48,7 +48,7 @@ function celebrar() {
 }
 
 export default function ArrendarPage({ params }: Props) {
-  const { id } = params instanceof Promise ? use(params) : params;
+  const { id } = use(params);
   const router = useRouter();
   const [arriendo, setArriendo] = useState<ArriendoEnCurso | null | undefined>(undefined);
 

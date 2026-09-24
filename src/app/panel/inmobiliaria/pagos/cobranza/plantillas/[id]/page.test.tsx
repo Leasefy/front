@@ -178,7 +178,7 @@ describe('TemplatePage (detail editor)', () => {
 
     await act(async () => {
       root.render(
-        React.createElement(TemplatePage, { params: { id: 'tpl-stage-1' } }),
+        React.createElement(TemplatePage, { params: Promise.resolve({ id: 'tpl-stage-1' }) }),
       )
     })
 
@@ -208,7 +208,7 @@ describe('TemplatePage (detail editor)', () => {
 
     await act(async () => {
       root.render(
-        React.createElement(TemplatePage, { params: { id: 'tpl-stage-1' } }),
+        React.createElement(TemplatePage, { params: Promise.resolve({ id: 'tpl-stage-1' }) }),
       )
     })
 
@@ -243,7 +243,7 @@ describe('TemplatePage (detail editor)', () => {
 
     await act(async () => {
       root.render(
-        React.createElement(TemplatePage, { params: { id: 'tpl-stage-1' } }),
+        React.createElement(TemplatePage, { params: Promise.resolve({ id: 'tpl-stage-1' }) }),
       )
     })
 
@@ -275,7 +275,7 @@ describe('TemplatePage (detail editor)', () => {
 
     await act(async () => {
       root.render(
-        React.createElement(TemplatePage, { params: { id: 'tpl-stage-1' } }),
+        React.createElement(TemplatePage, { params: Promise.resolve({ id: 'tpl-stage-1' }) }),
       )
     })
 

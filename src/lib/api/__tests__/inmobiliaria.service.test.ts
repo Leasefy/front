@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { agencyApi, cobrosApi, documentosApi, inmobiliariaConfigApi, inmueblesApi, mantenimientoApi, normalizeCobro, normalizeConsignacion, normalizeInmuebleSinConsignacion, normalizePipelineItem, permissionsApi, propietariosApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
+import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const { ok = true, status = 200 } = init;
@@ -630,6 +631,30 @@ describe('propietariosApi.update — applies the same wire mapping on a partial 
     expect(body).toEqual({ department: null, bankAccountHolderDocument: null, bankAccountHolderDocumentType: null });
   });
 
+  it('🔴 lo que guarda quien no ve la cuenta no lleva NINGÚN campo de la cuenta (23-09)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.update(
+      'prop-1',
+      sinLaCuenta({
+        name: 'Jorge',
+        email: 'jorge@correo.co',
+        phone: '3001234567',
+        documentType: 'CC',
+        documentNumber: '71234567',
+        bankCode: 'bbva',
+        accountType: 'checking',
+        accountNumber: '',
+        accountHolder: '',
+        accountHolderDocument: '',
+        accountHolderDocumentType: '',
+        titularDeLaCuenta: 'PROPIETARIO',
+      }),
+    );
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(Object.keys(body).filter((k) => /bank|titular/i.test(k))).toEqual([]);
+    expect(body.name).toBe('Jorge');
+  });
+
   it('throws instead of silently coercing an unmapped bank slug on update too', async () => {
     await expect(
       propietariosApi.update('prop-1', {
@@ -883,4 +908,25 @@ describe('normalizeCobro no se come los campos nuevos del detalle', () => {
     expect(salida.recibosDeCaja).toHaveLength(1);
   });
 });
+});
+
+describe('🔴 propietariosApi.getAll — la lista trae la cuenta resumida (23-09, datos personales)', () => {
+  it('los 4 últimos dígitos quedan en bankAccount.ultimos4 y el número no se inventa', async () => {
+    mockFetchOnce([
+      {
+        id: 'p1',
+        name: 'Jorge',
+        documentType: 'CC',
+        documentNumber: '71234567',
+        bankName: 'Bancolombia',
+        bankAccountType: 'Ahorros',
+        bankAccountNumber: null,
+        bankAccountUltimos4: '8901',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    ]);
+    const [p] = await propietariosApi.getAll();
+    expect(p.bankAccount.ultimos4).toBe('8901');
+    expect(p.bankAccount.accountNumber).toBe('');
+  });
 });

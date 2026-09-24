@@ -124,7 +124,16 @@ export async function generarPorTandas(
   claves: readonly string[],
   generar: (mes: string, claves: string[], corrida?: TandaDeLaCorrida) => Promise<ResultadoDeGeneracion>,
   onProgreso?: (p: ProgresoDeFacturas) => void,
-  opciones: { debeParar?: () => boolean; tamano?: number } = {},
+  opciones: {
+    debeParar?: () => boolean
+    tamano?: number
+    /**
+     * El proceso del centro que junta la corrida, apenas el back lo devuelve
+     * (tras la primera tanda). Es con lo que la pantalla le presta su
+     * «Detener» a la fila del centro (`detener-en-el-navegador.ts`).
+     */
+    onProceso?: (procesoId: string) => void
+  } = {},
 ): Promise<ResultadoDeLaCorrida> {
   const tamano = Math.max(1, opciones.tamano ?? FACTURAS_POR_TANDA)
   const partes = trozos(claves, tamano)
@@ -148,6 +157,8 @@ export async function generarPorTandas(
   let corte: CorteDeLaCorrida = 'completa'
   let error: unknown = null
   let enviadas = 0
+  /** El proceso de la corrida quedó cerrado por una tanda `ultimaTanda`. */
+  let cerrado = !agrupar
 
   for (const [i, parte] of partes.entries()) {
     let r: ResultadoDeGeneracion
@@ -172,6 +183,10 @@ export async function generarPorTandas(
         : undefined
       r = await generar(mes, parte, corrida)
       if (agrupar && !r.corridaAgrupable) agrupar = false
+      if (!agrupar || ultima) cerrado = true
+      if (agrupar && !ultima && r.procesoId && r.procesoId !== procesoDeLaCorrida) {
+        opciones.onProceso?.(r.procesoId)
+      }
       procesoDeLaCorrida = r.procesoId ?? procesoDeLaCorrida
     } catch (e) {
       corte = 'fallo'
@@ -217,6 +232,37 @@ export async function generarPorTandas(
       corte = 'detenida'
       informe.sinEnviar = quedan
       break
+    }
+  }
+
+  /*
+   * 🔴 Detenida o sin números a mitad de la corrida: la última tanda que salió
+   * iba con `ultimaTanda: false`, así que el proceso del centro quedaba
+   * «En curso» para siempre —hasta que el back lo diera por «interrumpido»—,
+   * sin su resumen y sin el ZIP de lo que SÍ salió. Con «Detener» viviendo en
+   * el centro (23-09) eso es lo primero que la persona mira después.
+   *
+   * Se cierra con una llamada más que no emite nada: la primera clave de la
+   * corrida ya pasó por el back, así que o salió (ya no está «por emitir» y el
+   * back la ignora) o se quedó sin número (y vuelve a quedarse sin número, que
+   * es lo que el resumen tiene que decir). Una tanda caída NO se cierra acá:
+   * de eso se encarga el back, que ya la marcó `FALLO`.
+   */
+  if (!cerrado && procesoDeLaCorrida && (corte === 'detenida' || corte === 'rangoAgotado')) {
+    try {
+      await generar(mes, [claves[0]], {
+        procesoId: procesoDeLaCorrida,
+        yaEnviadas: enviadas,
+        totalDeLaCorrida: claves.length,
+        ultimaTanda: true,
+        ...(informe.documentos.length > 0
+          ? { idsDeLaCorrida: informe.documentos.map((d) => d.facturaId) }
+          : {}),
+      }).then((r) => {
+        if (r.zipEnElCentro && r.procesoId) informe.procesosConZip.push(r.procesoId)
+      })
+    } catch {
+      /* el proceso queda como estaba; lo emitido, emitido */
     }
   }
 

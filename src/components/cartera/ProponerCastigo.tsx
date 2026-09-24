@@ -131,12 +131,21 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
     if (!elegido || total.cuotas === 0 || motivo.trim().length === 0) return
     setGuardando(true)
     try {
-      await castigoApi.proponer({
+      const propuesto = await castigoApi.proponer({
         contractId: elegido.contractId,
         cuotaIds: [...marcadas],
         motivo: motivo.trim(),
       })
-      toast.success('Propuesto. Ahora lo firman el administrador y el contador.')
+      /*
+       * 🔴 P-4 aclarado (Nico, 24-09): lo que propone el ADMINISTRADOR vuelve
+       * del back ya castigado, con su firma por los dos lados. No se le dice
+       * «ahora lo firman…» ni se le deja un pendiente que nunca llega.
+       */
+      toast.success(
+        propuesto?.estado === 'CASTIGADA'
+          ? 'Castigada por ti como administrador (P-4): tu firma valió por los dos lados. Sale de la cartera activa y de la cobranza.'
+          : 'Propuesto. Ahora lo firman el administrador y el contador.',
+      )
       setElegido(null)
       setCandidatas(null)
       setMarcadas(new Set())

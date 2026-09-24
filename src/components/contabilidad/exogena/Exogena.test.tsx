@@ -25,7 +25,7 @@ import type { ResumenDeExogena, ResumenDeFormato } from '@/lib/api/exogena.servi
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { api, escrituraMock, toastMock } = vi.hoisted(() => ({
+const { api, escrituraMock, exportarMock, toastMock } = vi.hoisted(() => ({
   api: {
     resumen: vi.fn(),
     formato: vi.fn(),
@@ -36,6 +36,7 @@ const { api, escrituraMock, toastMock } = vi.hoisted(() => ({
     anular: vi.fn(),
   },
   escrituraMock: { puede: true, motivo: null as string | null, usuarioId: 'u-1' },
+  exportarMock: { puede: true, motivo: null as string | null, usuarioId: 'u-1' },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
@@ -49,7 +50,11 @@ vi.mock('../use-puede-escribir', async () => {
   const actual = await vi.importActual<typeof import('../use-puede-escribir')>(
     '../use-puede-escribir',
   );
-  return { ...actual, usePuedeEscribir: () => escrituraMock };
+  return {
+    ...actual,
+    usePuedeEscribir: () => escrituraMock,
+    usePuedeExportarContabilidad: () => exportarMock,
+  };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 vi.mock('@/lib/i18n', () => ({
@@ -112,6 +117,8 @@ beforeEach(() => {
   api.archivo.mockReset().mockResolvedValue(new Blob(['x']));
   escrituraMock.puede = true;
   escrituraMock.motivo = null;
+  exportarMock.puede = true;
+  exportarMock.motivo = null;
 });
 
 afterEach(() => {
@@ -417,5 +424,25 @@ describe('<ConceptosDeExogena> dentro de la pantalla', () => {
     await pintar(2025);
     expect(api.conceptos).toHaveBeenCalledWith(2025);
     expect(api.resumen).toHaveBeenCalledWith(2025);
+  });
+});
+
+describe('🔴 el CSV de la exógena pide el permiso de exportar (23-09, datos personales)', () => {
+  it('sin `reportes:export` el botón se apaga con el porqué, y no se pide el archivo', async () => {
+    exportarMock.puede = false;
+    exportarMock.motivo = 'Tu rol puede ver la contabilidad en pantalla, pero no descargarla.';
+
+    await pintar();
+
+    const boton = q('descargar-1001') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(q('descargar-1001-motivo')!.textContent).toContain('no descargarla');
+    await act(async () => {
+      boton.click();
+      await Promise.resolve();
+    });
+    expect(api.archivo).not.toHaveBeenCalled();
+    // Mirar las filas en pantalla sigue abierto.
+    expect((q('ver-1001') as HTMLButtonElement).disabled).toBe(false);
   });
 });

@@ -57,6 +57,7 @@ import { usePuedeEscribir } from '../use-puede-escribir';
 import { EventosDeGasto } from './EventosDeGasto';
 import { RubrosDelPyg } from './RubrosDelPyg';
 import { NOMBRE_DEL_LADO, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
+import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 
 /** Cómo va el mapeo, para quien lo tiene adentro. Ver `onEstado`. */
 export interface EstadoDelMapeo {
@@ -303,20 +304,20 @@ export function MapeoContable({
             `Faltan ${sinCuenta.length} de ${mapeo.eventos.length}: sin cuenta, ese asiento no se genera`
           }
         >
-          <div className="space-y-3">
-            <p data-testid="mapeo-que-hacer">
+          <span className="block space-y-3">
+            <span className="block" data-testid="mapeo-que-hacer">
               Elige una cuenta en cada fila que diga «Sin cuenta». Mientras
               quede una sin asignar, el paso no queda hecho y los registros
               contables siguen en espera.
-            </p>
+            </span>
             {apagados.length > 0 && (
-              <p>
+              <span className="block">
                 Hoy quedan sin asiento automático: {apagados.join('; ')}. Lo que se quede sin
                 asentar se recupera con «Reprocesar» cuando el mapeo esté completo.
-              </p>
+              </span>
             )}
             {sembrables.length > 0 && (
-              <div className="space-y-1">
+              <span className="block space-y-1">
                 <Button
                   size="sm"
                   hideArrow
@@ -333,13 +334,13 @@ export function MapeoContable({
                 {/* El 403 del back, dicho antes del clic y con las mismas
                     palabras que después (`mensajeDeContabilidad`). */}
                 {!escritura.puede && escritura.motivo ? (
-                  <p className="text-caption text-fg-muted" data-testid="sin-escritura-mapeo">
+                  <span className="block text-caption text-fg-muted" data-testid="sin-escritura-mapeo">
                     {escritura.motivo}
-                  </p>
+                  </span>
                 ) : null}
-              </div>
+              </span>
             )}
-          </div>
+          </span>
         </Banner>
       )}
 
@@ -370,10 +371,11 @@ export function MapeoContable({
             hideArrow
             onClick={() => void reprocesar()}
             disabled={reprocesando || !escritura.puede}
-            title={escritura.motivo ?? undefined}
+            // Sin «Reprocesando…» (23-09): el avance es del centro de procesos.
+            title={escritura.motivo ?? (reprocesando ? EN_CURSO_EN_EL_CENTRO : undefined)}
             data-testid="reprocesar-asientos"
           >
-            {reprocesando ? 'Reprocesando…' : 'Reprocesar'}
+            Reprocesar
           </Button>
         </div>
       ) : null}

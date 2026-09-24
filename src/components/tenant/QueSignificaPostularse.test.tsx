@@ -5,7 +5,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
-import { act } from 'react-dom/test-utils'
+import { act } from 'react'
 
 import { QueSignificaPostularse } from './QueSignificaPostularse'
 

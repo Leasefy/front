@@ -1,5 +1,29 @@
 'use client';
 
+import type {
+  AccionDelHilo,
+  ConfirmacionEnElHilo,
+  FormularioEnElHilo,
+  IntencionDelChat,
+  ResultadoEnElHilo,
+} from '@/lib/chat/acciones-del-hilo';
+import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
+import {
+  conElProcesoDelStream,
+  type EventoProcesoIniciado,
+  type TarjetaDeEjecucion,
+} from '@/lib/chat/tarjetas-de-ejecucion';
+import type { TarjetaDePlan } from '@/lib/chat/plan-del-chat';
+import { invalidar } from '@/lib/api/refresco-de-datos';
+import { RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
+import {
+  crearTestigoDeTurnos,
+  mandarSenal,
+  mandarSenalEnUnMomento,
+  type TestigoDeTurnos,
+} from '@/lib/chat/senales';
+import { formatCurrency } from '@/lib/format';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   ChatMessage,
@@ -16,6 +40,7 @@ import type {
   ActionProposal,
   ChatSnapshot,
   TurnStep,
+  Reintentable,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
@@ -23,6 +48,8 @@ import { useAuth } from '@/lib/auth/use-auth';
 import {
   postChatTurn,
   streamChatTurn,
+  fetchEjecucion,
+  leerReintentable,
   fetchBriefing,
   isAgentConfigured,
   suggestedActionToResponseAction,
@@ -44,6 +71,7 @@ import {
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
 import { ApiError } from '@/lib/api/client';
+import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
 import { clasificarFallo } from '@/lib/errores/clasificar';
 
 /**
@@ -58,6 +86,8 @@ function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
     llamadasHoy: s.llamadasHoy,
     escalacionesPendientes: s.escalacionesPendientes,
     enPrejuridico: s.enPrejuridico,
+    ...(typeof s.carteraCop === 'number' ? { carteraCop: s.carteraCop } : {}),
+    ...(typeof s.contratosEnCartera === 'number' ? { contratosEnCartera: s.contratosEnCartera } : {}),
   };
 }
 
@@ -88,12 +118,6 @@ export function aprobacionADecision(approval: BackendPendingApproval): PendingDe
     })),
   };
 }
-
-const CHARS_PER_SECOND = 40;
-const LONG_PAUSE_CHARS = new Set(['.', '!', '?']);
-const SHORT_PAUSE_CHARS = new Set([',', ';', ':']);
-const LONG_PAUSE_MULTIPLIER = 6;
-const SHORT_PAUSE_MULTIPLIER = 3;
 
 const STORAGE_KEY = 'leasefy-beta-conversations';
 const STORAGE_VERSION_KEY = 'leasefy-beta-storage-version';
@@ -313,7 +337,12 @@ export interface UseBetaChatReturn {
 
   // Current conversation
   messages: ChatMessage[];
-  sendMessage: (text: string) => void;
+  /**
+   * Manda un mensaje de la persona. `intencion` = lo que pidió un botón del
+   * hilo, con forma (23-09, «todo en el chat»): viaja con el texto y el micro
+   * lo atiende sin adivinar.
+   */
+  sendMessage: (text: string, opciones?: { intencion?: IntencionDelChat | null }) => void;
   isThinking: boolean;
   isStreaming: boolean;
   streamingContent: string;
@@ -385,6 +414,25 @@ export interface UseBetaChatReturn {
    */
   confirmarAccionDelMensaje: (messageId: string) => Promise<void>;
   cancelarAccionDelMensaje: (messageId: string) => Promise<void>;
+
+  /**
+   * Señal para el cerebro del micro: la persona abrió o tocó una tarjeta de
+   * la respuesta (o «Ver las N filas»). `turnoId` es el del mensaje; sin él no
+   * sale nada. Fuego y olvido: nunca frena ni rompe el chat.
+   */
+  anotarTarjetaAbierta: (turnoId: string | undefined, entidad?: { tipo: string; id: string }) => void;
+
+  /**
+   * Pide al micro la tarjeta de HOY de una ejecución (`GET …/ejecuciones/{id}`)
+   * y la deja en SU mensaje (sólo ése: la misma ejecución puede haber pasado
+   * por otro mensaje como propuesta, y ése no cambia). Devuelve la tarjeta, o
+   * `null` si el micro no la tiene; lanza si no se pudo preguntar.
+   *
+   * 🔴 No es una lectura pasiva (lo programado que ya tocaba SALE): la llaman
+   * sólo la cuenta regresiva de la gracia al terminar, la programada al
+   * montarse con la hora pasada y la tarjeta en curso cuando su proceso termina.
+   */
+  refrescarEjecucion: (messageId: string, ejecucionId: string) => Promise<TarjetaDeEjecucion | null>;
 }
 
 // ============================================================================
@@ -411,7 +459,13 @@ export function mensajeDeFalloDelChat(error: unknown): string {
     case 'sinCreditos':
       return 'Tu plan se quedó sin créditos de IA. Pídele a quien administra la cuenta que recargue o cambie de plan.';
     case 'limitado':
-      return 'Demasiadas consultas seguidas. Espera un momento y vuelve a preguntar.';
+      // La misma frase que el 429 del back (`demasiadas-solicitudes.ts`), con
+      // el plazo cuando el micro lo dijo: un mensaje por límite, no dos.
+      return mensajeDeDemasiadasSolicitudes(
+        error instanceof ApiError && typeof error.detalle?.reintentarEnSegundos === 'number'
+          ? (error.detalle.reintentarEnSegundos as number)
+          : null,
+      );
     case 'tardo':
       return 'El asistente tardó demasiado en responder. Prueba de nuevo en un momento.';
     case 'sinSesion':
@@ -485,6 +539,47 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     [aplicarPasos]
   );
 
+  /**
+   * El paso que recibe el aviso de `progreso`: el especialista que está
+   * corriendo si hay uno (es quien consulta), si no el último paso vivo. Un
+   * paso que termina pierde su `actividad` (ver `parchearPaso` al cerrar).
+   */
+  const ponerActividad = useCallback(
+    (texto: string, avance?: { hechos?: number; total?: number }) => {
+      const actuales = turnStepsRef.current;
+      const vivos = actuales.filter((p) => p.status === 'running');
+      // Si nada corre (el especialista ya volvió y el modelo está cerrando la
+      // respuesta: «Cruzando lo que encontré…»), el aviso es del paso que
+      // sigue, que con eso arranca. Sin esto la lista quedaba toda en «hecho»
+      // o «pendiente» justo en la espera más larga.
+      const destino =
+        [...vivos].reverse().find((p) => p.kind === 'agente') ??
+        vivos[vivos.length - 1] ??
+        actuales.find((p) => p.status === 'pending') ??
+        null;
+      if (!destino) return;
+      // El sub-avance sólo se pinta como barra si hay un total contra qué
+      // medirlo; «29 filas» sin total ya lo dice el texto.
+      const conTotal =
+        typeof avance?.hechos === 'number' && typeof avance.total === 'number' && avance.total > 0
+          ? { hechos: avance.hechos, total: avance.total }
+          : undefined;
+      aplicarPasos(
+        actuales.map((p) =>
+          p.id === destino.id
+            ? {
+                ...p,
+                actividad: texto,
+                avance: conTotal,
+                ...(p.status === 'pending' ? { status: 'running' as const, startedAt: new Date() } : {}),
+              }
+            : p
+        )
+      );
+    },
+    [aplicarPasos]
+  );
+
   /** Cierra el turno: lo que quedó corriendo se da por hecho, y se limpia. */
   const cerrarPasos = useCallback(
     (comoFallo?: string) => {
@@ -497,6 +592,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 status: comoFallo ? ('failed' as const) : ('done' as const),
                 ...(comoFallo && p.status === 'running' ? { detail: comoFallo } : {}),
                 completedAt: ahora,
+                actividad: undefined,
+                avance: undefined,
               }
             : p
         )
@@ -575,6 +672,107 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const messages = activeConversation?.messages ?? [];
 
+  // ── Señales de la pantalla para el cerebro (23-09) ───────────────────────
+  // Lo que sólo ve el front (tarjeta abierta, abandono) sale por
+  // `src/lib/chat/senales.ts`, fuego y olvido. El testigo recuerda, de los
+  // turnos de ESTA sesión, cuándo llegaron y si se tocaron; los refs dejan leer
+  // la conversación actual desde `pagehide` y desde el desmontaje, que no ven
+  // el estado de React.
+  const [testigo] = useState<TestigoDeTurnos>(() => crearTestigoDeTurnos());
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
+  const activeConversationIdRef = useRef(activeConversationId);
+  activeConversationIdRef.current = activeConversationId;
+  const agencyIdRef = useRef(agencyId);
+  agencyIdRef.current = agencyId;
+
+  /**
+   * Si irse ahora de esta conversación deja su último turno abandonado (sin
+   * terminar, o sin mirarlo), se lo cuenta al cerebro. Se llama ANTES de
+   * cambiar/crear/borrar la conversación, al cerrar la pestaña y al salir del
+   * chat. Nunca frena nada: la señal sale sola. Se DECIDE ahora (con lo que
+   * se ve ahora); se MANDA ya sólo si la pestaña se está cerrando, y si no,
+   * dentro de un momento, para no llegarle al micro antes que el turno.
+   */
+  const anotarAbandonoDe = useCallback(
+    (conversationId: string | null, seCierraLaPestana = false) => {
+      if (!conversationId) return;
+      const conv = conversationsRef.current.find((c) => c.id === conversationId);
+      const ultimo = conv ? [...conv.messages].reverse().find((m) => m.role === 'assistant') : undefined;
+      if (!ultimo?.turnoId || !testigo.esAbandono(ultimo)) return;
+      const senal = { turnoId: ultimo.turnoId, tipo: 'abandono' as const };
+      if (seCierraLaPestana) mandarSenal(agencyIdRef.current, senal);
+      else mandarSenalEnUnMomento(agencyIdRef.current, senal);
+    },
+    [testigo]
+  );
+
+  /**
+   * La persona abrió o tocó una tarjeta de la respuesta (o «Ver las N filas»).
+   * Sin `turnoId` (mensaje viejo o micro viejo) no hay a quién contárselo.
+   */
+  const anotarTarjetaAbierta = useCallback(
+    (turnoId: string | undefined, entidad?: { tipo: string; id: string }) => {
+      if (!turnoId) return;
+      testigo.tocado(turnoId);
+      mandarSenal(agencyIdRef.current, {
+        turnoId,
+        tipo: 'tarjeta_abierta',
+        ...(entidad ? { entidad: { tipo: entidad.tipo, id: entidad.id } } : {}),
+      });
+    },
+    [testigo]
+  );
+
+  /**
+   * La tarjeta de hoy de una ejecución, en SU mensaje (24-09). Se busca el
+   * mensaje por id en todas las conversaciones (la persona pudo cambiar de
+   * conversación mientras corría la cuenta) y sólo se toca si sigue siendo la
+   * misma ejecución: una tarjeta vieja que vuelve tarde no pisa otra.
+   */
+  const refrescarEjecucion = useCallback(
+    async (messageId: string, ejecucionId: string): Promise<TarjetaDeEjecucion | null> => {
+      const agencia = agencyIdRef.current;
+      if (!agencia || !isAgentConfigured()) return null;
+      const tarjeta = await fetchEjecucion({ agencyId: agencia, ejecucionId });
+      if (!tarjeta || tarjeta.ejecucionId !== ejecucionId) return tarjeta;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.messages.some((m) => m.id === messageId && m.ejecucion?.ejecucionId === ejecucionId)
+            ? {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === messageId && m.ejecucion?.ejecucionId === ejecucionId ? { ...m, ejecucion: tarjeta } : m
+                ),
+              }
+            : c
+        )
+      );
+      return tarjeta;
+    },
+    []
+  );
+
+  // Cerrar la pestaña, recargar o irse a otra página: `pagehide` es el último
+  // evento fiable (y el abandono sale con `keepalive`). Salir del chat a otra
+  // pantalla del panel lo desmonta: también cuenta. Volver a la pestaña marca
+  // como vistas las respuestas que llegaron mientras estaba oculta.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const alCerrar = () => anotarAbandonoDe(activeConversationIdRef.current, true);
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') testigo.aLaVista();
+    };
+    window.addEventListener('pagehide', alCerrar);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      window.removeEventListener('pagehide', alCerrar);
+      document.removeEventListener('visibilitychange', alVolver);
+      // Salir del chat a otra pantalla: la página sigue viva.
+      anotarAbandonoDe(activeConversationIdRef.current);
+    };
+  }, [anotarAbandonoDe, testigo]);
+
   /**
    * 🔴 Controlador del turno EN VUELO.
    *
@@ -624,13 +822,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     aplicarPasos([]);
   }, [clearTimeouts, aplicarPasos]);
 
-  const getCharDelay = useCallback((char: string): number => {
-    const baseInterval = 1000 / CHARS_PER_SECOND;
-    if (LONG_PAUSE_CHARS.has(char)) return baseInterval * LONG_PAUSE_MULTIPLIER;
-    if (SHORT_PAUSE_CHARS.has(char)) return baseInterval * SHORT_PAUSE_MULTIPLIER;
-    return baseInterval;
-  }, []);
-
   // ========================================================================
   // Start streaming response (reusable — called after agents complete or directly)
   // ========================================================================
@@ -640,7 +831,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       assistantId: string,
       responseText: string,
       conversationId: string,
-      opts: { parcial?: boolean } = {}
+      opts: { parcial?: boolean; inmediato?: boolean } = {}
     ) => {
       // 🔴 El texto se muestra EN CUANTO LLEGA el evento `message`, no al
       // `done`. El micro manda la respuesta completa antes de despachar; el
@@ -732,18 +923,23 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           return;
         }
 
-        const currentChar = responseText[charIndexRef.current];
-        charIndexRef.current += 1;
-        const partial = responseText.slice(0, charIndexRef.current);
-        setStreamingContent(partial);
-
-        const delay = getCharDelay(currentChar);
-        charTimeoutRef.current = setTimeout(revealNextChar, delay);
+        // El ritmo lo decide `pasoDelRevelado`: letra por letra los primeros
+        // ~250 caracteres y después por palabras, cada vez más rápido (Nico,
+        // 23-09: «ve subiéndole la velocidad»). Con reduced-motion, de una vez.
+        // `inmediato`: la respuesta del camino directo (la ficha) es un DATO,
+        // no prosa del modelo: teclearla demoraba ~4 s la tarjeta (medido en
+        // el navegador, 23-09: 5,7 s en pantalla con 1,9 s del micro).
+        const paso = pasoDelRevelado(responseText, charIndexRef.current, {
+          reducirMovimiento: opts.inmediato === true || prefiereMenosMovimiento(),
+        });
+        charIndexRef.current = paso.hasta;
+        setStreamingContent(responseText.slice(0, paso.hasta));
+        charTimeoutRef.current = setTimeout(revealNextChar, paso.esperaMs);
       };
 
       revealNextChar();
     },
-    [getCharDelay, parchearPaso, cerrarPasos, aplicarPasos]
+    [parchearPaso, cerrarPasos, aplicarPasos]
   );
 
   // ========================================================================
@@ -996,6 +1192,30 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
          */
         pendingApprovals?: BackendPendingApproval[];
         accionesPropuestas?: BackendAccionPropuesta[];
+        /** La parte con forma del `done` (sólo por el stream). */
+        bloques?: BloqueDeRespuesta[];
+        entidades?: EntidadDelChat[];
+        /** El id del turno en el cerebro del micro (`done` o respuesta del POST). */
+        turnoId?: string;
+        /**
+         * Una consulta del turno falló y vale reintentar. Llega ya leído por
+         * el stream; por el POST, crudo (se lee con la misma función).
+         */
+        reintentable?: unknown;
+        /** «Todo en el chat» (sólo por el stream): ver `src/lib/chat/acciones-del-hilo.ts`. */
+        acciones?: AccionDelHilo[];
+        confirmacion?: ConfirmacionEnElHilo | null;
+        resultado?: ResultadoEnElHilo | null;
+        formulario?: FormularioEnElHilo | null;
+        /** La tarjeta del ejecutor (24-09, sólo por el stream). */
+        ejecucion?: TarjetaDeEjecucion | null;
+        ensayo?: boolean;
+        /** La tarjeta del plan (24-09, paquete H, sólo por el stream). */
+        plan?: TarjetaDePlan | null;
+        /** El proceso largo que anunció el stream antes del `done` (`proceso_iniciado`). */
+        procesoIniciado?: EventoProcesoIniciado | null;
+        /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
+        camino?: string;
       },
       assistantId: string,
       conversationId: string,
@@ -1004,8 +1224,36 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Attach the "estado de hoy" snapshot up-front. Every downstream setter
       // (live-block branch, driveAgentBlock, attachResponseMeta) spreads `...m`,
       // so this single patch survives regardless of which branch runs next.
+      //
+      // Lo mismo con la parte con FORMA (tablas, cifras, entidades): va al
+      // mensaje ANTES de que termine de escribirse, para que el texto sepa ya
+      // desde el primer cuadro que su tabla la pinta Cadence (y no la teclee).
+      //
+      // Y el `turnoId`: desde este momento las tarjetas, el 👍/👎 y el abandono
+      // ya saben de qué turno hablan.
       const snapshot = resp.snapshot ?? null;
-      if (snapshot) {
+      const bloques = resp.bloques ?? [];
+      const entidades = resp.entidades ?? [];
+      const turnoId = typeof resp.turnoId === 'string' && resp.turnoId ? resp.turnoId : null;
+      if (turnoId) testigo.llego(turnoId);
+      // «No pude consultar… intenta de nuevo»: con esto la respuesta lleva un
+      // «Reintentar» a la vista (pedido de Nico, 23-09: «no hay un reintentar»).
+      const reintentable = leerReintentable(resp.reintentable);
+      // Lo que ACTÚA en el hilo (23-09): botones, «¿Lo hago?», resultado y
+      // formulario van al mensaje igual que los bloques, antes del tecleo.
+      const acciones = resp.acciones ?? [];
+      const confirmacion = resp.confirmacion ?? null;
+      const resultado = resp.resultado ?? null;
+      const formulario = resp.formulario ?? null;
+      // La tarjeta del ejecutor (24-09). Si el stream anunció el proceso largo
+      // antes del `done` y la tarjeta todavía no lo trae, se le pega: así la
+      // barra del Centro de procesos arranca con la respuesta.
+      const ejecucion = conElProcesoDelStream(resp.ejecucion ?? null, resp.procesoIniciado ?? null);
+      const ensayo = resp.ensayo === true;
+      // La tarjeta del plan (24-09, paquete H): varias acciones, una confirmación.
+      const plan = resp.plan ?? null;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
+      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1013,7 +1261,23 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               : {
                   ...c,
                   messages: c.messages.map((m) =>
-                    m.id === assistantId ? { ...m, snapshot } : m
+                    m.id === assistantId
+                      ? {
+                          ...m,
+                          ...(snapshot ? { snapshot } : {}),
+                          ...(bloques.length > 0 ? { bloques } : {}),
+                          ...(entidades.length > 0 ? { entidades } : {}),
+                          ...(turnoId ? { turnoId } : {}),
+                          ...(reintentable ? { reintentable } : {}),
+                          ...(acciones.length > 0 ? { acciones } : {}),
+                          ...(confirmacion ? { confirmacion } : {}),
+                          ...(resultado ? { resultado } : {}),
+                          ...(formulario ? { formulario } : {}),
+                          ...(ejecucion ? { ejecucion } : {}),
+                          ...(ensayo ? { ensayo } : {}),
+                          ...(plan ? { plan } : {}),
+                        }
+                      : m
                   ),
                 }
           )
@@ -1089,10 +1353,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       } else {
         attachResponseMeta(assistantId, conversationId, responseMeta);
         setIsThinking(false);
-        startStreaming(assistantId, fullText, conversationId);
+        startStreaming(assistantId, fullText, conversationId, {
+          inmediato: typeof resp.camino === 'string' && resp.camino.startsWith('directo:'),
+        });
       }
     },
-    [startStreaming, driveAgentBlock, attachResponseMeta]
+    [startStreaming, driveAgentBlock, attachResponseMeta, testigo]
   );
 
   // ========================================================================
@@ -1112,12 +1378,27 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       conversationId: string;
       /** 🔴 Corta el `fetch` cuando el operador cambia de conversación. */
       signal: AbortSignal;
+      /** Lo que pidió el botón, con forma (23-09): el micro lo atiende directo. */
+      intencion?: IntencionDelChat | null;
     }): Promise<{
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
       dispatches: BackendDispatch[];
       snapshot: ChatSnapshot | null;
       liveBlock: AgentActivityBlock | null;
+      bloques: BloqueDeRespuesta[];
+      entidades: EntidadDelChat[];
+      turnoId?: string;
+      reintentable?: Reintentable;
+      acciones: AccionDelHilo[];
+      confirmacion: ConfirmacionEnElHilo | null;
+      resultado: ResultadoEnElHilo | null;
+      formulario: FormularioEnElHilo | null;
+      ejecucion: TarjetaDeEjecucion | null;
+      ensayo: boolean;
+      plan: TarjetaDePlan | null;
+      procesoIniciado: EventoProcesoIniciado | null;
+      camino?: string;
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1132,40 +1413,77 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           responseText: string;
           suggestedActions: BackendSuggestedAction[];
           dispatches: BackendDispatch[];
+          bloques?: BloqueDeRespuesta[];
+          entidades?: EntidadDelChat[];
+          turnoId?: string;
+          reintentable?: Reintentable;
+          acciones?: AccionDelHilo[];
+          confirmacion?: ConfirmacionEnElHilo | null;
+          resultado?: ResultadoEnElHilo | null;
+          formulario?: FormularioEnElHilo | null;
+          ejecucion?: TarjetaDeEjecucion | null;
+          ensayo?: boolean;
+          plan?: TarjetaDePlan | null;
+          camino?: string;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
         streamError: unknown;
-      } = { final: null, snapshot: null, streamError: null };
+        /** SSE `proceso_iniciado` (24-09): sale antes del `done`. */
+        procesoIniciado: EventoProcesoIniciado | null;
+      } = { final: null, snapshot: null, streamError: null, procesoIniciado: null };
 
       await streamChatTurn({
         agencyId: args.agencyId,
         message: args.message,
         history: args.history,
+        intencion: args.intencion ?? null,
         signal: args.signal,
         handlers: {
           onSnapshot: (s) => {
             collected.snapshot = backendSnapshotToChat(s);
-            // El snapshot es la PRIMERA prueba de que el backend ya leyó el
-            // estado de la agencia: cierra «entender» y llena el paso de
-            // cartera con las cifras que de verdad llegaron.
+            // El snapshot es la prueba de que el micro ya reunió el contexto:
+            // cierra ese paso y empieza «entender» (el modelo decidiendo).
             const ahora = new Date();
-            parchearPaso('entender', { status: 'done', completedAt: ahora });
-            parchearPaso(
-              'cartera',
-              s
-                ? {
-                    status: 'done',
-                    completedAt: ahora,
-                    detailKey: 'beta.tasks.detail.cartera',
-                    detailVars: {
-                      deudores: s.deudoresActivos,
-                      escalaciones: s.escalacionesPendientes,
-                      prejuridico: s.enPrejuridico,
-                    },
+            const conCartera = s !== null && typeof s.carteraCop === 'number';
+            aplicarPasos(
+              turnStepsRef.current
+                // Nico (23-09): «Sin datos de cartera para esta agencia» salía
+                // del esquema viejo del agente. Sin la cartera del ERP el paso
+                // no dice nada útil: se quita en vez de mentir con un vacío.
+                .filter((p) => p.id !== 'cartera' || s !== null)
+                .map((p) => {
+                  if (p.id === 'cartera') {
+                    return {
+                      ...p,
+                      status: 'done' as const,
+                      completedAt: ahora,
+                      actividad: undefined,
+                      ...(conCartera
+                        ? {
+                            detailKey: 'beta.tasks.detail.carteraErp',
+                            detailVars: {
+                              cartera: formatCurrency(s!.carteraCop ?? 0),
+                              contratos: s!.contratosEnCartera ?? 0,
+                            },
+                          }
+                        : {}),
+                    };
                   }
-                : { status: 'done', completedAt: ahora, detailKey: 'beta.tasks.detail.carteraVacia' }
+                  if (p.id === 'entender' && p.status === 'pending') {
+                    return { ...p, status: 'running' as const, startedAt: ahora };
+                  }
+                  return p;
+                })
             );
+          },
+          onProgreso: (p) => ponerActividad(p.texto, p),
+          onProcesoIniciado: (evento) => {
+            collected.procesoIniciado = evento;
+            // El Centro de procesos del panel (el anillo del header) mira ya,
+            // sin esperar su minuto de reposo. No se ABRE: la barra de avance
+            // la muestra la tarjeta, dentro del chat.
+            invalidar(RECURSO_DE_PROCESOS);
           },
           onMessage: (text, actions) => {
             messageText = text;
@@ -1174,8 +1492,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             // todavía no se había cerrado «entender» (agencia sin snapshot),
             // se cierra acá.
             const ahora = new Date();
-            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status === 'running')) {
-              parchearPaso('entender', { status: 'done', completedAt: ahora });
+            // Sin `snapshot` (micro viejo o POST) se cierra acá lo que siga vivo
+            // del contexto y de «entender».
+            if (turnStepsRef.current.some((p) => p.id === 'cartera' && p.status === 'running')) {
+              parchearPaso('cartera', { status: 'done', completedAt: ahora, actividad: undefined });
+            }
+            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status !== 'done')) {
+              parchearPaso('entender', { status: 'done', completedAt: ahora, actividad: undefined });
             }
             // 🔴 Y se MUESTRA ya. Antes se guardaba en `messageText` y no se
             // pintaba hasta el `done`: el texto existía y el operador miraba
@@ -1203,6 +1526,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             setIsThinking(false);
             setIsAgentsRunning(true);
             setActiveAgentBlock(liveBlock);
+            // Lo que se tecleó antes del despacho era el preámbulo («Voy a
+            // revisar…»), no la respuesta: «redactar» vuelve a esperar. Si no,
+            // quedaban DOS pasos girando y uno decía «Escribiendo la respuesta…»
+            // mientras el especialista todavía consultaba (visto en el panel).
+            if (turnStepsRef.current.some((p) => p.id === 'redactar' && p.status === 'running')) {
+              parchearPaso('redactar', { status: 'pending', startedAt: undefined, actividad: undefined });
+            }
             // Cada despacho es un paso propio, con la tarea que escribió el
             // orquestador. Acá es donde el plan deja de ser genérico: dos
             // preguntas distintas despachan agentes distintos.
@@ -1248,6 +1578,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               parchearPaso(cerrado.id, {
                 status: dispatch.status === 'failed' ? 'failed' : 'done',
                 completedAt: new Date(),
+                actividad: undefined,
                 ...(detalle ? { detail: detalle } : {}),
               });
             }
@@ -1323,6 +1654,18 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               responseText: f.responseText,
               suggestedActions: f.suggestedActions,
               dispatches: f.dispatches,
+              bloques: f.bloques,
+              entidades: f.entidades,
+              ...(f.turnoId ? { turnoId: f.turnoId } : {}),
+              ...(f.reintentable ? { reintentable: f.reintentable } : {}),
+              acciones: f.acciones,
+              confirmacion: f.confirmacion,
+              resultado: f.resultado,
+              formulario: f.formulario,
+              ejecucion: f.ejecucion,
+              ensayo: f.ensayo,
+              plan: f.plan,
+              ...(f.camino ? { camino: f.camino } : {}),
             };
           },
           onError: (message, meta) => {
@@ -1354,9 +1697,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         dispatches,
         snapshot: collected.snapshot,
         liveBlock,
+        // La parte con FORMA (tablas, cifras, entidades). Sólo la trae el
+        // `done`: si el stream se cortó antes, queda el texto, que es el respaldo.
+        bloques: final?.bloques ?? [],
+        entidades: final?.entidades ?? [],
+        // El id del turno en el cerebro: sólo lo trae el `done`.
+        ...(final?.turnoId ? { turnoId: final.turnoId } : {}),
+        ...(final?.reintentable ? { reintentable: final.reintentable } : {}),
+        // Lo que actúa en el hilo (23-09): sólo lo trae el `done`.
+        acciones: final?.acciones ?? [],
+        confirmacion: final?.confirmacion ?? null,
+        resultado: final?.resultado ?? null,
+        formulario: final?.formulario ?? null,
+        // La tarjeta del ejecutor y el proceso que anunció el stream (24-09).
+        ejecucion: final?.ejecucion ?? null,
+        ensayo: final?.ensayo === true,
+        // La tarjeta del plan (24-09, paquete H).
+        plan: final?.plan ?? null,
+        procesoIniciado: collected.procesoIniciado,
+        ...(final?.camino ? { camino: final.camino } : {}),
       };
     },
-    [parchearPaso, insertarPaso, startStreaming]
+    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
   );
 
   // ========================================================================
@@ -1366,8 +1728,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, opciones?: { intencion?: IntencionDelChat | null }) => {
       const trimmed = text.trim();
+      const intencion = opciones?.intencion ?? null;
       if (!trimmed || isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
 
       const conversationId = activeConversationId;
@@ -1397,6 +1760,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         content: trimmed,
         timestamp: new Date(),
         status: 'sent',
+        // Queda en el mensaje: así la tarjeta de «¿Lo hago?» sabe que ya se
+        // contestó y «Rehacer» vuelve a pedir lo mismo.
+        ...(intencion ? { intencion } : {}),
       };
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
@@ -1430,16 +1796,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
       // backend hable: leer la pregunta y responder. Todo lo del medio lo
       // agregan los eventos del stream, que es lo que lo hace contextual.
+      //
+      // 🔴 En el orden en que de verdad pasa (Nico, 23-09): primero el micro
+      // reúne el contexto (cartera del ERP, memoria, búsqueda) y DESPUÉS el
+      // modelo lee la pregunta y decide. Antes «entender» y «cartera» se
+      // cerraban juntos al llegar el `snapshot`, y entre ese instante y el
+      // primer texto —el modelo pensando, a veces 15 s— no quedaba NINGÚN paso
+      // vivo: la lista se veía muerta. Ahora «entender» corre hasta el texto.
       aplicarPasos([
+        {
+          id: 'cartera',
+          kind: 'cartera',
+          labelKey: 'beta.tasks.plan.snapshot',
+          status: 'running',
+          startedAt: new Date(),
+        },
         {
           id: 'entender',
           kind: 'entender',
           labelKey: 'beta.tasks.plan.understand',
           detail: trimmed,
-          status: 'running',
-          startedAt: new Date(),
+          status: 'pending',
         },
-        { id: 'cartera', kind: 'cartera', labelKey: 'beta.tasks.plan.snapshot', status: 'pending' },
         { id: 'redactar', kind: 'redactar', labelKey: 'beta.tasks.plan.write', status: 'pending' },
       ]);
 
@@ -1470,6 +1848,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             assistantId,
             conversationId,
             signal,
+            intencion,
           });
           if (signal.aborted) return;
           finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
@@ -1490,7 +1869,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           setActiveAgentBlock(null);
           setIsAgentsRunning(false);
           try {
-            const resp = await postChatTurn({ agencyId, message: trimmed, history, signal });
+            const resp = await postChatTurn({ agencyId, message: trimmed, history, intencion, signal });
             if (signal.aborted) return;
             finishTurn(resp, assistantId, conversationId, null);
           } catch (errorDelPost) {
@@ -1534,7 +1913,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
    * cuando el estado recortado ya aterrizó.
    */
-  const regeneracionPendienteRef = useRef<string | null>(null);
+  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null } | null>(null);
 
   /**
    * Rehace la última respuesta del asistente.
@@ -1561,6 +1940,16 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const texto = conv.messages[u].content;
       if (!texto.trim()) return;
 
+      // Rehacer (el ↻ o «Reintentar») es dejar ESA respuesta sin usar: se le
+      // cuenta al cerebro con su turno. La ruta de señales no tiene un tipo
+      // «reintento» (acepta `tarjeta_abierta`, `accion_deshecha`, `abandono`):
+      // el más cercano es `abandono`. Además el micro, solo, anota la misma
+      // pregunta repetida como `reformulacion` del turno anterior.
+      const descartada = conv.messages[idx];
+      if (descartada.turnoId) {
+        mandarSenalEnUnMomento(agencyId, { turnoId: descartada.turnoId, tipo: 'abandono' });
+      }
+
       const conversationId = activeConversationId;
       setConversations((prev) =>
         prev.map((c) =>
@@ -1569,9 +1958,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             : c
         )
       );
-      regeneracionPendienteRef.current = texto;
+      // Con su intención: rehacer «Ver contrato 24» vuelve a traer la ficha,
+      // no le pregunta al modelo por el texto del botón.
+      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null };
     },
-    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations]
+    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations, agencyId]
   );
 
   /**
@@ -1645,7 +2036,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         const r = await enviarFeedbackDeChat({
           agencyId,
           feedback: {
-            turnId: messageId,
+            // 🔴 El `turnoId` del servidor cuando lo hay (23-09): con él el
+            // cerebro asocia el pulgar EXACTO a su turno. Con el id del
+            // mensaje del front lo buscaba por el texto de la pregunta, y dos
+            // preguntas iguales en 72 horas se confundían. La ruta lo llama
+            // `turnId`; una llave `turnoId` el micro la borraría en silencio.
+            turnId: respuesta.turnoId ?? messageId,
             pregunta,
             respuesta: respuesta.content,
             veredicto: rating,
@@ -1676,10 +2072,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   useEffect(() => {
-    const texto = regeneracionPendienteRef.current;
-    if (texto === null) return;
+    const pendiente = regeneracionPendienteRef.current;
+    if (pendiente === null) return;
     regeneracionPendienteRef.current = null;
-    sendMessage(texto);
+    sendMessage(pendiente.texto, { intencion: pendiente.intencion });
     // Depende de `conversations` a propósito: es el cambio de ese estado (el
     // recorte) lo que habilita este envío con el historial ya correcto.
   }, [conversations, sendMessage]);
@@ -1689,6 +2085,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const createConversation = useCallback(() => {
+    // La que se deja: si su último turno quedó sin terminar o sin mirar, es un
+    // abandono (se mira ANTES de cortar el turno, que lo dejaría a medias).
+    anotarAbandonoDe(activeConversationIdRef.current);
     // Stop any in-flight streaming or agent execution
     clearTimeouts();
     setIsThinking(false);
@@ -1702,11 +2101,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     const newConv = createEmptyConversation();
     setConversations((prev) => [newConv, ...prev]);
     setActiveConversationId(newConv.id);
-  }, [clearTimeouts, abortarTurnoEnCurso]);
+  }, [clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]);
 
   const switchConversation = useCallback(
     (id: string) => {
       if (id === activeConversationId) return;
+      anotarAbandonoDe(activeConversationId);
       // Stop streaming/agents if switching mid-stream
       clearTimeouts();
       setIsThinking(false);
@@ -1720,11 +2120,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Switch to conversations tab so the user sees the conversation
       onTabChangeRef.current?.('conversations');
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
   );
 
   const deleteConversation = useCallback(
     (id: string) => {
+      // Borrar la conversación abierta también es irse de ella.
+      if (id === activeConversationId) anotarAbandonoDe(id);
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.id !== id);
         // If deleting the active conversation, switch to first remaining or create new
@@ -1748,7 +2150,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       abortarTurnoEnCurso();
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
   );
 
   // ========================================================================
@@ -2169,5 +2571,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     // Acciones que el chat propone y el operador confirma (esto SÍ ejecuta)
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
+
+    // Señales de la pantalla para el cerebro (23-09)
+    anotarTarjetaAbierta,
+
+    // Las tarjetas del ejecutor, al día (24-09)
+    refrescarEjecucion,
   };
 }

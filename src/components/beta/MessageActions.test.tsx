@@ -28,11 +28,13 @@ vi.mock('@/components/ui', () => ({
 }));
 
 const rateMessageMock = vi.fn(async () => true);
+const regenerateMock = vi.fn();
+const chatEstado = { isThinking: false };
 vi.mock('@/lib/context/BetaChatContext', () => ({
   useBetaChatContext: () => ({
-    regenerateResponse: vi.fn(),
+    regenerateResponse: regenerateMock,
     rateMessage: rateMessageMock,
-    isThinking: false,
+    isThinking: chatEstado.isThinking,
     isStreaming: false,
     isAgentsRunning: false,
   }),
@@ -56,6 +58,7 @@ let root: Root;
 beforeEach(() => {
   vi.clearAllMocks();
   rateMessageMock.mockResolvedValue(true);
+  chatEstado.isThinking = false;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -66,6 +69,7 @@ afterEach(() => {
     root.unmount();
   });
   container.remove();
+  vi.unstubAllGlobals();
 });
 
 function mkMessage(over: Partial<ChatMessage> = {}): ChatMessage {
@@ -181,5 +185,88 @@ describe('MessageActions — pulgares', () => {
     mount(mkMessage({ feedback: 'up', feedbackEnviado: true }));
     await clic(botonPorEtiqueta('beta.actions.like'));
     expect(rateMessageMock).toHaveBeenCalledWith('msg-1', 'up');
+  });
+});
+
+/**
+ * «Reintentar» (Nico, 23-09): cuando el chat contestó «No pude hacer la
+ * búsqueda en este momento… intenta de nuevo», «no hay un reintentar o algo».
+ * El micro avisa con `reintentable` en el `done`; sin él, no se pinta nada.
+ */
+describe('MessageActions — Reintentar', () => {
+  const REINTENTABLE = { motivo: 'tiempo', que: 'busqueda' };
+  const botonReintentar = () =>
+    [...container.querySelectorAll('button')].find((b) =>
+      /beta\.actions\.reintent/.test(b.textContent ?? ''),
+    ) as HTMLButtonElement | undefined;
+
+  function conMovimientoReducido(reducido: boolean) {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: reducido && q.includes('prefers-reduced-motion'),
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+  }
+
+  it('con `reintentable` aparece a la vista y vuelve a mandar la MISMA pregunta (el manejador del ↻)', async () => {
+    mount(mkMessage({ reintentable: REINTENTABLE }));
+    const boton = botonReintentar();
+    expect(boton?.textContent).toBe('beta.actions.reintentar');
+    expect(boton?.disabled).toBe(false);
+    await clic(boton!);
+    expect(regenerateMock).toHaveBeenCalledTimes(1);
+    expect(regenerateMock).toHaveBeenCalledWith('msg-1');
+  });
+
+  it('mientras reintenta queda ocupado y no se puede pedir dos veces', async () => {
+    mount(mkMessage({ reintentable: REINTENTABLE }));
+    await clic(botonReintentar()!);
+    const ocupado = botonReintentar()!;
+    expect(ocupado.textContent).toBe('beta.actions.reintentando');
+    expect(ocupado.disabled).toBe(true);
+    expect(ocupado.getAttribute('aria-busy')).toBe('true');
+    await clic(ocupado);
+    expect(regenerateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('con otra respuesta en curso está apagado', () => {
+    chatEstado.isThinking = true;
+    mount(mkMessage({ reintentable: REINTENTABLE }));
+    expect(botonReintentar()?.disabled).toBe(true);
+  });
+
+  it('sin el campo (micro viejo) no se pinta, aunque el texto diga «intenta de nuevo»', () => {
+    mount(
+      mkMessage({
+        content: 'No pude hacer la búsqueda en este momento. Intenta de nuevo en un momento.',
+      }),
+    );
+    expect(botonReintentar()).toBeUndefined();
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull();
+  });
+
+  it('se anima (entrada y giro de «ocupado») sólo si no se pidió reducir movimiento', async () => {
+    conMovimientoReducido(false);
+    mount(mkMessage({ reintentable: REINTENTABLE }));
+    expect(container.querySelector('[data-testid="reintentar"]')!.className).toContain('animate-in');
+    await clic(botonReintentar()!);
+    expect(container.querySelector('[data-testid="reintentar"] .animate-spin')).not.toBeNull();
+  });
+
+  it('con «reducir movimiento» no se anima: ni entrada ni giro', async () => {
+    conMovimientoReducido(true);
+    mount(mkMessage({ reintentable: REINTENTABLE }));
+    const envoltura = container.querySelector('[data-testid="reintentar"]')!;
+    expect(envoltura.className).not.toContain('animate-in');
+    await clic(botonReintentar()!);
+    expect(container.querySelector('[data-testid="reintentar"] .animate-spin')).toBeNull();
+    expect(container.querySelector('[data-testid="reintentar"] [class*="animate-"]')).toBeNull();
+    // Sigue diciendo que está ocupado, con texto.
+    expect(botonReintentar()?.textContent).toBe('beta.actions.reintentando');
   });
 });

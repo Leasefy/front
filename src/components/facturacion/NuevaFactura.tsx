@@ -81,7 +81,6 @@
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
-import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   DownloadSimple,
@@ -94,46 +93,11 @@ import {
 import {
   generarPorTandas,
   quedaronPendientes,
-  type ProgresoDeFacturas,
   type ResultadoDeLaCorrida,
 } from './facturasPorTandas'
 import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
-import { FilaDeProceso } from '@/components/procesos/FilaDeProceso'
 import { abrirCentroDeProcesos, anunciarProceso } from '@/lib/api/procesos.service'
-import type { Proceso } from '@/lib/api/procesos.types'
-
-/**
- * La corrida de «Generar» como un proceso más, para pintarla con la fila del
- * centro. Es LOCAL: la corrida la parte el navegador en tandas (cada tanda es
- * un proceso del back); ésta es la suma que ve quien espera en la pantalla.
- */
-export function procesoDeLaCorrida(mes: string, p: ProgresoDeFacturas): Proceso {
-  const ahora = new Date().toISOString()
-  return {
-    id: 'corrida-local',
-    tipo: 'EMISION_DE_FACTURAS',
-    titulo: `Facturas · ${mesLegible(mes).toLowerCase().replace(' de ', ' ')}`,
-    estado: 'CORRIENDO',
-    hechos: p.hechas,
-    total: p.total,
-    porcentaje: p.total > 0 ? Math.round((p.hechas / p.total) * 100) : null,
-    mensaje:
-      p.tandas > 1
-        ? `Etapa: Emitiendo, tanda ${p.tanda} de ${p.tandas}. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.`
-        : 'Etapa: Emitiendo. Si detienes, termina la tanda en curso; volver a «Generar» no duplica las que ya salieron.',
-    lanzadoPor: null,
-    esMio: true,
-    recurso: null,
-    archivo: null,
-    sePuedeCancelar: false,
-    cancelacionPedida: false,
-    interrumpido: false,
-    createdAt: ahora,
-    iniciadoAt: null,
-    terminadoAt: null,
-    actualizadoAt: ahora,
-  }
-}
+import { registrarDetenerEnElNavegador } from '@/components/procesos/detener-en-el-navegador'
 import { CajonDeLaFactura } from './CajonDeLaFactura'
 import { useDescargarFacturas } from './useDescargarFacturas'
 
@@ -142,7 +106,6 @@ import { Badge } from '@/components/ui/badge'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
 import {
   Select,
   SelectContent,
@@ -1066,14 +1029,18 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   }, [aQuien, delMes, seleccion])
 
   /*
-   * F3 (auditoría 13-09): la corrida va en tandas de 200 con progreso real y
-   * «Detener». F2: al terminar —entera, detenida o caída a mitad— queda un
-   * informe con lo que salió y lo que no, hasta que se cierre o se cambie de
+   * F3 (auditoría 13-09): la corrida va en tandas de 200 con «Detener». F2: si
+   * algo NO salió —detenida, sin números o caída a mitad— queda un informe con
+   * lo que salió, lo que no y qué hacer, hasta que se cierre o se cambie de
    * mes. Antes una tanda caída decía «No se pudieron emitir las facturas»
    * sobre las que sí habían salido.
+   *
+   * 🔴 El AVANCE y el «Detener» ya no se pintan acá (Nico, 23-09: «¿para qué
+   * muestras la carga también en la tabla? Ya tenemos centro de procesos,
+   * todas las cargas déjalas que sucedan allí y deja la pantalla quieta»).
+   * Viven en la fila del centro: la corrida le presta su «Detener» apenas el
+   * back le da el id del proceso (`registrarDetenerEnElNavegador`).
    */
-  const [progreso, setProgreso] = useState<ProgresoDeFacturas | null>(null)
-  const [deteniendo, setDeteniendo] = useState(false)
   const detenerRef = useRef(false)
   const [corridaHecha, setCorridaHecha] = useState<ResultadoDeLaCorrida | null>(null)
   /** La fila abierta en el cajón. Es la MISMA que pinta la tabla. */
@@ -1104,20 +1071,27 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     setGenerando(true)
     setCorridaHecha(null)
     detenerRef.current = false
-    setDeteniendo(false)
-    setProgreso({ hechas: 0, total: claves.length, tanda: 0, tandas: 0 })
+    // Se asigna desde `onProceso`: un objeto para que TS no lo dé por `null`.
+    const prestado: { soltar: (() => void) | null } = { soltar: null }
     try {
       // 🔴 El centro de procesos se hace presente (Nico, 22-09: «mandé a
       // emitir y el centro ni se abrió»): se abre solo con esta emisión.
       anunciarProceso({
         titulo: `Emitiendo ${claves.length} ${claves.length === 1 ? 'factura' : 'facturas'}`,
+        tipoDeProceso: 'EMISION_DE_FACTURAS',
       })
       const resultado = await generarPorTandas(
         mes,
         claves,
         (elMes, lote, corrida) => facturacionPorMesService.generar(elMes, lote, corrida),
-        setProgreso,
-        { debeParar: () => detenerRef.current },
+        undefined,
+        {
+          debeParar: () => detenerRef.current,
+          onProceso: (procesoId) => {
+            prestado.soltar?.()
+            prestado.soltar = registrarDetenerEnElNavegador(procesoId, detenerCorrida)
+          },
+        },
       )
       const { informe, corte } = resultado
       /*
@@ -1152,15 +1126,17 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       // corte: y lo que quedó por emitir vuelve seleccionado para reintentar.
       await cargar(mes, hasta, true)
     } finally {
+      prestado.soltar?.()
       setGenerando(false)
-      setProgreso(null)
-      setDeteniendo(false)
     }
   }
 
-  const detenerCorrida = () => {
+  /** El «Detener» de la fila del centro: se respeta al cerrar la tanda en curso. */
+  function detenerCorrida() {
     detenerRef.current = true
-    setDeteniendo(true)
+    toast.info('Se detiene al terminar la tanda en curso.', {
+      description: 'Lo que ya salió queda emitido, y volver a «Generar» no duplica nada.',
+    })
   }
 
   /**
@@ -1340,15 +1316,12 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       onClick={() => void generar()}
       data-testid="facturacion-generar"
     >
-      {generando ? (
-        <Spinner className="h-4 w-4" />
-      ) : (
-        <Receipt className="h-4 w-4" weight="bold" />
-      )}
+      <Receipt className="h-4 w-4" weight="bold" />
+      {/* 🔴 Sin spinner ni «200 de 450» (Nico, 23-09): el avance es del centro
+          de procesos. El botón queda apagado mientras la corrida manda sus
+          tandas —apretarlo otra vez no haría nada útil— y dice dónde mirar. */}
       {generando
-        ? progreso
-          ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
-          : 'Generando…'
+        ? 'Emitiendo: míralo en el centro de procesos'
         : // Sin nada marcado, «Generar 0 facturas» es un rótulo que
           // nadie escribiría: el botón dice qué hace y el pie de al
           // lado dice por qué está apagado.
@@ -1394,24 +1367,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         </div>
       )}
 
-      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar —
-          pero detrás de un botón (regla del molde, Nico 22-09: el párrafo gris
-          encima de la tabla «se ve tirado»): se lee una vez, no empuja la
-          tabla hacia abajo cada vez que se entra. */}
-      <div className="flex justify-end" data-testid="facturacion-como-funciona">
-        <ParaEntenderMas etiqueta="Cómo se factura">
-          <p>
-            Cada factura sale de la cuota del contrato: el mismo canon, el mismo
-            prorrateo y los mismos impuestos que el cliente ve en su estado de
-            cuenta. Una cuota que se generó sin escenario tributario confirmado se
-            factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
-            impuesto que nadie confirmó. La factura se numera con la resolución
-            vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
-            CUFE ni validación): eso necesita el proveedor tecnológico de la
-            inmobiliaria.
-          </p>
-        </ParaEntenderMas>
-      </div>
 
       {/* 🔴 UNA sola tarjeta: el mes, la resolución, las pestañas, la tabla y
           el pie de acciones masivas. Nico, 20-09, viendo los tres bloques
@@ -1531,21 +1486,6 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           </p>
         )}
       </div>
-
-      {/* F3: la corrida en curso, con la MISMA fila del centro de procesos
-          (22-09: «no dos diseños para lo mismo»): misma barra, mismo
-          «Detener». Una línea, no una tarjeta: el detalle vive en el centro. */}
-      {generando && progreso && (
-        <div className="border-b border-border" data-testid="facturacion-en-curso">
-          <FilaDeProceso
-            as="div"
-            sinVerResultado
-            proceso={procesoDeLaCorrida(mes, progreso)}
-            onDetener={detenerCorrida}
-            deteniendo={deteniendo}
-          />
-        </div>
-      )}
 
       {/* F2: lo que salió y lo que no, hasta que se cierre o cambie el mes. */}
       {corridaHecha && !generando && (

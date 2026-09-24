@@ -35,7 +35,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/components/ui/toast', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
 vi.mock('@/lib/hooks/usePermissions', () => ({
@@ -264,6 +264,53 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
         origen: { banco: 'BANCOLOMBIA', tipoDeCuenta: 'CORRIENTE', numeroDeCuenta: '10012345678' },
       }),
     );
+  });
+
+  it('🔴 al armar, avisa si hay pagos que ya salieron en el archivo de un lote anulado', async () => {
+    armar.mockResolvedValue({
+      lote: { id: 'lote-1', cantidad: 2, totalCop: 3_600_000 },
+      excluidos: [],
+      descubiertoCop: 0,
+      salieronEnUnArchivoAnulado: [
+        { dispersionId: 'd-1', propietarioId: 'p-1', nombre: 'JORGE', valorCop: 1_800_000, loteAnteriorId: 'l-0', archivoGeneradoAt: null, anuladoAt: null, motivoDeLaAnulacion: null },
+      ],
+    });
+    await abrirArmar();
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+
+    const { toast } = await import('@/components/ui/toast');
+    expect(toast.warning).toHaveBeenCalledWith(
+      'Revisa el aviso del lote: 1 de estos pagos ya salieron en el archivo de un lote anulado.',
+    );
+  });
+
+  it('🔴 P-4 (24-09): si el back lo devuelve aprobado (lo armó un administrador), el aviso dice «armado y aprobado… por ti»', async () => {
+    armar.mockResolvedValue({
+      lote: { id: 'lote-1', cantidad: 2, totalCop: 3_600_000, estado: 'APROBADO' },
+      excluidos: [],
+      descubiertoCop: 0,
+      mismoPaso: { aprobadoEnElMismoPaso: true, porQueNo: null, nota: 'Aprobado por ti como administrador (P-4)…' },
+    });
+    await abrirArmar();
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+
+    const { toast } = await import('@/components/ui/toast');
+    const [titulo, opciones] = vi.mocked(toast.success).mock.calls.at(-1)!;
+    expect(titulo).toBe('Lote de septiembre de 2026 armado y aprobado');
+    expect((opciones as { description: string }).description).toContain('Aprobado por ti como administrador (P-4)');
+  });
+
+  it('otro rol: «armado», como siempre (lo aprueba otra persona)', async () => {
+    armar.mockResolvedValue({
+      lote: { id: 'lote-1', cantidad: 2, totalCop: 3_600_000, estado: 'BORRADOR' },
+      excluidos: [],
+      descubiertoCop: 0,
+    });
+    await abrirArmar();
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+    const { toast } = await import('@/components/ui/toast');
+    const [titulo] = vi.mocked(toast.success).mock.calls.at(-1)!;
+    expect(titulo).toBe('Lote de septiembre de 2026 armado');
   });
 
   it('los bancos salen agrupados por lo que reciben', async () => {

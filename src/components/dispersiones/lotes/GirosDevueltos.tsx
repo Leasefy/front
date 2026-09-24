@@ -66,7 +66,9 @@ import {
   type Regiro,
 } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { useI18n } from '@/lib/i18n';
 
 /** El fallo en palabras y, si es el 503 de la migración, quién la aplica. */
 export function explicarGiro(error: unknown, porDefecto: string): string {
@@ -162,7 +164,7 @@ export function AccionesDelGiro({
   if (giro && !estaSinResolver(giro)) {
     return (
       <span className="text-xs text-fg-muted" data-testid={`regirado-${dispersionId}`}>
-        Se volvió a girar{giro.fechaDelNuevoGiro ? ` el ${giro.fechaDelNuevoGiro}` : ''}.
+        Se volvió a girar{giro.fechaDelNuevoGiro ? ` el ${diaLegible(giro.fechaDelNuevoGiro)}` : ''}.
       </span>
     );
   }
@@ -171,6 +173,7 @@ export function AccionesDelGiro({
     return (
       <div className="flex flex-wrap items-center gap-2" data-testid={`devuelto-${dispersionId}`}>
         <Badge variant="warning">Devuelto</Badge>
+        {giro.tieneSoporte ? <VerSoporte giroId={giro.id} /> : null}
         {puedeEditar ? (
           <Button
             variant="ghost"
@@ -205,6 +208,34 @@ export function AccionesDelGiro({
 
 // ══ Marcar devuelto ═════════════════════════════════════════════════════════
 
+/** «Ver soporte»: abre la URL firmada del extracto o comprobante del banco. */
+function VerSoporte({ giroId }: { giroId: string }) {
+  const { t } = useI18n();
+  const [abriendo, setAbriendo] = useState(false);
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      hideArrow
+      isLoading={abriendo}
+      data-testid={`ver-soporte-${giroId}`}
+      onClick={async () => {
+        setAbriendo(true);
+        try {
+          const { url } = await finanzasApi.soporteDelGiroDevuelto(giroId);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } catch (e) {
+          toast.error(explicarGiro(e, t('inmobiliaria.dispersiones.giroDevuelto.soporteNoAbre')));
+        } finally {
+          setAbriendo(false);
+        }
+      }}
+    >
+      {t('inmobiliaria.dispersiones.giroDevuelto.verSoporte')}
+    </Button>
+  );
+}
+
 export function MarcarDevueltoDialog({
   abierto,
   dispersionId,
@@ -220,10 +251,16 @@ export function MarcarDevueltoDialog({
   onCerrar: () => void;
   onListo: () => void;
 }) {
+  const { t } = useI18n();
   const [motivo, setMotivo] = useState<MotivoDeDevolucion>('CUENTA_ERRADA');
   const [detalle, setDetalle] = useState('');
   const [codigo, setCodigo] = useState('');
   const [fecha, setFecha] = useState(() => hoyEnBogota());
+  /*
+   * 🔴 El soporte del banco es OBLIGATORIO (Nico, 23-09-2026): una devolución
+   * vuelve a pagarle al propietario, y sin el papel del banco no se registra.
+   */
+  const [soporte, setSoporte] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<DevolucionRegistrada | null>(null);
 
@@ -233,11 +270,12 @@ export function MarcarDevueltoDialog({
     setDetalle('');
     setCodigo('');
     setFecha(hoyEnBogota());
+    setSoporte(null);
     setResultado(null);
   }, [abierto]);
 
   async function marcar() {
-    if (!dispersionId) return;
+    if (!dispersionId || !soporte) return;
     setEnviando(true);
     try {
       setResultado(
@@ -247,6 +285,7 @@ export function MarcarDevueltoDialog({
           motivoDetalle: detalle.trim() || undefined,
           codigoDelBanco: codigo.trim() || undefined,
           fechaDeLaDevolucion: fecha,
+          soporte,
         }),
       );
       onListo();
@@ -331,6 +370,19 @@ export function MarcarDevueltoDialog({
               </p>
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="soporte-devolucion">{t('inmobiliaria.dispersiones.giroDevuelto.soporte')}</Label>
+              <Input
+                id="soporte-devolucion"
+                data-testid="soporte-de-la-devolucion"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
+              />
+              <p className="text-sm text-fg-muted">
+                {t('inmobiliaria.dispersiones.giroDevuelto.soporteAyuda')}
+              </p>
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="codigo-del-banco">Código del banco</Label>
               <Input
                 id="codigo-del-banco"
@@ -362,7 +414,14 @@ export function MarcarDevueltoDialog({
               <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
                 Cancelar
               </Button>
-              <Button hideArrow onClick={() => void marcar()} isLoading={enviando}>
+              <Button
+                hideArrow
+                onClick={() => void marcar()}
+                isLoading={enviando}
+                disabled={!soporte}
+                title={soporte ? undefined : t('inmobiliaria.dispersiones.giroDevuelto.faltaSoporte')}
+                data-testid="confirmar-devuelto"
+              >
                 Marcar devuelto
               </Button>
             </>
@@ -438,7 +497,7 @@ export function RegirarDialog({
             </p>
             <p className="text-fg-muted">
               {resultado.egreso.seReFecho
-                ? `El egreso quedó con fecha ${resultado.egreso.fecha}.`
+                ? `El egreso quedó con fecha ${diaLegible(resultado.egreso.fecha)}.`
                 : 'El egreso conservó su fecha original.'}
             </p>
           </div>
@@ -453,7 +512,9 @@ export function RegirarDialog({
                 onChange={(e) => setFecha(e.target.value)}
               />
               <p className="text-xs text-fg-muted">
-                El giro se devolvió el {giro?.fechaDeLaDevolucion ?? '—'}.
+                {/* QA 23-09: pintaba «2026-09-23T00:00:00.000Z». Es una fecha
+                    CIVIL (`@db.Date`): en palabras y sin pasar por la zona. */}
+                El giro se devolvió el {diaLegible(giro?.fechaDeLaDevolucion)}.
               </p>
             </div>
             <p className="rounded-md border border-border px-4 py-3 text-xs text-fg-muted">

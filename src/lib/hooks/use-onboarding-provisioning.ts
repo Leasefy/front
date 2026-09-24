@@ -89,6 +89,13 @@ export interface UseOnboardingProvisioningResult {
   provision: (input: ProvisioningInput) => void
 }
 
+/** El código del 409 del back (`AgencyService.createAgency`). */
+export const CORREO_DE_OTRA_INMOBILIARIA = 'CORREO_DE_OTRA_INMOBILIARIA'
+
+/** Por si el 409 llega sin mensaje: la misma frase que manda el back. */
+const MOTIVO_CORREO_DE_OTRA_INMOBILIARIA =
+  'Ese correo ya es el de otra inmobiliaria en Leasefy. Usa el correo de la tuya; si es la misma, pídele acceso a su administrador.'
+
 const FALLO_GENERICO =
   'No pudimos preparar el registro de tu inmobiliaria. Vuelve a intentarlo en unos minutos.'
 
@@ -102,6 +109,21 @@ const FALLO_GENERICO =
  */
 export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
   if (error instanceof ApiError) {
+    /*
+     * 🔴 Auditoría de seguridad 23-09-2026 (back): el correo de la agencia es
+     * la identidad con la que el micro de avalúos le entrega sus certificados,
+     * así que el back ya no deja crear una agencia con el correo de OTRA
+     * (409 `CORREO_DE_OTRA_INMOBILIARIA`). Reintentar manda el mismo correo y
+     * da el mismo 409: no se ofrece. El mensaje es el del back, que dice qué
+     * hacer.
+     */
+    if (error.code === CORREO_DE_OTRA_INMOBILIARIA) {
+      return {
+        mensaje: error.message || MOTIVO_CORREO_DE_OTRA_INMOBILIARIA,
+        reintentable: false,
+        status: error.status,
+      }
+    }
     if (error.status === 0) {
       return { mensaje: error.message, reintentable: true, status: 0 }
     }

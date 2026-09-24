@@ -2,14 +2,19 @@
 
 import { cn } from '@/lib/utils';
 import type { TurnStep } from '@/lib/types/beta-chat';
-import { GlifoPaso, useTextoPaso, useRelojPaso } from './turn-steps';
+import { GlifoPaso, LineaDeActividad, useActividadPaso, useTextoPaso } from './turn-steps';
 
 function TaskRow({ step, esUltima }: { step: TurnStep; esUltima: boolean }) {
   const { label, detail } = useTextoPaso(step);
-  const reloj = useRelojPaso(step);
+  const actividad = useActividadPaso(step, detail);
+  const corriendo = step.status === 'running';
+  const fallo = step.status === 'failed';
 
   return (
-    <li className={cn('relative flex gap-3', step.kind === 'herramienta' && 'pl-6')}>
+    <li
+      className={cn('relative flex gap-3', step.kind === 'herramienta' && 'pl-6')}
+      data-estado={step.status}
+    >
       {/* Riel vertical que une las filas — el «árbol» de Manus */}
       {!esUltima && (
         <span aria-hidden className="absolute left-[9px] top-6 h-[calc(100%-4px)] w-px bg-border" />
@@ -19,33 +24,26 @@ function TaskRow({ step, esUltima }: { step: TurnStep; esUltima: boolean }) {
         <GlifoPaso estado={step.status} />
       </span>
 
-      <div className="min-w-0 flex-1 pb-3">
-        <div className="flex items-baseline justify-between gap-3">
-          {/* Dos líneas como máximo: el orquestador manda como «tarea» un
-              párrafo entero con todo el contexto, y en el hilo pesa como un
-              mensaje más. Lo que sigue lo cuenta el title. */}
-          <span
-            title={label}
-            className={cn(
-              'line-clamp-2 font-body text-[14px] leading-snug',
-              step.status === 'running' || step.status === 'failed' ? 'text-fg' : 'text-fg-muted'
-            )}
-          >
-            {label}
-          </span>
-          {reloj && (
-            <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-fg-subtle">{reloj}</span>
+      <div className={cn('min-w-0 flex-1', corriendo ? 'pb-3' : 'pb-2')}>
+        {/* Sin reloj (Nico, 23-09: «no tiene sentido dejarlo ahí»). El activo
+            puede ocupar dos líneas; uno terminado colapsa a UNA, con el resto
+            en el `title`: ya pasó, lo que importa es lo que está pasando. */}
+        <span
+          title={[label, !corriendo && !fallo ? detail : null].filter(Boolean).join(' — ')}
+          className={cn(
+            'block font-body text-[14px] leading-snug',
+            corriendo ? 'line-clamp-2 font-medium text-fg' : 'truncate',
+            fallo ? 'text-fg' : !corriendo && 'text-fg-muted'
           )}
-        </div>
+        >
+          {label}
+        </span>
 
-        {detail && (
-          <p
-            title={detail}
-            className={cn(
-              'mt-0.5 line-clamp-2 font-body text-[12.5px]',
-              step.status === 'failed' ? 'text-danger' : 'text-fg-subtle'
-            )}
-          >
+        {actividad && <LineaDeActividad texto={actividad} avance={step.avance} className="mt-0.5" />}
+
+        {/* El porqué de un fallo sí se queda a la vista: es lo que hay que leer. */}
+        {fallo && detail && (
+          <p title={detail} className="mt-0.5 line-clamp-2 font-body text-[13.5px] text-danger">
             {detail}
           </p>
         )}
@@ -65,12 +63,12 @@ interface AgentTaskThreadProps {
  *
  * ── Por qué (Nico, 2026-08-27) ────────────────────────────────────────────
  * «Mira cómo lo hace Manus: debemos mostrar qué está haciendo y pensando; lo
- * atan al chat y se ve hermoso». Filas planas con glifo de estado, la tarea,
- * un reloj y un riel que las une; se lee como parte de lo que dice el
- * asistente, no como un widget aparte.
+ * atan al chat y se ve hermoso». Filas planas con glifo de estado, la tarea
+ * y un riel que las une; se lee como parte de lo que dice el asistente, no
+ * como un widget aparte. El activo gira y dice qué hace (ver `turn-steps`).
  *
  * Acá va lo que YA pasó o está pasando. Lo que falta se ve en el panel del
- * compositor: en el hilo, una lista de futuros con relojes en cero es ruido.
+ * compositor: en el hilo, una lista de futuros es ruido.
  */
 export function AgentTaskThread({ steps, className }: AgentTaskThreadProps) {
   const visibles = steps.filter((p) => p.status !== 'pending');

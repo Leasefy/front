@@ -10,7 +10,11 @@
  *    `accionesPara(estado)`, calcada de los `if` del servicio, y del permiso
  *    de cada una. Un botón que siempre falla enseña a ignorar los errores.
  * 2. **Dejar que quien armó el lote crea que puede aprobarlo.** El back lo
- *    prohíbe; acá se dice antes de que gaste un clic.
+ *    prohíbe; acá se dice antes de que gaste un clic. Salvo P-4 (aclarado por
+ *    Nico el 24-09): el ADMINISTRADOR no se confirma a sí mismo. Lo que arma
+ *    vuelve del back ya aprobado y acá lo dice («Aprobado por ti como
+ *    administrador (P-4)»); un lote suyo que quedó esperando se aprueba con
+ *    un clic, sin código, en vez de un «Aprobar» apagado.
  * 3. **Entregar el archivo sin el aviso.** Mientras nadie haya subido un
  *    archivo de ese formato al banco y visto que lo acepta, el nombre lleva
  *    `SIN-VERIFICAR` y acá se muestra ANTES de guardar. Un giro de mil
@@ -108,6 +112,13 @@ import {
 } from './GirosDevueltos';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
+import { AvisoDeArchivoAnulado } from './AvisoDeArchivoAnulado';
+import { useI18n } from '@/lib/i18n';
+import {
+  APROBADO_POR_TI,
+  loApruebaElQueLoArmo,
+  notaDelLote,
+} from '@/lib/doble-control/el-administrador';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -164,8 +175,8 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
           : 'Facturación al propietario emitida'
       }
     >
-      <div className="space-y-1" data-testid="facturacion-del-lote">
-        <p>
+      <span className="block space-y-1" data-testid="facturacion-del-lote">
+        <span className="block">
           {r.emitidas}{' '}
           {r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} por{' '}
           {formatCurrency(r.totalCop)}
@@ -173,24 +184,24 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
             ` · ${r.yaEstaban} ya ${r.yaEstaban === 1 ? 'estaba' : 'estaban'} emitida${r.yaEstaban === 1 ? '' : 's'}`}
           {r.sinNumero > 0 && ` · ${r.sinNumero} sin número`}
           {r.candidatas > 0 && ` · de ${r.candidatas}`}
-        </p>
+        </span>
         {r.numeros.length > 0 && (
-          <p className="font-mono text-xs text-fg-muted">
+          <span className="block font-mono text-xs text-fg-muted">
             {r.numeros.slice(0, 8).join(' · ')}
             {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
-          </p>
+          </span>
         )}
         {hayFallas && (
-          <ul className="space-y-0.5">
+          <span role="list" className="block space-y-0.5">
             {r.fallas.map((f) => (
-              <li key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
+              <span role="listitem" className="block" key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
                 {nombreDelMes(f.mes)}: {f.motivo}
-              </li>
+              </span>
             ))}
-          </ul>
+          </span>
         )}
         {hayFallas && (
-          <p className="text-fg-muted">
+          <span className="block text-fg-muted">
             La plata ya salió del banco y el lote quedó PAGADO: lo que falta es
             emitir, y se reintenta desde{' '}
             <Link
@@ -200,9 +211,9 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
               Facturación
             </Link>
             .
-          </p>
+          </span>
         )}
-      </div>
+      </span>
     </Banner>
   );
 }
@@ -229,29 +240,29 @@ function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
             : `A los ${r.enviados} propietarios que quedaron en $0 les salió su extracto`
       }
     >
-      <div className="space-y-1" data-testid="extractos-de-compensados">
-        <p>
+      <span className="block space-y-1" data-testid="extractos-de-compensados">
+        <span className="block">
           {r.enviados} de {r.compensados}{' '}
           {r.compensados === 1 ? 'extracto enviado' : 'extractos enviados'}, con
           el detalle de las deducciones que explican por qué este mes no se les
           giró nada.
-        </p>
+        </span>
         {hayFallas && (
-          <ul className="space-y-0.5">
+          <span role="list" className="block space-y-0.5">
             {r.fallas.map((f) => (
-              <li key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
+              <span role="listitem" className="block" key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
                 <span className="font-medium">{f.nombre}</span>: {f.motivo}
-              </li>
+              </span>
             ))}
-          </ul>
+          </span>
         )}
         {hayFallas && (
-          <p className="text-fg-muted">
+          <span className="block text-fg-muted">
             El lote quedó PAGADO igual. El extracto se reenvía desde la ficha de
             cada propietario.
-          </p>
+          </span>
         )}
-      </div>
+      </span>
     </Banner>
   );
 }
@@ -283,8 +294,9 @@ export interface DetalleDelLoteProps {
 
 export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteProps) {
   const { vista, cargando, error, refetch, setVista } = useLoteDeDispersion(id);
-  const { canAccess } = usePermissions();
+  const { canAccess, isAdmin } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
+  const { t } = useI18n();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   /*
    * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
@@ -383,6 +395,23 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
+  /*
+   * 🔴 P-4 aclarado (Nico, 24-09): el ADMINISTRADOR que armó el lote no se
+   * confirma a sí mismo. «Pedir aprobación» se lo deja aprobado en ese paso y
+   * «Aprobar» no le pide código (lo hace el back). El botón no se le apaga.
+   */
+  const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin);
+  /** Lo armó y lo aprobó la misma persona (sólo un administrador, P-4). */
+  const notaP4 = notaDelLote(lote, yo);
+  /*
+   * 🔴 Nico, 23-09: el giro que vuelve a salir no lo aprueba quien registró su
+   * devolución (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
+   * Se apaga «Aprobar» con el porqué antes del clic.
+   */
+  const registreUnaDevolucion =
+    // P-4: al administrador el back también le deja aprobar el regiro de la
+    // devolución que registró (y lo deja en la bitácora).
+    !isAdmin && yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
 
   return (
@@ -435,11 +464,33 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {lote.extractosDeCompensados && (
         <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
       )}
-      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
+      {lote.estado === 'ESPERANDO_APROBACION' && registreUnaDevolucion && !soyElCreador && !bloqueado && (
+        <Banner variant="info" data-testid="registre-una-devolucion">
+          {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
+        </Banner>
+      )}
+      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !loApruebaAlPedir && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
+      )}
+      {(lote.estado === 'BORRADOR' || lote.estado === 'ESPERANDO_APROBACION') &&
+        loApruebaAlPedir &&
+        !bloqueado && (
+          <Banner variant="info" title="Lo armaste tú y eres administrador" data-testid="lo-apruebas-tu">
+            No se te pide que lo confirmes con otra persona ni con un código: con «Aprobar» queda
+            aprobado en un solo paso (P-4). En la bitácora queda que fuiste la misma persona.
+          </Banner>
+        )}
+      {lote.estado === 'APROBADO' && notaP4 && (
+        <Banner variant="success" title={notaP4.titulo} data-testid="aprobado-por-la-misma-persona">
+          {notaP4.detalle}
+        </Banner>
+      )}
+
+      {lote.estado !== 'ANULADO' && (
+        <AvisoDeArchivoAnulado pagos={vista.salieronEnUnArchivoAnulado} />
       )}
 
       {/* ── Línea de tiempo ────────────────────────────────────────────── */}
@@ -456,9 +507,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         />
         <Cifra
           etiqueta="Aprobado por"
-          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId) : 'Nadie todavía'}
+          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
           mono={false}
-          detalle={lote.aprobadoAt ? formatDateTime(lote.aprobadoAt) : undefined}
+          detalle={
+            lote.aprobadoAt
+              ? `${notaP4 ? 'Como administrador, en el mismo paso (P-4) · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              : undefined
+          }
         />
       </section>
 
@@ -470,22 +525,34 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         >
           {acciones.includes('pedirAprobacion') && (
             <Button onClick={() => setDialogo('pedirAprobacion')} hideArrow disabled={bloqueado}>
-              <PaperPlaneTilt className="h-4 w-4" />
-              Pedir aprobación
+              {loApruebaAlPedir ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <PaperPlaneTilt className="h-4 w-4" />
+              )}
+              {/* P-4: al administrador que lo armó, pedir la aprobación ES aprobar. */}
+              {loApruebaAlPedir ? 'Aprobar' : 'Pedir aprobación'}
             </Button>
           )}
           {acciones.includes('aprobar') && (
             <Button
               onClick={() => setDialogo('aprobar')}
               hideArrow
-              disabled={soyElCreador || bloqueado}
-              title={soyElCreador ? 'Quien arma el lote no puede aprobarlo' : undefined}
+              disabled={(soyElCreador && !loApruebaAlPedir) || registreUnaDevolucion || bloqueado}
+              title={
+                soyElCreador && !loApruebaAlPedir
+                  ? 'Quien arma el lote no puede aprobarlo'
+                  : registreUnaDevolucion
+                    ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
+                    : undefined
+              }
             >
               <ShieldCheck className="h-4 w-4" />
               Aprobar
             </Button>
           )}
-          {acciones.includes('reenviarCodigo') && (
+          {/* A quien lo aprueba él mismo no le sale un código: no hay qué reenviar. */}
+          {acciones.includes('reenviarCodigo') && !loApruebaAlPedir && (
             <Button
               variant="secondary"
               hideArrow
@@ -763,7 +830,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </div>
         <p className="text-xs text-fg-muted">
-          Armado por {nombreDe(lote.creadoPorUserId)} · {lote.items.length}{' '}
+          Armado por {nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
         </p>
       </section>
@@ -776,14 +843,16 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <PedirAprobacionDialog
         abierto={dialogo === 'pedirAprobacion'}
         lote={lote}
-        reenvio={lote.estado === 'ESPERANDO_APROBACION'}
+        reenvio={lote.estado === 'ESPERANDO_APROBACION' && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         onCerrar={cerrar}
         onListo={(r) => aplicarLote({ ...lote, ...r.lote, items: lote.items })}
       />
       <AprobarDialog
         abierto={dialogo === 'aprobar'}
         lote={lote}
-        exigeCodigo={exigeCodigo}
+        exigeCodigo={exigeCodigo && !loApruebaAlPedir}
+        comoAdministrador={loApruebaAlPedir}
         intentosRestantes={intentosRestantes}
         onCerrar={cerrar}
         onListo={aplicarLote}
@@ -943,9 +1012,15 @@ function PedirAprobacionDialog({
   abierto,
   lote,
   reenvio,
+  comoAdministrador = false,
   onCerrar,
   onListo,
-}: DialogoBase & { reenvio: boolean; onListo: (r: SolicitudDeAprobacion) => void }) {
+}: DialogoBase & {
+  reenvio: boolean;
+  /** P-4: lo armó quien mira y es administrador: este paso lo deja aprobado. */
+  comoAdministrador?: boolean;
+  onListo: (r: SolicitudDeAprobacion) => void;
+}) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<SolicitudDeAprobacion | null>(null);
@@ -964,7 +1039,13 @@ function PedirAprobacionDialog({
       const r = await lotesDeDispersionApi.solicitarAprobacion(lote.id);
       setResultado(r);
       onListo(r);
-      toast.success(reenvio ? 'Código reenviado' : 'Lote enviado a aprobación');
+      toast.success(
+        r.lote.estado === 'APROBADO'
+          ? 'Lote aprobado'
+          : reenvio
+            ? 'Código reenviado'
+            : 'Lote enviado a aprobación',
+      );
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo mandar el lote a aprobación.'));
     } finally {
@@ -976,7 +1057,9 @@ function PedirAprobacionDialog({
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
       <DialogContent className="max-w-lg" data-testid="dialogo-pedir-aprobacion">
         <DialogHeader>
-          <DialogTitle>{reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}</DialogTitle>
+          <DialogTitle>
+            {comoAdministrador ? 'Aprobar el lote' : reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}
+          </DialogTitle>
           <DialogDescription>
             {resultado
               ? 'Listo. Esto es lo que pasó.'
@@ -989,16 +1072,28 @@ function PedirAprobacionDialog({
         <div className="space-y-3 px-6 py-4 text-sm">
           {!resultado ? (
             <>
-              <p className="text-fg-muted">
-                Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
-                el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
-                le llega un código de 6 dígitos por correo que vence a los 10 minutos.
-              </p>
+              {comoAdministrador ? (
+                <p className="text-fg-muted">
+                  Lo armaste tú y eres administrador: queda aprobado en este paso, sin código y sin
+                  pedírselo a otra persona (P-4). En la bitácora queda que fuiste la misma persona.
+                </p>
+              ) : (
+                <p className="text-fg-muted">
+                  Lo aprueba otra persona con permiso de edición sobre dispersiones. Si el monto supera
+                  el que la inmobiliaria configuró —o si tiene el PIN prendido para todos los lotes—,
+                  le llega un código de 6 dígitos por correo que vence a los 10 minutos.
+                </p>
+              )}
               {error && <Banner variant="danger">{error}</Banner>}
             </>
           ) : (
             <div className="space-y-3" data-testid="resultado-de-aprobacion">
-              {resultado.exigeCodigo ? (
+              {resultado.lote.estado === 'APROBADO' ? (
+                <Banner variant="success" title={APROBADO_POR_TI}>
+                  {resultado.mismoPaso?.nota ??
+                    'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
+                </Banner>
+              ) : resultado.exigeCodigo ? (
                 <>
                   <Banner variant="info" title="El código salió por correo">
                     {resultado.motivoDelCodigo}
@@ -1035,7 +1130,7 @@ function PedirAprobacionDialog({
                 Cancelar
               </Button>
               <Button onClick={() => void pedir()} isLoading={enviando} hideArrow>
-                {reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
+                {comoAdministrador ? 'Aprobar' : reenvio ? 'Reenviar código' : 'Mandar a aprobación'}
               </Button>
             </>
           ) : (
@@ -1053,12 +1148,15 @@ function AprobarDialog({
   abierto,
   lote,
   exigeCodigo,
+  comoAdministrador = false,
   intentosRestantes,
   onCerrar,
   onListo,
   onFallo,
 }: DialogoBase & {
   exigeCodigo: boolean;
+  /** P-4: lo armó quien mira y es administrador: sin código, en un paso. */
+  comoAdministrador?: boolean;
   intentosRestantes: number;
   onListo: (lote: LoteDeDispersion) => void;
   /** Un código incorrecto gasta un intento: hay que volver a leer cuántos quedan. */
@@ -1132,6 +1230,11 @@ function AprobarDialog({
                 {intentosRestantes === 1 ? 'intento' : 'intentos'} antes de que el lote se bloquee.
               </p>
             </div>
+          ) : comoAdministrador ? (
+            <p className="text-fg-muted">
+              Lo armaste tú y eres administrador: se aprueba sin código y sin otra persona (P-4). En
+              la bitácora queda que fuiste la misma persona.
+            </p>
           ) : (
             <p className="text-fg-muted">
               Este lote no exige código: está por debajo del monto que pide doble control. Tu
@@ -1557,14 +1660,25 @@ function AnularDialog({
   onCerrar,
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
+  const { t } = useI18n();
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
+   * procesó en el banco (back, 23-09-2026: 409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin la confirmación). Sin
+   * esta casilla el botón mandaba el cuerpo de siempre y el lote no se podía
+   * anular nunca.
+   */
+  const conArchivo = lote.estado === 'ARCHIVO_GENERADO';
+  const [confirmo, setConfirmo] = useState(false);
 
   useEffect(() => {
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setConfirmo(false);
     }
   }, [abierto]);
 
@@ -1573,10 +1687,14 @@ function AnularDialog({
       setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
+    if (conArchivo && !confirmo) {
+      setError(t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar'));
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
-      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo);
+      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
       toast.success('Lote anulado', {
         description: 'Sus dispersiones quedaron libres para entrar en otro lote.',
@@ -1611,13 +1729,34 @@ function AnularDialog({
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          {conArchivo && (
+            <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
+              <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  data-testid="casilla-archivo-del-banco"
+                  checked={confirmo}
+                  onCheckedChange={(v) => setConfirmo(v === true)}
+                />
+                <span>{t('inmobiliaria.dispersiones.lote.anular.confirmaArchivo')}</span>
+              </label>
+            </div>
+          )}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={() => void anular()} isLoading={enviando} hideArrow>
+          <Button
+            variant="destructive"
+            onClick={() => void anular()}
+            isLoading={enviando}
+            disabled={conArchivo && !confirmo}
+            title={conArchivo && !confirmo ? t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar') : undefined}
+            hideArrow
+            data-testid="boton-anular-lote"
+          >
             <Prohibit className="h-4 w-4" />
             Anular lote
           </Button>

@@ -7,7 +7,7 @@ import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { PropertyDetailView } from '@/components/property/PropertyDetailView';
 
 interface PropertyDetailPageProps {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -27,7 +27,7 @@ interface PropertyDetailPageProps {
  * (Nico, 2026-09-05: «pon el de la landing ahí también»).
  */
 export default function PropertyDetailPage({ params }: PropertyDetailPageProps) {
-  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const resolvedParams = use(params);
 
   return (
     <LandingChrome activo="inmuebles">

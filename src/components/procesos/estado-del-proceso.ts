@@ -43,6 +43,12 @@ const ROL: Record<string, string> = {
   ABOGADO_EXTERNO: 'abogado externo',
 }
 
+/**
+ * El porqué de un botón apagado mientras su proceso corre (23-09: el avance
+ * vive en el centro; la pantalla no gira ni cuenta, sólo dice dónde mirar).
+ */
+export const EN_CURSO_EN_EL_CENTRO = 'Ya está en curso: lo sigues en el centro de procesos, arriba a la derecha.'
+
 export function estaActivo(p: Pick<Proceso, 'estado'>): boolean {
   return p.estado === 'EN_COLA' || p.estado === 'CORRIENDO'
 }
@@ -145,4 +151,53 @@ export function tiempoDelProceso(
     return `faltan ~${enPalabras(falta)}`
   }
   return null
+}
+
+// ══ El «Arrancando…» del panel (23-09) ═══════════════════════════════════════
+
+/**
+ * Lo que una pantalla anunció que lanzó, mientras el back todavía no lo
+ * registró. `conocidos` son los ids que el centro ya tenía en la lista cuando
+ * llegó el anuncio: un proceso que NO está ahí nació después.
+ */
+export interface AnuncioPendiente {
+  titulo: string
+  procesoId: string | null
+  tipo: string | null
+  conocidos: ReadonlySet<string>
+  desde: number
+}
+
+/**
+ * Pasado este rato, el «Arrancando…» se quita igual: la fila nace en el back
+ * en el mismo request que lanza el proceso, así que si a los 30 s no apareció
+ * es que no va a aparecer (un back sin centro, un POST que falló), y una línea
+ * que gira para siempre es peor que ninguna.
+ */
+export const MS_TOPE_DEL_ANUNCIO = 30_000
+
+/**
+ * ¿El centro ya ve lo que se anunció? 🔴 Nico, 23-09: la fila decía «Facturas
+ * · septiembre 2026 · Listo · tardó 21 s» y arriba seguía «Arrancando
+ * "Emitiendo 1 factura"…», con el encabezado en «Nada en curso». El anuncio
+ * sólo se escondía mientras hubiera algo EN CURSO y se borraba al cerrar el
+ * panel: un proceso que el sondeo nunca vio corriendo —pasó de no existir a
+ * «Listo» entre dos consultas— lo dejaba colgado, y además el título del
+ * anuncio («Emitiendo 1 factura») no es el del proceso («Facturas ·
+ * septiembre 2026»), así que no había cómo emparejarlos por nombre.
+ *
+ * Se empareja por lo que sí es estable: el id del proceso si el anuncio lo
+ * trae; si no, cualquier proceso MÍO que no estaba en la lista al anunciar
+ * (y del mismo tipo, si se sabe) — en cualquier estado, también terminado.
+ */
+export function anuncioResuelto(
+  anuncio: AnuncioPendiente,
+  procesos: readonly Pick<Proceso, 'id' | 'tipo' | 'esMio'>[],
+  ahora: number = Date.now(),
+): boolean {
+  if (ahora - anuncio.desde >= MS_TOPE_DEL_ANUNCIO) return true
+  if (anuncio.procesoId) return procesos.some((p) => p.id === anuncio.procesoId)
+  return procesos.some(
+    (p) => p.esMio && !anuncio.conocidos.has(p.id) && (!anuncio.tipo || p.tipo === anuncio.tipo),
+  )
 }

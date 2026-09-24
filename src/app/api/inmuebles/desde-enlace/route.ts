@@ -16,6 +16,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { traerConGuardia, FalloAlTraer } from '@/lib/inmuebles/traer-url';
 import { leerInmuebleDeHtml, loQueFalta } from '@/lib/inmuebles/leer-enlace';
+import { haySesionValida } from '@/lib/api/sesion-de-la-ruta';
+import { limitarLaRuta, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta';
 
 export const runtime = 'nodejs';
 
@@ -46,6 +48,21 @@ function decodificar(bytes: Uint8Array, contentType: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Límite por IP ANTES de verificar la sesión (que le pregunta a Supabase):
+  // una ráfaga se corta sin costar nada. Por instancia en Vercel; ver
+  // `limite-de-la-ruta.ts`.
+  const demasiadas = limitarLaRuta(req, POLITICAS_DE_LAS_RUTAS.desdeEnlace);
+  if (demasiadas) return demasiadas;
+
+  // Sin sesión esto era un proxy abierto a internet (auditoría 23-09): ver
+  // `sesion-de-la-ruta.ts`. Es un fallo de la PETICIÓN, no de un enlace: 401.
+  if (!(await haySesionValida(req))) {
+    return NextResponse.json(
+      { ok: false, motivo: 'sin_sesion', mensaje: 'Tu sesión se venció. Vuelve a entrar para leer enlaces.' },
+      { status: 401 },
+    );
+  }
+
   const cuerpo = await req.json().catch(() => null);
   const url = typeof cuerpo?.url === 'string' ? cuerpo.url.trim() : '';
 

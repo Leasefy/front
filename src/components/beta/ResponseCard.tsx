@@ -13,13 +13,13 @@ import {
   Buildings,
   ArrowRight,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import type { Icon } from '@phosphor-icons/react';
 import { Button, Badge } from '@/components/ui';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { ResponseMeta, ResponseAction } from '@/lib/types/beta-chat';
+import { entidadDeLaIntencion, type IntencionDelChat } from '@/lib/chat/acciones-del-hilo';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -60,6 +60,8 @@ const AGENT_DOT_COLORS: Record<string, string> = {
 interface ResponseCardProps {
   meta: ResponseMeta;
   content: string;
+  /** El turno del micro: tocar una sugerencia sobre una entidad se le cuenta al cerebro. */
+  turnoId?: string;
   isStreaming?: boolean;
   streamingContent?: string;
   className?: string;
@@ -90,22 +92,21 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
 }
 
 /**
- * Una acción sugerida se responde EN EL CHAT.
+ * Una acción sugerida es un MENSAJE DE LA PERSONA — nunca un enlace.
  *
- * ── Qué hacía antes (Nico, 2026-08-27) ─────────────────────────────────────
+ * ── Historia ───────────────────────────────────────────────────────────────
+ * Nico, 2026-08-27: «Todas estas acciones deben verse reflejadas en el chat,
+ * porque para eso es ese chat, no para que lo lleves a otro lado». Después se
+ * volvió a navegar cuando la acción tenía pantalla («Ver inmuebles
+ * disponibles» dejaba ~25 s esperando al modelo). Nico, 23-09 (22:51), con la
+ * captura de «Ver contrato 24» y «Gestionar cobranza de Mateo Pérez»: «¿Por
+ * qué las acciones siguen sacando fuera del chat? … ya te había dicho que sí
+ * para todas las acciones.»
  *
- * «Todas estas acciones deben verse reflejadas en el chat, porque para eso es
- * ese chat, no para que lo lleves a otro lado.»
- *
- * Con `href` renderizaba un `<a>` y te sacaba de la conversación; SIN `href`
- * renderizaba un `<button>` sin un solo `onClick` — muerto. O sea que ninguna
- * de las dos ramas hacía lo que el botón prometía.
- *
- * Ahora el clic le PREGUNTA al asistente (`prompt`, que por defecto es el
- * label — el back ya lo redacta como petición: «Ver resumen de cobranza de
- * hoy»). La sección sigue alcanzable, pero como salida secundaria al lado, no
- * como el botón entero: ir a la pantalla es una opción, no el destino
- * obligatorio de cada respuesta.
+ * Ahora el botón manda su texto como mensaje de la persona CON su intención
+ * (`action.intencion`, que el micro pega cuando la lee sin duda) y el micro
+ * lo contesta por su camino directo —la ficha del back, ~2 s— sin el bucle
+ * largo del modelo. Ya no existe `href`: no hay rama que navegue.
  */
 function ActionButton({
   action,
@@ -113,7 +114,7 @@ function ActionButton({
   disabled,
 }: {
   action: ResponseAction;
-  onAsk: (prompt: string) => void;
+  onAsk: (prompt: string, intencion?: IntencionDelChat) => void;
   disabled: boolean;
 }) {
   const ActionIcon = ICON_MAP[action.icon];
@@ -122,39 +123,6 @@ function ActionButton({
   const variant =
     action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
-  // Sin la salida secundaria a la sección. La primera versión dejaba un
-  // iconito de «abrir» al lado de cada pastilla y Nico lo vio enseguida:
-  // «no se entiende ese botón, se siente muy raro». Tres iconos huérfanos en
-  // fila se leen como ruido, no como opción. La sección sigue a un clic en la
-  // barra lateral; acá el botón hace UNA cosa: preguntarle al asistente.
-  // 🔴 Cuando la acción TIENE pantalla en el panel, el botón navega.
-  //
-  // Antes toda acción mandaba su texto como un mensaje nuevo: medido en vivo,
-  // «Ver inmuebles disponibles» dejaba al operador otros ~25 s esperando por
-  // una lista que el panel ya muestra a un clic — un botón que parece
-  // navegación y era un prompt. El mapeo marca cuáles son navegables dejando
-  // `prompt` sin definir (`suggestedActionToResponseAction`); las que no
-  // tienen pantalla siguen preguntándole al asistente, que es lo único que
-  // puede responderlas.
-  const navega = !action.prompt && Boolean(action.href);
-
-  if (navega) {
-    return (
-      <Button
-        asChild
-        variant={variant}
-        size="sm"
-        hideArrow
-        className="gap-1.5 rounded-md shrink-0"
-      >
-        <Link href={action.href!}>
-          {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
-          {action.label}
-        </Link>
-      </Button>
-    );
-  }
-
   return (
     <Button
       type="button"
@@ -162,7 +130,7 @@ function ActionButton({
       size="sm"
       hideArrow
       disabled={disabled}
-      onClick={() => onAsk(action.prompt ?? action.label)}
+      onClick={() => onAsk(action.prompt ?? action.label, action.intencion)}
       className="gap-1.5 rounded-md shrink-0"
     >
       {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
@@ -191,14 +159,20 @@ export function ResponseCard({
   content,
   isStreaming = false,
   streamingContent,
+  turnoId,
   className,
 }: ResponseCardProps) {
   // El chat es el destino de estas acciones, así que la tarjeta habla con él
   // directamente en vez de pedirle al padre que le pase un callback: vive
   // dentro del provider, y hacerlo prop obligaba a cablearlo en cada sitio
   // donde se monta una tarjeta.
-  const { sendMessage, isThinking, isStreaming: streamingTurno, isAgentsRunning } =
+  const { sendMessage, isThinking, isStreaming: streamingTurno, isAgentsRunning, anotarTarjetaAbierta } =
     useBetaChatContext();
+  const preguntar = (texto: string, intencion?: IntencionDelChat) => {
+    const entidad = entidadDeLaIntencion(intencion);
+    if (entidad) anotarTarjetaAbierta(turnoId, entidad);
+    sendMessage(texto, { intencion: intencion ?? null });
+  };
   const ocupado = isThinking || streamingTurno || isAgentsRunning;
 
   const agentColor = meta.primaryAgent
@@ -280,7 +254,7 @@ export function ResponseCard({
             <ActionButton
               key={action.id}
               action={action}
-              onAsk={sendMessage}
+              onAsk={preguntar}
               disabled={ocupado}
             />
           ))}

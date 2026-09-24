@@ -91,17 +91,26 @@ export function PilotoProcesos({
   const totalCargado = data ? Object.values(data.totales).reduce((a, b) => a + b, 0) : 0
   const hayFiltro = estado !== 'todos' || tipo !== 'todos'
 
-  /** Las fuentes que no contestaron, para decirlo arriba de la lista. */
+  /**
+   * Las fuentes que no contestaron, para decirlo arriba de la lista.
+   *
+   * 🔴 Auditoría del Piloto (23-09-2026, hallazgo 13): «El ERP no está
+   * conectado al Piloto» venía con «Reintentar», que no lo puede arreglar: la
+   * conciliación del Piloto está APAGADA en el servidor. Ahora el aviso dice
+   * por qué y sólo ofrece reintentar cuando una fuente se cayó de verdad.
+   */
   const avisosDeFuente = useMemo(() => {
-    if (!data) return []
-    const out: string[] = []
+    if (!data) return { textos: [] as string[], reintentable: false }
+    const textos: string[] = []
+    let reintentable = false
     for (const [fuente, salud] of Object.entries(data.fuentes) as Array<[TipoDeProceso, string]>) {
-      if (salud === 'sin_back') out.push(t('inmobiliaria.piloto.procesos.sinBack'))
+      if (salud === 'sin_back') textos.push(t('inmobiliaria.piloto.procesos.sinBack'))
       else if (salud === 'error') {
-        out.push(t('inmobiliaria.piloto.procesos.fuenteCaida', { fuente: t(`inmobiliaria.piloto.procesos.fuente.${fuente}`) }))
+        reintentable = true
+        textos.push(t('inmobiliaria.piloto.procesos.fuenteCaida', { fuente: t(`inmobiliaria.piloto.procesos.fuente.${fuente}`) }))
       }
     }
-    return out
+    return { textos, reintentable }
   }, [data, t])
 
   return (
@@ -136,14 +145,16 @@ export function PilotoProcesos({
       </section>
 
       {/* ── Avisos de fuente ──────────────────────────────────────────────── */}
-      {avisosDeFuente.length > 0 && (
+      {avisosDeFuente.textos.length > 0 && (
         <AlertaAccionable
           severidad="warning"
-          titulo={avisosDeFuente[0] as string}
+          titulo={avisosDeFuente.textos[0] as string}
           data-testid="procesos-aviso-fuente"
-          {...(onRefetch ? { accion: { label: t('inmobiliaria.piloto.cajon.reintentar'), onClick: () => void onRefetch() } } : {})}
+          {...(onRefetch && avisosDeFuente.reintentable
+            ? { accion: { label: t('inmobiliaria.piloto.cajon.reintentar'), onClick: () => void onRefetch() } }
+            : {})}
         >
-          {avisosDeFuente.length > 1 ? avisosDeFuente.slice(1).join(' ') : undefined}
+          {avisosDeFuente.textos.length > 1 ? avisosDeFuente.textos.slice(1).join(' ') : undefined}
         </AlertaAccionable>
       )}
 

@@ -20,7 +20,8 @@ import {
   registrarCierreDeSesion,
   haySesionGuardada,
 } from './session-terminal'
-import { claimSession, revokeSession } from '@/lib/api/session.service'
+import { claimSession } from '@/lib/api/session.service'
+import { revocarSesion } from './revocar-sesion'
 import { CLAVE_DE_PERFIL_ELEGIDO, leerPerfilElegido, type PerfilDeOnboarding } from './perfil-de-onboarding'
 import { getDeviceId } from '@/lib/auth/device-id'
 import {
@@ -356,19 +357,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
-      // Phase 38 plan 38-06 (D-38-06) — server-side seed for PanelPrefsContext.
-      // The custom event flows through window (no auth-context↔panel-prefs
-      // import cycle). If the backend has not yet wired `preferences` onto
-      // /users/me, dismissed defaults to false (tour eligible).
-      if (typeof window !== 'undefined') {
-        const prefs = data.preferences as Record<string, unknown> | undefined
-        const dismissed = prefs?.panel_tour_dismissed_v1 === true
-        window.dispatchEvent(
-          new CustomEvent('leasefy:preferences:loaded', {
-            detail: { panel_tour_dismissed_v1: dismissed },
-          }),
-        )
-      }
+      // 🔴 El «ya vio el recorrido del panel» YA NO sale de acá (23-09).
+      // `data.preferences` son las preferencias de búsqueda del INQUILINO y
+      // nunca traían esa marca: el aviso que se mandaba desde aquí decía
+      // siempre «no visto» y el recorrido volvía a salir. Ahora lo lee
+      // `PanelPrefsContext` de `/inmobiliaria/onboarding-visto`, por agencia.
       return {
         user: mapBackendUser(data, session?.user?.email_confirmed_at ?? undefined),
         needsOnboarding: false,
@@ -382,10 +375,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Never fall back to the degraded session user (that would loop on every
       // request) — surface the backend message and drop the Supabase session
       // so the user can log in with their original account.
-      // The message travels via sessionStorage (this file's decoupling
-      // precedent — see 'leasefy:preferences:loaded' above): a toast fired
-      // here would unmount with the panel during the sign-out redirect, and
-      // the /auth screen (AuthForm) owns the visible error banner.
+      // The message travels via sessionStorage (decoupled from any UI in
+      // this file): a toast fired here would unmount with the panel during
+      // the sign-out redirect, and the /auth screen (AuthForm) owns the
+      // visible error banner.
       if (err instanceof ApiError && err.status === 409) {
         const message =
           err.message ||
@@ -1231,6 +1224,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
            * GoTrueClient#_notifyAllSubscribers) antes de devolver el
            * control. El chequeo de MFA sigue diferido: mismo lock de auth-js
            * que todo lo demás acá.
+           *
+           * Incidente real (Nico, 24-09): su sesión quedó `aal2` a las
+           * 07:56:36 y el back siguió viendo `aal1` de 07:56:41 a 08:21 —
+           * un administrador recién puesto el segundo factor recibía 403
+           * «Tu rol exige segundo factor» hasta el refresco automático,
+           * ~1h después.
            */
           const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
@@ -1425,7 +1424,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.race([
         Promise.all([
           removeFcmToken().catch(() => {}),
-          tokenVivo ? revokeSession(tokenVivo).catch(() => {}) : Promise.resolve(),
+          // Back + Supabase (el refresh token), ANTES de borrar las cookies:
+          // ver `revocar-sesion.ts`.
+          tokenVivo ? revocarSesion(tokenVivo) : Promise.resolve(),
         ]),
         new Promise((resolve) => setTimeout(resolve, 1500)),
       ])

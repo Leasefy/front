@@ -97,7 +97,7 @@ import { diaLegible } from '@/lib/contabilidad/fechas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Monto } from '../Monto';
 import { AccionConMotivo, Bloqueos, Nota, VistoBuenoDelContador } from '../piezas';
-import { usePuedeEscribir } from '../use-puede-escribir';
+import { usePuedeEscribir, usePuedeExportarContabilidad } from '../use-puede-escribir';
 import { ConceptosDeExogena } from './ConceptosDeExogena';
 import { ConfiguracionDeExogena } from './ConfiguracionDeExogena';
 
@@ -125,6 +125,8 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
   const [motivo, setMotivo] = useState('');
 
   const escritura = usePuedeEscribir();
+  // El CSV pide `reportes:export` en el back (23-09, datos personales).
+  const exportacion = usePuedeExportarContabilidad();
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -386,8 +388,10 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
                   </AccionConMotivo>
 
                   <AccionConMotivo
-                    puede={f.filas > 0}
-                    motivo="Este formato no tiene filas: el archivo saldría vacío."
+                    puede={exportacion.puede && f.filas > 0}
+                    motivo={
+                      exportacion.motivo ?? 'Este formato no tiene filas: el archivo saldría vacío.'
+                    }
                     ocupado={ocupado === f.formato}
                     textoOcupado="Generando…"
                     onClick={() => void descargar(f.formato)}

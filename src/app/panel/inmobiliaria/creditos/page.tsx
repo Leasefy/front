@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Sparkle,
   Coin,
   ShoppingCart,
-  CheckCircle,
   WarningCircle,
   X,
   Info,
@@ -27,21 +25,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
-import { subscriptionsApi } from '@/lib/api/subscriptions.service';
+import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
+import { useAuth } from '@/lib/auth';
 import type {
   AgentCreditsBalance,
   AgentCreditPack,
-  PurchaseCreditsPaymentData,
 } from '@/lib/api/agent-credits.service';
-import type { PSEBank, PSEDocumentType } from '@/lib/api/subscriptions.types';
+import type {
+  PseFinancialInstitution,
+  PseLegalIdType,
+  PseUserType,
+} from '@/lib/api/pse-checkout.types';
 
 // ============================================================================
 // Page
 // ============================================================================
 
 function CreditosContent() {
-  const router = useRouter();
-
   const [balance, setBalance] = useState<AgentCreditsBalance | null>(null);
   const [packs, setPacks] = useState<AgentCreditPack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,14 +191,9 @@ function CreditosContent() {
         <PurchaseModal
           pack={selectedPack}
           onClose={() => setSelectedPack(null)}
-          onSuccess={() => {
-            setSelectedPack(null);
-            loadData();
-          }}
           onRedirect={(url) => {
-            window.location.href = url;
+            window.location.assign(url);
           }}
-          router={router}
         />
       )}
     </div>
@@ -273,84 +268,99 @@ function PackCard({
 }
 
 // ============================================================================
-// Purchase modal — PSE form
+// Purchase modal — PSE real (Wompi)
 // ============================================================================
 
-const DOCUMENT_TYPES: Array<{ value: PSEDocumentType; label: string }> = [
+/**
+ * 🔴 23-09: este formulario pedía el banco a `/pse-mock/banks` —una lista
+ * INVENTADA del banco simulado— y mandaba los datos a
+ * `POST /agent-credits/purchase`, que «cobraba» contra ese simulador y
+ * acreditaba el pack en el acto. En producción el back rechaza el riel
+ * simulado, así que nadie lograba comprar.
+ *
+ * Ahora es el mismo camino que el plan del propietario (`/panel/checkout`):
+ * catálogo REAL de bancos de Wompi, tipo de persona, documento, titular y
+ * correo; el back pone el monto con el pack y devuelve la URL del banco, y los
+ * créditos llegan cuando Wompi confirma el pago.
+ */
+const DOCUMENT_TYPES: Array<{ value: PseLegalIdType; label: string }> = [
   { value: 'CC', label: 'Cédula de ciudadanía' },
   { value: 'CE', label: 'Cédula de extranjería' },
   { value: 'NIT', label: 'NIT' },
   { value: 'PP', label: 'Pasaporte' },
 ];
 
+/** La misma regla que el back (`PseCreditsCheckoutDto.legalId`). */
+const DOCUMENTO_VALIDO = /^\d{6,15}$/;
+
 function PurchaseModal({
   pack,
   onClose,
-  onSuccess,
   onRedirect,
 }: {
   pack: AgentCreditPack;
   onClose: () => void;
-  onSuccess: () => void;
   onRedirect: (url: string) => void;
-  router: ReturnType<typeof useRouter>;
 }) {
-  const [banks, setBanks] = useState<PSEBank[]>([]);
-  const [form, setForm] = useState<PurchaseCreditsPaymentData>({
-    documentType: 'CC',
-    documentNumber: '',
-    bankCode: '',
-    holderName: '',
-    phoneNumber: '',
-  });
+  const { user } = useAuth();
+  const [bancos, setBancos] = useState<PseFinancialInstitution[]>([]);
+  const [bancosError, setBancosError] = useState(false);
+  const [banco, setBanco] = useState('');
+  const [tipoDePersona, setTipoDePersona] = useState<PseUserType>('NATURAL');
+  const [tipoDeDocumento, setTipoDeDocumento] = useState<PseLegalIdType>('CC');
+  const [documento, setDocumento] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [correo, setCorreo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    subscriptionsApi
-      .getPSEBanks()
-      .then(setBanks)
-      .catch(() => {
-        // Keep the list empty — user sees "no banks" state
-      });
+    if (user?.email) setCorreo((actual) => actual || user.email);
+  }, [user?.email]);
+
+  useEffect(() => {
+    pseCheckoutApi
+      .getFinancialInstitutions()
+      .then(setBancos)
+      .catch(() => setBancosError(true));
   }, []);
+
+  const datosCompletos =
+    !!banco &&
+    DOCUMENTO_VALIDO.test(documento.trim()) &&
+    nombre.trim().length > 0 &&
+    /.+@.+\..+/.test(correo.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || !datosCompletos) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await agentCreditsApi.purchase({
+      const res = await agentCreditsApi.startPseCheckout({
         packSize: pack.packSize,
-        psePaymentData: form,
+        userType: tipoDePersona,
+        legalIdType: tipoDeDocumento,
+        legalId: documento.trim(),
+        financialInstitutionCode: banco,
+        email: correo.trim(),
+        fullName: nombre.trim(),
       });
-      if (res.pseUrl) {
-        onRedirect(res.pseUrl);
+      if (res.asyncPaymentUrl) {
+        onRedirect(res.asyncPaymentUrl);
         return;
       }
-      setSuccessMessage(
-        '¡Compra iniciada! Los créditos se acreditarán cuando se confirme el pago.'
+      setSubmitError(
+        'El banco todavía no devolvió el enlace de pago. Intenta de nuevo en un momento.'
       );
-      setTimeout(() => {
-        onSuccess();
-      }, 2000);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Error al procesar la compra'
+        err instanceof Error ? err.message : 'No se pudo iniciar el pago por PSE.'
       );
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
-
-  const canSubmit =
-    form.documentNumber.trim() &&
-    form.bankCode &&
-    form.holderName.trim() &&
-    !isSubmitting;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -358,13 +368,21 @@ function PurchaseModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={isSubmitting ? undefined : onClose}
       />
-      <div className="relative bg-background rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comprar-creditos-titulo"
+        className="relative bg-background rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-fg">Comprar créditos</h3>
-            <p className="text-xs text-fg-muted">
-              {pack.packSize} créditos · {formatCurrency(pack.price)}
+            <h3 id="comprar-creditos-titulo" className="text-base font-semibold text-fg">
+              Comprar créditos
+            </h3>
+            <p className="text-sm text-fg-muted">
+              <span className="font-mono">{pack.packSize}</span> créditos ·{' '}
+              <span className="font-mono">{formatCurrency(pack.price)}</span>
             </p>
           </div>
           <Button
@@ -380,133 +398,148 @@ function PurchaseModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {successMessage ? (
-            <div className="rounded-lg bg-success-soft border border-success/30 p-4 text-sm text-success flex items-start gap-2">
-              <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>{successMessage}</span>
-            </div>
-          ) : (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  Tipo de documento
-                </label>
-                <Select
-                  value={form.documentType}
-                  onValueChange={(v) =>
-                    setForm({ ...form, documentType: v as PSEDocumentType })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_TYPES.map((d) => (
-                      <SelectItem key={d.value} value={d.value}>
-                        {d.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  Número de documento
-                </label>
-                <Input
-                  type="text"
-                  value={form.documentNumber}
-                  onChange={(e) =>
-                    setForm({ ...form, documentNumber: e.target.value })
-                  }
-                  placeholder="1234567890"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  Nombre del titular
-                </label>
-                <Input
-                  type="text"
-                  value={form.holderName}
-                  onChange={(e) => setForm({ ...form, holderName: e.target.value })}
-                  placeholder="Nombre completo"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  Banco
-                </label>
-                <Select
-                  value={form.bankCode || undefined}
-                  onValueChange={(v) => setForm({ ...form, bankCode: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un banco" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {banks.map((b) => (
-                      <SelectItem key={b.code} value={b.code}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  Teléfono (opcional)
-                </label>
-                <Input
-                  type="tel"
-                  value={form.phoneNumber ?? ''}
-                  onChange={(e) =>
-                    setForm({ ...form, phoneNumber: e.target.value })
-                  }
-                  placeholder="3001234567"
-                />
-              </div>
-
-              {submitError && (
-                <div className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2 text-xs text-danger">
-                  {submitError}
-                </div>
-              )}
-
-              <p className="text-[11px] text-fg-muted flex items-center gap-1.5 pt-2">
-                <Lock className="w-3 h-3" />
-                Pago seguro vía PSE. Serás redirigido al sitio de tu banco.
+          <div>
+            <label htmlFor="creditos-banco" className="block text-sm font-medium text-foreground mb-1">
+              Banco
+            </label>
+            <Select
+              value={banco || undefined}
+              onValueChange={setBanco}
+              disabled={bancosError || bancos.length === 0}
+            >
+              <SelectTrigger id="creditos-banco">
+                <SelectValue placeholder="Selecciona tu banco" />
+              </SelectTrigger>
+              <SelectContent>
+                {bancos.map((b) => (
+                  <SelectItem key={b.financial_institution_code} value={b.financial_institution_code}>
+                    {b.financial_institution_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {bancosError && (
+              <p className="text-sm text-danger mt-1">
+                No pudimos traer la lista de bancos de PSE. Cierra y vuelve a intentar.
               </p>
+            )}
+          </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  hideArrow
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  hideArrow
-                  isLoading={isSubmitting}
-                  disabled={!canSubmit}
-                  className="flex-1"
-                >
-                  Pagar {formatCurrency(pack.price)}
-                </Button>
-              </div>
-            </>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="creditos-persona" className="block text-sm font-medium text-foreground mb-1">
+                Tipo de persona
+              </label>
+              <Select value={tipoDePersona} onValueChange={(v) => setTipoDePersona(v as PseUserType)}>
+                <SelectTrigger id="creditos-persona">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NATURAL">Natural</SelectItem>
+                  <SelectItem value="JURIDICA">Jurídica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="creditos-tipo-doc" className="block text-sm font-medium text-foreground mb-1">
+                Tipo de documento
+              </label>
+              <Select
+                value={tipoDeDocumento}
+                onValueChange={(v) => setTipoDeDocumento(v as PseLegalIdType)}
+              >
+                <SelectTrigger id="creditos-tipo-doc">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_TYPES.map((d) => (
+                    <SelectItem key={d.value} value={d.value}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="creditos-documento" className="block text-sm font-medium text-foreground mb-1">
+              Número de documento
+            </label>
+            <Input
+              id="creditos-documento"
+              inputMode="numeric"
+              autoComplete="off"
+              className="font-mono"
+              value={documento}
+              onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15))}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="creditos-nombre" className="block text-sm font-medium text-foreground mb-1">
+              Nombre del titular
+            </label>
+            <Input
+              id="creditos-nombre"
+              autoComplete="name"
+              maxLength={200}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="creditos-correo" className="block text-sm font-medium text-foreground mb-1">
+              Correo
+            </label>
+            <Input
+              id="creditos-correo"
+              type="email"
+              autoComplete="email"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+            />
+          </div>
+
+          {submitError && (
+            <div
+              role="alert"
+              className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2 text-sm text-danger flex items-start gap-2"
+            >
+              <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{submitError}</span>
+            </div>
           )}
+
+          <p className="text-sm text-fg-muted flex items-center gap-1.5 pt-2">
+            <Lock className="w-4 h-4" />
+            Pago por PSE. Te llevamos al sitio de tu banco; los créditos llegan cuando el banco
+            confirme el pago.
+          </p>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              hideArrow
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              hideArrow
+              isLoading={isSubmitting}
+              disabled={isSubmitting || !datosCompletos}
+              title={!datosCompletos ? 'Completa los datos del pagador' : undefined}
+              className="flex-1"
+            >
+              Pagar <span className="font-mono">{formatCurrency(pack.price)}</span>
+            </Button>
+          </div>
         </form>
       </div>
     </div>

@@ -12,6 +12,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeAutocompleteResults } from '@/lib/api/geocode.normalize';
+import { limitarLaRuta, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta';
+import { haySesionValida } from '@/lib/api/sesion-de-la-ruta';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +21,21 @@ const LOCATIONIQ_AUTOCOMPLETE_URL = 'https://us1.locationiq.com/v1/autocomplete'
 const MIN_QUERY_LENGTH = 3;
 
 export async function GET(req: NextRequest) {
+  // Límite por IP ANTES de verificar la sesión (que le pregunta a Supabase):
+  // una ráfaga se corta sin costar nada. Por instancia en Vercel; ver
+  // `limite-de-la-ruta.ts`.
+  const demasiadas = limitarLaRuta(req, POLITICAS_DE_LAS_RUTAS.geocode);
+  if (demasiadas) return demasiadas;
+
+  // 🔴 Auditoría de seguridad (23-09): sin sesión, cualquiera en internet
+  // gastaba la cuota de LocationIQ que pagamos. Sólo la usan pantallas con
+  // sesión (el asistente de publicar, que está detrás de `ProtectedRoute`, y
+  // el panel de la inmobiliaria), así que se exige como en
+  // `/api/inmuebles/*`: ver `sesion-de-la-ruta.ts`.
+  if (!(await haySesionValida(req))) {
+    return NextResponse.json({ error: 'sin_sesion' }, { status: 401 });
+  }
+
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
 
   if (q.length < MIN_QUERY_LENGTH) {

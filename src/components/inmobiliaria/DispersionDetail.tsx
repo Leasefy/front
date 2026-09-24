@@ -411,6 +411,13 @@ export function DispersionDetail({
       dispersion.approvedBy &&
       dispersion.approvedBy === usuarioActualId,
   );
+  // 🔴 Nico, 23-09: quien registró la devolución de este giro no lo aprueba
+  // (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
+  const registreLaDevolucion = Boolean(
+    usuarioActualId &&
+      dispersion.devolucionRegistradaPor &&
+      dispersion.devolucionRegistradaPor === usuarioActualId,
+  );
 
   /*
    * 🔴 23-09 (QA): todo esto vivía en el PIE del cajón —el banco de origen, el
@@ -987,7 +994,12 @@ export function DispersionDetail({
           <Button
             className="bg-primary hover:opacity-90 text-primary-fg"
             onClick={handleApprove}
-            disabled={isProcessing}
+            disabled={isProcessing || registreLaDevolucion}
+            title={
+              registreLaDevolucion
+                ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
+                : undefined
+            }
             data-testid="dispersion-aprobar"
           >
             {isProcessing ? (

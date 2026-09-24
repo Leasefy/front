@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
+import { CABECERA_DEL_NONCE } from "@/lib/seguridad/politica-de-contenido";
 import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
@@ -106,11 +108,16 @@ export const viewport: Viewport = {
   themeColor: "#1A40FF",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // El nonce de la CSP de ESTA petición (lo pone `src/middleware.ts`). Leer
+  // `headers()` vuelve dinámico el render de todas las páginas: es el costo de
+  // los nonces —una página estática no puede llevar un nonce nuevo por visita—
+  // y es lo que hace que un `<script>` inyectado no corra.
+  const nonce = (await headers()).get(CABECERA_DEL_NONCE) ?? undefined;
   return (
     <html lang="es" className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
@@ -124,7 +131,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
           <AuthProvider>
             <WishlistProvider>
               <RouteAnnouncer />

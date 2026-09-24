@@ -8,6 +8,8 @@
  * monto lo exige), se genera el archivo y alguien confirma que el banco pagó.
  */
 
+import type { MismoPaso } from '@/lib/doble-control/el-administrador';
+
 /** En qué punto está el lote. Es el enum `EstadoDelLote` del back. */
 export type EstadoDelLote =
   | 'BORRADOR'
@@ -195,6 +197,12 @@ export interface LoteResumen {
   descubiertoCop?: number | null;
   /** Qué se decidió sobre la factura al marcar pagado. */
   facturarAhora?: boolean | null;
+  /**
+   * Quién armó / aprobó, con su NOMBRE resuelto por el back (QA 23-09).
+   * Opcional: back anterior. `null` = no se supo.
+   */
+  creadoPorNombre?: string | null;
+  aprobadoPorNombre?: string | null;
 }
 
 /** Una dispersión dentro del lote, con los datos bancarios congelados. */
@@ -299,6 +307,22 @@ export interface FilaExcluida {
   motivo: string;
 }
 
+/**
+ * Un pago de ESTE lote que ya salió en el archivo de un lote ANULADO después
+ * de generar su archivo (back, 23-09-2026). Ese archivo pudo llegar al banco:
+ * girarlo otra vez es pagarle dos veces al propietario.
+ */
+export interface SalioEnUnArchivoAnulado {
+  dispersionId: string;
+  propietarioId: string;
+  nombre: string;
+  valorCop: number;
+  loteAnteriorId: string;
+  archivoGeneradoAt: string | null;
+  anuladoAt: string | null;
+  motivoDeLaAnulacion: string | null;
+}
+
 export interface VistaDelLote {
   lote: LoteDeDispersion;
   /**
@@ -313,6 +337,19 @@ export interface VistaDelLote {
   /** Intentos de código que quedan antes de que el lote se bloquee. */
   intentosRestantes: number;
   bloqueado: boolean;
+  /** Opcional: back anterior al 2026-09-23. Vacío = ninguno. */
+  salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
+  /**
+   * Quiénes registraron la devolución de algún giro de este lote: ninguno lo
+   * puede aprobar (Nico, 23-09). Opcional: back anterior.
+   */
+  devolucionesRegistradasPor?: string[];
+  /**
+   * Quién armó / aprobó, con su NOMBRE (QA 23-09: «Armado por Usuario
+   * 435f5734»). Opcional: back anterior. `null` = no se supo.
+   */
+  creadoPorNombre?: string | null;
+  aprobadoPorNombre?: string | null;
 }
 
 export interface LoteArmado {
@@ -327,8 +364,15 @@ export interface LoteArmado {
    * que no se puede es que el número no se vea antes de mandarlo a aprobación.
    */
   descubiertoCop: number;
+  /** Opcional: back anterior al 2026-09-23. Ver `SalioEnUnArchivoAnulado`. */
+  salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
   /** El banco elegido. `null` sin la migración. */
   origen?: OrigenDelLote | null;
+  /**
+   * P-4 aclarado (24-09): el lote que arma un ADMINISTRADOR vuelve ya
+   * APROBADO por él (sin código). Opcional: back anterior.
+   */
+  mismoPaso?: MismoPaso;
 }
 
 /**
@@ -418,6 +462,12 @@ export interface SolicitudDeAprobacion {
   expiraAt: string | null;
   /** `con***@portofino.co`. */
   enviadoA: string[];
+  /**
+   * P-4 aclarado (24-09): si quien pide la aprobación es el administrador que
+   * armó el lote, queda APROBADO en este paso (sin código). Opcional: back
+   * anterior.
+   */
+  mismoPaso?: MismoPaso;
 }
 
 /**

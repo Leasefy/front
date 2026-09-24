@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export interface PanelFlotante<T extends HTMLElement> {
   abierto: boolean;
   /** Va en el contenedor que envuelve AL BOTÓN Y AL PANEL, no sólo al panel. */
-  ref: React.RefObject<T>;
+  ref: React.RefObject<T | null>;
   alternar: () => void;
   cerrar: () => void;
 }

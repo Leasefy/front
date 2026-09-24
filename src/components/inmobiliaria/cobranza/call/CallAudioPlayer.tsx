@@ -18,7 +18,7 @@ interface CallAudioPlayerProps {
   callId: string
   agencyId: string
   /** Shared ref so transcript click-to-seek drives the same element. */
-  audioRef: React.RefObject<HTMLAudioElement>
+  audioRef: React.RefObject<HTMLAudioElement | null>
 }
 
 /** Marco común: el hueco del reproductor mantiene la misma forma haya audio o

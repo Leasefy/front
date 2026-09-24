@@ -9,6 +9,7 @@
 
 import type { InmuebleDesdeEnlace } from './leer-enlace';
 import type { ImportProperty } from '@/components/inmobiliaria/import/lib/importTypes';
+import { fetchConSesion } from '@/lib/api/client';
 
 export interface EnlaceLeido {
   url: string;
@@ -87,7 +88,7 @@ export async function leerEnlaces(
     const parcial = await Promise.all(
       tanda.map(async (url): Promise<ResultadoDeEnlace> => {
         try {
-          const res = await fetch('/api/inmuebles/desde-enlace', {
+          const res = await fetchConSesion('/api/inmuebles/desde-enlace', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url }),
@@ -131,7 +132,18 @@ export const MAX_FOTOS_POR_INMUEBLE = 40;
  */
 export async function traerFotoComoArchivo(url: string, nombre: string): Promise<File | null> {
   try {
-    const res = await fetch(`/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`);
+    const pedir = () => fetchConSesion(`/api/inmuebles/imagen-remota?url=${encodeURIComponent(url)}`);
+    let res = await pedir();
+    // 23-09: la ruta tiene límite por IP. Si una importación grande lo toca,
+    // se espera lo que dice `Retry-After` (hasta un minuto) y se reintenta UNA
+    // vez: perder la foto por un freno de ritmo sería tirar un dato bueno.
+    if (res.status === 429) {
+      const segundos = Number(res.headers.get('Retry-After'));
+      if (Number.isFinite(segundos) && segundos > 0 && segundos <= 60) {
+        await new Promise((listo) => setTimeout(listo, segundos * 1000));
+        res = await pedir();
+      }
+    }
     if (!res.ok) return null;
     const blob = await res.blob();
     if (blob.size === 0) return null;

@@ -45,27 +45,38 @@ export interface AgentCreditPack {
   highlighted?: boolean;
 }
 
-export interface PurchaseCreditsPaymentData {
-  documentType: 'CC' | 'CE' | 'NIT' | 'PP';
-  documentNumber: string;
-  bankCode: string;
-  holderName: string;
-  phoneNumber?: string;
-}
-
-export interface PurchaseCreditsDto {
+/**
+ * Compra de un pack por el PSE REAL de Wompi (`POST /agent-credits/pse/checkout`,
+ * back `PseCreditsCheckoutDto`). Reemplaza a `POST /agent-credits/purchase`,
+ * que cobraba contra un banco SIMULADO (`/pse-mock`) — ver la página.
+ * El monto NO viaja: el back lo saca del pack.
+ */
+export interface CreditsPseCheckoutDto {
   packSize: number;
-  psePaymentData: PurchaseCreditsPaymentData;
+  userType: 'NATURAL' | 'JURIDICA';
+  legalIdType: 'CC' | 'CE' | 'NIT' | 'PP';
+  /** 6 a 15 dígitos (misma regla que el back). */
+  legalId: string;
+  /** `financial_institution_code` del catálogo de Wompi. */
+  financialInstitutionCode: string;
+  email: string;
+  fullName: string;
 }
 
-export interface PurchaseCreditsResponse {
-  /** PSE redirect URL or transaction id, depending on backend */
-  pseUrl?: string;
-  pseTransactionId?: string;
-  /** Reference id for tracking */
-  purchaseId?: string;
-  /** Balance after purchase (if the backend updates it inline) */
-  balance?: AgentCreditsBalance;
+export interface CreditsPseCheckoutResponse {
+  packSize: number;
+  amountCop: number;
+  wompiTransactionId: string;
+  /** URL del banco. Puede venir null si Wompi aún no la generó. */
+  asyncPaymentUrl: string | null;
+  status: 'PENDING';
+}
+
+/** Lo que devuelve de verdad `GET /agent-credits/packs` (back `getAvailablePacks`). */
+interface PackDelBack {
+  size: number;
+  priceCop: number;
+  pricePerCreditCop?: number;
 }
 
 // ============================================================================
@@ -78,16 +89,27 @@ export const agentCreditsApi = {
     return apiClient.get<AgentCreditsBalance>('/agent-credits/balance');
   },
 
-  /** GET /agent-credits/packs */
+  /**
+   * GET /agent-credits/packs → `{ packs: [{ size, priceCop, pricePerCreditCop }] }`.
+   *
+   * 🔴 Antes se leía como `AgentCreditPack[]` o `{ data }`: con la forma real
+   * `packs` quedaba `undefined` y la pantalla se caía en `packs.length`. Se
+   * traduce acá, en un solo lugar.
+   */
   async getPacks(): Promise<AgentCreditPack[]> {
-    const res = await apiClient.get<AgentCreditPack[] | { data: AgentCreditPack[] }>(
+    const res = await apiClient.get<{ packs?: PackDelBack[] } | PackDelBack[]>(
       '/agent-credits/packs'
     );
-    return Array.isArray(res) ? res : res.data;
+    const lista = Array.isArray(res) ? res : (res?.packs ?? []);
+    return lista.map((p) => ({ packSize: p.size, price: p.priceCop }));
   },
 
-  /** POST /agent-credits/purchase */
-  async purchase(dto: PurchaseCreditsDto): Promise<PurchaseCreditsResponse> {
-    return apiClient.post<PurchaseCreditsResponse>('/agent-credits/purchase', dto);
+  /**
+   * POST /agent-credits/pse/checkout — el back crea la transacción PSE en
+   * Wompi y devuelve la URL del banco. Los créditos se acreditan cuando el
+   * webhook de Wompi confirma el pago, no al volver de acá.
+   */
+  async startPseCheckout(dto: CreditsPseCheckoutDto): Promise<CreditsPseCheckoutResponse> {
+    return apiClient.post<CreditsPseCheckoutResponse>('/agent-credits/pse/checkout', dto);
   },
 };

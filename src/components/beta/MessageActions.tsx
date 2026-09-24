@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Copy, Check, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
 import { IconButton, Tooltip } from '@leasefy/cadence';
 import { toast } from '@/components/ui';
@@ -10,7 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import { valeLaPenaOfrecer } from '@/lib/chat/aprender';
 import type { ChatMessage } from '@/lib/types/beta-chat';
+import { AprenderEsto } from './AprenderEsto';
 
 /**
  * Copia al portapapeles con respaldo.
@@ -45,6 +49,63 @@ async function copiarAlPortapapeles(texto: string): Promise<boolean> {
 }
 
 /**
+ * «Reintentar», a la vista, cuando el micro dice que una consulta del turno no
+ * respondió (`message.reintentable`).
+ *
+ * Nico, 23-09: el chat contestaba «No pude hacer la búsqueda en este momento…
+ * intenta de nuevo» y «no hay un reintentar o algo»: el ↻ chiquito de la fila
+ * de íconos no se lee como reintentar. Este es un botón con texto, con foco de
+ * teclado, que hace LO MISMO que el ↻ (`regenerateResponse`: vuelve a mandar
+ * la misma pregunta). Mientras reintenta queda ocupado; si vuelve a fallar, la
+ * respuesta nueva trae su propio «Reintentar». Con «reducir movimiento» no se
+ * anima (ni la entrada ni el giro de «ocupado»).
+ */
+function BotonReintentar({
+  ocupado,
+  onReintentar,
+}: {
+  /** Hay un turno corriendo: no se puede reintentar todavía. */
+  ocupado: boolean;
+  onReintentar: () => void;
+}) {
+  const { t } = useI18n();
+  const quieto = prefiereMenosMovimiento();
+  const [pedido, setPedido] = useState(false);
+  // Si el turno terminó y el botón sigue acá, se suelta (normalmente el
+  // mensaje se reemplaza y el botón se va con él).
+  const estabaOcupado = useRef(ocupado);
+  useEffect(() => {
+    if (estabaOcupado.current && !ocupado) setPedido(false);
+    estabaOcupado.current = ocupado;
+  }, [ocupado]);
+
+  return (
+    <div
+      className={cn('mt-3', !quieto && 'animate-in fade-in duration-300 motion-reduce:animate-none')}
+      data-testid="reintentar"
+    >
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        hideArrow
+        isLoading={pedido && !quieto}
+        disabled={pedido || ocupado}
+        aria-busy={pedido || undefined}
+        onClick={() => {
+          if (pedido || ocupado) return;
+          setPedido(true);
+          onReintentar();
+        }}
+      >
+        {!(pedido && !quieto) && <ArrowsClockwise weight="bold" aria-hidden="true" />}
+        {pedido ? t('beta.actions.reintentando') : t('beta.actions.reintentar')}
+      </Button>
+    </div>
+  );
+}
+
+/**
  * Las acciones de UNA respuesta del asistente: copiar · rehacer · pulgar arriba ·
  * pulgar abajo, y el «¿Qué esperabas?» que abre el pulgar abajo.
  *
@@ -66,8 +127,19 @@ export function MessageActions({
   className?: string;
 }) {
   const { t } = useI18n();
-  const { regenerateResponse, rateMessage, isThinking, isStreaming, isAgentsRunning } =
+  const { regenerateResponse, rateMessage, isThinking, isStreaming, isAgentsRunning, messages } =
     useBetaChatContext();
+  // «¿Aprendo esto?» (24-09): sólo el ADMINISTRADOR según el ERP (el mismo
+  // `isAdmin` que gobierna el panel), y sólo donde hay algo que pudo enseñarle
+  // al chat. Sin permisos cargados (o fuera del panel) no se ofrece: falla cerrado.
+  const esAdministrador = usePermissionsContextSafe()?.isAdmin === true;
+  const preguntaAnterior = (() => {
+    const lista = messages ?? [];
+    const i = lista.findIndex((m) => m.id === message.id);
+    for (let j = i - 1; j >= 0; j--) if (lista[j]?.role === 'user') return lista[j]!.content;
+    return null;
+  })();
+  const ofrecerAprender = esAdministrador && valeLaPenaOfrecer(message, preguntaAnterior);
   const [copiado, setCopiado] = useState(false);
   // «¿Qué esperabas?» — sólo se abre con el pulgar abajo.
   const [abrirComentario, setAbrirComentario] = useState(false);
@@ -158,6 +230,9 @@ export function MessageActions({
 
   return (
     <div className={className}>
+      {message.reintentable && (
+        <BotonReintentar ocupado={ocupado} onReintentar={() => regenerateResponse(message.id)} />
+      )}
       <div className="flex items-center gap-0.5 mt-2">
         <Tooltip content={copiado ? t('beta.actions.copied') : t('beta.actions.copy')}>
           <IconButton
@@ -235,6 +310,8 @@ export function MessageActions({
           </span>
         )}
       </div>
+
+      {ofrecerAprender && <AprenderEsto message={message} />}
 
       {/* «¿Qué esperabas?» — el comentario es lo ÚNICO que se convierte en una
           lección para el chat, así que se pide; pero nunca se obliga: el pulgar

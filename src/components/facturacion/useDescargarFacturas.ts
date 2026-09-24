@@ -18,11 +18,17 @@
  * 🔴 Más que eso (22-09) ya NO se apaga: el ZIP se arma en el CENTRO DE
  * PROCESOS y se baja de ahí. Si la corrida fue de una sola tanda, su proceso
  * ya lo está armando y se abre ése; si fue de varias, se lanza uno con todos
- * los ids. Mientras tanto el botón dice cuánto va, y si la persona se va de
- * la pantalla el archivo la espera en el botón de procesos de arriba.
+ * los ids.
+ *
+ * 🔴 23-09 (Nico: «todas las cargas déjalas que sucedan allí y deja la
+ * pantalla quieta»): la pantalla ya NO espera el ZIP. Antes el botón giraba
+ * y el aviso contaba «100 de 450 PDF» mientras preguntaba cada 2 s, lo mismo
+ * que el centro mostraba arriba. Ahora: si el ZIP ya está, baja; si no, se
+ * lanza (o se busca el que ya se arma) y se abre el centro en ESE proceso,
+ * que es donde se ve el avance y se descarga.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { toast } from '@/components/ui/toast'
 import { descargarBlob } from '@/lib/reportes/exportables'
@@ -30,12 +36,8 @@ import {
   MAXIMO_FACTURAS_POR_ZIP,
   facturacionPorMesService,
 } from '@/lib/api/facturacion-por-mes.service'
-import { anunciarProceso, procesosApi } from '@/lib/api/procesos.service'
-import type { Proceso } from '@/lib/api/procesos.types'
+import { abrirCentroDeProcesos, procesosApi } from '@/lib/api/procesos.service'
 import { descargarArchivoDelProceso } from '@/components/procesos/descargar-archivo-del-proceso'
-
-/** Cada cuánto se pregunta por el ZIP que arma el centro. */
-export const MS_ENTRE_CONSULTAS_DEL_ZIP = 2_000
 
 /** ¿Este lote se arma en el centro de procesos en vez de bajarse directo? */
 export function vaPorElCentro(cuantas: number): boolean {
@@ -78,52 +80,31 @@ export interface DescargaDeFacturas {
     nombreDelZip: string,
     opciones?: { procesosConZip?: readonly string[] },
   ) => Promise<void>
-  /** El id (o `'lote'`) de lo que se está bajando. `null` = nada. */
+  /** El id (o `'lote'`) de lo que se está bajando o lanzando. `null` = nada. */
   descargando: string | null
-  /** El proceso del centro que está armando el ZIP, con su avance. */
-  zipEnElCentro: Proceso | null
 }
 
 export function useDescargarFacturas(): DescargaDeFacturas {
   const [descargando, setDescargando] = useState<string | null>(null)
-  const [zipEnElCentro, setZipEnElCentro] = useState<Proceso | null>(null)
-  // Se deja de preguntar si la pantalla se desmonta: el archivo igual queda
-  // en el centro de procesos.
-  const montado = useRef(true)
-  useEffect(() => {
-    montado.current = true
-    return () => {
-      montado.current = false
-    }
-  }, [])
 
-  const porElCentro = useCallback(
-    async (ids: string[], procesosConZip: readonly string[]) => {
-      const procesoId =
-        procesosConZip.length === 1
-          ? procesosConZip[0]
-          : (await facturacionPorMesService.zipEnSegundoPlano(ids)).procesoId
-      anunciarProceso()
-      toast.info('Armando el ZIP en el centro de procesos.', {
-        description: 'Si te vas de esta pantalla, lo bajas desde el botón de procesos de arriba.',
-      })
-      for (;;) {
-        const p = await procesosApi.ver(procesoId)
-        if (!montado.current) return
-        setZipEnElCentro(p)
-        if (p.estado === 'TERMINADO' && p.archivo && !p.archivo.vencido) {
-          await descargarArchivoDelProceso(p.id)
-          return
-        }
-        if (p.estado === 'TERMINADO' || p.estado === 'FALLO' || p.estado === 'CANCELADO') {
-          toast.error(p.mensaje ?? 'El ZIP no se pudo armar.')
-          return
-        }
-        await new Promise((r) => setTimeout(r, MS_ENTRE_CONSULTAS_DEL_ZIP))
+  /**
+   * El ZIP de más de 50: si el de la tanda ya está, se baja; si no, se abre
+   * el centro en el proceso que lo arma. La pantalla no se queda esperando.
+   */
+  const porElCentro = useCallback(async (ids: string[], procesosConZip: readonly string[]) => {
+    if (procesosConZip.length === 1) {
+      const p = await procesosApi.ver(procesosConZip[0])
+      if (p.estado === 'TERMINADO' && p.archivo && !p.archivo.vencido) {
+        await descargarArchivoDelProceso(p.id)
+        return
       }
-    },
-    [],
-  )
+      abrirCentroDeProcesos({ procesoId: p.id })
+      return
+    }
+    // `zipEnSegundoPlano` ya anuncia el proceso: el centro se abre solo.
+    const { procesoId } = await facturacionPorMesService.zipEnSegundoPlano(ids)
+    abrirCentroDeProcesos({ procesoId })
+  }, [])
 
   const descargarUna = useCallback(
     async (facturaId: string, numero: string | null) => {
@@ -165,10 +146,7 @@ export function useDescargarFacturas(): DescargaDeFacturas {
         } catch (error) {
           toast.error(mensajeDeError(error))
         } finally {
-          if (montado.current) {
-            setDescargando(null)
-            setZipEnElCentro(null)
-          }
+          setDescargando(null)
         }
         return
       }
@@ -186,5 +164,5 @@ export function useDescargarFacturas(): DescargaDeFacturas {
     [descargarUna, porElCentro],
   )
 
-  return { descargarUna, descargarLote, descargando, zipEnElCentro }
+  return { descargarUna, descargarLote, descargando }
 }

@@ -198,6 +198,10 @@ describe('un solo módulo de plata — no queda ningún enlace vivo a /cobros', 
         // Este archivo nombra la ruta vieja a propósito: es de lo que habla.
         if (relativa.endsWith('un-solo-modulo-de-plata.test.ts')) continue
         if (relativa.endsWith('un-solo-modulo-de-plata.data.mjs')) continue
+        // Documenta en un comentario el mismo cambio que esta tabla vigila
+        // (`/panel/inmobiliaria/cobros` → `/pagos/cartera/cobros`, T-0102
+        // delta): nombra la ruta vieja a propósito, no enlaza a ella.
+        if (relativa.endsWith('cobros-a-390.test.tsx')) continue
         if (PATRON.test(readFileSync(ruta, 'utf8'))) encontrados.push(relativa)
       }
     }

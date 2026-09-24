@@ -26,7 +26,7 @@
  * navegador es exactamente cómo dos pantallas terminan dando dos números.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import {
   ArrowCounterClockwise,
   CheckCircle,
@@ -52,6 +52,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { ProponerCastigo } from '@/components/cartera/ProponerCastigo'
 import { usePermissions } from '@/lib/hooks/usePermissions'
+import { AuthContext } from '@/lib/auth/auth-context'
+import { notaDelCastigo } from '@/lib/doble-control/el-administrador'
 import { castigoApi } from '@/lib/api/castigo.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import type {
@@ -162,6 +164,12 @@ export function CastigoDeCartera() {
    */
   const puedeFirmar =
     puedeMover && (isAdmin || agencyRole === 'ADMIN' || agencyRole === 'CONTADOR')
+  /*
+   * Quién mira, para decirle «castigado por ti» (P-4). El contexto, no
+   * `useAuth()`: esta pantalla se monta suelta en pruebas y sin sesión la nota
+   * se dice igual, sin el «ti».
+   */
+  const yo = useContext(AuthContext)?.user?.id ?? null
 
   const [lista, setLista] = useState<ListaDeCastigos | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -196,7 +204,10 @@ export function CastigoDeCartera() {
       const tras = await castigoApi.firmar(castigo.id)
       toast.success(
         tras.estado === 'CASTIGADA'
-          ? 'Castigada. Sale de la cartera activa y de la cobranza.'
+          ? // P-4: el castigo que él propuso se cierra con su firma por los dos lados.
+            notaDelCastigo(tras, yo)
+            ? `${notaDelCastigo(tras, yo)!.titulo}. Sale de la cartera activa y de la cobranza.`
+            : 'Castigada. Sale de la cartera activa y de la cobranza.'
           : 'Firmaste. Todavía falta la otra firma.',
       )
       await cargar()
@@ -327,6 +338,12 @@ export function CastigoDeCartera() {
                           {c.castigadaAt && (
                             <p className="mt-1 text-xs text-fg-muted">
                               Desde el {fecha(c.castigadaAt)}
+                            </p>
+                          )}
+                          {/* P-4 aclarado (24-09): lo castigó el administrador solo, en un paso. */}
+                          {c.estado === 'CASTIGADA' && notaDelCastigo(c, yo) && (
+                            <p className="mt-1 text-caption text-fg-muted" data-testid="castigo-p4">
+                              {notaDelCastigo(c, yo)!.titulo}
                             </p>
                           )}
                         </TableCell>

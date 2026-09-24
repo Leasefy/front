@@ -26,6 +26,22 @@ describe('esDireccionPrivada', () => {
     expect(esDireccionPrivada(ip)).toBe(esperado);
   });
 
+  // Auditoría de seguridad 23-09: la misma IPv4 escrita en hexadecimal, o
+  // envuelta en NAT64 / «compatible con IPv4», pasaba como pública.
+  it.each([
+    ['::ffff:a9fe:a9fe', true], // 169.254.169.254, el metadata
+    ['::ffff:7f00:1', true], // 127.0.0.1
+    ['::FFFF:0A00:0001', true], // 10.0.0.1, en mayúsculas
+    ['64:ff9b::a9fe:a9fe', true], // NAT64 → 169.254.169.254
+    ['64:ff9b::127.0.0.1', true],
+    ['::7f00:1', true], // compatible con IPv4 → 127.0.0.1
+    ['::127.0.0.1', true],
+    ['::ffff:808:808', false], // 8.8.8.8 sigue siendo pública
+    ['64:ff9b::808:808', false],
+  ])('reconoce %s escrita de otra forma', (ip, esperado) => {
+    expect(esDireccionPrivada(ip)).toBe(esperado);
+  });
+
   it.each([
     ['8.8.8.8', false],
     ['200.75.51.132', false], // un servidor colombiano cualquiera

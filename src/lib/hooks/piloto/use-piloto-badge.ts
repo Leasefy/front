@@ -3,12 +3,7 @@
 /**
  * use-piloto-badge.ts — el número del sidebar para «Piloto».
  *
- * Antes pedía GET /api/agency/{agencyId}/ai-hub/inbox por su cuenta, cada
- * 60s, DUPLICANDO el poll de `usePilotoInbox` cuando ambos están montados
- * (sidebar en el layout + bandeja en /panel/inmobiliaria/piloto). Ahora lee
- * el mismo dato compartido (`piloto-inbox-context.tsx`, un fetch/timer para
- * los dos) — T-0082 contract.md §8: call-site merge, sin wire nuevo, sin
- * cambiar el shape público de este hook.
+ * Lee SOLO el `total` de GET /api/agency/{agencyId}/ai-hub/inbox, cada 60s.
  *
  * Mismas reglas que use-postulaciones-pendientes.ts, que son las que hacen
  * que un contador sirva:
@@ -19,13 +14,40 @@
  *   · Cero es cero y tampoco se pinta (PlanSidebar oculta badge ≤ 0).
  */
 
-import { usePilotoInboxCompartido } from './piloto-inbox-context'
+import { useCallback, useEffect, useState } from 'react'
+
+import { useAuth } from '@/lib/auth'
+import { fetchPilotoInboxConteo } from '@/lib/api/piloto'
+
+const REFRESCO_MS = 60_000
 
 export function usePilotoBadge(): { total: number | undefined } {
-  const shared = usePilotoInboxCompartido()
-  // undefined mientras no hay una respuesta firme: primera carga en vuelo,
-  // bandeja no publicada (404 → notAvailable) o el poll falló — en los tres
-  // casos "no sabemos", así que no se pinta un número.
-  const sinRespuestaFirme = shared.isLoading || shared.notAvailable || shared.error !== null
-  return { total: sinRespuestaFirme ? undefined : shared.data?.total }
+  const { agency } = useAuth()
+  const agencyId = agency?.id ?? null
+
+  const [total, setTotal] = useState<number | undefined>(undefined)
+
+  const cargar = useCallback(async () => {
+    if (!process.env.NEXT_PUBLIC_AGENT_URL || !agencyId) return
+    try {
+      // El conteo, no la bandeja entera: se pide cada minuto desde TODAS las
+      // pantallas del panel y armar la bandeja cuesta segundos (auditoría
+      // del Piloto, hallazgo 14).
+      const res = await fetchPilotoInboxConteo(agencyId)
+      // 404 (endpoint aún no publicado) → data null → sin indicador.
+      setTotal(res.data?.total ?? undefined)
+    } catch {
+      // Sin dato no se inventa uno. El menú simplemente no dice nada.
+      setTotal(undefined)
+    }
+  }, [agencyId])
+
+  useEffect(() => {
+    if (!agencyId) return
+    void cargar()
+    const id = setInterval(() => void cargar(), REFRESCO_MS)
+    return () => clearInterval(id)
+  }, [cargar, agencyId])
+
+  return { total }
 }

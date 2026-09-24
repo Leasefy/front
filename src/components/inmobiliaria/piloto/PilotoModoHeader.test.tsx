@@ -178,11 +178,41 @@ describe('PilotoModoHeader', () => {
     expect(ahora.textContent).toContain('inmobiliaria.piloto.flota.esperando(2)')
   })
 
-  it('mixto: lo dice con el desglose en vez de esconderlo', () => {
-    estado.data = FLOTA({ modo: 'mixto', resumen: { sombra: 0, copiloto: 1, autonomo: 11 } })
+  it('🔴 P-1: nunca «Mixto» — dice el modo de la mayoría, cuántos difieren, y al abrirla el modo de cada uno', () => {
+    estado.data = FLOTA({
+      modo: 'copiloto',
+      distintos: ['cobranza'],
+      actuan: 2,
+      agentes: [
+        { agente: 'cobranza', modo: 'autonomo', origen: 'piloto', corre: true, actua: true, gobierna: true },
+        { agente: 'conciliacion', modo: 'copiloto', origen: 'piloto', corre: true, actua: true, gobierna: true },
+        { agente: 'cotizador', modo: 'copiloto', origen: 'default', corre: true, actua: false, gobierna: false },
+      ],
+    })
     render()
-    expect(q('[data-testid="piloto-modo-header"]')?.getAttribute('data-modo')).toBe('mixto')
-    expect(container.textContent).toContain('inmobiliaria.piloto.flota.mixtoHint(11,1,0)')
-    expect(q('[role="radio"][aria-checked="true"]')).toBeNull()
+    expect(container.textContent).not.toMatch(/mixto/i)
+    expect(q('[data-testid="piloto-modo-distintos"]')?.textContent).toContain(
+      'inmobiliaria.piloto.flota.distintosCorto(1)',
+    )
+    const porAgente = q('[data-testid="piloto-modo-por-agente"]')?.textContent ?? ''
+    expect(porAgente).toContain('inmobiliaria.piloto.flota.modo.autonomo')
+    expect(porAgente).toContain('inmobiliaria.piloto.flota.modo.copiloto')
+    // Los que todavía no actúan solos se nombran aparte.
+    expect(q('[data-testid="piloto-modo-todavia-no"]')).not.toBeNull()
+    // 🔴 No dice «2 actúan con este modo» cuando uno de los dos está en otro.
+    expect(container.textContent).not.toContain('inmobiliaria.piloto.flota.corriendo(2)')
+    expect(container.textContent).toContain('inmobiliaria.piloto.flota.corriendoConDistintos(2,1,1)')
+  })
+
+  it('🔴 «N agentes actúan»: cuenta los que de verdad actúan, no los apagados en el servidor', () => {
+    estado.data = FLOTA({
+      actuan: 1,
+      agentes: [
+        { agente: 'cobranza', modo: 'copiloto', origen: 'piloto', corre: true, actua: true, gobierna: true },
+        { agente: 'pagos', modo: 'copiloto', origen: 'default', corre: false, actua: false, gobierna: true },
+      ],
+    })
+    render()
+    expect(container.textContent).toContain('inmobiliaria.piloto.flota.corriendo(1)')
   })
 })

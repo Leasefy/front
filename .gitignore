@@ -79,3 +79,7 @@ next-env.d.ts
 
 # Volcado de Redis local (aparece al correr redis-server desde la raíz del repo).
 dump.rdb
+
+# Worker de MapLibre: lo copia el postinstall desde node_modules (ver
+# scripts/copiar-trabajador-de-maplibre.mjs). No se versiona.
+/public/maplibre/

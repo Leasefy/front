@@ -4,7 +4,10 @@ import { Check, Buildings, User, EnvelopeSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePublish } from '@/lib/context/PublishContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import { AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
+import type { Plan } from '@/lib/types/subscription';
 import { formatCurrency } from '@/lib/format';
 
 const PLAN_ICONS: Record<string, string> = {
@@ -12,10 +15,11 @@ const PLAN_ICONS: Record<string, string> = {
   starter: '🚀', flex: '🔄', enterprise: '👑',
 };
 
-const PROPIETARIO_OPTIONS = PLANS.map((plan) => ({
+/** Con el precio que cobra el back (QA 23-09): `PLANS` ya no trae cifras. */
+const opcionesDelPropietario = (planes: Plan[]) => planes.map((plan) => ({
   id: plan.id,
   name: plan.name,
-  price: plan.price.monthly === 0 ? '$0' : formatCurrency(plan.price.monthly),
+  price: plan.price.monthly === 0 ? '$0' : precioLegible(plan.price.monthly),
   priceNote: plan.price.monthly === 0 ? 'Para siempre' : '/mes',
   description: plan.description,
   icon: PLAN_ICONS[plan.id] ?? '📦',
@@ -68,7 +72,9 @@ const OWNER_TYPES = [
 export function StepPlan() {
   const { draft, updateDraft } = usePublish();
 
-  const planOptions = draft.ownerType === 'inmobiliaria' ? INMOBILIARIA_OPTIONS : PROPIETARIO_OPTIONS;
+  const { planes } = usePlanesDelPropietario();
+  const planOptions =
+    draft.ownerType === 'inmobiliaria' ? INMOBILIARIA_OPTIONS : opcionesDelPropietario(planes);
 
   return (
     <div className="space-y-6">

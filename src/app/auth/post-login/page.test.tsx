@@ -12,8 +12,9 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, authState } = vi.hoisted(() => ({
+const { replaceMock, authState, barra } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
+  barra: { query: '' },
   authState: {
     user: null as Record<string, unknown> | null,
     isAuthenticated: false,
@@ -30,7 +31,7 @@ const { replaceMock, authState } = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => new URLSearchParams(barra.query),
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -50,6 +51,7 @@ beforeEach(() => {
   authState.perfilElegido = null
   authState.mfaRequired = false
   authState.mfaEnrollRequired = false
+  barra.query = ''
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -136,5 +138,18 @@ describe('post-login — retomar donde lo dejó', () => {
     await render()
 
     expect(replaceMock).toHaveBeenCalledWith('/inquilino')
+  })
+})
+
+describe('post-login — el segundo factor conserva el destino (QA 23-09)', () => {
+  it('con segundo factor pendiente, /auth/mfa-verify lleva el returnUrl', async () => {
+    authState.mfaRequired = true
+    barra.query = 'returnUrl=%2Fpanel%2Finmobiliaria%2Fdispersiones%2Flotes%2Fabc'
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith(
+      '/auth/mfa-verify?returnUrl=%2Fpanel%2Finmobiliaria%2Fdispersiones%2Flotes%2Fabc',
+    )
   })
 })

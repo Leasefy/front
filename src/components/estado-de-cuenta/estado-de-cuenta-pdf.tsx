@@ -32,6 +32,7 @@
  *   cosas distintas y el cliente tendría razón en no creerle a ninguno de los dos.
  */
 
+import type { JSX } from "react"
 import {
   Document,
   Image,

@@ -428,6 +428,35 @@ describe('D3 — la agencia aprueba por lote', () => {
   });
 });
 
+describe('23-09 — la liquidación que ya está en un lote', () => {
+  it('🔴 un 409 DISPERSION_EN_UN_LOTE dice el mensaje del back y abre ESE lote, no «No se pudo aprobar»', async () => {
+    const msg =
+      'Esta liquidación está en un lote (APROBADO): se gira con ese lote. Girarla también por acá le pagaría dos veces al propietario.';
+    m.approve.mockRejectedValue(
+      new ApiError(409, msg, 'DISPERSION_EN_UN_LOTE', {
+        code: 'DISPERSION_EN_UN_LOTE',
+        message: msg,
+        loteId: 'lote-9',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      (q('detalle-aprobar') as HTMLButtonElement).click();
+    });
+    await asentar();
+
+    expect(m.toast.error).toHaveBeenCalledTimes(1);
+    const [titulo, opciones] = m.toast.error.mock.calls[0] as [
+      string,
+      { description: string; action: { label: string; onClick: () => void } },
+    ];
+    expect(titulo).toBe('inmobiliaria.dispersiones.enUnLote.titulo');
+    expect(opciones.description).toBe(msg);
+    opciones.action.onClick();
+    expect(m.push).toHaveBeenCalledWith('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-9');
+  });
+});
+
 describe('D5 — el resumen que no cargó', () => {
   it('se rotula «estimado» con reintento, y reintentar lo vuelve a pedir', async () => {
     m.getSummary.mockRejectedValueOnce(new ApiError(500, 'boom'));

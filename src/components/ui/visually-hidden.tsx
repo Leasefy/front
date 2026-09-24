@@ -112,7 +112,7 @@ export interface UseLiveRegionOptions {
 export function useLiveRegion(options: UseLiveRegionOptions = {}) {
   const { politeness = 'polite', clearDelay = 3000 } = options;
   const [message, setMessage] = React.useState<string>('');
-  const timeoutRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const announce = React.useCallback((text: string) => {
     // Clear any pending timeout

@@ -821,9 +821,28 @@ export const captacionApi = {
     consignacionId: string,
     body: { propietarioId?: string; firmanteNombre: string; firmanteCorreo?: string },
   ) =>
-    apiClient.post<{ id: string; venceEl: string; token: string }>(
+    // 🔴 Sin `token` (auditoría 23-09-2026): el enlace lo manda el servidor al
+    // correo de la ficha del propietario. `enlaceDePrueba` sólo llega en local
+    // con el correo simulado.
+    apiClient.post<{
+      id: string
+      venceEl: string
+      enviadoA: string
+      envio: 'ENVIADO' | 'SIMULADO' | 'FALLIDO'
+      enlaceDePrueba?: string
+    }>(
       `${BASE}/captacion/mandatos/${consignacionId}/firmas/electronica`,
       body,
+    ),
+
+  /**
+   * El mandato FIRMADO (auditoría 23-09-2026): en la firma electrónica el back
+   * compara el PDF con su huella antes de dar la URL (409
+   * `PDF_DEL_MANDATO_ALTERADO` si no coincide).
+   */
+  mandatoFirmado: (firmaId: string) =>
+    apiClient.get<{ url: string; sha256: string | null; verificado: boolean }>(
+      `${BASE}/captacion/firmas/${firmaId}/pdf`,
     ),
 
   anularFirma: (id: string, motivo: string) =>
@@ -888,11 +907,25 @@ export const invitacionApi = {
         correo: string | null
         mensaje: string
       }[]
+      /**
+       * 🔴 Las que ya se vencieron (24-09-2026): el back las LEE; ya no las
+       * vence al abrir esta pantalla. Las vence el Piloto según su modo.
+       */
       vencidas: {
         contractId: string
         contratoVolvioABorrador: boolean
         inmuebleLiberado: boolean
         aviso: string
+      }[]
+      /**
+       * Las que se quedaron sin firma al cumplirse el plazo y todavía nadie
+       * venció: el Piloto decide según su modo (Automático las vence, Copiloto
+       * te las deja en la Bandeja, Manual te las propone).
+       */
+      porVencer?: {
+        invitacionId: string
+        contractId: string
+        tenantName: string | null
       }[]
     }>(`${BASE}/invitacion-a-firmar/barrido`),
 }

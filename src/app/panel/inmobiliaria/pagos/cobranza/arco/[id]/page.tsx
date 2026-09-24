@@ -12,7 +12,7 @@
  *            D-36-10 (audit log chip), D-36-11, D-36-12
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
@@ -792,10 +792,11 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 // ─── PAGE ────────────────────────────────────────────────────────────────────────
 
 interface ArcoDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
+export default function ArcoDetailPage(props: ArcoDetailPageProps) {
+  const params = use(props.params)
   const { t } = useI18n()
   const { data, isLoading, error, refetch: detailRefetch } = useArcoDetail(params.id)
   const { data: gateData } = useArcoGate()

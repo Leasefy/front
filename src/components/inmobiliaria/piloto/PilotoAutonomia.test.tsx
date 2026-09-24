@@ -14,6 +14,8 @@
  * `DESIGN.md` y quedó documentado en el reporte del worker.
  */
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 import { AGENTES_NO_DISPONIBLES } from './PilotoAutonomia'
@@ -40,12 +42,27 @@ describe('copy del panel de autonomía (es.json / en.json)', () => {
    * lo que esta prueba cuida: que renombrar la etiqueta no arrastre el
    * contrato con el micro.
    */
-  it('el modo "sombra" se lee "Sombra" — el wire sigue en "sombra"', () => {
-    expect(es.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Sombra')
-    expect(en.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Shadow')
-    // Los otros dos modos no se tocaron.
-    expect(es.inmobiliaria.piloto.autonomia.modo.copiloto).toBe('Copiloto')
-    expect(es.inmobiliaria.piloto.autonomia.modo.autonomo).toBe('Autónomo')
+  it('🔴 P-1: los modos se leen Manual / Copiloto / Automático — el wire sigue en "sombra"/"autonomo"', () => {
+    // Decisión de Nico (23-09-2026): «Sombra se renombra Manual». La píldora
+    // y el panel dicen lo MISMO (antes el panel decía «Autónomo» y la
+    // píldora «Automático»), y «Mixto» ya no existe.
+    for (const loc of [es.inmobiliaria.piloto.autonomia.modo, es.inmobiliaria.piloto.flota.modo]) {
+      expect(loc.sombra).toBe('Manual')
+      expect(loc.copiloto).toBe('Copiloto')
+      expect(loc.autonomo).toBe('Automático')
+    }
+    expect(en.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Manual')
+    expect((es.inmobiliaria.piloto.flota.modo as Record<string, string>).mixto).toBeUndefined()
+  })
+
+  it('🔴 la píldora y el panel explican los modos con las MISMAS frases, sin prometer topes que no existen', () => {
+    const que = es.inmobiliaria.piloto.flota.que
+    expect(que.autonomo).not.toMatch(/tus topes/)
+    expect(que.autonomo).toContain('8 a. m.–7 p. m.')
+    // El panel ya no trae su propia explicación: usa estas claves.
+    const fuente = readFileSync(join(__dirname, 'PilotoAutonomia.tsx'), 'utf8')
+    expect(fuente).toContain('inmobiliaria.piloto.flota.que.')
+    expect(fuente).not.toContain('Ejecuta lo reversible solo')
   })
 
   it('el estado de gobierno "Próximamente" existe en ambos locales', () => {

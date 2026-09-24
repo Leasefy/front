@@ -31,7 +31,7 @@ const { estado, permisos, api, toast } = vi.hoisted(() => ({
     errorCrudo: null as unknown,
   },
   permisos: { negadas: new Set<string>(), pedidas: [] as string[] },
-  api: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  api: { create: vi.fn(), update: vi.fn(), delete: vi.fn(), getById: vi.fn() },
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
@@ -117,13 +117,16 @@ vi.mock('@/components/inmobiliaria', () => ({
     mode,
     onSubmit,
     serverError,
+    initialData,
   }: {
     mode: string;
     onSubmit: (d: PropietarioFormData) => Promise<void>;
     serverError?: { field: string; message: string } | null;
+    initialData?: Propietario;
   }) => (
     <button
       data-testid={`form-${mode}`}
+      data-cuenta={initialData?.bankAccount?.accountNumber ?? ''}
       data-error-campo={serverError?.field ?? ''}
       data-error-mensaje={serverError?.message ?? ''}
       // El formulario real se traga el rechazo para quedarse abierto.
@@ -190,6 +193,12 @@ beforeEach(() => {
   api.create.mockReset();
   api.update.mockReset();
   api.delete.mockReset();
+  // La ficha que pide el modal de editar: la misma fila, salvo que se diga otra cosa.
+  api.getById.mockReset().mockImplementation(async (id: string) => {
+    const fila = estado.lista.find((p) => p.id === id);
+    if (!fila) throw new Error('no existe');
+    return fila;
+  });
   Object.values(toast).forEach((f) => f.mockReset());
 });
 
@@ -359,6 +368,39 @@ describe('O2 — el duplicado y el 400 van al lado del campo', () => {
     await clic($('editar-p1'));
 
     expect($('aviso-en-el-dialogo')).toBeNull();
+  });
+});
+
+describe('🔴 editar pide la ficha: la lista ya no trae la cuenta entera (23-09, datos personales)', () => {
+  it('el formulario se llena con la ficha, no con la fila de la lista', async () => {
+    const cuenta = {
+      bank: 'bancolombia',
+      accountType: 'savings',
+      accountHolder: 'Ana Gómez',
+    } as const;
+    estado.lista = [
+      unPropietario({ bankAccount: { ...cuenta, accountNumber: '', ultimos4: '8901' } }),
+    ];
+    api.getById.mockResolvedValueOnce(
+      unPropietario({ bankAccount: { ...cuenta, accountNumber: '12345678901' } }),
+    );
+    await montar();
+
+    await clic($('editar-p1'));
+
+    expect(api.getById).toHaveBeenCalledWith('p1');
+    expect($('form-edit')!.getAttribute('data-cuenta')).toBe('12345678901');
+  });
+
+  it('si la ficha no llega, no se abre un formulario con la cuenta en blanco: se dice', async () => {
+    estado.lista = [unPropietario()];
+    api.getById.mockRejectedValueOnce(new ApiError(500, 'caído'));
+    await montar();
+
+    await clic($('editar-p1'));
+
+    expect($('form-edit')).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.loadForEditError');
   });
 });
 

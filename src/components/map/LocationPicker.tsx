@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef, type MapLayerMouseEvent, type MarkerDragEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import './trabajador-de-maplibre';
 import { MapPin } from '@phosphor-icons/react';
 import { MAP_STYLES, INITIAL_VIEW_STATE, ZOOM_LEVELS, getCityCoordinates } from '@/lib/constants/map';
 import { cn } from '@/lib/utils';

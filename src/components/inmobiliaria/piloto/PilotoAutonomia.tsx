@@ -15,6 +15,16 @@
  *
  * Usa el `SegmentedControl` del design system en vez del control artesanal
  * que tenía antes.
+ *
+ * ── Honesto (auditoría del Piloto, 23-09-2026, hallazgo 11) ───────────────
+ * Los modos se llaman como decidió Nico (P-1): Manual / Copiloto /
+ * Automático. Qué hace cada uno se explica con las MISMAS frases que la
+ * píldora del header (`flota.que.*`): antes el panel decía «Copiloto ejecuta
+ * lo reversible solo y te pide permiso para lo que cuesta plata» y la píldora
+ * «nada sale sin tu visto bueno», y el código no hacía ninguna de las dos
+ * distinciones. Por agente, la frase la pone el micro (su tabla de verdad), y
+ * los agentes cuyo modo no cambia nada lo dicen: «Todavía no actúa solo».
+ * Los datos vienen de UNA petición (la flota), no de doce.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -58,12 +68,6 @@ export const AGENTES_NO_DISPONIBLES: ReadonlySet<AgentePiloto> = new Set<AgenteP
   'prospectos',
 ])
 
-/** Qué significa cada modo, en una línea. Es lo que faltaba para decidir. */
-const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
-  sombra: 'Propone y registra, pero no ejecuta nada. Sirve para auditarlo antes de soltarlo.',
-  copiloto: 'Ejecuta lo reversible solo y te pide permiso para lo que cuesta plata.',
-  autonomo: 'Ejecuta también lo irreversible, dentro de los topes que la ley y tus reglas fijan.',
-}
 
 export interface PilotoAutonomiaProps {
   /**
@@ -131,7 +135,12 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
     }
   }
 
-  const autonomos = useMemo(() => rows.filter((r) => r.modo === 'autonomo').length, [rows])
+  // Sólo cuentan los que DE VERDAD actúan solos: modo Automático, el modo los
+  // gobierna y corren. Un cotizador «en Automático» no hace nada distinto.
+  const autonomos = useMemo(
+    () => rows.filter((r) => r.modo === 'autonomo' && r.gobierna && r.corre).length,
+    [rows],
+  )
 
   const cambiar = async (agente: (typeof rows)[number]['agente'], modo: AutonomiaModo) => {
     const res = await setModo(agente, modo)
@@ -188,7 +197,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               <dt className="font-medium text-fg">
                 {t(`inmobiliaria.piloto.autonomia.modo.${modo}`)}
               </dt>
-              <dd className="text-fg-muted">{MODO_EXPLICACION[modo]}</dd>
+              <dd className="text-fg-muted">{t(`inmobiliaria.piloto.flota.que.${modo}`)}</dd>
             </div>
           ))}
         </dl>
@@ -256,7 +265,9 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                   : gob.corre
                     ? t('inmobiliaria.piloto.gobierno.activo')
                     : t('inmobiliaria.piloto.gobierno.inactivo')
-                : null
+                : !row.corre
+                  ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
+                  : null
             return (
               <div
                 key={row.agente}
@@ -266,13 +277,21 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                 <div className="flex items-center justify-between gap-2">
                   <p
                     className={cn(
-                      'text-body-sm font-medium',
+                      'flex items-center gap-2 text-body-sm font-medium',
                       noDisponible ? 'text-fg-muted' : 'text-fg',
                     )}
                   >
                     {etiqueta}
+                    {!row.gobierna && (
+                      <span
+                        className="rounded-full bg-surface-muted px-2 py-0.5 text-caption font-normal text-fg-muted"
+                        data-testid={`piloto-autonomia-no-actua-${row.agente}`}
+                      >
+                        {t('inmobiliaria.piloto.autonomia.noActuaSolo')}
+                      </span>
+                    )}
                   </p>
-                  {(gob || noDisponible) && (
+                  {(gob || noDisponible || estadoTexto) && (
                     <span className="flex items-center gap-1.5">
                       {estadoTexto && (
                         <span className="text-caption text-fg-subtle">{estadoTexto}</span>

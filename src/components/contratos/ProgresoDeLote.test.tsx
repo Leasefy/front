@@ -50,10 +50,15 @@ const base: EstadoDeLote = {
  * obligatorio, no cosmético.
  */
 describe('<ProgresoDeLote>', () => {
-  it('muestra el progreso procesadas/total cuando está PROCESANDO', () => {
+  it('🔴 23-09: NO pinta el avance (ni barra ni «4 / 10»): lo manda al centro de procesos', () => {
+    // Nico: «ya tenemos centro de procesos, todas las cargas déjalas que
+    // sucedan allí y deja la pantalla quieta».
     render({ estado: base, agotado: false })
-    expect(container.textContent).toContain('4')
-    expect(container.textContent).toContain('10')
+    expect(container.querySelector('[data-testid="lote-progreso-indeterminado"]')).toBeNull()
+    expect(container.querySelector('[role="progressbar"], .rounded-full.bg-primary')).toBeNull()
+    expect(container.textContent).not.toMatch(/4\s*\/\s*10/)
+    expect(container.textContent).toContain('centro de procesos')
+    expect(container.querySelector('[data-testid="lote-ver-en-el-centro"]')).not.toBeNull()
   })
 
   it('nunca renderiza la lista de trabajo — sólo progreso', () => {

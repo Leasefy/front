@@ -266,6 +266,75 @@ describe('generarPorTandas — una emisión = UN proceso (23-09)', () => {
     expect(informe.procesosConZip).toEqual(['proc-corrida'])
   })
 
+  /** Un back que junta la corrida: cada tanda emite todo y devuelve el mismo proceso. */
+  const agrupado = (llamadas: { lote: string[]; corrida?: unknown }[]) =>
+    (mes: string, lote: string[], corrida?: unknown): Promise<ResultadoDeGeneracion> => {
+      llamadas.push({ lote, corrida })
+      const n = llamadas.length
+      return Promise.resolve({
+        mes,
+        emitidas: lote.length,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 0,
+        facturas: [{ clave: lote[0], numero: n, numeroDian: `PRU-${n}`, totalCop: 1, facturaId: `f-${n}` }],
+        procesoId: 'proc-corrida',
+        zipEnElCentro: (corrida as { ultimaTanda?: boolean } | undefined)?.ultimaTanda === true,
+        corridaAgrupable: true,
+      })
+    }
+
+  it('🔴 23-09: avisa el proceso de la corrida apenas lo conoce, una vez (con eso el «Detener» vive en el centro)', async () => {
+    const onProceso = vi.fn()
+    await generarPorTandas('2026-09', claves(450), agrupado([]), undefined, { onProceso })
+    expect(onProceso).toHaveBeenCalledTimes(1)
+    expect(onProceso).toHaveBeenCalledWith('proc-corrida')
+  })
+
+  it('🔴 23-09: detenida a mitad, CIERRA el proceso del centro sin emitir nada más (antes quedaba «En curso» para siempre)', async () => {
+    const llamadas: { lote: string[]; corrida?: unknown }[] = []
+    let parar = false
+    const back = agrupado(llamadas)
+    const { informe, corte } = await generarPorTandas(
+      '2026-09',
+      claves(1_000),
+      async (mes, lote, corrida) => {
+        const r = await back(mes, lote, corrida)
+        parar = true
+        return r
+      },
+      undefined,
+      { debeParar: () => parar },
+    )
+
+    expect(corte).toBe('detenida')
+    // La tanda de verdad y la de cierre: nada más.
+    expect(llamadas).toHaveLength(2)
+    expect(llamadas[1]).toEqual({
+      // Una clave que ya pasó por el back: salió, así que ya no está «por
+      // emitir» y el back no la toca.
+      lote: ['ct-0|2026-09|INQUILINO'],
+      corrida: {
+        procesoId: 'proc-corrida',
+        yaEnviadas: 200,
+        totalDeLaCorrida: 1_000,
+        ultimaTanda: true,
+        idsDeLaCorrida: ['f-1'],
+      },
+    })
+    // El informe es de lo emitido de verdad: la llamada de cierre no suma.
+    expect(informe.emitidas).toBe(200)
+    expect(informe.sinEnviar).toBe(800)
+    expect(informe.procesosConZip).toEqual(['proc-corrida'])
+  })
+
+  it('una corrida completa no manda la llamada de cierre: su última tanda ya cerró', async () => {
+    const llamadas: { lote: string[]; corrida?: unknown }[] = []
+    await generarPorTandas('2026-09', claves(450), agrupado(llamadas))
+    expect(llamadas).toHaveLength(3)
+  })
+
   it('una sola tanda no manda nada de corrida (es su propio proceso)', async () => {
     const generar = vi.fn(todoSale)
     await generarPorTandas('2026-09', claves(50), generar)

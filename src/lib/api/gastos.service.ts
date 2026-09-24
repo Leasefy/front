@@ -949,7 +949,8 @@ export const gastosApi = {
 
     /**
      * Escritura. 🔴 Aprueba OTRA persona: quien armó el lote recibe 409
-     * `APROBADOR_ES_EL_MISMO`. Sin cuerpo: el aprobador sale del JWT.
+     * `APROBADOR_ES_EL_MISMO`, salvo el ADMINISTRADOR (P-4: lo que él arma ya
+     * vuelve aprobado de `crear`). Sin cuerpo: el aprobador sale del JWT.
      */
     async aprobar(id: string): Promise<LoteDeEgreso> {
       return apiClient.post<LoteDeEgreso>(

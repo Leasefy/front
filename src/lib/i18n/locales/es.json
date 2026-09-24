@@ -1045,6 +1045,8 @@
       },
       "bandeja": {
         "titulo": "Bandeja",
+        "queEs": "Las decisiones que los agentes dejaron esperando por ti, la que más espera primero.",
+        "contadorParcial": "Mostrando {{mostrando}} de {{total}}",
         "verCaso": "Ver caso",
         "vacia": "No hay nada esperando por ti",
         "vaciaHint": "Cuando un agente necesite tu decisión, aparece aquí.",
@@ -1076,26 +1078,28 @@
         "apagado": "Apagado",
         "apagadoHint": "El Piloto está apagado en el servidor (PILOTO_ENABLED). Lo enciende el equipo técnico.",
         "cargando": "Leyendo el estado de la flota…",
-        "corriendo": "{{n}} agentes corriendo con este modo.",
-        "mixtoHint": "Los agentes no comparten modo: {{autonomo}} en automático · {{copiloto}} en copiloto · {{sombra}} en sombra. Elige uno para toda la flota o ajusta por agente.",
+        "corriendo": "{{n}} agentes actúan con este modo.",
+        "corriendoConDistintos": "{{n}} agentes actúan: {{enEste}} con este modo y {{otros}} con otro (abajo, cuáles).",
+        "distintosCorto": "({{n}} con otro modo)",
+        "cadaAgente": "Cada agente",
+        "todaviaNo": "Todavía no actúan solos (su modo queda guardado): {{agentes}}.",
         "aria": "Piloto automático: modo {{modo}}. Abrir para cambiarlo",
         "elegir": "Modo del Piloto",
         "modo": {
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
-          "autonomo": "Automático",
-          "mixto": "Mixto"
+          "autonomo": "Automático"
         },
         "que": {
-          "sombra": "Mira, registra y propone. No contacta a nadie ni firma nada, y no te interrumpe con avisos.",
-          "copiloto": "Prepara cada acción y te la deja en la bandeja: nada sale sin tu visto bueno.",
-          "autonomo": "Llama, escribe y emite recibos solo, dentro de la ley y de tus topes. Te cuenta lo que hizo."
+          "sombra": "Prepara cada acción y te la deja en la Bandeja con su botón. Nada sale sin ti, y no te interrumpe con avisos.",
+          "copiloto": "Prepara cada acción y te la deja en la Bandeja con su botón: nada sale sin tu visto bueno. Te avisa cuando algo te espera.",
+          "autonomo": "Los agentes que ya saben actuar solos lo hacen sin preguntarte, dentro del horario de cobranza (8 a. m.–7 p. m.); lo dudoso te lo siguen dejando en la Bandeja y te cuentan lo que hicieron."
         },
-        "confirmarAutonomo": "En automático el Piloto llama, escribe y emite recibos sin preguntarte. ¿Lo pasamos?",
-        "confirmarSi": "Sí, automático",
+        "confirmarAutonomo": "En Automático, los agentes que ya actúan solos llaman, escriben y concilian lo exacto sin preguntarte, dentro del horario de cobranza. ¿Lo pasamos?",
+        "confirmarSi": "Sí, Automático",
         "cancelar": "Cancelar",
-        "toastOk": "Piloto en modo {{modo}} para toda la flota",
-        "toastParcial": "Piloto en modo {{modo}}, salvo: {{agentes}}",
+        "toastOk": "Piloto en {{modo}} para todos los agentes",
+        "toastParcial": "Piloto en {{modo}}, salvo: {{agentes}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "ahora": "Ahora mismo",
         "llamadas": "{{n}} llamada(s) en curso",
@@ -1134,7 +1138,7 @@
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
         "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
-        "sinBack": "El ERP no está conectado al Piloto: los depósitos no se ven acá.",
+        "sinBack": "La conciliación del Piloto está apagada en el servidor: los depósitos del banco no se ven acá ni llegan a la Bandeja. La enciende el equipo técnico.",
         "contador": "{{visibles}} de {{total}}",
         "verPasos": "Ver pasos",
         "ocultarPasos": "Ocultar pasos",
@@ -1160,7 +1164,7 @@
       },
       "autonomia": {
         "titulo": "Autonomía",
-        "contadorTitulo": "{{n}} de {{total}} agentes pueden actuar solos, sin que nadie apruebe",
+        "contadorTitulo": "{{n}} de {{total}} agentes actúan solos, sin que nadie apruebe",
         "hint": "Define cuánto puede hacer cada agente sin ti.",
         "soloAdmin": "Solo un administrador puede cambiar el modo.",
         "vacia": "Ningún agente reporta su autonomía todavía",
@@ -1170,14 +1174,17 @@
         "toastOk": "{{agente}} ahora en modo {{modo}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "modo": {
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
-          "autonomo": "Autónomo"
+          "autonomo": "Automático"
         },
+        "noActuaSolo": "Todavía no actúa solo",
         "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
       },
       "pulso": {
-        "titulo": "Pulso del piloto",
+        "titulo": "Pulso del Piloto",
+        "midiendo": "Midiendo lo que pasa ahora: llamadas, conversaciones, promesas y decisiones que te esperan.",
+        "queEs": "el pulso del Piloto",
         "ahora": "En curso",
         "ahoraVacio": "No hay nada en curso en este momento.",
         "alertas": "Alertas",
@@ -1190,7 +1197,7 @@
           "ok": "Todo bajo control",
           "atencion": "Requiere tu atención",
           "critico": "Necesita acción ya",
-          "desconocido": "Estado no reconocido"
+          "desconocido": "Sin lectura"
         }
       },
       "cajon": {
@@ -1227,7 +1234,7 @@
       "gobierno": {
         "activo": "Activa",
         "inactivo": "Apagada para tu inmobiliaria",
-        "apagadoServidor": "Todavía no disponible en tu plan",
+        "apagadoServidor": "Apagado en el servidor: lo enciende el equipo técnico",
         "proximamente": "Próximamente",
         "switchAria": "Encender o apagar {{agente}} para tu inmobiliaria",
         "toastOn": "{{agente}} encendida para tu inmobiliaria",
@@ -1250,7 +1257,7 @@
         },
         "modo": {
           "todos": "Todos",
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
           "autonomo": "Automático",
           "sistema": "Sin modo"
@@ -1270,6 +1277,94 @@
         "vacioHint": "Prueba con otra área, otro modo o borrando la búsqueda.",
         "sinFuente": "No pudimos consultar los procesos",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya procesos corriendo."
+      },
+      "operaSola": {
+        "boton": "¿Opera sola?",
+        "pendientesAria": "Faltan {{n}} cosas para que opere sola en Automático",
+        "titulo": "¿Opera sola?",
+        "descripcion": "Qué le falta a toda tu inmobiliaria para operar sola en Automático, y quién lo destraba.",
+        "sinFuente": "No pude medir si tu inmobiliaria opera sola",
+        "sinFuenteHint": "No digo ni que sí ni que no: la medición no contestó. Vuelve a abrir esta pantalla en un momento.",
+        "estadoListo": "Opera sola en Automático",
+        "estadoNoListo": "Todavía no opera sola",
+        "nadaQueFalta": "Nada: todo lo que puede operar solo, opera solo.",
+        "afecta": "Afecta a: {{agentes}}",
+        "sinModoElegido": "nadie eligió su modo",
+        "verProcesos": "Ver sus {{n}} procesos",
+        "ocultarProcesos": "Ocultar sus procesos",
+        "interruptoresAyuda": "Los prende Leasefy en el servidor, nunca la inmobiliaria. Aquí sólo se dice si están prendidos, nunca su valor.",
+        "migraciones": "Migraciones que faltan (las aplica Leasefy)",
+        "migracionSinAplicar": "sin aplicar",
+        "migracionNoSe": "no se pudo comprobar",
+        "loQueHizoSinFuente": "No pude leer lo que hizo: el ERP no contestó.",
+        "secciones": {
+          "queFalta": "Qué falta, y quién lo destraba",
+          "porAgente": "Por agente",
+          "interruptores": "Interruptores del servidor",
+          "loQueHizo": "Lo que hizo en los últimos 30 días"
+        },
+        "quien": {
+          "leasefy": "Lo destraba Leasefy",
+          "administrador": "Lo destraba un administrador",
+          "programar": "Hay que programarlo"
+        },
+        "estadoAgente": {
+          "listo": "Opera solo",
+          "frenado": "Frenado",
+          "siempre_humano": "Pide un clic por regla",
+          "apagado": "Apagado"
+        },
+        "estadoProceso": {
+          "opera_solo": "Opera solo",
+          "siempre_humano": "Siempre pide un clic",
+          "frenado": "Frenado",
+          "apagado": "Apagado"
+        },
+        "delegacion": {
+          "registrada": "a nombre de {{quien}}",
+          "falta": "sin registrar a nombre de quién actúa",
+          "noMedida": "no pude comprobar a nombre de quién actúa"
+        },
+        "interruptor": {
+          "encendido": "Encendido",
+          "apagado": "Apagado",
+          "noSeVe": "No se ve desde aquí",
+          "donde": {
+            "micro": "En el Piloto",
+            "back": "En el ERP"
+          }
+        }
+      },
+      "topes": {
+        "titulo": "Tus topes en Automático",
+        "descripcion": "Hasta dónde el Piloto actúa solo. Por encima de un tope, aunque esté en Automático, te pide un clic.",
+        "sinFuente": "No pude leer tus topes: el Piloto no contestó.",
+        "fueraDeRango": "Tiene que estar entre {{min}} y {{max}}.",
+        "porDefecto": "Son los valores de Leasefy: nadie los ha cambiado todavía.",
+        "cambiadoPor": "Los cambió {{quien}} el {{fecha}}.",
+        "guardar": "Guardar los topes",
+        "guardado": "Topes guardados.",
+        "errorAlGuardar": "No se guardaron: {{error}}",
+        "topeMontoCop": {
+          "label": "Tope por acción",
+          "ayuda": "La plata de una sola acción (un recibo, un cobro). Con $0, toda acción con plata te pide un clic."
+        },
+        "topeDestinatarios": {
+          "label": "Personas por envío",
+          "ayuda": "A cuántas personas les puede salir algo en un solo envío. Con 0, todo envío te pide un clic."
+        },
+        "graciaSegundos": {
+          "label": "Segundos para deshacer",
+          "ayuda": "Lo que el Piloto manda solo espera este tiempo con «Deshacer» a la vista. El mínimo es un minuto."
+        },
+        "horario": {
+          "titulo": "Horario de ley",
+          "ayuda": "Lo pone la ley, no se edita: fuera de este horario, el Piloto lo programa para la próxima apertura."
+        },
+        "ventana": {
+          "cobranza": "Cobranza",
+          "aviso": "Avisos"
+        }
       }
     },
     "mobileNav": {
@@ -1446,6 +1541,8 @@
         "bitacoraDesc": "Quién hizo qué en lo que mueve plata: aprobar giros, anular, condonar, cambiar cuentas.",
         "movimientos": "Bitácora de movimientos",
         "movimientosDesc": "Quién hizo qué en todo el panel, con su rol y el resultado. Nadie la edita ni la borra a mano.",
+        "proteccionDeDatos": "Protección de datos",
+        "proteccionDeDatosDesc": "Las solicitudes de los titulares (habeas data): plazos, sus datos y la constancia de la respuesta",
         "slaDePqrs": "Tiempo de respuesta",
         "slaDePqrsDesc": "Cuánto te demoras en responder una PQRS, por tipo."
       },
@@ -1477,12 +1574,12 @@
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
         "panelTour": "Recorrido del panel",
-        "panelTourDesc": "Recorrido guiado por el panel la primera vez que entras",
-        "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
-        "panelTourDismissed": "Tour silenciado en este dispositivo",
-        "panelTourSyncing": "Sincronizando preferencia…",
+        "panelTourDesc": "Sale una sola vez por inmobiliaria: la primera vez que alguien del equipo entra al panel",
+        "panelTourPendiente": "Tu inmobiliaria todavía no lo ha visto: sale una sola vez, la próxima vez que alguien del equipo entre al panel",
+        "panelTourVistoOmitido": "Tu inmobiliaria ya lo vio: {{quien}} lo omitió el {{fecha}}. No vuelve a salir solo",
+        "panelTourVistoCompleto": "Tu inmobiliaria ya lo vio: {{quien}} lo terminó el {{fecha}}. No vuelve a salir solo",
+        "panelTourVistoSinQuien": "Tu inmobiliaria ya lo vio el {{fecha}}. No vuelve a salir solo",
         "relaunchTour": "Ver el recorrido ahora",
-        "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
         "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
       "security": {
@@ -2014,7 +2111,8 @@
         "exportError": "No se pudo exportar. Intenta de nuevo.",
         "createError": "No se pudo crear el propietario. Intenta de nuevo.",
         "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
-        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
+        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo.",
+        "loadForEditError": "No se pudo abrir la ficha del propietario para editarla. Intenta de nuevo en un momento."
       },
       "detail": {
         "title": "Detalle del Propietario",
@@ -2634,6 +2732,33 @@
         "errorAlCargar": "No se pudo cargar la lista de bancos.",
         "desde": "Desde {{banco}} · {{tipo}}",
         "teProponemosLaUltima": "Te proponemos la última cuenta desde la que giraste."
+      },
+      "lote": {
+        "archivoAnulado": {
+          "titulo": "{{n}} pagos de este lote ya salieron en el archivo de un lote anulado",
+          "tituloUno": "1 pago de este lote ya salió en el archivo de un lote anulado",
+          "texto": "Ese archivo se generó y pudo haberse subido al banco. Antes de mandar este lote a aprobación, confirma en el portal del banco que esos pagos NO se procesaron: si se procesaron, girarlos otra vez le paga dos veces al propietario.",
+          "fila": "salió en el archivo del {{generado}}; ese lote se anuló el {{anulado}}",
+          "motivo": "Motivo de la anulación: {{motivo}}",
+          "alArmar": "Revisa el aviso del lote: {{n}} de estos pagos ya salieron en el archivo de un lote anulado."
+        },
+        "anular": {
+          "confirmaArchivo": "Confirmo que revisé en el portal del banco que este archivo NO se procesó. Si llegó al banco, anular este lote hace que sus pagos se giren dos veces.",
+          "avisoArchivo": "El archivo de este lote ya se generó y pudo haberse subido al banco.",
+          "faltaConfirmar": "Marca la confirmación: el archivo de este lote ya se generó."
+        }
+      },
+      "enUnLote": {
+        "titulo": "Esta liquidación ya está en un lote",
+        "irAlLote": "Abrir el lote"
+      },
+      "giroDevuelto": {
+        "soporte": "Soporte del banco (obligatorio)",
+        "soporteAyuda": "El extracto o el comprobante de la devolución, en PDF o imagen, hasta 10 MB. Queda guardado con el giro: una devolución vuelve a pagarle al propietario, y sin el papel del banco no se registra.",
+        "faltaSoporte": "Adjunta el soporte del banco para marcar el giro devuelto.",
+        "verSoporte": "Ver soporte",
+        "soporteNoAbre": "No se pudo abrir el soporte del banco.",
+        "noApruebasLoQueDevolviste": "Tú registraste la devolución de un giro de este lote: lo aprueba otra persona. Es el segundo par de ojos sobre un pago que se hace dos veces."
       }
     },
     "operaciones": {
@@ -4965,6 +5090,7 @@
         "optional": "Opcional",
         "bankDataTitle": "Datos bancarios para dispersiones",
         "bankDataInfo": "Estos datos se usarán para transferir el canon mensual al propietario, después de descontar la comisión de administración.",
+        "bankDataHidden": "Tu rol no ve la cuenta bancaria de los propietarios. Lo que guardes aquí no la cambia; la registra o la corrige quien tenga acceso a los giros.",
         "bank": "Banco",
         "selectBank": "Seleccionar banco...",
         "accountType": "Tipo de cuenta",
@@ -5020,7 +5146,8 @@
           "NIT": "NIT",
           "PASSPORT": "Pasaporte",
           "PPT": "PPT"
-        }
+        },
+        "emailSoloAdministrador": "Sólo un administrador cambia el correo de un propietario: es por donde confirma los cambios de su cuenta bancaria y con el que entra a su portal."
       },
       "stats": {
         "properties": "Propiedades",
@@ -7862,7 +7989,12 @@
           "calidad": "Calidad de publicación",
           "prospectos": "Prospectos",
           "aprobaciones": "Aprobaciones del propietario",
-          "mantenimiento": "Mantenimiento"
+          "mantenimiento": "Mantenimiento",
+          "chat": "El chat",
+          "contratos": "Contratos",
+          "facturacion": "Facturación y caja",
+          "propietarios": "Propietarios",
+          "contabilidad": "Contabilidad"
         },
         "rol": {
           "cobrador": "Cobrador",
@@ -7945,12 +8077,12 @@
           "vallaTitle": "Límites del agente",
           "vallaEmpty": "Aún no hay límites publicados para este agente.",
           "modo": {
-            "sombra": "Sombra",
-            "sombraHint": "Solo observa y sugiere en silencio",
+            "sombra": "Manual",
+            "sombraHint": "Prepara y te deja la decisión, sin avisarte",
             "copiloto": "Copiloto",
-            "copilotoHint": "Sugiere; nada se aplica sin un humano",
-            "autonomo": "Autónomo",
-            "autonomoHint": "Ejecuta dentro de los límites aprobados"
+            "copilotoHint": "Prepara; nada sale sin tu visto bueno",
+            "autonomo": "Automático",
+            "autonomoHint": "Actúa solo donde ya sabe hacerlo, dentro de la ley"
           },
           "modoTitle": "Cuánto decide el agente por su cuenta",
           "modoActivo": "Modo activo",
@@ -10113,7 +10245,7 @@
         },
         "piloto": {
           "titulo": "Tú decides cuánto hace la IA sola",
-          "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes.",
+          "cuerpo": "Manual y Copiloto te dejan cada acción lista en la Bandeja para tu visto bueno (Manual, sin avisarte). Automático deja actuar solos a los agentes que ya saben hacerlo, dentro de la ley.",
           "dato": "Desde esta píldora cambias el modo de toda la flota, o lo ajustas agente por agente."
         },
         "chat": {
@@ -10143,6 +10275,11 @@
       "elInmueble": "el inmueble",
       "elContrato": "el contrato",
       "viendoCopia": "Estás sin señal. Estás viendo la copia guardada el {{cuando}}; lo que llenes se sube cuando vuelva la señal."
+    },
+    "egresos": {
+      "anularPagado": "Un egreso pagado no se anula: la plata ya salió del banco y el comprobante tiene número. Si la devolvieron, regístralo como ingreso con tu contador; si la fecha está mal, cámbiala desde el egreso.",
+      "anularAnulado": "Este egreso ya está anulado.",
+      "anulado": "Egreso anulado. Vuelve a quedar sin pagar."
     }
   },
   "validation": {
@@ -10352,9 +10489,40 @@
       "planNotFound": "No se encontró el plan seleccionado. Vuelve a la lista de planes.",
       "planLoadError": "Error al cargar el plan. Intenta de nuevo.",
       "processing": "Procesando...",
-      "securePayment": "Pago seguro procesado por Stripe",
+      "securePayment": "Pago seguro por PSE, procesado por Wompi",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
-      "paymentSuccess": "Pago exitoso! Plan {{name}} activado."
+      "paymentSuccess": "Pago exitoso! Plan {{name}} activado.",
+      "pseTitle": "Datos del pago por PSE",
+      "pseHint": "Te llevamos a tu banco para aprobar el pago. El plan se activa cuando el banco lo confirma.",
+      "bank": "Banco",
+      "bankPlaceholder": "Elige tu banco",
+      "banksError": "No pudimos cargar la lista de bancos. Recarga la página para intentarlo de nuevo.",
+      "personType": "Tipo de persona",
+      "personNatural": "Persona natural",
+      "personJuridica": "Persona jurídica",
+      "documentType": "Tipo de documento",
+      "documentTypes": {
+        "CC": "Cédula de ciudadanía",
+        "CE": "Cédula de extranjería",
+        "NIT": "NIT",
+        "PP": "Pasaporte"
+      },
+      "documentNumber": "Número de documento",
+      "fullName": "Nombre del titular de la cuenta",
+      "email": "Correo",
+      "completePayerData": "Completa los datos del pago: banco, documento (6 a 15 dígitos), nombre y correo.",
+      "bankLinkMissing": "Tu banco todavía no nos devolvió el enlace de pago. Inténtalo de nuevo en unos minutos.",
+      "paymentStartError": "No pudimos iniciar el pago. Inténtalo de nuevo.",
+      "priceLoading": "El precio lo trae el servidor; si no aparece, recarga la página.",
+      "yearlySaving": "-{{percent}}%",
+      "noPuedePagar": "No puedes pagar este plan ahora",
+      "resultadoTitulo": "El pago de tu plan",
+      "resultadoAprobado": "El banco aprobó el pago: tu plan {{name}} quedó activo.",
+      "resultadoRechazado": "El banco no aprobó el pago. No se te cobró el plan.",
+      "resultadoPendiente": "Estamos esperando la confirmación del banco. Esto puede tardar unos minutos; puedes cerrar esta página, el plan se activa solo cuando el banco confirme.",
+      "resultadoError": "No pudimos consultar cómo terminó el pago. Revisa tu plan en Configuración en unos minutos.",
+      "resultadoIrAlPanel": "Ir a mi panel",
+      "resultadoIntentarDeNuevo": "Intentar de nuevo"
     },
     "upgrade": {
       "unlockPotential": "Desbloquea todo el potencial",
@@ -11160,12 +11328,38 @@
       "endYes": "Terminar",
       "endCancel": "Cancelar"
     },
+    "cerebro": {
+      "boton": "¿Aprendo esto?",
+      "ayuda": "Sólo lo ves tú, como administrador: decide qué aprende el chat de esta respuesta.",
+      "titulo": "Lo que aprendería de esta respuesta",
+      "cargando": "Revisando qué se puede aprender…",
+      "error": "No pude revisarlo. Intenta de nuevo.",
+      "reintentar": "Reintentar",
+      "errorGuardar": "No pude guardarlo. Intenta de nuevo.",
+      "nada": "De esta respuesta todavía no hay nada que aprender.",
+      "aprender": "Sí, apréndelo",
+      "descartar": "No",
+      "aprendido": "Aprendido",
+      "descartado": "No lo aprendo",
+      "aprendidoToast": "Listo: lo aprendí",
+      "descartadoToast": "Listo: no lo aprendo",
+      "sinUso": "Quedó aprendido. El uso de lo aprendido está apagado en esta instalación: lo tendré en cuenta cuando lo prendan.",
+      "cerrar": "Cerrar",
+      "origen": {
+        "accion_deshecha": "De una acción que se deshizo",
+        "ambiguedad": "De la tarjeta que se eligió entre varias",
+        "definicion": "De cómo le dicen aquí a algo",
+        "apodo": "De un apodo que se usa aquí"
+      }
+    },
     "actions": {
       "copy": "Copiar respuesta",
       "copied": "Respuesta copiada",
       "copyError": "No pude copiar. Selecciona el texto y usa Cmd+C.",
       "regenerate": "Volver a generar",
       "regenerating": "Generando de nuevo…",
+      "reintentar": "Reintentar",
+      "reintentando": "Reintentando…",
       "busy": "Espera a que termine la respuesta en curso.",
       "like": "Respuesta útil",
       "dislike": "Respuesta poco útil",
@@ -11210,9 +11404,262 @@
         "consultAgent": "Consultar al especialista de {{agent}}"
       },
       "detail": {
-        "cartera": "{{deudores}} deudores en gestión · {{escalaciones}} escalaciones · {{prejuridico}} en prejurídico",
-        "carteraVacia": "Sin datos de cartera para esta agencia",
-        "toolRunning": "Consultando {{herramienta}}"
+        "toolRunning": "Consultando {{herramienta}}",
+        "carteraErp": "Cartera por cobrar: {{cartera}} en {{contratos}} contratos"
+      },
+      "activo": {
+        "cartera": "Leyendo tu cartera y lo que ya sé de tu inmobiliaria…",
+        "entender": "Decidiendo cómo resolverla…",
+        "redactar": "Escribiendo la respuesta…"
+      },
+      "avance": "{{hechos}} de {{total}}"
+    },
+    "forma": {
+      "resultados": "Resultados",
+      "fila": "{{n}} fila",
+      "filas": "{{n}} filas",
+      "filasDe": "{{n}} de {{total}} filas",
+      "verTodas": "Ver las {{n}} filas",
+      "verMenos": "Ver menos",
+      "estado": {
+        "activo": "Activo",
+        "firmado": "Firmado",
+        "vencido": "Vencido",
+        "terminado": "Terminado",
+        "cancelado": "Cancelado",
+        "borrador": "Borrador",
+        "pendiente": "Pendiente",
+        "porFirmar": "Por firmar",
+        "parcial": "Pago parcial",
+        "enMora": "En mora",
+        "incumplido": "Incumplido",
+        "pagado": "Pagado",
+        "renovacionPendiente": "Por renovar",
+        "notificado": "Notificado",
+        "enNegociacion": "Negociando",
+        "aprobada": "Aprobada",
+        "firmada": "Firmada",
+        "renovado": "Renovado",
+        "noRenueva": "No renueva",
+        "reportado": "Reportado",
+        "cotizado": "Cotizado",
+        "aprobado": "Aprobado",
+        "enCurso": "En curso",
+        "girado": "Girado",
+        "fallido": "Fallido"
+      },
+      "semaforo": {
+        "mora": "En mora · {{dias}} días",
+        "vence": "Vence en {{dias}} días",
+        "alDia": "Al día"
+      },
+      "papel": {
+        "inquilino": "Inquilino",
+        "coarrendatario": "Coarrendatario",
+        "propietario": "Propietario",
+        "inmueble": "Inmueble",
+        "contrato": "Contrato",
+        "postulante": "Postulante",
+        "lead": "Interesado",
+        "contacto": "Contacto",
+        "proveedor": "Proveedor"
+      },
+      "pedir": {
+        "estadoDeCuenta": "Dame el estado de cuenta de {{nombre}}",
+        "renovar": "Prepara la renovación del contrato #{{codigo}}"
+      },
+      "accion": {
+        "estadoDeCuenta": "Estado de cuenta",
+        "renovar": "Preparar renovación"
+      },
+      "canon": "canon",
+      "fin": "Fin",
+      "propietario": "Propietario",
+      "inquilino": "Inquilino",
+      "cartera": "Cartera",
+      "sinCartera": "Sin cuotas",
+      "otroContrato": "Y {{n}} contrato más en su historial.",
+      "otrosContratos": "Y {{n}} contratos más en su historial.",
+      "verFilasQueFaltan": "Ver las {{n}} filas que faltan",
+      "masInteres": "+ {{monto}} de interés de mora",
+      "restaDelContrato": "Resta del contrato"
+    },
+    "estadoDeHoy": {
+      "cartera": "Cartera por cobrar",
+      "contratosEnCartera": "Contratos en cartera",
+      "deudores": "Deudores activos",
+      "pagadoHoy": "Pagado hoy",
+      "llamadas": "Llamadas hoy",
+      "escalaciones": "Escalaciones",
+      "prejuridico": "Prejurídico"
+    },
+    "enElChat": {
+      "acciones": {
+        "titulo": "Lo que puedo hacer",
+        "ninguna": "Ahora no hay nada que se pueda hacer desde aquí.",
+        "ocultarNo": "Ocultar las acciones que no puedes hacer",
+        "verNoUna": "Ver 1 acción que todavía no puedes hacer",
+        "verNoVarias": "Ver {{n}} acciones que todavía no puedes hacer",
+        "sePuedeDesde": "se puede desde el {{fecha}}"
+      },
+      "riesgo": {
+        "plata": "Mueve plata",
+        "terceros": "Le escribe a otra persona",
+        "irreversible": "No se puede deshacer"
+      },
+      "modo": {
+        "manual": "Manual",
+        "copiloto": "Copiloto",
+        "automatico": "Automático"
+      },
+      "confirmacion": {
+        "si": "Sí, hazlo",
+        "no": "No",
+        "vencida": "Venció sin respuesta: si todavía lo necesitas, pídemelo de nuevo."
+      },
+      "resultado": {
+        "hecha": "Hecho",
+        "fallida": "No se pudo",
+        "cancelada": "No se hizo",
+        "deshecha": "Deshecho",
+        "deshacer": "Deshacer"
+      },
+      "formulario": {
+        "elige": "Elige una opción",
+        "seguir": "Listo, sigue"
+      },
+      "mensaje": {
+        "si": "Sí, hazlo",
+        "no": "No, no lo hagas",
+        "deshacer": "Deshacer: {{etiqueta}}",
+        "verFicha": "Ver la ficha de {{titulo}}",
+        "reintentar": "Reintentar: {{titulo}}"
+      },
+      "verFicha": "Ver ficha",
+      "enlaceExterno": "se abre en otra pestaña ({{destino}})",
+      "verElResto": "Ver el resto",
+      "tarjeta": {
+        "estado": {
+          "propuesta": "Espera tu respuesta",
+          "respondida": "Respondida",
+          "en_curso": "En curso",
+          "en_gracia": "Por salir",
+          "hecha": "Hecho",
+          "cancelada": "No se hizo",
+          "deshecha": "Deshecho",
+          "vencida": "Venció",
+          "programada": "Programada",
+          "error": "No se pudo",
+          "ensayo": "Ensayo"
+        },
+        "propuesta": {
+          "hacerlo": "Hacerlo",
+          "no": "No",
+          "dijisteSi": "Dijiste que sí.",
+          "dijisteNo": "Dijiste que no.",
+          "programada": "Si dices que sí, queda programada para {{cuando}}.",
+          "ensayo": "Modo ensayo: esto no se va a hacer ni a programar."
+        },
+        "riesgo": {
+          "titulo": "Qué implica",
+          "irreversible": "No se puede deshacer",
+          "plata": "Mueve plata",
+          "fiscal": "Fiscal (DIAN)",
+          "terceros": "Le escribe a otra persona",
+          "masiva": "Masiva",
+          "masivaConTope": "Masiva (hasta {{tope}})",
+          "dobleControl": "Doble control"
+        },
+        "vistaPrevia": {
+          "titulo": "Lo que va a quedar",
+          "sinVistaPrevia": "El ERP no mandó una vista previa de esta acción.",
+          "verMas": "Ver {{n}} más",
+          "verMenos": "Ver menos",
+          "si": "Sí",
+          "no": "No"
+        },
+        "dobleControl": {
+          "otraPersona": "Esto lo aprueba otra persona.",
+          "laPuedesHacerTu": "Eres administrador: puedes aprobarlo tú (queda en la bitácora que fuiste la misma persona)."
+        },
+        "enCurso": {
+          "avance": "{{hechos}} de {{total}}",
+          "avanceSinTotal": "{{hechos}} hechos",
+          "barra": "Avance de {{titulo}}",
+          "cancelar": "Cancelar",
+          "cancelacionPedida": "Pediste cancelarlo: se detiene en el siguiente paso.",
+          "noPudeCancelar": "No pude cancelarlo: {{motivo}}",
+          "noPudeLeer": "No pude leer cómo va; sigo intentando.",
+          "sinResultado": "Terminó, pero no pude traer el resultado. Pregúntame en un momento."
+        },
+        "gracia": {
+          "seEnviaEn": "Se envía en",
+          "enviando": "Enviándolo…",
+          "anuncioInicio": "Se envía en {{segundos}} segundos. Puedes deshacerlo antes.",
+          "anuncioDiez": "Quedan 10 segundos para deshacerlo.",
+          "anuncioFinal": "Se está enviando: ya no se puede deshacer.",
+          "sinConfirmar": "No pude confirmar que salió. Pregúntame en un momento.",
+          "pedisteDeshacer": "Pediste deshacerlo."
+        },
+        "programada": {
+          "cuando": "Lo programé para {{cuando}}.",
+          "saleConTuSesion": "Tu sesión vence antes de esa hora: sale apenas vuelvas a escribirle al chat, dentro del horario."
+        },
+        "error": {
+          "permiso": "Permiso que falta: {{modulo}} · {{accion}}",
+          "quienesPueden": "Lo pueden hacer: {{nombres}}.",
+          "nadiePuede": "Hoy nadie de tu inmobiliaria tiene ese permiso.",
+          "codigo": "Código de tu app de autenticación",
+          "verificar": "Verificar y reintentar",
+          "sinFactor": "Todavía no tienes el segundo factor activado en tu cuenta.",
+          "codigoIncorrecto": "Ese código no era. Prueba con el siguiente.",
+          "noPudeVerificar": "No pude verificar el código: {{motivo}}"
+        }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Espera tu respuesta",
+          "contestado": "Respondido",
+          "ejecutando": "Haciéndose",
+          "hecho": "Hecho",
+          "detenido": "Detenido",
+          "cancelado": "No se hizo",
+          "vencido": "Venció"
+        },
+        "loQuePediste": "Lo que pediste: «{{cita}}»",
+        "pasos": "Los pasos del plan",
+        "paso": {
+          "estado": {
+            "pendiente": "Pendiente",
+            "hecho": "Hecho",
+            "fallido": "No se pudo",
+            "en_curso": "Sigue corriendo",
+            "omitido": "No hizo falta"
+          },
+          "dependeDe": "Se puede cuando esté hecho el paso {{n}}.",
+          "pedisteDeshacer": "Pediste deshacerlo: la respuesta va abajo."
+        },
+        "seDetieneAntesDe": "El plan se detiene antes del paso {{n}} ({{que}}):",
+        "detenidoEn": "Se detuvo en el paso {{n}}:",
+        "hacerTodo": "Hacer todo",
+        "no": "No",
+        "noSeguir": "No seguir",
+        "reintentarDesde": "Reintentar desde el paso {{n}}",
+        "seguirDesde": "Seguir desde el paso {{n}}",
+        "llenaLoQueFalta": "Llena lo que falta en los pasos para poder hacerlo todo.",
+        "yaRespondiste": {
+          "hacer_plan": "Dijiste que sí: el avance va en la respuesta de abajo.",
+          "cancelar_plan": "Dijiste que no.",
+          "seguir_plan": "Pediste seguir: el avance va en la respuesta de abajo."
+        },
+        "vencido": "Este plan venció: pídemelo de nuevo y lo armo con los datos de ahora.",
+        "ensayo": "Ensayo: el plan está completo, pero nada se guarda ni se ejecuta.",
+        "mensaje": {
+          "hacerTodo": "Sí, hazlo todo",
+          "no": "No, no hagas el plan",
+          "seguir": "Sigue desde el paso {{n}}",
+          "noSeguir": "No sigas con el plan"
+        }
       }
     }
   },

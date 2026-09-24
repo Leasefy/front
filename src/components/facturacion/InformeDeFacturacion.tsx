@@ -48,7 +48,7 @@ export function InformeDeFacturacion({
    * El aviso decía «Se emitió 1 factura» y sólo ofrecía «Cerrar». Una → su PDF;
    * varias → el ZIP de ESTA corrida; más del tope → apagado diciendo por qué.
    */
-  const { descargarLote, descargando, zipEnElCentro } = useDescargarFacturas()
+  const { descargarLote, descargando } = useDescargarFacturas()
   const documentos = informe.documentos ?? []
   const noSeDescarga = motivoParaNoDescargarLote(documentos.length)
   const pendientes = quedaronPendientes(informe)
@@ -131,13 +131,8 @@ export function InformeDeFacturacion({
           {/* Más de 50: el ZIP lo arma el centro de procesos (22-09). */}
           {vaPorElCentro(documentos.length) && (
             <p className="mt-2 text-body-sm text-fg-muted" data-testid="facturacion-informe-por-el-centro">
-              {zipEnElCentro
-                ? `Armando el ZIP en el centro de procesos${
-                    zipEnElCentro.total
-                      ? ` · ${Math.min(zipEnElCentro.hechos, zipEnElCentro.total).toLocaleString('es-CO')} de ${zipEnElCentro.total.toLocaleString('es-CO')} PDF`
-                      : ''
-                  }. Si te vas, lo bajas desde el botón de procesos de arriba.`
-                : `Son ${numero(documentos.length)} facturas: el ZIP se arma en el centro de procesos y se baja de ahí.`}
+              {/* Sin «100 de 450 PDF» acá (23-09): el avance es del centro. */}
+              {`Son ${numero(documentos.length)} facturas: el ZIP se arma en el centro de procesos y se baja de ahí.`}
             </p>
           )}
           {documentos.length > 0 && noSeDescarga && (

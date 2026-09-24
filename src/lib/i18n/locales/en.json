@@ -1045,6 +1045,8 @@
       },
       "bandeja": {
         "titulo": "Inbox",
+        "queEs": "Decisions the agents left waiting for you, the one waiting longest first.",
+        "contadorParcial": "Showing {{mostrando}} of {{total}}",
         "verCaso": "View case",
         "vacia": "Nothing is waiting for you",
         "vaciaHint": "When an agent needs your decision, it shows up here.",
@@ -1076,26 +1078,28 @@
         "apagado": "Off",
         "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
         "cargando": "Reading the fleet state…",
-        "corriendo": "{{n}} agents running in this mode.",
-        "mixtoHint": "Agents don't share a mode: {{autonomo}} autopilot · {{copiloto}} copilot · {{sombra}} shadow. Pick one for the whole fleet or adjust per agent.",
+        "corriendo": "{{n}} agents act in this mode.",
+        "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",
+        "distintosCorto": "({{n}} in another mode)",
+        "cadaAgente": "Each agent",
+        "todaviaNo": "Don't act on their own yet (their mode is saved): {{agentes}}.",
         "aria": "Autopilot: {{modo}} mode. Open to change it",
         "elegir": "Pilot mode",
         "modo": {
-          "sombra": "Shadow",
+          "sombra": "Manual",
           "copiloto": "Copilot",
-          "autonomo": "Autopilot",
-          "mixto": "Mixed"
+          "autonomo": "Automatic"
         },
         "que": {
-          "sombra": "Watches, records and proposes. Contacts nobody, signs nothing, and doesn't interrupt you.",
-          "copiloto": "Prepares every action and leaves it in your inbox: nothing goes out without your OK.",
-          "autonomo": "Calls, writes and issues receipts on its own, within the law and your limits. Tells you what it did."
+          "sombra": "Prepares every action and leaves it in the Inbox with its button. Nothing goes out without you, and it doesn't interrupt you.",
+          "copiloto": "Prepares every action and leaves it in the Inbox with its button: nothing goes out without your OK. It tells you when something is waiting.",
+          "autonomo": "Agents that already know how to act on their own do it without asking, within collection hours (8 a.m.–7 p.m.); anything doubtful still goes to the Inbox, and they tell you what they did."
         },
-        "confirmarAutonomo": "On autopilot the Pilot calls, writes and issues receipts without asking. Switch it on?",
-        "confirmarSi": "Yes, autopilot",
+        "confirmarAutonomo": "In Automatic, agents that already act on their own call, write and reconcile exact matches without asking, within collection hours. Switch it on?",
+        "confirmarSi": "Yes, Automatic",
         "cancelar": "Cancel",
-        "toastOk": "Pilot in {{modo}} mode for the whole fleet",
-        "toastParcial": "Pilot in {{modo}} mode, except: {{agentes}}",
+        "toastOk": "Pilot in {{modo}} for every agent",
+        "toastParcial": "Pilot in {{modo}}, except: {{agentes}}",
         "toastFail": "Couldn't change the mode: {{error}}",
         "ahora": "Right now",
         "llamadas": "{{n}} call(s) in progress",
@@ -1133,7 +1137,7 @@
         "sinFuente": "We couldn't query the processes",
         "sinFuenteHint": "The source didn't answer; that doesn't mean nothing happened.",
         "fuenteCaida": "{{fuente}} didn't answer: those processes aren't in this list.",
-        "sinBack": "The ERP isn't connected to the Pilot: deposits don't show here.",
+        "sinBack": "The Pilot's reconciliation is switched off on the server: bank deposits don't show here or reach the Inbox. The tech team turns it on.",
         "contador": "{{visibles}} of {{total}}",
         "verPasos": "Show steps",
         "ocultarPasos": "Hide steps",
@@ -1169,15 +1173,18 @@
         "toastOk": "{{agente}} is now in {{modo}} mode",
         "toastFail": "Could not change the mode: {{error}}",
         "modo": {
-          "sombra": "Shadow",
+          "sombra": "Manual",
           "copiloto": "Copilot",
-          "autonomo": "Autonomous"
+          "autonomo": "Automatic"
         },
+        "noActuaSolo": "Doesn't act on its own yet",
         "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own.",
-        "contadorTitulo": "{{n}} of {{total}} agents can act on their own, with nobody approving"
+        "contadorTitulo": "{{n}} of {{total}} agents act on their own, with nobody approving"
       },
       "pulso": {
         "titulo": "Pilot pulse",
+        "midiendo": "Measuring what's happening now: calls, conversations, promises and decisions waiting for you.",
+        "queEs": "the Pilot pulse",
         "ahora": "In progress",
         "ahoraVacio": "Nothing in progress right now.",
         "alertas": "Alerts",
@@ -1190,7 +1197,7 @@
           "ok": "All under control",
           "atencion": "Needs your attention",
           "critico": "Needs action now",
-          "desconocido": "Unrecognized state"
+          "desconocido": "No reading"
         }
       },
       "cajon": {
@@ -1227,7 +1234,7 @@
       "gobierno": {
         "activo": "Active",
         "inactivo": "Off for your agency",
-        "apagadoServidor": "Off at the server",
+        "apagadoServidor": "Off at the server: the tech team turns it on",
         "proximamente": "Coming soon",
         "switchAria": "Turn {agente} on or off for your agency",
         "toastOn": "{agente} turned on for your agency",
@@ -1236,6 +1243,94 @@
       "catalogo": {
         "titulo": "All processes",
         "descripcion": "Every piece of the platform, process by process: what each one does, who runs it, what mode it is in and when it was last seen."
+      },
+      "operaSola": {
+        "boton": "Runs on its own?",
+        "pendientesAria": "{{n}} things missing for it to run on its own in Automatic",
+        "titulo": "Runs on its own?",
+        "descripcion": "What your whole agency still needs to run on its own in Automatic, and who unblocks it.",
+        "sinFuente": "I could not measure whether your agency runs on its own",
+        "sinFuenteHint": "I am not saying yes or no: the measurement did not answer. Open this panel again in a moment.",
+        "estadoListo": "Runs on its own in Automatic",
+        "estadoNoListo": "It does not run on its own yet",
+        "nadaQueFalta": "Nothing: everything that can run on its own, does.",
+        "afecta": "Affects: {{agentes}}",
+        "sinModoElegido": "nobody chose its mode",
+        "verProcesos": "See its {{n}} processes",
+        "ocultarProcesos": "Hide its processes",
+        "interruptoresAyuda": "Leasefy turns these on in the server, never the agency. This only says whether they are on, never their value.",
+        "migraciones": "Missing migrations (Leasefy applies them)",
+        "migracionSinAplicar": "not applied",
+        "migracionNoSe": "could not be checked",
+        "loQueHizoSinFuente": "I could not read what it did: the ERP did not answer.",
+        "secciones": {
+          "queFalta": "What is missing, and who unblocks it",
+          "porAgente": "By agent",
+          "interruptores": "Server switches",
+          "loQueHizo": "What it did in the last 30 days"
+        },
+        "quien": {
+          "leasefy": "Leasefy unblocks it",
+          "administrador": "An administrator unblocks it",
+          "programar": "It has to be built"
+        },
+        "estadoAgente": {
+          "listo": "Runs on its own",
+          "frenado": "Blocked",
+          "siempre_humano": "Asks for a click by rule",
+          "apagado": "Off"
+        },
+        "estadoProceso": {
+          "opera_solo": "Runs on its own",
+          "siempre_humano": "Always asks for a click",
+          "frenado": "Blocked",
+          "apagado": "Off"
+        },
+        "delegacion": {
+          "registrada": "on behalf of {{quien}}",
+          "falta": "not registered on whose behalf it acts",
+          "noMedida": "could not check on whose behalf it acts"
+        },
+        "interruptor": {
+          "encendido": "On",
+          "apagado": "Off",
+          "noSeVe": "Not visible from here",
+          "donde": {
+            "micro": "In the Pilot",
+            "back": "In the ERP"
+          }
+        }
+      },
+      "topes": {
+        "titulo": "Your limits in Automatic",
+        "descripcion": "How far the Pilot acts on its own. Above a limit, even in Automatic, it asks for your click.",
+        "sinFuente": "I could not read your limits: the Pilot did not answer.",
+        "fueraDeRango": "It must be between {{min}} and {{max}}.",
+        "porDefecto": "These are the Leasefy defaults: nobody has changed them yet.",
+        "cambiadoPor": "{{quien}} changed them on {{fecha}}.",
+        "guardar": "Save the limits",
+        "guardado": "Limits saved.",
+        "errorAlGuardar": "Not saved: {{error}}",
+        "topeMontoCop": {
+          "label": "Limit per action",
+          "ayuda": "The money in a single action (a receipt, a charge). With $0, every action with money asks for your click."
+        },
+        "topeDestinatarios": {
+          "label": "People per send",
+          "ayuda": "How many people can receive something in a single send. With 0, every send asks for your click."
+        },
+        "graciaSegundos": {
+          "label": "Seconds to undo",
+          "ayuda": "What the Pilot sends on its own waits this long with «Undo» in view. The minimum is one minute."
+        },
+        "horario": {
+          "titulo": "Legal schedule",
+          "ayuda": "Set by law, not editable: outside this schedule, the Pilot schedules it for the next opening."
+        },
+        "ventana": {
+          "cobranza": "Collections",
+          "aviso": "Notices"
+        }
       }
     },
     "mobileNav": {
@@ -1412,6 +1507,8 @@
         "bitacoraDesc": "Who did what with money: approving payouts, voiding, waiving, changing accounts.",
         "movimientos": "Activity log",
         "movimientosDesc": "Who did what across the panel, with their role and the outcome. Nobody can edit or delete it by hand.",
+        "proteccionDeDatos": "Data protection",
+        "proteccionDeDatosDesc": "Data subject requests (habeas data): deadlines, their data and the record of the answer",
         "slaDePqrs": "Response time",
         "slaDePqrsDesc": "How long you take to answer a PQRS, by type."
       },
@@ -1443,12 +1540,12 @@
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
         "panelTour": "Panel tour",
-        "panelTourDesc": "Guided walkthrough of the panel the first time you come in",
-        "panelTourEnabled": "Tour enabled — it will show on your next visit",
-        "panelTourDismissed": "Tour silenced on this device",
-        "panelTourSyncing": "Syncing preference…",
+        "panelTourDesc": "Shown only once per agency: the first time someone on the team opens the panel",
+        "panelTourPendiente": "Your agency hasn't seen it yet: it shows only once, the next time someone on the team opens the panel",
+        "panelTourVistoOmitido": "Your agency already saw it: {{quien}} skipped it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoCompleto": "Your agency already saw it: {{quien}} finished it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoSinQuien": "Your agency already saw it on {{fecha}}. It won't show up on its own again",
         "relaunchTour": "See the tour now",
-        "relaunchTourDesc": "See the walkthrough again without changing your preference",
         "relaunchTourStarted": "Tour started — follow the hints on screen"
       },
       "security": {
@@ -1980,7 +2077,8 @@
         "exportError": "Could not export. Try again.",
         "createError": "Could not create the owner. Please try again.",
         "updateError": "Could not update the owner. Please try again.",
-        "deleteError": "Could not delete the owner. Please try again."
+        "deleteError": "Could not delete the owner. Please try again.",
+        "loadForEditError": "Could not open the owner record for editing. Try again in a moment."
       },
       "detail": {
         "title": "Owner Details",
@@ -2600,6 +2698,33 @@
         "errorAlCargar": "The bank list could not be loaded.",
         "desde": "From {{banco}} · {{tipo}}",
         "teProponemosLaUltima": "We suggest the last account you transferred from."
+      },
+      "lote": {
+        "archivoAnulado": {
+          "titulo": "{{n}} payments in this batch already went out in the file of a cancelled batch",
+          "tituloUno": "1 payment in this batch already went out in the file of a cancelled batch",
+          "texto": "That file was generated and may have been uploaded to the bank. Before sending this batch for approval, check in the bank portal that those payments were NOT processed: if they were, paying them again pays the owner twice.",
+          "fila": "went out in the file of {{generado}}; that batch was cancelled on {{anulado}}",
+          "motivo": "Cancellation reason: {{motivo}}",
+          "alArmar": "Check the batch warning: {{n}} of these payments already went out in the file of a cancelled batch."
+        },
+        "anular": {
+          "confirmaArchivo": "I confirm I checked in the bank portal that this file was NOT processed. If it reached the bank, cancelling this batch makes its payments go out twice.",
+          "avisoArchivo": "This batch file was already generated and may have been uploaded to the bank.",
+          "faltaConfirmar": "Tick the confirmation: this batch file was already generated."
+        }
+      },
+      "enUnLote": {
+        "titulo": "This settlement is already in a batch",
+        "irAlLote": "Open the batch"
+      },
+      "giroDevuelto": {
+        "soporte": "Bank support (required)",
+        "soporteAyuda": "The bank statement or receipt of the return, as PDF or image, up to 10 MB. It is stored with the transfer: a return pays the owner again, and without the bank document it is not recorded.",
+        "faltaSoporte": "Attach the bank support to mark the transfer as returned.",
+        "verSoporte": "View support",
+        "soporteNoAbre": "The bank support could not be opened.",
+        "noApruebasLoQueDevolviste": "You recorded the return of a transfer in this batch: someone else approves it. It is the second pair of eyes on a payment made twice."
       }
     },
     "operaciones": {
@@ -4931,6 +5056,7 @@
         "optional": "Optional",
         "bankDataTitle": "Bank details for disbursements",
         "bankDataInfo": "This information will be used to transfer the monthly rent to the owner, after deducting the management commission.",
+        "bankDataHidden": "Your role cannot see owners’ bank accounts. Saving here leaves the account untouched; someone with access to payouts registers or corrects it.",
         "bank": "Bank",
         "selectBank": "Select bank...",
         "accountType": "Account type",
@@ -4986,7 +5112,8 @@
           "NIT": "NIT",
           "PASSPORT": "Passport",
           "PPT": "PPT"
-        }
+        },
+        "emailSoloAdministrador": "Only an administrator can change an owner’s email: it is how they confirm bank account changes and how they sign in to their portal."
       },
       "stats": {
         "properties": "Properties",
@@ -7828,7 +7955,12 @@
           "calidad": "Listing quality",
           "prospectos": "Prospects",
           "aprobaciones": "Owner approvals",
-          "mantenimiento": "Maintenance"
+          "mantenimiento": "Maintenance",
+          "chat": "The chat",
+          "contratos": "Contracts",
+          "facturacion": "Billing and cash",
+          "propietarios": "Owners",
+          "contabilidad": "Accounting"
         },
         "rol": {
           "cobrador": "Collector",
@@ -7911,12 +8043,12 @@
           "vallaTitle": "Agent limits",
           "vallaEmpty": "No limits published for this agent yet.",
           "modo": {
-            "sombra": "Shadow",
-            "sombraHint": "Only observes and suggests silently",
+            "sombra": "Manual",
+            "sombraHint": "Prepares and leaves the decision to you, without notifying",
             "copiloto": "Copilot",
-            "copilotoHint": "Suggests; nothing is applied without a human",
-            "autonomo": "Autonomous",
-            "autonomoHint": "Executes within the approved limits"
+            "copilotoHint": "Prepares; nothing goes out without your OK",
+            "autonomo": "Automatic",
+            "autonomoHint": "Acts on its own where it already knows how, within the law"
           },
           "modoTitle": "How much the agent decides on its own",
           "modoActivo": "Active mode",
@@ -10079,7 +10211,7 @@
         },
         "piloto": {
           "titulo": "You decide how much the AI does alone",
-          "cuerpo": "Shadow watches and proposes. Copilot leaves each action ready for your approval. Automatic acts within the law and your limits.",
+          "cuerpo": "Manual and Copilot leave each action ready in the Inbox for your approval (Manual, without notifying you). Automatic lets agents that already know how act on their own, within the law.",
           "dato": "This pill changes the mode for the whole fleet, or you can tune it agent by agent."
         },
         "chat": {
@@ -10109,6 +10241,11 @@
       "elInmueble": "the property",
       "elContrato": "the contract",
       "viendoCopia": "You are without signal. You are seeing the copy saved on {{cuando}}; whatever you fill in uploads when the signal returns."
+    },
+    "egresos": {
+      "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
+      "anularAnulado": "This disbursement is already cancelled.",
+      "anulado": "Disbursement cancelled. It is unpaid again."
     }
   },
   "validation": {
@@ -10318,9 +10455,40 @@
       "planNotFound": "The selected plan was not found. Go back to the plans list.",
       "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
-      "securePayment": "Secure payment processed by Stripe",
+      "securePayment": "Secure PSE payment, processed by Wompi",
       "cancelAnytime": "Cancel anytime. No commitments.",
-      "paymentSuccess": "Payment successful! {{name}} plan activated."
+      "paymentSuccess": "Payment successful! {{name}} plan activated.",
+      "pseTitle": "PSE payment details",
+      "pseHint": "We take you to your bank to approve the payment. The plan is activated once the bank confirms it.",
+      "bank": "Bank",
+      "bankPlaceholder": "Choose your bank",
+      "banksError": "We couldn't load the list of banks. Reload the page to try again.",
+      "personType": "Person type",
+      "personNatural": "Individual",
+      "personJuridica": "Company",
+      "documentType": "Document type",
+      "documentTypes": {
+        "CC": "Citizen ID (CC)",
+        "CE": "Foreigner ID (CE)",
+        "NIT": "NIT",
+        "PP": "Passport"
+      },
+      "documentNumber": "Document number",
+      "fullName": "Account holder name",
+      "email": "Email",
+      "completePayerData": "Complete the payment details: bank, document (6 to 15 digits), name and email.",
+      "bankLinkMissing": "Your bank hasn't returned the payment link yet. Try again in a few minutes.",
+      "paymentStartError": "We couldn't start the payment. Try again.",
+      "priceLoading": "The price comes from the server; if it doesn't show up, reload the page.",
+      "yearlySaving": "-{{percent}}%",
+      "noPuedePagar": "You can't pay for this plan right now",
+      "resultadoTitulo": "Your plan payment",
+      "resultadoAprobado": "The bank approved the payment: your {{name}} plan is active.",
+      "resultadoRechazado": "The bank didn't approve the payment. You weren't charged for the plan.",
+      "resultadoPendiente": "We're waiting for the bank's confirmation. This can take a few minutes; you can close this page, the plan activates on its own when the bank confirms.",
+      "resultadoError": "We couldn't check how the payment ended. Check your plan in Settings in a few minutes.",
+      "resultadoIrAlPanel": "Go to my panel",
+      "resultadoIntentarDeNuevo": "Try again"
     },
     "upgrade": {
       "unlockPotential": "Unlock the full potential",
@@ -11126,12 +11294,38 @@
       "endYes": "End",
       "endCancel": "Cancel"
     },
+    "cerebro": {
+      "boton": "Should I learn this?",
+      "ayuda": "Only you see this, as the administrator: decide what the chat learns from this answer.",
+      "titulo": "What I would learn from this answer",
+      "cargando": "Checking what can be learned…",
+      "error": "I couldn't check it. Try again.",
+      "reintentar": "Retry",
+      "errorGuardar": "I couldn't save it. Try again.",
+      "nada": "There is nothing to learn from this answer yet.",
+      "aprender": "Yes, learn it",
+      "descartar": "No",
+      "aprendido": "Learned",
+      "descartado": "Not learning it",
+      "aprendidoToast": "Done: I learned it",
+      "descartadoToast": "Done: I won't learn it",
+      "sinUso": "It was learned. Using what the chat learns is turned off in this installation: I'll take it into account once it is turned on.",
+      "cerrar": "Close",
+      "origen": {
+        "accion_deshecha": "From an action that was undone",
+        "ambiguedad": "From the card picked among several",
+        "definicion": "From what something is called here",
+        "apodo": "From a nickname used here"
+      }
+    },
     "actions": {
       "copy": "Copy response",
       "copied": "Response copied",
       "copyError": "Couldn't copy. Select the text and press Cmd+C.",
       "regenerate": "Regenerate",
       "regenerating": "Generating again…",
+      "reintentar": "Retry",
+      "reintentando": "Retrying…",
       "busy": "Wait for the current response to finish.",
       "like": "Helpful response",
       "dislike": "Unhelpful response",
@@ -11176,9 +11370,262 @@
         "consultAgent": "Consult the {{agent}} specialist"
       },
       "detail": {
-        "cartera": "{{deudores}} debtors in management · {{escalaciones}} escalations · {{prejuridico}} pre-legal",
-        "carteraVacia": "No portfolio data for this agency",
-        "toolRunning": "Querying {{herramienta}}"
+        "toolRunning": "Querying {{herramienta}}",
+        "carteraErp": "Receivables: {{cartera}} across {{contratos}} leases"
+      },
+      "activo": {
+        "cartera": "Reading your receivables and what I already know about your agency…",
+        "entender": "Deciding how to solve it…",
+        "redactar": "Writing the answer…"
+      },
+      "avance": "{{hechos}} of {{total}}"
+    },
+    "forma": {
+      "resultados": "Results",
+      "fila": "{{n}} row",
+      "filas": "{{n}} rows",
+      "filasDe": "{{n}} of {{total}} rows",
+      "verTodas": "See all {{n}} rows",
+      "verMenos": "See less",
+      "estado": {
+        "activo": "Active",
+        "firmado": "Signed",
+        "vencido": "Expired",
+        "terminado": "Terminated",
+        "cancelado": "Cancelled",
+        "borrador": "Draft",
+        "pendiente": "Pending",
+        "porFirmar": "Awaiting signature",
+        "parcial": "Partial payment",
+        "enMora": "Overdue",
+        "incumplido": "Defaulted",
+        "pagado": "Paid",
+        "renovacionPendiente": "To renew",
+        "notificado": "Notified",
+        "enNegociacion": "Negotiating",
+        "aprobada": "Approved",
+        "firmada": "Signed",
+        "renovado": "Renewed",
+        "noRenueva": "Not renewing",
+        "reportado": "Reported",
+        "cotizado": "Quoted",
+        "aprobado": "Approved",
+        "enCurso": "In progress",
+        "girado": "Paid out",
+        "fallido": "Failed"
+      },
+      "semaforo": {
+        "mora": "Overdue · {{dias}} days",
+        "vence": "Ends in {{dias}} days",
+        "alDia": "Up to date"
+      },
+      "papel": {
+        "inquilino": "Tenant",
+        "coarrendatario": "Co-tenant",
+        "propietario": "Owner",
+        "inmueble": "Property",
+        "contrato": "Lease",
+        "postulante": "Applicant",
+        "lead": "Lead",
+        "contacto": "Contact",
+        "proveedor": "Supplier"
+      },
+      "pedir": {
+        "estadoDeCuenta": "Give me the account statement for {{nombre}}",
+        "renovar": "Prepare the renewal of lease #{{codigo}}"
+      },
+      "accion": {
+        "estadoDeCuenta": "Account statement",
+        "renovar": "Prepare renewal"
+      },
+      "canon": "rent",
+      "fin": "Ends",
+      "propietario": "Owner",
+      "inquilino": "Tenant",
+      "cartera": "Receivables",
+      "sinCartera": "No installments",
+      "otroContrato": "And {{n}} more lease in their history.",
+      "otrosContratos": "And {{n}} more leases in their history.",
+      "verFilasQueFaltan": "Show the {{n}} remaining rows",
+      "masInteres": "+ {{monto}} late interest",
+      "restaDelContrato": "Contract balance"
+    },
+    "estadoDeHoy": {
+      "cartera": "Receivables",
+      "contratosEnCartera": "Leases with debt",
+      "deudores": "Active debtors",
+      "pagadoHoy": "Paid today",
+      "llamadas": "Calls today",
+      "escalaciones": "Escalations",
+      "prejuridico": "Pre-legal"
+    },
+    "enElChat": {
+      "acciones": {
+        "titulo": "What I can do",
+        "ninguna": "There is nothing that can be done from here right now.",
+        "ocultarNo": "Hide the actions you can’t do",
+        "verNoUna": "Show 1 action you can’t do yet",
+        "verNoVarias": "Show {{n}} actions you can’t do yet",
+        "sePuedeDesde": "possible from {{fecha}}"
+      },
+      "riesgo": {
+        "plata": "Moves money",
+        "terceros": "Writes to someone else",
+        "irreversible": "Can’t be undone"
+      },
+      "modo": {
+        "manual": "Manual",
+        "copiloto": "Copilot",
+        "automatico": "Automatic"
+      },
+      "confirmacion": {
+        "si": "Yes, do it",
+        "no": "No",
+        "vencida": "It expired without an answer: if you still need it, ask me again."
+      },
+      "resultado": {
+        "hecha": "Done",
+        "fallida": "Couldn’t do it",
+        "cancelada": "Not done",
+        "deshecha": "Undone",
+        "deshacer": "Undo"
+      },
+      "formulario": {
+        "elige": "Choose an option",
+        "seguir": "Done, continue"
+      },
+      "mensaje": {
+        "si": "Yes, do it",
+        "no": "No, don’t do it",
+        "deshacer": "Undo: {{etiqueta}}",
+        "verFicha": "Show the record of {{titulo}}",
+        "reintentar": "Retry: {{titulo}}"
+      },
+      "verFicha": "Show record",
+      "enlaceExterno": "opens in another tab ({{destino}})",
+      "verElResto": "See the rest",
+      "tarjeta": {
+        "estado": {
+          "propuesta": "Waiting for you",
+          "respondida": "Answered",
+          "en_curso": "In progress",
+          "en_gracia": "About to go out",
+          "hecha": "Done",
+          "cancelada": "Not done",
+          "deshecha": "Undone",
+          "vencida": "Expired",
+          "programada": "Scheduled",
+          "error": "Couldn’t do it",
+          "ensayo": "Dry run"
+        },
+        "propuesta": {
+          "hacerlo": "Do it",
+          "no": "No",
+          "dijisteSi": "You said yes.",
+          "dijisteNo": "You said no.",
+          "programada": "If you say yes, it will be scheduled for {{cuando}}.",
+          "ensayo": "Dry run: this will not be done or scheduled."
+        },
+        "riesgo": {
+          "titulo": "What it implies",
+          "irreversible": "Can’t be undone",
+          "plata": "Moves money",
+          "fiscal": "Tax (DIAN)",
+          "terceros": "Writes to someone else",
+          "masiva": "Bulk",
+          "masivaConTope": "Bulk (up to {{tope}})",
+          "dobleControl": "Dual control"
+        },
+        "vistaPrevia": {
+          "titulo": "What it will look like",
+          "sinVistaPrevia": "The ERP didn’t send a preview for this action.",
+          "verMas": "Show {{n}} more",
+          "verMenos": "Show less",
+          "si": "Yes",
+          "no": "No"
+        },
+        "dobleControl": {
+          "otraPersona": "Someone else approves this.",
+          "laPuedesHacerTu": "You are an administrator: you can approve it yourself (the log records it was the same person)."
+        },
+        "enCurso": {
+          "avance": "{{hechos}} of {{total}}",
+          "avanceSinTotal": "{{hechos}} done",
+          "barra": "Progress of {{titulo}}",
+          "cancelar": "Cancel",
+          "cancelacionPedida": "You asked to cancel it: it stops at the next step.",
+          "noPudeCancelar": "I couldn’t cancel it: {{motivo}}",
+          "noPudeLeer": "I couldn’t read the progress; still trying.",
+          "sinResultado": "It finished, but I couldn’t get the result. Ask me again in a moment."
+        },
+        "gracia": {
+          "seEnviaEn": "Sends in",
+          "enviando": "Sending…",
+          "anuncioInicio": "It sends in {{segundos}} seconds. You can undo it before then.",
+          "anuncioDiez": "10 seconds left to undo it.",
+          "anuncioFinal": "It is being sent: it can no longer be undone.",
+          "sinConfirmar": "I couldn’t confirm it went out. Ask me again in a moment.",
+          "pedisteDeshacer": "You asked to undo it."
+        },
+        "programada": {
+          "cuando": "I scheduled it for {{cuando}}.",
+          "saleConTuSesion": "Your session expires before then: it goes out as soon as you write to the chat again, within the allowed hours."
+        },
+        "error": {
+          "permiso": "Missing permission: {{modulo}} · {{accion}}",
+          "quienesPueden": "Who can do it: {{nombres}}.",
+          "nadiePuede": "Nobody in your agency has that permission today.",
+          "codigo": "Code from your authenticator app",
+          "verificar": "Verify and retry",
+          "sinFactor": "You don’t have the second factor turned on in your account yet.",
+          "codigoIncorrecto": "That code didn’t work. Try the next one.",
+          "noPudeVerificar": "I couldn’t verify the code: {{motivo}}"
+        }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Waiting for your answer",
+          "contestado": "Answered",
+          "ejecutando": "In progress",
+          "hecho": "Done",
+          "detenido": "Stopped",
+          "cancelado": "Not done",
+          "vencido": "Expired"
+        },
+        "loQuePediste": "What you asked: “{{cita}}”",
+        "pasos": "Plan steps",
+        "paso": {
+          "estado": {
+            "pendiente": "Pending",
+            "hecho": "Done",
+            "fallido": "Failed",
+            "en_curso": "Still running",
+            "omitido": "Not needed"
+          },
+          "dependeDe": "Possible once step {{n}} is done.",
+          "pedisteDeshacer": "You asked to undo it: the answer is below."
+        },
+        "seDetieneAntesDe": "The plan stops before step {{n}} ({{que}}):",
+        "detenidoEn": "Stopped at step {{n}}:",
+        "hacerTodo": "Do it all",
+        "no": "No",
+        "noSeguir": "Don’t continue",
+        "reintentarDesde": "Retry from step {{n}}",
+        "seguirDesde": "Continue from step {{n}}",
+        "llenaLoQueFalta": "Fill in what’s missing in the steps to do it all.",
+        "yaRespondiste": {
+          "hacer_plan": "You said yes: progress is in the answer below.",
+          "cancelar_plan": "You said no.",
+          "seguir_plan": "You asked to continue: progress is in the answer below."
+        },
+        "vencido": "This plan expired: ask me again and I’ll build it with current data.",
+        "ensayo": "Dry run: the plan is complete, but nothing is saved or executed.",
+        "mensaje": {
+          "hacerTodo": "Yes, do it all",
+          "no": "No, don’t do the plan",
+          "seguir": "Continue from step {{n}}",
+          "noSeguir": "Don’t continue the plan"
+        }
       }
     }
   },

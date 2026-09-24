@@ -23,6 +23,7 @@
  * (threat T-v7-03-09). Dates are Colombian (es-CO). Additive — new route only.
  */
 
+import { use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -293,7 +294,8 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
 // Page
 // ============================================================================
 
-export default function CaseDetailPage({ params }: { params: { caseId: string } }) {
+export default function CaseDetailPage(props: { params: Promise<{ caseId: string }> }) {
+  const params = use(props.params);
   const { locale } = useI18n();
   const { cases, isLoading, error } = useTenantCases();
 

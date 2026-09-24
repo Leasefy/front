@@ -259,7 +259,7 @@ describe('HubDeContabilidad — CT2: reprocesar pide confirmación', () => {
     expect($('[data-testid="confirmar-reproceso-dialogo"]')).toBeNull();
   });
 
-  it('si reprocesar falla, lo dice y el diálogo sigue abierto', async () => {
+  it('si reprocesar falla, lo dice (y el reintento vive en la fila del centro)', async () => {
     api.asientos.reprocesar.mockRejectedValue(new ApiError(500, 'El servidor no pudo.'));
     await montar();
     await clic($('[data-testid="reprocesar-asientos"]'));
@@ -267,7 +267,31 @@ describe('HubDeContabilidad — CT2: reprocesar pide confirmación', () => {
 
     expect(toastMock.error).toHaveBeenCalledTimes(1);
     expect(toastMock.success).not.toHaveBeenCalled();
-    expect($('[data-testid="confirmar-reproceso-dialogo"]')).not.toBeNull();
+  });
+
+  it('🔴 23-09: el diálogo se cierra APENAS se confirma, sin «Asentando…» ni «Reprocesando…» mientras corre', async () => {
+    // Nico: «ya tenemos centro de procesos, todas las cargas déjalas que
+    // sucedan allí y deja la pantalla quieta».
+    let terminar: (r: unknown) => void = () => {};
+    api.asientos.reprocesar.mockImplementation(() => new Promise((r) => (terminar = r)));
+    await montar();
+    await clic($('[data-testid="reprocesar-asientos"]'));
+    await clic($('[data-testid="confirmar-reproceso"]'));
+
+    expect(api.asientos.reprocesar).toHaveBeenCalledTimes(1);
+    expect($('[data-testid="confirmar-reproceso-dialogo"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('Asentando…');
+    expect(document.body.textContent).not.toContain('Reprocesando…');
+    // Apagado mientras corre, diciendo dónde mirar.
+    const boton = $('[data-testid="reprocesar-asientos"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(boton.getAttribute('title')).toContain('centro de procesos');
+
+    await act(async () => {
+      terminar({ asentados: 2, sinResolver: 0, motivos: [] });
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(toastMock.success).toHaveBeenCalledWith('2 asientos generados.');
   });
 });
 

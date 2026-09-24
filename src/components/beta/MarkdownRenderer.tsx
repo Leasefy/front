@@ -1,12 +1,16 @@
 'use client';
 
-import { useRef, type ReactNode } from 'react';
+import { Children, isValidElement, useRef, type ReactNode } from 'react';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { rehypeRevelar } from '@/lib/chat/rehype-revelar';
 import { prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import { intencionDelEnlace } from '@/lib/chat/acciones-del-hilo';
+import { useBetaChatOpcional } from '@/lib/context/BetaChatContext';
+import { useI18n } from '@/lib/i18n';
 
 interface MarkdownRendererProps {
   content: string;
@@ -58,6 +62,83 @@ export function destinoExterno(href: string | undefined | null): string | null {
   return `${url.hostname}${corta}`;
 }
 
+/** El texto plano de lo que va dentro de un enlace (para mandarlo como mensaje). */
+export function textoDe(nodo: ReactNode): string {
+  let salida = '';
+  Children.forEach(nodo, (hijo) => {
+    if (typeof hijo === 'string' || typeof hijo === 'number') salida += String(hijo);
+    else if (isValidElement<{ children?: ReactNode }>(hijo)) salida += textoDe(hijo.props.children);
+  });
+  return salida;
+}
+
+/**
+ * Un enlace de la respuesta, SIN sacar de la conversación (Nico, 23-09:
+ * «debe todo funcionar dentro del chat»).
+ *
+ *   · Interno (`/panel/…`): antes abría la pantalla en otra pestaña. Ahora es
+ *     un MENSAJE DE LA PERSONA con el texto del enlace; si la ruta nombra una
+ *     entidad (un contrato, un propietario…), lleva la intención de ver su
+ *     ficha y el micro la trae al hilo. Sin chat alrededor, es texto.
+ *   · Externo (otro dominio, http/https): se abre en otra pestaña CON AVISO —
+ *     el dominio al lado y un ícono que lo dice— para que un «Ver estado de
+ *     cuenta» que va a otro sitio se vea antes del clic.
+ *   · Correo y teléfono: texto, una sola vez. GFM convierte
+ *     «mateo@ejemplo.com» en un enlace y el dominio se pintaba al lado:
+ *     «mateo@ejemplo.com (mateo@ejemplo.com)» (captura de Nico, 23-09).
+ *   · Cualquier otro esquema: texto. Nada que el modelo escriba se ejecuta.
+ */
+function EnlaceDelChat({ href, children }: { href?: string; children?: ReactNode }) {
+  const chat = useBetaChatOpcional();
+  const { t } = useI18n();
+  const crudo = (href ?? '').trim();
+  const visible = textoDe(children).trim();
+
+  if (/^(mailto|tel):/i.test(crudo)) {
+    const direccion = decodeURIComponent(crudo.replace(/^(mailto|tel):/i, ''));
+    return (
+      <span>
+        {children}
+        {visible && visible !== direccion && <span className="ml-1 font-mono text-[14px] text-muted-foreground">({direccion})</span>}
+      </span>
+    );
+  }
+
+  const destino = destinoExterno(crudo);
+  if (destino) {
+    if (!/^(https?:)?\/\//i.test(crudo)) return <span>{children}</span>;
+    return (
+      <a
+        href={crudo}
+        className="text-primary hover:underline"
+        target="_blank"
+        rel="noopener noreferrer"
+        title={crudo}
+        aria-label={`${visible} — ${t('beta.enElChat.enlaceExterno', { destino })}`}
+      >
+        {children}
+        <span className="ml-1 inline-flex items-center gap-0.5 font-mono text-[14px] text-muted-foreground">
+          <ArrowSquareOut className="size-3.5" aria-hidden />({destino})
+        </span>
+      </a>
+    );
+  }
+
+  // Interno: un mensaje de la persona, no una pantalla.
+  if (!chat || !crudo || crudo.startsWith('#') || !visible) return <span>{children}</span>;
+  const ocupado = chat.isThinking || chat.isStreaming || chat.isAgentsRunning;
+  return (
+    <button
+      type="button"
+      disabled={ocupado}
+      className="text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+      onClick={() => chat.sendMessage(visible, { intencion: intencionDelEnlace(crudo) })}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * Custom component overrides for chat-context markdown.
  * Tighter spacing, chat-appropriate sizing, dark mode compatible.
@@ -81,23 +162,7 @@ const markdownComponents: Components = {
   em: ({ children }) => (
     <em className="italic">{children}</em>
   ),
-  a: ({ href, children }) => {
-    const destino = destinoExterno(href);
-    return (
-      <a
-        href={href}
-        className="text-primary hover:underline"
-        target="_blank"
-        rel="noopener noreferrer"
-        title={destino ? href : undefined}
-      >
-        {children}
-        {destino && (
-          <span className="ml-1 font-mono text-[14px] text-muted-foreground">({destino})</span>
-        )}
-      </a>
-    );
-  },
+  a: ({ href, children }) => <EnlaceDelChat href={href}>{children}</EnlaceDelChat>,
   // Ninguna imagen se carga: se dice que había una y adónde apuntaba. Ver
   // «Por qué no se pintan imágenes» abajo.
   img: ({ src, alt }) => {

@@ -11355,7 +11355,10 @@
       "cartera": "Cartera",
       "sinCartera": "Sin cuotas",
       "otroContrato": "Y {{n}} contrato más en su historial.",
-      "otrosContratos": "Y {{n}} contratos más en su historial."
+      "otrosContratos": "Y {{n}} contratos más en su historial.",
+      "verFilasQueFaltan": "Ver las {{n}} filas que faltan",
+      "masInteres": "+ {{monto}} de interés de mora",
+      "restaDelContrato": "Resta del contrato"
     },
     "estadoDeHoy": {
       "cartera": "Cartera por cobrar",
@@ -11365,6 +11368,51 @@
       "llamadas": "Llamadas hoy",
       "escalaciones": "Escalaciones",
       "prejuridico": "Prejurídico"
+    },
+    "enElChat": {
+      "acciones": {
+        "titulo": "Lo que puedo hacer",
+        "ninguna": "Ahora no hay nada que se pueda hacer desde aquí.",
+        "ocultarNo": "Ocultar las acciones que no puedes hacer",
+        "verNoUna": "Ver 1 acción que todavía no puedes hacer",
+        "verNoVarias": "Ver {{n}} acciones que todavía no puedes hacer",
+        "sePuedeDesde": "se puede desde el {{fecha}}"
+      },
+      "riesgo": {
+        "plata": "Mueve plata",
+        "terceros": "Le escribe a otra persona",
+        "irreversible": "No se puede deshacer"
+      },
+      "modo": {
+        "manual": "Manual",
+        "copiloto": "Copiloto",
+        "automatico": "Automático"
+      },
+      "confirmacion": {
+        "si": "Sí, hazlo",
+        "no": "No",
+        "vencida": "Venció sin respuesta: si todavía lo necesitas, pídemelo de nuevo."
+      },
+      "resultado": {
+        "hecha": "Hecho",
+        "fallida": "No se pudo",
+        "cancelada": "No se hizo",
+        "deshecha": "Deshecho",
+        "deshacer": "Deshacer"
+      },
+      "formulario": {
+        "elige": "Elige una opción",
+        "seguir": "Listo, sigue"
+      },
+      "mensaje": {
+        "si": "Sí, hazlo",
+        "no": "No, no lo hagas",
+        "deshacer": "Deshacer: {{etiqueta}}",
+        "verFicha": "Ver la ficha de {{titulo}}"
+      },
+      "verFicha": "Ver ficha",
+      "enlaceExterno": "se abre en otra pestaña ({{destino}})",
+      "verElResto": "Ver el resto"
     }
   },
   "landlordProfile": {

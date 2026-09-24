@@ -108,6 +108,8 @@ describe('leerEntidades — persona → contratos → inmueble → propietario �
       carteraCop: 2500000,
       porVencerCop: 0,
       diasDeMoraMaximo: 12,
+      // Sin interés en el payload, 0 (nunca `undefined` en la tarjeta).
+      interesDeMoraCop: 0,
     });
   });
 

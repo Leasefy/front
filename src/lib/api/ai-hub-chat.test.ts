@@ -7,8 +7,6 @@ vi.mock('@/lib/api/agent-auth', () => ({
 
 import {
   backendAgentToFrontType,
-  targetToHref,
-  targetTienePantalla,
   suggestedActionToResponseAction,
   dispatchToAgentExecution,
   splitSSEEvents,
@@ -28,60 +26,43 @@ describe('backendAgentToFrontType', () => {
   });
 });
 
-describe('targetToHref', () => {
-  it('routes known targets and falls back to the hub for the rest', () => {
-    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/pagos/cobranza');
-    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad');
-    expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/pagos');
-    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/pagos/cobranza');
-    // Evaluación de candidatos está oculta (Nico, 2026-09-08): sin workspace,
-    // el target cae al Piloto como cualquier meta sin pantalla.
-    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/piloto');
-    expect(targetToHref('conciliacion')).toBe('/panel/inmobiliaria/conciliacion');
-  });
-});
-
 describe('suggestedActionToResponseAction', () => {
-  it('first is primary, rest secondary; carries href + icon', () => {
-    const first = suggestedActionToResponseAction(
-      { label: 'Ver cobranza', target: 'cobranza' },
+  it('first is primary, rest secondary; carries icon', () => {
+    const first = suggestedActionToResponseAction({ label: 'Ver cobranza', target: 'cobranza' }, 0);
+    expect(first).toMatchObject({ label: 'Ver cobranza', variant: 'primary' });
+    expect(first.icon.length).toBeGreaterThan(0);
+    expect(suggestedActionToResponseAction({ label: 'x', target: 'pagos' }, 1).variant).toBe('secondary');
+  });
+
+  // 🔴 Nico, 23-09 (22:51), con la captura de «Ver contrato 24» y «Gestionar
+  // cobranza de Mateo Pérez» sacándolo del chat: «Debe todo funcionar dentro
+  // del chat». Hasta ese día una sugerencia con pantalla NAVEGABA; ahora
+  // ninguna: todas son un mensaje de la persona.
+  it('ninguna sugerencia navega: todas preguntan en el chat, con o sin pantalla en el panel', () => {
+    const metas = ['cobranza', 'cotizador', 'estudio', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
+    for (const t of metas) {
+      const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
+      expect(a.prompt, t).toBe(`ir a ${t}`);
+      expect('href' in a, t).toBe(false);
+    }
+  });
+
+  it('lleva la intención que el micro le pegó (el siguiente clic no adivina el texto)', () => {
+    const a = suggestedActionToResponseAction(
+      {
+        label: 'Ver contrato 24',
+        target: 'cartera',
+        intencion: { accion: 'ver', entidad: { tipo: 'contrato', id: '24' } },
+      },
       0,
     );
-    expect(first).toMatchObject({
-      label: 'Ver cobranza',
-      href: '/panel/inmobiliaria/pagos/cobranza',
-      variant: 'primary',
-    });
-    expect(first.icon.length).toBeGreaterThan(0);
-    expect(
-      suggestedActionToResponseAction({ label: 'x', target: 'pagos' }, 1).variant,
-    ).toBe('secondary');
-  });
-
-  // 🔴 Medido en vivo: «Ver inmuebles disponibles» mandaba su texto como un
-  // mensaje nuevo y dejaba al operador otros ~25 s esperando por una lista que
-  // el panel ya muestra. Sin `prompt` = el botón navega.
-  it('una acción con pantalla en el panel NAVEGA (no manda un prompt)', () => {
-    const a = suggestedActionToResponseAction({ label: 'Ver inmuebles disponibles', target: 'matching' }, 0);
-    expect(targetTienePantalla('matching')).toBe(true);
-    expect(a.prompt).toBeUndefined();
-    expect(a.href).toBe(targetToHref('matching'));
-  });
-
-  it('las metas del contrato con pantalla navegan; Evaluación de candidatos está oculta y pregunta', () => {
-    const conPantalla = ['cobranza', 'cotizador', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
-    for (const t of conPantalla) {
-      const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
-      expect(targetTienePantalla(t), t).toBe(true);
-      expect(a.prompt).toBeUndefined();
-    }
-    // `estudio` sigue en el contrato del micro, pero su sección está oculta
-    // (Nico, 2026-09-08): sin workspace no hay pantalla que abrir, así que el
-    // botón le pregunta al asistente en vez de mandar a una puerta que
-    // devuelve a Postulaciones.
-    const oculta = suggestedActionToResponseAction({ label: 'ir a estudio', target: 'estudio' }, 0);
-    expect(targetTienePantalla('estudio')).toBe(false);
-    expect(oculta.prompt).toBe('ir a estudio');
+    expect(a.intencion).toEqual({ accion: 'ver', entidad: { tipo: 'contrato', id: '24' } });
+    // Una intención mal formada se descarta: el botón manda sólo su texto.
+    const b = suggestedActionToResponseAction(
+      { label: 'x', target: 'pagos', intencion: { accion: 'ver', entidad: { tipo: 'agencia', id: 'otra' } } },
+      0,
+    );
+    expect(b.intencion).toBeUndefined();
   });
 });
 

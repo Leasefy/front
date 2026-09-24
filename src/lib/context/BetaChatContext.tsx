@@ -67,3 +67,12 @@ export function useBetaChatContext(): UseBetaChatReturn {
   }
   return context;
 }
+
+/**
+ * El chat si hay uno alrededor, o `null`. Para lo que se pinta dentro Y fuera
+ * del chat (el markdown): un enlace interno de una respuesta se vuelve un
+ * mensaje de la persona cuando hay chat; sin chat, es texto — nunca navega.
+ */
+export function useBetaChatOpcional(): UseBetaChatReturn | null {
+  return useContext(BetaChatContext);
+}

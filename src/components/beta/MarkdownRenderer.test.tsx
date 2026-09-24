@@ -11,7 +11,14 @@
  */
 
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const { chat } = vi.hoisted(() => ({
+  chat: { actual: null as null | { sendMessage: ReturnType<typeof vi.fn>; isThinking: boolean; isStreaming: boolean; isAgentsRunning: boolean } },
+}));
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+vi.mock('@/lib/context/BetaChatContext', () => ({ useBetaChatOpcional: () => chat.actual }));
+
 import { MarkdownRenderer, destinoExterno } from './MarkdownRenderer';
 
 function render(elemento: React.ReactElement): { container: HTMLElement } {
@@ -40,9 +47,47 @@ describe('MarkdownRenderer — respuestas de IA', () => {
     expect(a.getAttribute('rel')).toContain('noopener');
   });
 
-  it('un enlace interno del panel no lleva destino al lado', () => {
-    const { container } = render(<MarkdownRenderer content={'[Contratos](/panel/inmobiliaria/contratos)'} />);
-    expect(container.querySelector('a')!.textContent).toBe('Contratos');
+  it('un enlace a otro sitio avisa que se abre en otra pestaña', () => {
+    const { container } = render(<MarkdownRenderer content={'[Wompi](https://checkout.wompi.co/l/abc)'} />);
+    const a = container.querySelector('a')!;
+    expect(a.getAttribute('target')).toBe('_blank');
+    expect(a.getAttribute('aria-label')).toContain('se abre en otra pestaña (checkout.wompi.co/l/abc)');
+  });
+
+  // 🔴 Nico, 23-09 (22:51): «Debe todo funcionar dentro del chat». Un enlace
+  // interno abría la pantalla del panel en otra pestaña.
+  it('un enlace INTERNO no navega: sin chat es texto; con chat, un mensaje de la persona con intención', async () => {
+    const sinChat = render(<MarkdownRenderer content={'[Contratos](/panel/inmobiliaria/contratos)'} />);
+    expect(sinChat.container.querySelector('a')).toBeNull();
+    expect(sinChat.container.textContent).toBe('Contratos');
+
+    const { createRoot } = await import('react-dom/client');
+    const { act } = await import('react');
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    chat.actual = { sendMessage: vi.fn(), isThinking: false, isStreaming: false, isAgentsRunning: false };
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    act(() =>
+      root.render(
+        <MarkdownRenderer content={'Mira [el contrato #24](/panel/inmobiliaria/contratos/4a23f784-2050-4874-bfc4-bc9d1352794a).'} />,
+      ),
+    );
+    expect(el.querySelector('a')).toBeNull();
+    const boton = el.querySelector('button')!;
+    act(() => boton.click());
+    expect(chat.actual.sendMessage).toHaveBeenCalledWith('el contrato #24', {
+      intencion: { accion: 'ver', entidad: { tipo: 'contrato', id: '4a23f784-2050-4874-bfc4-bc9d1352794a' } },
+    });
+    act(() => root.unmount());
+    el.remove();
+    chat.actual = null;
+  });
+
+  it('el correo sale UNA vez (antes: «mateo@example.com (mateo@example.com)»)', () => {
+    const { container } = render(<MarkdownRenderer content={'Su correo es mateo.perez@example.com.'} />);
+    expect(container.textContent).toBe('Su correo es mateo.perez@example.com.');
+    expect(container.querySelector('a')).toBeNull();
   });
 
   it('destinoExterno recorta rutas largas y deja fuera lo interno', () => {

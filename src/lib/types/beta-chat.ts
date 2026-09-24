@@ -168,10 +168,11 @@ export interface ResponseAction {
    */
   prompt?: string;
   /**
-   * Sección de la app relacionada. Deja de ser lo que hace el botón y pasa a
-   * ser una salida SECUNDARIA, para cuando de verdad quieres ir a la pantalla.
+   * Lo que pide el botón, con forma (23-09, «todo en el chat»): viaja con el
+   * mensaje para que el micro lo atienda sin adivinar el texto. Ya no hay
+   * `href`: ningún botón del chat saca de la conversación (Nico, 23-09).
    */
-  href?: string;
+  intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
   /** Phosphor icon name */
   icon: string;
   /** Visual variant */
@@ -326,6 +327,18 @@ export interface ChatMessage {
    */
   bloques?: import('@/lib/chat/bloques').BloqueDeRespuesta[];
   entidades?: import('@/lib/chat/bloques').EntidadDelChat[];
+  /**
+   * «Todo en el chat» (Nico, 23-09): en un mensaje de la PERSONA, lo que pidió
+   * con un botón del hilo (la intención viaja con el texto). En uno del
+   * asistente, lo que se puede hacer (`acciones`), la tarjeta de «¿Lo hago?»
+   * (`confirmacion`), lo que pasó (`resultado`) y los datos que faltan
+   * (`formulario`). Ver `src/lib/chat/acciones-del-hilo.ts`.
+   */
+  intencion?: import('@/lib/chat/acciones-del-hilo').IntencionDelChat;
+  acciones?: import('@/lib/chat/acciones-del-hilo').AccionDelHilo[];
+  confirmacion?: import('@/lib/chat/acciones-del-hilo').ConfirmacionEnElHilo;
+  resultado?: import('@/lib/chat/acciones-del-hilo').ResultadoEnElHilo;
+  formulario?: import('@/lib/chat/acciones-del-hilo').FormularioEnElHilo;
   /**
    * El id de ESTE turno en el cerebro del micro (23-09), acuñado por el
    * servidor: llega en el `done` del stream y en la respuesta del POST. Con él

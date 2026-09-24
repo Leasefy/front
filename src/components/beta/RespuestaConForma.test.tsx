@@ -105,7 +105,7 @@ const JUAN: EntidadDelChat = {
       inmueble: { id: 'i-1', codigo: 7, titulo: 'Apto 301', direccion: 'Cra 7 # 45-10', ciudad: 'Bogotá' },
       propietarios: [{ id: 'o-1', nombre: 'Marta Gómez' }],
       renovacion: null,
-      cartera: { estado: 'ok', deudaTotalCop: 0, carteraCop: 0, porVencerCop: 0, diasDeMoraMaximo: 0 },
+      cartera: { estado: 'ok', deudaTotalCop: 0, carteraCop: 0, porVencerCop: 0, diasDeMoraMaximo: 0, interesDeMoraCop: 0 },
     },
   ],
 };
@@ -137,10 +137,72 @@ describe('RespuestaConForma', () => {
   it('muestra las primeras filas y el resto a un clic, sin empujar la conversación', () => {
     pintar(<RespuestaConForma bloques={[TABLA]} />);
     expect(container.querySelectorAll('tbody tr')).toHaveLength(FILAS_A_LA_VISTA);
-    const ver = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Ver las 12 filas')!;
+    const ver = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Ver las 4 filas que faltan')!;
     act(() => ver.click());
     expect(container.querySelectorAll('tbody tr')).toHaveLength(12);
     expect(ver.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  // Nico (23-09, 23:48): «darles una caja a los componentes de Cadence para
+  // el chat… y eso de "ver 9 filas" debería estar dentro del componente».
+  describe('cada bloque en su caja', () => {
+    const filas = (n: number): Extract<BloqueDeRespuesta, { tipo: 'tabla' }> => ({
+      ...TABLA,
+      titulo: 'Cuotas sin pagar',
+      filas: Array.from({ length: n }, (_, i) => ({ ...TABLA.filas[0], codigo: 1000 + i })),
+      total: n,
+      truncada: false,
+    });
+
+    it('con 9 filas no se esconde ninguna (una sola fila escondida no vale un botón)', () => {
+      pintar(<RespuestaConForma bloques={[filas(9)]} />);
+      expect(container.querySelectorAll('tbody tr')).toHaveLength(9);
+      expect([...container.querySelectorAll('button')].some((b) => /filas que faltan/.test(b.textContent ?? ''))).toBe(false);
+    });
+
+    it('con 20 se esconden 12, el botón lo dice y vive en el PIE de la caja de la tabla', () => {
+      pintar(<RespuestaConForma bloques={[filas(20)]} />);
+      const caja = container.querySelector('[data-testid="bloque-tabla"]')!;
+      expect(caja.querySelectorAll('tbody tr')).toHaveLength(8);
+      const pie = caja.querySelector('[data-pie-de-caja]')!;
+      const ver = pie.querySelector('button')!;
+      expect(ver.textContent).toBe('Ver las 12 filas que faltan');
+      // La cabecera de la caja dice qué es y cuántas.
+      expect(caja.querySelector('header')!.textContent).toBe('Cuotas sin pagar20 filas');
+      act(() => ver.click());
+      expect(caja.querySelectorAll('tbody tr')).toHaveLength(20);
+      expect(ver.textContent).toBe('Ver menos');
+    });
+
+    it('la cifra y el aviso también van en su caja (misma familia que la tarjeta)', () => {
+      pintar(
+        <RespuestaConForma
+          bloques={[
+            { tipo: 'metrica', titulo: 'Interés de mora · contrato #24', valor: 173_609, formato: 'moneda' },
+            { tipo: 'aviso', tono: 'info', texto: 'Muestro las 12 cuotas más recientes.' },
+          ]}
+        />
+      );
+      const cifra = container.querySelector('[data-testid="bloque-metricas"]')!;
+      expect(cifra.querySelector('header')!.textContent).toBe('Interés de mora · contrato #24');
+      expect(cifra.textContent).toMatch(/173[.,]609/);
+      expect(container.querySelector('[data-testid="bloque-aviso"]')!.textContent).toBe('Muestro las 12 cuotas más recientes.');
+    });
+  });
+
+  it('el interés de mora va DENTRO de la tarjeta, junto a la cartera (no como cifra suelta)', () => {
+    const conInteres: EntidadDelChat = {
+      ...JUAN,
+      contratos: [
+        {
+          ...JUAN.contratos[0],
+          cartera: { estado: 'ok', deudaTotalCop: 13_950_000, carteraCop: 13_950_000, porVencerCop: 0, diasDeMoraMaximo: 261, interesDeMoraCop: 173_609 },
+        },
+      ],
+    };
+    pintar(<RespuestaConForma entidades={[conInteres]} />);
+    expect(container.textContent).toMatch(/\+ \$\s?173[.,]609 de interés de mora/);
+    expect(container.querySelector('[data-testid="bloque-metricas"]')).toBeNull();
   });
 
   it('una cifra es una tarjeta de métrica; un aviso, un callout', () => {
@@ -170,7 +232,29 @@ describe('RespuestaConForma', () => {
     // P-7: a menos de 3 meses del fin, la renovación se ofrece EN el chat.
     const renovar = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Preparar renovación')!;
     act(() => renovar.click());
-    expect(contexto.sendMessage).toHaveBeenCalledWith('Prepara la renovación del contrato #101');
+    // 23-09 («todo en el chat»): el mensaje de la persona viaja con su
+    // intención, para que el micro la atienda con la ficha sin adivinar.
+    expect(contexto.sendMessage).toHaveBeenCalledWith('Prepara la renovación del contrato #101', {
+      intencion: { accion: 'abrir_renovacion', entidad: { tipo: 'contrato', id: 'c-1' } },
+    });
+  });
+
+  it('«Ver ficha» trae la ficha de ESA persona al hilo (un mensaje con intención, nunca otra pantalla)', () => {
+    pintar(<RespuestaConForma entidades={[JUAN]} turnoId="t-1" />);
+    const ver = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Ver ficha')!;
+    act(() => ver.click());
+    expect(contexto.sendMessage).toHaveBeenCalledWith('Ver la ficha de Juan Camilo López', {
+      intencion: { accion: 'ver', entidad: { tipo: 'persona', id: 'p-1' } },
+    });
+    // Y cuenta como tarjeta abierta para el cerebro (tipo + id, nada más).
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith('t-1', { tipo: 'inquilino', id: 'p-1' });
+    expect(container.querySelector('a[href]')).toBeNull();
+  });
+
+  it('con la lista completa de acciones de la ficha debajo, la tarjeta no repite sus atajos', () => {
+    pintar(<RespuestaConForma entidades={[JUAN]} conAcciones />);
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Ver ficha');
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Estado de cuenta');
   });
 
   it('una cifra que es el conteo de la tabla de al lado no se repite (el molde: una frase, una vez)', () => {
@@ -219,7 +303,7 @@ describe('las señales para el cerebro', () => {
 
   it('«Ver las N filas» cuenta al abrirse (sin entidad), no al cerrarse', () => {
     pintar(<RespuestaConForma bloques={[TABLA]} turnoId={TURNO} />);
-    act(() => boton('Ver las 12 filas').click());
+    act(() => boton('Ver las 4 filas que faltan').click());
     expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledTimes(1);
     expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO);
     act(() => boton('Ver menos').click());
@@ -237,7 +321,7 @@ describe('las señales para el cerebro', () => {
       turnoId: TURNO,
     };
     pintar(<AssistantBubble message={conTurno} />);
-    act(() => boton('Ver las 12 filas').click());
+    act(() => boton('Ver las 4 filas que faltan').click());
     expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO);
   });
 });

@@ -112,6 +112,8 @@ export type CarteraDeEntidad =
       carteraCop: number;
       porVencerCop: number;
       diasDeMoraMaximo: number;
+      /** El interés de mora, aparte del capital (0 si no hay o no vino). */
+      interesDeMoraCop: number;
     }
   | { estado: 'sin_cuotas' | 'no_disponible' };
 
@@ -153,6 +155,11 @@ export interface EntidadDelChat {
   contratos: ContratoDeEntidad[];
   totalContratos: number;
   otrosRoles: TipoDeEntidad[];
+  /**
+   * Con qué tipo se vuelve a pedir su ficha (`persona`, `contrato`…). Lo manda
+   * el camino directo del micro (23-09); sin él, sale del `tipo`.
+   */
+  tipoDeFicha?: string;
 }
 
 const TIPOS: TipoDeEntidad[] = [
@@ -178,6 +185,7 @@ function leerCartera(v: unknown): CarteraDeEntidad {
       carteraCop: numero(v.carteraCop) ?? 0,
       porVencerCop: numero(v.porVencerCop) ?? 0,
       diasDeMoraMaximo: numero(v.diasDeMoraMaximo) ?? 0,
+      interesDeMoraCop: numero(v.interesDeMoraCop) ?? 0,
     };
   }
   return { estado: esObjeto(v) && v.estado === 'sin_cuotas' ? 'sin_cuotas' : 'no_disponible' };
@@ -259,6 +267,7 @@ export function leerEntidades(v: unknown): EntidadDelChat[] {
       otrosRoles: Array.isArray(e.otrosRoles)
         ? (e.otrosRoles.filter((r) => TIPOS.includes(r as TipoDeEntidad)) as TipoDeEntidad[])
         : [],
+      ...(texto(e.tipoDeFicha) ? { tipoDeFicha: texto(e.tipoDeFicha) as string } : {}),
     });
   }
   return salida;

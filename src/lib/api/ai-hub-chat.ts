@@ -28,6 +28,12 @@ import {
   type IntencionDelChat,
   type ResultadoEnElHilo,
 } from '@/lib/chat/acciones-del-hilo';
+import {
+  leerEventoProcesoIniciado,
+  leerTarjetaDeEjecucion,
+  type EventoProcesoIniciado,
+  type TarjetaDeEjecucion,
+} from '@/lib/chat/tarjetas-de-ejecucion';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
@@ -293,6 +299,12 @@ export interface ChatStreamHandlers {
    * manda y el paso se queda con su indicador animado.
    */
   onProgreso?: (p: { texto: string; hechos?: number; total?: number }) => void;
+  /**
+   * La acción arrancó un PROCESO LARGO en el back (SSE `proceso_iniciado`,
+   * 24-09). Sale antes del `done`: el chat lo sigue con el Centro de procesos
+   * (con su propio JWT) y, cuando termina, pide la tarjeta al día al micro.
+   */
+  onProcesoIniciado?: (evento: EventoProcesoIniciado) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -311,6 +323,14 @@ export interface ChatStreamHandlers {
     confirmacion: ConfirmacionEnElHilo | null;
     resultado: ResultadoEnElHilo | null;
     formulario: FormularioEnElHilo | null;
+    /**
+     * La tarjeta del ejecutor (24-09): propuesta, en curso, resultado (con la
+     * gracia de P-10), programada o error. `null` con un micro de antes: ahí
+     * mandan `confirmacion` y `resultado`, como siempre.
+     */
+    ejecucion: TarjetaDeEjecucion | null;
+    /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
+    ensayo: boolean;
     /**
      * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
@@ -450,6 +470,12 @@ export function handleSSEEvent(
       }
       break;
     }
+    case 'proceso_iniciado': {
+      // Sin sus dos ids no hay qué seguir: se ignora sin romper el stream.
+      const evento = leerEventoProcesoIniciado(obj);
+      if (evento) handlers.onProcesoIniciado?.(evento);
+      break;
+    }
     case 'done': {
       const reintentable = leerReintentable(obj.reintentable);
       handlers.onDone?.({
@@ -465,6 +491,9 @@ export function handleSSEEvent(
         confirmacion: leerConfirmacion(obj.confirmacion),
         resultado: leerResultado(obj.resultado),
         formulario: leerFormulario(obj.formulario),
+        // Aditivo (24-09): un `done` viejo no las trae → `null` / `false`.
+        ejecucion: leerTarjetaDeEjecucion(obj.ejecucion),
+        ensayo: obj.ensayo === true,
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
       });
       break;
@@ -582,6 +611,39 @@ export async function resolveChatApproval(args: {
 }
 
 /**
+ * La tarjeta de HOY de una ejecución del chat (24-09):
+ * `GET /api/agency/:agencyId/ai-hub/chat/ejecuciones/:ejecucionId` → `{ tarjeta }`.
+ *
+ * 🔴 No es una lectura pasiva, y por eso sólo se llama en tres momentos: cuando
+ * termina la cuenta regresiva de la gracia de P-10, al volver a una programada
+ * cuya hora ya pasó y cuando el Centro de procesos ve terminar el proceso que
+ * arrancó la acción. Si lo programado ya tocaba, el micro lo manda AHORA con la
+ * sesión de la persona (una sola vez por ejecución); si había un proceso, lo
+ * cierra. Nunca en un bucle.
+ *
+ * `null` si el micro no la tiene (404: no es tuya, o falta su migración) o no
+ * se entiende; un fallo de red o un 5xx lanza (`ApiError`), para que quien la
+ * pidió decida si vuelve a preguntar.
+ */
+export async function fetchEjecucion(args: {
+  agencyId: string;
+  ejecucionId: string;
+  signal?: AbortSignal;
+}): Promise<TarjetaDeEjecucion | null> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/ejecuciones/${encodeURIComponent(args.ejecucionId)}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: agentAuthHeaders(),
+    ...(args.signal ? { signal: args.signal } : {}),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat ejecucion');
+  const cuerpo: unknown = await res.json().catch(() => null);
+  const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
+  return leerTarjetaDeEjecucion(tarjeta);
+}
+
+/**
  * Streaming turn over SSE. Calls the handlers in order as events arrive. Throws
  * if the request can't be opened (the caller falls back to postChatTurn).
  */
@@ -638,8 +700,10 @@ export interface ExecuteActionArgs {
 }
 
 /**
- * Execute a confirmed action proposal. Throws on non-2xx (the caller shows an
- * inline error on the ActionProposalCard and offers retry).
+ * Execute a confirmed action proposal. Throws on non-2xx (the caller keeps the
+ * error on the message). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
+ * se retiró el 24-09: ninguna pantalla la montaba; lo que el chat ejecuta hoy
+ * se ve con `TarjetaDeEjecucion`.
  */
 export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/actions/execute`;

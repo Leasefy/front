@@ -64,7 +64,7 @@ function esObjeto(v: unknown): v is Record<string, unknown> {
 }
 const texto = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 
-function leerEntidadDeLaIntencion(v: unknown): EntidadDeLaIntencion | null {
+export function leerEntidadDeLaIntencion(v: unknown): EntidadDeLaIntencion | null {
   if (!esObjeto(v)) return null;
   const tipo = v.tipo as TipoDeFicha;
   const id = texto(v.id);

@@ -11409,11 +11409,90 @@
         "si": "Yes, do it",
         "no": "No, don’t do it",
         "deshacer": "Undo: {{etiqueta}}",
-        "verFicha": "Show the record of {{titulo}}"
+        "verFicha": "Show the record of {{titulo}}",
+        "reintentar": "Retry: {{titulo}}"
       },
       "verFicha": "Show record",
       "enlaceExterno": "opens in another tab ({{destino}})",
-      "verElResto": "See the rest"
+      "verElResto": "See the rest",
+      "tarjeta": {
+        "estado": {
+          "propuesta": "Waiting for you",
+          "respondida": "Answered",
+          "en_curso": "In progress",
+          "en_gracia": "About to go out",
+          "hecha": "Done",
+          "cancelada": "Not done",
+          "deshecha": "Undone",
+          "vencida": "Expired",
+          "programada": "Scheduled",
+          "error": "Couldn’t do it",
+          "ensayo": "Dry run"
+        },
+        "propuesta": {
+          "hacerlo": "Do it",
+          "no": "No",
+          "dijisteSi": "You said yes.",
+          "dijisteNo": "You said no.",
+          "programada": "If you say yes, it will be scheduled for {{cuando}}.",
+          "ensayo": "Dry run: this will not be done or scheduled."
+        },
+        "riesgo": {
+          "titulo": "What it implies",
+          "irreversible": "Can’t be undone",
+          "plata": "Moves money",
+          "fiscal": "Tax (DIAN)",
+          "terceros": "Writes to someone else",
+          "masiva": "Bulk",
+          "masivaConTope": "Bulk (up to {{tope}})",
+          "dobleControl": "Dual control"
+        },
+        "vistaPrevia": {
+          "titulo": "What it will look like",
+          "sinVistaPrevia": "The ERP didn’t send a preview for this action.",
+          "verMas": "Show {{n}} more",
+          "verMenos": "Show less",
+          "si": "Yes",
+          "no": "No"
+        },
+        "dobleControl": {
+          "otraPersona": "Someone else approves this.",
+          "laPuedesHacerTu": "You are an administrator: you can approve it yourself (the log records it was the same person)."
+        },
+        "enCurso": {
+          "avance": "{{hechos}} of {{total}}",
+          "avanceSinTotal": "{{hechos}} done",
+          "barra": "Progress of {{titulo}}",
+          "cancelar": "Cancel",
+          "cancelacionPedida": "You asked to cancel it: it stops at the next step.",
+          "noPudeCancelar": "I couldn’t cancel it: {{motivo}}",
+          "noPudeLeer": "I couldn’t read the progress; still trying.",
+          "sinResultado": "It finished, but I couldn’t get the result. Ask me again in a moment."
+        },
+        "gracia": {
+          "seEnviaEn": "Sends in",
+          "enviando": "Sending…",
+          "anuncioInicio": "It sends in {{segundos}} seconds. You can undo it before then.",
+          "anuncioDiez": "10 seconds left to undo it.",
+          "anuncioFinal": "It is being sent: it can no longer be undone.",
+          "sinConfirmar": "I couldn’t confirm it went out. Ask me again in a moment.",
+          "pedisteDeshacer": "You asked to undo it."
+        },
+        "programada": {
+          "cuando": "I scheduled it for {{cuando}}.",
+          "saleConTuSesion": "Your session expires before then: it goes out as soon as you write to the chat again, within the allowed hours."
+        },
+        "error": {
+          "permiso": "Missing permission: {{modulo}} · {{accion}}",
+          "quienesPueden": "Who can do it: {{nombres}}.",
+          "nadiePuede": "Nobody in your agency has that permission today.",
+          "codigo": "Code from your authenticator app",
+          "verificar": "Verify and retry",
+          "sinFactor": "You don’t have the second factor turned on in your account yet.",
+          "codigoIncorrecto": "That code didn’t work. Try the next one.",
+          "noPudeVerificar": "I couldn’t verify the code: {{motivo}}"
+        }
+      }
     }
   },
   "landlordProfile": {

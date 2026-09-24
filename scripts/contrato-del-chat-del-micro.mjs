@@ -85,7 +85,25 @@ const RUTAS = [
     // contrato sólo entiende tipos simples: se extraen los que el front mira.
     camposDeLaRespuesta: ['aplicado', 'motivo', 'leccionesEnUso'],
   },
+  // Las tarjetas del ejecutor (24-09): la tarjeta de HOY de una ejecución, que
+  // el chat pide cuando termina la gracia de «Deshacer», cuando vuelve a una
+  // programada cuya hora ya pasó y cuando el Centro de procesos ve terminar el
+  // proceso que arrancó la acción.
+  {
+    metodo: 'get',
+    camino: '/api/agency/{agencyId}/ai-hub/chat/ejecuciones/{ejecucionId}',
+    archivo: 'src/server/routes/agency-ai-hub-chat-ejecuciones.ts',
+    camposDeLaRespuesta: ['tarjeta'],
+  },
 ];
+
+/**
+ * Lo que viaja por el STREAM y no es una ruta del registro (el `done` y los
+ * eventos SSE): el micro lo deja como componentes del snapshot desde
+ * `agency-ai-hub-chat-ejecuciones.ts`. Se copian resueltos para que las
+ * pruebas del front lean y validen contra el mismo esquema.
+ */
+const COMPONENTES = ['AiHubChatPiezasNuevasDelDone', 'AiHubChatEventoProcesoIniciado'];
 
 let spec;
 try {
@@ -155,6 +173,16 @@ for (const r of RUTAS) {
   rutas[`${r.metodo.toUpperCase()} ${r.camino}`] = salida;
 }
 
+const componentes = {};
+for (const nombre of COMPONENTES) {
+  const esquema = spec.components?.schemas?.[nombre];
+  if (!esquema) {
+    console.error(`El micro no declara el componente ${nombre} en su snapshot.`);
+    process.exit(1);
+  }
+  componentes[nombre] = sinReferencias(esquema);
+}
+
 let commit = 'desconocido';
 try {
   commit = execFileSync('git', ['-C', MICRO, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -171,9 +199,12 @@ writeFileSync(
       sacadoDe: `micro@${commit}/openapi-snapshot.json`,
       cuando: new Date().toISOString().slice(0, 10),
       rutas,
+      componentes,
     },
     null,
     2,
   ) + '\n',
 );
-console.log(`${Object.keys(rutas).length} rutas del chat → ${SALIDA} (micro@${commit})`);
+console.log(
+  `${Object.keys(rutas).length} rutas y ${Object.keys(componentes).length} componentes del chat → ${SALIDA} (micro@${commit})`,
+);

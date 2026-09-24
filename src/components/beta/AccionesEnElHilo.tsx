@@ -28,12 +28,12 @@ import {
   type AccionDelHilo,
   type ConfirmacionEnElHilo,
   type FormularioEnElHilo,
-  type IntencionDelChat,
   type ResultadoEnElHilo,
   type RiesgoDeLaAccion,
 } from '@/lib/chat/acciones-del-hilo';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { CajaDelChat } from './CajaDelChat';
+import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
 
 /**
  * AccionesEnElHilo — la parte del hilo que ACTÚA (Nico, 23-09-2026, 22:51:
@@ -49,6 +49,12 @@ import { CajaDelChat } from './CajaDelChat';
  *     otra persona». «Sí, hazlo» y «No» son, otra vez, mensajes de la persona.
  *   · El resultado, con su explicación, y «Deshacer» cuando se puede.
  *   · Los datos que faltan, pedidos en el hilo.
+ *   · Desde el 24-09, la tarjeta del EJECUTOR (`TarjetaDeEjecucion`):
+ *     propuesta con vista previa, en curso, resultado con la gracia de
+ *     «Deshacer», programada y error explicado. Con ella a la vista, la
+ *     `confirmacion` y el `resultado` de siempre —la MISMA ejecución, que el
+ *     micro sigue mandando para un panel viejo— no se pintan: serían la misma
+ *     tarjeta dos veces. Sin ella (un micro de antes), todo queda como estaba.
  *
  * Nada de esto navega: el guardián `chat-sin-salidas.guardian.test.ts` lo
  * vigila sobre todo `src/components/beta/`.
@@ -61,33 +67,25 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
     return i < 0 ? [] : lista.slice(i + 1);
   }, [messages, message.id]);
 
-  const { acciones, confirmacion, resultado, formulario } = message;
-  if (!acciones?.length && !confirmacion && !resultado && !formulario) return null;
+  const { acciones, confirmacion, resultado, formulario, ejecucion } = message;
+  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion) return null;
 
   return (
     <div className={cn('space-y-3', className)} data-testid="acciones-en-el-hilo">
       {formulario && (
         <FormularioDeLaAccion formulario={formulario} yaEnviado={posteriores.some((m) => m.role === 'user')} />
       )}
-      {confirmacion && <TarjetaDeConfirmacion confirmacion={confirmacion} posteriores={posteriores} />}
-      {resultado && <TarjetaDeResultado resultado={resultado} posteriores={posteriores} />}
+      {ejecucion ? (
+        <TarjetaDeEjecucion tarjeta={ejecucion} message={message} posteriores={posteriores} />
+      ) : (
+        <>
+          {confirmacion && <TarjetaDeConfirmacion confirmacion={confirmacion} posteriores={posteriores} />}
+          {resultado && <TarjetaDeResultado resultado={resultado} posteriores={posteriores} />}
+        </>
+      )}
       {acciones && acciones.length > 0 && <AccionesDeLaFicha acciones={acciones} turnoId={message.turnoId} />}
     </div>
   );
-}
-
-// ── Enviar un mensaje de la persona ─────────────────────────────────────────
-
-function useMandar() {
-  const { sendMessage, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
-  const ocupado = isThinking || isStreaming || isAgentsRunning;
-  return {
-    ocupado,
-    mandar: (texto: string, intencion: IntencionDelChat) => {
-      if (ocupado) return;
-      sendMessage(texto, { intencion });
-    },
-  };
 }
 
 // ── Lo que se puede hacer ───────────────────────────────────────────────────

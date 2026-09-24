@@ -182,7 +182,13 @@ export function CobroResumen({
       {/* Main Content */}
       <div className="p-5">
         {/* Collection Rate - Hero Section */}
-        <div className="flex items-center justify-between mb-5">
+        {/* 🔴 24-09-2026 (a 390 px): la tasa y «Por cobrar» se parten en dos
+            líneas si no caben; antes se cortaban contra el borde de la
+            tarjeta (`overflow-hidden`). */}
+        <div
+          className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5"
+          data-testid="cobros-tasa-y-por-cobrar"
+        >
           <div>
             <p className="text-sm text-muted-foreground mb-1" data-testid="cobros-rotulo-de-la-tasa">
               {rotuloDeLaTasa}
@@ -233,7 +239,13 @@ export function CobroResumen({
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-5">
+        {/* 🔴 24-09-2026 (a 390 px): una debajo de otra en el teléfono. En tres
+            columnas cada cifra tenía ≈71 px para «$10.631.082» (≈110 px) y se
+            pisaban. */}
+        <div
+          className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 mb-5"
+          data-testid="cobros-cifras-del-mes"
+        >
           {/* Cobrado */}
           <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
@@ -289,7 +301,10 @@ export function CobroResumen({
 
         {/* Quick Actions */}
         {(onViewPending || onViewLate) && (
-          <div className="flex gap-3 pt-4 border-t border-border">
+          <div
+            className="flex flex-col gap-3 pt-4 border-t border-border sm:flex-row"
+            data-testid="cobros-atajos-del-resumen"
+          >
             {onViewPending && summary.cobrosPending > 0 && (
               <Button
                 variant="outline"

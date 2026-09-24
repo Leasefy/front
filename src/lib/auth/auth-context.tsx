@@ -302,19 +302,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = session?.access_token
     try {
       const data = await apiClient.get<Record<string, unknown>>('/users/me', token)
-      // Phase 38 plan 38-06 (D-38-06) — server-side seed for PanelPrefsContext.
-      // The custom event flows through window (no auth-context↔panel-prefs
-      // import cycle). If the backend has not yet wired `preferences` onto
-      // /users/me, dismissed defaults to false (tour eligible).
-      if (typeof window !== 'undefined') {
-        const prefs = data.preferences as Record<string, unknown> | undefined
-        const dismissed = prefs?.panel_tour_dismissed_v1 === true
-        window.dispatchEvent(
-          new CustomEvent('leasefy:preferences:loaded', {
-            detail: { panel_tour_dismissed_v1: dismissed },
-          }),
-        )
-      }
+      // 🔴 El «ya vio el recorrido del panel» YA NO sale de acá (23-09).
+      // `data.preferences` son las preferencias de búsqueda del INQUILINO y
+      // nunca traían esa marca: el aviso que se mandaba desde aquí decía
+      // siempre «no visto» y el recorrido volvía a salir. Ahora lo lee
+      // `PanelPrefsContext` de `/inmobiliaria/onboarding-visto`, por agencia.
       return {
         user: mapBackendUser(data, session?.user?.email_confirmed_at ?? undefined),
         needsOnboarding: false,
@@ -328,10 +320,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Never fall back to the degraded session user (that would loop on every
       // request) — surface the backend message and drop the Supabase session
       // so the user can log in with their original account.
-      // The message travels via sessionStorage (this file's decoupling
-      // precedent — see 'leasefy:preferences:loaded' above): a toast fired
-      // here would unmount with the panel during the sign-out redirect, and
-      // the /auth screen (AuthForm) owns the visible error banner.
+      // The message travels via sessionStorage (decoupled from any UI in
+      // this file): a toast fired here would unmount with the panel during
+      // the sign-out redirect, and the /auth screen (AuthForm) owns the
+      // visible error banner.
       if (err instanceof ApiError && err.status === 409) {
         const message =
           err.message ||

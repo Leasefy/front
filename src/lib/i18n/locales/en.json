@@ -1445,12 +1445,12 @@
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
         "panelTour": "Panel tour",
-        "panelTourDesc": "Guided walkthrough of the panel the first time you come in",
-        "panelTourEnabled": "Tour enabled — it will show on your next visit",
-        "panelTourDismissed": "Tour silenced on this device",
-        "panelTourSyncing": "Syncing preference…",
+        "panelTourDesc": "Shown only once per agency: the first time someone on the team opens the panel",
+        "panelTourPendiente": "Your agency hasn't seen it yet: it shows only once, the next time someone on the team opens the panel",
+        "panelTourVistoOmitido": "Your agency already saw it: {{quien}} skipped it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoCompleto": "Your agency already saw it: {{quien}} finished it on {{fecha}}. It won't show up on its own again",
+        "panelTourVistoSinQuien": "Your agency already saw it on {{fecha}}. It won't show up on its own again",
         "relaunchTour": "See the tour now",
-        "relaunchTourDesc": "See the walkthrough again without changing your preference",
         "relaunchTourStarted": "Tour started — follow the hints on screen"
       },
       "security": {

@@ -1,11 +1,17 @@
 'use client';
 
 /**
- * Preferencias del panel: tema, idioma y las novedades de los agentes.
+ * Preferencias del panel: tema, idioma y el recorrido del panel.
  *
- * El tema y el idioma son del navegador (next-themes / i18n). La preferencia
- * de novedades sí se guarda (localStorage + servidor, `PanelPrefsContext`), y
- * «Volver a verlas» es sólo de esta sesión.
+ * El tema y el idioma son del navegador (next-themes / i18n).
+ *
+ * 🔴 El recorrido NO es una preferencia de nadie (Nico, 23-09): «el
+ * onboarding solo debe aparecer una sola vez por inmobiliaria». Aquí había un
+ * interruptor que lo volvía a «prender», y eso ya no se puede cumplir —el
+ * «visto» es de la AGENCIA y la primera persona que lo cierra gana—, así que
+ * sería un cable muerto. Queda lo que sí vale: decir si la inmobiliaria ya lo
+ * vio (quién y cuándo) y «Ver el recorrido ahora», que dura sólo esta sesión
+ * y no cambia el «visto» de la agencia (`PanelPrefsContext`).
  */
 
 import { useEffect, useState } from 'react';
@@ -17,21 +23,40 @@ import { Button, Switch } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
+import { formatDate } from '@/lib/format';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
-import { resetAgentIntros } from '@/components/tour/AgentIntroModal';
 import { FilaDeAjuste, TarjetaDeAjustes } from './piezas';
 
 export function SeccionPreferencias() {
   const { t, locale, setLocale } = useI18n();
   const { resolvedTheme, setTheme } = useTheme();
-  const { tourDismissed, setTourDismissed, relaunchTour } = usePanelPrefs();
-  const [cambiandoTour, setCambiandoTour] = useState(false);
+  const { tourDismissed, vistaDelRecorrido, relaunchTour } = usePanelPrefs();
   // El tema real sólo se conoce en el cliente: hasta montar, el interruptor
   // no puede afirmar nada.
   const [montado, setMontado] = useState(false);
   useEffect(() => {
     setMontado(true);
   }, []);
+
+  // Lo que se sabe del recorrido, en una frase. Sin respuesta del servidor
+  // no se afirma nada: se dice la regla.
+  const estadoDelRecorrido = vistaDelRecorrido
+    ? vistaDelRecorrido.quien
+      ? t(
+          vistaDelRecorrido.estado === 'completo'
+            ? 'inmobiliaria.config.preferences.panelTourVistoCompleto'
+            : 'inmobiliaria.config.preferences.panelTourVistoOmitido',
+          {
+            quien: vistaDelRecorrido.quien,
+            fecha: formatDate(vistaDelRecorrido.fecha, locale),
+          },
+        )
+      : t('inmobiliaria.config.preferences.panelTourVistoSinQuien', {
+          fecha: formatDate(vistaDelRecorrido.fecha, locale),
+        })
+    : tourDismissed === false
+      ? t('inmobiliaria.config.preferences.panelTourPendiente')
+      : t('inmobiliaria.config.preferences.panelTourDesc');
 
   return (
     <TarjetaDeAjustes>
@@ -83,50 +108,19 @@ export function SeccionPreferencias() {
       <FilaDeAjuste
         icono={Compass}
         titulo={t('inmobiliaria.config.preferences.panelTour')}
-        descripcion={t('inmobiliaria.config.preferences.panelTourDesc')}
-      >
-        <Switch
-          checked={tourDismissed === false}
-          aria-label={t('inmobiliaria.config.preferences.panelTour')}
-          aria-busy={cambiandoTour || tourDismissed === null}
-          disabled={cambiandoTour || tourDismissed === null}
-          onCheckedChange={async () => {
-            if (tourDismissed === null) return;
-            setCambiandoTour(true);
-            try {
-              // El interruptor está en ON cuando las novedades están prendidas
-              // (dismissed=false); el aviso habla del estado NUEVO.
-              const siguiente = !tourDismissed;
-              await setTourDismissed(siguiente);
-              toast.success(
-                siguiente
-                  ? t('inmobiliaria.config.preferences.panelTourDismissed')
-                  : t('inmobiliaria.config.preferences.panelTourEnabled'),
-              );
-            } finally {
-              setCambiandoTour(false);
-            }
-          }}
-        />
-      </FilaDeAjuste>
-
-      <FilaDeAjuste
-        icono={Compass}
-        titulo={t('inmobiliaria.config.preferences.relaunchTour')}
-        descripcion={t('inmobiliaria.config.preferences.relaunchTourDesc')}
+        descripcion={estadoDelRecorrido}
       >
         <Button
           variant="secondary"
           size="sm"
           hideArrow
           onClick={() => {
-            // Reponer la preferencia global NO alcanza: cada novedad guarda su
-            // propio «ya la vi» en localStorage, así que sin este reset el
-            // botón no mostraría nada.
-            resetAgentIntros();
+            // Sólo esta sesión: también vuelve a presentar a los agentes de IA
+            // una vez, sin tocar lo que la inmobiliaria ya tiene visto.
             relaunchTour();
             toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
           }}
+          data-testid="ver-el-recorrido-ahora"
         >
           {t('inmobiliaria.config.preferences.relaunchTour')}
         </Button>

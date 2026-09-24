@@ -1479,12 +1479,12 @@
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
         "panelTour": "Recorrido del panel",
-        "panelTourDesc": "Recorrido guiado por el panel la primera vez que entras",
-        "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
-        "panelTourDismissed": "Tour silenciado en este dispositivo",
-        "panelTourSyncing": "Sincronizando preferencia…",
+        "panelTourDesc": "Sale una sola vez por inmobiliaria: la primera vez que alguien del equipo entra al panel",
+        "panelTourPendiente": "Tu inmobiliaria todavía no lo ha visto: sale una sola vez, la próxima vez que alguien del equipo entre al panel",
+        "panelTourVistoOmitido": "Tu inmobiliaria ya lo vio: {{quien}} lo omitió el {{fecha}}. No vuelve a salir solo",
+        "panelTourVistoCompleto": "Tu inmobiliaria ya lo vio: {{quien}} lo terminó el {{fecha}}. No vuelve a salir solo",
+        "panelTourVistoSinQuien": "Tu inmobiliaria ya lo vio el {{fecha}}. No vuelve a salir solo",
         "relaunchTour": "Ver el recorrido ahora",
-        "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
         "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
       "security": {

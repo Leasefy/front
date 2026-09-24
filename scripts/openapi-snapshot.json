@@ -15078,6 +15078,42 @@
           "error"
         ]
       },
+      "PilotoEnvioDeshecho": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "deshecho"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "mensaje"
+        ]
+      },
+      "PilotoEnvioError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "PilotoLauraDeHoy": {
         "type": [
           "object",
@@ -45397,6 +45433,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/envios/{id}/deshacer": {
+      "post": {
+        "operationId": "pilotoEnvioDeshacer",
+        "summary": "Piloto — «Deshacer» un envío del micro (WhatsApp o correo de cobranza) durante su gracia (P-10)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deshecho: no sale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioDeshecho"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso del ERP de este proceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya salió (o ya estaba deshecho)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "La base no está disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoEnvioError"
                 }
               }
             }

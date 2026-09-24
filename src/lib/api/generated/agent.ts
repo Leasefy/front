@@ -5229,6 +5229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/envios/{id}/deshacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — «Deshacer» un envío del micro (WhatsApp o correo de cobranza) durante su gracia (P-10) */
+        post: operations["pilotoEnvioDeshacer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/opera-sola": {
         parameters: {
             query?: never;
@@ -12318,6 +12335,16 @@ export interface components {
             createdAt: string;
         };
         PilotoAccionError: {
+            error: string;
+            code?: string;
+        };
+        PilotoEnvioDeshecho: {
+            id: string;
+            /** @enum {string} */
+            estado: "deshecho";
+            mensaje: string;
+        };
+        PilotoEnvioError: {
             error: string;
             code?: string;
         };
@@ -24455,6 +24482,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+        };
+    };
+    pilotoEnvioDeshacer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deshecho: no sale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioDeshecho"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso del ERP de este proceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description Ya salió (o ya estaba deshecho) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
+                };
+            };
+            /** @description La base no está disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoEnvioError"];
                 };
             };
         };

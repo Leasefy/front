@@ -11239,6 +11239,30 @@
       "endYes": "Terminar",
       "endCancel": "Cancelar"
     },
+    "cerebro": {
+      "boton": "¿Aprendo esto?",
+      "ayuda": "Sólo lo ves tú, como administrador: decide qué aprende el chat de esta respuesta.",
+      "titulo": "Lo que aprendería de esta respuesta",
+      "cargando": "Revisando qué se puede aprender…",
+      "error": "No pude revisarlo. Intenta de nuevo.",
+      "reintentar": "Reintentar",
+      "errorGuardar": "No pude guardarlo. Intenta de nuevo.",
+      "nada": "De esta respuesta todavía no hay nada que aprender.",
+      "aprender": "Sí, apréndelo",
+      "descartar": "No",
+      "aprendido": "Aprendido",
+      "descartado": "No lo aprendo",
+      "aprendidoToast": "Listo: lo aprendí",
+      "descartadoToast": "Listo: no lo aprendo",
+      "sinUso": "Quedó aprendido. El uso de lo aprendido está apagado en esta instalación: lo tendré en cuenta cuando lo prendan.",
+      "cerrar": "Cerrar",
+      "origen": {
+        "accion_deshecha": "De una acción que se deshizo",
+        "ambiguedad": "De la tarjeta que se eligió entre varias",
+        "definicion": "De cómo le dicen aquí a algo",
+        "apodo": "De un apodo que se usa aquí"
+      }
+    },
     "actions": {
       "copy": "Copiar respuesta",
       "copied": "Respuesta copiada",

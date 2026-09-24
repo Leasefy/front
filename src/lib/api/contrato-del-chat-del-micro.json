@@ -1,6 +1,6 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@f366c145/openapi-snapshot.json",
+  "sacadoDe": "micro@e402f1ac/openapi-snapshot.json",
   "cuando": "2026-09-24",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
@@ -117,6 +117,122 @@
         },
         "required": [
           "turnoId"
+        ]
+      }
+    },
+    "GET /api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
+      "archivo": "src/server/routes/agency-ai-hub-chat-aprender.ts",
+      "respuesta": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "aprendizajes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "clase": {
+                  "type": "string",
+                  "enum": [
+                    "leccion",
+                    "preferencia"
+                  ]
+                },
+                "origen": {
+                  "type": "string",
+                  "enum": [
+                    "accion_deshecha",
+                    "ambiguedad",
+                    "definicion",
+                    "apodo"
+                  ]
+                },
+                "texto": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": [
+                    "nuevo",
+                    "aprendido",
+                    "descartado"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "clase",
+                "origen",
+                "texto",
+                "estado"
+              ]
+            }
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "disponible",
+          "aprendizajes",
+          "motivo",
+          "leccionesEnUso"
+        ]
+      }
+    },
+    "POST /api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
+      "archivo": "src/server/routes/agency-ai-hub-chat-aprender.ts",
+      "cuerpo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "aprender",
+              "descartar"
+            ]
+          },
+          "propuestaId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "id",
+          "decision"
+        ]
+      },
+      "respuesta": {
+        "type": "object",
+        "properties": {
+          "aplicado": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aplicado",
+          "motivo",
+          "leccionesEnUso"
         ]
       }
     }

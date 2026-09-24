@@ -10,8 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import { valeLaPenaOfrecer } from '@/lib/chat/aprender';
 import type { ChatMessage } from '@/lib/types/beta-chat';
+import { AprenderEsto } from './AprenderEsto';
 
 /**
  * Copia al portapapeles con respaldo.
@@ -124,8 +127,19 @@ export function MessageActions({
   className?: string;
 }) {
   const { t } = useI18n();
-  const { regenerateResponse, rateMessage, isThinking, isStreaming, isAgentsRunning } =
+  const { regenerateResponse, rateMessage, isThinking, isStreaming, isAgentsRunning, messages } =
     useBetaChatContext();
+  // «¿Aprendo esto?» (24-09): sólo el ADMINISTRADOR según el ERP (el mismo
+  // `isAdmin` que gobierna el panel), y sólo donde hay algo que pudo enseñarle
+  // al chat. Sin permisos cargados (o fuera del panel) no se ofrece: falla cerrado.
+  const esAdministrador = usePermissionsContextSafe()?.isAdmin === true;
+  const preguntaAnterior = (() => {
+    const lista = messages ?? [];
+    const i = lista.findIndex((m) => m.id === message.id);
+    for (let j = i - 1; j >= 0; j--) if (lista[j]?.role === 'user') return lista[j]!.content;
+    return null;
+  })();
+  const ofrecerAprender = esAdministrador && valeLaPenaOfrecer(message, preguntaAnterior);
   const [copiado, setCopiado] = useState(false);
   // «¿Qué esperabas?» — sólo se abre con el pulgar abajo.
   const [abrirComentario, setAbrirComentario] = useState(false);
@@ -296,6 +310,8 @@ export function MessageActions({
           </span>
         )}
       </div>
+
+      {ofrecerAprender && <AprenderEsto message={message} />}
 
       {/* «¿Qué esperabas?» — el comentario es lo ÚNICO que se convierte en una
           lección para el chat, así que se pide; pero nunca se obliga: el pulgar

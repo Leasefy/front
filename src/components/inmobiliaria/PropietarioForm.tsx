@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 import {
@@ -37,6 +38,7 @@ import {
   type AccountType,
 } from '@/lib/types/payment-accounts';
 import { revisarDocumentoDelTitular, titularInicial } from '@/lib/propietarios/titular-de-la-cuenta';
+import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
 import {
   TitularDeLaCuentaCampos,
   erroresDelTitular,
@@ -145,6 +147,33 @@ export function PropietarioForm({
   serverError,
 }: PropietarioFormProps) {
   const { t } = useI18n();
+  /*
+   * 🔴 23-09 (auditoría de seguridad): el correo de un propietario es por
+   * donde confirma los cambios de su cuenta bancaria y con el que entra a su
+   * portal, así que cambiar uno que YA estaba es cosa de un administrador (el
+   * back lo exige: `CORREO_SOLO_ADMINISTRADOR`). Registrar el primero de una
+   * ficha que no tenía sigue abierto. Fuera del proveedor de permisos no se
+   * sabe el rol y se deja editable: decide el back.
+   */
+  const permisos = usePermissionsContextSafe();
+  const correoBloqueado =
+    mode === 'edit' && !!initialData?.email?.trim() && permisos !== null && !permisos.isAdmin;
+  /*
+   * 🔴 23-09 (datos personales): quien no ve la plata del propietario (sin
+   * `dispersiones:view`, el asesor comercial) no ve ni llena su cuenta. La
+   * ficha le llega con la cuenta en `null` y `datosBancariosOcultos`; antes el
+   * formulario la pintaba vacía y la EXIGÍA, así que el asesor no podía ni
+   * corregir un teléfono, y si escribía un número chocaba con el cambio
+   * controlado de cuenta. Ahora el bloque no se muestra, no se valida y
+   * guardar no manda ningún campo de la cuenta: el back la deja como estaba.
+   * Fuera del proveedor de permisos no se sabe el rol: se muestra, decide el back.
+   */
+  const sinDatosBancarios =
+    initialData?.datosBancariosOcultos === true ||
+    (permisos !== null &&
+      !permisos.isLoading &&
+      !permisos.isAdmin &&
+      !permisos.canAccess('dispersiones', 'view'));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -271,7 +300,12 @@ export function PropietarioForm({
       }
     }
 
-    // Bank account validation
+    // Bank account validation (sólo si quien llena el formulario ve la cuenta)
+    if (sinDatosBancarios) {
+      setErroresTitular({});
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
     if (!formData.bankCode) {
       newErrors.bankCode = t('inmobiliaria.propietario.form.errBankRequired');
     }
@@ -300,6 +334,7 @@ export function PropietarioForm({
    * exigirla (editar sin tocarla), el titular tal como se cargó.
    */
   const conElTitular = (): PropietarioFormData => {
+    if (sinDatosBancarios) return sinLaCuenta(formData);
     if (!exigeTitular) return formData;
     const tercero = titular.titular === 'TERCERO';
     return {
@@ -422,11 +457,14 @@ export function PropietarioForm({
             label="Email"
             required
             error={touched.email ? errors.email : undefined}
+            hint={correoBloqueado ? t('inmobiliaria.propietario.form.emailSoloAdministrador') : undefined}
           >
             <div className="relative">
               <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
                 type="email"
+                disabled={correoBloqueado}
+                data-testid="correo-del-propietario"
                 value={formData.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
@@ -504,6 +542,18 @@ export function PropietarioForm({
       </div>
 
       {/* Bank Account */}
+      {sinDatosBancarios ? (
+        <div
+          className="space-y-2 pt-4 border-t border-border-faint dark:border-border-strong"
+          data-testid="cuenta-oculta-por-rol"
+        >
+          <div className="flex items-center gap-2 text-fg">
+            <Bank className="w-5 h-5 text-fg-subtle" />
+            <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+          </div>
+          <p className="text-sm text-fg-muted">{t('inmobiliaria.propietario.form.bankDataHidden')}</p>
+        </div>
+      ) : (
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg">
           <Bank className="w-5 h-5 text-success" />
@@ -602,6 +652,7 @@ export function PropietarioForm({
           />
         </InputWrapper>
       </div>
+      )}
 
       {/* Notes */}
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">

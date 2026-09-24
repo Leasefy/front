@@ -18,6 +18,7 @@
  * data owner (consistent with other Phase 37 widgets).
  */
 
+import type { JSX } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'

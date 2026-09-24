@@ -75,3 +75,27 @@ describe('limpiarCredencialesDeLaUrl', () => {
     expect(window.history.state).toEqual({ marca: 1 });
   });
 });
+
+describe('tomarTokensDelFragmento', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('🔴 saca el access y el refresh token de la barra (y del historial) antes de usarlos', async () => {
+    const { tomarTokensDelFragmento } = await import('./credenciales-en-la-url');
+    window.history.replaceState(null, '', '/auth/enlace?returnUrl=%2Fpanel#access_token=eyJ.a.b&refresh_token=r3fr35h&type=invite');
+    const params = tomarTokensDelFragmento();
+    expect(params?.get('access_token')).toBe('eyJ.a.b');
+    expect(params?.get('refresh_token')).toBe('r3fr35h');
+    expect(window.location.href).not.toContain('r3fr35h');
+    expect(window.location.href).not.toContain('access_token');
+    expect(`${window.location.pathname}${window.location.search}`).toBe('/auth/enlace?returnUrl=%2Fpanel');
+  });
+
+  it('un fragmento de error (sin tokens) se lee y se deja como está', async () => {
+    const { tomarTokensDelFragmento } = await import('./credenciales-en-la-url');
+    window.history.replaceState(null, '', '/auth/enlace#error_code=otp_expired');
+    expect(tomarTokensDelFragmento()?.get('error_code')).toBe('otp_expired');
+    expect(window.location.hash).toBe('#error_code=otp_expired');
+  });
+});

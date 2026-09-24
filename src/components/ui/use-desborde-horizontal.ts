@@ -42,7 +42,7 @@ export interface DesbordeHorizontal {
 const TOLERANCIA_PX = 1
 
 export function useDesbordeHorizontal<T extends HTMLElement>(): DesbordeHorizontal & {
-  ref: React.RefObject<T>
+  ref: React.RefObject<T | null>
 } {
   const ref = React.useRef<T>(null)
   const [estado, setEstado] = React.useState<DesbordeHorizontal>({

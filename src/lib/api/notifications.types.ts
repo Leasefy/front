@@ -3,6 +3,7 @@
  * Maps between backend notification format and frontend display types
  */
 
+import { destinoDeNotificacion } from '@/lib/utils/safe-redirect';
 import type {
   LandlordNotification,
   TenantNotification,
@@ -59,7 +60,7 @@ export function mapToLandlordNotification(n: BackendNotification): LandlordNotif
     message: n.message,
     read: n.read,
     createdAt: n.createdAt,
-    actionUrl: n.actionUrl,
+    actionUrl: destinoDeNotificacion(n.actionUrl),
     actionLabel: n.actionLabel,
     metadata: n.metadata as LandlordNotification['metadata'],
   };
@@ -74,7 +75,7 @@ export function mapToTenantNotification(n: BackendNotification): TenantNotificat
     message: n.message,
     read: n.read,
     createdAt: n.createdAt,
-    actionUrl: n.actionUrl,
+    actionUrl: destinoDeNotificacion(n.actionUrl),
     actionLabel: n.actionLabel,
     metadata: n.metadata as TenantNotification['metadata'],
   };

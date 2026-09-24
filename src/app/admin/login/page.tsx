@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
 import { Wordmark } from '@/components/admin/Wordmark'
 
 /**
@@ -20,7 +21,10 @@ export default function AdminLoginPage() {
 function LoginInner() {
   const sp = useSearchParams()
   const sent = sp.get('sent') === '1'
-  const next = sp.get('next') ?? undefined
+  // Se sanea acá también (además de en el callback, que es el que navega):
+  // así el enlace mágico que se manda por correo nunca lleva un destino ajeno.
+  const nextCrudo = sp.get('next')
+  const next = nextCrudo ? sanitizeReturnUrl(nextCrudo, '/admin') : undefined
   const urlError = sp.get('error') ?? undefined
 
   return (

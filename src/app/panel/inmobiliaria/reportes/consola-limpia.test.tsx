@@ -160,9 +160,14 @@ const capturado: string[] = []
 let origError: typeof console.error
 let origWarn: typeof console.warn
 
-/** Ver el ⚠️ del encabezado: artefacto del harness, no del navegador. */
+/**
+ * Ver el ⚠️ del encabezado: artefacto del harness, no del navegador. Desde
+ * React 19 el aviso ya no trae el nombre del componente en el texto (va en la
+ * pila aparte), así que se reconoce por los DOS atributos de styled-jsx, `jsx`
+ * y `global`, que son los únicos que puede nombrar.
+ */
 const ES_ARTEFACTO_DE_STYLED_JSX = (aviso: string) =>
-  aviso.includes('for a non-boolean attribute') && aviso.includes('ReportPDFExport')
+  aviso.includes('for a non-boolean attribute') && /\b(jsx|global)\b/.test(aviso)
 
 function avisosReales(): string[] {
   return capturado.filter((a) => !ES_ARTEFACTO_DE_STYLED_JSX(a))

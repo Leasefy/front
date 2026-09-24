@@ -204,3 +204,23 @@ describe('Configuración fuera del sidebar', () => {
     expect(moduloDeLaRuta(`${RAIZ_CONFIGURACION}/ia`)).toBeNull();
   });
 });
+
+describe('🔴 Protección de datos (23-09): ADMIN y CONTADOR, igual que el back', () => {
+  const seccion = seccionPorId('proteccion-de-datos');
+  const conRol = (agencyRole: string | null) => ({ ...ctx({ modulos: ['reportes', 'configuracion'] }), agencyRole });
+
+  it('la ve el contador', () => {
+    expect(puedeVerSeccion(seccion, conRol('CONTADOR'))).toBe(true);
+  });
+
+  it('la ve el administrador', () => {
+    expect(puedeVerSeccion(seccion, { ...ctx({ admin: true }), agencyRole: 'ADMIN' })).toBe(true);
+  });
+
+  it.each(['VIEWER', 'AGENTE', 'COORDINADOR', 'AUXILIAR_CARTERA', null])(
+    '%s no, aunque tenga reportes y configuración',
+    (rol) => {
+      expect(puedeVerSeccion(seccion, conRol(rol))).toBe(false);
+    },
+  );
+});

@@ -51,6 +51,12 @@ export interface ParaEntenderMasProps {
   descripcion?: string;
   /** Más ancho para lo que de verdad lo necesita (un mapa de once pasos). */
   ancho?: 'normal' | 'ancho';
+  /**
+   * `fantasma` (por defecto) para cuando vive dentro de un bloque; `secundario`
+   * para cuando va en el encabezado de la pantalla, donde iría su botón de
+   * acción (Nico, 23-09: el fantasma suelto a la derecha dejaba una fila vacía).
+   */
+  variante?: 'fantasma' | 'secundario';
   children: ReactNode;
   className?: string;
 }
@@ -60,6 +66,7 @@ export function ParaEntenderMas({
   titulo,
   descripcion,
   ancho = 'normal',
+  variante = 'fantasma',
   children,
   className,
 }: ParaEntenderMasProps) {
@@ -69,7 +76,7 @@ export function ParaEntenderMas({
     <>
       <Button
         type="button"
-        variant="ghost"
+        variant={variante === 'secundario' ? 'secondary' : 'ghost'}
         size="sm"
         hideArrow
         className={className}
@@ -84,6 +91,11 @@ export function ParaEntenderMas({
         <DialogContent
           className={ancho === 'ancho' ? 'sm:max-w-5xl' : 'sm:max-w-lg'}
           data-testid="para-entender-mas-contenido"
+          /* Sin `descripcion`, se dice EXPLÍCITO que no hay: Radix avisaba en la
+             consola «Missing `Description` or `aria-describedby={undefined}`»
+             en cada apertura (QA 23-09). El contenido del modal ya es la
+             explicación; una descripción de relleno repetiría el título. */
+          {...(descripcion ? {} : { 'aria-describedby': undefined })}
         >
           <DialogHeader>
             <DialogTitle>{titulo ?? etiqueta}</DialogTitle>

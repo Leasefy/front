@@ -15,16 +15,29 @@
  * exported for unit testing without a browser/network.
  */
 
+import { leerBloques, leerEntidades, type BloqueDeRespuesta, type EntidadDelChat } from '@/lib/chat/bloques';
+import {
+  leerAcciones,
+  leerConfirmacion,
+  leerFormulario,
+  leerIntencion,
+  leerResultado,
+  type AccionDelHilo,
+  type ConfirmacionEnElHilo,
+  type FormularioEnElHilo,
+  type IntencionDelChat,
+  type ResultadoEnElHilo,
+} from '@/lib/chat/acciones-del-hilo';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
-import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
   AgentType,
   AgentExecution,
   ResponseAction,
   DailyBriefing,
   BriefingSection,
+  Reintentable,
 } from '@/lib/types/beta-chat';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub-chat[-stream]) ──────
@@ -72,6 +85,12 @@ export type BackendActionTarget =
 export interface BackendSuggestedAction {
   label: string;
   target: BackendActionTarget;
+  /**
+   * Lo que pide el botón, con forma (23-09, «todo en el chat»): el micro la
+   * pega cuando la lee sin duda («Ver contrato 24» → ver el contrato 24).
+   * Opcional: sin ella el botón manda su texto y lo contesta el modelo.
+   */
+  intencion?: unknown;
 }
 
 /**
@@ -113,6 +132,9 @@ export interface BackendSnapshot {
   escalacionesPendientes: number;
   enPrejuridico: number;
   generatedAt: string;
+  /** La cartera del ERP (Pagos → Cartera). Opcional: un micro viejo no la manda. */
+  carteraCop?: number;
+  contratosEnCartera?: number;
 }
 
 export interface BackendChatResponse {
@@ -136,6 +158,13 @@ export interface BackendChatResponse {
    * Opcional porque un agente viejo no las manda.
    */
   accionesPropuestas?: BackendAccionPropuesta[];
+  /**
+   * El id de este turno en el cerebro del micro (23-09). Opcional porque un
+   * micro viejo no lo manda; sin él no salen las señales de la pantalla.
+   */
+  turnoId?: string;
+  /** Una consulta del turno falló y vale reintentar (ver `leerReintentable`). */
+  reintentable?: unknown;
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -155,64 +184,6 @@ export function backendAgentToFrontType(agent: BackendDispatchAgent): AgentType 
   return agent;
 }
 
-/**
- * Wire target → slug del workspace en `agentWorkspaceNav.ts`. Los agentes ya
- * no viven en `/ai/*`: cada uno está dentro del módulo que automatiza, y su
- * ruta la sabe UNA sola tabla. `cartera` sigue apuntando al agente de cobranza
- * (el back habla de la cartera del agente, no de la pantalla Cartera de Cobros).
- */
-const TARGET_SLUG: Record<BackendActionTarget, string> = {
-  cobranza: 'cobranza',
-  cotizador: 'asegurabilidad', // wire target stays 'cotizador'; the route is /asegurabilidad
-  estudio: 'estudio',
-  matching: 'matching',
-  pagos: 'pagos',
-  conciliacion: 'conciliacion',
-  avaluo: 'avaluos',
-  cartera: 'cobranza',
-};
-
-/**
- * 🔴 Targets que nombran una PANTALLA real del panel que ya no es la sala de
- * un agente.
- *
- * Hoy es uno solo: `pagos`. Hasta el 2026-09-16 su ruta la resolvía
- * `AGENT_WORKSPACES`, porque `/pagos` era la Sala del agente de Pagos. Esa
- * Sala se fue (NOTA al pie de `agentWorkspaceNav.ts`) pero la pantalla sigue
- * ahí —es la raíz del módulo de la plata—, y el asistente sigue proponiendo
- * «ver pagos». Sin esta tabla, ese botón habría dejado de navegar en silencio
- * y habría caído al Piloto.
- */
-const PANTALLA_SIN_AGENTE: Partial<Record<BackendActionTarget, string>> = {
-  pagos: '/panel/inmobiliaria/pagos',
-};
-
-/**
- * Front route for a suggested-action target. Unknown or unregistered targets
- * fall back to Inicio (el Piloto, la torre de control de los agentes) — never
- * a dead/404 link.
- */
-export function targetToHref(target: BackendActionTarget): string {
-  const slug = TARGET_SLUG[target];
-  const ws = slug ? AGENT_WORKSPACES.find((w) => w.slug === slug) : undefined;
-  return ws?.basePath ?? PANTALLA_SIN_AGENTE[target] ?? '/panel/inmobiliaria/piloto';
-}
-
-/**
- * 🔴 ¿Este target tiene una PANTALLA de verdad en el panel?
- *
- * Medido en vivo: «Ver inmuebles disponibles» no llevaba a la lista —mandaba
- * el texto como un mensaje nuevo y dejaba al operador otros ~25 s esperando
- * por algo que el panel ya tiene a un clic—. Cuando la acción existe como
- * pantalla, el botón navega; cuando no (y `targetToHref` cae al Piloto),
- * sigue preguntándole al asistente, que es lo único que puede responderla.
- */
-export function targetTienePantalla(target: BackendActionTarget): boolean {
-  if (PANTALLA_SIN_AGENTE[target]) return true;
-  const slug = TARGET_SLUG[target];
-  return Boolean(slug && AGENT_WORKSPACES.some((w) => w.slug === slug));
-}
-
 const TARGET_ICON: Record<BackendActionTarget, string> = {
   cobranza: 'CurrencyDollar',
   cotizador: 'ShieldCheck',
@@ -224,19 +195,29 @@ const TARGET_ICON: Record<BackendActionTarget, string> = {
   cartera: 'ChartBar',
 };
 
+/**
+ * 🔴 Una sugerencia del asistente es un MENSAJE DE LA PERSONA, nunca un enlace.
+ *
+ * Nico, 23-09 (22:51), con la captura de «Ver contrato 24» y «Gestionar
+ * cobranza de Mateo Pérez» sacándolo del chat: «Debe todo funcionar dentro del
+ * chat: si le digo "ver contrato", es como un mensaje de la persona y tú traes
+ * acá el contrato». Hasta ese día, una sugerencia con pantalla en el panel
+ * navegaba (`href`) porque preguntarle al asistente tardaba ~25 s; ahora el
+ * micro la contesta por su camino directo, con la ficha, en ~2 s.
+ *
+ * Por eso ya no hay `href`: el botón manda la etiqueta como mensaje, con la
+ * intención que el micro le pegó cuando la pudo leer sin duda.
+ */
 export function suggestedActionToResponseAction(
   action: BackendSuggestedAction,
   index: number,
 ): ResponseAction {
-  const tienePantalla = targetTienePantalla(action.target);
+  const intencion = leerIntencion(action.intencion);
   return {
     id: `act_${index}_${action.target}`,
     label: action.label,
-    // Sin `prompt` = el botón NAVEGA a la pantalla (`href`). Con `prompt` = le
-    // pregunta al asistente, que es lo correcto cuando no hay pantalla que
-    // abrir: el label del back ya viene redactado como petición.
-    ...(tienePantalla ? {} : { prompt: action.label }),
-    href: targetToHref(action.target),
+    prompt: action.label,
+    ...(intencion ? { intencion } : {}),
     icon: TARGET_ICON[action.target] ?? 'ArrowRight',
     variant: index === 0 ? 'primary' : 'secondary',
   };
@@ -256,6 +237,20 @@ export function dispatchToAgentExecution(
     completedAt: new Date(),
     ...(dispatch.status === 'failed' ? { error: dispatch.summary } : {}),
   };
+}
+
+/**
+ * `reintentable` del `done` (contrato fijo con el micro, 23-09): la consulta
+ * del turno no respondió (`motivo`: tiempo/red/servidor; `que`:
+ * busqueda/cartera/ficha/cifras) y vale la pena volver a preguntar. Vale
+ * cualquier objeto con los dos textos; lo demás es «no llegó» → `null`, y la
+ * respuesta no lleva el botón. Nunca se deduce del texto de la respuesta.
+ */
+export function leerReintentable(v: unknown): Reintentable | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const { motivo, que } = v as Record<string, unknown>;
+  if (typeof motivo !== 'string' || !motivo || typeof que !== 'string' || !que) return null;
+  return { motivo, que };
 }
 
 // ── SSE parsing (pure, testable) ──────────────────────────────────────────────
@@ -292,11 +287,35 @@ export interface ChatStreamHandlers {
    * del `done` para que el front reconcilie igual que con las aprobaciones.
    */
   onAccionPropuesta?: (propuesta: BackendAccionPropuesta) => void;
+  /**
+   * Qué está haciendo AHORA el paso activo (evento aditivo `progreso`, 23-09):
+   * «Leyendo contratos…», «Leí 29 filas de contratos». Un micro viejo no lo
+   * manda y el paso se queda con su indicador animado.
+   */
+  onProgreso?: (p: { texto: string; hechos?: number; total?: number }) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
     dispatches: BackendDispatch[];
     generatedAt: string;
+    /** Tablas/cifras/avisos con forma. Vacío si el micro no los manda. */
+    bloques: BloqueDeRespuesta[];
+    /** Las tarjetas de la búsqueda en la plataforma. */
+    entidades: EntidadDelChat[];
+    /** El id del turno en el cerebro del micro. Falta con un micro viejo. */
+    turnoId?: string;
+    /** Una consulta del turno falló y vale reintentar. Falta con un micro viejo. */
+    reintentable?: Reintentable;
+    /** «Todo en el chat» (23-09): lo que se puede hacer, la tarjeta de «¿Lo hago?», el resultado, el formulario. */
+    acciones: AccionDelHilo[];
+    confirmacion: ConfirmacionEnElHilo | null;
+    resultado: ResultadoEnElHilo | null;
+    formulario: FormularioEnElHilo | null;
+    /**
+     * Por dónde lo contestó el micro. `directo:*` = el camino directo (la ficha,
+     * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
+     */
+    camino?: string;
   }) => void;
   /**
    * Un fallo ANUNCIADO dentro del stream (evento `error`).
@@ -420,14 +439,36 @@ export function handleSSEEvent(
       }
       break;
     }
-    case 'done':
+    case 'progreso': {
+      const texto = obj.texto;
+      if (typeof texto === 'string' && texto.trim()) {
+        handlers.onProgreso?.({
+          texto: texto.trim(),
+          ...(typeof obj.hechos === 'number' ? { hechos: obj.hechos } : {}),
+          ...(typeof obj.total === 'number' ? { total: obj.total } : {}),
+        });
+      }
+      break;
+    }
+    case 'done': {
+      const reintentable = leerReintentable(obj.reintentable);
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
         suggestedActions: (obj.suggestedActions as BackendSuggestedAction[]) ?? [],
         dispatches: (obj.dispatches as BackendDispatch[]) ?? [],
         generatedAt: String(obj.generatedAt ?? ''),
+        bloques: leerBloques(obj.bloques),
+        entidades: leerEntidades(obj.entidades),
+        ...(typeof obj.turnoId === 'string' && obj.turnoId ? { turnoId: obj.turnoId } : {}),
+        ...(reintentable ? { reintentable } : {}),
+        acciones: leerAcciones(obj.acciones),
+        confirmacion: leerConfirmacion(obj.confirmacion),
+        resultado: leerResultado(obj.resultado),
+        formulario: leerFormulario(obj.formulario),
+        ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
       });
       break;
+    }
     case 'error':
       handlers.onError?.(String(obj.error ?? 'stream error'), {
         ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
@@ -451,6 +492,13 @@ export function handleSSEEvent(
  * distingue.
  */
 async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+  // El 429 del micro (su limitador, o el `agents_limit` de NGINX) se dice
+  // IGUAL que el del back: «Espera 45 segundos y vuelve a intentar», con el
+  // número cuando viene en el cuerpo o en `Retry-After`. Antes pasaba el
+  // `message` crudo del micro (en inglés, o «ai-hub chat 429») y la burbuja
+  // decía «espera un momento» sin plazo, que invita a machacar el botón y
+  // alarga el bloqueo (auditoría de seguridad 23-09).
+  if (res.status === 429) return errorDeDemasiadasSolicitudes(res);
   let cuerpo: Record<string, unknown> | undefined;
   try {
     const json: unknown = await res.json();
@@ -482,10 +530,13 @@ export function isAgentConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_URL);
 }
 
-function buildBody(message: string, history?: ChatHistoryEntry[]): string {
+function buildBody(message: string, history?: ChatHistoryEntry[], intencion?: IntencionDelChat | null): string {
   return JSON.stringify({
     message,
     ...(history && history.length > 0 ? { history } : {}),
+    // Lo que pidió el botón, con forma: el micro lo atiende por su camino
+    // directo (la ficha) sin adivinar el texto.
+    ...(intencion ? { intencion } : {}),
   });
 }
 
@@ -494,13 +545,14 @@ export async function postChatTurn(args: {
   agencyId: string;
   message: string;
   history?: ChatHistoryEntry[];
+  intencion?: IntencionDelChat | null;
   signal?: AbortSignal;
 }): Promise<BackendChatResponse> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat`;
   const res = await fetch(url, {
     method: 'POST',
     headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-    body: buildBody(args.message, args.history),
+    body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat');
@@ -537,6 +589,7 @@ export async function streamChatTurn(args: {
   agencyId: string;
   message: string;
   history?: ChatHistoryEntry[];
+  intencion?: IntencionDelChat | null;
   signal?: AbortSignal;
   handlers: ChatStreamHandlers;
 }): Promise<void> {
@@ -547,7 +600,7 @@ export async function streamChatTurn(args: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
     }),
-    body: buildBody(args.message, args.history),
+    body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat stream');

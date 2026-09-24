@@ -439,6 +439,45 @@ describe('una certificación por cada cuenta nueva', () => {
     expect(porTestId('abrir-certificacion')).not.toBeNull();
     expect(porTestId('abrir-certificacion-1')).toBeNull();
   });
+
+  /*
+   * 🔴 Auditoría de seguridad (23-09): quien pidió el cambio no lo aprueba si
+   * la inmobiliaria tiene otro administrador. El back lo decide y lo dice en
+   * `aprobacion`; la pantalla apaga «Aprobar» con ESE porqué (nunca un botón
+   * vivo que responde 403, nunca un botón muerto sin explicación).
+   */
+  it('🔴 a quien pidió el cambio, «Aprobar» le sale apagado con el porqué del back', async () => {
+    const motivo =
+      'Tú pediste este cambio de cuenta: lo tiene que aprobar otro administrador de la inmobiliaria. Así una sola persona no puede desviar los giros de un propietario.';
+    h.cambiosDeCuenta.mockResolvedValue({
+      ...SIN_CAMBIOS,
+      cambios: [
+        {
+          ...CAMBIO,
+          aprobacion: { puede: false, codigo: 'APROBADOR_DISTINTO_AL_SOLICITANTE', motivo, mismaPersona: true },
+        },
+      ],
+    });
+    await pintar();
+
+    const aprobar = porTestId('aprobar-cambio-de-cuenta') as HTMLButtonElement;
+    expect(aprobar.disabled).toBe(true);
+    expect(porTestId('por-que-no-aprueba')?.textContent).toBe(motivo);
+    await clic(aprobar);
+    expect(porTestId('certificaciones-a-revisar')).toBeNull();
+  });
+
+  it('con un solo administrador puede aprobar lo que pidió, y la pantalla le dice que queda marcado', async () => {
+    h.cambiosDeCuenta.mockResolvedValue({
+      ...SIN_CAMBIOS,
+      cambios: [{ ...CAMBIO, aprobacion: { puede: true, codigo: null, motivo: null, mismaPersona: true } }],
+    });
+    await pintar();
+
+    expect((porTestId('aprobar-cambio-de-cuenta') as HTMLButtonElement).disabled).toBe(false);
+    expect(porTestId('aprueba-quien-lo-pidio')?.textContent).toContain('queda marcado en la bitácora');
+    expect(porTestId('por-que-no-aprueba')).toBeNull();
+  });
 });
 
 /**

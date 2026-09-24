@@ -13,6 +13,22 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
+import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
+
+/**
+ * El `returnUrl` de la barra. Se lee de `window.location` y no con
+ * `useSearchParams` a propósito: éste obliga a envolver la página en
+ * `<Suspense>` y el valor sólo se necesita al irse. Se sanea al usarlo.
+ */
+function returnUrlDeLaBarra(): string | null {
+  if (typeof window === 'undefined') return null;
+  // Se sanea ACÁ, donde se lee (lo exige el guardián de destinos de la URL);
+  // `destinoTrasElSegundoFactor` vuelve a mirar, que no cuesta nada.
+  const crudo = new URLSearchParams(window.location.search).get('returnUrl');
+  const saneado = sanitizeReturnUrl(crudo, '/');
+  return saneado === '/' ? null : saneado;
+}
 
 export default function MfaVerifyPage() {
   const router = useRouter();
@@ -49,11 +65,12 @@ export default function MfaVerifyPage() {
   const [hayError, setHayError] = useState(false);
   const inscribiendo = tieneFactor === false || quiereInscribir;
 
-  // If MFA is not required, redirect to dashboard. T-0099: if enrollment
-  // turns out to be what's actually pending (defensive — these two states
-  // are meant to be mutually exclusive, see contract.md T-0099 §3), send to
-  // /auth/mfa-enroll instead of stranding on a verify screen with nothing to
-  // verify.
+  // If MFA is not required, redirect away. T-0099: if enrollment turns out to
+  // be what's actually pending (defensive — these two states are meant to be
+  // mutually exclusive, see contract.md T-0099 §3), send to /auth/mfa-enroll
+  // instead of stranding on a verify screen with nothing to verify. When
+  // nothing is pending, go to the destination the person was headed to (the
+  // saneado `returnUrl`) or the start of their panel.
   useEffect(() => {
     if (!user) return;
     if (mfaEnrollRequired) {
@@ -61,12 +78,7 @@ export default function MfaVerifyPage() {
       return;
     }
     if (!mfaRequired) {
-      const dashboardPath = user.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role));
     }
   }, [user, mfaRequired, mfaEnrollRequired, router]);
 
@@ -125,13 +137,8 @@ export default function MfaVerifyPage() {
       // Mark MFA as verified in context
       setMfaVerified();
 
-      // Redirect to dashboard
-      const dashboardPath = user?.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user?.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+      // Al destino que traía la persona (QA 23-09), o al inicio de su panel.
+      router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
     } catch (err) {
       const msg = (err as Error).message || '';
       // 🔴 Las casillas se pintan en rojo además del aviso: el aviso se va solo

@@ -547,6 +547,8 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                   Este candidato aún no tiene un análisis de IA generado por el agente.
                 </p>
               </div>
+            ) : evaluacionDesactualizada(evaluation) ? (
+              <AvisoDeEvaluacionDesactualizada />
             ) : aiError ? (
               <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -997,6 +999,34 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
  *
  * Exported for direct unit testing (see CandidateDrawer.test.tsx).
  */
+/**
+ * 🔴 Auditoría 23-09-2026: el candidato cambió sus datos (o reactivó la
+ * postulación) después de evaluarlo. El back ya borró el puntaje y dejó la
+ * evaluación esperando con `datos_cambiaron`: mostrar el viejo al lado de los
+ * datos nuevos era aprobar a alguien con el estudio de otra versión suya.
+ */
+export function evaluacionDesactualizada(
+  evaluation: Pick<EvaluationResult, 'awaiting_reason'> | null | undefined,
+): boolean {
+  return evaluation?.awaiting_reason === 'datos_cambiaron';
+}
+
+export function AvisoDeEvaluacionDesactualizada() {
+  return (
+    <div
+      className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm"
+      data-testid="evaluacion-desactualizada"
+    >
+      <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+      <span>
+        <span className="font-semibold">Hay que volver a evaluarlo.</span> El candidato
+        cambió sus datos después del estudio, así que el puntaje anterior ya no vale. Pide
+        un estudio nuevo; no se exige subir documentos otra vez.
+      </span>
+    </div>
+  );
+}
+
 export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
   if (!study) {
     return (

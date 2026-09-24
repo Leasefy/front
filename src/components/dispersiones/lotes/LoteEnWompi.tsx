@@ -76,14 +76,6 @@ export function avanceEnPalabras(e: Pick<EnvioAWompi, 'pagados' | 'totalDeGiros'
 }
 
 /**
- * El ancho de la barra: cuántos giros de los mandados ya salieron. No es una
- * tasa de recaudo (lo que vigila `tasa-de-recaudo.guardian`): es avance.
- */
-export function anchoDelAvance(hechos: number, de: number): string {
-  return `${de > 0 ? Math.min(100, (hechos * 100) / de) : 0}%`;
-}
-
-/**
  * La lectura de Wompi para un lote. Falla ABIERTO: con error, `vista` queda
  * `null` y el detalle sigue por archivo. Mientras el lote está en Wompi se
  * vuelve a pedir cada 30 s, para que el avance se vea sin recargar.
@@ -229,21 +221,9 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
               {envio.cuentaOrigen}.
             </span>
           </p>
-          <div
-            className="h-2 overflow-hidden rounded-full bg-surface-muted"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={envio.totalDeGiros}
-            aria-valuenow={envio.pagados}
-            aria-label="Giros pagados por Wompi"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{
-                width: anchoDelAvance(envio.pagados, envio.totalDeGiros),
-              }}
-            />
-          </div>
+          {/* 🔴 Sin barra propia (Nico, 23-09: «todas las cargas déjalas que
+              sucedan allí»): el avance del envío lo pinta el centro de
+              procesos. Acá queda el dato del lote, en una frase. */}
           {envio.mensaje && (
             <Banner
               variant={

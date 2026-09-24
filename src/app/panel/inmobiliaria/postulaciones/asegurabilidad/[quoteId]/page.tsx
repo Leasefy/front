@@ -6,7 +6,7 @@
 // D-33-10 / D-33-11: Phase 33 wires the two header actions ("Pedir explicación"
 // + "Re-cotizar con cambios") and the ReQuoteOfBadge subtitle.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -452,11 +452,8 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 // Default export — wrapped with PageGuard
 // ---------------------------------------------------------------------------
 
-export default function QuoteDetailPage({
-  params,
-}: {
-  params: { quoteId: string }
-}) {
+export default function QuoteDetailPage(props: { params: Promise<{ quoteId: string }> }) {
+  const params = use(props.params)
   return (
     <PageGuard module="cotizador" action="view">
       <QuoteDetailContent quoteId={params.quoteId} />

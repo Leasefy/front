@@ -369,6 +369,39 @@ describe('useOnboardingProvisioning — dónde quedó', () => {
     expect(hook.get().fallo?.status).toBe(400)
   })
 
+  it('el 409 CORREO_DE_OTRA_INMOBILIARIA muestra el mensaje del back y no ofrece reintentar', async () => {
+    postUsersOnboardingMock.mockRejectedValue(
+      new ApiError(
+        409,
+        'Ese correo ya es el de otra inmobiliaria en Leasefy. Usa el correo de la tuya; si es la misma, pídele acceso a su administrador.',
+        'CORREO_DE_OTRA_INMOBILIARIA',
+      ),
+    )
+    const hook = renderHook()
+    await flush()
+    act(() => hook.get().provision(VALID_INPUT))
+    await flush()
+
+    expect(hook.get().status).toBe('error')
+    expect(hook.get().fallo?.mensaje).toContain('ya es el de otra inmobiliaria')
+    // Reintentar manda el mismo correo: daría el mismo 409 para siempre.
+    expect(hook.get().fallo?.reintentable).toBe(false)
+    expect(hook.get().fallo?.status).toBe(409)
+  })
+
+  it('el 409 CORREO_DE_OTRA_INMOBILIARIA sin mensaje no cae en el genérico', async () => {
+    postUsersOnboardingMock.mockRejectedValue(
+      new ApiError(409, '', 'CORREO_DE_OTRA_INMOBILIARIA'),
+    )
+    const hook = renderHook()
+    await flush()
+    act(() => hook.get().provision(VALID_INPUT))
+    await flush()
+
+    expect(hook.get().fallo?.mensaje).toContain('ya es el de otra inmobiliaria')
+    expect(hook.get().fallo?.reintentable).toBe(false)
+  })
+
   it('un 503 sí es reintentable', async () => {
     postUsersOnboardingMock.mockRejectedValue(new ApiError(503, 'Intenta en unos minutos.'))
     const hook = renderHook()

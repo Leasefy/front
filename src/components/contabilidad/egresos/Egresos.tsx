@@ -105,6 +105,7 @@ import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
+import { useI18n } from '@/lib/i18n';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
   {
@@ -124,6 +125,7 @@ export function parteDeEgresos(valor: string | null | undefined): ParteDeEgresos
 }
 
 export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = {}) {
+  const { t } = useI18n();
   const [parte, setParte] = useState<ParteDeEgresos>(inicial);
 
   const [egresos, setEgresos] = useState<Egreso[] | null>(null);
@@ -304,7 +306,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         toast.success('Lote anulado. Sus egresos volvieron a quedar pendientes.');
       } else {
         await gastosApi.egresos.anular(id, motivo.trim());
-        toast.success('Egreso anulado. Si estaba pagado, su asiento quedó reversado.');
+        toast.success(t('inmobiliaria.egresos.anulado'));
       }
       setAnulando(null);
       setMotivo('');
@@ -552,9 +554,17 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                                 <LinkSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                                 Conciliar
                               </AccionConMotivo>
+                              {/* 🔴 Un egreso PAGADO no se anula (back, 23-09-2026: 409
+                                  `EGRESO_PAGADO_NO_SE_ANULA`). Antes el botón se ofrecía y
+                                  el back reversaba el asiento del pago antes de reventar. */}
                               <AccionConMotivo
-                                puede={escritura.puede && e.estado !== 'ANULADO'}
-                                motivo={escritura.motivo ?? 'Este egreso ya está anulado.'}
+                                puede={escritura.puede && e.estado !== 'ANULADO' && e.estado !== 'PAGADO'}
+                                motivo={
+                                  escritura.motivo ??
+                                  (e.estado === 'PAGADO'
+                                    ? t('inmobiliaria.egresos.anularPagado')
+                                    : t('inmobiliaria.egresos.anularAnulado'))
+                                }
                                 onClick={() => {
                                   setAnulando({ tipo: 'egreso', egreso: e });
                                   setMotivo('');

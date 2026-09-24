@@ -9,7 +9,7 @@
  * del 503 con `code` (escrituras).
  */
 
-import { apiClient, ApiError } from '@/lib/api/client';
+import { apiClient, ApiError, getAccessToken } from '@/lib/api/client';
 import {
   CODIGOS_SIN_MIGRAR,
   type CambiosDeCostos,
@@ -44,6 +44,7 @@ import {
   type TasasDeUsura,
 } from './finanzas.types';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 const BASE = '/inmobiliaria/finanzas';
 
 /** `?a=1&b=2`, saltándose lo vacío. `''` cuando no queda nada. */
@@ -188,9 +189,58 @@ export const finanzasApi = {
   girosDevueltos: (estado: 'VIVOS' | 'TODOS' = 'VIVOS') =>
     apiClient.get<GirosDevueltos>(`${BASE}/giros-devueltos${query({ estado })}`),
 
-  /** Permiso `dispersiones:edit`. 503 `GIROS_DEVUELTOS_SIN_MIGRAR`. */
-  marcarDevuelto: (devolucion: NuevaDevolucion) =>
-    apiClient.post<DevolucionRegistrada>(`${BASE}/giros-devueltos`, devolucion),
+  /**
+   * Permiso `dispersiones:edit`. 503 `GIROS_DEVUELTOS_SIN_MIGRAR`.
+   *
+   * 🔴 Multipart desde el 23-09 (Nico): el soporte del banco —el extracto o el
+   * comprobante de la devolución— es OBLIGATORIO, en el campo `soporte`
+   * (PDF o imagen, hasta 10 MB). Sin él el back responde 400
+   * `SOPORTE_DE_LA_DEVOLUCION_OBLIGATORIO`.
+   */
+  marcarDevuelto: async (devolucion: NuevaDevolucion): Promise<DevolucionRegistrada> => {
+    const f = new FormData();
+    f.append('dispersionId', devolucion.dispersionId);
+    f.append('motivo', devolucion.motivo);
+    if (devolucion.motivoDetalle) f.append('motivoDetalle', devolucion.motivoDetalle);
+    if (devolucion.codigoDelBanco) f.append('codigoDelBanco', devolucion.codigoDelBanco);
+    f.append('fechaDeLaDevolucion', devolucion.fechaDeLaDevolucion);
+    f.append('soporte', devolucion.soporte);
+    const token = getAccessToken();
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(`${BACKEND_URL}${BASE}/giros-devueltos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: f,
+      });
+    } catch (error) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    if (!respuesta.ok) {
+      const cuerpo = (await respuesta.json().catch(() => ({}))) as Record<string, unknown>;
+      const mensaje = Array.isArray(cuerpo.message)
+        ? (cuerpo.message as string[])
+        : typeof cuerpo.message === 'string'
+          ? cuerpo.message
+          : 'No se pudo marcar el giro como devuelto.';
+      throw new ApiError(
+        respuesta.status,
+        mensaje,
+        typeof cuerpo.code === 'string' ? cuerpo.code : undefined,
+        cuerpo,
+      );
+    }
+    return respuesta.json() as Promise<DevolucionRegistrada>;
+  },
+
+  /** Permiso `dispersiones:view`. La URL firmada (1 hora) del soporte del banco. */
+  soporteDelGiroDevuelto: (id: string) =>
+    apiClient.get<{ url: string; nombre: string; tipo: string }>(
+      `${BASE}/giros-devueltos/${encodeURIComponent(id)}/soporte`,
+    ),
 
   /** Permiso `dispersiones:edit`. `fecha` = el día del giro que sí salió. */
   regirar: (id: string, dispersionNuevaId: string, fecha: string) =>

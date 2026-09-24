@@ -45,11 +45,17 @@ export function useNombresDelEquipo() {
 
   const yo = user?.id ?? null;
 
+  /**
+   * `nombreDelBack` es el nombre que el back ya resolvió (`creadoPorNombre`,
+   * `aprobadoPorNombre`, QA 23-09): gana sobre la lista de agentes, que no
+   * trae a los administradores — por eso el detalle decía «Armado por Usuario
+   * 435f5734». El id corto queda sólo para cuando nadie supo el nombre.
+   */
   const nombreDe = useCallback(
-    (userId: string | null | undefined): string => {
+    (userId: string | null | undefined, nombreDelBack?: string | null): string => {
       if (!userId) return '—';
       if (yo === userId) return 'Tú';
-      return porId[userId] ?? `Usuario ${userId.slice(0, 8)}`;
+      return nombreDelBack || porId[userId] || `Usuario ${userId.slice(0, 8)}`;
     },
     [porId, yo],
   );

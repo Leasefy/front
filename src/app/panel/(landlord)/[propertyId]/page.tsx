@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, use } from 'react';
 import Link from 'next/link';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import { useRouter } from 'next/navigation';
@@ -55,9 +55,9 @@ import { formatCanon, formatFecha, mesesHastaFin } from './format';
 // ============================================================================
 
 interface PropertyCandidatesPageProps {
-  params: {
+  params: Promise<{
     propertyId: string;
-  };
+  }>;
 }
 
 interface CandidateRow extends LandlordCandidate {
@@ -70,7 +70,8 @@ interface CandidateRow extends LandlordCandidate {
 // Component
 // ============================================================================
 
-export default function PropertyCandidatesPage({ params }: PropertyCandidatesPageProps) {
+export default function PropertyCandidatesPage(props: PropertyCandidatesPageProps) {
+  const params = use(props.params);
   const { locale } = useI18n();
   const { propertyId } = params;
   const router = useRouter();

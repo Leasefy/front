@@ -105,9 +105,18 @@ export async function adminApi<T>(path: string, opts: ApiOptions = {}): Promise<
     redirectTo('/admin/login')
     throw new ApiError(401, 'Sesión expirada')
   }
-  if (res.status === 403 && !opts.noForbiddenRedirect) {
-    redirectTo('/admin/forbidden')
-    throw new ApiError(403, 'No autorizado')
+  if (res.status === 403) {
+    const cuerpo = await res.clone().json().catch(() => undefined)
+    // 🔴 Antes que `noForbiddenRedirect`: sin segundo factor NINGUNA llamada
+    // pasa, sea proxy o no, y la salida es activarlo, no un error de dominio.
+    if (pideSegundoFactor(cuerpo)) {
+      redirectTo(RUTA_DEL_SEGUNDO_FACTOR)
+      throw new ApiError(403, MENSAJE_SEGUNDO_FACTOR, cuerpo)
+    }
+    if (!opts.noForbiddenRedirect) {
+      redirectTo('/admin/forbidden')
+      throw new ApiError(403, 'No autorizado')
+    }
   }
 
   if (!res.ok) {
@@ -155,6 +164,11 @@ export async function adminApiBlob(path: string, opts: ApiOptions = {}): Promise
     throw new ApiError(401, 'Sesión expirada')
   }
   if (res.status === 403) {
+    const cuerpo = await res.clone().json().catch(() => undefined)
+    if (pideSegundoFactor(cuerpo)) {
+      redirectTo(RUTA_DEL_SEGUNDO_FACTOR)
+      throw new ApiError(403, MENSAJE_SEGUNDO_FACTOR, cuerpo)
+    }
     redirectTo('/admin/forbidden')
     throw new ApiError(403, 'No autorizado')
   }
@@ -173,11 +187,37 @@ export function adminApiUrl(path: string, query?: ApiOptions['query']): string {
   return buildUrl(path, query)
 }
 
+/**
+ * 🔴 SEGUNDO FACTOR OBLIGATORIO en el panel de administración (auditoría de
+ * seguridad, 23-09-2026). El back (`AdminAllowlistGuard`) responde 403 con
+ * `code: 'SEGUNDO_FACTOR_REQUERIDO'` a un correo de la lista cuya sesión no
+ * pasó un segundo factor (`aal1`: se entra con enlace mágico). Ese 403 NO es
+ * «no estás en la lista»: mandarlo a `/admin/forbidden` le diría a un admin de
+ * verdad que pida que lo agreguen. Va a `/admin/segundo-factor`, que lo inscribe
+ * si no tiene factor o le pide el código si ya lo tiene.
+ */
+export const RUTA_DEL_SEGUNDO_FACTOR = '/admin/segundo-factor'
+export const CODIGO_SEGUNDO_FACTOR = 'SEGUNDO_FACTOR_REQUERIDO'
+const MENSAJE_SEGUNDO_FACTOR = 'El panel de administración exige segundo factor.'
+
+export function pideSegundoFactor(cuerpo: unknown): boolean {
+  return (
+    !!cuerpo &&
+    typeof cuerpo === 'object' &&
+    (cuerpo as { code?: unknown }).code === CODIGO_SEGUNDO_FACTOR
+  )
+}
+
+/** ¿Este error es el 403 del segundo factor? (para el guard del layout). */
+export function esFaltaDeSegundoFactor(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 403 && pideSegundoFactor(err.body)
+}
+
 function redirectTo(path: string): void {
   if (typeof window === 'undefined') return
-  if (path === '/admin/login') {
+  if (path === '/admin/login' || path === RUTA_DEL_SEGUNDO_FACTOR) {
     const next = window.location.pathname + window.location.search
-    window.location.href = `/admin/login?next=${encodeURIComponent(next)}`
+    window.location.href = `${path}?next=${encodeURIComponent(next)}`
     return
   }
   window.location.href = path

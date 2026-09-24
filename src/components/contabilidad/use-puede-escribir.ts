@@ -192,3 +192,43 @@ export function usePuedeCambiarEgresos(): PuedeEscribir {
   }
   return { puede: false, motivo: MOTIVO_SIN_CAMBIO_DE_EGRESO, usuarioId };
 }
+
+/**
+ * El porqué de no poder bajar un archivo de la contabilidad sin `reportes:export`.
+ */
+export const MOTIVO_SIN_EXPORTAR =
+  'Tu rol puede ver la contabilidad en pantalla, pero no descargarla: el archivo lleva el documento, la dirección y los pagos de todos los terceros. Pídele a un administrador el permiso «Exportar» de Reportes.';
+
+/**
+ * ¿Puede bajar el ARCHIVO de la exógena (o cualquier export de la contabilidad)?
+ *
+ * 🔴 23-09 (datos personales): el back pide `reportes:export` para
+ * `GET /contabilidad/exogena/:formato/archivo`, igual que para `libro.csv`. La
+ * lectura en pantalla sigue con `reportes:view`; llevarse en un CSV a todos los
+ * terceros del año con su documento y su dirección es otra cosa. Mismo criterio
+ * que los demás: sólo deshabilita y explica; el back es la autoridad.
+ */
+export function usePuedeExportarContabilidad(): PuedeEscribir {
+  const permisos = usePermissionsContextSafe();
+  const auth = useContext(AuthContext);
+  const usuarioId = auth?.user?.id ?? null;
+
+  if (!permisos) {
+    return {
+      puede: false,
+      motivo: 'No pudimos leer tu rol en la inmobiliaria. Recarga la pantalla.',
+      usuarioId,
+    };
+  }
+  if (permisos.isLoading) {
+    return {
+      puede: false,
+      motivo: 'Estamos verificando tu rol en la inmobiliaria.',
+      usuarioId,
+    };
+  }
+  if (permisos.isAdmin || permisos.canAccess('reportes', 'export')) {
+    return { puede: true, motivo: null, usuarioId };
+  }
+  return { puede: false, motivo: MOTIVO_SIN_EXPORTAR, usuarioId };
+}

@@ -75,6 +75,7 @@ export function WizardShell({
     submitApplication,
     isLoading,
     submissionError,
+    submissionLoginHref,
     canSubmit,
     currentStepValidation,
     currentStepMissingFields,
@@ -396,6 +397,19 @@ export function WizardShell({
                   className="mx-4 mb-3 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger lg:mx-6"
                 >
                   {submissionError}
+                  {/* 409 INICIA_SESION: el correo ya tiene cuenta. La salida
+                      es entrar y volver a esta misma postulación. */}
+                  {submissionLoginHref && (
+                    <>
+                      {' '}
+                      <Link
+                        href={submissionLoginHref}
+                        className="font-medium underline underline-offset-2"
+                      >
+                        Iniciar sesión
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
 

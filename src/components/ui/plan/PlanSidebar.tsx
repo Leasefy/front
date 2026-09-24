@@ -200,6 +200,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = item.children && item.children.length > 0;
   const pathname = usePathname();
+  const router = useRouter();
 
   const checkChildActive = (children: NavItem[]) => {
     return children.some(child => {
@@ -310,12 +311,33 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
   }
 
   // Expanded leaf row — the REAL Cadence SidebarItem (owns hover/active/focus).
-  // legacyBehavior + passHref bridges Next client routing onto the DS anchor.
+  //
+  // 🔴 Sin el puente `legacyBehavior` + `passHref` de `Link` (QA 23-09): Next 15 lo depreca y lo
+  // avisa en la consola. `SidebarItem` pinta su propio `<a>` y no tiene
+  // `asChild`, así que la navegación del lado del cliente se hace acá, con lo
+  // MISMO que hacía el puente: `href` real en el ancla (⌘/Ctrl/Shift/clic del
+  // medio abren otra pestaña como cualquier enlace) y, en un clic simple,
+  // `router.push` sin recargar. El prefetch de `Link` se conserva al pasar el
+  // mouse o enfocar la fila.
   // SidebarItemProps (HTMLAttributes) can't type data-*, so the PanelTour hook
   // rides on a minimal wrapper only when present.
+  const navegar = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onClick?.();
+    if (e.defaultPrevented) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    router.push(item.href);
+  };
+  const precargar = () => {
+    try {
+      router.prefetch?.(item.href);
+    } catch {
+      /* el prefetch es una cortesía */
+    }
+  };
   const row = (
-    <Link href={item.href} legacyBehavior passHref>
       <SidebarItem
+        href={item.href}
         icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
         label={displayLabel(item)}
         active={isActive}
@@ -324,12 +346,17 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         // the IA / Próximamente pills ride here without forking the DS row.
         badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
         depth={depth}
-        onClick={onClick}
+        onClick={navegar}
+        onMouseEnter={precargar}
+        onFocus={precargar}
         className={
           enSeccion
             ? // El tramo encendido cae exactamente sobre la guía de la sección
               // (`GUIA_DE_SECCION`: 1 px de borde + 3 px de aire → centro a −3,5 px).
-              "data-[active]:before:absolute data-[active]:before:-left-[4.5px] data-[active]:before:top-1.5 data-[active]:before:bottom-1.5 data-[active]:before:w-[2px] data-[active]:before:rounded-full data-[active]:before:bg-primary data-[active]:before:content-['']"
+              // Nico, 23-09: «que se vea algo más top, glow up esa línea»: 3 px,
+              // degradado del primario hacia abajo y un halo del mismo color, así
+              // se lee como luz sobre la guía y no como un borde más.
+              "data-[active]:before:absolute data-[active]:before:-left-[5px] data-[active]:before:top-1 data-[active]:before:bottom-1 data-[active]:before:w-[3px] data-[active]:before:rounded-full data-[active]:before:bg-gradient-to-b data-[active]:before:from-primary data-[active]:before:via-primary data-[active]:before:to-primary/50 data-[active]:before:shadow-[0_0_10px_1px_hsl(var(--primary)/0.55)] data-[active]:before:content-[''] motion-safe:data-[active]:before:animate-in motion-safe:data-[active]:before:fade-in motion-safe:data-[active]:before:duration-300"
             : undefined
         }
         // SidebarItem fija su padding con `style` y esparce los props DESPUÉS,
@@ -337,7 +364,6 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0, enS
         style={enSeccion ? { paddingLeft: 8, paddingRight: 6 } : undefined}
         title={enSeccion ? displayLabel(item) : undefined}
       />
-    </Link>
   );
 
   return item.dataTourTarget ? <div data-tour-target={item.dataTourTarget}>{row}</div> : row;
@@ -442,8 +468,11 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
       >
         <span
           className={cn(
-            'min-w-0 flex-1 truncate text-[13px] font-semibold tracking-[-0.01em]',
-            marcada ? 'text-primary' : 'text-fg',
+            // La cabecera de sección habla con la voz de las etiquetas de la
+            // casa (mono, MAYÚSCULA, espaciada — la de `SectionLabel`): se
+            // distingue de las filas sin competir con ellas (Nico, 23-09).
+            'min-w-0 flex-1 truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em]',
+            marcada ? 'text-primary' : 'text-fg-subtle group-hover/seccion:text-fg-muted',
           )}
         >
           {bloque.cabecera.label}
@@ -479,14 +508,14 @@ function SeccionPlegable({ bloque, abierta, contieneLaActiva, onAlternar, isActi
       {/* La altura se anima con `grid-template-rows` 0fr↔1fr: no hay que
           medir nada y funciona con cualquier cantidad de filas. Cerrada, la
           caja es `inert`: sus enlaces salen del orden del Tab y del árbol de
-          accesibilidad (atributo crudo — React 18 no lo tipa; ver
-          MuroDeMigracion). */}
+          accesibilidad (prop booleana desde React 19; el string vacío de
+          React 18 ahí se lee como falso — ver MuroDeMigracion). */}
       <div
         id={idFilas}
         data-abierta={abierta ? 'true' : 'false'}
         className="grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: abierta ? '1fr' : '0fr', opacity: abierta ? 1 : 0 }}
-        {...(abierta ? {} : ({ inert: '' } as unknown as Record<string, string>))}
+        inert={!abierta}
       >
         <div className="min-h-0 overflow-hidden">
           <div className={cn(GUIA_DE_SECCION, 'mb-1 mt-0.5 space-y-0.5')}>

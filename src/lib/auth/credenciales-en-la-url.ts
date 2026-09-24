@@ -63,3 +63,30 @@ export function limpiarCredencialesDeLaUrl(): boolean {
   window.history.replaceState(window.history.state, '', limpia);
   return true;
 }
+
+/**
+ * Los tokens de sesión que llegan en el FRAGMENTO de un enlace de Supabase
+ * (`/auth/enlace#access_token=…&refresh_token=…`, flujo implícito de
+ * invitaciones y enlaces del admin) se sacan de la barra ANTES de usarlos.
+ *
+ * ── Por qué (endurecimiento de la sesión, 23-09) ──────────────────────────
+ * El fragmento no viaja al servidor ni en el `Referer`, pero sí se queda: en
+ * la barra mientras se abre la sesión (una captura de pantalla, un «copiar
+ * enlace» para pedir ayuda), en el HISTORIAL del navegador —y con él, en el
+ * historial sincronizado de la cuenta de Google/Apple— y al alcance de
+ * cualquier script que lea `location.href`. El `refresh_token` de ahí es una
+ * sesión entera: medido en el navegador el 23-09, la URL con los dos tokens
+ * quedaba como la entrada de historial de `/auth/enlace`.
+ *
+ * Devuelve los parámetros del fragmento (para que la pantalla los use) y deja
+ * la URL sin él; si el fragmento no trae tokens, no toca nada.
+ */
+export function tomarTokensDelFragmento(): URLSearchParams | null {
+  if (typeof window === 'undefined' || !window.location.hash) return null;
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  if (params.has('access_token') || params.has('refresh_token')) {
+    const { pathname, search } = window.location;
+    window.history.replaceState(window.history.state, '', `${pathname}${search}`);
+  }
+  return params;
+}

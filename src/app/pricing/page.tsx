@@ -10,6 +10,7 @@ import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Ca
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AgencyTierCard, BenefitCard } from '@/components/pricing/AgencyTierCard';
+import { usePlanesDelPropietario } from '@/lib/planes/use-planes-del-propietario';
 import { PricingDetailSheet, type PlanDetail } from '@/components/pricing/PricingDetailSheet';
 import { PricingFAQSection, pricingFaqs } from '@/components/pricing/PricingFAQSection';
 
@@ -291,7 +292,17 @@ function FlexCalculator() {
  * 2. Property owners who self-manage (DIY subscription)
  * 3. Real estate agencies (business subscription)
  */
+/**
+ * La cifra del plan del propietario, sin el «$» (lo pone la tarjeta). El precio
+ * lo dice el back (QA 23-09: acá decía 149.900 y el back cobra 149.000);
+ * mientras no llega, «—».
+ */
+function cifraDelPlan(valor: number | null): string {
+  return valor === null ? '—' : valor.toLocaleString('es-CO', { maximumFractionDigits: 0 });
+}
+
 export default function PricingPage() {
+  const { planDe } = usePlanesDelPropietario();
   const [userTextT, setUserTextT] = useState<UserTextT>('owner-managed');
   const [exampleRent, setExampleRent] = useState(2000000);
   const [selectedAgencyPlan, setSelectedAgencyPlan] = useState<AgencyPlan>(null);
@@ -792,7 +803,7 @@ export default function PricingPage() {
               />
               <AgencyTierCard
                 name="Propietario"
-                price="149.900"
+                price={cifraDelPlan(planDe('pro').price.monthly)}
                 period="/mes"
                 description="Tú administras, nosotros te damos las herramientas"
                 popular
@@ -810,7 +821,7 @@ export default function PricingPage() {
               />
               <AgencyTierCard
                 name="Inversionista"
-                price="299.900"
+                price={cifraDelPlan(planDe('flex').price.monthly)}
                 period="/mes"
                 description="Para propietarios con múltiples inmuebles"
                 features={[

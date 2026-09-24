@@ -23,6 +23,7 @@ import { useCallback, useState } from 'react';
 import { Banner } from '@leasefy/cadence';
 
 import { FilaDeProceso } from '@/components/procesos/FilaDeProceso';
+import { estaActivo } from '@/components/procesos/estado-del-proceso';
 import { descargarArchivoDelProceso, type Navegar } from '@/components/procesos/descargar-archivo-del-proceso';
 import { useCentroDeProcesos } from '@/lib/hooks/use-centro-de-procesos';
 import { RECURSO_LOTE } from '@/lib/api/procesos.service';
@@ -145,7 +146,14 @@ export function ArchivoDelLote({
         </div>
       )}
 
-      {proceso ? (
+      {/* 🔴 23-09 (Nico: «todas las cargas déjalas que sucedan allí»): el
+          archivo EN PREPARACIÓN no se pinta acá con su barra —eso lo muestra
+          el centro—; acá sólo el archivo ya hecho, con «Descargar». */}
+      {proceso && estaActivo(proceso) ? (
+        <p className="border-t border-border-faint px-4 py-3 text-caption text-fg-muted" data-testid="archivo-en-el-centro">
+          Se está preparando: lo sigues en el centro de procesos, arriba a la derecha, y aparece aquí cuando esté.
+        </p>
+      ) : proceso ? (
         <ul className="border-t border-border-faint">
           <FilaDeProceso proceso={proceso} onCambio={() => void archivo.refetch()} navegar={navegar} />
         </ul>

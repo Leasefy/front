@@ -55,6 +55,7 @@ import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { Spinner } from '@/components/ui/spinner'
 import type { PulsoAlerta, PulsoEnCurso, PulsoEstado, PulsoResponse } from '@/lib/api/piloto'
 
 /**
@@ -68,6 +69,8 @@ const ESTADO_META: Record<PulsoEstado, { punto: string; icono: Icon }> = {
   ok: { punto: 'bg-success', icono: CheckCircle },
   atencion: { punto: 'bg-warning', icono: WarningCircle },
   critico: { punto: 'bg-danger', icono: WarningOctagon },
+  // No se pudo leer nada: neutro, nunca verde (auditoría del Piloto, hallazgo 5).
+  desconocido: { punto: 'bg-fg-subtle', icono: Info },
 }
 
 /** Para un estado fuera del contrato: neutro, nunca verde. */
@@ -157,13 +160,27 @@ export function PilotoPulso({
 }: PilotoPulsoProps) {
   const { t } = useI18n()
 
+  // 🔴 Auditoría del Piloto (23-09-2026, hallazgo 4): esto era un bloque gris
+  // del ancho de la pantalla, sin una palabra, durante 10–15 s o para
+  // siempre. Ahora dice qué es y qué está midiendo; si no contesta a tiempo,
+  // el hook lo convierte en un error con «Intentar de nuevo».
   if (isLoading) {
     return (
-      <div
-        className="h-52 animate-pulse rounded-lg border border-border bg-surface-muted"
+      <section
+        className="rounded-lg border border-border bg-surface px-6 pb-6 pt-6"
         role="status"
-        aria-label={t('common.loading')}
-      />
+        aria-live="polite"
+        data-testid="piloto-pulso-cargando"
+      >
+        <div className="flex items-center gap-2">
+          <Spinner size="sm" variant="muted" />
+          <MonoLabel>{t('inmobiliaria.piloto.pulso.titulo')}</MonoLabel>
+        </div>
+        <p className="mt-3 max-w-3xl text-body text-fg-muted">
+          {t('inmobiliaria.piloto.pulso.midiendo')}
+        </p>
+        <div className="mt-4 h-16 animate-pulse rounded-md bg-surface-muted" aria-hidden="true" />
+      </section>
     )
   }
 
@@ -174,7 +191,7 @@ export function PilotoPulso({
     return (
       <FalloDeCarga
         error={error}
-        queEs="el tablero"
+        queEs={t('inmobiliaria.piloto.pulso.queEs')}
         {...(onRefetch ? { onReintentar: onRefetch } : {})}
       />
     )
@@ -221,7 +238,10 @@ export function PilotoPulso({
             )}
             <span className={`relative inline-flex h-2 w-2 rounded-full ${meta.punto}`} />
           </span>
-          <MonoLabel>{estadoLabel}</MonoLabel>
+          {/* Cada bloque dice qué es (EL MOLDE, regla 6): el nombre y su estado. */}
+          <MonoLabel>
+            {t('inmobiliaria.piloto.pulso.titulo')} · {estadoLabel}
+          </MonoLabel>
         </div>
 
         <h2 className="mt-3 max-w-3xl text-balance text-h2 font-semibold text-fg">
@@ -285,7 +305,10 @@ export function PilotoPulso({
           `border-border` queda sólo para el borde exterior. */}
       {(enCurso.length > 0 || alertasVisibles.length > 0) && (
         <div className="grid gap-px border-t border-border-faint bg-border-faint sm:grid-cols-2">
-          <div className="bg-surface pb-2 pt-5">
+          {/* `min-w-0` en cada columna: sin él, el título largo de una alerta
+              estira el track del grid más allá de la tarjeta y a 390 px se
+              cortaba a media palabra («esperá…») en vez de truncar (24-09). */}
+          <div className="min-w-0 bg-surface pb-2 pt-5">
             <h3 className="mb-1 px-6"><MonoLabel>
               {t('inmobiliaria.piloto.pulso.ahora')}</MonoLabel>
             </h3>
@@ -308,7 +331,7 @@ export function PilotoPulso({
             )}
           </div>
 
-          <div className="bg-surface pb-2 pt-5">
+          <div className="min-w-0 bg-surface pb-2 pt-5">
             <h3 className="mb-1 px-6"><MonoLabel>
               {t('inmobiliaria.piloto.pulso.alertas')}</MonoLabel>
             </h3>

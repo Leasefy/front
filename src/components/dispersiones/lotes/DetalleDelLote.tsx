@@ -108,6 +108,8 @@ import {
 } from './GirosDevueltos';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { LoteEnWompi, useLoteEnWompi } from './LoteEnWompi';
+import { AvisoDeArchivoAnulado } from './AvisoDeArchivoAnulado';
+import { useI18n } from '@/lib/i18n';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -164,8 +166,8 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
           : 'Facturación al propietario emitida'
       }
     >
-      <div className="space-y-1" data-testid="facturacion-del-lote">
-        <p>
+      <span className="block space-y-1" data-testid="facturacion-del-lote">
+        <span className="block">
           {r.emitidas}{' '}
           {r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} por{' '}
           {formatCurrency(r.totalCop)}
@@ -173,24 +175,24 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
             ` · ${r.yaEstaban} ya ${r.yaEstaban === 1 ? 'estaba' : 'estaban'} emitida${r.yaEstaban === 1 ? '' : 's'}`}
           {r.sinNumero > 0 && ` · ${r.sinNumero} sin número`}
           {r.candidatas > 0 && ` · de ${r.candidatas}`}
-        </p>
+        </span>
         {r.numeros.length > 0 && (
-          <p className="font-mono text-xs text-fg-muted">
+          <span className="block font-mono text-xs text-fg-muted">
             {r.numeros.slice(0, 8).join(' · ')}
             {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
-          </p>
+          </span>
         )}
         {hayFallas && (
-          <ul className="space-y-0.5">
+          <span role="list" className="block space-y-0.5">
             {r.fallas.map((f) => (
-              <li key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
+              <span role="listitem" className="block" key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
                 {nombreDelMes(f.mes)}: {f.motivo}
-              </li>
+              </span>
             ))}
-          </ul>
+          </span>
         )}
         {hayFallas && (
-          <p className="text-fg-muted">
+          <span className="block text-fg-muted">
             La plata ya salió del banco y el lote quedó PAGADO: lo que falta es
             emitir, y se reintenta desde{' '}
             <Link
@@ -200,9 +202,9 @@ function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
               Facturación
             </Link>
             .
-          </p>
+          </span>
         )}
-      </div>
+      </span>
     </Banner>
   );
 }
@@ -229,29 +231,29 @@ function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
             : `A los ${r.enviados} propietarios que quedaron en $0 les salió su extracto`
       }
     >
-      <div className="space-y-1" data-testid="extractos-de-compensados">
-        <p>
+      <span className="block space-y-1" data-testid="extractos-de-compensados">
+        <span className="block">
           {r.enviados} de {r.compensados}{' '}
           {r.compensados === 1 ? 'extracto enviado' : 'extractos enviados'}, con
           el detalle de las deducciones que explican por qué este mes no se les
           giró nada.
-        </p>
+        </span>
         {hayFallas && (
-          <ul className="space-y-0.5">
+          <span role="list" className="block space-y-0.5">
             {r.fallas.map((f) => (
-              <li key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
+              <span role="listitem" className="block" key={f.propietarioId} data-testid={`extracto-fallido-${f.propietarioId}`}>
                 <span className="font-medium">{f.nombre}</span>: {f.motivo}
-              </li>
+              </span>
             ))}
-          </ul>
+          </span>
         )}
         {hayFallas && (
-          <p className="text-fg-muted">
+          <span className="block text-fg-muted">
             El lote quedó PAGADO igual. El extracto se reenvía desde la ficha de
             cada propietario.
-          </p>
+          </span>
         )}
-      </div>
+      </span>
     </Banner>
   );
 }
@@ -285,6 +287,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const { vista, cargando, error, refetch, setVista } = useLoteDeDispersion(id);
   const { canAccess } = usePermissions();
   const { nombreDe, yo } = useNombresDelEquipo();
+  const { t } = useI18n();
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   /*
    * 🔴 Giros devueltos (contrato del 17-09, §8). El banco sólo puede devolver
@@ -383,6 +386,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
+  /*
+   * 🔴 Nico, 23-09: el giro que vuelve a salir no lo aprueba quien registró su
+   * devolución (el back responde 409 `APROBADOR_REGISTRO_LA_DEVOLUCION`).
+   * Se apaga «Aprobar» con el porqué antes del clic.
+   */
+  const registreUnaDevolucion =
+    yo !== null && (vista.devolucionesRegistradasPor ?? []).includes(yo);
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
 
   return (
@@ -435,11 +445,20 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {lote.extractosDeCompensados && (
         <ResultadoDeLosExtractos r={lote.extractosDeCompensados} />
       )}
+      {lote.estado === 'ESPERANDO_APROBACION' && registreUnaDevolucion && !soyElCreador && !bloqueado && (
+        <Banner variant="info" data-testid="registre-una-devolucion">
+          {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
+        </Banner>
+      )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
+      )}
+
+      {lote.estado !== 'ANULADO' && (
+        <AvisoDeArchivoAnulado pagos={vista.salieronEnUnArchivoAnulado} />
       )}
 
       {/* ── Línea de tiempo ────────────────────────────────────────────── */}
@@ -456,7 +475,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         />
         <Cifra
           etiqueta="Aprobado por"
-          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId) : 'Nadie todavía'}
+          valor={lote.aprobadoPorUserId ? nombreDe(lote.aprobadoPorUserId, vista.aprobadoPorNombre) : 'Nadie todavía'}
           mono={false}
           detalle={lote.aprobadoAt ? formatDateTime(lote.aprobadoAt) : undefined}
         />
@@ -478,8 +497,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             <Button
               onClick={() => setDialogo('aprobar')}
               hideArrow
-              disabled={soyElCreador || bloqueado}
-              title={soyElCreador ? 'Quien arma el lote no puede aprobarlo' : undefined}
+              disabled={soyElCreador || registreUnaDevolucion || bloqueado}
+              title={
+                soyElCreador
+                  ? 'Quien arma el lote no puede aprobarlo'
+                  : registreUnaDevolucion
+                    ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
+                    : undefined
+              }
             >
               <ShieldCheck className="h-4 w-4" />
               Aprobar
@@ -763,7 +788,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </div>
         <p className="text-xs text-fg-muted">
-          Armado por {nombreDe(lote.creadoPorUserId)} · {lote.items.length}{' '}
+          Armado por {nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
         </p>
       </section>
@@ -1557,14 +1582,25 @@ function AnularDialog({
   onCerrar,
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
+  const { t } = useI18n();
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
+   * procesó en el banco (back, 23-09-2026: 409
+   * `CONFIRMA_QUE_EL_ARCHIVO_PUDO_LLEGAR_AL_BANCO` sin la confirmación). Sin
+   * esta casilla el botón mandaba el cuerpo de siempre y el lote no se podía
+   * anular nunca.
+   */
+  const conArchivo = lote.estado === 'ARCHIVO_GENERADO';
+  const [confirmo, setConfirmo] = useState(false);
 
   useEffect(() => {
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setConfirmo(false);
     }
   }, [abierto]);
 
@@ -1573,10 +1609,14 @@ function AnularDialog({
       setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
+    if (conArchivo && !confirmo) {
+      setError(t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar'));
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
-      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo);
+      const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
       toast.success('Lote anulado', {
         description: 'Sus dispersiones quedaron libres para entrar en otro lote.',
@@ -1611,13 +1651,34 @@ function AnularDialog({
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          {conArchivo && (
+            <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
+              <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  data-testid="casilla-archivo-del-banco"
+                  checked={confirmo}
+                  onCheckedChange={(v) => setConfirmo(v === true)}
+                />
+                <span>{t('inmobiliaria.dispersiones.lote.anular.confirmaArchivo')}</span>
+              </label>
+            </div>
+          )}
           {error && <Banner variant="danger">{error}</Banner>}
         </div>
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={onCerrar} disabled={enviando}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={() => void anular()} isLoading={enviando} hideArrow>
+          <Button
+            variant="destructive"
+            onClick={() => void anular()}
+            isLoading={enviando}
+            disabled={conArchivo && !confirmo}
+            title={conArchivo && !confirmo ? t('inmobiliaria.dispersiones.lote.anular.faltaConfirmar') : undefined}
+            hideArrow
+            data-testid="boton-anular-lote"
+          >
             <Prohibit className="h-4 w-4" />
             Anular lote
           </Button>

@@ -345,10 +345,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   }, [puesto, refrescar]);
 
   /*
-   * `inert` como atributo crudo: React 18 no lo tipa como prop booleana (sí
-   * lo hace React 19), y pasarlo como booleano imprime `inert="false"`, que
-   * el navegador lee como PRESENTE. Un string vacío es la forma correcta, y
-   * sólo cuando el muro está puesto.
+   * `inert` es prop BOOLEANA desde React 19 (subida del 23-09): `true` pinta
+   * `inert=""` y `false` no pinta nada. 🔴 El truco de React 18 —pasar el
+   * atributo crudo como string vacío— en React 19 se lee como FALSO y el
+   * atributo desaparece sin error: el muro quedaba dibujado y la navegación de
+   * atrás seguía viva. Lo atrapó `MuroDeMigracion.test.tsx`.
    *
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
@@ -405,9 +406,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
-  const inerte = tapado
-    ? ({ inert: "" } as unknown as Record<string, string>)
-    : {};
+  const inerte = { inert: tapado };
 
   return (
     <MigracionContext.Provider value={contexto}>
@@ -1285,8 +1284,8 @@ function PasoEnFoco({
             data-ocupado={ocupado ? "" : undefined}
             aria-busy={ocupado || undefined}
             /*
-             * `inert` crudo por la misma razón que arriba: React 18 no lo tipa
-             * como booleano. Congela clicks, foco y teclado de TODO el paso.
+             * `inert` booleano (React 19, ver arriba). Congela clicks, foco y
+             * teclado de TODO el paso.
              *
              * 🔴 Salvo cuando el paso se congela SOLO. `inert` no se puede
              * desactivar en un descendiente, así que un paso con una espera
@@ -1295,9 +1294,7 @@ function PasoEnFoco({
              * única forma de que viva EN SU SITIO es que el `inert` lo ponga
              * quien conoce la tarjeta. Ver `seCongelaSolo`.
              */
-            {...(ocupado && !seCongelaSolo
-              ? ({ inert: "" } as unknown as Record<string, string>)
-              : {})}
+            inert={ocupado && !seCongelaSolo}
             className={ocupado && !seCongelaSolo ? "cursor-progress" : undefined}
           >
             <ContenidoDelPaso

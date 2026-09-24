@@ -21,6 +21,8 @@ import type { LoteDeDispersion, VistaDelLote } from '@/lib/api/lotes-de-dispersi
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
@@ -305,6 +307,16 @@ describe('<DetalleDelLote> — qué se ofrece en cada estado', () => {
     );
     // El nombre del que lo armó, no el uuid.
     expect(container.textContent).toContain('Armado por Ana Ruiz');
+  });
+
+  it('🔴 quien armó NO está en la lista de agentes (un administrador): el nombre lo dice el back (QA 23-09)', async () => {
+    await render(
+      vista(lote({ creadoPorUserId: '435f5734-0000-4000-8000-000000000000' }), {
+        creadoPorNombre: 'Nicolás García',
+      }),
+    );
+    expect(container.textContent).toContain('Armado por Nicolás García');
+    expect(container.textContent).not.toContain('Usuario 435f5734');
   });
 
   it('APROBADO: generar archivo y anular', async () => {
@@ -769,6 +781,35 @@ describe('<DetalleDelLote> — cierre', () => {
     ).toContain('La plata ya salió del banco');
   });
 
+  it('🔴 el aviso de la facturación no mete bloques dentro del <p> del Banner (error de hidratación, QA 23-09)', async () => {
+    const errores: string[] = [];
+    const espia = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errores.push(a.map(String).join(' '));
+    });
+    try {
+      await render(listoParaPagar());
+      vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
+        pagadoCon({
+          pedida: true,
+          candidatas: 2,
+          emitidas: 1,
+          yaEstaban: 0,
+          sinNumero: 0,
+          totalCop: 100_000,
+          numeros: ['FE-1'],
+          fallas: [{ mes: '2026-08', motivo: 'La resolución venció.' }],
+        }),
+      );
+      await pagar(true);
+    } finally {
+      espia.mockRestore();
+    }
+    expect(errores.filter((e) => /cannot (be a descendant of|contain a nested)/.test(e))).toEqual([]);
+    expect(container.querySelector('[data-testid="falla-2026-08"]')?.textContent).toContain(
+      'La resolución venció.',
+    );
+  });
+
   it('«ya estaban» se cuenta, no se pinta como error', async () => {
     await render(listoParaPagar());
     vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue(
@@ -883,7 +924,7 @@ describe('<DetalleDelLote> — cierre', () => {
     await escribir('motivo-de-anulacion', 'Cambió una cuenta');
     await clic('Anular lote');
 
-    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'Cambió una cuenta', false);
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Anulado');
   });
 
@@ -949,5 +990,89 @@ describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
   it('sin compensados no aparece la sección', async () => {
     await render(vista(lote()));
     expect(container.querySelector('[data-testid="compensados-del-lote"]')).toBeNull();
+  });
+});
+
+describe('<DetalleDelLote> — el archivo que pudo llegar al banco (23-09)', () => {
+  async function marcarCasilla() {
+    await act(async () => {
+      (document.body.querySelector('[data-testid="casilla-archivo-del-banco"]') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('🔴 con el archivo generado, anular pide la casilla y manda la confirmación al back', async () => {
+    await render(
+      vista(lote({ estado: 'ARCHIVO_GENERADO', archivoGeneradoAt: '2026-09-20T14:00:00.000Z' })),
+    );
+    vi.mocked(lotesDeDispersionApi.anular).mockResolvedValue(
+      lote({ estado: 'ANULADO', anuladoAt: '2026-09-21T10:00:00.000Z', motivoDeLaAnulacion: 'El banco lo rechazó' }),
+    );
+
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).not.toBeNull();
+    await escribir('motivo-de-anulacion', 'El banco lo rechazó');
+    // Sin la casilla, el botón está apagado y no se le pega al back.
+    expect(boton('Anular lote').disabled).toBe(true);
+    expect(lotesDeDispersionApi.anular).not.toHaveBeenCalled();
+
+    await marcarCasilla();
+    await clic('Anular lote');
+    expect(lotesDeDispersionApi.anular).toHaveBeenCalledWith(ID, 'El banco lo rechazó', true);
+  });
+
+  it('un lote sin archivo se anula sin casilla', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    await clic('Anular');
+    expect(document.body.querySelector('[data-testid="confirmar-archivo-del-banco"]')).toBeNull();
+  });
+
+  it('🔴 los pagos que ya salieron en el archivo de un lote anulado se avisan en el detalle', async () => {
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), {
+        salieronEnUnArchivoAnulado: [
+          {
+            dispersionId: 'disp-1',
+            propietarioId: 'prop-1',
+            nombre: 'JORGE RESTREPO',
+            valorCop: 1_800_000,
+            loteAnteriorId: 'lote-viejo',
+            archivoGeneradoAt: '2026-09-20T14:00:00.000Z',
+            anuladoAt: '2026-09-21T10:00:00.000Z',
+            motivoDeLaAnulacion: 'El banco lo rechazó',
+          },
+        ],
+      }),
+    );
+
+    const aviso = container.querySelector('[data-testid="aviso-archivo-anulado"]');
+    expect(aviso).not.toBeNull();
+    expect(cuerpo()).toContain('1 pago de este lote ya salió en el archivo de un lote anulado');
+    expect(aviso?.textContent).toContain('JORGE RESTREPO');
+    expect(aviso?.textContent).toContain('El banco lo rechazó');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/dispersiones/lotes/lote-viejo',
+    );
+  });
+});
+
+describe('<DetalleDelLote> — quien registró una devolución no aprueba (Nico, 23-09)', () => {
+  it('🔴 «Aprobar» apagado con el porqué cuando yo registré la devolución de un giro del lote', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-otro'] }),
+    );
+    const b = boton('Aprobar');
+    expect(b.disabled).toBe(true);
+    expect(b.getAttribute('title')).toContain('registraste la devolución');
+    expect(container.querySelector('[data-testid="registre-una-devolucion"]')).not.toBeNull();
+  });
+
+  it('otra persona sí ve «Aprobar» prendido', async () => {
+    usuarioActual = 'u-otro';
+    await render(
+      vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-tercero'] }),
+    );
+    expect(boton('Aprobar').disabled).toBe(false);
   });
 });

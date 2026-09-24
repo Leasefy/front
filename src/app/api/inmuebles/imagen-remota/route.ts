@@ -25,6 +25,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { traerConGuardia, FalloAlTraer } from '@/lib/inmuebles/traer-url';
 import { detectarTipoDeImagenPorFirma } from '@/lib/inmuebles/firma-imagen';
+import { haySesionValida } from '@/lib/api/sesion-de-la-ruta';
+import { limitarLaRuta, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +34,18 @@ export const runtime = 'nodejs';
 const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
 
 export async function GET(req: NextRequest) {
+  // Límite por IP ANTES de verificar la sesión (que le pregunta a Supabase):
+  // una ráfaga se corta sin costar nada. Por instancia en Vercel; ver
+  // `limite-de-la-ruta.ts`.
+  const demasiadas = limitarLaRuta(req, POLITICAS_DE_LAS_RUTAS.imagenRemota);
+  if (demasiadas) return demasiadas;
+
+  // Sin sesión esto era un proxy abierto a internet (auditoría 23-09): ver
+  // `sesion-de-la-ruta.ts`.
+  if (!(await haySesionValida(req))) {
+    return NextResponse.json({ error: 'sin_sesion' }, { status: 401 });
+  }
+
   const url = req.nextUrl.searchParams.get('url')?.trim() ?? '';
 
   if (!url) {

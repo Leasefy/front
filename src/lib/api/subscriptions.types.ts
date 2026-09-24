@@ -80,34 +80,34 @@ export interface CreateSubscriptionDto {
 }
 
 // ============================================================================
-// PSE Subscribe DTO (POST /subscriptions/subscribe)
+// PSE real del plan (POST /subscriptions/pse/checkout — back
+// `PseSubscriptionCheckoutDto`). Reemplaza al `/pse-mock` (borrado el 23-09).
 // ============================================================================
 
 export type PSEDocumentType = 'CC' | 'CE' | 'NIT' | 'PP';
 export type SubscriptionCycle = 'MONTHLY' | 'ANNUAL';
 
-export interface PSEPaymentData {
-  documentType: PSEDocumentType;
-  documentNumber: string;
-  bankCode: string;
-  holderName: string;
-  phoneNumber?: string;
-}
-
-export interface SubscribeWithPSEDto {
-  planId: string; // backend UUID
+export interface SubscriptionPseCheckoutDto {
+  planId: string; // UUID del plan en el back
   cycle: SubscriptionCycle;
-  psePaymentData?: PSEPaymentData; // required for paid plans, omit for Starter/free
   couponCode?: string;
+  userType: 'NATURAL' | 'JURIDICA';
+  legalIdType: PSEDocumentType;
+  /** 6 a 15 dígitos (el back lo valida con la misma regla). */
+  legalId: string;
+  /** `financial_institution_code` del catálogo de Wompi. */
+  financialInstitutionCode: string;
+  email: string;
+  fullName: string;
 }
 
-// ============================================================================
-// PSE Bank (GET /pse-mock/banks)
-// ============================================================================
-
-export interface PSEBank {
-  code: string;
-  name: string;
+export interface SubscriptionPseCheckoutResponse {
+  subscriptionId: string;
+  subscriptionPaymentId: string;
+  wompiTransactionId: string;
+  /** URL del banco. Puede venir null si Wompi aún no la generó. */
+  asyncPaymentUrl: string | null;
+  status: 'PENDING_PAYMENT';
 }
 
 // ============================================================================
@@ -190,4 +190,18 @@ export interface DisplaySubscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   trialEndsAt?: string;
+}
+
+/** `GET /subscriptions/pse/puede-pagar` (QA 23-09). */
+export interface PuedePagarElPlan {
+  puede: boolean;
+  code: 'PANEL_PROPIETARIO_INDEPENDIENTE_CONGELADO' | null;
+  motivo: string | null;
+}
+
+/** `GET /subscriptions/pse/pagos/:id` (QA 23-09). */
+export interface EstadoDelPagoPse {
+  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  planNombre: string | null;
+  ciclo: string;
 }

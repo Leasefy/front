@@ -71,6 +71,9 @@ import { procesosApi, anunciarProceso } from '@/lib/api/procesos.service'
 import { BotonDelCentroDeProcesos, resumenDelCentro } from './BotonDelCentroDeProcesos'
 import { FilaDeProceso } from './FilaDeProceso'
 import { HistorialDeProcesos, fraseDelHistorial } from './HistorialDeProcesos'
+import { anuncioResuelto, MS_TOPE_DEL_ANUNCIO } from './estado-del-proceso'
+import { registrarDetenerEnElNavegador } from './detener-en-el-navegador'
+import { invalidar } from '@/lib/api/refresco-de-datos'
 
 const AHORA = Date.parse('2026-09-22T20:00:00.000Z')
 
@@ -471,5 +474,103 @@ describe('Wompi en el centro (23-09)', () => {
     expect(container.textContent).toContain('Pagando en Wompi')
     expect(q('avance-del-proceso')?.textContent).toBe('37 de 120')
     expect(q('ver-resultado-proceso')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes/lote-7')
+  })
+})
+
+describe('🔴 el «Arrancando…» del panel (23-09)', () => {
+  /*
+   * Nico, 23-09: la fila decía «Facturas · septiembre 2026 · Listo · tardó
+   * 21 s» y arriba seguía «Arrancando "Emitiendo 1 factura"…», con el
+   * encabezado en «Nada en curso». El anuncio sólo se escondía con algo EN
+   * CURSO: un proceso que el sondeo nunca vio corriendo lo dejaba colgado.
+   */
+  const RAPIDO = proceso({
+    id: 'p-rapido',
+    titulo: 'Facturas · septiembre 2026',
+    estado: 'TERMINADO',
+    hechos: 1,
+    total: 1,
+    porcentaje: 100,
+    esMio: true,
+    createdAt: '2026-09-22T19:59:40.000Z',
+    terminadoAt: '2026-09-22T20:00:01.000Z',
+  })
+
+  it('🔴 se quita cuando aparece el proceso NUEVO, aunque ya llegue terminado (y el encabezado no dice «Nada en curso» mientras tanto)', async () => {
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista([TERMINADO_CON_ARCHIVO]))
+    await montar(<BotonDelCentroDeProcesos />)
+
+    await act(async () => {
+      anunciarProceso({ titulo: 'Emitiendo 1 factura', tipoDeProceso: 'EMISION_DE_FACTURAS' })
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(q('centro-arrancando')?.textContent).toContain('Emitiendo 1 factura')
+    expect(q('centro-de-procesos-resumen')?.textContent).toBe('Arrancando lo que acabas de lanzar.')
+
+    // El siguiente sondeo ya lo trae «Listo»: nunca se lo vio en curso.
+    vi.mocked(procesosApi.listar).mockResolvedValue(lista([RAPIDO, TERMINADO_CON_ARCHIVO]))
+    await act(async () => {
+      invalidar('procesos')
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(q('centro-arrancando')).toBeNull()
+    expect(q('centro-de-procesos-resumen')?.textContent).toBe('Nada en curso. Estos son los últimos tuyos.')
+    expect(todas('fila-de-proceso')[0].getAttribute('data-proceso-id')).toBe('p-rapido')
+  })
+
+  it('anuncioResuelto: por id si lo trae; si no, un proceso MÍO que no estaba (del mismo tipo); y con tope de tiempo', () => {
+    const base = {
+      titulo: 'Emitiendo 1 factura',
+      procesoId: null,
+      tipo: 'EMISION_DE_FACTURAS',
+      conocidos: new Set(['p-2']),
+      desde: AHORA,
+    }
+    // Lo que ya estaba no cuenta.
+    expect(anuncioResuelto(base, [TERMINADO_CON_ARCHIVO], AHORA + 1_000)).toBe(false)
+    // De otra persona del equipo, u otro tipo: tampoco.
+    expect(anuncioResuelto(base, [{ ...RAPIDO, esMio: false }], AHORA + 1_000)).toBe(false)
+    expect(anuncioResuelto(base, [{ ...RAPIDO, tipo: 'EXPORTACION' }], AHORA + 1_000)).toBe(false)
+    // Nuevo, mío y del tipo: sí, en el estado que sea.
+    expect(anuncioResuelto(base, [RAPIDO], AHORA + 1_000)).toBe(true)
+    // Con id: sólo ése.
+    expect(anuncioResuelto({ ...base, procesoId: 'p-x' }, [RAPIDO], AHORA + 1_000)).toBe(false)
+    expect(anuncioResuelto({ ...base, procesoId: 'p-rapido' }, [RAPIDO], AHORA + 1_000)).toBe(true)
+    // Nunca apareció: se quita igual a los 30 s.
+    expect(anuncioResuelto(base, [], AHORA + MS_TOPE_DEL_ANUNCIO)).toBe(true)
+  })
+})
+
+describe('🔴 «Detener» de una corrida del navegador, en la fila del centro (23-09)', () => {
+  it('la fila ofrece «Detener» sólo mientras la corrida está registrada, y lo pasa a «Deteniendo…»', async () => {
+    const detener = vi.fn()
+    const enCurso = proceso({ id: 'p-corrida', esMio: true, sePuedeCancelar: false })
+    await montar(
+      <ul>
+        <FilaDeProceso proceso={enCurso} ahora={AHORA} />
+      </ul>,
+    )
+    // El back no la sabe cancelar: sin registro no hay botón.
+    expect(q('cancelar-proceso')).toBeNull()
+
+    let soltar: () => void = () => {}
+    await act(async () => {
+      soltar = registrarDetenerEnElNavegador('p-corrida', detener)
+    })
+    const boton = q('cancelar-proceso') as HTMLButtonElement
+    expect(boton.textContent).toBe('Detener')
+    await act(async () => {
+      boton.click()
+    })
+    expect(detener).toHaveBeenCalledTimes(1)
+    expect(procesosApi.cancelar).not.toHaveBeenCalled()
+    expect((q('cancelar-proceso') as HTMLButtonElement).textContent).toBe('Deteniendo…')
+    expect(q('estado-del-proceso')?.textContent).toBe('Deteniendo…')
+
+    await act(async () => {
+      soltar()
+    })
+    expect(q('cancelar-proceso')).toBeNull()
   })
 })

@@ -1,7 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/format';
+import { getYearlySavings } from '@/lib/constants/subscription-plans';
+import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -32,21 +33,17 @@ export function PricingCard({
   onSelect,
   className,
 }: PricingCardProps) {
+  // `null` = el precio todavía no llegó del back (lo dice el back, no `PLANS`):
+  // se pinta «—», nunca un «$ 0» que se leería como gratis.
   const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
   const monthlyEquivalent =
     billingCycle === 'yearly'
-      ? Math.round(plan.price.yearly / 12)
+      ? plan.price.yearly === null
+        ? null
+        : Math.round(plan.price.yearly / 12)
       : plan.price.monthly;
 
-  // Calculate yearly savings
-  const yearlySavings =
-    plan.price.monthly > 0
-      ? Math.round(
-          ((plan.price.monthly * 12 - plan.price.yearly) /
-            (plan.price.monthly * 12)) *
-            100
-        )
-      : 0;
+  const yearlySavings = getYearlySavings(plan);
 
   const handleSelect = () => {
     if (!isCurrentPlan && onSelect) {
@@ -85,15 +82,15 @@ export function PricingCard({
       <div className="text-center mb-6">
         <div className="flex items-baseline justify-center gap-1">
           <span className={cn('text-3xl font-bold font-mono tabular-nums', 'text-foreground')}>
-            {price === 0 ? 'Gratis' : formatCurrency(monthlyEquivalent)}
+            {price === 0 ? 'Gratis' : precioLegible(monthlyEquivalent)}
           </span>
-          {price > 0 && <span className="text-muted-foreground">/mes</span>}
+          {price !== 0 && <span className="text-muted-foreground">/mes</span>}
         </div>
 
         {/* Yearly billing note */}
-        {billingCycle === 'yearly' && price > 0 && (
+        {billingCycle === 'yearly' && price !== null && price > 0 && (
           <p className={cn('text-sm mt-1', 'text-muted-foreground')}>
-            Facturado anualmente (<span className="font-mono tabular-nums">{formatCurrency(plan.price.yearly)}</span>)
+            Facturado anualmente (<span className="font-mono tabular-nums">{precioLegible(plan.price.yearly)}</span>)
           </p>
         )}
 

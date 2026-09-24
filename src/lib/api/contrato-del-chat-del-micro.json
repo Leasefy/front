@@ -1,0 +1,124 @@
+{
+  "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
+  "sacadoDe": "micro@f366c145/openapi-snapshot.json",
+  "cuando": "2026-09-24",
+  "rutas": {
+    "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
+      "archivo": "src/server/routes/agency-ai-hub-chat-senales.ts",
+      "cuerpo": {
+        "type": "object",
+        "properties": {
+          "turnoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "tarjeta_abierta",
+              "accion_deshecha",
+              "abandono"
+            ]
+          },
+          "entidad": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "tipo",
+              "id"
+            ]
+          },
+          "propuestaId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "turnoId",
+          "tipo"
+        ]
+      }
+    },
+    "POST /api/agency/{agencyId}/ai-hub/chat/feedback": {
+      "archivo": "src/server/routes/agency-ai-hub-chat-feedback.ts",
+      "cuerpo": {
+        "type": "object",
+        "properties": {
+          "turnId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "pregunta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "respuesta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "veredicto": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "comentario": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cifraMal": {
+            "type": "boolean"
+          },
+          "herramientas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "maxItems": 12
+          },
+          "consulta": {
+            "type": "string",
+            "maxLength": 8000
+          }
+        },
+        "required": [
+          "turnId",
+          "pregunta",
+          "respuesta",
+          "veredicto"
+        ]
+      }
+    },
+    "POST /api/agency/{agencyId}/ai-hub/chat": {
+      "archivo": "src/server/routes/agency-ai-hub-chat.ts",
+      "respuesta": {
+        "type": "object",
+        "properties": {
+          "turnoId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "turnoId"
+        ]
+      }
+    }
+  }
+}

@@ -6,7 +6,9 @@
  *  2. 🔴 Con más de 50 el botón YA NO se apaga: el ZIP lo arma el centro de
  *     procesos. Si la corrida fue de UNA tanda, se abre el proceso que ya lo
  *     está armando (no se pide otro); si fue de varias, se lanza uno con los
- *     ids de toda la corrida. Cuando termina, se baja desde el centro.
+ *     ids de toda la corrida. 🔴 23-09: la pantalla NO espera el ZIP —ni
+ *     spinner ni «100 de 450 PDF»—: si ya está, baja; si no, abre el centro
+ *     en ese proceso, que es donde se ve el avance.
  *  3. Si el ZIP falla, se dice por qué.
  */
 
@@ -20,12 +22,13 @@ import type { Proceso } from '@/lib/api/procesos.types'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { toastMock, facturacion, procesos, descargar, bajarBlob } = vi.hoisted(() => ({
+const { toastMock, facturacion, procesos, descargar, bajarBlob, abrir } = vi.hoisted(() => ({
   toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
   facturacion: { zipDeFacturas: vi.fn(), zipEnSegundoPlano: vi.fn(), pdfDeLaFactura: vi.fn() },
   procesos: { ver: vi.fn() },
   descargar: vi.fn(async () => 'facturas.zip'),
   bajarBlob: vi.fn(),
+  abrir: vi.fn(),
 }))
 
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
@@ -36,6 +39,7 @@ vi.mock('@/lib/api/facturacion-por-mes.service', async (importOriginal) => ({
 }))
 vi.mock('@/lib/api/procesos.service', () => ({
   anunciarProceso: vi.fn(),
+  abrirCentroDeProcesos: abrir,
   RECURSO_DE_PROCESOS: 'procesos',
   procesosApi: procesos,
 }))
@@ -143,35 +147,25 @@ describe('<InformeDeFacturacion> — la descarga del lote', () => {
     expect(descargar).toHaveBeenCalledWith('proc-tanda')
   })
 
-  it('más de 50 en VARIAS tandas: lanza un ZIP con los ids de toda la corrida y lo baja cuando está', async () => {
+  it('🔴 23-09: más de 50 en VARIAS tandas lanza el ZIP y ABRE el centro en ese proceso; la pantalla no lo espera', async () => {
     facturacion.zipEnSegundoPlano.mockResolvedValue({ procesoId: 'proc-todo' })
-    procesos.ver
-      .mockResolvedValueOnce(zipListo('proc-todo', { estado: 'CORRIENDO', hechos: 100, total: 450, archivo: null }))
-      .mockResolvedValue(zipListo('proc-todo'))
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    try {
-      await montar(corrida(450, ['proc-1', 'proc-2', 'proc-3']))
-      await descargarLasFacturas()
-      expect(facturacion.zipEnSegundoPlano).toHaveBeenCalledWith(Array.from({ length: 450 }, (_, i) => `f-${i}`))
-      expect(container.querySelector('[data-testid="facturacion-informe-por-el-centro"]')?.textContent).toContain(
-        '100 de 450 PDF',
-      )
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2_100)
-      })
-    } finally {
-      vi.useRealTimers()
-    }
-    expect(descargar).toHaveBeenCalledWith('proc-todo')
+    await montar(corrida(450, ['proc-1', 'proc-2', 'proc-3']))
+    await descargarLasFacturas()
+    expect(facturacion.zipEnSegundoPlano).toHaveBeenCalledWith(Array.from({ length: 450 }, (_, i) => `f-${i}`))
+    expect(abrir).toHaveBeenCalledWith({ procesoId: 'proc-todo' })
+    // Ni se pregunta por su avance ni se cuenta «100 de 450 PDF» acá.
+    expect(procesos.ver).not.toHaveBeenCalled()
+    expect(container.textContent).not.toMatch(/\d+ de \d+ PDF/)
+    const boton = container.querySelector('[data-testid="facturacion-informe-descargar"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(false)
   })
 
-  it('si el ZIP falla en el centro, se dice por qué', async () => {
-    procesos.ver.mockResolvedValue(
-      zipListo('proc-tanda', { estado: 'FALLO', archivo: null, mensaje: 'Pero el ZIP con los PDF no se pudo armar.' }),
-    )
+  it('🔴 23-09: el ZIP de la tanda que todavía se arma abre el centro en ESE proceso, sin esperarlo', async () => {
+    procesos.ver.mockResolvedValue(zipListo('proc-tanda', { estado: 'CORRIENDO', hechos: 10, total: 60, archivo: null }))
     await montar(corrida(60, ['proc-tanda']))
     await descargarLasFacturas()
-    expect(toastMock.error).toHaveBeenCalledWith('Pero el ZIP con los PDF no se pudo armar.')
+    expect(procesos.ver).toHaveBeenCalledTimes(1)
+    expect(abrir).toHaveBeenCalledWith({ procesoId: 'proc-tanda' })
     expect(descargar).not.toHaveBeenCalled()
   })
 })

@@ -64,6 +64,12 @@ export interface AvisoDeProceso {
   titulo?: string
   /** El proceso a resaltar, si ya se sabe. */
   procesoId?: string | null
+  /**
+   * De qué tipo es lo que arrancó (`EMISION_DE_FACTURAS`…). Con él, el
+   * «Arrancando…» del centro se apaga en cuanto aparece un proceso NUEVO de
+   * ese tipo, aunque ya haya terminado (`anuncioResuelto`).
+   */
+  tipoDeProceso?: string
 }
 
 export type EventoDelCentro = ({ tipo: 'anuncio' } | { tipo: 'abrir' }) & AvisoDeProceso

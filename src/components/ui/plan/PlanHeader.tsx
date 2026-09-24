@@ -1212,7 +1212,11 @@ export function PlanHeader({
                 // Anclaje del recorrido guiado del panel (`TourDelPanel`): acá
                 // viven perfil, configuración y el enlace que vuelve a lanzarlo.
                 data-tour-target="perfil"
-                className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                // A 390 px sólo el avatar: el sello del plan y la flecha se
+                // van a partir de `sm`. Con ellos el encabezado medía 447 px y
+                // la página entera scrolleaba de lado (24-09). El plan sigue a
+                // un toque, en el rayo de «Tu suscripción».
+                className="flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 sm:pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center">
@@ -1222,26 +1226,30 @@ export function PlanHeader({
                 </div>
                 {/* Subscription badge */}
                 {isLandlord ? (
-                  <AvatarSubscriptionIndicator
-                    variant="landlord"
-                    planId={planId}
-                    agencyPlan={
-                      isInmobiliaria && agencyLivePlan
-                        ? {
-                            name: agencyLivePlan.name,
-                            isDefault: agencyLivePlan.isDefault ?? false,
-                            level: agencyLivePlan.level ?? null,
-                          }
-                        : undefined
-                    }
-                  />
+                  <span className="hidden sm:inline-flex">
+                    <AvatarSubscriptionIndicator
+                      variant="landlord"
+                      planId={planId}
+                      agencyPlan={
+                        isInmobiliaria && agencyLivePlan
+                          ? {
+                              name: agencyLivePlan.name,
+                              isDefault: agencyLivePlan.isDefault ?? false,
+                              level: agencyLivePlan.level ?? null,
+                            }
+                          : undefined
+                      }
+                    />
+                  </span>
                 ) : tenantSubscription ? (
-                  <AvatarSubscriptionIndicator
-                    variant="tenant"
-                    tenantSubscription={tenantSubscription}
-                  />
+                  <span className="hidden sm:inline-flex">
+                    <AvatarSubscriptionIndicator
+                      variant="tenant"
+                      tenantSubscription={tenantSubscription}
+                    />
+                  </span>
                 ) : null}
-                <CaretDown className="w-4 h-4 text-fg-subtle" />
+                <CaretDown className="hidden sm:block w-4 h-4 text-fg-subtle" />
               </button>
             </DropdownListTrigger>
             <DropdownListContent

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase/client'
-import { adminApi, ApiError, setAdminToken } from '@/lib/admin/api'
+import { adminApi, ApiError, esFaltaDeSegundoFactor, setAdminToken } from '@/lib/admin/api'
 import type { Me } from '@/lib/admin/types'
 import { Nav } from '@/components/admin/Nav'
 import { Wordmark } from '@/components/admin/Wordmark'
@@ -16,6 +16,8 @@ type Status = 'checking' | 'authorized' | 'error'
  *   - no session            → /admin/login?next=<path>
  *   - session, GET /me 200  → render Nav + screen
  *   - session, GET /me 403  → /admin/forbidden (email not on ADMIN_EMAILS)
+ *   - session, GET /me 403 SEGUNDO_FACTOR_REQUERIDO → /admin/segundo-factor
+ *     (on the list, but the session has no second factor — 23-09)
  * Public routes (login / auth/callback / forbidden) live outside this group,
  * so they render without the gate.
  */
@@ -46,6 +48,10 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         setStatus('authorized')
       } catch (err) {
         if (cancelled) return
+        // 🔴 23-09: en la lista pero sin segundo factor. `adminApi` ya está
+        // navegando a `/admin/segundo-factor`; mandarlo a «forbidden» encima le
+        // diría a un admin de verdad que no está autorizado.
+        if (esFaltaDeSegundoFactor(err)) return
         if (err instanceof ApiError && err.status === 403) {
           router.replace('/admin/forbidden')
           return

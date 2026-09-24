@@ -143,6 +143,7 @@ import { Monto } from './Monto';
 import { RangoDeFechas } from './RangoDeFechas';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
+import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
 
 const BASE = '/panel/inmobiliaria/contabilidad';
@@ -445,10 +446,12 @@ function Alerta({
           hideArrow
           onClick={onReprocesar}
           disabled={ocupado}
+          // Sin «Reprocesando…» (23-09): el avance es del centro de procesos.
+          title={ocupado ? EN_CURSO_EN_EL_CENTRO : undefined}
           data-testid="reprocesar-asientos"
         >
           <ArrowsClockwise className="mr-1.5 h-4 w-4" aria-hidden="true" />
-          {ocupado ? 'Reprocesando…' : alerta.accion.label}
+          {alerta.accion.label}
         </Button>
       ) : (
         <Button variant="outline" size="sm" hideArrow onClick={onCerrarMes}>
@@ -1036,8 +1039,19 @@ export function HubDeContabilidad() {
         }
       : undefined;
 
+  /*
+   * 🔴 23-09 (Nico: «todas las cargas déjalas que sucedan allí y deja la
+   * pantalla quieta»): el diálogo se cierra APENAS se confirma, no cuando el
+   * back termina. Antes se quedaba en «Asentando…» todo el reproceso —la
+   * misma espera que el centro de procesos ya muestra con su avance y su
+   * «Detener»—. El resultado llega en un aviso y la pantalla relee al final.
+   */
   const reprocesar = async () => {
     setReprocesando(true);
+    setConfirmandoReproceso(false);
+    // Que el diálogo alcance a cerrarse: con uno abierto, el centro no se abre
+    // solo (avisa con un toast), y aquí lo que se quiere es verlo.
+    await new Promise((r) => setTimeout(r, 0));
     try {
       const r = await contabilidadApi.asientos.reprocesar();
       if (r.asentados > 0) {
@@ -1051,10 +1065,9 @@ export function HubDeContabilidad() {
         );
       }
       if (r.asentados === 0 && r.sinResolver === 0) toast.success('No había nada pendiente de asentar.');
-      setConfirmandoReproceso(false);
       await recargar();
     } catch (e) {
-      // El diálogo queda abierto: reintentar no obliga a volver a abrirlo.
+      // La fila del centro queda en «Falló» con su «Reintentar».
       toast.error(mensajeDeContabilidad(e, 'No se pudo reprocesar.'));
     } finally {
       setReprocesando(false);
@@ -1279,14 +1292,13 @@ export function HubDeContabilidad() {
             <AlertDialogCancel disabled={reprocesando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
-                // Se cierra sólo cuando el back contestó.
                 e.preventDefault();
                 void reprocesar();
               }}
               disabled={reprocesando}
               data-testid="confirmar-reproceso"
             >
-              {reprocesando ? 'Asentando…' : 'Asentar'}
+              Asentar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

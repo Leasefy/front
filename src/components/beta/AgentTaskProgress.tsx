@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { TurnStep } from '@/lib/types/beta-chat';
 import { ChatOrb } from './ChatOrb';
-import { GlifoPaso, useTextoPaso, useRelojPaso, ClasePaso } from './turn-steps';
+import { GlifoPaso, LineaDeActividad, useActividadPaso, useTextoPaso, ClasePaso } from './turn-steps';
 
 interface AgentTaskProgressProps {
   /** Los pasos del turno en curso, en orden. Vacío = no hay turno. */
@@ -16,45 +16,53 @@ interface AgentTaskProgressProps {
 
 function Fila({ step }: { step: TurnStep }) {
   const { label, detail } = useTextoPaso(step);
-  const reloj = useRelojPaso(step);
+  const actividad = useActividadPaso(step, detail);
+  const corriendo = step.status === 'running';
+  const fallo = step.status === 'failed';
 
+  // Sin reloj (Nico, 23-09). Terminados y pendientes en UNA línea; el activo
+  // dice qué hace; el fallido, por qué.
   return (
-    <li className={cn('flex items-start gap-3', step.kind === 'herramienta' && 'pl-6')}>
+    <li className={cn('flex items-start gap-3', step.kind === 'herramienta' && 'pl-6')} data-estado={step.status}>
       <span className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center">
         <GlifoPaso estado={step.status} size={13} />
       </span>
       <span className="min-w-0 flex-1">
-        <span title={label} className={cn('line-clamp-2 font-body text-[13.5px]', ClasePaso(step.status))}>
+        <span
+          title={[label, !corriendo && !fallo ? detail : null].filter(Boolean).join(' — ')}
+          className={cn(
+            'block font-body text-[13.5px]',
+            corriendo ? 'line-clamp-2 font-medium' : 'truncate',
+            ClasePaso(step.status)
+          )}
+        >
           {label}
         </span>
-        {detail && (
-          <span className="mt-0.5 block line-clamp-2 font-body text-[12px] text-fg-subtle" title={detail}>
+        {actividad && <LineaDeActividad texto={actividad} avance={step.avance} className="mt-0.5" />}
+        {fallo && detail && (
+          <span className="mt-0.5 block line-clamp-2 font-body text-[13.5px] text-danger" title={detail}>
             {detail}
           </span>
         )}
       </span>
-      {reloj && (
-        <span className="shrink-0 pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
-          {reloj}
-        </span>
-      )}
     </li>
   );
 }
 
-/** Encabezado: hay que llamar hooks del paso en curso, y va en su propio componente. */
+/**
+ * Encabezado: lo que se está haciendo AHORA. Si el paso activo avisó qué hace
+ * («Leyendo contratos…»), eso; si no, su nombre. Sin reloj (Nico, 23-09).
+ */
 function Encabezado({ step }: { step: TurnStep }) {
   const { label } = useTextoPaso(step);
-  const reloj = useRelojPaso(step);
+  const texto = step.actividad || label;
   return (
-    <>
-      <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">{label}</span>
-      {reloj && (
-        <span className="shrink-0 pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
-          {reloj}
-        </span>
-      )}
-    </>
+    <span
+      key={texto}
+      className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg animate-in fade-in duration-300 motion-reduce:animate-none"
+    >
+      {texto}
+    </span>
   );
 }
 

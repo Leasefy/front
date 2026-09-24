@@ -1,5 +1,10 @@
 import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
+import {
+  CODIGO_DEMASIADAS_SOLICITUDES,
+  mensajeDeDemasiadasSolicitudes,
+  segundosDeEspera,
+} from './demasiadas-solicitudes'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -213,6 +218,29 @@ async function renovarTokenVencido(usado: string | null): Promise<string | null>
   return esperarUnTokenDistinto(usado)
 }
 
+/**
+ * `fetch` a una ruta PROPIA del front (`/api/**`) con la sesión puesta.
+ *
+ * Las rutas que bajan URLs de afuera (`/api/inmuebles/desde-enlace`,
+ * `/api/inmuebles/imagen-remota`) exigen sesión desde la auditoría de seguridad
+ * del 23-09 —antes cualquiera en internet las usaba de proxy—. Un import largo
+ * cruza renovaciones del token (dura una hora), así que un 401 con el token que
+ * acaba de vencer se reintenta UNA vez con el nuevo, igual que `apiClient`.
+ */
+export async function fetchConSesion(input: string, init: RequestInit = {}): Promise<Response> {
+  await esperarRespuestaDeSesion()
+  const conToken = (token: string | null): RequestInit => {
+    const headers = new Headers(init.headers)
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+    return { ...init, headers }
+  }
+  const usado = _accessToken
+  const res = await fetch(input, conToken(usado))
+  if (res.status !== 401 || !usado) return res
+  const nuevo = await renovarTokenVencido(usado)
+  return nuevo ? fetch(input, conToken(nuevo)) : res
+}
+
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   _onUnauthorized = handler
 }
@@ -252,6 +280,23 @@ export class ApiError extends Error {
     this.name = 'ApiError'
     if (Array.isArray(message)) this.messages = message
   }
+}
+
+/**
+ * El 429 del limitador del back (o del proxy de adelante), convertido en un
+ * `ApiError` que dice CUÁNTO esperar. Va en todas las ramas que leen una
+ * respuesta —`request`, `requestBlob` y los `fetch` a mano que lo importen—
+ * para que ninguna pantalla muestre «Error 429». Ver `demasiadas-solicitudes.ts`.
+ */
+export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiError> {
+  const cuerpo: Record<string, unknown> = await res.json().catch(() => ({}))
+  const segundos = segundosDeEspera(res.headers, cuerpo)
+  return new ApiError(
+    429,
+    mensajeDeDemasiadasSolicitudes(segundos),
+    CODIGO_DEMASIADAS_SOLICITUDES,
+    { ...cuerpo, reintentarEnSegundos: segundos },
+  )
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -414,6 +459,10 @@ async function request<T>(
     )
   }
 
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
+  }
+
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
     // Forwarded generally — not a special case for any one endpoint. 401
@@ -505,6 +554,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
     }
 
     throw new ApiError(401, errorBody.message || 'No autorizado', code)
+  }
+
+  if (res.status === 429) {
+    throw await errorDeDemasiadasSolicitudes(res)
   }
 
   if (!res.ok) {

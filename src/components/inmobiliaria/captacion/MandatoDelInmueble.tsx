@@ -109,11 +109,31 @@ export function MandatoDelInmueble({
     ['portafolio'],
   )
   const [pidiendo, setPidiendo] = useState(false)
-  const [enlace, setEnlace] = useState<string | null>(null)
+  const [envio, setEnvio] = useState<{
+    enviadoA: string
+    envio: 'ENVIADO' | 'SIMULADO' | 'FALLIDO'
+    enlaceDePrueba?: string
+  } | null>(null)
 
   const laFirma = (firmas.datos?.firmas ?? []).find(
     (f) => f.estado === 'PENDIENTE' || f.estado === 'FIRMADA',
   )
+
+  const [descargando, setDescargando] = useState(false)
+
+  // El mandato firmado, con la huella comprobada por el back: si el archivo no
+  // es el que firmó el propietario, el back no da el enlace y se dice por qué.
+  async function descargarFirmado(firmaId: string) {
+    setDescargando(true)
+    try {
+      const r = await captacionApi.mandatoFirmado(firmaId)
+      window.open(r.url, '_blank', 'noopener')
+    } catch (e) {
+      toast.error(errorEnCristiano(e, 'No pudimos abrir el mandato firmado.'))
+    } finally {
+      setDescargando(false)
+    }
+  }
 
   async function pedirFirma() {
     setPidiendo(true)
@@ -121,9 +141,16 @@ export function MandatoDelInmueble({
       const r = await captacionApi.pedirFirmaElectronica(consignacionId, {
         firmanteNombre: propietarioNombre ?? 'Propietario',
       })
-      // 🔴 El token sale UNA vez. Se muestra para copiarlo y ya: no se guarda
-      // en ninguna parte del front ni vuelve en las lecturas.
-      setEnlace(`${window.location.origin}/mandato/firma/${r.token}`)
+      // 🔴 Auditoría 23-09-2026: el enlace ya NO pasa por la inmobiliaria. Lo
+      // manda el servidor al correo de la ficha del propietario y el token no
+      // vuelve acá (antes se mostraba para copiarlo, y con él cualquiera del
+      // equipo podía firmar por el propietario). Sólo en local, con el correo
+      // simulado, llega un `enlaceDePrueba` para poder probar el flujo.
+      setEnvio({
+        enviadoA: r.enviadoA,
+        envio: r.envio,
+        enlaceDePrueba: r.enlaceDePrueba,
+      })
       invalidar('portafolio')
     } catch (e) {
       // 🔴 Acá no había `catch` (Nico, 18-09-2026: «cuando uno le da lo de
@@ -251,6 +278,18 @@ export function MandatoDelInmueble({
               </p>
             )}
 
+            {laFirma?.estado === 'FIRMADA' ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void descargarFirmado(laFirma.id)}
+                disabled={descargando}
+                data-testid="descargar-mandato-firmado"
+              >
+                {descargando ? 'Abriendo…' : 'Ver el mandato firmado'}
+              </Button>
+            ) : null}
+
             {puedeEditar && !laFirma ? (
               <Button
                 size="sm"
@@ -263,15 +302,35 @@ export function MandatoDelInmueble({
               </Button>
             ) : null}
 
-            {enlace ? (
+            {envio ? (
               <div className="space-y-1" data-testid="enlace-de-firma">
-                <p className="flex items-center gap-1.5 text-xs font-medium">
-                  <Lock className="h-3.5 w-3.5" />
-                  Cópialo ahora: el enlace no se vuelve a mostrar.
+                <p className="flex items-center gap-1.5 text-sm">
+                  <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+                  {envio.envio === 'FALLIDO' ? (
+                    <>
+                      No pudimos mandarle el correo a{' '}
+                      <span className="font-mono">{envio.enviadoA}</span>. Anula
+                      este enlace y vuelve a intentarlo.
+                    </>
+                  ) : (
+                    <>
+                      Le enviamos el enlace a{' '}
+                      <span className="font-mono">{envio.enviadoA}</span>. Para
+                      firmar, le pediremos un código que le llega a ese correo.
+                    </>
+                  )}
                 </p>
-                <code className="block break-all rounded border p-2 text-xs">
-                  {enlace}
-                </code>
+                {envio.enlaceDePrueba ? (
+                  <a
+                    href={envio.enlaceDePrueba}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-muted-foreground block break-all text-sm underline"
+                    data-testid="enlace-de-prueba"
+                  >
+                    Enlace de prueba (sólo en local, el correo no salió)
+                  </a>
+                ) : null}
               </div>
             ) : null}
           </div>

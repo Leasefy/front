@@ -94,11 +94,13 @@ vi.mock('@/components/ui/toast', () => ({
   toast: {
     success: (...a: unknown[]) => toastOk(...a),
     error: (...a: unknown[]) => toastErr(...a),
+    info: () => undefined,
   },
 }));
 
 import { NuevaFactura } from './NuevaFactura';
 import { alEventoDelCentro, type EventoDelCentro } from '@/lib/api/procesos.service';
+import { detenerEnElNavegador } from '@/components/procesos/detener-en-el-navegador';
 
 function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {
@@ -608,20 +610,10 @@ describe('NuevaFactura', () => {
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
-  it('🔴 dice que un escenario sin confirmar se factura SIN impuestos', async () => {
+  it('la explicación de cómo se factura ya no ocupa una fila dentro de la pestaña', async () => {
+    // Subió al encabezado de la pantalla (Nico, 23-09): ver page.test.tsx.
     await montar();
-    // La explicación vive detrás de «Cómo se factura» (no sobre la tabla):
-    // se abre y se lee en el diálogo, que se monta en el body.
-    const boton = Array.from(host.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Cómo se factura'),
-    );
-    expect(boton).toBeTruthy();
-    await act(async () => {
-      boton!.click();
-    });
-    expect(document.body.textContent).toContain('se factura SIN impuestos');
-    // Y que numerar no es transmitir: la factura electrónica no está.
-    expect(document.body.textContent).toContain('todavía no se transmite');
+    expect(q('[data-testid="facturacion-como-funciona"]')).toBeNull();
   });
 
   /**
@@ -894,38 +886,54 @@ describe('NuevaFactura', () => {
       expect(toastOk.mock.calls[0]?.[1]).toMatchObject({ action: { label: 'Ver en el centro' } });
     });
 
-    it('🔴 F3: dice en qué va y «Detener» corta al cerrar la tanda en curso', async () => {
+    it('🔴 23-09: la pantalla NO pinta la carga (ni fila, ni barra, ni «200 de 450»); el «Detener» vive en el centro', async () => {
       let soltar: () => void = () => {};
-      generarMock.mockImplementationOnce(
-        (mes: string, claves: string[]) =>
-          new Promise((r) => {
-            soltar = () => r(sale(mes, claves));
-          }),
-      );
-      generarMock.mockImplementation(sale);
+      const agrupada = async (mes: string, claves: string[]) => ({
+        ...(await sale(mes, claves)),
+        procesoId: 'proc-corrida',
+        corridaAgrupable: true,
+      });
+      generarMock
+        .mockImplementationOnce(agrupada)
+        .mockImplementationOnce(
+          (mes: string, claves: string[]) =>
+            new Promise((r) => {
+              soltar = () => r(agrupada(mes, claves));
+            }),
+        )
+        .mockImplementation(agrupada);
       await montar();
       await apretarGenerar();
+      await soltarTareas();
 
-      expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitiendo 0 de 450');
-      // La corrida se pinta con la MISMA fila del centro de procesos.
-      const enCurso = q('[data-testid="facturacion-en-curso"]')!;
-      expect(enCurso.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull();
-      expect(enCurso.querySelector('[data-testid="avance-del-proceso"]')!.textContent).toBe('0 de 450');
+      // Nico: «¿para qué muestras la carga también en la tabla? Ya tenemos
+      // centro de procesos». Nada del avance en la pantalla.
+      expect(q('[data-testid="facturacion-en-curso"]')).toBeNull();
+      expect(q('[data-testid="fila-de-proceso"]')).toBeNull();
+      expect(q('[role="progressbar"]')).toBeNull();
+      const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+      expect(boton.disabled).toBe(true);
+      expect(boton.textContent).not.toMatch(/\d+ de \d+/);
+      expect(boton.textContent).toContain('centro de procesos');
 
+      // La fila del centro de ESTE proceso tiene el «Detener» de la corrida.
       await act(async () => {
-        (enCurso.querySelector('[data-testid="cancelar-proceso"]') as HTMLButtonElement).click();
+        expect(detenerEnElNavegador('proc-corrida')).toBe(true);
       });
       await act(async () => {
         soltar();
       });
       await soltarTareas();
 
-      expect(generarMock).toHaveBeenCalledTimes(1);
+      // Tanda 1, tanda 2 (la que viajaba) y la llamada que CIERRA el proceso.
+      expect(generarMock).toHaveBeenCalledTimes(3);
+      expect(generarMock.mock.calls[2][2]).toMatchObject({ procesoId: 'proc-corrida', ultimaTanda: true });
       const informe = q('[data-testid="facturacion-informe"]')!;
       expect(informe.getAttribute('data-corte')).toBe('detenida');
-      expect(informe.textContent).toContain('Se emitieron 200 facturas');
-      expect(informe.textContent).toContain('250 facturas no se enviaron porque detuviste la corrida');
-      expect(informe.textContent).toContain('Vuelve a apretar «Generar»');
+      expect(informe.textContent).toContain('Se emitieron 400 facturas');
+      expect(informe.textContent).toContain('50 facturas no se enviaron porque detuviste la corrida');
+      // Terminada la corrida, el centro ya no ofrece un «Detener» que no haría nada.
+      expect(detenerEnElNavegador('proc-corrida')).toBe(false);
     });
 
     it('🔴 F2: una tanda caída a mitad no borra lo emitido y separa lo dudoso de lo no enviado', async () => {

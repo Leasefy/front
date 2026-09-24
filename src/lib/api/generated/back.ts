@@ -1797,6 +1797,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/subscriptions/pse/puede-pagar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ¿Puede pagar el plan del propietario? (el panel independiente puede estar en pausa) */
+        get: operations["SubscriptionsController_puedePagarElPlanDelPropietario"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions/pse/pagos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de un pago PSE del plan (la página a la que vuelve la persona después del banco) */
+        get: operations["SubscriptionsController_estadoDelPagoPse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/subscriptions/cancel": {
         parameters: {
             query?: never;
@@ -1941,7 +1975,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agent-credits/purchase": {
+    "/agent-credits/pse/checkout": {
         parameters: {
             query?: never;
             header?: never;
@@ -1950,8 +1984,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Comprar pack de creditos via PSE */
-        post: operations["AgentCreditsController_purchase"];
+        /** Iniciar la compra de un pack de creditos por PSE (Wompi) */
+        post: operations["AgentCreditsController_startPseCheckout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8132,6 +8166,487 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/cartera/inquilinos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cartera de inquilinos: por inquilino, mes y concepto */
+        get: operations["CarteraController_inquilinos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/mes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La deuda de un mes, cuota por cuota */
+        get: operations["CarteraController_mes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/propietarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que la inmobiliaria le debe a cada propietario, por mes */
+        get: operations["CarteraController_propietarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los castigos de cartera: lo propuesto, lo castigado y lo que se recuperó de ello. */
+        get: operations["CastigoDeCarteraController_listar"];
+        put?: never;
+        /** Propone castigar unas cuotas. Congela el monto: las dos firmas aprueban ESE número. */
+        post: operations["CastigoDeCarteraController_proponer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/candidatas/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qué cuotas de un contrato se pueden castigar hoy, y por qué NO las demás. */
+        get: operations["CastigoDeCarteraController_candidatas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un castigo, con sus firmas y su recuperación. */
+        get: operations["CastigoDeCarteraController_uno"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/firmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Firma el castigo por el lado que le toca al rol. Con las dos firmas queda castigada. */
+        post: operations["CastigoDeCarteraController_firmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rechaza la propuesta con su motivo. Las cuotas quedan libres. */
+        post: operations["CastigoDeCarteraController_rechazar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/cartera/castigo/{castigoId}/reversar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Devuelve a la vida una cartera castigada: vuelve al informe activo y a la cobranza. */
+        post: operations["CastigoDeCarteraController_reversar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate dispersiones for a month */
+        post: operations["DispersionesController_generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What generating this month would produce */
+        get: operations["DispersionesController_preview"];
+        put?: never;
+        /** What generating this selection would produce */
+        post: operations["DispersionesController_previewDeLaSeleccion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/disponible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plata disponible para dispersar hoy */
+        get: operations["DispersionesController_disponible"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/origen-del-giro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bancos y última cuenta de origen para marcar girada */
+        get: operations["DispersionesController_origenDelGiro"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totals and status counts for a month */
+        get: operations["DispersionesController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List dispersiones with filters */
+        get: operations["DispersionesController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get dispersion by ID */
+        get: operations["DispersionesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Approve a dispersion */
+        put: operations["DispersionesController_approve"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/{id}/extracto.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download dispersion extracto as PDF */
+        get: operations["DispersionesController_getExtractoPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/dispersiones/{id}/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Process a dispersion (mark as completed) */
+        put: operations["DispersionesController_process"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/abogados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los abogados de la inmobiliaria */
+        get: operations["JuridicoController_listarAbogados"];
+        put?: never;
+        /** Registrar un abogado */
+        post: operations["JuridicoController_crearAbogado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/abogados/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar, activar o desactivar un abogado */
+        patch: operations["JuridicoController_actualizarAbogado"];
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/configuracion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que la inmobiliaria pacta por defecto: honorarios, % y tope */
+        get: operations["JuridicoController_configuracion"];
+        /** Guardar lo pactado por defecto */
+        put: operations["JuridicoController_guardarConfiguracion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/contratos/{id}/honorarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** ¿ESTE contrato pacta honorarios jurídicos a cargo del inquilino? `null` hereda el de la inmobiliaria */
+        put: operations["JuridicoController_pactarEnElContrato"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/sugeridos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contratos con 90 días o más de mora y sin póliza. Pasarlos lo hace una persona. */
+        get: operations["JuridicoController_sugeridos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/casos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los casos: en jurídico y cerrados */
+        get: operations["JuridicoController_listarCasos"];
+        put?: never;
+        /** Pasar un contrato a jurídico (lo hace una persona) */
+        post: operations["JuridicoController_pasar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/casos/{id}/cerrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cerrar el caso, con motivo */
+        post: operations["JuridicoController_cerrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/honorarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que se le debe a cada abogado: el cargo de una vez que se le puso al inquilino al pasar el caso */
+        get: operations["JuridicoController_listarHonorarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/juridico/honorarios/pagar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar honorarios como pagados al abogado */
+        post: operations["JuridicoController_pagar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/medios-de-pago": {
         parameters: {
             query?: never;
@@ -8374,177 +8889,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inmobiliaria/dispersiones/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate dispersiones for a month */
-        post: operations["DispersionesController_generate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** What generating this month would produce */
-        get: operations["DispersionesController_preview"];
-        put?: never;
-        /** What generating this selection would produce */
-        post: operations["DispersionesController_previewDeLaSeleccion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/disponible": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Plata disponible para dispersar hoy */
-        get: operations["DispersionesController_disponible"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/origen-del-giro": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Bancos y última cuenta de origen para marcar girada */
-        get: operations["DispersionesController_origenDelGiro"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Totals and status counts for a month */
-        get: operations["DispersionesController_summary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List dispersiones with filters */
-        get: operations["DispersionesController_findAll"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get dispersion by ID */
-        get: operations["DispersionesController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/{id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Approve a dispersion */
-        put: operations["DispersionesController_approve"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/{id}/extracto.pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download dispersion extracto as PDF */
-        get: operations["DispersionesController_getExtractoPdf"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/dispersiones/{id}/process": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Process a dispersion (mark as completed) */
-        put: operations["DispersionesController_process"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/inmobiliaria/wompi-pagos/conexion": {
         parameters: {
             query?: never;
@@ -8693,6 +9037,654 @@ export interface paths {
         put?: never;
         /** Pedir que se cancele (en cola: ya; corriendo: en su próximo paso) */
         post: operations["ProcesosController_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/acciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que las automatizaciones del back dejaron pendiente, propuesto o programado (para la Bandeja del Piloto) */
+        get: operations["InternalPilotoController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/acciones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Una acción del Piloto */
+        get: operations["InternalPilotoController_una"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/acciones/{id}/ejecutar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El clic de la Bandeja: hacer lo pendiente, lo propuesto o sacar ya lo programado */
+        post: operations["InternalPilotoController_ejecutar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/acciones/{id}/deshacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** «Deshacer» (P-10): que lo programado no salga */
+        post: operations["InternalPilotoController_deshacer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/acciones/{id}/descartar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Descartar lo pendiente o propuesto (no se vuelve a proponer) */
+        post: operations["InternalPilotoController_descartar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/detecciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qué tiene que hacer hoy el Gerente del Piloto en esta inmobiliaria (sólo lee) */
+        get: operations["InternalGerenteController_detecciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/registrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Guardar lo que la perilla del micro ya decidió (misma idempotencia que el back) */
+        post: operations["InternalGerenteController_registrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/retirar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cerrar lo pendiente del Gerente que ya no aplica (se resolvió por otro lado) */
+        post: operations["InternalGerenteController_retirar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/programadas/reclamar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lo programado del Gerente cuya hora llegó, ya reclamado para ejecutarse */
+        post: operations["InternalGerenteController_programadas"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/acciones/{id}/reclamar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El clic de la Bandeja sobre una acción del Gerente: reclamarla para ejecutarla */
+        post: operations["InternalGerenteController_reclamar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/acciones/{id}/resultado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cómo terminó una acción del Gerente */
+        post: operations["InternalGerenteController_resultado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/credencial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El pase del Piloto para UNA ruta exacta de la ficha (Automático) */
+        post: operations["InternalGerenteController_credencial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/piloto/gerente/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** «¿Opera sola?»: lo que el Piloto detectó, hizo solo, dejó para un clic y falló */
+        get: operations["InternalGerenteController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/piloto/delegaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quién tiene cada agente del Piloto en Automático (las delegaciones vigentes) */
+        get: operations["DelegacionesDelPilotoController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/piloto/delegaciones/{agente}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Poner (automatico: true) o sacar (false) un agente del Piloto de Automático, a tu nombre */
+        put: operations["DelegacionesDelPilotoController_delegar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/ficha/{tipo}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha 360 de una persona, contrato, inmueble o propietario, con sus relaciones y las acciones posibles (uso interno del micro de agentes) */
+        get: operations["FichaParaElAgenteController_ficha"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/inquilino/{tenantRef}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de cuenta de un inquilino: todos sus contratos, cuota por cuota */
+        get: operations["EstadoDeCuentaController_inquilino"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/propietario/{propietarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estado de cuenta de un propietario: lo que se le ha girado y lo que falta */
+        get: operations["EstadoDeCuentaController_propietario"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Un enlace público al estado de cuenta del cliente */
+        post: operations["EstadoDeCuentaController_compartir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/enlaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los enlaces vivos del estado de cuenta */
+        get: operations["EstadoDeCuentaController_enlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/enlaces/{enlaceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revocar un enlace compartido */
+        delete: operations["EstadoDeCuentaController_revocar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/correo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mandarle el enlace al cliente por correo */
+        post: operations["EstadoDeCuentaController_porCorreo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mandarle el enlace al cliente por WhatsApp */
+        post: operations["EstadoDeCuentaController_porWhatsapp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen del estado de cuenta, para las fichas */
+        get: operations["EstadoDeCuentaController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/publico/estado-de-cuenta/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El estado de cuenta detrás de un enlace público */
+        get: operations["EstadoDeCuentaPublicoController_porToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/estado-de-cuenta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mi estado de cuenta, resuelto por la sesión */
+        get: operations["PortalEstadoDeCuentaController_mio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List lease renewals */
+        get: operations["RenovacionesController_findAll"];
+        put?: never;
+        /** Create a lease renewal */
+        post: operations["RenovacionesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get upcoming lease renewals */
+        get: operations["RenovacionesController_getUpcoming"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/plan/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan de renovación automática de un contrato */
+        get: operations["RenovacionesController_planDelContrato"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/ipc-que-falta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPC que falta para las renovaciones del año que rige */
+        get: operations["RenovacionesController_ipcQueFalta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/correr-automatica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correr la renovación automática de la agencia */
+        post: operations["RenovacionesController_correrAutomatica"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get lease renewal detail */
+        get: operations["RenovacionesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}/stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update lease renewal stage */
+        put: operations["RenovacionesController_updateStage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/auto-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Auto-create renewals for expiring contracts */
+        post: operations["RenovacionesController_autoCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}/aviso-de-no-renovacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar el aviso de no renovación */
+        post: operations["RenovacionesController_registrarAviso"];
+        /** Retirar el aviso de no renovación */
+        delete: operations["RenovacionesController_borrarAviso"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a note to a lease renewal */
+        post: operations["RenovacionesController_addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a renewal document */
+        post: operations["RenovacionesController_uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/renovaciones/{id}/document/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a signed URL for the renewal document */
+        get: operations["RenovacionesController_getDocumentUrl"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11549,7 +12541,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Forma 1: el enlace de firma electrónica (devuelve el token una vez) */
+        /** Forma 1: el servidor le manda el enlace de firma al correo de la ficha del propietario (el token no vuelve) */
         post: operations["CaptacionController_pedirFirma"];
         delete?: never;
         options?: never;
@@ -11608,6 +12600,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/captacion/firmas/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** URL firmada del mandato firmado (con la huella comprobada si es electrónica) */
+        get: operations["CaptacionController_mandatoFirmado"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/captacion/firmas/{id}/anular": {
         parameters: {
             query?: never;
@@ -11642,6 +12651,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandato/firma/{token}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El PDF del mandato que el propietario va a firmar */
+        get: operations["FirmaDelMandatoPublicController_pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandato/firma/{token}/codigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El propietario pide el código de firma (llega a su correo) */
+        post: operations["FirmaDelMandatoPublicController_pedirCodigo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandato/firma/{token}/firmar": {
         parameters: {
             query?: never;
@@ -11651,7 +12694,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** El propietario firma. Queda el rastro (IP y agente) */
+        /** El propietario firma con el código del correo. Queda el rastro (IP y agente) */
         post: operations["FirmaDelMandatoPublicController_firmar"];
         delete?: never;
         options?: never;
@@ -11705,368 +12748,6 @@ export interface paths {
         put?: never;
         /** Cancelar la invitación. 🔴 Es el ÚNICO camino por el que el inmueble se libera */
         post: operations["InvitacionAFirmarController_cancelar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/abogados": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los abogados de la inmobiliaria */
-        get: operations["JuridicoController_listarAbogados"];
-        put?: never;
-        /** Registrar un abogado */
-        post: operations["JuridicoController_crearAbogado"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/abogados/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Editar, activar o desactivar un abogado */
-        patch: operations["JuridicoController_actualizarAbogado"];
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/configuracion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lo que la inmobiliaria pacta por defecto: honorarios, % y tope */
-        get: operations["JuridicoController_configuracion"];
-        /** Guardar lo pactado por defecto */
-        put: operations["JuridicoController_guardarConfiguracion"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/contratos/{id}/honorarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** ¿ESTE contrato pacta honorarios jurídicos a cargo del inquilino? `null` hereda el de la inmobiliaria */
-        put: operations["JuridicoController_pactarEnElContrato"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/sugeridos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Contratos con 90 días o más de mora y sin póliza. Pasarlos lo hace una persona. */
-        get: operations["JuridicoController_sugeridos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/casos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los casos: en jurídico y cerrados */
-        get: operations["JuridicoController_listarCasos"];
-        put?: never;
-        /** Pasar un contrato a jurídico (lo hace una persona) */
-        post: operations["JuridicoController_pasar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/casos/{id}/cerrar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cerrar el caso, con motivo */
-        post: operations["JuridicoController_cerrar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/honorarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lo que se le debe a cada abogado: el cargo de una vez que se le puso al inquilino al pasar el caso */
-        get: operations["JuridicoController_listarHonorarios"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/juridico/honorarios/pagar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Marcar honorarios como pagados al abogado */
-        post: operations["JuridicoController_pagar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List lease renewals */
-        get: operations["RenovacionesController_findAll"];
-        put?: never;
-        /** Create a lease renewal */
-        post: operations["RenovacionesController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/upcoming": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get upcoming lease renewals */
-        get: operations["RenovacionesController_getUpcoming"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/plan/{contractId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Plan de renovación automática de un contrato */
-        get: operations["RenovacionesController_planDelContrato"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/ipc-que-falta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** IPC que falta para las renovaciones del año que rige */
-        get: operations["RenovacionesController_ipcQueFalta"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/correr-automatica": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Correr la renovación automática de la agencia */
-        post: operations["RenovacionesController_correrAutomatica"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get lease renewal detail */
-        get: operations["RenovacionesController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}/stage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update lease renewal stage */
-        put: operations["RenovacionesController_updateStage"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/auto-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Auto-create renewals for expiring contracts */
-        post: operations["RenovacionesController_autoCreate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}/aviso-de-no-renovacion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Registrar el aviso de no renovación */
-        post: operations["RenovacionesController_registrarAviso"];
-        /** Retirar el aviso de no renovación */
-        delete: operations["RenovacionesController_borrarAviso"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}/notes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add a note to a lease renewal */
-        post: operations["RenovacionesController_addNote"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}/document": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upload a renewal document */
-        post: operations["RenovacionesController_uploadDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/renovaciones/{id}/document/url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a signed URL for the renewal document */
-        get: operations["RenovacionesController_getDocumentUrl"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12306,176 +12987,6 @@ export interface paths {
         };
         /** Descargar mi certificado */
         get: operations["CertificadosDelPortalController_pdf"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/inquilino/{tenantRef}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Estado de cuenta de un inquilino: todos sus contratos, cuota por cuota */
-        get: operations["EstadoDeCuentaController_inquilino"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/propietario/{propietarioId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Estado de cuenta de un propietario: lo que se le ha girado y lo que falta */
-        get: operations["EstadoDeCuentaController_propietario"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Un enlace público al estado de cuenta del cliente */
-        post: operations["EstadoDeCuentaController_compartir"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/enlaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los enlaces vivos del estado de cuenta */
-        get: operations["EstadoDeCuentaController_enlaces"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/enlaces/{enlaceId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revocar un enlace compartido */
-        delete: operations["EstadoDeCuentaController_revocar"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/correo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mandarle el enlace al cliente por correo */
-        post: operations["EstadoDeCuentaController_porCorreo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/compartir/whatsapp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mandarle el enlace al cliente por WhatsApp */
-        post: operations["EstadoDeCuentaController_porWhatsapp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/estado-de-cuenta/{tipo}/{id}/resumen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen del estado de cuenta, para las fichas */
-        get: operations["EstadoDeCuentaController_resumen"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/publico/estado-de-cuenta/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** El estado de cuenta detrás de un enlace público */
-        get: operations["EstadoDeCuentaPublicoController_porToken"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/portal/estado-de-cuenta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Mi estado de cuenta, resuelto por la sesión */
-        get: operations["PortalEstadoDeCuentaController_mio"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12840,160 +13351,6 @@ export interface paths {
         get: operations["ReportsController_getRendimientoAgentesReport"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/inquilinos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cartera de inquilinos: por inquilino, mes y concepto */
-        get: operations["CarteraController_inquilinos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/mes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** La deuda de un mes, cuota por cuota */
-        get: operations["CarteraController_mes"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/propietarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lo que la inmobiliaria le debe a cada propietario, por mes */
-        get: operations["CarteraController_propietarios"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Los castigos de cartera: lo propuesto, lo castigado y lo que se recuperó de ello. */
-        get: operations["CastigoDeCarteraController_listar"];
-        put?: never;
-        /** Propone castigar unas cuotas. Congela el monto: las dos firmas aprueban ESE número. */
-        post: operations["CastigoDeCarteraController_proponer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo/candidatas/{contractId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Qué cuotas de un contrato se pueden castigar hoy, y por qué NO las demás. */
-        get: operations["CastigoDeCarteraController_candidatas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo/{castigoId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Un castigo, con sus firmas y su recuperación. */
-        get: operations["CastigoDeCarteraController_uno"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo/{castigoId}/firmar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Firma el castigo por el lado que le toca al rol. Con las dos firmas queda castigada. */
-        post: operations["CastigoDeCarteraController_firmar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo/{castigoId}/rechazar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Rechaza la propuesta con su motivo. Las cuotas quedan libres. */
-        post: operations["CastigoDeCarteraController_rechazar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inmobiliaria/cartera/castigo/{castigoId}/reversar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Devuelve a la vida una cartera castigada: vuelve al informe activo y a la cobranza. */
-        post: operations["CastigoDeCarteraController_reversar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13403,6 +13760,23 @@ export interface paths {
         put?: never;
         /** Marca un giro como devuelto: la plata vuelve a estar por girar y se avisa al propietario. */
         post: operations["FinanzasController_registrarGiroDevuelto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/finanzas/giros-devueltos/{id}/soporte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** URL firmada (1 hora) del soporte del banco de un giro devuelto */
+        get: operations["FinanzasController_soporteDelGiroDevuelto"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14715,6 +15089,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inmobiliaria/habeas-data/solicitudes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las solicitudes de la inmobiliaria, con su plazo */
+        get: operations["HabeasDataController_listar"];
+        put?: never;
+        /** Registra la solicitud de un titular y calcula su vencimiento */
+        post: operations["HabeasDataController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/habeas-data/solicitudes/{id}/responder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deja la constancia de la respuesta al titular */
+        post: operations["HabeasDataController_responder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/habeas-data/solicitudes/{id}/datos-del-titular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Todo lo que la inmobiliaria guarda del titular, por su documento */
+        get: operations["HabeasDataController_datosDelTitular"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/onboarding-visto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las bienvenidas del panel que esta inmobiliaria ya vio */
+        get: operations["OnboardingVistoController_leer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inmobiliaria/onboarding-visto/{clave}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Marca una bienvenida como vista para toda la inmobiliaria (la primera gana) */
+        put: operations["OnboardingVistoController_marcar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inmobiliaria/dashboard/kpis": {
         parameters: {
             query?: never;
@@ -15255,6 +15715,125 @@ export interface paths {
         put?: never;
         /** Encola notificaciones para admins de la agencia o un usuario puntual (uso interno del micro de agentes) */
         post: operations["InternalAgentController_notify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/cartera/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen de cartera de la agencia, con la misma cifra de la pantalla de Cartera (uso interno del micro de agentes) */
+        get: operations["CarteraParaElAgenteController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/busqueda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Busca personas, contratos e inmuebles de la agencia por nombre, documento, teléfono, correo, código o dirección, con sus relaciones (uso interno del micro de agentes) */
+        get: operations["BusquedaParaElAgenteController_buscar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/miembro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Membresía activa, rol del ERP y permisos efectivos de un usuario en una inmobiliaria (uso interno del micro de agentes) */
+        get: operations["MiembroParaElAgenteController_miembro"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/cobranza/mora-a-pedido": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La cartera de un inquilino (por contrato o por documento), lista para crear su deudor en el agente de cobranza */
+        get: operations["MoraAPedidoController_moraAPedido"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/grafo/actualizar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pone al día el grafo del chat de la agencia (incremental, por marca de agua) */
+        post: operations["GrafoDelChatController_actualizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/grafo/reconstruir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconstruye el grafo del chat de la agencia entero (sin vaciarlo antes) */
+        post: operations["GrafoDelChatController_reconstruir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/grafo/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Nodos por tipo, aristas y marcas de agua del grafo del chat de la agencia */
+        get: operations["GrafoDelChatController_estado"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18216,15 +18795,22 @@ export interface components {
              */
             planId: string;
         };
-        BuyCreditsDto: {
+        PseCreditsCheckoutDto: {
             /**
-             * @description Cantidad de creditos a comprar
              * @example 5
              * @enum {number}
              */
             packSize: 1 | 5 | 10 | 20;
-            /** @description Datos de pago PSE */
-            psePaymentData: components["schemas"]["PseSubscriptionPaymentDto"];
+            /** @enum {string} */
+            userType: "NATURAL" | "JURIDICA";
+            /** @enum {string} */
+            legalIdType: "CC" | "CE" | "NIT" | "PP";
+            /** @description Documento del pagador (6 a 15 dígitos) */
+            legalId: string;
+            /** @description `financial_institution_code` del catálogo de Wompi */
+            financialInstitutionCode: string;
+            email: string;
+            fullName: string;
         };
         CreatePropertyDto: {
             /** @example Apartamento moderno en Chapinero */
@@ -19429,6 +20015,11 @@ export interface components {
             notes?: string;
             /** @example https://…/nevera.jpg */
             photoUrl?: string;
+            /**
+             * @description La ruta de la foto en el bucket privado del inventario. Sólo se acepta si es de este inmueble.
+             * @example inventario/inmueble/<inmueble>/<versión>/<ítem>
+             */
+            photoPath?: string;
         };
         ActualizarInventarioDto: {
             items: components["schemas"]["ItemDeInventarioDto"][];
@@ -19496,6 +20087,11 @@ export interface components {
             notes?: string;
             /** @example https://…/nevera.jpg */
             photoUrl?: string;
+            /**
+             * @description La ruta de la foto en el bucket privado del inventario. Sólo se acepta si es de este inmueble.
+             * @example inventario/inmueble/<inmueble>/<versión>/<ítem>
+             */
+            photoPath?: string;
             /** @example Cocina */
             espacio?: string;
         };
@@ -21336,6 +21932,11 @@ export interface components {
         };
         CreateInvitationDto: {
             /**
+             * @description Correo de la persona invitada: sólo esa cuenta puede reclamar el enlace
+             * @example juan.perez@correo.com
+             */
+            email: string;
+            /**
              * @description Optional label/reference for the invitation (e.g. the name)
              * @example Juan Pérez
              */
@@ -21695,9 +22296,120 @@ export interface components {
              */
             motivo: string;
         };
-        AgenciaBodyDto: Record<string, never>;
+        ConciliarSegurosBodyDto: Record<string, never>;
         ConciliarBodyDto: Record<string, never>;
         IgnorarBodyDto: Record<string, never>;
+        ProponerCastigoDto: {
+            /** @description El contrato de cuya cartera se trata. */
+            contractId: string;
+            /** @description Las cuotas que se proponen castigar. El tope de 500 es el mismo criterio que el resto: un lote que nadie puede revisar no es una decisión. */
+            cuotaIds: string[];
+            /** @description Por qué esta cartera es incobrable. Obligatorio: un castigo sin motivo no se defiende ante una revisoría. */
+            motivo: string;
+            /** @description Notas internas. */
+            notas?: string;
+        };
+        CastigoMotivoDto: {
+            /** @description Por qué. Lo lee quien propuso. */
+            motivo: string;
+        };
+        GenerateDispersionDto: {
+            /**
+             * @description Month to generate dispersiones for, in YYYY-MM format
+             * @example 2026-02
+             */
+            month: string;
+            /** @description Generate only for these propietarios. Omit for the whole month. */
+            propietarioIds?: string[];
+            /** @description Generate only these properties of those propietarios. Omit for all. */
+            propertyIds?: string[];
+            /**
+             * @description CAUSADO (todas las cuotas del mes, el default) o RECAUDADO (sólo las que el inquilino ya pagó)
+             * @enum {string}
+             */
+            base?: "RECAUDADO" | "CAUSADO";
+        };
+        PreviewDispersionDto: {
+            /**
+             * @description Month, YYYY-MM
+             * @example 2026-02
+             */
+            month: string;
+            propietarioIds?: string[];
+            propertyIds?: string[];
+            /** @enum {string} */
+            base?: "RECAUDADO" | "CAUSADO";
+        };
+        OrigenDelLoteDto: {
+            /**
+             * @description Id del banco (`GET /inmobiliaria/lotes-de-dispersion/bancos`)
+             * @example BANCOLOMBIA
+             */
+            banco: string;
+            /** @enum {string} */
+            tipoDeCuenta: "AHORROS" | "CORRIENTE";
+            /** @example 12345678901 */
+            numeroDeCuenta: string;
+        };
+        ProcessDispersionDto: {
+            /**
+             * @description Bank transfer reference number
+             * @example TRF-2026-02-001
+             */
+            transferReference: string;
+            origen?: components["schemas"]["OrigenDelLoteDto"];
+        };
+        CrearAbogadoDto: {
+            /** @example Martínez & Asociados */
+            nombre: string;
+            /** @description Cédula o NIT, para la cuenta por pagar */
+            documento?: string;
+            email?: string;
+            telefono?: string;
+        };
+        ActualizarAbogadoDto: {
+            nombre?: string;
+            documento?: string;
+            email?: string;
+            telefono?: string;
+            /** @description Un abogado inactivo no recibe casos nuevos */
+            activo?: boolean;
+        };
+        ConfiguracionJuridicaDto: {
+            /** @description Por defecto, ¿los honorarios del abogado los paga el inquilino? Cada contrato puede decir lo suyo. */
+            pactaHonorarios?: boolean;
+            /**
+             * @description Porcentaje DE LA DEUDA al pasar el caso que se le paga al abogado (0 < pct ≤ 100). Entra como un cargo de una vez al estado de cuenta del inquilino.
+             * @example 10
+             */
+            honorariosPct?: number;
+            /**
+             * @description Tope en pesos de los honorarios de TODO el caso. Sin tope, no va.
+             * @example 3000000
+             */
+            honorariosTopeCop?: number;
+        };
+        PactaHonorariosDto: {
+            /** @description `true`/`false` lo fija en este contrato; `null` hereda el de la inmobiliaria. */
+            pacta?: Record<string, never> | null;
+        };
+        PasarAJuridicoDto: {
+            contractId: string;
+            /** @description El abogado que lleva el caso */
+            abogadoId: string;
+            /** @example 120 días de mora, sin póliza. */
+            motivo?: string;
+        };
+        CerrarCasoDto: {
+            /** @example El inquilino se puso al día y entregó el inmueble. */
+            motivo: string;
+            /** @description 🔴 El caso se cerró SIN COBRO: los honorarios salen del estado de cuenta del inquilino (se anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o un cobro encima, es 409: se corrige con una nota crédito. */
+            sinCobro?: boolean;
+        };
+        PagarHonorariosDto: {
+            /** @description Los honorarios que se le giraron al abogado */
+            ids: string[];
+        };
         CrearMedioDePagoDto: {
             /** @enum {string} */
             tipo: "TRANSFERENCIA" | "EFECTIVO" | "PSE" | "NEQUI" | "DAVIPLATA" | "ENLACE_DE_PAGO" | "OTRO";
@@ -21756,17 +22468,6 @@ export interface components {
             activo?: boolean;
             orden?: number;
         };
-        OrigenDelLoteDto: {
-            /**
-             * @description Id del banco (`GET /inmobiliaria/lotes-de-dispersion/bancos`)
-             * @example BANCOLOMBIA
-             */
-            banco: string;
-            /** @enum {string} */
-            tipoDeCuenta: "AHORROS" | "CORRIENTE";
-            /** @example 12345678901 */
-            numeroDeCuenta: string;
-        };
         ArmarLoteDto: {
             /**
              * @description Mes a pagar, `YYYY-MM`
@@ -21810,41 +22511,11 @@ export interface components {
              * @example Dos propietarios cambiaron de cuenta después de armar el lote
              */
             motivo: string;
-        };
-        GenerateDispersionDto: {
             /**
-             * @description Month to generate dispersiones for, in YYYY-MM format
-             * @example 2026-02
+             * @description Confirmo que el archivo ya pudo llegar al banco. Obligatorio si el lote está en ARCHIVO_GENERADO.
+             * @example true
              */
-            month: string;
-            /** @description Generate only for these propietarios. Omit for the whole month. */
-            propietarioIds?: string[];
-            /** @description Generate only these properties of those propietarios. Omit for all. */
-            propertyIds?: string[];
-            /**
-             * @description CAUSADO (todas las cuotas del mes, el default) o RECAUDADO (sólo las que el inquilino ya pagó)
-             * @enum {string}
-             */
-            base?: "RECAUDADO" | "CAUSADO";
-        };
-        PreviewDispersionDto: {
-            /**
-             * @description Month, YYYY-MM
-             * @example 2026-02
-             */
-            month: string;
-            propietarioIds?: string[];
-            propertyIds?: string[];
-            /** @enum {string} */
-            base?: "RECAUDADO" | "CAUSADO";
-        };
-        ProcessDispersionDto: {
-            /**
-             * @description Bank transfer reference number
-             * @example TRF-2026-02-001
-             */
-            transferReference: string;
-            origen?: components["schemas"]["OrigenDelLoteDto"];
+            confirmoQueElArchivoPudoLlegarAlBanco?: boolean;
         };
         GuardarConexionWompiDto: {
             /** @enum {string} */
@@ -21859,6 +22530,51 @@ export interface components {
         EnviarLoteAWompiDto: {
             /** @example false */
             facturarAhora?: boolean;
+        };
+        DecisionHumanaDto: Record<string, never>;
+        RegistrarDto: Record<string, never>;
+        RetirarDto: Record<string, never>;
+        ReclamarDto: Record<string, never>;
+        ResultadoDto: Record<string, never>;
+        CredencialDto: Record<string, never>;
+        DelegarDto: Record<string, never>;
+        CreateRenovacionDto: {
+            /** @description Consignacion ID */
+            consignacionId: string;
+            /** @description Lease ID to link the renewal to */
+            leaseId?: string;
+            /** @description Assigned agent user ID */
+            agenteUserId?: string;
+        };
+        UpdateRenovacionStageDto: {
+            /**
+             * @description New renewal status
+             * @enum {string}
+             */
+            status: "RENOV_PENDING" | "NOTIFIED" | "NEGOTIATING" | "RENOV_APPROVED" | "RENOV_SIGNED" | "RENOV_COMPLETED" | "RENOV_TERMINATED";
+            /** @description IPC rate for rent adjustment */
+            ipcRate?: number;
+            /** @description Proposed new rent amount in COP */
+            proposedRent?: number;
+            /** @description Negotiated rent amount in COP */
+            negotiatedRent?: number;
+            /** @description Negotiated building administration fee (admin del conjunto) in COP */
+            negotiatedAdminFee?: number;
+            /** @description Note to add to renewal history */
+            historyNote?: string;
+            /** @description Editable message sent to the tenant when transitioning to NOTIFIED */
+            notificationMessage?: string;
+            /** @description Mensaje para el PROPIETARIO al pasar a NOTIFIED. Sin él no se le manda nada — es el interruptor que deja el camino manual del cajón exactamente como estaba. Lo llena la renovación automática. */
+            mensajeParaPropietario?: string;
+        };
+        AvisoDeNoRenovacionDto: {
+            /**
+             * @description Quién avisa que no renueva
+             * @enum {string}
+             */
+            parte: "INQUILINO" | "PROPIETARIO" | "INMOBILIARIA";
+            /** @description Motivo del aviso, tal cual se registró */
+            motivo: string;
         };
         CrearCopropiedadDto: {
             /** @example Conjunto Residencial Altos del Poblado */
@@ -22858,99 +23574,16 @@ export interface components {
         AnularFirmaDto: {
             motivo: string;
         };
+        FirmarMandatoDto: {
+            /** @example 123456 */
+            codigo: string;
+            /** @example a3f5… */
+            sha256: string;
+        };
         CancelarInvitacionDto: {
             motivo: string;
             /** @description 🔴 A-13: el inmueble sólo se libera ACÁ, y es una decisión explícita de quien cancela. */
             liberarElInmueble?: boolean;
-        };
-        CrearAbogadoDto: {
-            /** @example Martínez & Asociados */
-            nombre: string;
-            /** @description Cédula o NIT, para la cuenta por pagar */
-            documento?: string;
-            email?: string;
-            telefono?: string;
-        };
-        ActualizarAbogadoDto: {
-            nombre?: string;
-            documento?: string;
-            email?: string;
-            telefono?: string;
-            /** @description Un abogado inactivo no recibe casos nuevos */
-            activo?: boolean;
-        };
-        ConfiguracionJuridicaDto: {
-            /** @description Por defecto, ¿los honorarios del abogado los paga el inquilino? Cada contrato puede decir lo suyo. */
-            pactaHonorarios?: boolean;
-            /**
-             * @description Porcentaje DE LA DEUDA al pasar el caso que se le paga al abogado (0 < pct ≤ 100). Entra como un cargo de una vez al estado de cuenta del inquilino.
-             * @example 10
-             */
-            honorariosPct?: number;
-            /**
-             * @description Tope en pesos de los honorarios de TODO el caso. Sin tope, no va.
-             * @example 3000000
-             */
-            honorariosTopeCop?: number;
-        };
-        PactaHonorariosDto: {
-            /** @description `true`/`false` lo fija en este contrato; `null` hereda el de la inmobiliaria. */
-            pacta?: Record<string, never> | null;
-        };
-        PasarAJuridicoDto: {
-            contractId: string;
-            /** @description El abogado que lleva el caso */
-            abogadoId: string;
-            /** @example 120 días de mora, sin póliza. */
-            motivo?: string;
-        };
-        CerrarCasoDto: {
-            /** @example El inquilino se puso al día y entregó el inmueble. */
-            motivo: string;
-            /** @description 🔴 El caso se cerró SIN COBRO: los honorarios salen del estado de cuenta del inquilino (se anulan con este motivo) y dejan de ser cuenta por pagar al abogado. Si esa cuota ya tiene un pago o un cobro encima, es 409: se corrige con una nota crédito. */
-            sinCobro?: boolean;
-        };
-        PagarHonorariosDto: {
-            /** @description Los honorarios que se le giraron al abogado */
-            ids: string[];
-        };
-        CreateRenovacionDto: {
-            /** @description Consignacion ID */
-            consignacionId: string;
-            /** @description Lease ID to link the renewal to */
-            leaseId?: string;
-            /** @description Assigned agent user ID */
-            agenteUserId?: string;
-        };
-        UpdateRenovacionStageDto: {
-            /**
-             * @description New renewal status
-             * @enum {string}
-             */
-            status: "RENOV_PENDING" | "NOTIFIED" | "NEGOTIATING" | "RENOV_APPROVED" | "RENOV_SIGNED" | "RENOV_COMPLETED" | "RENOV_TERMINATED";
-            /** @description IPC rate for rent adjustment */
-            ipcRate?: number;
-            /** @description Proposed new rent amount in COP */
-            proposedRent?: number;
-            /** @description Negotiated rent amount in COP */
-            negotiatedRent?: number;
-            /** @description Negotiated building administration fee (admin del conjunto) in COP */
-            negotiatedAdminFee?: number;
-            /** @description Note to add to renewal history */
-            historyNote?: string;
-            /** @description Editable message sent to the tenant when transitioning to NOTIFIED */
-            notificationMessage?: string;
-            /** @description Mensaje para el PROPIETARIO al pasar a NOTIFIED. Sin él no se le manda nada — es el interruptor que deja el camino manual del cajón exactamente como estaba. Lo llena la renovación automática. */
-            mensajeParaPropietario?: string;
-        };
-        AvisoDeNoRenovacionDto: {
-            /**
-             * @description Quién avisa que no renueva
-             * @enum {string}
-             */
-            parte: "INQUILINO" | "PROPIETARIO" | "INMOBILIARIA";
-            /** @description Motivo del aviso, tal cual se registró */
-            motivo: string;
         };
         CreateDocumentTemplateDto: {
             /**
@@ -23314,20 +23947,6 @@ export interface components {
         ObjetarActaDto: {
             /** @description Con qué no está de acuerdo el inquilino */
             texto: string;
-        };
-        ProponerCastigoDto: {
-            /** @description El contrato de cuya cartera se trata. */
-            contractId: string;
-            /** @description Las cuotas que se proponen castigar. El tope de 500 es el mismo criterio que el resto: un lote que nadie puede revisar no es una decisión. */
-            cuotaIds: string[];
-            /** @description Por qué esta cartera es incobrable. Obligatorio: un castigo sin motivo no se defiende ante una revisoría. */
-            motivo: string;
-            /** @description Notas internas. */
-            notas?: string;
-        };
-        CastigoMotivoDto: {
-            /** @description Por qué. Lo lee quien propuso. */
-            motivo: string;
         };
         GuardarUsuraDto: {
             /** @example 2026-09 */
@@ -23833,6 +24452,38 @@ export interface components {
             RECLAMO?: Record<string, never>;
             /** @description Horas prometidas. Omitir o `null` = el plazo legal. */
             SOLICITUD?: Record<string, never>;
+        };
+        CrearSolicitudDeHabeasDataDto: {
+            /** @enum {string} */
+            tipo: "CONSULTA" | "RECTIFICACION" | "SUPRESION" | "REVOCATORIA";
+            /**
+             * @description Por dónde llegó
+             * @enum {string}
+             */
+            canal: "CORREO" | "CARTA" | "PRESENCIAL" | "TELEFONO" | "OTRO";
+            titularNombre: string;
+            /** @enum {string} */
+            titularTipoDocumento: "CC" | "CE" | "TI" | "NIT" | "PASSPORT" | "PPT";
+            titularDocumento: string;
+            titularCorreo?: string;
+            titularTelefono?: string;
+            /** @description Qué pide el titular, con sus palabras */
+            descripcion: string;
+            /** @description Día en que llegó la solicitud (YYYY-MM-DD). Sin él, hoy en Bogotá. */
+            recibidaEl?: string;
+        };
+        ResponderSolicitudDeHabeasDataDto: {
+            /** @enum {string} */
+            resultado: "ATENDIDA" | "NEGADA";
+            /** @description Lo que se le contestó al titular, textual */
+            respuesta: string;
+        };
+        MarcarOnboardingVistoDto: {
+            /**
+             * @description `completo` = llegó al final; `omitido` = Omitir, la ✕ o Esc. Los dos cuentan como visto.
+             * @enum {string}
+             */
+            estado: "completo" | "omitido";
         };
         SendToOwnerDto: {
             /** @description Email address of the recipient (property owner) */
@@ -24390,7 +25041,11 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The Health Check is successful */
+            /**
+             * @description Application is healthy
+             *
+             *     The Health Check is successful
+             */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -24438,7 +25093,11 @@ export interface operations {
                     };
                 };
             };
-            /** @description The Health Check is not successful */
+            /**
+             * @description Application is unhealthy
+             *
+             *     The Health Check is not successful
+             */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -24621,8 +25280,12 @@ export interface operations {
     };
     UsersController_getMyPermissions: {
         parameters: {
-            query?: never;
-            header?: never;
+            query: {
+                inmobiliaria: string;
+            };
+            header: {
+                "x-inmobiliaria": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -27987,6 +28650,51 @@ export interface operations {
             };
         };
     };
+    SubscriptionsController_puedePagarElPlanDelPropietario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { puede, code, motivo } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubscriptionsController_estadoDelPagoPse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { estado, planNombre, ciclo } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No existe o no es de quien pregunta */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SubscriptionsController_cancel: {
         parameters: {
             query?: never;
@@ -28338,7 +29046,7 @@ export interface operations {
             };
         };
     };
-    AgentCreditsController_purchase: {
+    AgentCreditsController_startPseCheckout: {
         parameters: {
             query?: never;
             header?: never;
@@ -28347,11 +29055,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BuyCreditsDto"];
+                "application/json": components["schemas"]["PseCreditsCheckoutDto"];
             };
         };
         responses: {
-            /** @description Creditos comprados exitosamente */
+            /** @description Transaccion PSE creada; devuelve asyncPaymentUrl. Los creditos se acreditan con el webhook. */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -38417,7 +39125,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AgenciaBodyDto"];
+                "application/json": components["schemas"]["ConciliarSegurosBodyDto"];
             };
         };
         responses: {
@@ -38464,6 +39172,679 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IgnorarBodyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarteraController_inquilinos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada inquilino con una fila por mes con saldo, las columnas por concepto y los totales; la suma de las filas es el total del inquilino. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarteraController_mes: {
+        parameters: {
+            query: {
+                mes: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo pactado, lo pagado y lo que falta del mes, con lo que falta partido en por vencer, vencido en plazo y cartera; y una fila por cuota. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarteraController_propietarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cada propietario con sus meses (neto, girado, pendiente y el estado de la dispersión) y los totales por mes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_listar: {
+        parameters: {
+            query: {
+                contractId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin la migración responde con la lista vacía y el motivo, no con un error: la pantalla abre igual y dice por qué está vacía. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_proponer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProponerCastigoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_candidatas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_uno: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_firmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_rechazar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastigoMotivoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CastigoDeCarteraController_reversar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                castigoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastigoMotivoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_generate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateDispersionDto"];
+            };
+        };
+        responses: {
+            /** @description Dispersiones generated successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_preview: {
+        parameters: {
+            query: {
+                month: string;
+                base?: "RECAUDADO" | "CAUSADO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-owner draft, nothing persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_previewDeLaSeleccion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewDispersionDto"];
+            };
+        };
+        responses: {
+            /** @description Per-owner draft of the selection, nothing persisted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_disponible: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entradas, comprometido y disponible */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_origenDelGiro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bancos, cuentas registradas y la última usada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_summary: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Month summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_findAll: {
+        parameters: {
+            query?: {
+                month?: string;
+                /** @description pending | processing | completed | failed (o el nombre del enum). Otro valor = 400. */
+                status?: string;
+                propietarioId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of dispersiones with items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dispersion details with items and propietario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dispersion approved and set to PROCESSING */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_getExtractoPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF binary stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DispersionesController_process: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessDispersionDto"];
+            };
+        };
+        responses: {
+            /** @description Dispersion processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_listarAbogados: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_crearAbogado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearAbogadoDto"];
+            };
+        };
+        responses: {
+            /** @description El abogado registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_actualizarAbogado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarAbogadoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_configuracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_guardarConfiguracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracionJuridicaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_pactarEnElContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PactaHonorariosDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_sugeridos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_listarCasos: {
+        parameters: {
+            query: {
+                estado: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Casos con su abogado y sus honorarios */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_pasar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasarAJuridicoDto"];
+            };
+        };
+        responses: {
+            /** @description El caso, con lo pactado copiado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_cerrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarCasoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_listarHonorarios: {
+        parameters: {
+            query: {
+                estado: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JuridicoController_pagar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagarHonorariosDto"];
             };
         };
         responses: {
@@ -38852,234 +40233,6 @@ export interface operations {
             };
         };
     };
-    DispersionesController_generate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateDispersionDto"];
-            };
-        };
-        responses: {
-            /** @description Dispersiones generated successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_preview: {
-        parameters: {
-            query: {
-                month: string;
-                base?: "RECAUDADO" | "CAUSADO";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Per-owner draft, nothing persisted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_previewDeLaSeleccion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PreviewDispersionDto"];
-            };
-        };
-        responses: {
-            /** @description Per-owner draft of the selection, nothing persisted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_disponible: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Entradas, comprometido y disponible */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_origenDelGiro: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Bancos, cuentas registradas y la última usada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_summary: {
-        parameters: {
-            query: {
-                month: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Month summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_findAll: {
-        parameters: {
-            query?: {
-                month?: string;
-                /** @description pending | processing | completed | failed (o el nombre del enum). Otro valor = 400. */
-                status?: string;
-                propietarioId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of dispersiones with items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Dispersion details with items and propietario */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_approve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Dispersion approved and set to PROCESSING */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_getExtractoPdf: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description PDF binary stream */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    DispersionesController_process: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProcessDispersionDto"];
-            };
-        };
-        responses: {
-            /** @description Dispersion processed successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     WompiPagosController_verConexion: {
         parameters: {
             query?: never;
@@ -39283,6 +40436,860 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalPilotoController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalPilotoController_una: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalPilotoController_ejecutar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionHumanaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalPilotoController_deshacer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionHumanaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalPilotoController_descartar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionHumanaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_detecciones: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_registrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_retirar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetirarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_programadas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReclamarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_reclamar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReclamarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_resultado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultadoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_credencial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredencialDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InternalGerenteController_resumen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DelegacionesDelPilotoController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DelegacionesDelPilotoController_delegar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FichaParaElAgenteController_ficha: {
+        parameters: {
+            query: {
+                agencyId: string;
+                /** @description El correo de la sesión del operador */
+                email: unknown;
+            };
+            header?: never;
+            path: {
+                tipo: "persona" | "inquilino" | "coarrendatario" | "codeudor" | "postulante" | "contrato" | "inmueble" | "propietario";
+                /** @description El id que devolvió la búsqueda. Persona: id de usuario, «doc:<documento>» o «correo:<correo>». Contrato: id o número (#1291). Inmueble: id del inmueble o del mandato. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La ficha */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tipo o id inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AGENT_API_KEY inválida o ausente */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin operador identificado, o sin permiso de ver esa entidad */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No existe en esa agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_inquilino: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description El id de usuario del inquilino, o su número de documento */
+                tenantRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cabecera de la inmobiliaria, una sección por contrato (Arriendos y Otros Conceptos) y los totales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_propietario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                propietarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las mismas secciones del inquilino más las columnas de comisión (comisión, su IVA y lo que el propietario le retiene a la inmobiliaria). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_compartir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: "inquilino" | "propietario";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_enlaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_revocar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enlaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_porCorreo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_porWhatsapp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaController_resumen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EstadoDeCuentaPublicoController_porToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PortalEstadoDeCuentaController_mio: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_findAll: {
+        parameters: {
+            query?: {
+                status?: string;
+                /** @description Urgency bucket: 0-30, 31-60, 61-90, 90+ */
+                urgency?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of lease renewals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRenovacionDto"];
+            };
+        };
+        responses: {
+            /** @description Lease renewal created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_getUpcoming: {
+        parameters: {
+            query?: {
+                /** @description Number of days to look ahead (default 90) */
+                days?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of upcoming renewals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_planDelContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Qué va a pasar con el contrato, y cuándo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_ipcQueFalta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El año del IPC que falta y cuántos contratos se renuevan sin incremento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_correrAutomatica: {
+        parameters: {
+            query?: {
+                /** @description true = contar sin hacer (ni correos ni cambios) */
+                simular?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen de la pasada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lease renewal with history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_updateStage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRenovacionStageDto"];
+            };
+        };
+        responses: {
+            /** @description Lease renewal stage updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_autoCreate: {
+        parameters: {
+            query?: {
+                /** @description Days ahead to scan (1-365, default 90) */
+                withinDays?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Renewals created for expiring contracts */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_registrarAviso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoDeNoRenovacionDto"];
+            };
+        };
+        responses: {
+            /** @description Aviso registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_borrarAviso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aviso retirado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_addNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Note added to renewal history */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_uploadDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Renewal document uploaded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RenovacionesController_getDocumentUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed download URL */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43590,6 +45597,25 @@ export interface operations {
             };
         };
     };
+    CaptacionController_mandatoFirmado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CaptacionController_anular: {
         parameters: {
             query?: never;
@@ -43632,7 +45658,7 @@ export interface operations {
             };
         };
     };
-    FirmaDelMandatoPublicController_firmar: {
+    FirmaDelMandatoPublicController_pdf: {
         parameters: {
             query?: never;
             header?: never;
@@ -43642,6 +45668,48 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FirmaDelMandatoPublicController_pedirCodigo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FirmaDelMandatoPublicController_firmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FirmarMandatoDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -43722,544 +45790,6 @@ export interface operations {
             };
         };
         responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_listarAbogados: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_crearAbogado: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrearAbogadoDto"];
-            };
-        };
-        responses: {
-            /** @description El abogado registrado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_actualizarAbogado: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActualizarAbogadoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_configuracion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_guardarConfiguracion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConfiguracionJuridicaDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_pactarEnElContrato: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PactaHonorariosDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_sugeridos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_listarCasos: {
-        parameters: {
-            query: {
-                estado: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Casos con su abogado y sus honorarios */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_pasar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasarAJuridicoDto"];
-            };
-        };
-        responses: {
-            /** @description El caso, con lo pactado copiado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_cerrar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CerrarCasoDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_listarHonorarios: {
-        parameters: {
-            query: {
-                estado: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JuridicoController_pagar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PagarHonorariosDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_findAll: {
-        parameters: {
-            query?: {
-                status?: string;
-                /** @description Urgency bucket: 0-30, 31-60, 61-90, 90+ */
-                urgency?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of lease renewals */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRenovacionDto"];
-            };
-        };
-        responses: {
-            /** @description Lease renewal created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_getUpcoming: {
-        parameters: {
-            query?: {
-                /** @description Number of days to look ahead (default 90) */
-                days?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of upcoming renewals */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_planDelContrato: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                contractId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Qué va a pasar con el contrato, y cuándo */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_ipcQueFalta: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description El año del IPC que falta y cuántos contratos se renuevan sin incremento */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_correrAutomatica: {
-        parameters: {
-            query?: {
-                /** @description true = contar sin hacer (ni correos ni cambios) */
-                simular?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Resumen de la pasada */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Lease renewal with history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_updateStage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateRenovacionStageDto"];
-            };
-        };
-        responses: {
-            /** @description Lease renewal stage updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_autoCreate: {
-        parameters: {
-            query?: {
-                /** @description Days ahead to scan (1-365, default 90) */
-                withinDays?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Renewals created for expiring contracts */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_registrarAviso: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AvisoDeNoRenovacionDto"];
-            };
-        };
-        responses: {
-            /** @description Aviso registrado */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_borrarAviso: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Aviso retirado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_addNote: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Note added to renewal history */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_uploadDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Renewal document uploaded */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RenovacionesController_getDocumentUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Signed download URL */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -44600,204 +46130,6 @@ export interface operations {
             path: {
                 documentoId: string;
             };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_inquilino: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description El id de usuario del inquilino, o su número de documento */
-                tenantRef: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cabecera de la inmobiliaria, una sección por contrato (Arriendos y Otros Conceptos) y los totales. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_propietario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                propietarioId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Las mismas secciones del inquilino más las columnas de comisión (comisión, su IVA y lo que el propietario le retiene a la inmobiliaria). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_compartir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: "inquilino" | "propietario";
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_enlaces: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_revocar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                enlaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_porCorreo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_porWhatsapp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaController_resumen: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tipo: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    EstadoDeCuentaPublicoController_porToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PortalEstadoDeCuentaController_mio: {
-        parameters: {
-            query: {
-                agencyId: string;
-            };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -45368,206 +46700,6 @@ export interface operations {
         responses: {
             /** @description Performance metrics per agent */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CarteraController_inquilinos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada inquilino con una fila por mes con saldo, las columnas por concepto y los totales; la suma de las filas es el total del inquilino. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CarteraController_mes: {
-        parameters: {
-            query: {
-                mes: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Lo pactado, lo pagado y lo que falta del mes, con lo que falta partido en por vencer, vencido en plazo y cartera; y una fila por cuota. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CarteraController_propietarios: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cada propietario con sus meses (neto, girado, pendiente y el estado de la dispersión) y los totales por mes. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_listar: {
-        parameters: {
-            query: {
-                contractId: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sin la migración responde con la lista vacía y el motivo, no con un error: la pantalla abre igual y dice por qué está vacía. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_proponer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProponerCastigoDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_candidatas: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                contractId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_uno: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                castigoId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_firmar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                castigoId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_rechazar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                castigoId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CastigoMotivoDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    CastigoDeCarteraController_reversar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                castigoId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CastigoMotivoDto"];
-            };
-        };
-        responses: {
-            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -46189,11 +47321,30 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RegistrarGiroDevueltoDto"];
+                "multipart/form-data": components["schemas"]["RegistrarGiroDevueltoDto"];
             };
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FinanzasController_soporteDelGiroDevuelto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -48036,6 +49187,129 @@ export interface operations {
             };
         };
     };
+    HabeasDataController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { disponible, migracion, resumen, solicitudes[] } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabeasDataController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearSolicitudDeHabeasDataDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabeasDataController_responder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponderSolicitudDeHabeasDataDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    HabeasDataController_datosDelTitular: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnboardingVistoController_leer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { disponible, motivo, vistas: [{ clave, estado, fecha, usuarioId, quien }] } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OnboardingVistoController_marcar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clave: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarcarOnboardingVistoDto"];
+            };
+        };
+        responses: {
+            /** @description { clave, estado, fecha, usuarioId, quien, yaEstaba } — lo que quedó guardado, que puede ser de otra persona */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     DashboardController_getDashboardKpis: {
         parameters: {
             query?: never;
@@ -49158,6 +50432,230 @@ export interface operations {
             };
             /** @description Agencia no encontrada */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarteraParaElAgenteController_resumen: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen de cartera y lo pagado hoy y en el mes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description agencyId no es un UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AGENT_API_KEY inválida o ausente */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agencia no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BusquedaParaElAgenteController_buscar: {
+        parameters: {
+            query: {
+                agencyId: string;
+                /** @description Correo de la sesión del chat (lo pone el micro). Decide si documento/teléfono/correo van completos, y queda en la bitácora. */
+                usuario?: unknown;
+                /** @description Lo que escribió el operador, tal cual */
+                q: unknown;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resultados ordenados, con relaciones y lo que no se pudo leer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description agencyId no es un UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AGENT_API_KEY inválida o ausente */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agencia no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MiembroParaElAgenteController_miembro: {
+        parameters: {
+            query: {
+                agencyId: string;
+                userId: string;
+                /** @description El `aal` del token de Supabase ya verificado por el micro */
+                aal?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Miembro activo con su rol y sus permisos efectivos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description agencyId o userId no son UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AGENT_API_KEY inválida o ausente */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No es miembro ACTIVO de esa inmobiliaria (code: SIN_MEMBRESIA_ACTIVA) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MoraAPedidoController_moraAPedido: {
+        parameters: {
+            query: {
+                agencyId: string;
+                contractId?: string;
+                documento?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las filas de mora de esa persona */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Falta decir de quién (contrato O documento), o vienen los dos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AGENT_API_KEY inválida o ausente */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GrafoDelChatController_actualizar: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Qué se leyó, escribió y barrió por fuente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GrafoDelChatController_reconstruir: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GrafoDelChatController_estado: {
+        parameters: {
+            query: {
+                agencyId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

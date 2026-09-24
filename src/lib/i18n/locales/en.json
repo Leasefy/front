@@ -7959,7 +7959,8 @@
           "chat": "The chat",
           "contratos": "Contracts",
           "facturacion": "Billing and cash",
-          "propietarios": "Owners"
+          "propietarios": "Owners",
+          "contabilidad": "Accounting"
         },
         "rol": {
           "cobrador": "Collector",

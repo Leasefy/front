@@ -7993,7 +7993,8 @@
           "chat": "El chat",
           "contratos": "Contratos",
           "facturacion": "Facturación y caja",
-          "propietarios": "Propietarios"
+          "propietarios": "Propietarios",
+          "contabilidad": "Contabilidad"
         },
         "rol": {
           "cobrador": "Cobrador",

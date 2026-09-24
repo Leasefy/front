@@ -182,6 +182,735 @@
       }
     },
     "schemas": {
+      "AiHubChatVistaPrevia": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "no_disponible"
+            ]
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST"
+            ]
+          },
+          "ruta": {
+            "type": "string"
+          },
+          "datos": {},
+          "recortada": {
+            "type": "boolean"
+          },
+          "explicacion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "metodo",
+          "ruta",
+          "recortada",
+          "explicacion"
+        ]
+      },
+      "AiHubChatDobleControl": {
+        "type": "object",
+        "properties": {
+          "paso": {
+            "type": "string",
+            "enum": [
+              "propone",
+              "aprueba"
+            ]
+          },
+          "laOtraMitad": {
+            "type": "string",
+            "enum": [
+              "la_puedes_hacer_tu",
+              "otra_persona"
+            ]
+          },
+          "frase": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "paso",
+          "laOtraMitad",
+          "frase"
+        ]
+      },
+      "AiHubChatProceso": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "EN_COLA",
+              "CORRIENDO",
+              "TERMINADO",
+              "FALLO",
+              "CANCELADO"
+            ]
+          },
+          "hechos": {
+            "type": "number"
+          },
+          "total": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "porcentaje": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mensaje": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "hechos",
+          "total",
+          "porcentaje",
+          "mensaje"
+        ]
+      },
+      "AiHubChatRiesgoDeLaAccion": {
+        "type": "object",
+        "properties": {
+          "muevePlata": {
+            "type": "boolean"
+          },
+          "escribeATerceros": {
+            "type": "boolean"
+          },
+          "irreversible": {
+            "type": "boolean"
+          },
+          "masiva": {
+            "type": "boolean"
+          },
+          "fiscal": {
+            "type": "boolean"
+          },
+          "dobleControl": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "paso": {
+                "type": "string",
+                "enum": [
+                  "propone",
+                  "aprueba"
+                ]
+              }
+            },
+            "required": [
+              "paso"
+            ]
+          },
+          "proceso": {
+            "type": "boolean"
+          },
+          "tope": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "agenteDueno": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "muevePlata",
+          "escribeATerceros",
+          "irreversible",
+          "masiva",
+          "fiscal",
+          "dobleControl",
+          "proceso",
+          "tope",
+          "agenteDueno"
+        ]
+      },
+      "AiHubChatTarjetaPropuesta": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "propuesta"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "copiloto",
+              "automatico"
+            ]
+          },
+          "riesgo": {
+            "$ref": "#/components/schemas/AiHubChatRiesgoDeLaAccion"
+          },
+          "vistaPrevia": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatVistaPrevia"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "venceEn": {
+            "type": "string"
+          },
+          "siConfirmas": {
+            "type": "object",
+            "properties": {
+              "sale": {
+                "type": "string",
+                "enum": [
+                  "ahora",
+                  "programada"
+                ]
+              },
+              "ejecutarDesde": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cuando": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sale",
+              "ejecutarDesde",
+              "cuando"
+            ]
+          },
+          "dobleControl": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatDobleControl"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          },
+          "siNoFueraEnsayo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "ejecutar",
+              "gracia",
+              "programar",
+              "clic"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "frase",
+          "pregunta",
+          "porQue",
+          "modo",
+          "riesgo",
+          "vistaPrevia",
+          "venceEn",
+          "siConfirmas",
+          "dobleControl",
+          "ensayo",
+          "siNoFueraEnsayo"
+        ]
+      },
+      "AiHubChatTarjetaEnCurso": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "en_curso"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "procesoId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proceso": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatProceso"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "desde": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "resumen",
+          "procesoId",
+          "proceso",
+          "desde"
+        ]
+      },
+      "AiHubChatIntencionDelBoton": {
+        "type": "object",
+        "properties": {
+          "accion": {
+            "type": "string"
+          },
+          "propuestaId": {
+            "type": "string"
+          },
+          "entidad": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tipo",
+              "id"
+            ]
+          },
+          "datos": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "accion"
+        ]
+      },
+      "AiHubChatTarjetaResultado": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "resultado"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "en_gracia",
+              "hecha",
+              "cancelada",
+              "deshecha",
+              "vencida"
+            ]
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "gracia": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "hasta": {
+                "type": "string"
+              },
+              "segundos": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "hasta",
+              "segundos"
+            ]
+          },
+          "deshacer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "estado",
+          "resumen",
+          "gracia",
+          "deshacer"
+        ]
+      },
+      "AiHubChatTarjetaProgramada": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "programada"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "ejecutarDesde": {
+            "type": "string"
+          },
+          "cuando": {
+            "type": "string"
+          },
+          "ventana": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "cobranza",
+              "aviso"
+            ]
+          },
+          "saleSola": {
+            "type": "boolean"
+          },
+          "deshacer": {
+            "type": "object",
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "resumen",
+          "ejecutarDesde",
+          "cuando",
+          "ventana",
+          "saleSola",
+          "deshacer"
+        ]
+      },
+      "AiHubChatTarjetaError": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explicacion": {
+            "type": "string"
+          },
+          "permiso": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "modulo": {
+                "type": "string"
+              },
+              "accion": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "modulo",
+              "accion"
+            ]
+          },
+          "quienesPueden": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "segundoFactor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "reintento": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "reintento"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "status",
+          "code",
+          "explicacion",
+          "permiso",
+          "quienesPueden",
+          "segundoFactor"
+        ]
+      },
+      "AiHubChatTarjetaDeEjecucion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaPropuesta"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaEnCurso"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaResultado"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaProgramada"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaError"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "tipo",
+          "mapping": {
+            "propuesta": "#/components/schemas/AiHubChatTarjetaPropuesta",
+            "en_curso": "#/components/schemas/AiHubChatTarjetaEnCurso",
+            "resultado": "#/components/schemas/AiHubChatTarjetaResultado",
+            "programada": "#/components/schemas/AiHubChatTarjetaProgramada",
+            "error": "#/components/schemas/AiHubChatTarjetaError"
+          }
+        }
+      },
+      "AiHubChatEventoProcesoIniciado": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "proceso_iniciado"
+            ]
+          },
+          "procesoId": {
+            "type": "string"
+          },
+          "ejecucionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "procesoId",
+          "ejecucionId"
+        ]
+      },
+      "AiHubChatPiezasNuevasDelDone": {
+        "type": "object",
+        "properties": {
+          "ejecucion": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatTarjetaDeEjecucion"
+              },
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaPropuesta"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaEnCurso"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaResultado"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaProgramada"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaError"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ejecucion",
+          "ensayo"
+        ]
+      },
       "DashboardSummaryResponse": {
         "type": "object",
         "properties": {
@@ -597,7 +1326,7 @@
           "nit": {
             "type": "string",
             "maxLength": 20,
-            "pattern": "^\\d{9,10}(?:-\\d)?$",
+            "pattern": "^\\d{6,10}(?:-\\d)?$",
             "example": "900123456-7"
           },
           "existingTenantId": {
@@ -781,7 +1510,7 @@
           },
           "nit": {
             "type": "string",
-            "pattern": "^\\d{9,10}(?:-\\d)?$",
+            "pattern": "^\\d{6,10}(?:-\\d)?$",
             "example": "900123456-7"
           },
           "address": {
@@ -1428,7 +2157,7 @@
           },
           "nit": {
             "type": "string",
-            "pattern": "^\\d{9,10}(?:-\\d)?$"
+            "pattern": "^\\d{6,10}(?:-\\d)?$"
           },
           "address": {
             "$ref": "#/components/schemas/OnboardingSessionAgencyAddress"
@@ -6778,6 +7507,74 @@
           "templates"
         ]
       },
+      "PedirLlamadaRespuesta": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "retenida",
+              "programada",
+              "ya_pendiente",
+              "sin_mora",
+              "excluido",
+              "no_disponible"
+            ]
+          },
+          "debtorId": {
+            "type": "string"
+          },
+          "decisionId": {
+            "type": "string"
+          },
+          "deudorNuevo": {
+            "type": "boolean"
+          },
+          "porQue": {
+            "type": "string",
+            "enum": [
+              "no_encontrado",
+              "al_dia",
+              "dentro_del_plazo",
+              "castigada",
+              "en_juridico",
+              "datos_incompletos"
+            ]
+          },
+          "valla": {
+            "type": "string",
+            "enum": [
+              "judicializado",
+              "pausa",
+              "opt_out"
+            ]
+          },
+          "detalle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "PedirLlamadaBody": {
+        "type": "object",
+        "properties": {
+          "contractId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documento": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 30
+          },
+          "motivo": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      },
       "CobranzaEscalationCard": {
         "type": "object",
         "properties": {
@@ -9793,7 +10590,7 @@
               "string",
               "null"
             ],
-            "description": "Block reason when contacted=false (codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted."
+            "description": "Block reason when contacted=false (codeudor_sin_umbral | mora_bajo_umbral | sin_dato_de_mora | codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted."
           }
         },
         "required": [
@@ -9881,6 +10678,12 @@
           },
           "isDefault": {
             "type": "boolean"
+          },
+          "advertencia": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10413,6 +11216,392 @@
           }
         }
       },
+      "CobranzaEtapasDeCartera": {
+        "type": "object",
+        "properties": {
+          "s1": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s2": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s3": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "s5": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          }
+        },
+        "required": [
+          "s1",
+          "s2",
+          "s3",
+          "s5"
+        ]
+      },
+      "CobranzaPoliticaPorInmobiliaria": {
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "centralesAvisoDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "codeudorAvisosDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "provisionada": {
+            "type": "boolean"
+          },
+          "etapasDeCartera": {
+            "$ref": "#/components/schemas/CobranzaEtapasDeCartera"
+          },
+          "etapasPersonalizadas": {
+            "type": "boolean"
+          },
+          "afiliadaDatacredito": {
+            "type": "boolean"
+          },
+          "afiliadaTransunion": {
+            "type": "boolean"
+          },
+          "sugerenciaDeCuotasPorEtapa": {
+            "type": "object",
+            "properties": {
+              "S0": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S1": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S2": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S3": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S4": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "S5": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              },
+              "SX": {
+                "type": "object",
+                "properties": {
+                  "maxInstallments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minInitialPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "conditionEs": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "maxInstallments",
+                  "minInitialPct",
+                  "conditionEs"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "agencyId",
+          "centralesAvisoDesdeDiasMora",
+          "codeudorAvisosDesdeDiasMora",
+          "provisionada",
+          "etapasDeCartera",
+          "etapasPersonalizadas",
+          "afiliadaDatacredito",
+          "afiliadaTransunion",
+          "sugerenciaDeCuotasPorEtapa"
+        ]
+      },
+      "CobranzaPoliticaPorInmobiliariaUpdate": {
+        "type": "object",
+        "properties": {
+          "centralesAvisoDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 365
+          },
+          "codeudorAvisosDesdeDiasMora": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 365
+          },
+          "etapasDeCartera": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CobranzaEtapasDeCartera"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "afiliadaDatacredito": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "afiliadaTransunion": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AvisoPrevioSinEnviar": {
+        "type": "object",
+        "properties": {
+          "avisoId": {
+            "type": "string"
+          },
+          "debtorId": {
+            "type": "string"
+          },
+          "generadoEn": {
+            "type": "string"
+          },
+          "diasMora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "deudaCop": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "legalArtifactId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "avisoId",
+          "debtorId",
+          "generadoEn",
+          "diasMora",
+          "deudaCop",
+          "legalArtifactId"
+        ]
+      },
+      "AvisosPreviosSinEnviar": {
+        "type": "object",
+        "properties": {
+          "avisos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvisoPrevioSinEnviar"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "avisos",
+          "total"
+        ]
+      },
+      "AvisoPrevioEnvioResultado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "enviadoEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "enviadoEn"
+        ]
+      },
+      "AvisoPrevioEnvio": {
+        "type": "object",
+        "properties": {
+          "canal": {
+            "type": "string",
+            "enum": [
+              "correo_certificado",
+              "correo_fisico",
+              "email",
+              "whatsapp",
+              "entrega_personal",
+              "otro"
+            ]
+          },
+          "constancia": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "canal",
+          "constancia"
+        ],
+        "additionalProperties": false
+      },
       "CarteraImportErrorEntry": {
         "type": "object",
         "properties": {
@@ -10754,7 +11943,10 @@
               "matching",
               "avaluo",
               "conciliacion",
-              "pagos"
+              "pagos",
+              "documentos",
+              "reportes",
+              "comunicacion"
             ]
           },
           "actionType": {
@@ -10833,7 +12025,10 @@
               "matching",
               "avaluo",
               "conciliacion",
-              "pagos"
+              "pagos",
+              "documentos",
+              "reportes",
+              "comunicacion"
             ]
           },
           "taskDescription": {
@@ -10861,6 +12056,81 @@
           "taskDescription",
           "status",
           "summary"
+        ]
+      },
+      "AiHubChatAccionPropuesta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "canal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destinatarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "contacto": {
+                  "type": "string"
+                },
+                "detalle": {
+                  "type": "string"
+                },
+                "excluidoPor": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nombre",
+                "contacto"
+              ]
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "texto": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estado": {
+            "type": "string"
+          },
+          "venceEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "accion",
+          "titulo",
+          "resumen",
+          "canal",
+          "destinatarios",
+          "total",
+          "texto",
+          "estado",
+          "venceEn"
         ]
       },
       "AiHubChatSnapshot": {
@@ -10948,6 +12218,22 @@
               "$ref": "#/components/schemas/AiHubChatPendingApproval"
             }
           },
+          "accionesPropuestas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatAccionPropuesta"
+            }
+          },
+          "entidades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "turnoId": {
+            "type": "string"
+          },
           "snapshot": {
             "$ref": "#/components/schemas/AiHubChatSnapshot"
           },
@@ -10960,6 +12246,9 @@
           "suggestedActions",
           "dispatches",
           "pendingApprovals",
+          "accionesPropuestas",
+          "entidades",
+          "turnoId",
           "snapshot",
           "generatedAt"
         ]
@@ -10973,6 +12262,21 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "AiHubChatErrorConCodigo": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "code"
         ]
       },
       "AiHubChatRequest": {
@@ -11069,7 +12373,8 @@
             "type": "string",
             "enum": [
               "routing",
-              "approval"
+              "approval",
+              "feedback"
             ]
           },
           "pattern": {
@@ -11087,7 +12392,10 @@
                   "matching",
                   "avaluo",
                   "conciliacion",
-                  "pagos"
+                  "pagos",
+                  "documentos",
+                  "reportes",
+                  "comunicacion"
                 ]
               },
               "tags": {
@@ -11245,6 +12553,418 @@
           }
         },
         "required": [
+          "decision"
+        ]
+      },
+      "AiHubChatAccionResultado": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "enviados": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fallidos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nombre",
+                "motivo"
+              ]
+            }
+          },
+          "resumen": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enviados",
+          "fallidos",
+          "resumen"
+        ]
+      },
+      "AiHubChatAccionRespuesta": {
+        "type": "object",
+        "properties": {
+          "propuestaId": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ejecutada",
+              "fallida",
+              "cancelada"
+            ]
+          },
+          "yaEjecutada": {
+            "type": "boolean"
+          },
+          "resultado": {
+            "$ref": "#/components/schemas/AiHubChatAccionResultado"
+          },
+          "resueltaEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "propuestaId",
+          "estado",
+          "yaEjecutada",
+          "resultado",
+          "resueltaEn"
+        ]
+      },
+      "AiHubChatAccionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatFeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "guardado": {
+            "type": "boolean"
+          },
+          "yaRegistrado": {
+            "type": "boolean"
+          },
+          "leccionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "registradoEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "guardado",
+          "yaRegistrado",
+          "leccionId",
+          "motivo",
+          "registradoEn"
+        ]
+      },
+      "AiHubChatFeedbackError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "turnId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "pregunta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "respuesta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "veredicto": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "comentario": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cifraMal": {
+            "type": "boolean"
+          },
+          "herramientas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "maxItems": 12
+          },
+          "consulta": {
+            "type": "string",
+            "maxLength": 8000
+          }
+        },
+        "required": [
+          "turnId",
+          "pregunta",
+          "respuesta",
+          "veredicto"
+        ]
+      },
+      "AiHubChatSenalResponse": {
+        "type": "object",
+        "properties": {
+          "registrada": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "registrada",
+          "motivo"
+        ]
+      },
+      "AiHubChatSenalError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatSenalRequest": {
+        "type": "object",
+        "properties": {
+          "turnoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "tarjeta_abierta",
+              "accion_deshecha",
+              "abandono"
+            ]
+          },
+          "entidad": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "tipo",
+              "id"
+            ]
+          },
+          "propuestaId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "turnoId",
+          "tipo"
+        ]
+      },
+      "AiHubChatEjecucionRespuesta": {
+        "type": "object",
+        "properties": {
+          "tarjeta": {
+            "$ref": "#/components/schemas/AiHubChatTarjetaDeEjecucion"
+          }
+        },
+        "required": [
+          "tarjeta"
+        ]
+      },
+      "AiHubChatEjecucionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatAprendizaje": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "clase": {
+            "type": "string",
+            "enum": [
+              "leccion",
+              "preferencia"
+            ]
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "accion_deshecha",
+              "ambiguedad",
+              "definicion",
+              "apodo"
+            ]
+          },
+          "texto": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "nuevo",
+              "aprendido",
+              "descartado"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "clase",
+          "origen",
+          "texto",
+          "estado"
+        ]
+      },
+      "AiHubChatAprendizajeLectura": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "aprendizajes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatAprendizaje"
+            }
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "disponible",
+          "aprendizajes",
+          "motivo",
+          "leccionesEnUso"
+        ]
+      },
+      "AiHubChatAprendizajeError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatAprendizajeResultado": {
+        "type": "object",
+        "properties": {
+          "aplicado": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "nuevo",
+              "aprendido",
+              "descartado"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aplicado",
+          "estado",
+          "motivo",
+          "leccionesEnUso"
+        ]
+      },
+      "AiHubChatAprendizajeDecision": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "aprender",
+              "descartar"
+            ]
+          },
+          "propuestaId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "id",
           "decision"
         ]
       },
@@ -11624,6 +13344,57 @@
           "pageSize"
         ]
       },
+      "PilotoInboxAccionCampo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "opcion",
+              "multiple",
+              "texto"
+            ]
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "valor": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "valor",
+                "label"
+              ]
+            }
+          },
+          "requerido": {
+            "type": "boolean"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "maxLargo": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "tipo"
+        ]
+      },
       "PilotoInboxAccion": {
         "type": "object",
         "properties": {
@@ -11643,6 +13414,34 @@
           "body": {
             "type": "object",
             "additionalProperties": {}
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoInboxAccionCampo"
+            }
+          },
+          "confirmacion": {
+            "type": "string"
+          },
+          "tono": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "peligro"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permitida": {
+            "type": "boolean"
+          },
+          "porQueNo": {
+            "type": "string"
           }
         },
         "required": [
@@ -11737,6 +13536,28 @@
           "items",
           "total",
           "porPrioridad"
+        ]
+      },
+      "PilotoInboxConteo": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "masVieja": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "viejas": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "masVieja",
+          "viejas"
         ]
       },
       "PilotoActivityItem": {
@@ -11865,6 +13686,24 @@
           "efectoReal"
         ]
       },
+      "AiHubDelegacionEnElBack": {
+        "type": "object",
+        "properties": {
+          "registrada": {
+            "type": "boolean"
+          },
+          "porQue": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "registrada",
+          "porQue"
+        ]
+      },
       "AiHubAutonomiaPutResponse": {
         "type": "object",
         "properties": {
@@ -11878,6 +13717,9 @@
               "copiloto",
               "autonomo"
             ]
+          },
+          "delegacion": {
+            "$ref": "#/components/schemas/AiHubDelegacionEnElBack"
           }
         },
         "required": [
@@ -11915,15 +13757,25 @@
             "type": "string",
             "enum": [
               "llamada",
+              "whatsapp",
+              "correo",
               "cobro",
-              "dispersion",
+              "reporte",
+              "acuerdo-roto",
               "nada"
             ]
+          },
+          "programadaPara": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
           }
         },
         "required": [
           "ok",
-          "emitido"
+          "emitido",
+          "mensaje"
         ]
       },
       "AiHubGobiernoItem": {
@@ -11986,6 +13838,32 @@
         ],
         "additionalProperties": false
       },
+      "AiHubFlotaValla": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "regla"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "value",
+          "estado"
+        ]
+      },
       "AiHubFlotaAgente": {
         "type": "object",
         "properties": {
@@ -12010,13 +13888,43 @@
           },
           "corre": {
             "type": "boolean"
+          },
+          "porQueNoCorre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gobierna": {
+            "type": "boolean"
+          },
+          "actua": {
+            "type": "boolean"
+          },
+          "efectoReal": {
+            "type": "string"
+          },
+          "valla": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubFlotaValla"
+            }
+          },
+          "t323": {
+            "type": "boolean"
           }
         },
         "required": [
           "agente",
           "modo",
           "origen",
-          "corre"
+          "corre",
+          "porQueNoCorre",
+          "gobierna",
+          "actua",
+          "efectoReal",
+          "valla",
+          "t323"
         ]
       },
       "AiHubFlotaResponse": {
@@ -12030,9 +13938,17 @@
             "enum": [
               "sombra",
               "copiloto",
-              "autonomo",
-              "mixto"
+              "autonomo"
             ]
+          },
+          "distintos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actuan": {
+            "type": "integer"
           },
           "agentes": {
             "type": "array",
@@ -12085,6 +14001,8 @@
         "required": [
           "activo",
           "modo",
+          "distintos",
+          "actuan",
           "agentes",
           "resumen",
           "enVivo",
@@ -12122,6 +14040,43 @@
                     "error"
                   ]
                 }
+              },
+              "delegacion": {
+                "type": "object",
+                "properties": {
+                  "registrada": {
+                    "type": "boolean"
+                  },
+                  "porQue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "fallidas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "agente": {
+                          "type": "string"
+                        },
+                        "porQue": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "agente",
+                        "porQue"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "registrada",
+                  "porQue",
+                  "fallidas"
+                ]
               }
             },
             "required": [
@@ -12684,6 +14639,1004 @@
         ],
         "additionalProperties": false
       },
+      "PilotoConciliacionIgnorarResponse": {
+        "type": "object",
+        "properties": {
+          "movimientoId": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "movimientoId",
+          "estado"
+        ]
+      },
+      "PilotoConciliacionIgnorarBody": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "motivo"
+        ],
+        "additionalProperties": false
+      },
+      "PilotoPreferencias": {
+        "type": "object",
+        "properties": {
+          "topeMontoCop": {
+            "type": "number"
+          },
+          "topeDestinatarios": {
+            "type": "number"
+          },
+          "graciaSegundos": {
+            "type": "number"
+          },
+          "porDefecto": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "topeMontoCop",
+          "topeDestinatarios",
+          "graciaSegundos",
+          "porDefecto"
+        ]
+      },
+      "PilotoProcesoGobernado": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "dondeCorre": {
+            "type": "string",
+            "enum": [
+              "back",
+              "micro"
+            ]
+          },
+          "queHace": {
+            "type": "string"
+          },
+          "siempreHumano": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "envio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "cobranza",
+              "aviso"
+            ]
+          },
+          "topes": {
+            "type": "object",
+            "properties": {
+              "monto": {
+                "type": "boolean"
+              },
+              "destinatarios": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "monto",
+              "destinatarios"
+            ]
+          },
+          "cableado": {
+            "type": "string",
+            "enum": [
+              "si",
+              "pendiente"
+            ]
+          },
+          "nota": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "queHaceAhora": {
+            "type": "string"
+          },
+          "queHaceEnCadaModo": {
+            "type": "object",
+            "properties": {
+              "sombra": {
+                "type": "string"
+              },
+              "copiloto": {
+                "type": "string"
+              },
+              "autonomo": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "agente",
+          "dondeCorre",
+          "queHace",
+          "siempreHumano",
+          "envio",
+          "topes",
+          "cableado",
+          "nota",
+          "modo",
+          "queHaceAhora",
+          "queHaceEnCadaModo"
+        ]
+      },
+      "PilotoPerilla": {
+        "type": "object",
+        "properties": {
+          "preferencias": {
+            "$ref": "#/components/schemas/PilotoPreferencias"
+          },
+          "ventanas": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "procesos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoProcesoGobernado"
+            }
+          }
+        },
+        "required": [
+          "preferencias",
+          "ventanas",
+          "procesos"
+        ]
+      },
+      "PilotoPerillaError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PilotoPantallaDePreferencias": {
+        "type": "object",
+        "properties": {
+          "preferencias": {
+            "$ref": "#/components/schemas/PilotoPreferencias"
+          },
+          "rangos": {
+            "type": "object",
+            "properties": {
+              "topeMontoCop": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "topeDestinatarios": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              },
+              "graciaSegundos": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            "required": [
+              "topeMontoCop",
+              "topeDestinatarios",
+              "graciaSegundos"
+            ]
+          },
+          "ventanas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "enum": [
+                    "cobranza",
+                    "aviso"
+                  ]
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "tipo",
+                "nombre"
+              ]
+            }
+          },
+          "puedeEditar": {
+            "type": "boolean"
+          },
+          "guardable": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "porQueNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cambiadoPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cambiadoEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "preferencias",
+          "rangos",
+          "ventanas",
+          "puedeEditar",
+          "guardable",
+          "porQueNo",
+          "cambiadoPor",
+          "cambiadoEn"
+        ]
+      },
+      "PilotoPreferenciasPutBody": {
+        "type": "object",
+        "properties": {
+          "topeMontoCop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "topeDestinatarios": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "graciaSegundos": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 600
+          }
+        },
+        "additionalProperties": false
+      },
+      "PilotoAccionDelBack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "proceso": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "montoCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "destinatarios": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ejecutarEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resultado": {},
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resueltoPorNombre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resueltoAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "proceso",
+          "agente",
+          "estado",
+          "modo",
+          "motivo",
+          "resumen",
+          "montoCop",
+          "destinatarios",
+          "ejecutarEn",
+          "error",
+          "resueltoPorNombre",
+          "resueltoAt",
+          "createdAt"
+        ]
+      },
+      "PilotoAccionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PilotoLauraDeHoy": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "dia": {
+            "type": "string"
+          },
+          "corrioHoy": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "planificacionesHoy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "llamadasHoy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "retenidasHoy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "contactosHoy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "frase": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dia",
+          "corrioHoy",
+          "planificacionesHoy",
+          "llamadasHoy",
+          "retenidasHoy",
+          "contactosHoy",
+          "frase"
+        ]
+      },
+      "PilotoOperaSola": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "desde": {
+            "type": "string"
+          },
+          "dias": {
+            "type": "number"
+          },
+          "inmobiliaria": {
+            "type": "object",
+            "properties": {
+              "detectadas": {
+                "type": "number"
+              },
+              "hechasSolas": {
+                "type": "number"
+              },
+              "hechasConClic": {
+                "type": "number"
+              },
+              "esperanClic": {
+                "type": "number"
+              },
+              "propuestas": {
+                "type": "number"
+              },
+              "programadas": {
+                "type": "number"
+              },
+              "fallidas": {
+                "type": "number"
+              },
+              "yaNoHacianFalta": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "detectadas",
+              "hechasSolas",
+              "hechasConClic",
+              "esperanClic",
+              "propuestas",
+              "programadas",
+              "fallidas",
+              "yaNoHacianFalta"
+            ]
+          },
+          "porDetector": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "detectadas": {
+                  "type": "number"
+                },
+                "hechasSolas": {
+                  "type": "number"
+                },
+                "hechasConClic": {
+                  "type": "number"
+                },
+                "esperanClic": {
+                  "type": "number"
+                },
+                "propuestas": {
+                  "type": "number"
+                },
+                "programadas": {
+                  "type": "number"
+                },
+                "fallidas": {
+                  "type": "number"
+                },
+                "yaNoHacianFalta": {
+                  "type": "number"
+                },
+                "detector": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "detectadas",
+                "hechasSolas",
+                "hechasConClic",
+                "esperanClic",
+                "propuestas",
+                "programadas",
+                "fallidas",
+                "yaNoHacianFalta",
+                "detector",
+                "nombre"
+              ]
+            }
+          },
+          "laura": {
+            "$ref": "#/components/schemas/PilotoLauraDeHoy"
+          },
+          "frase": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "disponible",
+          "desde",
+          "dias",
+          "inmobiliaria",
+          "porDetector",
+          "laura",
+          "frase"
+        ]
+      },
+      "PilotoOperaSolaError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PilotoQueFaltaFalta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "interruptor",
+              "pases",
+              "migracion",
+              "agente_apagado",
+              "sin_modo",
+              "modo",
+              "delegacion",
+              "sin_cablear",
+              "laura",
+              "no_medido"
+            ]
+          },
+          "que": {
+            "type": "string"
+          },
+          "quien": {
+            "type": "string",
+            "enum": [
+              "leasefy",
+              "administrador",
+              "programar"
+            ]
+          },
+          "como": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "que",
+          "quien",
+          "como"
+        ]
+      },
+      "PilotoQueFaltaProceso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "queHace": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "opera_solo",
+              "siempre_humano",
+              "frenado",
+              "apagado"
+            ]
+          },
+          "faltas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaFalta"
+            }
+          },
+          "siempreHumano": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "agente",
+          "queHace",
+          "estado",
+          "faltas",
+          "siempreHumano",
+          "limites"
+        ]
+      },
+      "PilotoQueFaltaAgente": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "modoElegido": {
+            "type": "boolean"
+          },
+          "corre": {
+            "type": "boolean"
+          },
+          "delegacion": {
+            "type": "object",
+            "properties": {
+              "necesaria": {
+                "type": "boolean"
+              },
+              "estado": {
+                "type": "string",
+                "enum": [
+                  "registrada",
+                  "falta",
+                  "no_medida",
+                  "no_aplica"
+                ]
+              },
+              "quien": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "desde": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "necesaria",
+              "estado",
+              "quien",
+              "desde"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "listo",
+              "siempre_humano",
+              "frenado",
+              "apagado"
+            ]
+          },
+          "faltas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaFalta"
+            }
+          },
+          "procesos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaProceso"
+            }
+          }
+        },
+        "required": [
+          "agente",
+          "nombre",
+          "modo",
+          "modoElegido",
+          "corre",
+          "delegacion",
+          "estado",
+          "faltas",
+          "procesos"
+        ]
+      },
+      "PilotoQueFalta": {
+        "type": "object",
+        "properties": {
+          "listo": {
+            "type": "boolean"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "conteo": {
+            "type": "object",
+            "properties": {
+              "procesos": {
+                "type": "number"
+              },
+              "operanSolos": {
+                "type": "number"
+              },
+              "siempreHumanos": {
+                "type": "number"
+              },
+              "frenados": {
+                "type": "number"
+              },
+              "apagados": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "procesos",
+              "operanSolos",
+              "siempreHumanos",
+              "frenados",
+              "apagados"
+            ]
+          },
+          "pendientes": {
+            "type": "object",
+            "properties": {
+              "leasefy": {
+                "type": "number"
+              },
+              "administrador": {
+                "type": "number"
+              },
+              "programar": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "leasefy",
+              "administrador",
+              "programar"
+            ]
+          },
+          "interruptores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                },
+                "donde": {
+                  "type": "string",
+                  "enum": [
+                    "micro",
+                    "back"
+                  ]
+                },
+                "variables": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "queHabilita": {
+                  "type": "string"
+                },
+                "encendido": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "detalle": {
+                  "type": "string"
+                },
+                "quien": {
+                  "type": "string",
+                  "enum": [
+                    "leasefy"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "nombre",
+                "donde",
+                "variables",
+                "queHabilita",
+                "encendido",
+                "detalle",
+                "quien"
+              ]
+            }
+          },
+          "migraciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "donde": {
+                  "type": "string",
+                  "enum": [
+                    "micro",
+                    "back"
+                  ]
+                },
+                "queHabilita": {
+                  "type": "string"
+                },
+                "aplicada": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "donde",
+                "queHabilita",
+                "aplicada"
+              ]
+            }
+          },
+          "topes": {
+            "type": "object",
+            "properties": {
+              "topeMontoCop": {
+                "type": "number"
+              },
+              "topeDestinatarios": {
+                "type": "number"
+              },
+              "graciaSegundos": {
+                "type": "number"
+              },
+              "porDefecto": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "topeMontoCop",
+              "topeDestinatarios",
+              "graciaSegundos",
+              "porDefecto"
+            ]
+          },
+          "agentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoQueFaltaAgente"
+            }
+          },
+          "tomadoAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "listo",
+          "frase",
+          "conteo",
+          "pendientes",
+          "interruptores",
+          "migraciones",
+          "topes",
+          "agentes",
+          "tomadoAt"
+        ]
+      },
       "PilotoPulsoEnCurso": {
         "type": "object",
         "properties": {
@@ -12776,7 +15729,8 @@
             "enum": [
               "ok",
               "atencion",
-              "critico"
+              "critico",
+              "desconocido"
             ]
           },
           "titular": {
@@ -12951,6 +15905,35 @@
           "body": {
             "type": "object",
             "additionalProperties": {}
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "confirmacion": {
+            "type": "string"
+          },
+          "tono": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "peligro"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permitida": {
+            "type": "boolean"
+          },
+          "porQueNo": {
+            "type": "string"
           }
         },
         "required": [
@@ -13211,6 +16194,97 @@
           "traza",
           "generatedAt"
         ]
+      },
+      "AiHubMatchingEnviarOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "enviado"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "estado"
+        ]
+      },
+      "AiHubMatchingNoEnviado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "motivo",
+          "mensaje"
+        ]
+      },
+      "AiHubMatchingNoDisponible": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "mensaje"
+        ]
+      },
+      "AiHubMatchingDescartarOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "descartado"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "estado"
+        ]
+      },
+      "AiHubMatchingDescartarBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
       },
       "AiHubMetricsResponse": {
         "type": "object",
@@ -32422,6 +35496,85 @@
         }
       }
     },
+    "/api/agency/{agencyId}/cobranza/pedir-llamada": {
+      "post": {
+        "operationId": "pedirLlamadaDeLaura",
+        "summary": "Pídele a Laura que llame a un inquilino: lo crea como deudor desde las cuotas de su contrato si hace falta, y la llamada sigue el Piloto",
+        "tags": [
+          "agency",
+          "cobranza",
+          "intervention"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedirLlamadaBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado del pedido: retenida en la bandeja, programada (Automático), ya pendiente, sin mora, excluida por una valla, o no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedirLlamadaRespuesta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaInterventionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaInterventionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaInterventionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/cobranza/escalations": {
       "get": {
         "operationId": "listCobranzaEscalations",
@@ -35331,7 +38484,7 @@
       "post": {
         "operationId": "proposeCobranzaAgreement",
         "summary": "Propone (borrador) un acuerdo de pago reutilizando el motor de payment-plans",
-        "description": "Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer) — same per-stage ceilings + Math.min(tier, agencyMaxDiscountPct) clamp (triple-gate authority). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).",
+        "description": "Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer). The discount comes ONLY from an approved agency policy (acuerdo general, clamped by agencyMaxDiscountPct); without one there is no discount (rule of 2026-09-17). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).",
         "tags": [
           "agency",
           "cobranza",
@@ -37263,7 +40416,7 @@
       "post": {
         "operationId": "postCobranzaCodeudorContactar",
         "summary": "Manually contact the codeudor / fiador (cobranza:approve — OWNER/ADMIN)",
-        "description": "Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by AgencyPolicy.contactCodeudorEnabled (default OFF ⇒ 200 with contacted=false, reason=codeudor_disabled). Reuses the existing Ley 2300 / Habeas Data / certified-fence guardrails via the channel senders. Never auto-contacts.",
+        "description": "Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by the agency's N days overdue (politica_de_cobranza.codeudor_avisos_desde_dias_mora; unset ⇒ 200 with contacted=false, reason=codeudor_sin_umbral; case below N ⇒ reason=mora_bajo_umbral). Ley 2300 frequency is counted for the codeudor as a PERSON (1 contact/day, one channel per ISO week), separate from the debtor. Reuses the Habeas Data / certified-fence guardrails. Never auto-contacts.",
         "tags": [
           "agency",
           "cobranza"
@@ -37363,7 +40516,7 @@
       "get": {
         "operationId": "getCobranzaAutonomy",
         "summary": "Read the cobranza autonomy level",
-        "description": "Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('automatico_completo' = current behavior) with isDefault=true. cobranza:view.",
+        "description": "Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('sugerir' since 2026-09-17: nothing auto-dispatches until an admin picks another level) with isDefault=true. cobranza:view.",
         "tags": [
           "agency",
           "cobranza"
@@ -38195,6 +41348,463 @@
         }
       }
     },
+    "/api/agency/{agencyId}/cobranza/politica": {
+      "get": {
+        "operationId": "getCobranzaPoliticaPorInmobiliaria",
+        "summary": "Umbrales de cobranza de la inmobiliaria (centrales y codeudor)",
+        "description": "Días de mora desde los que sale solo el aviso previo de centrales (Ley 1266) y desde los que el codeudor recibe los avisos de cobro. null = no se hace nada. Requiere cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Política vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliaria"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putCobranzaPoliticaPorInmobiliaria",
+        "summary": "Fijar los umbrales de cobranza de la inmobiliaria (OWNER/ADMIN)",
+        "description": "Actualiza uno o los dos umbrales (1 a 365 días de mora, o null para apagar). Deja rastro en audit_log. Requiere cobranza:configure. 503 si la migración de la tabla no está aplicada.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliariaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Política actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaPoliticaPorInmobiliaria"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado o umbral fuera de rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible o migración sin aplicar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/centrales/avisos": {
+      "get": {
+        "operationId": "listarAvisosPreviosSinEnviar",
+        "summary": "Avisos previos a centrales generados y SIN enviar",
+        "description": "Mientras un aviso esté acá, el reloj de 20 días de la Ley 1266 no corre y el reporte no se puede proponer. Requiere cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avisos sin enviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvisosPreviosSinEnviar"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/centrales/avisos/{avisoId}/enviado": {
+      "post": {
+        "operationId": "registrarEnvioDelAvisoPrevio",
+        "summary": "Registrar que el aviso previo SALIÓ (arranca los 20 días de la Ley 1266)",
+        "description": "El micro no manda este aviso: lo manda una persona y acá registra el canal y la constancia. Sólo este registro arranca el reloj. Requiere cobranza:approve.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "avisoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvisoPrevioEnvio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Envío registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvisoPrevioEnvioResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ese aviso no existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ese aviso ya estaba registrado como enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/cartera/import": {
       "post": {
         "operationId": "importCartera",
@@ -38439,6 +42049,16 @@
               }
             }
           },
+          "402": {
+            "description": "La cuenta de IA se quedó sin créditos. Reintentar no lo arregla: hay que recargar (code: sin_creditos_ia).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatErrorConCodigo"
+                }
+              }
+            }
+          },
           "403": {
             "description": "agencyId mismatch (T-15-06) / not a member",
             "content": {
@@ -38665,6 +42285,573 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiHubChatLessonsError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/confirmar": {
+      "post": {
+        "operationId": "postAiHubChatAccionConfirmar",
+        "summary": "Confirma y EJECUTA una acción que el chat propuso",
+        "description": "Ejecuta la propuesta guardada (recordatorio de pago, mensaje directo, PQRS o mantenimiento) con la inmobiliaria de la sesión. Idempotente por id: confirmar dos veces no manda dos veces. Vencida → 410. Cancelada o en vuelo → 409. Requiere OPERATOR+.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "propuestaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejecutada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria o rol sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe para esta inmobiliaria / este operador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cancelada o con otra confirmación en vuelo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Venció (10 minutos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/acciones/{propuestaId}/cancelar": {
+      "post": {
+        "operationId": "postAiHubChatAccionCancelar",
+        "summary": "Descarta una acción propuesta (no ejecuta nada)",
+        "description": "Marca la propuesta como cancelada. No ejecuta nada y deja el rastro de que el operador dijo que no.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "propuestaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria o rol sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe para esta inmobiliaria / este operador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/feedback": {
+      "post": {
+        "operationId": "postAiHubChatFeedback",
+        "summary": "Chat del panel — valorar una respuesta (pulgar arriba / abajo)",
+        "description": "Guarda la valoración de UNA respuesta del chat. Con pulgar abajo y un comentario, crea además una lección por inmobiliaria (pasando por una guarda de calidad que descarta lo que no es una regla). Con pulgar arriba, propone la pregunta para el banco de preguntas (no la agrega sola). Idempotente por turno. Cualquier miembro de la agencia.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubChatFeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valoración registrada (con o sin lección)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId distinto al del token / no es miembro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base de datos: la valoración no se pudo guardar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatFeedbackError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/senales": {
+      "post": {
+        "operationId": "postAiHubChatSenal",
+        "summary": "Chat del panel — una señal que sólo ve la pantalla (clic en tarjeta, deshacer, abandono)",
+        "description": "Le cuenta al cerebro de la inmobiliaria algo que pasó en la pantalla sobre un turno del chat: que se abrió una tarjeta, que se deshizo una acción o que la persona abandonó. El turno tiene que ser de quien llama. Idempotente. Cualquier miembro de la agencia.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubChatSenalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Señal procesada (anotada o no, con el motivo)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatSenalResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatSenalError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId distinto al del token / no es miembro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatSenalError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/ejecuciones/{ejecucionId}": {
+      "get": {
+        "operationId": "getAiHubChatEjecucion",
+        "summary": "La tarjeta de hoy de una acción del chat (propuesta, en curso, resultado, programada o error)",
+        "description": "Devuelve la tarjeta de una ejecución del chat de quien pregunta. Si estaba programada y ya le llegó la hora, sale ahora con la sesión de la persona (idempotente: una sola llamada al back por ejecución). Si arrancó un proceso largo, hace UNA consulta al Centro de procesos y, si terminó, la cierra. Cualquier miembro.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "ejecucionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La tarjeta al día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria, o ensayo sin su token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe, no es tuya, o este servidor todavía no guarda ejecuciones (falta la migración)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
+      "get": {
+        "operationId": "getAiHubChatAprender",
+        "summary": "Chat del panel — qué aprendería el chat de una respuesta («¿Aprendo esto?», sólo administrador)",
+        "description": "Lo que el chat puede aprender de ESA respuesta de quien llama: una acción que se deshizo, la tarjeta que eligió entre varias, o cómo le dicen en la inmobiliaria a algo. Lo deja como candidato (idempotente) y dice en qué quedó. Sólo el administrador de la inmobiliaria.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "El `turnoId` de la respuesta (lo devolvió la ruta del chat).",
+              "example": "33333333-3333-4333-8333-333333333333"
+            },
+            "required": true,
+            "name": "turnoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "required": false,
+            "name": "propuestaId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo que se puede aprender (o por qué no hay nada)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeLectura"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la agencia, o no es su administrador (`SOLO_ADMINISTRADOR`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postAiHubChatAprender",
+        "summary": "Chat del panel — el administrador decide si el chat aprende algo de una respuesta",
+        "description": "Certifica (o descarta) la lección, o confirma (o descarta) el vocabulario, que salió de ESA respuesta de quien llama. Sólo el administrador. Una lección certificada entra a las respuestas sólo con CHAT_LESSONS_ENABLED.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "El `turnoId` de la respuesta (lo devolvió la ruta del chat).",
+              "example": "33333333-3333-4333-8333-333333333333"
+            },
+            "required": true,
+            "name": "turnoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubChatAprendizajeDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decisión aplicada (o por qué no)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la agencia, o no es su administrador (`SOLO_ADMINISTRADOR`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
                 }
               }
             }
@@ -38934,6 +43121,100 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PilotoInboxResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/inbox/conteo": {
+      "get": {
+        "operationId": "getAiHubInboxConteo",
+        "summary": "Piloto automático — cuántas decisiones esperan (para el badge del menú)",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El conteo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoInboxConteo"
                 }
               }
             }
@@ -39355,7 +43636,7 @@
       "post": {
         "operationId": "aprobarRetenidoPiloto",
         "summary": "Piloto — aprobar y liberar una acción retenida por autonomía",
-        "description": "Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos) o un cobro por WhatsApp/email. Idempotente: la segunda aprobación devuelve 409 y no emite nada.",
+        "description": "Libera la acción que el copiloto retuvo: una llamada, un WhatsApp de seguimiento o un correo de cobranza, un cobro por WhatsApp/email, un reporte a centrales de riesgo (que sólo sale con esta aprobación) o la ruptura de un acuerdo incumplido. Antes de marcar re-verifica la deuda de hoy (cuotas del ERP), el acuerdo vigente, el RNE y el horario (8 a. m.–7 p. m.); fuera de horario PROGRAMA la acción para la próxima apertura (`programadaPara`). Idempotente: la segunda aprobación devuelve 409 y no emite nada.",
         "tags": [
           "agency",
           "ai-hub",
@@ -39453,7 +43734,7 @@
             }
           },
           "409": {
-            "description": "Ya estaba resuelto / sin teléfono",
+            "description": "No se hizo: ya estaba resuelta, el deudor ya no existe o ya no debe, tiene acuerdo vigente, está en el RNE, no tiene teléfono o no se pudo leer su deuda de hoy. `error` lo dice en palabras.",
             "content": {
               "application/json": {
                 "schema": {
@@ -39593,7 +43874,7 @@
             }
           },
           "409": {
-            "description": "Ya estaba resuelto / sin teléfono",
+            "description": "No se hizo: ya estaba resuelta, el deudor ya no existe o ya no debe, tiene acuerdo vigente, está en el RNE, no tiene teléfono o no se pudo leer su deuda de hoy. `error` lo dice en palabras.",
             "content": {
               "application/json": {
                 "schema": {
@@ -39952,7 +44233,7 @@
       "put": {
         "operationId": "putAiHubFlota",
         "summary": "Piloto automático — mover la flota entera a un modo",
-        "description": "Escribe el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.",
+        "description": "Escribe el modo (Manual / Copiloto / Automático; en la base sombra / copiloto / autonomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.",
         "tags": [
           "agency",
           "ai-hub",
@@ -40288,7 +44569,7 @@
             }
           },
           "409": {
-            "description": "El gobierno de la agencia no deja actuar",
+            "description": "El agente de conciliación no está habilitado para la inmobiliaria",
             "content": {
               "application/json": {
                 "schema": {
@@ -40383,7 +44664,7 @@
             }
           },
           "403": {
-            "description": "Rol insuficiente",
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
             "content": {
               "application/json": {
                 "schema": {
@@ -40401,7 +44682,7 @@
             }
           },
           "409": {
-            "description": "El gobierno de la agencia no deja actuar, o el movimiento ya no está pendiente",
+            "description": "El agente de conciliación no está habilitado, o el movimiento ya no está pendiente",
             "content": {
               "application/json": {
                 "schema": {
@@ -40432,6 +44713,816 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/ignorar": {
+      "post": {
+        "operationId": "pilotoIgnorarMovimiento",
+        "summary": "Piloto — dejar un movimiento del banco fuera de la conciliación, con su motivo",
+        "tags": [
+          "agency",
+          "piloto",
+          "conciliacion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PilotoConciliacionIgnorarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El movimiento quedó fuera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoConciliacionIgnorarResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso cobros:edit del ERP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El agente de conciliación no está habilitado, o el movimiento ya no está pendiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no está configurado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/perilla": {
+      "get": {
+        "operationId": "getPilotoPerilla",
+        "summary": "Piloto — qué gobierna la perilla: cada proceso, qué hace hoy en el modo de la agencia y lo siempre humano",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La perilla",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerilla"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/preferencias": {
+      "get": {
+        "operationId": "getPilotoPreferencias",
+        "summary": "Piloto — topes (P-3) y gracia (P-10) de la inmobiliaria, con sus rangos, el horario de ley y si puedes cambiarlos",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Topes y gracia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPantallaDePreferencias"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putPilotoPreferencias",
+        "summary": "Piloto — topes por acción (P-3) y gracia de «Deshacer» (P-10) de la inmobiliaria",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PilotoPreferenciasPutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guardadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPreferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fuera de rango o sin nada que cambiar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sólo un administrador cambia los topes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin la migración de la tabla o sin base",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPerillaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/acciones/{id}/ejecutar": {
+      "post": {
+        "operationId": "pilotoAccionEjecutar",
+        "summary": "Piloto — hacer lo que una automatización del back dejó pendiente o propuesto (o sacar ya lo programado)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cómo quedó la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso del ERP de este proceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya no está esperando (se hizo, se deshizo, se descartó o salió)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no está configurado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/acciones/{id}/deshacer": {
+      "post": {
+        "operationId": "pilotoAccionDeshacer",
+        "summary": "Piloto — «Deshacer»: que lo programado no salga (P-10)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cómo quedó la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso del ERP de este proceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya no está esperando (se hizo, se deshizo, se descartó o salió)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no está configurado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/acciones/{id}/descartar": {
+      "post": {
+        "operationId": "pilotoAccionDescartar",
+        "summary": "Piloto — descartar lo pendiente o propuesto (no se vuelve a proponer)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cómo quedó la acción",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionDelBack"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin membresía o sin el permiso del ERP de este proceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya no está esperando (se hizo, se deshizo, se descartó o salió)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no está configurado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoAccionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/opera-sola": {
+      "get": {
+        "operationId": "getPilotoOperaSola",
+        "summary": "Piloto — ¿opera sola? Lo que el Piloto hizo solo, con un clic, lo que espera y lo que falló, y Laura de hoy",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            },
+            "required": false,
+            "name": "dias",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "¿Opera sola?",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSola"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/opera-sola/que-falta": {
+      "get": {
+        "operationId": "getPilotoOperaSolaQueFalta",
+        "summary": "Piloto — ¿opera sola? Qué le falta a toda la inmobiliaria para operar en Automático, por agente y proceso, y quién lo destraba",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Qué falta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoQueFalta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoOperaSolaError"
                 }
               }
             }
@@ -40937,6 +46028,278 @@
           },
           "404": {
             "description": "Unknown `agente`, or the case does not exist for this tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/enviar": {
+      "post": {
+        "operationId": "enviarAiHubMatchingCaso",
+        "summary": "Matching — mandarle al candidato las opciones de un caso de la cola",
+        "description": "Le pide al back que mande el correo con los inmuebles compatibles (el back vuelve a verificar consentimiento y enfriamiento). El caso pasa a `enviado`; si el correo no sale, responde 409 con el motivo en palabras y el caso se actualiza igual que cuando lo reporta el circuito automático.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Correo enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingEnviarOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El caso no existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El caso ya no está en la cola, o el correo no salió (motivo en `mensaje`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingNoEnviado"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no respondió o la base no está disponible — se puede reintentar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingNoDisponible"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/descartar": {
+      "post": {
+        "operationId": "descartarAiHubMatchingCaso",
+        "summary": "Matching — sacar un caso de la cola sin mandar nada",
+        "description": "El caso pasa a `descartado` con quién lo decidió y el motivo (opcional). No se le manda nada al candidato. 409 si el caso ya no estaba en la cola.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubMatchingDescartarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Caso descartado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingDescartarOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El caso no existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El caso ya no estaba en la cola",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
             "content": {
               "application/json": {
                 "schema": {

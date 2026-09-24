@@ -767,3 +767,187 @@ export function fetchPilotoCatalogo(
 ): Promise<PilotoFetchResult<PilotoCatalogoResponse>> {
   return getJson<PilotoCatalogoResponse>(`/api/agency/${agencyId}/ai-hub/catalogo`, signal)
 }
+
+// ── «¿Opera sola?»: qué le falta a toda la inmobiliaria (24-09-2026) ───────
+
+/**
+ * Espejo de `GET /api/agency/{agencyId}/piloto/opera-sola/que-falta` del micro
+ * (`src/piloto/que-falta.ts`). Por agente y por proceso: qué lo frena de
+ * operar solo en Automático y QUIÉN lo destraba. Los interruptores vienen como
+ * sí/no (nunca sus valores); los que viven en el back pueden venir `null`:
+ * «desde aquí no se ve».
+ */
+export type QuienLoArregla = 'leasefy' | 'administrador' | 'programar'
+
+export type TipoDeFalta =
+  | 'interruptor'
+  | 'pases'
+  | 'migracion'
+  | 'agente_apagado'
+  | 'sin_modo'
+  | 'modo'
+  | 'delegacion'
+  | 'sin_cablear'
+  | 'laura'
+  | 'no_medido'
+
+export interface FaltaParaAutomatico {
+  /** Estable: la misma falta en dos agentes trae el mismo id. */
+  id: string
+  tipo: TipoDeFalta
+  que: string
+  quien: QuienLoArregla
+  como: string
+}
+
+export type EstadoDelProcesoEnAutomatico = 'opera_solo' | 'siempre_humano' | 'frenado' | 'apagado'
+export type EstadoDelAgenteEnAutomatico = 'listo' | 'siempre_humano' | 'frenado' | 'apagado'
+
+export interface ProcesoEnAutomatico {
+  id: string
+  agente: string
+  queHace: string
+  estado: EstadoDelProcesoEnAutomatico
+  faltas: FaltaParaAutomatico[]
+  siempreHumano: string | null
+  limites: string[]
+}
+
+export interface AgenteEnAutomatico {
+  agente: string
+  nombre: string
+  modo: AutonomiaModo
+  modoElegido: boolean
+  corre: boolean
+  delegacion: {
+    necesaria: boolean
+    estado: 'registrada' | 'falta' | 'no_medida' | 'no_aplica'
+    quien: string | null
+    desde: string | null
+  }
+  estado: EstadoDelAgenteEnAutomatico
+  faltas: FaltaParaAutomatico[]
+  procesos: ProcesoEnAutomatico[]
+}
+
+export interface InterruptorDelPiloto {
+  id: string
+  nombre: string
+  donde: 'micro' | 'back'
+  /** Los NOMBRES de las variables, para pedírselo a Leasefy. Nunca sus valores. */
+  variables: string[]
+  queHabilita: string
+  /** `null` = desde aquí no se ve. */
+  encendido: boolean | null
+  detalle: string
+  quien: 'leasefy'
+}
+
+export interface MigracionDelPiloto {
+  id: string
+  donde: 'micro' | 'back'
+  queHabilita: string
+  aplicada: boolean | null
+}
+
+export interface PilotoQueFaltaResponse {
+  listo: boolean
+  frase: string
+  conteo: { procesos: number; operanSolos: number; siempreHumanos: number; frenados: number; apagados: number }
+  pendientes: Record<QuienLoArregla, number>
+  interruptores: InterruptorDelPiloto[]
+  migraciones: MigracionDelPiloto[]
+  topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number; porDefecto: boolean }
+  agentes: AgenteEnAutomatico[]
+  tomadoAt: string
+}
+
+export function fetchPilotoQueFalta(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoQueFaltaResponse>> {
+  // Lee también las delegaciones del back (hasta 6 s en el micro): el tope
+  // de 15 s deja margen y no un esqueleto eterno.
+  return getJson<PilotoQueFaltaResponse>(`/api/agency/${agencyId}/piloto/opera-sola/que-falta`, signal, 15_000)
+}
+
+/** Lo que el Piloto HIZO (la otra mitad de «¿Opera sola?»): `GET /piloto/opera-sola`. */
+export interface PilotoLoQueHizoResponse {
+  disponible: boolean
+  desde: string
+  dias: number
+  frase: string
+}
+
+export function fetchPilotoLoQueHizo(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoLoQueHizoResponse>> {
+  return getJson<PilotoLoQueHizoResponse>(`/api/agency/${agencyId}/piloto/opera-sola?dias=30`, signal, 15_000)
+}
+
+// ── Topes y gracia (P-3, P-10) — 24-09-2026 ────────────────────────────────
+
+export interface PreferenciasDelPiloto {
+  topeMontoCop: number
+  topeDestinatarios: number
+  graciaSegundos: number
+  /** `true` = no había fila: son los valores de Nico. */
+  porDefecto: boolean
+}
+
+export interface RangoDePreferencia {
+  min: number
+  max: number
+}
+
+/** Espejo de `GET /api/agency/{agencyId}/piloto/preferencias`. */
+export interface PilotoPreferenciasResponse {
+  preferencias: PreferenciasDelPiloto
+  /** Los rangos que acepta el PUT: la pantalla valida con los mismos números. */
+  rangos: { topeMontoCop: RangoDePreferencia; topeDestinatarios: RangoDePreferencia; graciaSegundos: RangoDePreferencia }
+  /** El horario de ley: se muestra, no se edita. */
+  ventanas: Array<{ tipo: 'cobranza' | 'aviso'; nombre: string }>
+  puedeEditar: boolean
+  /** `false` = falta la migración; `null` = no se supo. */
+  guardable: boolean | null
+  porQueNo: string | null
+  cambiadoPor: string | null
+  cambiadoEn: string | null
+}
+
+export function fetchPilotoPreferencias(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoPreferenciasResponse>> {
+  return getJson<PilotoPreferenciasResponse>(`/api/agency/${agencyId}/piloto/preferencias`, signal, 10_000)
+}
+
+export type CambiosDePreferencias = Partial<Pick<PreferenciasDelPiloto, 'topeMontoCop' | 'topeDestinatarios' | 'graciaSegundos'>>
+
+/** Guarda los topes y la gracia. Sólo un administrador (el micro contesta 403 al resto). */
+export async function putPilotoPreferencias(
+  agencyId: string,
+  cambios: CambiosDePreferencias,
+): Promise<{ ok: boolean; data?: PreferenciasDelPiloto; error?: string; code?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/preferencias`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(cambios),
+    })
+    if (!res.ok) {
+      const cuerpo = (await res.json().catch(() => ({}))) as { error?: unknown; code?: unknown }
+      return {
+        ok: false,
+        error: typeof cuerpo.error === 'string' ? cuerpo.error : `${res.status}`,
+        ...(typeof cuerpo.code === 'string' ? { code: cuerpo.code } : {}),
+      }
+    }
+    return { ok: true, data: (await res.json()) as PreferenciasDelPiloto }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+  }
+}

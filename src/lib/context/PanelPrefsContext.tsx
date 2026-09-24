@@ -1,44 +1,50 @@
 'use client'
 
 /**
- * PanelPrefsContext — Phase 38 plan 38-06 (D-38-06 / D-38-07).
+ * PanelPrefsContext — el «ya lo vio» de las bienvenidas de primera vez del
+ * panel de la inmobiliaria: el recorrido guiado (`TourDelPanel`) y la
+ * presentación de cada agente de IA (`AgentIntroModal`).
  *
- * Hybrid localStorage + DB persistence for AI panel preferences. Currently
- * houses a single key: `panel_tour_dismissed_v1`. The DB side lives in
- * agency_members.preferences JSONB and is written through the Phase 38-03
- * endpoint `PATCH /api/agency/:agencyId/members/me/preferences`.
+ * ── La regla (Nico, 23-09, manda) ─────────────────────────────────────────
  *
- * State machine (D-38-07):
- *   - `tourDismissed === null` → context still hydrating from localStorage.
- *     Consumers should wait before firing the tour to avoid a flash.
- *   - `tourDismissed === false` → eligible to auto-trigger the tour.
- *   - `tourDismissed === true`  → silenced; user has already dismissed.
+ * «El onboarding solo debe aparecer una sola vez por inmobiliaria: si le da
+ * omitir no vuelve a aparecer y si lo ve completo no vuelve a aparecer.»
  *
- * Persistence rules:
- *   - setTourDismissed(true)  → writes localStorage AND fires the PATCH.
- *   - setTourDismissed(false) → writes localStorage only. (Not a code path
- *     today, but kept symmetric for future use.)
- *   - relaunchTour()          → flips in-memory state to false, no localStorage
- *     write, no API call. Survives only the current React tree.
+ *   · La unidad es la INMOBILIARIA: si cualquier persona de la agencia la
+ *     omite o la termina, no le vuelve a salir sola a nadie de esa agencia, en
+ *     ningún navegador ni dispositivo.
+ *   · Omitir, la ✕ o Esc → `omitido`; llegar al final → `completo`. El back
+ *     guarda cuál fue, quién y cuándo, y la primera gana.
+ *   · «Ver el recorrido ahora» (Configuración → Preferencias) sigue: lo pide
+ *     la persona, dura sólo esta sesión y no cambia el «visto» de la agencia.
+ *   · 🔴 Mientras no se sepa la respuesta del servidor, NO se muestra. Nada de
+ *     un recorrido que arranca y después se cierra.
  *
- * Server seed (D-38-06):
- *   - The auth-context dispatches a `leasefy:preferences:loaded` custom event
- *     after fetching /users/me. The detail carries `panel_tour_dismissed_v1`.
- *   - seedFromServer() honors a true server value over any false localStorage
- *     value (cross-device dismiss should win), but never downgrades local true
- *     to false (DB false is the initial state — local true means the user
- *     explicitly dismissed on this device).
+ * ── Por qué reaparecía (medido el 23-09) ──────────────────────────────────
  *
- * Security (T-38-06-02): localStorage key is namespaced + version-suffixed
- * (`leasefy_panel_tour_dismissed_v1`) so a future schema change can invalidate
- * stale state cleanly. Stored value is a boolean string ('true'/'false') —
- * NO PII in localStorage.
+ * La versión anterior guardaba en localStorage (por navegador) y hacía PATCH
+ * a una preferencia POR MIEMBRO del micro (`agent.agency_members`, donde
+ * muchos roles del ERP ni están, así que fallaba), pero LEÍA de `/users/me`
+ * del back —las preferencias de búsqueda del inquilino—, que nunca trae la
+ * marca: el servidor decía siempre «no visto». Y sin localStorage el estado
+ * pasaba a `false` al montar, así que el recorrido arrancaba ANTES de
+ * preguntarle a nadie. Otro navegador, otra persona o un localStorage borrado
+ * = el recorrido otra vez.
  *
- * Refs:
- *   - .planning/phases/38-polish-empty-states-onboarding-a11y/38-CONTEXT.md (D-38-05/06/07/08)
- *   - .planning/phases/38-polish-empty-states-onboarding-a11y/38-06-PLAN.md
- *   - mvp/src/lib/context/PIIRevealContext.tsx (createContext<T|null> + safe hook pattern)
- *   - mvp/src/lib/context/TenantOnboardingContext.tsx (localStorage hydration with guard)
+ * Ahora se escribe y se lee el MISMO recurso: `GET/PUT
+ * /inmobiliaria/onboarding-visto` del back (`onboarding-visto.service.ts`).
+ *
+ * ── Tres estados ──────────────────────────────────────────────────────────
+ *
+ *   `null`  → no se sabe todavía (cargando, falló, o el back no tiene la
+ *             migración). NO se muestra.
+ *   `true`  → la inmobiliaria ya la vio. NO se muestra.
+ *   `false` → la inmobiliaria no la ha visto: se muestra, una vez.
+ *
+ * localStorage es sólo una CACHÉ de `true`, por agencia y clave, para no
+ * esperar al servidor cuando ya se sabe. Si la caché dice «visto» y el
+ * servidor no lo tiene (el PUT se cayó, se cerró la pestaña a mitad), se le
+ * vuelve a mandar al servidor: lo que la persona cerró, cerrado queda.
  */
 
 import * as React from 'react'
@@ -48,48 +54,111 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import {
+  CLAVE_DEL_RECORRIDO_DEL_PANEL,
+  onboardingVistoApi,
+  type EstadoDelOnboarding,
+  type OnboardingVisto,
+} from '@/lib/api/onboarding-visto.service'
 
 void React
 
-/** Exact namespaced localStorage key (T-38-06-02 — versioned suffix). */
-export const STORAGE_KEY = 'leasefy_panel_tour_dismissed_v1'
+/** Prefijo de la caché local de «visto». Lleva la agencia: un navegador puede entrar a varias. */
+export const PREFIJO_DE_LA_CACHE = 'leasefy:onboarding-visto:v2:'
 
-/** Backend route on the agent service (NOT the NestJS BFF). */
-const PREFERENCES_PATH = (agencyId: string) =>
-  `/api/agency/${agencyId}/members/me/preferences`
+/**
+ * La clave de la versión anterior (por navegador, sin agencia). Si está en
+ * `true`, esta persona ya cerró el recorrido en este navegador: se toma como
+ * «visto» de la agencia en la que está y se sube al servidor, para que el
+ * arreglo no le muestre el recorrido una vez más a quien ya lo había cerrado.
+ */
+export const CLAVE_DE_LA_VERSION_ANTERIOR = 'leasefy_panel_tour_dismissed_v1'
 
-/** Custom event emitted by auth-context.tsx after /users/me resolves. */
-export const PREFERENCES_LOADED_EVENT = 'leasefy:preferences:loaded'
+/**
+ * Cuánto esperar antes de volver a preguntar si la lectura FALLA (no si dice
+ * `disponible: false`, que es una respuesta). Se agota rápido a propósito:
+ * es para la carrera del token recién renovado, no para un back caído.
+ */
+export const ESPERAS_PARA_VOLVER_A_LEER_MS = [1500, 4000, 10000]
 
-export interface PreferencesLoadedDetail {
-  panel_tour_dismissed_v1: boolean
+function claveDeCache(agencyId: string, clave: string): string {
+  return `${PREFIJO_DE_LA_CACHE}${agencyId}:${clave}`
+}
+
+function esEstado(v: unknown): v is EstadoDelOnboarding {
+  return v === 'completo' || v === 'omitido'
+}
+
+/** Lo que la caché dice que esta agencia ya vio, en este navegador. */
+function leerCache(agencyId: string): Record<string, EstadoDelOnboarding> {
+  const vistas: Record<string, EstadoDelOnboarding> = {}
+  if (typeof window === 'undefined') return vistas
+  try {
+    const prefijo = `${PREFIJO_DE_LA_CACHE}${agencyId}:`
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i)
+      if (!k || !k.startsWith(prefijo)) continue
+      const v = window.localStorage.getItem(k)
+      if (esEstado(v)) vistas[k.slice(prefijo.length)] = v
+    }
+    if (
+      !vistas[CLAVE_DEL_RECORRIDO_DEL_PANEL] &&
+      window.localStorage.getItem(CLAVE_DE_LA_VERSION_ANTERIOR) === 'true'
+    ) {
+      vistas[CLAVE_DEL_RECORRIDO_DEL_PANEL] = 'omitido'
+    }
+  } catch {
+    // Sin almacenamiento (modo privado): sólo manda el servidor.
+  }
+  return vistas
+}
+
+function guardarCache(agencyId: string, clave: string, estado: EstadoDelOnboarding): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(claveDeCache(agencyId, clave), estado)
+  } catch {
+    // Non-fatal: el servidor es el que manda.
+  }
+}
+
+function olvidarVersionAnterior(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(CLAVE_DE_LA_VERSION_ANTERIOR)
+  } catch {
+    // Non-fatal.
+  }
 }
 
 export interface PanelPrefsContextValue {
-  /** null until localStorage has been read; boolean afterwards. */
+  /**
+   * ¿El recorrido del panel ya lo vio la inmobiliaria?
+   * `null` = no se sabe (no se muestra) · `true` = visto · `false` = mostrarlo.
+   * Tras «Ver el recorrido ahora» vale `false` hasta que se cierre.
+   */
   tourDismissed: boolean | null
   /**
-   * Persist a dismiss decision. `true` writes localStorage AND fires the
-   * PATCH endpoint; `false` writes localStorage only.
+   * Cierra el recorrido: `omitido` (Omitir, la ✕, Esc) o `completo` (llegó
+   * al final). Queda visto para TODA la inmobiliaria.
    */
-  setTourDismissed: (value: boolean) => Promise<void>
+  cerrarRecorrido: (estado: EstadoDelOnboarding) => Promise<void>
   /**
-   * Session-only relaunch — flips in-memory state to false without
-   * persisting to localStorage or the DB. Used by the "Tour del panel"
-   * link in the user menu.
+   * «Ver el recorrido ahora»: sólo esta sesión, sin tocar el «visto» de la
+   * agencia.
    */
   relaunchTour: () => void
-  /**
-   * Server-side seed. Invoked when auth-context loads the user profile;
-   * also wired internally via the PREFERENCES_LOADED_EVENT custom event so
-   * this provider does not need direct access to the auth flow.
-   */
-  seedFromServer: (value: boolean) => void
+  /** Lo que guardó el back del recorrido (quién y cuándo), si ya se vio. */
+  vistaDelRecorrido: OnboardingVisto | null
+  /** El mismo contrato de tres estados, para cualquier otra bienvenida (`agente:<id>`). */
+  estaVista: (clave: string) => boolean | null
+  /** La marca, para cualquier otra bienvenida. Idempotente; la primera gana. */
+  marcarVista: (clave: string, estado: EstadoDelOnboarding) => Promise<void>
 }
 
 const PanelPrefsContext = createContext<PanelPrefsContextValue | null>(null)
@@ -100,126 +169,155 @@ interface ProviderProps {
 
 export function PanelPrefsProvider({ children }: ProviderProps) {
   const { agency } = useAuth()
-  const [tourDismissed, setTourDismissedState] = useState<boolean | null>(null)
+  const agencyId = agency?.id ?? null
 
-  // Internal state-setter used by both the event listener and the public
-  // seedFromServer method. The merge rule mirrors the contract above:
-  // server truth wins for `true`, but a stale-localStorage `true` is kept.
-  const seedFromServerInternal = useCallback((value: boolean) => {
-    setTourDismissedState((prev) => {
-      if (prev === null) return value
-      // DB dismiss wins over any local state.
-      if (value === true) {
-        if (typeof window !== 'undefined') {
-          try {
-            window.localStorage.setItem(STORAGE_KEY, 'true')
-          } catch {
-            // Storage may be unavailable in private browsing; non-fatal.
+  /** Lo que dice el servidor. `null` = no se sabe. */
+  const [delServidor, setDelServidor] = useState<Record<string, OnboardingVisto> | null>(null)
+  /** Lo que ya se sabe visto sin esperar al servidor: la caché y lo cerrado en esta sesión. */
+  const [locales, setLocales] = useState<Record<string, EstadoDelOnboarding>>({})
+  const [relanzado, setRelanzado] = useState(false)
+  /**
+   * «Ver el recorrido ahora» también vuelve a presentar a cada agente de IA
+   * UNA vez en esta sesión (antes lo hacía borrando su marca del navegador,
+   * `resetAgentIntros`). `null` = no se pidió; el conjunto guarda las
+   * presentaciones que ya se volvieron a ver desde que se pidió.
+   */
+  const [repuestas, setRepuestas] = useState<ReadonlySet<string> | null>(null)
+  // Espejo para `marcarVista`, que no debe re-crearse con cada respuesta.
+  const delServidorRef = useRef(delServidor)
+  delServidorRef.current = delServidor
+
+  useEffect(() => {
+    setDelServidor(null)
+    setRelanzado(false)
+    setRepuestas(null)
+    if (!agencyId) {
+      setLocales({})
+      return
+    }
+    const cache = leerCache(agencyId)
+    setLocales(cache)
+
+    let vigente = true
+    let intento = 0
+    let reintento: ReturnType<typeof setTimeout> | undefined
+    const leer = () =>
+      onboardingVistoApi
+        .leer()
+        .then((lectura) => {
+          if (!vigente) return
+          // Sin la migración el back no sabe: se queda en «no se sabe» y no
+          // se muestra nada solo (salvo lo que la caché ya daba por visto).
+          if (!lectura?.disponible || !Array.isArray(lectura.vistas)) return
+          const vistas: Record<string, OnboardingVisto> = {}
+          for (const v of lectura.vistas) {
+            vistas[v.clave] = v
+            guardarCache(agencyId, v.clave, v.estado)
           }
-        }
-        return true
-      }
-      // Server says undismissed; if local is already true (user dismissed
-      // here), keep the local truth — don't reset their choice.
-      return prev
-    })
-  }, [])
-
-  // 1. Hydrate from localStorage on mount.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY)
-      if (saved !== null) {
-        setTourDismissedState(saved === 'true')
-      } else {
-        // No prior decision → undismissed (default = show tour).
-        setTourDismissedState(false)
-      }
-    } catch {
-      // localStorage may throw in private browsing or sandboxed contexts.
-      setTourDismissedState(false)
-    }
-  }, [])
-
-  // 2. Listen for the auth-context preference event (D-38-06 cross-device seed).
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<PreferencesLoadedDetail>).detail
-      if (detail && typeof detail.panel_tour_dismissed_v1 === 'boolean') {
-        seedFromServerInternal(detail.panel_tour_dismissed_v1)
-      }
-    }
-    window.addEventListener(PREFERENCES_LOADED_EVENT, handler)
-    return () => window.removeEventListener(PREFERENCES_LOADED_EVENT, handler)
-  }, [seedFromServerInternal])
-
-  const setTourDismissed = useCallback(
-    async (value: boolean) => {
-      // Optimistic local write — survives reload even if the PATCH fails.
-      if (typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(STORAGE_KEY, String(value))
-        } catch {
-          // Non-fatal — localStorage may be unavailable.
-        }
-      }
-      setTourDismissedState(value)
-
-      // Only the "dismissed → true" transition is persisted to the DB.
-      // Re-enable (false) is intentionally session-only.
-      if (value !== true) return
-
-      const agencyId = agency?.id
-      if (!agencyId) return
-
-      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-      if (!agentUrl) return
-
-      try {
-        const res = await fetch(`${agentUrl}${PREFERENCES_PATH(agencyId)}`, {
-          method: 'PATCH',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ panel_tour_dismissed_v1: true }),
+          setDelServidor(vistas)
+          // Lo que este navegador cerró y el servidor no tiene, se le sube.
+          for (const [clave, estado] of Object.entries(cache)) {
+            if (vistas[clave]) continue
+            onboardingVistoApi
+              .marcar(clave, estado)
+              .then((r) => {
+                if (!vigente) return
+                guardarCache(agencyId, clave, estado)
+                if (clave === CLAVE_DEL_RECORRIDO_DEL_PANEL) olvidarVersionAnterior()
+                setDelServidor((prev) => (prev ? { ...prev, [clave]: r } : prev))
+              })
+              .catch(() => {
+                // Se reintenta en la próxima carga; la caché lo sostiene acá.
+              })
+          }
+          if (vistas[CLAVE_DEL_RECORRIDO_DEL_PANEL]) olvidarVersionAnterior()
         })
-        if (!res.ok) {
-          // Non-fatal: localStorage is already written; the next login will
-          // re-sync the DB from the server response (which is currently false)
-          // — but the local truth keeps the tour silenced anyway.
-          console.warn(
-            '[PanelPrefsContext] preferences PATCH failed:',
-            res.status,
-          )
-        }
+        .catch(() => {
+          // No se sabe: no se muestra. Nada de adivinar «no visto».
+          //
+          // Pero se vuelve a preguntar, pocas veces: un fallo suelto (la red,
+          // el token que se está renovando) no puede costar el recorrido de
+          // toda la sesión.
+          //
+          // ⚠️ Medido en el navegador de QA (23-09): recién pasado el segundo
+          // factor, TODO el panel —pipeline, consignaciones, agentes y esta
+          // lectura— respondió 403 `SEGUNDO_FACTOR_REQUERIDO` hasta recargar.
+          // Eso es de la sesión, no de esto, y los reintentos no lo cubren:
+          // mientras dure, el recorrido espera (no se muestra sin saber) y sale
+          // en la siguiente carga.
+          if (!vigente) return
+          const espera = ESPERAS_PARA_VOLVER_A_LEER_MS[intento++]
+          if (espera != null) reintento = setTimeout(() => void leer(), espera)
+        })
+    void leer()
+    return () => {
+      vigente = false
+      if (reintento) clearTimeout(reintento)
+    }
+  }, [agencyId])
+
+  const estaVista = useCallback(
+    (clave: string): boolean | null => {
+      if (repuestas && clave !== CLAVE_DEL_RECORRIDO_DEL_PANEL && !repuestas.has(clave)) {
+        return false
+      }
+      if (locales[clave]) return true
+      if (delServidor === null) return null
+      return delServidor[clave] != null
+    },
+    [locales, delServidor, repuestas],
+  )
+
+  const marcarVista = useCallback(
+    async (clave: string, estado: EstadoDelOnboarding) => {
+      // Visto YA, en esta pantalla y en este navegador: no espera la red.
+      setLocales((prev) => (prev[clave] ? prev : { ...prev, [clave]: estado }))
+      setRepuestas((prev) => (prev && !prev.has(clave) ? new Set(prev).add(clave) : prev))
+      if (!agencyId) return
+      guardarCache(agencyId, clave, estado)
+      // Ya estaba en el servidor (volver a verlo a mano): no se reescribe
+      // nada, la agencia ya lo tiene visto por la primera persona.
+      if (delServidorRef.current?.[clave]) return
+      try {
+        const r = await onboardingVistoApi.marcar(clave, estado)
+        if (clave === CLAVE_DEL_RECORRIDO_DEL_PANEL) olvidarVersionAnterior()
+        setDelServidor((prev) => (prev ? { ...prev, [clave]: r } : prev))
       } catch (err) {
-        console.warn('[PanelPrefsContext] preferences PATCH error:', err)
+        // La caché lo sostiene en este navegador y se reintenta en la próxima
+        // carga (ver el efecto de arriba).
+        console.warn('[PanelPrefsContext] no se pudo guardar la bienvenida vista:', err)
       }
     },
-    [agency?.id],
+    [agencyId],
+  )
+
+  const cerrarRecorrido = useCallback(
+    async (estado: EstadoDelOnboarding) => {
+      setRelanzado(false)
+      await marcarVista(CLAVE_DEL_RECORRIDO_DEL_PANEL, estado)
+    },
+    [marcarVista],
   )
 
   const relaunchTour = useCallback(() => {
-    // Session-only flip: no localStorage write, no DB call. The next page
-    // mount will pick this up and fire the tour.
-    setTourDismissedState(false)
+    // Sólo en memoria: ni caché ni servidor. Lo pidió la persona.
+    setRelanzado(true)
+    setRepuestas(new Set())
   }, [])
 
-  const seedFromServer = useCallback(
-    (value: boolean) => {
-      seedFromServerInternal(value)
-    },
-    [seedFromServerInternal],
-  )
+  const tourDismissed = relanzado ? false : estaVista(CLAVE_DEL_RECORRIDO_DEL_PANEL)
+  const vistaDelRecorrido = delServidor?.[CLAVE_DEL_RECORRIDO_DEL_PANEL] ?? null
 
   const value = useMemo<PanelPrefsContextValue>(
     () => ({
       tourDismissed,
-      setTourDismissed,
+      cerrarRecorrido,
       relaunchTour,
-      seedFromServer,
+      vistaDelRecorrido,
+      estaVista,
+      marcarVista,
     }),
-    [tourDismissed, setTourDismissed, relaunchTour, seedFromServer],
+    [tourDismissed, cerrarRecorrido, relaunchTour, vistaDelRecorrido, estaVista, marcarVista],
   )
 
   return (

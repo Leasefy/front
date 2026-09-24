@@ -8,8 +8,16 @@
  *
  * The FIRST time the user enters an agent's workspace
  * (el workspace del agente dentro de su módulo) a centered announcement presents that
- * agent: what it does and how to work with it. Dismissal persists per agent in
- * localStorage (any close — backdrop, Escape or the CTA — marks it as seen).
+ * agent: what it does and how to work with it.
+ *
+ * 🔴 Una vez POR INMOBILIARIA, no por navegador (Nico, 23-09: «el onboarding
+ * solo debe aparecer una sola vez por inmobiliaria»). El «ya la vi» vivía en
+ * localStorage (`leasefy.agent-intro.<id>`): otro navegador u otra persona
+ * de la misma agencia la volvía a ver. Ahora es la clave `agente:<id>` del
+ * mismo mecanismo que el recorrido del panel (`PanelPrefsContext` →
+ * `/inmobiliaria/onboarding-visto`): el fondo o Esc la dejan `omitido`,
+ * «Entendido» `completo`, y mientras no se sabe si la agencia ya la vio no se
+ * muestra.
  *
  * A11y: role=dialog + aria-label, Escape dismisses, focus lands on the dialog
  * on open and is restored on close.
@@ -20,9 +28,14 @@ import { createPortal } from 'react-dom'
 import { FeatureAnnouncement } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
+import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
+import {
+  claveDeLaPresentacionDelAgente,
+  type EstadoDelOnboarding,
+} from '@/lib/api/onboarding-visto.service'
 
 export interface AgentIntroConfig {
-  /** Agent id — also the localStorage suffix + i18n block name. */
+  /** Agent id — the `agente:<id>` key of the agency's «ya la vio» + i18n block name. */
   id: string
   /** Route prefix under which this agent's workspace lives. */
   /** Slug del workspace en `agentWorkspaceNav.ts` (findAgentWorkspace decide cuál aplica). */
@@ -81,7 +94,7 @@ export const AGENT_INTROS: AgentIntroConfig[] = [
   // `findAgentWorkspace` ya no devuelve este slug y la presentación no se
   // muestra. Es lo correcto: anunciar «acá trabaja el agente de pagos» sobre la
   // plata de la inmobiliaria era la confusión que se retiró. Queda en la lista,
-  // igual que `estudio`, para `resetAgentIntros` y para cuando el equipo vuelva.
+  // igual que `estudio`, para cuando el equipo vuelva.
   {
     id: 'pagos',
     slug: 'pagos',
@@ -91,50 +104,19 @@ export const AGENT_INTROS: AgentIntroConfig[] = [
   },
 ]
 
-const STORAGE_PREFIX = 'leasefy.agent-intro.'
-
-function isDismissed(id: string): boolean {
-  try {
-    return window.localStorage.getItem(`${STORAGE_PREFIX}${id}`) === '1'
-  } catch {
-    return true // storage unavailable → never nag
-  }
-}
-
-function persistDismissed(id: string): void {
-  try {
-    window.localStorage.setItem(`${STORAGE_PREFIX}${id}`, '1')
-  } catch {
-    /* storage unavailable — session-only dismissal */
-  }
-}
-
-/**
- * Olvida el "ya la vi" de TODAS las novedades, para que vuelvan a presentarse.
- *
- * Existe porque el ajuste «volver a ver las novedades» sólo repone la
- * preferencia global: sin esto, cada agente seguiría marcado como visto en
- * localStorage y el botón no haría nada visible.
- */
-export function resetAgentIntros(): void {
-  try {
-    for (const a of AGENT_INTROS) {
-      window.localStorage.removeItem(`${STORAGE_PREFIX}${a.id}`)
-    }
-  } catch {
-    /* storage unavailable — nothing to reset */
-  }
-}
-
 export interface AgentIntroModalProps {
   /** Current pathname (from usePathname in the host layout). */
   pathname: string
-  /** Suppress while the panel tour is open/visible. */
+  /**
+   * Suppress while the panel tour is open/visible — or while nobody knows yet
+   * whether the agency saw it (it would start on top of this).
+   */
   suppressed?: boolean
 }
 
 export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModalProps) {
   const { t } = useI18n()
+  const { estaVista, marcarVista } = usePanelPrefs()
   const [mounted, setMounted] = useState(false)
   const [visibleId, setVisibleId] = useState<string | null>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
@@ -145,18 +127,17 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   // presenta el agente de Pagos; en /conciliacion-ia tampoco el de Conciliación).
   const slug = findAgentWorkspace(pathname)?.slug ?? null
   const agent = slug ? (AGENT_INTROS.find((a) => a.slug === slug) ?? null) : null
+  const clave = agent ? claveDeLaPresentacionDelAgente(agent.id) : null
+  // null = no se sabe si la agencia ya la vio → no se muestra.
+  const vista = clave ? estaVista(clave) : null
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Open with a small delay on first visit to the agent's workspace.
+  // Open with a small delay on the agency's first visit to the agent's workspace.
   useEffect(() => {
-    if (!mounted || suppressed || !agent) {
-      setVisibleId(null)
-      return
-    }
-    if (isDismissed(agent.id)) {
+    if (!mounted || suppressed || !agent || vista !== false) {
       setVisibleId(null)
       return
     }
@@ -165,15 +146,21 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
       setVisibleId(agent.id)
     }, 600)
     return () => window.clearTimeout(timer)
-  }, [mounted, suppressed, agent])
+  }, [mounted, suppressed, agent, vista])
 
-  const dismiss = useCallback(() => {
-    if (visibleId) persistDismissed(visibleId)
-    setVisibleId(null)
-    setTimeout(() => {
-      prevFocusRef.current?.focus?.()
-    }, 0)
-  }, [visibleId])
+  const cerrar = useCallback(
+    (estado: EstadoDelOnboarding) => {
+      if (visibleId) void marcarVista(claveDeLaPresentacionDelAgente(visibleId), estado)
+      setVisibleId(null)
+      setTimeout(() => {
+        prevFocusRef.current?.focus?.()
+      }, 0)
+    },
+    [visibleId, marcarVista],
+  )
+  // El fondo y Esc la dejan de lado; «Entendido» es haberla leído.
+  const dismiss = useCallback(() => cerrar('omitido'), [cerrar])
+  const entendido = useCallback(() => cerrar('completo'), [cerrar])
 
   // Escape dismisses; focus lands on the dialog when it opens.
   useEffect(() => {
@@ -214,7 +201,7 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
           title={t(agent.titleKey)}
           description={t(agent.descriptionKey)}
           ctaLabel={t('inmobiliaria.ai.tour.finish')}
-          onCta={dismiss}
+          onCta={entendido}
           className="max-w-[calc(100vw-2rem)]"
         />
       </div>

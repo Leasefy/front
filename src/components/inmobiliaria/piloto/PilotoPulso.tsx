@@ -305,7 +305,10 @@ export function PilotoPulso({
           `border-border` queda sólo para el borde exterior. */}
       {(enCurso.length > 0 || alertasVisibles.length > 0) && (
         <div className="grid gap-px border-t border-border-faint bg-border-faint sm:grid-cols-2">
-          <div className="bg-surface pb-2 pt-5">
+          {/* `min-w-0` en cada columna: sin él, el título largo de una alerta
+              estira el track del grid más allá de la tarjeta y a 390 px se
+              cortaba a media palabra («esperá…») en vez de truncar (24-09). */}
+          <div className="min-w-0 bg-surface pb-2 pt-5">
             <h3 className="mb-1 px-6"><MonoLabel>
               {t('inmobiliaria.piloto.pulso.ahora')}</MonoLabel>
             </h3>
@@ -328,7 +331,7 @@ export function PilotoPulso({
             )}
           </div>
 
-          <div className="bg-surface pb-2 pt-5">
+          <div className="min-w-0 bg-surface pb-2 pt-5">
             <h3 className="mb-1 px-6"><MonoLabel>
               {t('inmobiliaria.piloto.pulso.alertas')}</MonoLabel>
             </h3>

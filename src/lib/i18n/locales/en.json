@@ -1079,6 +1079,7 @@
         "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
         "cargando": "Reading the fleet state…",
         "corriendo": "{{n}} agents act in this mode.",
+        "corriendoConDistintos": "{{n}} agents act: {{enEste}} in this mode and {{otros}} in another (see below which).",
         "distintosCorto": "({{n}} in another mode)",
         "cadaAgente": "Each agent",
         "todaviaNo": "Don't act on their own yet (their mode is saved): {{agentes}}.",
@@ -7867,7 +7868,10 @@
           "prospectos": "Prospects",
           "aprobaciones": "Owner approvals",
           "mantenimiento": "Maintenance",
-          "chat": "The chat"
+          "chat": "The chat",
+          "contratos": "Contracts",
+          "facturacion": "Billing and cash",
+          "propietarios": "Owners"
         },
         "rol": {
           "cobrador": "Collector",
@@ -11328,7 +11332,10 @@
       "cartera": "Receivables",
       "sinCartera": "No installments",
       "otroContrato": "And {{n}} more lease in their history.",
-      "otrosContratos": "And {{n}} more leases in their history."
+      "otrosContratos": "And {{n}} more leases in their history.",
+      "verFilasQueFaltan": "Show the {{n}} remaining rows",
+      "masInteres": "+ {{monto}} late interest",
+      "restaDelContrato": "Contract balance"
     },
     "estadoDeHoy": {
       "cartera": "Receivables",
@@ -11338,6 +11345,51 @@
       "llamadas": "Calls today",
       "escalaciones": "Escalations",
       "prejuridico": "Pre-legal"
+    },
+    "enElChat": {
+      "acciones": {
+        "titulo": "What I can do",
+        "ninguna": "There is nothing that can be done from here right now.",
+        "ocultarNo": "Hide the actions you can’t do",
+        "verNoUna": "Show 1 action you can’t do yet",
+        "verNoVarias": "Show {{n}} actions you can’t do yet",
+        "sePuedeDesde": "possible from {{fecha}}"
+      },
+      "riesgo": {
+        "plata": "Moves money",
+        "terceros": "Writes to someone else",
+        "irreversible": "Can’t be undone"
+      },
+      "modo": {
+        "manual": "Manual",
+        "copiloto": "Copilot",
+        "automatico": "Automatic"
+      },
+      "confirmacion": {
+        "si": "Yes, do it",
+        "no": "No",
+        "vencida": "It expired without an answer: if you still need it, ask me again."
+      },
+      "resultado": {
+        "hecha": "Done",
+        "fallida": "Couldn’t do it",
+        "cancelada": "Not done",
+        "deshecha": "Undone",
+        "deshacer": "Undo"
+      },
+      "formulario": {
+        "elige": "Choose an option",
+        "seguir": "Done, continue"
+      },
+      "mensaje": {
+        "si": "Yes, do it",
+        "no": "No, don’t do it",
+        "deshacer": "Undo: {{etiqueta}}",
+        "verFicha": "Show the record of {{titulo}}"
+      },
+      "verFicha": "Show record",
+      "enlaceExterno": "opens in another tab ({{destino}})",
+      "verElResto": "See the rest"
     }
   },
   "landlordProfile": {

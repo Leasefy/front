@@ -38,6 +38,7 @@ import type {
   AgentType,
 } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 // ============================================================================
@@ -204,32 +205,33 @@ function StepItem({
   );
 }
 
-/** Action button matching the ResponseCard pattern — Cadence Button */
+/**
+ * Action button matching the ResponseCard pattern — Cadence Button.
+ *
+ * 🔴 Ninguna acción del chat saca de la conversación (Nico, 23-09): antes,
+ * con `href` renderizaba un `<a>` a otra pantalla, y sin él un botón sin
+ * `onClick`. Ahora es un mensaje de la persona con su intención, como en
+ * `ResponseCard`.
+ */
 function ActionButton({ action }: { action: ResponseAction }) {
+  const { sendMessage, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
   const ActionIcon = ICON_MAP[action.icon];
   // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
   // secondary → outline; ghost → ghost.
   const variant =
     action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
-  const content = (
-    <>
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      hideArrow
+      className="gap-2 rounded-lg"
+      disabled={isThinking || isStreaming || isAgentsRunning}
+      onClick={() => sendMessage(action.prompt ?? action.label, { intencion: action.intencion ?? null })}
+    >
       {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
       {action.label}
-    </>
-  );
-
-  if (action.href) {
-    return (
-      <Button asChild variant={variant} hideArrow className="gap-2 rounded-lg">
-        <a href={action.href}>{content}</a>
-      </Button>
-    );
-  }
-
-  return (
-    <Button type="button" variant={variant} hideArrow className="gap-2 rounded-lg">
-      {content}
     </Button>
   );
 }

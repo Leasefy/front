@@ -10,6 +10,7 @@ import { MessageActions } from './MessageActions';
 import { LeasefyMark } from './LeasefyMark';
 import { ChatOrb } from './ChatOrb';
 import { RespuestaConForma } from './RespuestaConForma';
+import { AccionesEnElHilo } from './AccionesEnElHilo';
 import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
 
 interface AssistantBubbleProps {
@@ -113,12 +114,21 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
                 el texto terminó de escribirse, con un fundido: el texto
                 presenta, la tarjeta muestra. */}
             {conForma && (
-              <RespuestaConForma
-                bloques={message.bloques}
-                entidades={message.entidades}
-                turnoId={message.turnoId}
-                className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
-              />
+              <>
+                <RespuestaConForma
+                  bloques={message.bloques}
+                  entidades={message.entidades}
+                  turnoId={message.turnoId}
+                  conAcciones={(message.acciones?.length ?? 0) > 0}
+                  className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
+                />
+                {/* Lo que ACTÚA en el hilo (23-09, «todo en el chat»): lo que se
+                    puede hacer, «¿Lo hago?», el resultado y los datos que faltan. */}
+                <AccionesEnElHilo
+                  message={message}
+                  className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
+                />
+              </>
             )}
 
             <MessageActions message={message} />

@@ -147,7 +147,9 @@ export function PilotoModoHeader() {
           data-modo={modo ?? 'cargando'}
           aria-label={t('inmobiliaria.piloto.flota.aria', { modo: etiquetaModo(modo) })}
           className={cn(
-            'inline-flex h-9 max-w-[240px] items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm',
+            // A 390 px la píldora se compacta a punto + modo (sin flecha): el
+            // encabezado desbordaba y la página medía 446–463 px de ancho (24-09).
+            'inline-flex h-9 max-w-[240px] items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm sm:gap-2 sm:px-3 lg:max-w-[320px]',
             'text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             !activo && data && 'text-fg-muted',
           )}
@@ -193,11 +195,11 @@ export function PilotoModoHeader() {
               )}
             </span>
           )}
-          <CaretDown className="h-3.5 w-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <CaretDown className="hidden h-3.5 w-3.5 shrink-0 text-fg-muted sm:block" aria-hidden="true" />
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" sideOffset={8} className="w-[340px] p-0">
+      <PopoverContent align="end" sideOffset={8} className="w-[min(340px,calc(100vw-2rem))] p-0">
         <div className="flex items-start gap-3 border-b border-faint px-4 py-3">
           <AirTrafficControl weight="duotone" className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0">
@@ -205,9 +207,18 @@ export function PilotoModoHeader() {
             <p className="text-caption text-fg-muted">
               {data
                 ? activo
-                  ? t('inmobiliaria.piloto.flota.corriendo', {
-                      n: String(data.actuan ?? agentesQueActuan.length),
-                    })
+                  ? distintos.length > 0
+                    ? // «7 agentes actúan con este modo» cuando 3 de esos 7
+                      // están en otro era falso (visto el 24-09): se dice
+                      // cuántos en este y cuántos en otro, y abajo cuáles.
+                      t('inmobiliaria.piloto.flota.corriendoConDistintos', {
+                        n: String(data.actuan ?? agentesQueActuan.length),
+                        enEste: String(Math.max(0, (data.actuan ?? agentesQueActuan.length) - distintos.length)),
+                        otros: String(distintos.length),
+                      })
+                    : t('inmobiliaria.piloto.flota.corriendo', {
+                        n: String(data.actuan ?? agentesQueActuan.length),
+                      })
                   : t('inmobiliaria.piloto.flota.apagadoHint')
                 : t('inmobiliaria.piloto.flota.cargando')}
             </p>

@@ -199,6 +199,9 @@ describe('PilotoModoHeader', () => {
     expect(porAgente).toContain('inmobiliaria.piloto.flota.modo.copiloto')
     // Los que todavía no actúan solos se nombran aparte.
     expect(q('[data-testid="piloto-modo-todavia-no"]')).not.toBeNull()
+    // 🔴 No dice «2 actúan con este modo» cuando uno de los dos está en otro.
+    expect(container.textContent).not.toContain('inmobiliaria.piloto.flota.corriendo(2)')
+    expect(container.textContent).toContain('inmobiliaria.piloto.flota.corriendoConDistintos(2,1,1)')
   })
 
   it('🔴 «N agentes actúan»: cuenta los que de verdad actúan, no los apagados en el servidor', () => {

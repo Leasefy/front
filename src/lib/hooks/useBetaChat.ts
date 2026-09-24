@@ -1,5 +1,12 @@
 'use client';
 
+import type {
+  AccionDelHilo,
+  ConfirmacionEnElHilo,
+  FormularioEnElHilo,
+  IntencionDelChat,
+  ResultadoEnElHilo,
+} from '@/lib/chat/acciones-del-hilo';
 import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
 import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
 import {
@@ -321,7 +328,12 @@ export interface UseBetaChatReturn {
 
   // Current conversation
   messages: ChatMessage[];
-  sendMessage: (text: string) => void;
+  /**
+   * Manda un mensaje de la persona. `intencion` = lo que pidió un botón del
+   * hilo, con forma (23-09, «todo en el chat»): viaja con el texto y el micro
+   * lo atiende sin adivinar.
+   */
+  sendMessage: (text: string, opciones?: { intencion?: IntencionDelChat | null }) => void;
   isThinking: boolean;
   isStreaming: boolean;
   streamingContent: string;
@@ -769,7 +781,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       assistantId: string,
       responseText: string,
       conversationId: string,
-      opts: { parcial?: boolean } = {}
+      opts: { parcial?: boolean; inmediato?: boolean } = {}
     ) => {
       // 🔴 El texto se muestra EN CUANTO LLEGA el evento `message`, no al
       // `done`. El micro manda la respuesta completa antes de despachar; el
@@ -864,8 +876,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // El ritmo lo decide `pasoDelRevelado`: letra por letra los primeros
         // ~250 caracteres y después por palabras, cada vez más rápido (Nico,
         // 23-09: «ve subiéndole la velocidad»). Con reduced-motion, de una vez.
+        // `inmediato`: la respuesta del camino directo (la ficha) es un DATO,
+        // no prosa del modelo: teclearla demoraba ~4 s la tarjeta (medido en
+        // el navegador, 23-09: 5,7 s en pantalla con 1,9 s del micro).
         const paso = pasoDelRevelado(responseText, charIndexRef.current, {
-          reducirMovimiento: prefiereMenosMovimiento(),
+          reducirMovimiento: opts.inmediato === true || prefiereMenosMovimiento(),
         });
         charIndexRef.current = paso.hasta;
         setStreamingContent(responseText.slice(0, paso.hasta));
@@ -1137,6 +1152,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
          * el stream; por el POST, crudo (se lee con la misma función).
          */
         reintentable?: unknown;
+        /** «Todo en el chat» (sólo por el stream): ver `src/lib/chat/acciones-del-hilo.ts`. */
+        acciones?: AccionDelHilo[];
+        confirmacion?: ConfirmacionEnElHilo | null;
+        resultado?: ResultadoEnElHilo | null;
+        formulario?: FormularioEnElHilo | null;
+        /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
+        camino?: string;
       },
       assistantId: string,
       conversationId: string,
@@ -1160,7 +1182,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // «No pude consultar… intenta de nuevo»: con esto la respuesta lleva un
       // «Reintentar» a la vista (pedido de Nico, 23-09: «no hay un reintentar»).
       const reintentable = leerReintentable(resp.reintentable);
-      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable) {
+      // Lo que ACTÚA en el hilo (23-09): botones, «¿Lo hago?», resultado y
+      // formulario van al mensaje igual que los bloques, antes del tecleo.
+      const acciones = resp.acciones ?? [];
+      const confirmacion = resp.confirmacion ?? null;
+      const resultado = resp.resultado ?? null;
+      const formulario = resp.formulario ?? null;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario;
+      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1176,6 +1205,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(entidades.length > 0 ? { entidades } : {}),
                           ...(turnoId ? { turnoId } : {}),
                           ...(reintentable ? { reintentable } : {}),
+                          ...(acciones.length > 0 ? { acciones } : {}),
+                          ...(confirmacion ? { confirmacion } : {}),
+                          ...(resultado ? { resultado } : {}),
+                          ...(formulario ? { formulario } : {}),
                         }
                       : m
                   ),
@@ -1253,7 +1286,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       } else {
         attachResponseMeta(assistantId, conversationId, responseMeta);
         setIsThinking(false);
-        startStreaming(assistantId, fullText, conversationId);
+        startStreaming(assistantId, fullText, conversationId, {
+          inmediato: typeof resp.camino === 'string' && resp.camino.startsWith('directo:'),
+        });
       }
     },
     [startStreaming, driveAgentBlock, attachResponseMeta, testigo]
@@ -1276,6 +1311,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       conversationId: string;
       /** 🔴 Corta el `fetch` cuando el operador cambia de conversación. */
       signal: AbortSignal;
+      /** Lo que pidió el botón, con forma (23-09): el micro lo atiende directo. */
+      intencion?: IntencionDelChat | null;
     }): Promise<{
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
@@ -1286,6 +1323,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       entidades: EntidadDelChat[];
       turnoId?: string;
       reintentable?: Reintentable;
+      acciones: AccionDelHilo[];
+      confirmacion: ConfirmacionEnElHilo | null;
+      resultado: ResultadoEnElHilo | null;
+      formulario: FormularioEnElHilo | null;
+      camino?: string;
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1304,6 +1346,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           entidades?: EntidadDelChat[];
           turnoId?: string;
           reintentable?: Reintentable;
+          acciones?: AccionDelHilo[];
+          confirmacion?: ConfirmacionEnElHilo | null;
+          resultado?: ResultadoEnElHilo | null;
+          formulario?: FormularioEnElHilo | null;
+          camino?: string;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
@@ -1314,6 +1361,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         agencyId: args.agencyId,
         message: args.message,
         history: args.history,
+        intencion: args.intencion ?? null,
         signal: args.signal,
         handlers: {
           onSnapshot: (s) => {
@@ -1527,6 +1575,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               entidades: f.entidades,
               ...(f.turnoId ? { turnoId: f.turnoId } : {}),
               ...(f.reintentable ? { reintentable: f.reintentable } : {}),
+              acciones: f.acciones,
+              confirmacion: f.confirmacion,
+              resultado: f.resultado,
+              formulario: f.formulario,
+              ...(f.camino ? { camino: f.camino } : {}),
             };
           },
           onError: (message, meta) => {
@@ -1565,6 +1618,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // El id del turno en el cerebro: sólo lo trae el `done`.
         ...(final?.turnoId ? { turnoId: final.turnoId } : {}),
         ...(final?.reintentable ? { reintentable: final.reintentable } : {}),
+        // Lo que actúa en el hilo (23-09): sólo lo trae el `done`.
+        acciones: final?.acciones ?? [],
+        confirmacion: final?.confirmacion ?? null,
+        resultado: final?.resultado ?? null,
+        formulario: final?.formulario ?? null,
+        ...(final?.camino ? { camino: final.camino } : {}),
       };
     },
     [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
@@ -1577,8 +1636,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, opciones?: { intencion?: IntencionDelChat | null }) => {
       const trimmed = text.trim();
+      const intencion = opciones?.intencion ?? null;
       if (!trimmed || isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
 
       const conversationId = activeConversationId;
@@ -1608,6 +1668,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         content: trimmed,
         timestamp: new Date(),
         status: 'sent',
+        // Queda en el mensaje: así la tarjeta de «¿Lo hago?» sabe que ya se
+        // contestó y «Rehacer» vuelve a pedir lo mismo.
+        ...(intencion ? { intencion } : {}),
       };
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
@@ -1693,6 +1756,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             assistantId,
             conversationId,
             signal,
+            intencion,
           });
           if (signal.aborted) return;
           finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
@@ -1713,7 +1777,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           setActiveAgentBlock(null);
           setIsAgentsRunning(false);
           try {
-            const resp = await postChatTurn({ agencyId, message: trimmed, history, signal });
+            const resp = await postChatTurn({ agencyId, message: trimmed, history, intencion, signal });
             if (signal.aborted) return;
             finishTurn(resp, assistantId, conversationId, null);
           } catch (errorDelPost) {
@@ -1757,7 +1821,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
    * cuando el estado recortado ya aterrizó.
    */
-  const regeneracionPendienteRef = useRef<string | null>(null);
+  const regeneracionPendienteRef = useRef<{ texto: string; intencion: IntencionDelChat | null } | null>(null);
 
   /**
    * Rehace la última respuesta del asistente.
@@ -1802,7 +1866,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             : c
         )
       );
-      regeneracionPendienteRef.current = texto;
+      // Con su intención: rehacer «Ver contrato 24» vuelve a traer la ficha,
+      // no le pregunta al modelo por el texto del botón.
+      regeneracionPendienteRef.current = { texto, intencion: conv.messages[u].intencion ?? null };
     },
     [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations, agencyId]
   );
@@ -1914,10 +1980,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   useEffect(() => {
-    const texto = regeneracionPendienteRef.current;
-    if (texto === null) return;
+    const pendiente = regeneracionPendienteRef.current;
+    if (pendiente === null) return;
     regeneracionPendienteRef.current = null;
-    sendMessage(texto);
+    sendMessage(pendiente.texto, { intencion: pendiente.intencion });
     // Depende de `conversations` a propósito: es el cambio de ese estado (el
     // recorte) lo que habilita este envío con el historial ya correcto.
   }, [conversations, sendMessage]);

@@ -152,21 +152,25 @@ describe('AutonomiaPanel — modo como chip de lectura', () => {
     const hint = container.querySelector('[data-testid="autonomia-modo-hint"]')
     expect(hint).not.toBeNull()
     // copiloto is the active mode → its hint shows
-    expect(hint!.textContent).toContain('Sugiere; nada se aplica sin un humano')
+    expect(hint!.textContent).toContain('Prepara; nada sale sin tu visto bueno')
     // the title= tooltip on the chip is kept
     expect(
       container.querySelector('[data-testid="autonomia-modo-copiloto"]')!.getAttribute('title'),
-    ).toContain('Sugiere')
+    ).toContain('nada sale sin tu visto bueno')
   })
 
   it('renders the sombra hint when sombra is the active mode', () => {
     render({ data: { ...DATA, modo: 'sombra' } })
     expect(container.querySelector('[data-testid="autonomia-modo-hint"]')!.textContent).toContain(
-      'Solo observa y sugiere en silencio',
+      'Prepara y te deja la decisión, sin avisarte',
     )
   })
 })
 
+// P-1 (Nico, 23-09-2026): los modos se llaman Manual / Copiloto / Automático
+// en toda pantalla (en la base siguen sombra / copiloto / autonomo), y cada
+// frase dice lo que el código hace — no «sugiere en silencio» ni «límites
+// aprobados» que no existen.
 describe('AutonomiaPanel — modo como control real', () => {
   it('con escritura y permiso: una tarjeta por modo, sin emojis y con lo que implica cada uno', () => {
     // Nico (2026-09-08): «esta UX está horrible y la UI TAMBIÉN». Era un
@@ -177,12 +181,12 @@ describe('AutonomiaPanel — modo como control real', () => {
     expect(opciones).toHaveLength(3)
 
     const textos = opciones.map((r) => r.textContent ?? '')
-    expect(textos[0]).toContain('Sombra')
+    expect(textos[0]).toContain('Manual')
     expect(textos[1]).toContain('Copiloto')
-    expect(textos[2]).toContain('Autónomo')
+    expect(textos[2]).toContain('Automático')
     // Cada tarjeta explica su postura, no sólo la activa.
-    expect(textos[0]).toContain('Solo observa y sugiere en silencio')
-    expect(textos[2]).toContain('Ejecuta dentro de los límites aprobados')
+    expect(textos[0]).toContain('Prepara y te deja la decisión, sin avisarte')
+    expect(textos[2]).toContain('Actúa solo donde ya sabe hacerlo, dentro de la ley')
     // Sin emojis en ninguna.
     expect(textos.join('')).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u)
     // La activa se marca por aria, no sólo por color.
@@ -199,15 +203,15 @@ describe('AutonomiaPanel — modo como control real', () => {
     })
     const textos = radios().map((r) => r.textContent ?? '')
     expect(textos).toHaveLength(2)
-    expect(textos[0]).toContain('Sombra')
+    expect(textos[0]).toContain('Manual')
     expect(textos[1]).toContain('Copiloto')
-    expect(textos.join('')).not.toContain('Autónomo')
+    expect(textos.join('')).not.toContain('Automático')
   })
 
   it('bajar de autonomía es un clic: llama a la escritura sin confirmar', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: true }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
     await act(async () => {
       sombra.click()
     })
@@ -219,7 +223,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('subir a autónomo PIDE confirmación y recién entonces escribe', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: true }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const autonomo = radios().find((r) => r.textContent?.includes('Autónomo'))!
+    const autonomo = radios().find((r) => r.textContent?.includes('Automático'))!
     await act(async () => {
       autonomo.click()
     })
@@ -227,7 +231,7 @@ describe('AutonomiaPanel — modo como control real', () => {
     expect(onCambiarModo).not.toHaveBeenCalled()
     const dialogo = document.querySelector('[role="alertdialog"]')
     expect(dialogo).not.toBeNull()
-    expect(dialogo!.textContent).toContain('¿Pasar a Autónomo?')
+    expect(dialogo!.textContent).toContain('¿Pasar a Automático?')
 
     await act(async () => {
       ;(document.querySelector('[data-testid="autonomia-confirmar"]') as HTMLElement).click()
@@ -239,7 +243,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('si la escritura falla, avisa por el toast de error', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: false, error: '403' }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
     await act(async () => {
       sombra.click()
     })

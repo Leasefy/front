@@ -182,6 +182,735 @@
       }
     },
     "schemas": {
+      "AiHubChatVistaPrevia": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "no_disponible"
+            ]
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST"
+            ]
+          },
+          "ruta": {
+            "type": "string"
+          },
+          "datos": {},
+          "recortada": {
+            "type": "boolean"
+          },
+          "explicacion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "metodo",
+          "ruta",
+          "recortada",
+          "explicacion"
+        ]
+      },
+      "AiHubChatDobleControl": {
+        "type": "object",
+        "properties": {
+          "paso": {
+            "type": "string",
+            "enum": [
+              "propone",
+              "aprueba"
+            ]
+          },
+          "laOtraMitad": {
+            "type": "string",
+            "enum": [
+              "la_puedes_hacer_tu",
+              "otra_persona"
+            ]
+          },
+          "frase": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "paso",
+          "laOtraMitad",
+          "frase"
+        ]
+      },
+      "AiHubChatProceso": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "EN_COLA",
+              "CORRIENDO",
+              "TERMINADO",
+              "FALLO",
+              "CANCELADO"
+            ]
+          },
+          "hechos": {
+            "type": "number"
+          },
+          "total": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "porcentaje": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mensaje": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "hechos",
+          "total",
+          "porcentaje",
+          "mensaje"
+        ]
+      },
+      "AiHubChatRiesgoDeLaAccion": {
+        "type": "object",
+        "properties": {
+          "muevePlata": {
+            "type": "boolean"
+          },
+          "escribeATerceros": {
+            "type": "boolean"
+          },
+          "irreversible": {
+            "type": "boolean"
+          },
+          "masiva": {
+            "type": "boolean"
+          },
+          "fiscal": {
+            "type": "boolean"
+          },
+          "dobleControl": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "paso": {
+                "type": "string",
+                "enum": [
+                  "propone",
+                  "aprueba"
+                ]
+              }
+            },
+            "required": [
+              "paso"
+            ]
+          },
+          "proceso": {
+            "type": "boolean"
+          },
+          "tope": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "agenteDueno": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "muevePlata",
+          "escribeATerceros",
+          "irreversible",
+          "masiva",
+          "fiscal",
+          "dobleControl",
+          "proceso",
+          "tope",
+          "agenteDueno"
+        ]
+      },
+      "AiHubChatTarjetaPropuesta": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "propuesta"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "copiloto",
+              "automatico"
+            ]
+          },
+          "riesgo": {
+            "$ref": "#/components/schemas/AiHubChatRiesgoDeLaAccion"
+          },
+          "vistaPrevia": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatVistaPrevia"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "venceEn": {
+            "type": "string"
+          },
+          "siConfirmas": {
+            "type": "object",
+            "properties": {
+              "sale": {
+                "type": "string",
+                "enum": [
+                  "ahora",
+                  "programada"
+                ]
+              },
+              "ejecutarDesde": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cuando": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sale",
+              "ejecutarDesde",
+              "cuando"
+            ]
+          },
+          "dobleControl": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatDobleControl"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          },
+          "siNoFueraEnsayo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "ejecutar",
+              "gracia",
+              "programar",
+              "clic"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "frase",
+          "pregunta",
+          "porQue",
+          "modo",
+          "riesgo",
+          "vistaPrevia",
+          "venceEn",
+          "siConfirmas",
+          "dobleControl",
+          "ensayo",
+          "siNoFueraEnsayo"
+        ]
+      },
+      "AiHubChatTarjetaEnCurso": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "en_curso"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "procesoId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proceso": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatProceso"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "desde": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "resumen",
+          "procesoId",
+          "proceso",
+          "desde"
+        ]
+      },
+      "AiHubChatIntencionDelBoton": {
+        "type": "object",
+        "properties": {
+          "accion": {
+            "type": "string"
+          },
+          "propuestaId": {
+            "type": "string"
+          },
+          "entidad": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tipo",
+              "id"
+            ]
+          },
+          "datos": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "accion"
+        ]
+      },
+      "AiHubChatTarjetaResultado": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "resultado"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "en_gracia",
+              "hecha",
+              "cancelada",
+              "deshecha",
+              "vencida"
+            ]
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "gracia": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "hasta": {
+                "type": "string"
+              },
+              "segundos": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "hasta",
+              "segundos"
+            ]
+          },
+          "deshacer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "estado",
+          "resumen",
+          "gracia",
+          "deshacer"
+        ]
+      },
+      "AiHubChatTarjetaProgramada": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "programada"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "ejecutarDesde": {
+            "type": "string"
+          },
+          "cuando": {
+            "type": "string"
+          },
+          "ventana": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "cobranza",
+              "aviso"
+            ]
+          },
+          "saleSola": {
+            "type": "boolean"
+          },
+          "deshacer": {
+            "type": "object",
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "resumen",
+          "ejecutarDesde",
+          "cuando",
+          "ventana",
+          "saleSola",
+          "deshacer"
+        ]
+      },
+      "AiHubChatTarjetaError": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "ejecucionId": {
+            "type": "string"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explicacion": {
+            "type": "string"
+          },
+          "permiso": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "modulo": {
+                "type": "string"
+              },
+              "accion": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "modulo",
+              "accion"
+            ]
+          },
+          "quienesPueden": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "segundoFactor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "reintento": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "reintento"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "ejecucionId",
+          "accion",
+          "titulo",
+          "status",
+          "code",
+          "explicacion",
+          "permiso",
+          "quienesPueden",
+          "segundoFactor"
+        ]
+      },
+      "AiHubChatTarjetaDeEjecucion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaPropuesta"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaEnCurso"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaResultado"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaProgramada"
+          },
+          {
+            "$ref": "#/components/schemas/AiHubChatTarjetaError"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "tipo",
+          "mapping": {
+            "propuesta": "#/components/schemas/AiHubChatTarjetaPropuesta",
+            "en_curso": "#/components/schemas/AiHubChatTarjetaEnCurso",
+            "resultado": "#/components/schemas/AiHubChatTarjetaResultado",
+            "programada": "#/components/schemas/AiHubChatTarjetaProgramada",
+            "error": "#/components/schemas/AiHubChatTarjetaError"
+          }
+        }
+      },
+      "AiHubChatEventoProcesoIniciado": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "proceso_iniciado"
+            ]
+          },
+          "procesoId": {
+            "type": "string"
+          },
+          "ejecucionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "procesoId",
+          "ejecucionId"
+        ]
+      },
+      "AiHubChatPiezasNuevasDelDone": {
+        "type": "object",
+        "properties": {
+          "ejecucion": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatTarjetaDeEjecucion"
+              },
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaPropuesta"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaEnCurso"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaResultado"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaProgramada"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AiHubChatTarjetaError"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ejecucion",
+          "ensayo"
+        ]
+      },
       "DashboardSummaryResponse": {
         "type": "object",
         "properties": {
@@ -12073,6 +12802,170 @@
         "required": [
           "turnoId",
           "tipo"
+        ]
+      },
+      "AiHubChatEjecucionRespuesta": {
+        "type": "object",
+        "properties": {
+          "tarjeta": {
+            "$ref": "#/components/schemas/AiHubChatTarjetaDeEjecucion"
+          }
+        },
+        "required": [
+          "tarjeta"
+        ]
+      },
+      "AiHubChatEjecucionError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatAprendizaje": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "clase": {
+            "type": "string",
+            "enum": [
+              "leccion",
+              "preferencia"
+            ]
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "accion_deshecha",
+              "ambiguedad",
+              "definicion",
+              "apodo"
+            ]
+          },
+          "texto": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "nuevo",
+              "aprendido",
+              "descartado"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "clase",
+          "origen",
+          "texto",
+          "estado"
+        ]
+      },
+      "AiHubChatAprendizajeLectura": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "aprendizajes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatAprendizaje"
+            }
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "disponible",
+          "aprendizajes",
+          "motivo",
+          "leccionesEnUso"
+        ]
+      },
+      "AiHubChatAprendizajeError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AiHubChatAprendizajeResultado": {
+        "type": "object",
+        "properties": {
+          "aplicado": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "nuevo",
+              "aprendido",
+              "descartado"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "leccionesEnUso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aplicado",
+          "estado",
+          "motivo",
+          "leccionesEnUso"
+        ]
+      },
+      "AiHubChatAprendizajeDecision": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "aprender",
+              "descartar"
+            ]
+          },
+          "propuestaId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "id",
+          "decision"
         ]
       },
       "AgentOverviewResponse": {
@@ -41231,6 +42124,245 @@
         }
       }
     },
+    "/api/agency/{agencyId}/ai-hub/chat/ejecuciones/{ejecucionId}": {
+      "get": {
+        "operationId": "getAiHubChatEjecucion",
+        "summary": "La tarjeta de hoy de una acción del chat (propuesta, en curso, resultado, programada o error)",
+        "description": "Devuelve la tarjeta de una ejecución del chat de quien pregunta. Si estaba programada y ya le llegó la hora, sale ahora con la sesión de la persona (idempotente: una sola llamada al back por ejecución). Si arrancó un proceso largo, hace UNA consulta al Centro de procesos y, si terminó, la cierra. Cualquier miembro.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "22222222-2222-4222-8222-222222222222"
+            },
+            "required": true,
+            "name": "ejecucionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La tarjeta al día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionRespuesta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Otra inmobiliaria, o ensayo sin su token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe, no es tuya, o este servidor todavía no guarda ejecuciones (falta la migración)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatEjecucionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}": {
+      "get": {
+        "operationId": "getAiHubChatAprender",
+        "summary": "Chat del panel — qué aprendería el chat de una respuesta («¿Aprendo esto?», sólo administrador)",
+        "description": "Lo que el chat puede aprender de ESA respuesta de quien llama: una acción que se deshizo, la tarjeta que eligió entre varias, o cómo le dicen en la inmobiliaria a algo. Lo deja como candidato (idempotente) y dice en qué quedó. Sólo el administrador de la inmobiliaria.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "El `turnoId` de la respuesta (lo devolvió la ruta del chat).",
+              "example": "33333333-3333-4333-8333-333333333333"
+            },
+            "required": true,
+            "name": "turnoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "required": false,
+            "name": "propuestaId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo que se puede aprender (o por qué no hay nada)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeLectura"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la agencia, o no es su administrador (`SOLO_ADMINISTRADOR`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postAiHubChatAprender",
+        "summary": "Chat del panel — el administrador decide si el chat aprende algo de una respuesta",
+        "description": "Certifica (o descarta) la lección, o confirma (o descarta) el vocabulario, que salió de ESA respuesta de quien llama. Sólo el administrador. Una lección certificada entra a las respuestas sólo con CHAT_LESSONS_ENABLED.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "El `turnoId` de la respuesta (lo devolvió la ruta del chat).",
+              "example": "33333333-3333-4333-8333-333333333333"
+            },
+            "required": true,
+            "name": "turnoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubChatAprendizajeDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decisión aplicada (o por qué no)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la agencia, o no es su administrador (`SOLO_ADMINISTRADOR`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubChatAprendizajeError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/ai-hub/agentes/{agente}/overview": {
       "get": {
         "operationId": "getAgencyAiHubAgentOverview",
@@ -43036,7 +44168,7 @@
             }
           },
           "403": {
-            "description": "Rol insuficiente",
+            "description": "Sin membresía o sin el permiso cobros:create del ERP",
             "content": {
               "application/json": {
                 "schema": {

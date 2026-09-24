@@ -254,6 +254,67 @@ describe('handleSSEEvent', () => {
     handleSSEEvent('event: message\ndata: {bad json', handlers);
     expect(calls).toEqual(['done:1', 'error:boom:-:-']);
   });
+
+  // ── Nico, 23-09: «se queda ahí sólo con un texto y sin cargas» ─────────────
+  it('entrega el `progreso` del paso activo (evento aditivo del micro)', () => {
+    const vistos: unknown[] = [];
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":"Leyendo contratos…"}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":" Revisando 29 filas ","hechos":29,"total":40}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    // Un aviso vacío no borra la línea viva del paso.
+    handleSSEEvent('event: progreso\ndata: {"type":"progreso","texto":"  "}', {
+      onProgreso: (p) => vistos.push(p),
+    });
+    expect(vistos).toEqual([
+      { texto: 'Leyendo contratos…' },
+      { texto: 'Revisando 29 filas', hechos: 29, total: 40 },
+    ]);
+  });
+
+  it('el `done` trae la parte con FORMA (bloques y entidades); lo que no se entiende se descarta', () => {
+    let final: Parameters<NonNullable<ChatStreamHandlers['onDone']>>[0] | null = null;
+    const done = {
+      responseText: 'Tienes 2 contratos que vencen en octubre.',
+      suggestedActions: [],
+      dispatches: [],
+      generatedAt: 'now',
+      bloques: [
+        {
+          tipo: 'tabla',
+          titulo: 'contratos',
+          columnas: [
+            { clave: 'codigo', titulo: 'Código', formato: 'numero' },
+            { clave: 'canon', titulo: 'Canon', formato: 'moneda' },
+          ],
+          filas: [{ codigo: 101, canon: 2500000 }],
+          total: 1,
+          truncada: false,
+        },
+        { tipo: 'metrica', titulo: 'Contratos', valor: 2, formato: 'numero' },
+        { tipo: 'grafica', puntos: [] },
+        { tipo: 'metrica', titulo: 'roto', valor: 'dos' },
+      ],
+      entidades: [
+        { tipo: 'inquilino', id: 'p-1', titulo: 'Juan Camilo López', motivo: 'nombre', contratos: [] },
+        { tipo: 'marciano', id: 'x' },
+      ],
+    };
+    handleSSEEvent(`event: done\ndata: ${JSON.stringify(done)}`, { onDone: (f) => (final = f) });
+    expect(final!.bloques.map((b) => b.tipo)).toEqual(['tabla', 'metrica']);
+    expect(final!.entidades.map((e) => e.titulo)).toEqual(['Juan Camilo López']);
+  });
+
+  it('un micro viejo (sin `bloques` ni `entidades`) deja las dos listas vacías, no `undefined`', () => {
+    let final: Parameters<NonNullable<ChatStreamHandlers['onDone']>>[0] | null = null;
+    handleSSEEvent('event: done\ndata: {"responseText":"x","suggestedActions":[],"dispatches":[]}', {
+      onDone: (f) => (final = f),
+    });
+    expect(final!.bloques).toEqual([]);
+    expect(final!.entidades).toEqual([]);
+  });
 });
 
 // ── Briefing mapper (F4) ──────────────────────────────────────────────────────

@@ -15,6 +15,7 @@
  * exported for unit testing without a browser/network.
  */
 
+import { leerBloques, leerEntidades, type BloqueDeRespuesta, type EntidadDelChat } from '@/lib/chat/bloques';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
@@ -113,6 +114,9 @@ export interface BackendSnapshot {
   escalacionesPendientes: number;
   enPrejuridico: number;
   generatedAt: string;
+  /** La cartera del ERP (Pagos → Cartera). Opcional: un micro viejo no la manda. */
+  carteraCop?: number;
+  contratosEnCartera?: number;
 }
 
 export interface BackendChatResponse {
@@ -292,11 +296,21 @@ export interface ChatStreamHandlers {
    * del `done` para que el front reconcilie igual que con las aprobaciones.
    */
   onAccionPropuesta?: (propuesta: BackendAccionPropuesta) => void;
+  /**
+   * Qué está haciendo AHORA el paso activo (evento aditivo `progreso`, 23-09):
+   * «Leyendo contratos…», «Leí 29 filas de contratos». Un micro viejo no lo
+   * manda y el paso se queda con su indicador animado.
+   */
+  onProgreso?: (p: { texto: string; hechos?: number; total?: number }) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
     dispatches: BackendDispatch[];
     generatedAt: string;
+    /** Tablas/cifras/avisos con forma. Vacío si el micro no los manda. */
+    bloques: BloqueDeRespuesta[];
+    /** Las tarjetas de la búsqueda en la plataforma. */
+    entidades: EntidadDelChat[];
   }) => void;
   /**
    * Un fallo ANUNCIADO dentro del stream (evento `error`).
@@ -420,12 +434,25 @@ export function handleSSEEvent(
       }
       break;
     }
+    case 'progreso': {
+      const texto = obj.texto;
+      if (typeof texto === 'string' && texto.trim()) {
+        handlers.onProgreso?.({
+          texto: texto.trim(),
+          ...(typeof obj.hechos === 'number' ? { hechos: obj.hechos } : {}),
+          ...(typeof obj.total === 'number' ? { total: obj.total } : {}),
+        });
+      }
+      break;
+    }
     case 'done':
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
         suggestedActions: (obj.suggestedActions as BackendSuggestedAction[]) ?? [],
         dispatches: (obj.dispatches as BackendDispatch[]) ?? [],
         generatedAt: String(obj.generatedAt ?? ''),
+        bloques: leerBloques(obj.bloques),
+        entidades: leerEntidades(obj.entidades),
       });
       break;
     case 'error':

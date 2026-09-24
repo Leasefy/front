@@ -2,13 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-/** «0:51» — minutos:segundos, como el reloj de Manus. */
-export function formatElapsed(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2, '0')}`;
-}
-
 /**
  * Tiempo transcurrido desde `desde`, vivo mientras `corriendo`.
  *

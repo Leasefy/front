@@ -11244,10 +11244,91 @@
         "consultAgent": "Consult the {{agent}} specialist"
       },
       "detail": {
-        "cartera": "{{deudores}} debtors in management · {{escalaciones}} escalations · {{prejuridico}} pre-legal",
-        "carteraVacia": "No portfolio data for this agency",
-        "toolRunning": "Querying {{herramienta}}"
-      }
+        "toolRunning": "Querying {{herramienta}}",
+        "carteraErp": "Receivables: {{cartera}} across {{contratos}} leases"
+      },
+      "activo": {
+        "cartera": "Reading your receivables and what I already know about your agency…",
+        "entender": "Deciding how to solve it…",
+        "redactar": "Writing the answer…"
+      },
+      "avance": "{{hechos}} of {{total}}"
+    },
+    "forma": {
+      "resultados": "Results",
+      "fila": "{{n}} row",
+      "filas": "{{n}} rows",
+      "filasDe": "{{n}} of {{total}} rows",
+      "verTodas": "See all {{n}} rows",
+      "verMenos": "See less",
+      "estado": {
+        "activo": "Active",
+        "firmado": "Signed",
+        "vencido": "Expired",
+        "terminado": "Terminated",
+        "cancelado": "Cancelled",
+        "borrador": "Draft",
+        "pendiente": "Pending",
+        "porFirmar": "Awaiting signature",
+        "parcial": "Partial payment",
+        "enMora": "Overdue",
+        "incumplido": "Defaulted",
+        "pagado": "Paid",
+        "renovacionPendiente": "To renew",
+        "notificado": "Notified",
+        "enNegociacion": "Negotiating",
+        "aprobada": "Approved",
+        "firmada": "Signed",
+        "renovado": "Renewed",
+        "noRenueva": "Not renewing",
+        "reportado": "Reported",
+        "cotizado": "Quoted",
+        "aprobado": "Approved",
+        "enCurso": "In progress",
+        "girado": "Paid out",
+        "fallido": "Failed"
+      },
+      "semaforo": {
+        "mora": "Overdue · {{dias}} days",
+        "vence": "Ends in {{dias}} days",
+        "alDia": "Up to date"
+      },
+      "papel": {
+        "inquilino": "Tenant",
+        "coarrendatario": "Co-tenant",
+        "propietario": "Owner",
+        "inmueble": "Property",
+        "contrato": "Lease",
+        "postulante": "Applicant",
+        "lead": "Lead",
+        "contacto": "Contact",
+        "proveedor": "Supplier"
+      },
+      "pedir": {
+        "estadoDeCuenta": "Give me the account statement for {{nombre}}",
+        "renovar": "Prepare the renewal of lease #{{codigo}}"
+      },
+      "accion": {
+        "estadoDeCuenta": "Account statement",
+        "renovar": "Prepare renewal"
+      },
+      "canon": "rent",
+      "fin": "Ends",
+      "propietario": "Owner",
+      "inquilino": "Tenant",
+      "cartera": "Receivables",
+      "sinCartera": "No installments",
+      "otroContrato": "And {{n}} more lease in their history.",
+      "otrosContratos": "And {{n}} more leases in their history."
+    },
+    "estadoDeHoy": {
+      "cartera": "Receivables",
+      "contratosEnCartera": "Leases with debt",
+      "deudores": "Active debtors",
+      "pagadoHoy": "Paid today",
+      "llamadas": "Calls today",
+      "escalaciones": "Escalations",
+      "prejuridico": "Pre-legal"
     }
   },
   "landlordProfile": {

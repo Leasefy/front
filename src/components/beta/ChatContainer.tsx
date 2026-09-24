@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChatDataCard, type ChatDataTile } from '@leasefy/cadence';
-import type { ChatSnapshot } from '@/lib/types/beta-chat';
+import { ChatDataCard } from '@leasefy/cadence';
+import type { ChatMessage } from '@/lib/types/beta-chat';
+import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
+import { mosaicosDelEstado } from '@/lib/chat/tarjeta-del-estado';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -16,6 +18,7 @@ import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
+import { RespuestaConForma } from './RespuestaConForma';
 import { MessageActions } from './MessageActions';
 import { WorkspaceView } from './WorkspaceView';
 import { AccionPropuestaCard } from './AccionPropuestaCard';
@@ -52,34 +55,12 @@ function responseNeedsCard(message: {
   return meta.type === 'actionable' || (meta.actions?.length ?? 0) > 0 || !!message.decision;
 }
 
-/** Compact COP for a narrow mono tile, e.g. 8_420_000 → "$8,4 M". */
-function formatCopCompact(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount);
-}
-
 /**
- * The "estado de hoy" snapshot → ChatDataCard tiles. Always shows the 3 core
- * KPIs (deudores / pagado hoy / llamadas); appends escalaciones + prejurídico
- * only when > 0 so the glance stays clean when there's nothing pending.
+ * El texto de la respuesta sin la tabla que el modelo copió a mano, cuando la
+ * misma tabla viene como DATOS y la pinta Cadence (`RespuestaConForma`).
  */
-function snapshotTiles(s: ChatSnapshot): ChatDataTile[] {
-  const tiles: ChatDataTile[] = [
-    { label: 'Deudores activos', value: s.deudoresActivos },
-    { label: 'Pagado hoy', value: formatCopCompact(s.pagadoHoyCop) },
-    { label: 'Llamadas hoy', value: s.llamadasHoy },
-  ];
-  if (s.escalacionesPendientes > 0) {
-    tiles.push({ label: 'Escalaciones', value: s.escalacionesPendientes });
-  }
-  if (s.enPrejuridico > 0) {
-    tiles.push({ label: 'Prejurídico', value: s.enPrejuridico });
-  }
-  return tiles;
+function textoSinTablaRepetida(message: ChatMessage): string {
+  return tieneTabla(message.bloques) ? sinTablasDeMarkdown(message.content) : message.content;
 }
 
 /**
@@ -256,10 +237,10 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 const snapshotEsNuevo =
                   message.snapshot &&
                   (!snapshotPrevio ||
-                    JSON.stringify(snapshotTiles(snapshotPrevio)) !==
-                      JSON.stringify(snapshotTiles(message.snapshot)));
+                    JSON.stringify(mosaicosDelEstado(snapshotPrevio, t)) !==
+                      JSON.stringify(mosaicosDelEstado(message.snapshot, t)));
                 const snapshotCard = snapshotEsNuevo && message.snapshot ? (
-                  <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
+                  <ChatDataCard tiles={mosaicosDelEstado(message.snapshot, t)} />
                 ) : null;
 
                 // For the last assistant message, use live activeAgentBlock if agents are running
@@ -271,7 +252,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 }
 
                 // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
-                // (filas planas + reloj vivo), en vez de la tarjeta con borde.
+                // (filas planas; el paso activo gira y dice qué hace), en vez de
+                // la tarjeta con borde.
                 if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
                     <div key={message.id} className="space-y-3 animate-fade-in">
@@ -292,7 +274,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         <>
                           <ResponseCard
                             meta={message.responseMeta}
-                            content={message.content}
+                            content={textoSinTablaRepetida(message)}
+                          />
+                          <RespuestaConForma
+                            bloques={message.bloques}
+                            entidades={message.entidades}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
@@ -340,7 +327,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
                         <>
                           <ResponseCard
                             meta={message.responseMeta}
-                            content={message.content}
+                            content={textoSinTablaRepetida(message)}
+                          />
+                          <RespuestaConForma
+                            bloques={message.bloques}
+                            entidades={message.entidades}
+                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
@@ -383,9 +375,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
                       {responseNeedsCard(message) ? (
                         <ResponseCard
                           meta={message.responseMeta}
-                          content={message.content}
+                          content={textoSinTablaRepetida(message)}
                           isStreaming
-                          streamingContent={streamingContent}
+                          streamingContent={
+                            tieneTabla(message.bloques)
+                              ? sinTablasDeMarkdown(streamingContent, { parcial: true })
+                              : streamingContent
+                          }
                         />
                       ) : (
                         <AssistantBubble
@@ -454,6 +450,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   // El par pendiente (pregunta + placeholder) no es contexto leído.
                   historyCount={Math.max(0, messages.length - 2)}
                   snapshot={messages[messages.length - 1]?.snapshot ?? null}
+                  actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
                 />
               )}
 

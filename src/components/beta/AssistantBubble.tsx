@@ -9,6 +9,8 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { MessageActions } from './MessageActions';
 import { LeasefyMark } from './LeasefyMark';
 import { ChatOrb } from './ChatOrb';
+import { RespuestaConForma } from './RespuestaConForma';
+import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
 
 interface AssistantBubbleProps {
   message: ChatMessage;
@@ -32,7 +34,14 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
   const { regenerateResponse, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
   const isStreamingThis = message.status === 'streaming';
   const isSending = message.status === 'sending';
-  const displayContent = isStreamingThis && streamingContent ? streamingContent : message.content;
+  const textoCrudo = isStreamingThis && streamingContent ? streamingContent : message.content;
+  // Si la respuesta trae su tabla como DATOS, la pinta Cadence debajo; la que
+  // el modelo copió a mano en el texto sería decirlo dos veces (y teclear una
+  // tabla letra por letra se ve roto). Ver `sinTablasDeMarkdown`.
+  const displayContent = tieneTabla(message.bloques)
+    ? sinTablasDeMarkdown(textoCrudo, { parcial: isStreamingThis })
+    : textoCrudo;
+  const conForma = message.status === 'complete';
 
   /*
    * B1 — el turno que falló. Antes quedaba `complete`: el aviso se pintaba con
@@ -99,6 +108,17 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
             <div className="text-[16px] leading-[1.6] text-foreground">
               <MarkdownRenderer content={displayContent} isStreaming={isStreamingThis} />
             </div>
+
+            {/* Lo que tiene FORMA (tabla, cifra, aviso, entidad) aparece cuando
+                el texto terminó de escribirse, con un fundido: el texto
+                presenta, la tarjeta muestra. */}
+            {conForma && (
+              <RespuestaConForma
+                bloques={message.bloques}
+                entidades={message.entidades}
+                className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
+              />
+            )}
 
             <MessageActions message={message} />
           </>

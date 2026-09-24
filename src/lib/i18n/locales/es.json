@@ -11278,10 +11278,91 @@
         "consultAgent": "Consultar al especialista de {{agent}}"
       },
       "detail": {
-        "cartera": "{{deudores}} deudores en gestión · {{escalaciones}} escalaciones · {{prejuridico}} en prejurídico",
-        "carteraVacia": "Sin datos de cartera para esta agencia",
-        "toolRunning": "Consultando {{herramienta}}"
-      }
+        "toolRunning": "Consultando {{herramienta}}",
+        "carteraErp": "Cartera por cobrar: {{cartera}} en {{contratos}} contratos"
+      },
+      "activo": {
+        "cartera": "Leyendo tu cartera y lo que ya sé de tu inmobiliaria…",
+        "entender": "Decidiendo cómo resolverla…",
+        "redactar": "Escribiendo la respuesta…"
+      },
+      "avance": "{{hechos}} de {{total}}"
+    },
+    "forma": {
+      "resultados": "Resultados",
+      "fila": "{{n}} fila",
+      "filas": "{{n}} filas",
+      "filasDe": "{{n}} de {{total}} filas",
+      "verTodas": "Ver las {{n}} filas",
+      "verMenos": "Ver menos",
+      "estado": {
+        "activo": "Activo",
+        "firmado": "Firmado",
+        "vencido": "Vencido",
+        "terminado": "Terminado",
+        "cancelado": "Cancelado",
+        "borrador": "Borrador",
+        "pendiente": "Pendiente",
+        "porFirmar": "Por firmar",
+        "parcial": "Pago parcial",
+        "enMora": "En mora",
+        "incumplido": "Incumplido",
+        "pagado": "Pagado",
+        "renovacionPendiente": "Por renovar",
+        "notificado": "Notificado",
+        "enNegociacion": "Negociando",
+        "aprobada": "Aprobada",
+        "firmada": "Firmada",
+        "renovado": "Renovado",
+        "noRenueva": "No renueva",
+        "reportado": "Reportado",
+        "cotizado": "Cotizado",
+        "aprobado": "Aprobado",
+        "enCurso": "En curso",
+        "girado": "Girado",
+        "fallido": "Fallido"
+      },
+      "semaforo": {
+        "mora": "En mora · {{dias}} días",
+        "vence": "Vence en {{dias}} días",
+        "alDia": "Al día"
+      },
+      "papel": {
+        "inquilino": "Inquilino",
+        "coarrendatario": "Coarrendatario",
+        "propietario": "Propietario",
+        "inmueble": "Inmueble",
+        "contrato": "Contrato",
+        "postulante": "Postulante",
+        "lead": "Interesado",
+        "contacto": "Contacto",
+        "proveedor": "Proveedor"
+      },
+      "pedir": {
+        "estadoDeCuenta": "Dame el estado de cuenta de {{nombre}}",
+        "renovar": "Prepara la renovación del contrato #{{codigo}}"
+      },
+      "accion": {
+        "estadoDeCuenta": "Estado de cuenta",
+        "renovar": "Preparar renovación"
+      },
+      "canon": "canon",
+      "fin": "Fin",
+      "propietario": "Propietario",
+      "inquilino": "Inquilino",
+      "cartera": "Cartera",
+      "sinCartera": "Sin cuotas",
+      "otroContrato": "Y {{n}} contrato más en su historial.",
+      "otrosContratos": "Y {{n}} contratos más en su historial."
+    },
+    "estadoDeHoy": {
+      "cartera": "Cartera por cobrar",
+      "contratosEnCartera": "Contratos en cartera",
+      "deudores": "Deudores activos",
+      "pagadoHoy": "Pagado hoy",
+      "llamadas": "Llamadas hoy",
+      "escalaciones": "Escalaciones",
+      "prejuridico": "Prejurídico"
     }
   },
   "landlordProfile": {

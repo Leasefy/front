@@ -137,6 +137,15 @@ export interface TurnStep {
    * borrar las repeticiones sería mentir por omisión. Se cuentan.
    */
   repeticiones?: number;
+  /**
+   * Lo que el paso está haciendo AHORA, en presente («Leyendo contratos…»,
+   * «Leí 29 filas de contratos»). Llega por el evento `progreso` del micro y
+   * se reemplaza con cada aviso. Nico (23-09): «se queda ahí sólo con un texto
+   * y sin cargas, no se sabe si sí está funcionando».
+   */
+  actividad?: string;
+  /** Sub-avance medible del paso activo (llega con `progreso` cuando hay total). */
+  avance?: { hechos: number; total: number };
   status: TurnStepStatus;
   startedAt?: Date;
   completedAt?: Date;
@@ -256,6 +265,9 @@ export interface ChatSnapshot {
   llamadasHoy: number;
   escalacionesPendientes: number;
   enPrejuridico: number;
+  /** La cartera del ERP (Pagos → Cartera). Falta con un micro anterior al 23-09. */
+  carteraCop?: number;
+  contratosEnCartera?: number;
 }
 
 /**
@@ -296,6 +308,13 @@ export interface ChatMessage {
   actionProposals?: ActionProposal[];
   /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
   snapshot?: ChatSnapshot;
+  /**
+   * La parte de la respuesta con FORMA (tabla, cifra, aviso) y las entidades
+   * de la búsqueda. Llegan en el `done`; el texto sigue siendo el respaldo.
+   * Ver `src/lib/chat/bloques.ts`.
+   */
+  bloques?: import('@/lib/chat/bloques').BloqueDeRespuesta[];
+  entidades?: import('@/lib/chat/bloques').EntidadDelChat[];
   /**
    * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
    *

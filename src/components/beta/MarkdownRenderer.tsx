@@ -1,9 +1,12 @@
 'use client';
 
+import { useRef, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import { cn } from '@/lib/utils';
+import { rehypeRevelar } from '@/lib/chat/rehype-revelar';
+import { prefiereMenosMovimiento } from '@/lib/chat/revelado';
 
 interface MarkdownRendererProps {
   content: string;
@@ -172,6 +175,44 @@ const markdownComponents: Components = {
   ),
 };
 
+/*
+ * El fundido del texto recién revelado. Dos componentes DISTINTOS a propósito:
+ * `rehypeRevelar` alterna la etiqueta en cada bloque para que React monte un
+ * elemento nuevo y la animación vuelva a correr (ver el plugin).
+ */
+const CLASE_REVELADO = 'animate-in fade-in duration-300 ease-out motion-reduce:animate-none';
+function RevelarA({ children }: { children?: ReactNode }) {
+  return <span className={CLASE_REVELADO}>{children}</span>;
+}
+function RevelarB({ children }: { children?: ReactNode }) {
+  return <span className={CLASE_REVELADO}>{children}</span>;
+}
+const componentesConRevelado = {
+  ...markdownComponents,
+  'revelar-a': RevelarA,
+  'revelar-b': RevelarB,
+} as Components;
+
+/**
+ * Desde dónde fundir: si el texto creció en más de un carácter desde el cuadro
+ * anterior, lo nuevo es un BLOQUE (fase acelerada del revelado) y se funde. Una
+ * sola letra más es el tecleo de siempre: no necesita fundido.
+ */
+function useRevelado(content: string, isStreaming: boolean) {
+  const previo = useRef({ largo: 0, desde: null as number | null, bloques: 0 });
+  const r = previo.current;
+  if (!isStreaming) {
+    r.largo = content.length;
+    r.desde = null;
+  } else if (content.length !== r.largo) {
+    const crecio = content.length - r.largo;
+    r.desde = crecio > 1 && r.largo > 0 && !prefiereMenosMovimiento() ? r.largo : null;
+    if (r.desde !== null) r.bloques += 1;
+    r.largo = content.length;
+  }
+  return { desde: r.desde, etiqueta: r.bloques % 2 === 0 ? 'revelar-a' : 'revelar-b' };
+}
+
 /**
  * MarkdownRenderer - Renders markdown content in chat bubbles.
  *
@@ -185,6 +226,7 @@ export function MarkdownRenderer({
   className,
   isStreaming = false,
 }: MarkdownRendererProps) {
+  const revelado = useRevelado(content, isStreaming);
   return (
     <div
       className={cn(
@@ -204,7 +246,11 @@ export function MarkdownRenderer({
         className
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={revelado.desde !== null ? [[rehypeRevelar, revelado]] : []}
+        components={revelado.desde !== null ? componentesConRevelado : markdownComponents}
+      >
         {content}
       </ReactMarkdown>
       {/* Sin cursor de streaming (Nico, 2026-08-27: «esa barra azul que da como

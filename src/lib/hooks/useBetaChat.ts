@@ -1,5 +1,8 @@
 'use client';
 
+import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
+import { formatCurrency } from '@/lib/format';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   ChatMessage,
@@ -59,6 +62,8 @@ function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
     llamadasHoy: s.llamadasHoy,
     escalacionesPendientes: s.escalacionesPendientes,
     enPrejuridico: s.enPrejuridico,
+    ...(typeof s.carteraCop === 'number' ? { carteraCop: s.carteraCop } : {}),
+    ...(typeof s.contratosEnCartera === 'number' ? { contratosEnCartera: s.contratosEnCartera } : {}),
   };
 }
 
@@ -89,12 +94,6 @@ export function aprobacionADecision(approval: BackendPendingApproval): PendingDe
     })),
   };
 }
-
-const CHARS_PER_SECOND = 40;
-const LONG_PAUSE_CHARS = new Set(['.', '!', '?']);
-const SHORT_PAUSE_CHARS = new Set([',', ';', ':']);
-const LONG_PAUSE_MULTIPLIER = 6;
-const SHORT_PAUSE_MULTIPLIER = 3;
 
 const STORAGE_KEY = 'leasefy-beta-conversations';
 const STORAGE_VERSION_KEY = 'leasefy-beta-storage-version';
@@ -492,6 +491,47 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     [aplicarPasos]
   );
 
+  /**
+   * El paso que recibe el aviso de `progreso`: el especialista que está
+   * corriendo si hay uno (es quien consulta), si no el último paso vivo. Un
+   * paso que termina pierde su `actividad` (ver `parchearPaso` al cerrar).
+   */
+  const ponerActividad = useCallback(
+    (texto: string, avance?: { hechos?: number; total?: number }) => {
+      const actuales = turnStepsRef.current;
+      const vivos = actuales.filter((p) => p.status === 'running');
+      // Si nada corre (el especialista ya volvió y el modelo está cerrando la
+      // respuesta: «Cruzando lo que encontré…»), el aviso es del paso que
+      // sigue, que con eso arranca. Sin esto la lista quedaba toda en «hecho»
+      // o «pendiente» justo en la espera más larga.
+      const destino =
+        [...vivos].reverse().find((p) => p.kind === 'agente') ??
+        vivos[vivos.length - 1] ??
+        actuales.find((p) => p.status === 'pending') ??
+        null;
+      if (!destino) return;
+      // El sub-avance sólo se pinta como barra si hay un total contra qué
+      // medirlo; «29 filas» sin total ya lo dice el texto.
+      const conTotal =
+        typeof avance?.hechos === 'number' && typeof avance.total === 'number' && avance.total > 0
+          ? { hechos: avance.hechos, total: avance.total }
+          : undefined;
+      aplicarPasos(
+        actuales.map((p) =>
+          p.id === destino.id
+            ? {
+                ...p,
+                actividad: texto,
+                avance: conTotal,
+                ...(p.status === 'pending' ? { status: 'running' as const, startedAt: new Date() } : {}),
+              }
+            : p
+        )
+      );
+    },
+    [aplicarPasos]
+  );
+
   /** Cierra el turno: lo que quedó corriendo se da por hecho, y se limpia. */
   const cerrarPasos = useCallback(
     (comoFallo?: string) => {
@@ -504,6 +544,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 status: comoFallo ? ('failed' as const) : ('done' as const),
                 ...(comoFallo && p.status === 'running' ? { detail: comoFallo } : {}),
                 completedAt: ahora,
+                actividad: undefined,
+                avance: undefined,
               }
             : p
         )
@@ -631,13 +673,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     aplicarPasos([]);
   }, [clearTimeouts, aplicarPasos]);
 
-  const getCharDelay = useCallback((char: string): number => {
-    const baseInterval = 1000 / CHARS_PER_SECOND;
-    if (LONG_PAUSE_CHARS.has(char)) return baseInterval * LONG_PAUSE_MULTIPLIER;
-    if (SHORT_PAUSE_CHARS.has(char)) return baseInterval * SHORT_PAUSE_MULTIPLIER;
-    return baseInterval;
-  }, []);
-
   // ========================================================================
   // Start streaming response (reusable — called after agents complete or directly)
   // ========================================================================
@@ -739,18 +774,20 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           return;
         }
 
-        const currentChar = responseText[charIndexRef.current];
-        charIndexRef.current += 1;
-        const partial = responseText.slice(0, charIndexRef.current);
-        setStreamingContent(partial);
-
-        const delay = getCharDelay(currentChar);
-        charTimeoutRef.current = setTimeout(revealNextChar, delay);
+        // El ritmo lo decide `pasoDelRevelado`: letra por letra los primeros
+        // ~250 caracteres y después por palabras, cada vez más rápido (Nico,
+        // 23-09: «ve subiéndole la velocidad»). Con reduced-motion, de una vez.
+        const paso = pasoDelRevelado(responseText, charIndexRef.current, {
+          reducirMovimiento: prefiereMenosMovimiento(),
+        });
+        charIndexRef.current = paso.hasta;
+        setStreamingContent(responseText.slice(0, paso.hasta));
+        charTimeoutRef.current = setTimeout(revealNextChar, paso.esperaMs);
       };
 
       revealNextChar();
     },
-    [getCharDelay, parchearPaso, cerrarPasos, aplicarPasos]
+    [parchearPaso, cerrarPasos, aplicarPasos]
   );
 
   // ========================================================================
@@ -1003,6 +1040,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
          */
         pendingApprovals?: BackendPendingApproval[];
         accionesPropuestas?: BackendAccionPropuesta[];
+        /** La parte con forma del `done` (sólo por el stream). */
+        bloques?: BloqueDeRespuesta[];
+        entidades?: EntidadDelChat[];
       },
       assistantId: string,
       conversationId: string,
@@ -1011,8 +1051,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Attach the "estado de hoy" snapshot up-front. Every downstream setter
       // (live-block branch, driveAgentBlock, attachResponseMeta) spreads `...m`,
       // so this single patch survives regardless of which branch runs next.
+      //
+      // Lo mismo con la parte con FORMA (tablas, cifras, entidades): va al
+      // mensaje ANTES de que termine de escribirse, para que el texto sepa ya
+      // desde el primer cuadro que su tabla la pinta Cadence (y no la teclee).
       const snapshot = resp.snapshot ?? null;
-      if (snapshot) {
+      const bloques = resp.bloques ?? [];
+      const entidades = resp.entidades ?? [];
+      if (snapshot || bloques.length > 0 || entidades.length > 0) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1020,7 +1066,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               : {
                   ...c,
                   messages: c.messages.map((m) =>
-                    m.id === assistantId ? { ...m, snapshot } : m
+                    m.id === assistantId
+                      ? {
+                          ...m,
+                          ...(snapshot ? { snapshot } : {}),
+                          ...(bloques.length > 0 ? { bloques } : {}),
+                          ...(entidades.length > 0 ? { entidades } : {}),
+                        }
+                      : m
                   ),
                 }
           )
@@ -1125,6 +1178,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       dispatches: BackendDispatch[];
       snapshot: ChatSnapshot | null;
       liveBlock: AgentActivityBlock | null;
+      bloques: BloqueDeRespuesta[];
+      entidades: EntidadDelChat[];
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1139,6 +1194,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           responseText: string;
           suggestedActions: BackendSuggestedAction[];
           dispatches: BackendDispatch[];
+          bloques?: BloqueDeRespuesta[];
+          entidades?: EntidadDelChat[];
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
@@ -1153,27 +1210,42 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         handlers: {
           onSnapshot: (s) => {
             collected.snapshot = backendSnapshotToChat(s);
-            // El snapshot es la PRIMERA prueba de que el backend ya leyó el
-            // estado de la agencia: cierra «entender» y llena el paso de
-            // cartera con las cifras que de verdad llegaron.
+            // El snapshot es la prueba de que el micro ya reunió el contexto:
+            // cierra ese paso y empieza «entender» (el modelo decidiendo).
             const ahora = new Date();
-            parchearPaso('entender', { status: 'done', completedAt: ahora });
-            parchearPaso(
-              'cartera',
-              s
-                ? {
-                    status: 'done',
-                    completedAt: ahora,
-                    detailKey: 'beta.tasks.detail.cartera',
-                    detailVars: {
-                      deudores: s.deudoresActivos,
-                      escalaciones: s.escalacionesPendientes,
-                      prejuridico: s.enPrejuridico,
-                    },
+            const conCartera = s !== null && typeof s.carteraCop === 'number';
+            aplicarPasos(
+              turnStepsRef.current
+                // Nico (23-09): «Sin datos de cartera para esta agencia» salía
+                // del esquema viejo del agente. Sin la cartera del ERP el paso
+                // no dice nada útil: se quita en vez de mentir con un vacío.
+                .filter((p) => p.id !== 'cartera' || s !== null)
+                .map((p) => {
+                  if (p.id === 'cartera') {
+                    return {
+                      ...p,
+                      status: 'done' as const,
+                      completedAt: ahora,
+                      actividad: undefined,
+                      ...(conCartera
+                        ? {
+                            detailKey: 'beta.tasks.detail.carteraErp',
+                            detailVars: {
+                              cartera: formatCurrency(s!.carteraCop ?? 0),
+                              contratos: s!.contratosEnCartera ?? 0,
+                            },
+                          }
+                        : {}),
+                    };
                   }
-                : { status: 'done', completedAt: ahora, detailKey: 'beta.tasks.detail.carteraVacia' }
+                  if (p.id === 'entender' && p.status === 'pending') {
+                    return { ...p, status: 'running' as const, startedAt: ahora };
+                  }
+                  return p;
+                })
             );
           },
+          onProgreso: (p) => ponerActividad(p.texto, p),
           onMessage: (text, actions) => {
             messageText = text;
             messageActions = actions;
@@ -1181,8 +1253,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             // todavía no se había cerrado «entender» (agencia sin snapshot),
             // se cierra acá.
             const ahora = new Date();
-            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status === 'running')) {
-              parchearPaso('entender', { status: 'done', completedAt: ahora });
+            // Sin `snapshot` (micro viejo o POST) se cierra acá lo que siga vivo
+            // del contexto y de «entender».
+            if (turnStepsRef.current.some((p) => p.id === 'cartera' && p.status === 'running')) {
+              parchearPaso('cartera', { status: 'done', completedAt: ahora, actividad: undefined });
+            }
+            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status !== 'done')) {
+              parchearPaso('entender', { status: 'done', completedAt: ahora, actividad: undefined });
             }
             // 🔴 Y se MUESTRA ya. Antes se guardaba en `messageText` y no se
             // pintaba hasta el `done`: el texto existía y el operador miraba
@@ -1210,6 +1287,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             setIsThinking(false);
             setIsAgentsRunning(true);
             setActiveAgentBlock(liveBlock);
+            // Lo que se tecleó antes del despacho era el preámbulo («Voy a
+            // revisar…»), no la respuesta: «redactar» vuelve a esperar. Si no,
+            // quedaban DOS pasos girando y uno decía «Escribiendo la respuesta…»
+            // mientras el especialista todavía consultaba (visto en el panel).
+            if (turnStepsRef.current.some((p) => p.id === 'redactar' && p.status === 'running')) {
+              parchearPaso('redactar', { status: 'pending', startedAt: undefined, actividad: undefined });
+            }
             // Cada despacho es un paso propio, con la tarea que escribió el
             // orquestador. Acá es donde el plan deja de ser genérico: dos
             // preguntas distintas despachan agentes distintos.
@@ -1255,6 +1339,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               parchearPaso(cerrado.id, {
                 status: dispatch.status === 'failed' ? 'failed' : 'done',
                 completedAt: new Date(),
+                actividad: undefined,
                 ...(detalle ? { detail: detalle } : {}),
               });
             }
@@ -1330,6 +1415,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               responseText: f.responseText,
               suggestedActions: f.suggestedActions,
               dispatches: f.dispatches,
+              bloques: f.bloques,
+              entidades: f.entidades,
             };
           },
           onError: (message, meta) => {
@@ -1361,9 +1448,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         dispatches,
         snapshot: collected.snapshot,
         liveBlock,
+        // La parte con FORMA (tablas, cifras, entidades). Sólo la trae el
+        // `done`: si el stream se cortó antes, queda el texto, que es el respaldo.
+        bloques: final?.bloques ?? [],
+        entidades: final?.entidades ?? [],
       };
     },
-    [parchearPaso, insertarPaso, startStreaming]
+    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
   );
 
   // ========================================================================
@@ -1437,16 +1528,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
       // backend hable: leer la pregunta y responder. Todo lo del medio lo
       // agregan los eventos del stream, que es lo que lo hace contextual.
+      //
+      // 🔴 En el orden en que de verdad pasa (Nico, 23-09): primero el micro
+      // reúne el contexto (cartera del ERP, memoria, búsqueda) y DESPUÉS el
+      // modelo lee la pregunta y decide. Antes «entender» y «cartera» se
+      // cerraban juntos al llegar el `snapshot`, y entre ese instante y el
+      // primer texto —el modelo pensando, a veces 15 s— no quedaba NINGÚN paso
+      // vivo: la lista se veía muerta. Ahora «entender» corre hasta el texto.
       aplicarPasos([
+        {
+          id: 'cartera',
+          kind: 'cartera',
+          labelKey: 'beta.tasks.plan.snapshot',
+          status: 'running',
+          startedAt: new Date(),
+        },
         {
           id: 'entender',
           kind: 'entender',
           labelKey: 'beta.tasks.plan.understand',
           detail: trimmed,
-          status: 'running',
-          startedAt: new Date(),
+          status: 'pending',
         },
-        { id: 'cartera', kind: 'cartera', labelKey: 'beta.tasks.plan.snapshot', status: 'pending' },
         { id: 'redactar', kind: 'redactar', labelKey: 'beta.tasks.plan.write', status: 'pending' },
       ]);
 

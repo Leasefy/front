@@ -52,3 +52,56 @@ describe('MarkdownRenderer — respuestas de IA', () => {
     expect(destinoExterno('https://a.example/' + 'b'.repeat(50))).toMatch(/^a\.example\/b{29}…$/);
   });
 });
+
+/**
+ * El final del revelado (Nico, 23-09: «que se sienta pulido»). Pasados los
+ * primeros ~250 caracteres el texto llega por palabras y luego por bloques
+ * (`src/lib/chat/revelado.ts`); sin fundido eso parpadea. Lo nuevo se envuelve
+ * en un elemento que se funde; el tecleo de una sola letra no.
+ */
+describe('MarkdownRenderer — el texto recién revelado se funde', () => {
+  async function montar() {
+    const { createRoot } = await import('react-dom/client');
+    const { act } = await import('react');
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    return {
+      container,
+      pintar: (content: string, isStreaming = true) =>
+        act(() => root.render(<MarkdownRenderer content={content} isStreaming={isStreaming} />)),
+      soltar: () => {
+        act(() => root.unmount());
+        container.remove();
+      },
+    };
+  }
+
+  it('un bloque de varias palabras entra con fundido; lo ya visible no se vuelve a animar', async () => {
+    const m = await montar();
+    m.pintar('Tienes 29 contratos');
+    m.pintar('Tienes 29 contratos que vencen en octubre.');
+    const fundidos = [...m.container.querySelectorAll('span.animate-in')];
+    expect(fundidos.map((s) => s.textContent).join('')).toBe(' que vencen en octubre.');
+    m.soltar();
+  });
+
+  it('una letra más es el tecleo de siempre: sin fundido', async () => {
+    const m = await montar();
+    m.pintar('Tienes 2');
+    m.pintar('Tienes 29');
+    expect(m.container.querySelector('span.animate-in')).toBeNull();
+    m.soltar();
+  });
+
+  it('terminada la respuesta no queda ningún envoltorio', async () => {
+    const m = await montar();
+    m.pintar('Tienes 29');
+    m.pintar('Tienes 29 contratos que vencen en octubre.');
+    m.pintar('Tienes 29 contratos que vencen en octubre.', false);
+    expect(m.container.querySelector('span.animate-in')).toBeNull();
+    expect(m.container.textContent).toBe('Tienes 29 contratos que vencen en octubre.');
+    m.soltar();
+  });
+});

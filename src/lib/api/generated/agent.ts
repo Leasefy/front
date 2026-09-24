@@ -3525,6 +3525,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/pedir-llamada": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pídele a Laura que llame a un inquilino: lo crea como deudor desde las cuotas de su contrato si hace falta, y la llamada sigue el Piloto */
+        post: operations["pedirLlamadaDeLaura"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/escalations": {
         parameters: {
             query?: never;
@@ -4767,6 +4784,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/chat/senales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat del panel — una señal que sólo ve la pantalla (clic en tarjeta, deshacer, abandono)
+         * @description Le cuenta al cerebro de la inmobiliaria algo que pasó en la pantalla sobre un turno del chat: que se abrió una tarjeta, que se deshizo una acción o que la persona abandonó. El turno tiene que ser de quien llama. Idempotente. Cualquier miembro de la agencia.
+         */
+        post: operations["postAiHubChatSenal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/agentes/{agente}/overview": {
         parameters: {
             query?: never;
@@ -4821,6 +4858,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/inbox/conteo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — cuántas decisiones esperan (para el badge del menú) */
+        get: operations["getAiHubInboxConteo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/activity": {
         parameters: {
             query?: never;
@@ -4859,23 +4913,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/ai-hub/agentes/autonomia": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Piloto automático — postura de autonomía de TODA la flota, en una llamada */
-        get: operations["getAiHubAgentesAutonomiaRoster"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/aprobar": {
         parameters: {
             query?: never;
@@ -4887,7 +4924,7 @@ export interface paths {
         put?: never;
         /**
          * Piloto — aprobar y liberar una acción retenida por autonomía
-         * @description Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos), un cobro por WhatsApp/email o un reporte a centrales de riesgo (que sólo sale con esta aprobación). Idempotente: la segunda aprobación devuelve 409 y no emite nada.
+         * @description Libera la acción que el copiloto retuvo: una llamada, un WhatsApp de seguimiento o un correo de cobranza, un cobro por WhatsApp/email, un reporte a centrales de riesgo (que sólo sale con esta aprobación) o la ruptura de un acuerdo incumplido. Antes de marcar re-verifica la deuda de hoy (cuotas del ERP), el acuerdo vigente, el RNE y el horario (8 a. m.–7 p. m.); fuera de horario PROGRAMA la acción para la próxima apertura (`programadaPara`). Idempotente: la segunda aprobación devuelve 409 y no emite nada.
          */
         post: operations["aprobarRetenidoPiloto"];
         delete?: never;
@@ -4964,7 +5001,7 @@ export interface paths {
         get: operations["getAiHubFlota"];
         /**
          * Piloto automático — mover la flota entera a un modo
-         * @description Escribe el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.
+         * @description Escribe el modo (Manual / Copiloto / Automático; en la base sombra / copiloto / autonomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.
          */
         put: operations["putAiHubFlota"];
         post?: never;
@@ -5039,6 +5076,125 @@ export interface paths {
         put?: never;
         /** Piloto — conciliar un movimiento del banco contra el cobro elegido */
         post: operations["pilotoConciliarMovimiento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/ignorar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — dejar un movimiento del banco fuera de la conciliación, con su motivo */
+        post: operations["pilotoIgnorarMovimiento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/perilla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — qué gobierna la perilla: cada proceso, qué hace hoy en el modo de la agencia y lo siempre humano */
+        get: operations["getPilotoPerilla"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/preferencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Piloto — topes por acción (P-3) y gracia de «Deshacer» (P-10) de la inmobiliaria */
+        put: operations["putPilotoPreferencias"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/acciones/{id}/ejecutar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — hacer lo que una automatización del back dejó pendiente o propuesto (o sacar ya lo programado) */
+        post: operations["pilotoAccionEjecutar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/acciones/{id}/deshacer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — «Deshacer»: que lo programado no salga (P-10) */
+        post: operations["pilotoAccionDeshacer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/acciones/{id}/descartar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — descartar lo pendiente o propuesto (no se vuelve a proponer) */
+        post: operations["pilotoAccionDescartar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/opera-sola": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — ¿opera sola? Lo que el Piloto hizo solo, con un clic, lo que espera y lo que falló, y Laura de hoy */
+        get: operations["getPilotoOperaSola"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10135,6 +10291,24 @@ export interface components {
                 }[];
             }[];
         };
+        PedirLlamadaRespuesta: {
+            /** @enum {string} */
+            estado: "retenida" | "programada" | "ya_pendiente" | "sin_mora" | "excluido" | "no_disponible";
+            debtorId?: string;
+            decisionId?: string;
+            deudorNuevo?: boolean;
+            /** @enum {string} */
+            porQue?: "no_encontrado" | "al_dia" | "dentro_del_plazo" | "castigada" | "en_juridico" | "datos_incompletos";
+            /** @enum {string} */
+            valla?: "judicializado" | "pausa" | "opt_out";
+            detalle?: string;
+        };
+        PedirLlamadaBody: {
+            /** Format: uuid */
+            contractId?: string;
+            documento?: string;
+            motivo?: string;
+        };
         CobranzaEscalationCard: {
             id: string;
             debtor_id: string;
@@ -11257,6 +11431,10 @@ export interface components {
             dispatches: components["schemas"]["AiHubChatDispatch"][];
             pendingApprovals: components["schemas"]["AiHubChatPendingApproval"][];
             accionesPropuestas: components["schemas"]["AiHubChatAccionPropuesta"][];
+            entidades: {
+                [key: string]: unknown;
+            }[];
+            turnoId: string;
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             generatedAt: string;
         };
@@ -11373,6 +11551,24 @@ export interface components {
             herramientas?: string[];
             consulta?: string;
         };
+        AiHubChatSenalResponse: {
+            registrada: boolean;
+            motivo: string;
+        };
+        AiHubChatSenalError: {
+            error: string;
+        };
+        AiHubChatSenalRequest: {
+            /** Format: uuid */
+            turnoId: string;
+            /** @enum {string} */
+            tipo: "tarjeta_abierta" | "accion_deshecha" | "abandono";
+            entidad?: {
+                tipo: string;
+                id: string;
+            };
+            propuestaId?: string;
+        };
         AgentOverviewResponse: {
             /** @enum {string} */
             agente: "cobranza" | "cotizador" | "conciliacion" | "pagos" | "estudio" | "matching" | "avaluos";
@@ -11455,6 +11651,19 @@ export interface components {
             page: number;
             pageSize: number;
         };
+        PilotoInboxAccionCampo: {
+            id: string;
+            label: string;
+            /** @enum {string} */
+            tipo: "opcion" | "multiple" | "texto";
+            opciones?: {
+                valor: string;
+                label: string;
+            }[];
+            requerido?: boolean;
+            placeholder?: string;
+            maxLargo?: number;
+        };
         PilotoInboxAccion: {
             label: string;
             /** @enum {string} */
@@ -11463,6 +11672,13 @@ export interface components {
             body?: {
                 [key: string]: unknown;
             };
+            campos?: components["schemas"]["PilotoInboxAccionCampo"][];
+            confirmacion?: string;
+            /** @enum {string} */
+            tono?: "normal" | "peligro";
+            roles?: string[];
+            permitida?: boolean;
+            porQueNo?: string;
         };
         PilotoInboxItem: {
             id: string;
@@ -11485,6 +11701,11 @@ export interface components {
                 media: number;
                 baja: number;
             };
+        };
+        PilotoInboxConteo: {
+            total: number;
+            masVieja: string | null;
+            viejas: number;
         };
         PilotoActivityItem: {
             id: string;
@@ -11515,23 +11736,27 @@ export interface components {
             origen: "piloto" | "politica" | "default";
             efectoReal: string;
         };
+        AiHubDelegacionEnElBack: {
+            registrada: boolean;
+            porQue: string | null;
+        };
         AiHubAutonomiaPutResponse: {
             agente: string;
             /** @enum {string} */
             modo: "sombra" | "copiloto" | "autonomo";
+            delegacion?: components["schemas"]["AiHubDelegacionEnElBack"];
         };
         AiHubAutonomiaPutBody: {
             /** @enum {string} */
             modo: "sombra" | "copiloto" | "autonomo";
         };
-        AiHubAgentesAutonomiaResponse: {
-            agentes: components["schemas"]["AiHubAutonomiaResponse"][];
-        };
         AiHubRetenidoResultado: {
             /** @enum {boolean} */
             ok: true;
             /** @enum {string} */
-            emitido: "llamada" | "cobro" | "reporte" | "acuerdo-roto" | "nada";
+            emitido: "llamada" | "whatsapp" | "correo" | "cobro" | "reporte" | "acuerdo-roto" | "nada";
+            programadaPara?: string;
+            mensaje: string;
         };
         AiHubGobiernoItem: {
             agente: string;
@@ -11547,6 +11772,13 @@ export interface components {
         AiHubGobiernoPutBody: {
             habilitado: boolean;
         };
+        AiHubFlotaValla: {
+            id: string;
+            label: string;
+            value: string;
+            /** @enum {string} */
+            estado: "regla";
+        };
         AiHubFlotaAgente: {
             agente: string;
             /** @enum {string} */
@@ -11554,11 +11786,19 @@ export interface components {
             /** @enum {string} */
             origen: "piloto" | "politica" | "default";
             corre: boolean;
+            porQueNoCorre: string | null;
+            gobierna: boolean;
+            actua: boolean;
+            efectoReal: string;
+            valla: components["schemas"]["AiHubFlotaValla"][];
+            t323: boolean;
         };
         AiHubFlotaResponse: {
             activo: boolean;
             /** @enum {string} */
-            modo: "sombra" | "copiloto" | "autonomo" | "mixto";
+            modo: "sombra" | "copiloto" | "autonomo";
+            distintos: string[];
+            actuan: number;
             agentes: components["schemas"]["AiHubFlotaAgente"][];
             resumen: {
                 sombra: number;
@@ -11578,6 +11818,14 @@ export interface components {
                 agente: string;
                 error: string;
             }[];
+            delegacion?: {
+                registrada: boolean;
+                porQue: string | null;
+                fallidas: {
+                    agente: string;
+                    porQue: string;
+                }[];
+            };
         };
         AiHubFlotaPutBody: {
             /** @enum {string} */
@@ -11703,6 +11951,123 @@ export interface components {
             /** Format: uuid */
             cobroId: string;
         };
+        PilotoConciliacionIgnorarResponse: {
+            movimientoId: string;
+            estado: string;
+        };
+        PilotoConciliacionIgnorarBody: {
+            motivo: string;
+        };
+        PilotoPreferencias: {
+            topeMontoCop: number;
+            topeDestinatarios: number;
+            graciaSegundos: number;
+            porDefecto: boolean;
+        };
+        PilotoProcesoGobernado: {
+            id: string;
+            agente: string;
+            /** @enum {string} */
+            dondeCorre: "back" | "micro";
+            queHace: string;
+            siempreHumano: string | null;
+            /** @enum {string|null} */
+            envio: "cobranza" | "aviso" | null;
+            topes: {
+                monto: boolean;
+                destinatarios: boolean;
+            };
+            /** @enum {string} */
+            cableado: "si" | "pendiente";
+            nota: string | null;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+            queHaceAhora: string;
+            queHaceEnCadaModo: {
+                sombra: string;
+                copiloto: string;
+                autonomo: string;
+            };
+        };
+        PilotoPerilla: {
+            preferencias: components["schemas"]["PilotoPreferencias"];
+            ventanas: {
+                [key: string]: string;
+            };
+            procesos: components["schemas"]["PilotoProcesoGobernado"][];
+        };
+        PilotoPerillaError: {
+            error: string;
+            code?: string;
+        };
+        PilotoPreferenciasPutBody: {
+            topeMontoCop?: number;
+            topeDestinatarios?: number;
+            graciaSegundos?: number;
+        };
+        PilotoAccionDelBack: {
+            id: string;
+            proceso: string;
+            agente: string;
+            estado: string;
+            modo: string;
+            motivo: string;
+            resumen: string;
+            montoCop: number | null;
+            destinatarios: number | null;
+            ejecutarEn: string | null;
+            resultado?: unknown;
+            error: string | null;
+            resueltoPorNombre: string | null;
+            resueltoAt: string | null;
+            createdAt: string;
+        };
+        PilotoAccionError: {
+            error: string;
+            code?: string;
+        };
+        PilotoLauraDeHoy: {
+            dia: string;
+            corrioHoy: boolean | null;
+            planificacionesHoy: number | null;
+            llamadasHoy: number | null;
+            retenidasHoy: number | null;
+            contactosHoy: number | null;
+            frase: string;
+        } | null;
+        PilotoOperaSola: {
+            disponible: boolean;
+            desde: string;
+            dias: number;
+            inmobiliaria: {
+                detectadas: number;
+                hechasSolas: number;
+                hechasConClic: number;
+                esperanClic: number;
+                propuestas: number;
+                programadas: number;
+                fallidas: number;
+                yaNoHacianFalta: number;
+            };
+            porDetector: {
+                detectadas: number;
+                hechasSolas: number;
+                hechasConClic: number;
+                esperanClic: number;
+                propuestas: number;
+                programadas: number;
+                fallidas: number;
+                yaNoHacianFalta: number;
+                detector: string;
+                nombre: string;
+            }[];
+            laura: components["schemas"]["PilotoLauraDeHoy"];
+            frase: string;
+        };
+        PilotoOperaSolaError: {
+            error: string;
+            code?: string;
+        };
         PilotoPulsoEnCurso: {
             id: string;
             tipo: string;
@@ -11727,7 +12092,7 @@ export interface components {
         };
         PilotoPulsoResponse: {
             /** @enum {string} */
-            estado: "ok" | "atencion" | "critico";
+            estado: "ok" | "atencion" | "critico" | "desconocido";
             titular: string;
             enCurso: components["schemas"]["PilotoPulsoEnCurso"][];
             alertas: components["schemas"]["PilotoPulsoAlerta"][];
@@ -11773,6 +12138,15 @@ export interface components {
             body?: {
                 [key: string]: unknown;
             };
+            campos?: {
+                [key: string]: unknown;
+            }[];
+            confirmacion?: string;
+            /** @enum {string} */
+            tono?: "normal" | "peligro";
+            roles?: string[];
+            permitida?: boolean;
+            porQueNo?: string;
         };
         PilotoDetalleEnlace: {
             label: string;
@@ -17696,6 +18070,59 @@ export interface operations {
             };
         };
     };
+    pedirLlamadaDeLaura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PedirLlamadaBody"];
+            };
+        };
+        responses: {
+            /** @description Resultado del pedido: retenida en la bandeja, programada (Automático), ya pendiente, sin mora, excluida por una valla, o no disponible */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedirLlamadaRespuesta"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
     listCobranzaEscalations: {
         parameters: {
             query?: never;
@@ -21980,6 +22407,50 @@ export interface operations {
             };
         };
     };
+    postAiHubChatSenal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatSenalRequest"];
+            };
+        };
+        responses: {
+            /** @description Señal procesada (anotada o no, con el motivo) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatSenalResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatSenalError"];
+                };
+            };
+            /** @description agencyId distinto al del token / no es miembro */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatSenalError"];
+                };
+            };
+        };
+    };
     getAgencyAiHubAgentOverview: {
         parameters: {
             query?: never;
@@ -22114,6 +22585,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PilotoInboxResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubInboxConteo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El conteo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoInboxConteo"];
                 };
             };
             /** @description JWT faltante o inválido */
@@ -22346,61 +22872,6 @@ export interface operations {
             };
         };
     };
-    getAiHubAgentesAutonomiaRoster: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Roster completo, un item por agente de AGENTES_CON_AUTONOMIA */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AiHubAgentesAutonomiaResponse"];
-                };
-            };
-            /** @description JWT faltante o inválido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Cross-tenant */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Base de datos no disponible */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
     aprobarRetenidoPiloto: {
         parameters: {
             query?: never;
@@ -22455,7 +22926,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Ya estaba resuelto / sin teléfono */
+            /** @description No se hizo: ya estaba resuelta, el deudor ya no existe o ya no debe, tiene acuerdo vigente, está en el RNE, no tiene teléfono o no se pudo leer su deuda de hoy. `error` lo dice en palabras. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22533,7 +23004,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Ya estaba resuelto / sin teléfono */
+            /** @description No se hizo: ya estaba resuelta, el deudor ya no existe o ya no debe, tiene acuerdo vigente, está en el RNE, no tiene teléfono o no se pudo leer su deuda de hoy. `error` lo dice en palabras. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22919,7 +23390,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description El gobierno de la agencia no deja actuar */
+            /** @description El agente de conciliación no está habilitado para la inmobiliaria */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22979,7 +23450,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description El gobierno de la agencia no deja actuar, o el movimiento ya no está pendiente */
+            /** @description El agente de conciliación no está habilitado, o el movimiento ya no está pendiente */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22999,6 +23470,470 @@ export interface operations {
                     "application/json": {
                         error: string;
                     };
+                };
+            };
+        };
+    };
+    pilotoIgnorarMovimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoConciliacionIgnorarBody"];
+            };
+        };
+        responses: {
+            /** @description El movimiento quedó fuera */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoConciliacionIgnorarResponse"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso cobros:edit del ERP */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El agente de conciliación no está habilitado, o el movimiento ya no está pendiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getPilotoPerilla: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La perilla */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerilla"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+        };
+    };
+    putPilotoPreferencias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoPreferenciasPutBody"];
+            };
+        };
+        responses: {
+            /** @description Guardadas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPreferencias"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description Sólo un administrador cambia los topes */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPerillaError"];
+                };
+            };
+        };
+    };
+    pilotoAccionEjecutar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cómo quedó la acción */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso del ERP de este proceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+        };
+    };
+    pilotoAccionDeshacer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cómo quedó la acción */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso del ERP de este proceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+        };
+    };
+    pilotoAccionDescartar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cómo quedó la acción */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Gerente: un lote grande quedó ejecutándose en segundo plano, al ritmo del back */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionDelBack"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Sin membresía o sin el permiso del ERP de este proceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description Ya no está esperando (se hizo, se deshizo, se descartó o salió) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+            /** @description El back no está configurado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoAccionError"];
+                };
+            };
+        };
+    };
+    getPilotoOperaSola: {
+        parameters: {
+            query?: {
+                dias?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ¿Opera sola? */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoOperaSola"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoOperaSolaError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoOperaSolaError"];
                 };
             };
         };

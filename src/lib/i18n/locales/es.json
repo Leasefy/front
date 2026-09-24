@@ -11614,6 +11614,51 @@
           "codigoIncorrecto": "Ese código no era. Prueba con el siguiente.",
           "noPudeVerificar": "No pude verificar el código: {{motivo}}"
         }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Espera tu respuesta",
+          "contestado": "Respondido",
+          "ejecutando": "Haciéndose",
+          "hecho": "Hecho",
+          "detenido": "Detenido",
+          "cancelado": "No se hizo",
+          "vencido": "Venció"
+        },
+        "loQuePediste": "Lo que pediste: «{{cita}}»",
+        "pasos": "Los pasos del plan",
+        "paso": {
+          "estado": {
+            "pendiente": "Pendiente",
+            "hecho": "Hecho",
+            "fallido": "No se pudo",
+            "en_curso": "Sigue corriendo",
+            "omitido": "No hizo falta"
+          },
+          "dependeDe": "Se puede cuando esté hecho el paso {{n}}.",
+          "pedisteDeshacer": "Pediste deshacerlo: la respuesta va abajo."
+        },
+        "seDetieneAntesDe": "El plan se detiene antes del paso {{n}} ({{que}}):",
+        "detenidoEn": "Se detuvo en el paso {{n}}:",
+        "hacerTodo": "Hacer todo",
+        "no": "No",
+        "noSeguir": "No seguir",
+        "reintentarDesde": "Reintentar desde el paso {{n}}",
+        "seguirDesde": "Seguir desde el paso {{n}}",
+        "llenaLoQueFalta": "Llena lo que falta en los pasos para poder hacerlo todo.",
+        "yaRespondiste": {
+          "hacer_plan": "Dijiste que sí: el avance va en la respuesta de abajo.",
+          "cancelar_plan": "Dijiste que no.",
+          "seguir_plan": "Pediste seguir: el avance va en la respuesta de abajo."
+        },
+        "vencido": "Este plan venció: pídemelo de nuevo y lo armo con los datos de ahora.",
+        "ensayo": "Ensayo: el plan está completo, pero nada se guarda ni se ejecuta.",
+        "mensaje": {
+          "hacerTodo": "Sí, hazlo todo",
+          "no": "No, no hagas el plan",
+          "seguir": "Sigue desde el paso {{n}}",
+          "noSeguir": "No sigas con el plan"
+        }
       }
     }
   },

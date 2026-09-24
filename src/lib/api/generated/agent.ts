@@ -8875,6 +8875,7 @@ export interface components {
         AiHubChatIntencionDelBoton: {
             accion: string;
             propuestaId?: string;
+            planId?: string;
             entidad?: {
                 tipo: string;
                 id: string;
@@ -8947,6 +8948,75 @@ export interface components {
             } | null;
         };
         AiHubChatTarjetaDeEjecucion: components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"];
+        AiHubChatCampoDelPlan: {
+            clave: string;
+            etiqueta: string;
+            /** @enum {string} */
+            tipo: "moneda" | "fecha" | "mes" | "numero" | "texto" | "texto_largo" | "opcion";
+            requerido: boolean;
+            opciones: {
+                valor: string;
+                etiqueta: string;
+            }[];
+            ayuda: string | null;
+            valor: string | null;
+        };
+        AiHubChatPasoDelPlan: {
+            n: number;
+            accion: string;
+            titulo: string;
+            frase: string;
+            riesgo: components["schemas"]["AiHubChatRiesgoDeLaAccion"];
+            /** @enum {string} */
+            estado: "pendiente" | "hecho" | "fallido" | "en_curso" | "omitido";
+            resumen: string | null;
+            ejecucionId: string | null;
+            deshacer: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            campos: components["schemas"]["AiHubChatCampoDelPlan"][];
+            dependeDe: number | null;
+        };
+        AiHubChatTarjetaPlan: {
+            /** @enum {string} */
+            tipo: "plan";
+            planId: string;
+            titulo: string;
+            cita: string;
+            /** @enum {string} */
+            estado: "propuesto" | "ejecutando" | "hecho" | "detenido" | "cancelado" | "vencido";
+            /** @enum {string} */
+            modo: "manual" | "copiloto" | "automatico";
+            pregunta: string;
+            porQue: string;
+            venceEn: string;
+            pasos: components["schemas"]["AiHubChatPasoDelPlan"][];
+            seDetieneAntesDe: {
+                n: number;
+                que: string;
+                porQue: string;
+            } | null;
+            detenido: {
+                n: number;
+                /** @enum {string} */
+                tipo: "fallo" | "en_curso" | "doble_control" | "faltan_datos" | "horario" | "no_disponible" | "referencia";
+                porQue: string;
+            } | null;
+            hacerTodo: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            cancelar: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            seguir: {
+                etiqueta: string;
+                intencion: components["schemas"]["AiHubChatIntencionDelBoton"];
+            } | null;
+            ensayo: boolean;
+        };
         AiHubChatEventoProcesoIniciado: {
             /** @enum {string} */
             type: "proceso_iniciado";
@@ -8956,6 +9026,7 @@ export interface components {
         AiHubChatPiezasNuevasDelDone: {
             ejecucion: Omit<components["schemas"]["AiHubChatTarjetaDeEjecucion"], "tipo"> & (components["schemas"]["AiHubChatTarjetaPropuesta"] | components["schemas"]["AiHubChatTarjetaEnCurso"] | components["schemas"]["AiHubChatTarjetaResultado"] | components["schemas"]["AiHubChatTarjetaProgramada"] | components["schemas"]["AiHubChatTarjetaError"] | null);
             ensayo: boolean;
+            plan?: components["schemas"]["AiHubChatTarjetaPlan"] & (Record<string, never> | null);
         };
         DashboardSummaryResponse: {
             /** Format: uuid */

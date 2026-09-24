@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { CurrencyInput, QuickActionChips, SensitiveActionConfirm, StatusBadge } from '@leasefy/cadence';
+import { QuickActionChips, SensitiveActionConfirm, StatusBadge } from '@leasefy/cadence';
 import {
   ArrowCounterClockwise,
   CaretDown,
@@ -14,10 +14,6 @@ import {
   XCircle,
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { Input, Textarea } from '@/components/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
-import { mesActual } from '@/lib/recaudo/meses';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -33,7 +29,9 @@ import {
 } from '@/lib/chat/acciones-del-hilo';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { CajaDelChat } from './CajaDelChat';
+import { CamposEnElChat, datosDeLosCampos, valoresIniciales } from './CamposEnElChat';
 import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
+import { TarjetaDePlan } from './TarjetaDePlan';
 
 /**
  * AccionesEnElHilo — la parte del hilo que ACTÚA (Nico, 23-09-2026, 22:51:
@@ -49,6 +47,8 @@ import { TarjetaDeEjecucion, useMandar } from './TarjetaDeEjecucion';
  *     otra persona». «Sí, hazlo» y «No» son, otra vez, mensajes de la persona.
  *   · El resultado, con su explicación, y «Deshacer» cuando se puede.
  *   · Los datos que faltan, pedidos en el hilo.
+ *   · Desde el 24-09, la tarjeta del PLAN (`TarjetaDePlan`): varias acciones
+ *     pedidas en una frase, con un solo «Hacer todo» y el avance paso a paso.
  *   · Desde el 24-09, la tarjeta del EJECUTOR (`TarjetaDeEjecucion`):
  *     propuesta con vista previa, en curso, resultado con la gracia de
  *     «Deshacer», programada y error explicado. Con ella a la vista, la
@@ -67,14 +67,16 @@ export function AccionesEnElHilo({ message, className }: { message: ChatMessage;
     return i < 0 ? [] : lista.slice(i + 1);
   }, [messages, message.id]);
 
-  const { acciones, confirmacion, resultado, formulario, ejecucion } = message;
-  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion) return null;
+  const { acciones, confirmacion, resultado, formulario, ejecucion, plan } = message;
+  if (!acciones?.length && !confirmacion && !resultado && !formulario && !ejecucion && !plan) return null;
 
   return (
     <div className={cn('space-y-3', className)} data-testid="acciones-en-el-hilo">
       {formulario && (
         <FormularioDeLaAccion formulario={formulario} yaEnviado={posteriores.some((m) => m.role === 'user')} />
       )}
+      {/* (24-09, paquete H) Varias acciones pedidas en una frase: UNA tarjeta, un «Hacer todo». */}
+      {plan && <TarjetaDePlan plan={plan} message={message} posteriores={posteriores} />}
       {ejecucion ? (
         <TarjetaDeEjecucion tarjeta={ejecucion} message={message} posteriores={posteriores} />
       ) : (
@@ -350,26 +352,17 @@ function TarjetaDeResultado({
 function FormularioDeLaAccion({ formulario: f, yaEnviado }: { formulario: FormularioEnElHilo; yaEnviado: boolean }) {
   const { t } = useI18n();
   const { mandar, ocupado } = useMandar();
-  const [valores, setValores] = useState<Record<string, string>>(() =>
-    // Un mes siempre tiene valor (el selector no se puede dejar «vacío»).
-    Object.fromEntries(f.campos.map((c) => [c.clave, c.valor ?? (c.tipo === 'mes' ? mesActual() : '')])),
-  );
+  const [valores, setValores] = useState<Record<string, string>>(() => valoresIniciales(f.campos));
   const poner = (clave: string, v: string) => setValores((x) => ({ ...x, [clave]: v }));
   const faltan = f.campos.filter((c) => c.requerido && !(valores[c.clave] ?? '').trim());
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     if (faltan.length || ocupado || yaEnviado) return;
-    const datos: Record<string, string | number> = {};
-    for (const c of f.campos) {
-      const v = (valores[c.clave] ?? '').trim();
-      if (!v) continue;
-      datos[c.clave] = c.tipo === 'moneda' || c.tipo === 'numero' ? Number(v.replace(',', '.')) : v;
-    }
     mandar(textoDelFormulario(f, valores), {
       accion: f.accion,
       entidad: f.entidad,
-      datos,
+      datos: datosDeLosCampos(f.campos, valores),
     });
   };
 
@@ -394,67 +387,7 @@ function FormularioDeLaAccion({ formulario: f, yaEnviado }: { formulario: Formul
               ))}
             </ul>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {f.campos.map((c) => {
-              const id = `campo-${f.accion}-${c.clave}`;
-              const ancho = c.tipo === 'texto_largo' ? 'sm:col-span-2' : '';
-              return (
-                <div key={c.clave} className={cn('space-y-1.5', ancho)}>
-                  <label htmlFor={id} className="block font-body text-[14px] font-medium text-fg">
-                    {c.etiqueta}
-                  </label>
-                  {c.tipo === 'moneda' ? (
-                    <CurrencyInput
-                      id={id}
-                      value={valores[c.clave] ? Number(valores[c.clave]) : undefined}
-                      onChange={(v) => poner(c.clave, Number.isFinite(v) ? String(v) : '')}
-                    />
-                  ) : c.tipo === 'fecha' ? (
-                    <Input
-                      id={id}
-                      type="date"
-                      value={valores[c.clave] ?? ''}
-                      onChange={(e) => poner(c.clave, e.target.value)}
-                    />
-                  ) : c.tipo === 'mes' ? (
-                    <SelectorDeMes
-                      mes={valores[c.clave] || mesActual()}
-                      onCambiar={(m) => poner(c.clave, m)}
-                      testId={id}
-                    />
-                  ) : c.tipo === 'opcion' ? (
-                    <Select value={valores[c.clave] ?? ''} onValueChange={(v) => poner(c.clave, v)}>
-                      <SelectTrigger id={id} aria-label={c.etiqueta}>
-                        <SelectValue placeholder={t('beta.enElChat.formulario.elige')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {c.opciones.map((o) => (
-                          <SelectItem key={o.valor} value={o.valor}>
-                            {o.etiqueta}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : c.tipo === 'texto_largo' ? (
-                    <Textarea
-                      id={id}
-                      rows={3}
-                      value={valores[c.clave] ?? ''}
-                      onChange={(e) => poner(c.clave, e.target.value)}
-                    />
-                  ) : (
-                    <Input
-                      id={id}
-                      inputMode={c.tipo === 'numero' ? 'decimal' : undefined}
-                      value={valores[c.clave] ?? ''}
-                      onChange={(e) => poner(c.clave, e.target.value)}
-                    />
-                  )}
-                  {c.ayuda && <p className="font-body text-[13px] text-fg-muted">{c.ayuda}</p>}
-                </div>
-              );
-            })}
-          </div>
+          <CamposEnElChat campos={f.campos} valores={valores} onCambiar={poner} idBase={f.accion} />
         </div>
       </CajaDelChat>
     </form>

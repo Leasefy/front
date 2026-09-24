@@ -14,6 +14,7 @@ import {
   type EventoProcesoIniciado,
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
+import type { TarjetaDePlan } from '@/lib/chat/plan-del-chat';
 import { invalidar } from '@/lib/api/refresco-de-datos';
 import { RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
 import {
@@ -1209,6 +1210,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         /** La tarjeta del ejecutor (24-09, sólo por el stream). */
         ejecucion?: TarjetaDeEjecucion | null;
         ensayo?: boolean;
+        /** La tarjeta del plan (24-09, paquete H, sólo por el stream). */
+        plan?: TarjetaDePlan | null;
         /** El proceso largo que anunció el stream antes del `done` (`proceso_iniciado`). */
         procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
@@ -1247,7 +1250,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // barra del Centro de procesos arranca con la respuesta.
       const ejecucion = conElProcesoDelStream(resp.ejecucion ?? null, resp.procesoIniciado ?? null);
       const ensayo = resp.ensayo === true;
-      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo;
+      // La tarjeta del plan (24-09, paquete H): varias acciones, una confirmación.
+      const plan = resp.plan ?? null;
+      const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
       if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
         setConversations((prev) =>
           prev.map((c) =>
@@ -1270,6 +1275,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(formulario ? { formulario } : {}),
                           ...(ejecucion ? { ejecucion } : {}),
                           ...(ensayo ? { ensayo } : {}),
+                          ...(plan ? { plan } : {}),
                         }
                       : m
                   ),
@@ -1390,6 +1396,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       formulario: FormularioEnElHilo | null;
       ejecucion: TarjetaDeEjecucion | null;
       ensayo: boolean;
+      plan: TarjetaDePlan | null;
       procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
     }> => {
@@ -1416,6 +1423,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           formulario?: FormularioEnElHilo | null;
           ejecucion?: TarjetaDeEjecucion | null;
           ensayo?: boolean;
+          plan?: TarjetaDePlan | null;
           camino?: string;
         } | null;
         snapshot: ChatSnapshot | null;
@@ -1656,6 +1664,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               formulario: f.formulario,
               ejecucion: f.ejecucion,
               ensayo: f.ensayo,
+              plan: f.plan,
               ...(f.camino ? { camino: f.camino } : {}),
             };
           },
@@ -1703,6 +1712,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // La tarjeta del ejecutor y el proceso que anunció el stream (24-09).
         ejecucion: final?.ejecucion ?? null,
         ensayo: final?.ensayo === true,
+        // La tarjeta del plan (24-09, paquete H).
+        plan: final?.plan ?? null,
         procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
       };

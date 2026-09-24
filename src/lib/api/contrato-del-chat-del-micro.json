@@ -1,6 +1,6 @@
 {
   "_comentario": "Generado por scripts/contrato-del-chat-del-micro.mjs desde el openapi-snapshot.json del micro. No editar a mano: regenerar.",
-  "sacadoDe": "micro@4a2291c6/openapi-snapshot.json",
+  "sacadoDe": "micro@fd26f8b3/openapi-snapshot.json",
   "cuando": "2026-09-24",
   "rutas": {
     "POST /api/agency/{agencyId}/ai-hub/chat/senales": {
@@ -653,6 +653,9 @@
                           "propuestaId": {
                             "type": "string"
                           },
+                          "planId": {
+                            "type": "string"
+                          },
                           "entidad": {
                             "type": "object",
                             "properties": {
@@ -757,6 +760,9 @@
                             "type": "string"
                           },
                           "propuestaId": {
+                            "type": "string"
+                          },
+                          "planId": {
                             "type": "string"
                           },
                           "entidad": {
@@ -888,6 +894,9 @@
                             "type": "string"
                           },
                           "propuestaId": {
+                            "type": "string"
+                          },
+                          "planId": {
                             "type": "string"
                           },
                           "entidad": {
@@ -1380,6 +1389,9 @@
                             "propuestaId": {
                               "type": "string"
                             },
+                            "planId": {
+                              "type": "string"
+                            },
                             "entidad": {
                               "type": "object",
                               "properties": {
@@ -1484,6 +1496,9 @@
                               "type": "string"
                             },
                             "propuestaId": {
+                              "type": "string"
+                            },
+                            "planId": {
                               "type": "string"
                             },
                             "entidad": {
@@ -1615,6 +1630,9 @@
                               "type": "string"
                             },
                             "propuestaId": {
+                              "type": "string"
+                            },
+                            "planId": {
                               "type": "string"
                             },
                             "entidad": {
@@ -2094,6 +2112,9 @@
                             "propuestaId": {
                               "type": "string"
                             },
+                            "planId": {
+                              "type": "string"
+                            },
                             "entidad": {
                               "type": "object",
                               "properties": {
@@ -2198,6 +2219,9 @@
                               "type": "string"
                             },
                             "propuestaId": {
+                              "type": "string"
+                            },
+                            "planId": {
                               "type": "string"
                             },
                             "entidad": {
@@ -2331,6 +2355,9 @@
                             "propuestaId": {
                               "type": "string"
                             },
+                            "planId": {
+                              "type": "string"
+                            },
                             "entidad": {
                               "type": "object",
                               "properties": {
@@ -2393,6 +2420,568 @@
         },
         "ensayo": {
           "type": "boolean"
+        },
+        "plan": {
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "enum": [
+                    "plan"
+                  ]
+                },
+                "planId": {
+                  "type": "string"
+                },
+                "titulo": {
+                  "type": "string"
+                },
+                "cita": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": [
+                    "propuesto",
+                    "ejecutando",
+                    "hecho",
+                    "detenido",
+                    "cancelado",
+                    "vencido"
+                  ]
+                },
+                "modo": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "copiloto",
+                    "automatico"
+                  ]
+                },
+                "pregunta": {
+                  "type": "string"
+                },
+                "porQue": {
+                  "type": "string"
+                },
+                "venceEn": {
+                  "type": "string"
+                },
+                "pasos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "n": {
+                        "type": "integer"
+                      },
+                      "accion": {
+                        "type": "string"
+                      },
+                      "titulo": {
+                        "type": "string"
+                      },
+                      "frase": {
+                        "type": "string"
+                      },
+                      "riesgo": {
+                        "type": "object",
+                        "properties": {
+                          "muevePlata": {
+                            "type": "boolean"
+                          },
+                          "escribeATerceros": {
+                            "type": "boolean"
+                          },
+                          "irreversible": {
+                            "type": "boolean"
+                          },
+                          "masiva": {
+                            "type": "boolean"
+                          },
+                          "fiscal": {
+                            "type": "boolean"
+                          },
+                          "dobleControl": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "paso": {
+                                "type": "string",
+                                "enum": [
+                                  "propone",
+                                  "aprueba"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "paso"
+                            ]
+                          },
+                          "proceso": {
+                            "type": "boolean"
+                          },
+                          "tope": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "agenteDueno": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "muevePlata",
+                          "escribeATerceros",
+                          "irreversible",
+                          "masiva",
+                          "fiscal",
+                          "dobleControl",
+                          "proceso",
+                          "tope",
+                          "agenteDueno"
+                        ]
+                      },
+                      "estado": {
+                        "type": "string",
+                        "enum": [
+                          "pendiente",
+                          "hecho",
+                          "fallido",
+                          "en_curso",
+                          "omitido"
+                        ]
+                      },
+                      "resumen": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "ejecucionId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "deshacer": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "etiqueta": {
+                            "type": "string"
+                          },
+                          "intencion": {
+                            "type": "object",
+                            "properties": {
+                              "accion": {
+                                "type": "string"
+                              },
+                              "propuestaId": {
+                                "type": "string"
+                              },
+                              "planId": {
+                                "type": "string"
+                              },
+                              "entidad": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "id"
+                                ]
+                              },
+                              "datos": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "accion"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "etiqueta",
+                          "intencion"
+                        ]
+                      },
+                      "campos": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "clave": {
+                              "type": "string"
+                            },
+                            "etiqueta": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "moneda",
+                                "fecha",
+                                "mes",
+                                "numero",
+                                "texto",
+                                "texto_largo",
+                                "opcion"
+                              ]
+                            },
+                            "requerido": {
+                              "type": "boolean"
+                            },
+                            "opciones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "valor": {
+                                    "type": "string"
+                                  },
+                                  "etiqueta": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "valor",
+                                  "etiqueta"
+                                ]
+                              }
+                            },
+                            "ayuda": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "valor": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "clave",
+                            "etiqueta",
+                            "tipo",
+                            "requerido",
+                            "opciones",
+                            "ayuda",
+                            "valor"
+                          ]
+                        }
+                      },
+                      "dependeDe": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "n",
+                      "accion",
+                      "titulo",
+                      "frase",
+                      "riesgo",
+                      "estado",
+                      "resumen",
+                      "ejecucionId",
+                      "deshacer",
+                      "campos",
+                      "dependeDe"
+                    ]
+                  }
+                },
+                "seDetieneAntesDe": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "n": {
+                      "type": "integer"
+                    },
+                    "que": {
+                      "type": "string"
+                    },
+                    "porQue": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "n",
+                    "que",
+                    "porQue"
+                  ]
+                },
+                "detenido": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "n": {
+                      "type": "integer"
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "fallo",
+                        "en_curso",
+                        "doble_control",
+                        "faltan_datos",
+                        "horario",
+                        "no_disponible",
+                        "referencia"
+                      ]
+                    },
+                    "porQue": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "n",
+                    "tipo",
+                    "porQue"
+                  ]
+                },
+                "hacerTodo": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "etiqueta": {
+                      "type": "string"
+                    },
+                    "intencion": {
+                      "type": "object",
+                      "properties": {
+                        "accion": {
+                          "type": "string"
+                        },
+                        "propuestaId": {
+                          "type": "string"
+                        },
+                        "planId": {
+                          "type": "string"
+                        },
+                        "entidad": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "id"
+                          ]
+                        },
+                        "datos": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "accion"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "etiqueta",
+                    "intencion"
+                  ]
+                },
+                "cancelar": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "etiqueta": {
+                      "type": "string"
+                    },
+                    "intencion": {
+                      "type": "object",
+                      "properties": {
+                        "accion": {
+                          "type": "string"
+                        },
+                        "propuestaId": {
+                          "type": "string"
+                        },
+                        "planId": {
+                          "type": "string"
+                        },
+                        "entidad": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "id"
+                          ]
+                        },
+                        "datos": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "accion"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "etiqueta",
+                    "intencion"
+                  ]
+                },
+                "seguir": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "etiqueta": {
+                      "type": "string"
+                    },
+                    "intencion": {
+                      "type": "object",
+                      "properties": {
+                        "accion": {
+                          "type": "string"
+                        },
+                        "propuestaId": {
+                          "type": "string"
+                        },
+                        "planId": {
+                          "type": "string"
+                        },
+                        "entidad": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "id"
+                          ]
+                        },
+                        "datos": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "accion"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "etiqueta",
+                    "intencion"
+                  ]
+                },
+                "ensayo": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "tipo",
+                "planId",
+                "titulo",
+                "cita",
+                "estado",
+                "modo",
+                "pregunta",
+                "porQue",
+                "venceEn",
+                "pasos",
+                "seDetieneAntesDe",
+                "detenido",
+                "hacerTodo",
+                "cancelar",
+                "seguir",
+                "ensayo"
+              ]
+            },
+            {
+              "type": [
+                "object",
+                "null"
+              ]
+            }
+          ]
         }
       },
       "required": [

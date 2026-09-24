@@ -546,6 +546,9 @@
           "propuestaId": {
             "type": "string"
           },
+          "planId": {
+            "type": "string"
+          },
           "entidad": {
             "type": "object",
             "properties": {
@@ -848,6 +851,338 @@
           }
         }
       },
+      "AiHubChatCampoDelPlan": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "etiqueta": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "moneda",
+              "fecha",
+              "mes",
+              "numero",
+              "texto",
+              "texto_largo",
+              "opcion"
+            ]
+          },
+          "requerido": {
+            "type": "boolean"
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "valor": {
+                  "type": "string"
+                },
+                "etiqueta": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "valor",
+                "etiqueta"
+              ]
+            }
+          },
+          "ayuda": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "clave",
+          "etiqueta",
+          "tipo",
+          "requerido",
+          "opciones",
+          "ayuda",
+          "valor"
+        ]
+      },
+      "AiHubChatPasoDelPlan": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "accion": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "frase": {
+            "type": "string"
+          },
+          "riesgo": {
+            "$ref": "#/components/schemas/AiHubChatRiesgoDeLaAccion"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "pendiente",
+              "hecho",
+              "fallido",
+              "en_curso",
+              "omitido"
+            ]
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ejecucionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deshacer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatCampoDelPlan"
+            }
+          },
+          "dependeDe": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "n",
+          "accion",
+          "titulo",
+          "frase",
+          "riesgo",
+          "estado",
+          "resumen",
+          "ejecucionId",
+          "deshacer",
+          "campos",
+          "dependeDe"
+        ]
+      },
+      "AiHubChatTarjetaPlan": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "plan"
+            ]
+          },
+          "planId": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cita": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "propuesto",
+              "ejecutando",
+              "hecho",
+              "detenido",
+              "cancelado",
+              "vencido"
+            ]
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "copiloto",
+              "automatico"
+            ]
+          },
+          "pregunta": {
+            "type": "string"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "venceEn": {
+            "type": "string"
+          },
+          "pasos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubChatPasoDelPlan"
+            }
+          },
+          "seDetieneAntesDe": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "n": {
+                "type": "integer"
+              },
+              "que": {
+                "type": "string"
+              },
+              "porQue": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "n",
+              "que",
+              "porQue"
+            ]
+          },
+          "detenido": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "n": {
+                "type": "integer"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "fallo",
+                  "en_curso",
+                  "doble_control",
+                  "faltan_datos",
+                  "horario",
+                  "no_disponible",
+                  "referencia"
+                ]
+              },
+              "porQue": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "n",
+              "tipo",
+              "porQue"
+            ]
+          },
+          "hacerTodo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "cancelar": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "seguir": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "etiqueta": {
+                "type": "string"
+              },
+              "intencion": {
+                "$ref": "#/components/schemas/AiHubChatIntencionDelBoton"
+              }
+            },
+            "required": [
+              "etiqueta",
+              "intencion"
+            ]
+          },
+          "ensayo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tipo",
+          "planId",
+          "titulo",
+          "cita",
+          "estado",
+          "modo",
+          "pregunta",
+          "porQue",
+          "venceEn",
+          "pasos",
+          "seDetieneAntesDe",
+          "detenido",
+          "hacerTodo",
+          "cancelar",
+          "seguir",
+          "ensayo"
+        ]
+      },
       "AiHubChatEventoProcesoIniciado": {
         "type": "object",
         "properties": {
@@ -904,6 +1239,19 @@
           },
           "ensayo": {
             "type": "boolean"
+          },
+          "plan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AiHubChatTarjetaPlan"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [

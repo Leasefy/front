@@ -11234,6 +11234,8 @@
       "copyError": "No pude copiar. Selecciona el texto y usa Cmd+C.",
       "regenerate": "Volver a generar",
       "regenerating": "Generando de nuevo…",
+      "reintentar": "Reintentar",
+      "reintentando": "Reintentando…",
       "busy": "Espera a que termine la respuesta en curso.",
       "like": "Respuesta útil",
       "dislike": "Respuesta poco útil",

@@ -11200,6 +11200,8 @@
       "copyError": "Couldn't copy. Select the text and press Cmd+C.",
       "regenerate": "Regenerate",
       "regenerating": "Generating again…",
+      "reintentar": "Retry",
+      "reintentando": "Retrying…",
       "busy": "Wait for the current response to finish.",
       "like": "Helpful response",
       "dislike": "Unhelpful response",

@@ -279,6 +279,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           <RespuestaConForma
                             bloques={message.bloques}
                             entidades={message.entidades}
+                            turnoId={message.turnoId}
                             className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las
@@ -332,6 +333,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           <RespuestaConForma
                             bloques={message.bloques}
                             entidades={message.entidades}
+                            turnoId={message.turnoId}
                             className="animate-in fade-in duration-300 motion-reduce:animate-none"
                           />
                           {/* La tarjeta se quedaba SIN pulgares: justo las

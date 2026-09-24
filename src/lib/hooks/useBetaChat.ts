@@ -2,6 +2,12 @@
 
 import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
 import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
+import {
+  crearTestigoDeTurnos,
+  mandarSenal,
+  mandarSenalEnUnMomento,
+  type TestigoDeTurnos,
+} from '@/lib/chat/senales';
 import { formatCurrency } from '@/lib/format';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
@@ -19,6 +25,7 @@ import type {
   ActionProposal,
   ChatSnapshot,
   TurnStep,
+  Reintentable,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
@@ -26,6 +33,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import {
   postChatTurn,
   streamChatTurn,
+  leerReintentable,
   fetchBriefing,
   isAgentConfigured,
   suggestedActionToResponseAction,
@@ -385,6 +393,13 @@ export interface UseBetaChatReturn {
    */
   confirmarAccionDelMensaje: (messageId: string) => Promise<void>;
   cancelarAccionDelMensaje: (messageId: string) => Promise<void>;
+
+  /**
+   * Señal para el cerebro del micro: la persona abrió o tocó una tarjeta de
+   * la respuesta (o «Ver las N filas»). `turnoId` es el del mensaje; sin él no
+   * sale nada. Fuego y olvido: nunca frena ni rompe el chat.
+   */
+  anotarTarjetaAbierta: (turnoId: string | undefined, entidad?: { tipo: string; id: string }) => void;
 }
 
 // ============================================================================
@@ -623,6 +638,78 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // Active conversation messages
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const messages = activeConversation?.messages ?? [];
+
+  // ── Señales de la pantalla para el cerebro (23-09) ───────────────────────
+  // Lo que sólo ve el front (tarjeta abierta, abandono) sale por
+  // `src/lib/chat/senales.ts`, fuego y olvido. El testigo recuerda, de los
+  // turnos de ESTA sesión, cuándo llegaron y si se tocaron; los refs dejan leer
+  // la conversación actual desde `pagehide` y desde el desmontaje, que no ven
+  // el estado de React.
+  const [testigo] = useState<TestigoDeTurnos>(() => crearTestigoDeTurnos());
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
+  const activeConversationIdRef = useRef(activeConversationId);
+  activeConversationIdRef.current = activeConversationId;
+  const agencyIdRef = useRef(agencyId);
+  agencyIdRef.current = agencyId;
+
+  /**
+   * Si irse ahora de esta conversación deja su último turno abandonado (sin
+   * terminar, o sin mirarlo), se lo cuenta al cerebro. Se llama ANTES de
+   * cambiar/crear/borrar la conversación, al cerrar la pestaña y al salir del
+   * chat. Nunca frena nada: la señal sale sola. Se DECIDE ahora (con lo que
+   * se ve ahora); se MANDA ya sólo si la pestaña se está cerrando, y si no,
+   * dentro de un momento, para no llegarle al micro antes que el turno.
+   */
+  const anotarAbandonoDe = useCallback(
+    (conversationId: string | null, seCierraLaPestana = false) => {
+      if (!conversationId) return;
+      const conv = conversationsRef.current.find((c) => c.id === conversationId);
+      const ultimo = conv ? [...conv.messages].reverse().find((m) => m.role === 'assistant') : undefined;
+      if (!ultimo?.turnoId || !testigo.esAbandono(ultimo)) return;
+      const senal = { turnoId: ultimo.turnoId, tipo: 'abandono' as const };
+      if (seCierraLaPestana) mandarSenal(agencyIdRef.current, senal);
+      else mandarSenalEnUnMomento(agencyIdRef.current, senal);
+    },
+    [testigo]
+  );
+
+  /**
+   * La persona abrió o tocó una tarjeta de la respuesta (o «Ver las N filas»).
+   * Sin `turnoId` (mensaje viejo o micro viejo) no hay a quién contárselo.
+   */
+  const anotarTarjetaAbierta = useCallback(
+    (turnoId: string | undefined, entidad?: { tipo: string; id: string }) => {
+      if (!turnoId) return;
+      testigo.tocado(turnoId);
+      mandarSenal(agencyIdRef.current, {
+        turnoId,
+        tipo: 'tarjeta_abierta',
+        ...(entidad ? { entidad: { tipo: entidad.tipo, id: entidad.id } } : {}),
+      });
+    },
+    [testigo]
+  );
+
+  // Cerrar la pestaña, recargar o irse a otra página: `pagehide` es el último
+  // evento fiable (y el abandono sale con `keepalive`). Salir del chat a otra
+  // pantalla del panel lo desmonta: también cuenta. Volver a la pestaña marca
+  // como vistas las respuestas que llegaron mientras estaba oculta.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const alCerrar = () => anotarAbandonoDe(activeConversationIdRef.current, true);
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') testigo.aLaVista();
+    };
+    window.addEventListener('pagehide', alCerrar);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      window.removeEventListener('pagehide', alCerrar);
+      document.removeEventListener('visibilitychange', alVolver);
+      // Salir del chat a otra pantalla: la página sigue viva.
+      anotarAbandonoDe(activeConversationIdRef.current);
+    };
+  }, [anotarAbandonoDe, testigo]);
 
   /**
    * 🔴 Controlador del turno EN VUELO.
@@ -1043,6 +1130,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         /** La parte con forma del `done` (sólo por el stream). */
         bloques?: BloqueDeRespuesta[];
         entidades?: EntidadDelChat[];
+        /** El id del turno en el cerebro del micro (`done` o respuesta del POST). */
+        turnoId?: string;
+        /**
+         * Una consulta del turno falló y vale reintentar. Llega ya leído por
+         * el stream; por el POST, crudo (se lee con la misma función).
+         */
+        reintentable?: unknown;
       },
       assistantId: string,
       conversationId: string,
@@ -1055,10 +1149,18 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Lo mismo con la parte con FORMA (tablas, cifras, entidades): va al
       // mensaje ANTES de que termine de escribirse, para que el texto sepa ya
       // desde el primer cuadro que su tabla la pinta Cadence (y no la teclee).
+      //
+      // Y el `turnoId`: desde este momento las tarjetas, el 👍/👎 y el abandono
+      // ya saben de qué turno hablan.
       const snapshot = resp.snapshot ?? null;
       const bloques = resp.bloques ?? [];
       const entidades = resp.entidades ?? [];
-      if (snapshot || bloques.length > 0 || entidades.length > 0) {
+      const turnoId = typeof resp.turnoId === 'string' && resp.turnoId ? resp.turnoId : null;
+      if (turnoId) testigo.llego(turnoId);
+      // «No pude consultar… intenta de nuevo»: con esto la respuesta lleva un
+      // «Reintentar» a la vista (pedido de Nico, 23-09: «no hay un reintentar»).
+      const reintentable = leerReintentable(resp.reintentable);
+      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1072,6 +1174,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(snapshot ? { snapshot } : {}),
                           ...(bloques.length > 0 ? { bloques } : {}),
                           ...(entidades.length > 0 ? { entidades } : {}),
+                          ...(turnoId ? { turnoId } : {}),
+                          ...(reintentable ? { reintentable } : {}),
                         }
                       : m
                   ),
@@ -1152,7 +1256,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         startStreaming(assistantId, fullText, conversationId);
       }
     },
-    [startStreaming, driveAgentBlock, attachResponseMeta]
+    [startStreaming, driveAgentBlock, attachResponseMeta, testigo]
   );
 
   // ========================================================================
@@ -1180,6 +1284,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       liveBlock: AgentActivityBlock | null;
       bloques: BloqueDeRespuesta[];
       entidades: EntidadDelChat[];
+      turnoId?: string;
+      reintentable?: Reintentable;
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1196,6 +1302,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           dispatches: BackendDispatch[];
           bloques?: BloqueDeRespuesta[];
           entidades?: EntidadDelChat[];
+          turnoId?: string;
+          reintentable?: Reintentable;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
@@ -1417,6 +1525,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               dispatches: f.dispatches,
               bloques: f.bloques,
               entidades: f.entidades,
+              ...(f.turnoId ? { turnoId: f.turnoId } : {}),
+              ...(f.reintentable ? { reintentable: f.reintentable } : {}),
             };
           },
           onError: (message, meta) => {
@@ -1452,6 +1562,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         // `done`: si el stream se cortó antes, queda el texto, que es el respaldo.
         bloques: final?.bloques ?? [],
         entidades: final?.entidades ?? [],
+        // El id del turno en el cerebro: sólo lo trae el `done`.
+        ...(final?.turnoId ? { turnoId: final.turnoId } : {}),
+        ...(final?.reintentable ? { reintentable: final.reintentable } : {}),
       };
     },
     [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
@@ -1671,6 +1784,16 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const texto = conv.messages[u].content;
       if (!texto.trim()) return;
 
+      // Rehacer (el ↻ o «Reintentar») es dejar ESA respuesta sin usar: se le
+      // cuenta al cerebro con su turno. La ruta de señales no tiene un tipo
+      // «reintento» (acepta `tarjeta_abierta`, `accion_deshecha`, `abandono`):
+      // el más cercano es `abandono`. Además el micro, solo, anota la misma
+      // pregunta repetida como `reformulacion` del turno anterior.
+      const descartada = conv.messages[idx];
+      if (descartada.turnoId) {
+        mandarSenalEnUnMomento(agencyId, { turnoId: descartada.turnoId, tipo: 'abandono' });
+      }
+
       const conversationId = activeConversationId;
       setConversations((prev) =>
         prev.map((c) =>
@@ -1681,7 +1804,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       );
       regeneracionPendienteRef.current = texto;
     },
-    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations]
+    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations, agencyId]
   );
 
   /**
@@ -1755,7 +1878,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         const r = await enviarFeedbackDeChat({
           agencyId,
           feedback: {
-            turnId: messageId,
+            // 🔴 El `turnoId` del servidor cuando lo hay (23-09): con él el
+            // cerebro asocia el pulgar EXACTO a su turno. Con el id del
+            // mensaje del front lo buscaba por el texto de la pregunta, y dos
+            // preguntas iguales en 72 horas se confundían. La ruta lo llama
+            // `turnId`; una llave `turnoId` el micro la borraría en silencio.
+            turnId: respuesta.turnoId ?? messageId,
             pregunta,
             respuesta: respuesta.content,
             veredicto: rating,
@@ -1799,6 +1927,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const createConversation = useCallback(() => {
+    // La que se deja: si su último turno quedó sin terminar o sin mirar, es un
+    // abandono (se mira ANTES de cortar el turno, que lo dejaría a medias).
+    anotarAbandonoDe(activeConversationIdRef.current);
     // Stop any in-flight streaming or agent execution
     clearTimeouts();
     setIsThinking(false);
@@ -1812,11 +1943,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     const newConv = createEmptyConversation();
     setConversations((prev) => [newConv, ...prev]);
     setActiveConversationId(newConv.id);
-  }, [clearTimeouts, abortarTurnoEnCurso]);
+  }, [clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]);
 
   const switchConversation = useCallback(
     (id: string) => {
       if (id === activeConversationId) return;
+      anotarAbandonoDe(activeConversationId);
       // Stop streaming/agents if switching mid-stream
       clearTimeouts();
       setIsThinking(false);
@@ -1830,11 +1962,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // Switch to conversations tab so the user sees the conversation
       onTabChangeRef.current?.('conversations');
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
   );
 
   const deleteConversation = useCallback(
     (id: string) => {
+      // Borrar la conversación abierta también es irse de ella.
+      if (id === activeConversationId) anotarAbandonoDe(id);
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.id !== id);
         // If deleting the active conversation, switch to first remaining or create new
@@ -1858,7 +1992,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       abortarTurnoEnCurso();
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
   );
 
   // ========================================================================
@@ -2279,5 +2413,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     // Acciones que el chat propone y el operador confirma (esto SÍ ejecuta)
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
+
+    // Señales de la pantalla para el cerebro (23-09)
+    anotarTarjetaAbierta,
   };
 }

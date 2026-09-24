@@ -48,10 +48,16 @@ import {
 export function RespuestaConForma({
   bloques,
   entidades,
+  turnoId,
   className,
 }: {
   bloques?: BloqueDeRespuesta[];
   entidades?: EntidadDelChat[];
+  /**
+   * El turno del micro al que pertenece esta respuesta: con él, abrir una
+   * tarjeta o la tabla se le cuenta al cerebro de la inmobiliaria.
+   */
+  turnoId?: string;
   className?: string;
 }) {
   const lista = bloques ?? [];
@@ -75,7 +81,7 @@ export function RespuestaConForma({
   return (
     <div className={cn('space-y-3', className)} data-testid="respuesta-con-forma">
       {personas.map((e) => (
-        <TarjetaDeEntidad key={`${e.tipo}-${e.id}`} entidad={e} />
+        <TarjetaDeEntidad key={`${e.tipo}-${e.id}`} entidad={e} turnoId={turnoId} />
       ))}
       {metricas.length > 0 && (
         <ChatDataCard
@@ -89,7 +95,7 @@ export function RespuestaConForma({
       )}
       {resto.map((b, i) =>
         b.tipo === 'tabla' ? (
-          <BloqueTabla key={`t-${i}`} bloque={b} />
+          <BloqueTabla key={`t-${i}`} bloque={b} turnoId={turnoId} />
         ) : b.tipo === 'aviso' ? (
           <Callout
             key={`a-${i}`}
@@ -175,8 +181,15 @@ function Estado({ valor }: { valor: string }) {
  */
 export const FILAS_A_LA_VISTA = 8;
 
-function BloqueTabla({ bloque }: { bloque: Extract<BloqueDeRespuesta, { tipo: 'tabla' }> }) {
+function BloqueTabla({
+  bloque,
+  turnoId,
+}: {
+  bloque: Extract<BloqueDeRespuesta, { tipo: 'tabla' }>;
+  turnoId?: string;
+}) {
   const { t } = useI18n();
+  const { anotarTarjetaAbierta } = useBetaChatContext();
   const [todas, setTodas] = useState(false);
   const viajaron = bloque.filas.length;
   const filas = todas ? bloque.filas : bloque.filas.slice(0, FILAS_A_LA_VISTA);
@@ -246,7 +259,12 @@ function BloqueTabla({ bloque }: { bloque: Extract<BloqueDeRespuesta, { tipo: 't
           variant="ghost"
           hideArrow
           aria-expanded={todas}
-          onClick={() => setTodas((v) => !v)}
+          onClick={() => {
+            // Abrir las filas es usar la respuesta (señal para el cerebro);
+            // volver a cerrarlas no dice nada nuevo.
+            if (!todas) anotarTarjetaAbierta(turnoId);
+            setTodas((v) => !v);
+          }}
         >
           {todas
             ? t('beta.forma.verMenos')
@@ -275,9 +293,9 @@ export function semaforoDelContrato(c: ContratoDeEntidad): {
   return { clave: 'beta.forma.semaforo.alDia', tono: 'success' };
 }
 
-export function TarjetaDeEntidad({ entidad }: { entidad: EntidadDelChat }) {
+export function TarjetaDeEntidad({ entidad, turnoId }: { entidad: EntidadDelChat; turnoId?: string }) {
   const { t } = useI18n();
-  const { sendMessage, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
+  const { sendMessage, isThinking, isStreaming, isAgentsRunning, anotarTarjetaAbierta } = useBetaChatContext();
   const ocupado = isThinking || isStreaming || isAgentsRunning;
 
   const vigente = entidad.contratos.find((c) => c.vigente) ?? null;
@@ -292,6 +310,12 @@ export function TarjetaDeEntidad({ entidad }: { entidad: EntidadDelChat }) {
 
   return (
     <ChatEntityCard
+      // Un clic en la tarjeta —en su cuerpo o en «Estado de cuenta» /
+      // «Preparar renovación», que burbujean hasta acá— dice CUÁL de los
+      // resultados era el que buscaba: el cerebro aprende así los apodos.
+      // Sólo escucha; no es un control (los controles son los botones). Viaja
+      // tipo + id, nunca el nombre ni el documento.
+      onClick={() => anotarTarjetaAbierta(turnoId, { tipo: entidad.tipo, id: entidad.id })}
       eyebrow={papeles}
       status={semaforo ? <StatusBadge tone={semaforo.tono}>{t(semaforo.clave, semaforo.vars)}</StatusBadge> : undefined}
       actions={

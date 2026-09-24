@@ -19,6 +19,7 @@ const { contexto } = vi.hoisted(() => ({
     sendMessage: vi.fn(),
     regenerateResponse: vi.fn(),
     rateMessage: vi.fn(async () => true),
+    anotarTarjetaAbierta: vi.fn(),
     isThinking: false,
     isStreaming: false,
     isAgentsRunning: false,
@@ -44,6 +45,7 @@ let root: Root;
 
 beforeEach(() => {
   contexto.sendMessage.mockReset();
+  contexto.anotarTarjetaAbierta.mockReset();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -77,6 +79,35 @@ const TABLA: Extract<BloqueDeRespuesta, { tipo: 'tabla' }> = {
   })),
   total: 29,
   truncada: true,
+};
+
+const JUAN: EntidadDelChat = {
+  tipo: 'inquilino',
+  id: 'p-1',
+  titulo: 'Juan Camilo López',
+  motivo: 'nombre',
+  documento: '1020304050',
+  telefono: '3001234567',
+  correo: null,
+  totalContratos: 2,
+  otrosRoles: [],
+  contratos: [
+    {
+      id: 'c-1',
+      codigo: 101,
+      estado: 'ACTIVE',
+      vigente: true,
+      inquilino: 'Juan Camilo López',
+      inicio: '2025-11-01',
+      fin: '2026-10-31',
+      canonCop: 2_500_000,
+      diasParaVencer: 38,
+      inmueble: { id: 'i-1', codigo: 7, titulo: 'Apto 301', direccion: 'Cra 7 # 45-10', ciudad: 'Bogotá' },
+      propietarios: [{ id: 'o-1', nombre: 'Marta Gómez' }],
+      renovacion: null,
+      cartera: { estado: 'ok', deudaTotalCop: 0, carteraCop: 0, porVencerCop: 0, diasDeMoraMaximo: 0 },
+    },
+  ],
 };
 
 describe('RespuestaConForma', () => {
@@ -127,35 +158,7 @@ describe('RespuestaConForma', () => {
   });
 
   it('una persona es una tarjeta de entidad: contrato, inmueble, propietario y cartera, con la acción que toca', () => {
-    const juan: EntidadDelChat = {
-      tipo: 'inquilino',
-      id: 'p-1',
-      titulo: 'Juan Camilo López',
-      motivo: 'nombre',
-      documento: '1020304050',
-      telefono: '3001234567',
-      correo: null,
-      totalContratos: 2,
-      otrosRoles: [],
-      contratos: [
-        {
-          id: 'c-1',
-          codigo: 101,
-          estado: 'ACTIVE',
-          vigente: true,
-          inquilino: 'Juan Camilo López',
-          inicio: '2025-11-01',
-          fin: '2026-10-31',
-          canonCop: 2_500_000,
-          diasParaVencer: 38,
-          inmueble: { id: 'i-1', codigo: 7, titulo: 'Apto 301', direccion: 'Cra 7 # 45-10', ciudad: 'Bogotá' },
-          propietarios: [{ id: 'o-1', nombre: 'Marta Gómez' }],
-          renovacion: null,
-          cartera: { estado: 'ok', deudaTotalCop: 0, carteraCop: 0, porVencerCop: 0, diasDeMoraMaximo: 0 },
-        },
-      ],
-    };
-    pintar(<RespuestaConForma entidades={[juan]} />);
+    pintar(<RespuestaConForma entidades={[JUAN]} />);
     const texto = container.textContent!;
     expect(texto).toContain('Inquilino');
     expect(texto).toContain('Juan Camilo López');
@@ -183,6 +186,59 @@ describe('RespuestaConForma', () => {
   it('sin nada con forma no pinta nada', () => {
     pintar(<RespuestaConForma bloques={[]} entidades={[]} />);
     expect(container.innerHTML).toBe('');
+  });
+});
+
+/**
+ * Cerebro de la inmobiliaria (23-09): abrir una tarjeta, tocar sus botones o
+ * abrir «Ver las N filas» le dice al micro CUÁL resultado servía. Sale con el
+ * `turnoId` del mensaje (lo manda el hook, fuego y olvido).
+ */
+describe('las señales para el cerebro', () => {
+  const TURNO = '3f2b8c1e-9d4a-4f6b-8e2a-1c5d7e9f0a3b';
+  const boton = (texto: string) => [...container.querySelectorAll('button')].find((b) => b.textContent === texto)!;
+
+  it.each(['Preparar renovación', 'Estado de cuenta'])(
+    '«%s» cuenta como tarjeta abierta, con el turno y sólo tipo + id de la entidad',
+    (texto) => {
+      pintar(<RespuestaConForma entidades={[JUAN]} turnoId={TURNO} />);
+      act(() => boton(texto).click());
+      expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO, { tipo: 'inquilino', id: 'p-1' });
+      // Y el botón sigue haciendo lo suyo.
+      expect(contexto.sendMessage).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('un clic en el cuerpo de la tarjeta también', () => {
+    pintar(<RespuestaConForma entidades={[JUAN]} turnoId={TURNO} />);
+    const nombre = [...container.querySelectorAll('p')].find((p) => p.textContent === 'Juan Camilo López')!;
+    act(() => nombre.click());
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO, { tipo: 'inquilino', id: 'p-1' });
+    expect(contexto.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('«Ver las N filas» cuenta al abrirse (sin entidad), no al cerrarse', () => {
+    pintar(<RespuestaConForma bloques={[TABLA]} turnoId={TURNO} />);
+    act(() => boton('Ver las 12 filas').click());
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledTimes(1);
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO);
+    act(() => boton('Ver menos').click());
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledTimes(1);
+  });
+
+  it('la burbuja le pasa a la tabla el turno de SU mensaje', () => {
+    const conTurno: ChatMessage = {
+      id: 'a-9',
+      role: 'assistant',
+      content: 'Tienes 29 contratos que vencen en octubre.',
+      timestamp: new Date(),
+      status: 'complete',
+      bloques: [TABLA],
+      turnoId: TURNO,
+    };
+    pintar(<AssistantBubble message={conTurno} />);
+    act(() => boton('Ver las 12 filas').click());
+    expect(contexto.anotarTarjetaAbierta).toHaveBeenCalledWith(TURNO);
   });
 });
 

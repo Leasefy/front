@@ -116,6 +116,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
               <RespuestaConForma
                 bloques={message.bloques}
                 entidades={message.entidades}
+                turnoId={message.turnoId}
                 className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
               />
             )}

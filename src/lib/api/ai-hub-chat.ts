@@ -26,6 +26,7 @@ import type {
   ResponseAction,
   DailyBriefing,
   BriefingSection,
+  Reintentable,
 } from '@/lib/types/beta-chat';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub-chat[-stream]) ──────
@@ -140,6 +141,13 @@ export interface BackendChatResponse {
    * Opcional porque un agente viejo no las manda.
    */
   accionesPropuestas?: BackendAccionPropuesta[];
+  /**
+   * El id de este turno en el cerebro del micro (23-09). Opcional porque un
+   * micro viejo no lo manda; sin él no salen las señales de la pantalla.
+   */
+  turnoId?: string;
+  /** Una consulta del turno falló y vale reintentar (ver `leerReintentable`). */
+  reintentable?: unknown;
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -262,6 +270,20 @@ export function dispatchToAgentExecution(
   };
 }
 
+/**
+ * `reintentable` del `done` (contrato fijo con el micro, 23-09): la consulta
+ * del turno no respondió (`motivo`: tiempo/red/servidor; `que`:
+ * busqueda/cartera/ficha/cifras) y vale la pena volver a preguntar. Vale
+ * cualquier objeto con los dos textos; lo demás es «no llegó» → `null`, y la
+ * respuesta no lleva el botón. Nunca se deduce del texto de la respuesta.
+ */
+export function leerReintentable(v: unknown): Reintentable | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const { motivo, que } = v as Record<string, unknown>;
+  if (typeof motivo !== 'string' || !motivo || typeof que !== 'string' || !que) return null;
+  return { motivo, que };
+}
+
 // ── SSE parsing (pure, testable) ──────────────────────────────────────────────
 
 export interface ChatStreamHandlers {
@@ -311,6 +333,10 @@ export interface ChatStreamHandlers {
     bloques: BloqueDeRespuesta[];
     /** Las tarjetas de la búsqueda en la plataforma. */
     entidades: EntidadDelChat[];
+    /** El id del turno en el cerebro del micro. Falta con un micro viejo. */
+    turnoId?: string;
+    /** Una consulta del turno falló y vale reintentar. Falta con un micro viejo. */
+    reintentable?: Reintentable;
   }) => void;
   /**
    * Un fallo ANUNCIADO dentro del stream (evento `error`).
@@ -445,7 +471,8 @@ export function handleSSEEvent(
       }
       break;
     }
-    case 'done':
+    case 'done': {
+      const reintentable = leerReintentable(obj.reintentable);
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
         suggestedActions: (obj.suggestedActions as BackendSuggestedAction[]) ?? [],
@@ -453,8 +480,11 @@ export function handleSSEEvent(
         generatedAt: String(obj.generatedAt ?? ''),
         bloques: leerBloques(obj.bloques),
         entidades: leerEntidades(obj.entidades),
+        ...(typeof obj.turnoId === 'string' && obj.turnoId ? { turnoId: obj.turnoId } : {}),
+        ...(reintentable ? { reintentable } : {}),
       });
       break;
+    }
     case 'error':
       handlers.onError?.(String(obj.error ?? 'stream error'), {
         ...(typeof obj.status === 'number' ? { status: obj.status } : {}),

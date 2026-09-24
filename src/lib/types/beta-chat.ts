@@ -285,6 +285,17 @@ export interface AccionEnHilo {
   error?: string | null;
 }
 
+/**
+ * Por qué y qué consulta del turno falló, tal como lo dice el micro en el
+ * `done`. Valores del contrato: `motivo` = 'tiempo' | 'red' | 'servidor';
+ * `que` = 'busqueda' | 'cartera' | 'ficha' | 'cifras'. Se guardan como texto:
+ * el botón no depende del valor, y uno nuevo del micro no debe esconderlo.
+ */
+export interface Reintentable {
+  motivo: string;
+  que: string;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -315,6 +326,22 @@ export interface ChatMessage {
    */
   bloques?: import('@/lib/chat/bloques').BloqueDeRespuesta[];
   entidades?: import('@/lib/chat/bloques').EntidadDelChat[];
+  /**
+   * El id de ESTE turno en el cerebro del micro (23-09), acuñado por el
+   * servidor: llega en el `done` del stream y en la respuesta del POST. Con él
+   * viajan las señales que sólo ve la pantalla (`src/lib/chat/senales.ts`) y
+   * el 👍/👎, que así se asocian EXACTO al turno en vez de buscarlo por el
+   * texto de la pregunta. Falta en los mensajes de antes del 23-09 y con un
+   * micro viejo: entonces no sale ninguna señal.
+   */
+  turnoId?: string;
+  /**
+   * El micro NO PUDO hacer una consulta de este turno y vale la pena volver a
+   * preguntar (contrato fijo con el micro, 23-09: llega en el `done`). Con él
+   * la respuesta lleva un botón «Reintentar» a la vista. Sin él no se pinta
+   * nada: el front no adivina fallos leyendo el texto.
+   */
+  reintentable?: Reintentable;
   /**
    * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
    *

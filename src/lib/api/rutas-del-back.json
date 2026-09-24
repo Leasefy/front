@@ -1,8 +1,8 @@
 {
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
-  "cuando": "2026-09-23",
-  "cuantas": 1131,
+  "cuando": "2026-09-24",
+  "cuantas": 1132,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -510,6 +510,7 @@
     "GET /inmobiliaria/wompi-pagos/lotes/:id",
     "GET /insurance/tiers",
     "GET /insurance/tiers/:tier",
+    "GET /internal/cartera/resumen",
     "GET /internal/cobros/:id",
     "GET /internal/conciliacion-bancaria/foto",
     "GET /internal/conciliacion-bancaria/movimientos/:id",

@@ -50,6 +50,7 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
 }));
 
 import { CastigoDeCartera } from './CastigoDeCartera';
+import { AuthContext } from '@/lib/auth/auth-context';
 import { contratosConCartera } from './ProponerCastigo';
 import type { CarteraItem } from '@/lib/types/inmobiliaria';
 
@@ -219,6 +220,59 @@ describe('la pantalla de cartera castigada', () => {
     await clic($('[data-testid="firmar-castigo"]'));
     expect(toastMock.success).toHaveBeenCalledWith(
       'Castigada. Sale de la cartera activa y de la cobranza.',
+    );
+  });
+
+  /*
+   * P-4 aclarado (Nico, 24-09): lo que propone el administrador vuelve del
+   * back ya castigado, con su firma por los dos lados. La pantalla lo LEE de
+   * las firmas (la misma persona en los dos lados), no lo adivina.
+   */
+  it('🔴 P-4: un castigo firmado por la misma persona en los dos lados lo dice', async () => {
+    const SOLO = { ...CASTIGADO, id: 'cas-3', admin: FIRMA('Ana Díaz'), contador: FIRMA('Ana Díaz') };
+    api.listar.mockResolvedValue(LISTA([SOLO]));
+    await montar();
+    expect($('[data-testid="castigo-p4"]').textContent).toBe(
+      'Lo castigó una sola persona, como administrador (P-4)',
+    );
+  });
+
+  it('🔴 P-4: a quien lo castigó solo le dice «castigado por ti como administrador»', async () => {
+    const SOLO = { ...CASTIGADO, id: 'cas-3', admin: FIRMA('Ana Díaz'), contador: FIRMA('Ana Díaz') };
+    api.listar.mockResolvedValue(LISTA([SOLO]));
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root!.render(
+        <AuthContext.Provider value={{ user: { id: 'u-Ana Díaz' } } as never}>
+          <CastigoDeCartera />
+        </AuthContext.Provider>,
+      );
+    });
+    await esperar();
+    await esperar();
+    expect($('[data-testid="castigo-p4"]').textContent).toBe('Castigado por ti como administrador (P-4)');
+  });
+
+  it('dos personas distintas: sin nota de P-4', async () => {
+    await montar();
+    expect(hay('[data-testid="castigo-p4"]')).toBe(false);
+  });
+
+  it('🔴 P-4: el administrador que lo propuso firma y queda castigado de una: el aviso lo dice', async () => {
+    permisos.isAdmin = true;
+    permisos.agencyRole = 'ADMIN';
+    api.firmar.mockResolvedValue({
+      ...PROPUESTO,
+      estado: 'CASTIGADA',
+      admin: FIRMA('Carla Paz'),
+      contador: FIRMA('Carla Paz'),
+    });
+    await montar();
+    await clic($('[data-testid="firmar-castigo"]'));
+    expect(toastMock.success).toHaveBeenCalledWith(
+      'Lo castigó una sola persona, como administrador (P-4). Sale de la cartera activa y de la cobranza.',
     );
   });
 

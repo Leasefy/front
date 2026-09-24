@@ -32,8 +32,9 @@ vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: { id: usuarioActual, email: 'x@x.co' } }),
 }));
 
+let soyAdmin = false;
 vi.mock('@/lib/hooks/usePermissions', () => ({
-  usePermissions: () => ({ canAccess: () => true, isAdmin: false, isLoading: false, agencyRole: 'admin' }),
+  usePermissions: () => ({ canAccess: () => true, isAdmin: soyAdmin, isLoading: false, agencyRole: 'admin' }),
 }));
 
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
@@ -178,6 +179,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   usuarioActual = 'u-otro';
+  soyAdmin = false;
   guardar.mockReset();
   vi.mocked(procesosApi.listar).mockResolvedValue({
     disponible: true,
@@ -438,6 +440,106 @@ describe('<DetalleDelLote> — aprobación', () => {
     expect(resultado).toContain('PIN para todos los lotes');
     expect(resultado).toContain('Vale hasta');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Esperando aprobación');
+  });
+});
+
+/**
+ * P-4 aclarado (Nico, 24-09): «si quien propone es ADMINISTRADOR, no se le
+ * pide que se confirme a sí mismo». El lote que él arma vuelve del back ya
+ * aprobado: acá no se le muestra un «Aprobar» apagado ni un «pendiente de
+ * aprobación» que nunca llega.
+ */
+describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo', () => {
+  it('🔴 el lote que armó y quedó aprobado dice «Aprobado por ti como administrador (P-4)», sin nada apagado', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+
+    const nota = container.querySelector('[data-testid="aprobado-por-la-misma-persona"]');
+    expect(nota?.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(nota?.textContent).toContain('sin código');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
+    expect(acciones()).toEqual(['Generar archivo', 'Anular']);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+    expect(container.textContent).toContain('Como administrador, en el mismo paso (P-4)');
+  });
+
+  it('otra persona que lo mira lo lee sin «ti»', async () => {
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+    expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')?.textContent).toContain(
+      'Lo armó y lo aprobó la misma persona (P-4)',
+    );
+  });
+
+  it('aprobado por OTRA persona: ninguna nota de P-4', async () => {
+    await render(
+      vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-otro', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
+    );
+    expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')).toBeNull();
+  });
+
+  it('🔴 un borrador suyo (de antes de la regla): el botón dice «Aprobar» y lo aprueba en un paso, sin código', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote()));
+    expect(acciones()).toEqual(['Aprobar', 'Anular']);
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeTruthy();
+    vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockResolvedValue({
+      lote: lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
+      exigeCodigo: false,
+      motivoDelCodigo: null,
+      expiraAt: null,
+      enviadoA: [],
+      mismoPaso: {
+        aprobadoEnElMismoPaso: true,
+        porQueNo: null,
+        nota: 'Aprobado por ti como administrador (P-4): quedó aprobado en el mismo paso en que lo armaste, sin código.',
+      },
+    });
+
+    await clic('Aprobar');
+    const dialogo = document.body.querySelector('[data-testid="dialogo-pedir-aprobacion"]');
+    expect(dialogo?.textContent).toContain('Aprobar el lote');
+    expect(dialogo?.textContent).toContain('sin código');
+    await clicEnDialogo('dialogo-pedir-aprobacion', 'Aprobar');
+
+    expect(lotesDeDispersionApi.solicitarAprobacion).toHaveBeenCalledWith(ID);
+    const resultado = document.body.querySelector('[data-testid="resultado-de-aprobacion"]')?.textContent ?? '';
+    expect(resultado).toContain('Aprobado por ti como administrador (P-4)');
+    expect(resultado).not.toContain('Le llegó a');
+    expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
+  });
+
+  it('🔴 un lote suyo esperando con código: «Aprobar» prendido y SIN pedirle el código', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
+    vi.mocked(lotesDeDispersionApi.aprobar).mockResolvedValue(
+      lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' }),
+    );
+
+    expect(boton('Aprobar').disabled).toBe(false);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+    // No hay código que reenviar: a él no le sale uno.
+    expect(acciones()).not.toContain('Volver a mandar el código');
+
+    await clic('Aprobar');
+    expect(document.body.querySelector('[data-testid="codigo-de-aprobacion"]')).toBeNull();
+    await clicEnDialogo('dialogo-aprobar', 'Aprobar');
+    expect(lotesDeDispersionApi.aprobar).toHaveBeenCalledWith(ID, undefined);
+  });
+
+  it('quien armó y NO es administrador: como hoy, «Aprobar» apagado', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = false;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION' })));
+    expect(boton('Aprobar').disabled).toBe(true);
+    expect(container.textContent).toContain('Tú armaste este lote');
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
   });
 });
 

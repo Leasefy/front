@@ -105,6 +105,7 @@ import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
+import { APROBADO_POR_TI, notaDelLote } from '@/lib/doble-control/el-administrador';
 import { useI18n } from '@/lib/i18n';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
@@ -207,12 +208,20 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   const armarLote = async () => {
     setArmando(true);
     try {
-      await gastosApi.lotes.crear({
+      const armado = await gastosApi.lotes.crear({
         concepto: conceptoDelLote.trim(),
         egresoIds: marcados.map((e) => e.id),
       });
+      const cuantos = `${marcados.length} ${marcados.length === 1 ? 'egreso' : 'egresos'}`;
+      /*
+       * 🔴 P-4 aclarado (Nico, 24-09): lo que arma el ADMINISTRADOR vuelve del
+       * back ya aprobado por él. No se le dice «lo tiene que aprobar otra
+       * persona» ni se le deja un pendiente que nunca llega.
+       */
       toast.success(
-        `Lote armado con ${marcados.length} ${marcados.length === 1 ? 'egreso' : 'egresos'}. Lo tiene que aprobar otra persona.`,
+        armado?.estado === 'APROBADO'
+          ? `Lote armado y aprobado con ${cuantos}. ${APROBADO_POR_TI}: sin código y en el mismo paso. Ya se puede bajar el archivo para el banco.`
+          : `Lote armado con ${cuantos}. Lo tiene que aprobar otra persona.`,
       );
       setElegidos(new Set());
       setConceptoDelLote('');
@@ -406,7 +415,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
               {parte === 'egresos'
                 ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
-                : 'Un lote se arma, lo aprueba otra persona, sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso: P-4), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
             </p>
           </div>
 
@@ -600,7 +609,11 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 monto={marcados.length > 0 ? <Monto valor={totalDelLote(marcados)} /> : null}
                 onQuitar={() => setElegidos(new Set())}
                 ocupado={armando}
-                cuandoNoHayNada="Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona."
+                cuandoNoHayNada={
+                  escritura.esAdministrador
+                    ? 'Marca los egresos pendientes que van juntos al banco. Como eres administrador, el lote queda aprobado al armarlo, sin código (P-4).'
+                    : 'Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona.'
+                }
                 nota={
                   pendientesSinDatos.length > 0 ? (
                     <p className="max-w-xl text-caption text-warning" data-testid="pendientes-sin-datos">
@@ -659,7 +672,13 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           ) : (
             <ul className="space-y-4">
               {lotes.map((lote) => {
-                const permisos = permisosDelLote(lote, escritura.usuarioId);
+                const permisos = permisosDelLote(
+                  lote,
+                  escritura.usuarioId,
+                  escritura.esAdministrador === true,
+                );
+                const notaP4 =
+                  lote.estado === 'APROBADO' ? notaDelLote(lote, escritura.usuarioId) : null;
                 const sinFirma = escritura.puede ? null : escritura.motivo;
                 const pendientesDeConciliar = sinConciliar(lote.egresos ?? []);
                 return (
@@ -702,6 +721,15 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                         {NOMBRE_DEL_ESTADO_DEL_LOTE[lote.estado]}
                       </Badge>
                     </div>
+
+                    {notaP4 ? (
+                      <Nota testId={`aprobado-por-la-misma-persona-${lote.id}`}>
+                        <p>
+                          <span className="font-medium text-fg">{notaP4.titulo}.</span>{' '}
+                          {notaP4.detalle}
+                        </p>
+                      </Nota>
+                    ) : null}
 
                     {pendientesDeConciliar > 0 ? (
                       <Nota testId={`sin-conciliar-${lote.id}`}>

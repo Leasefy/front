@@ -23,6 +23,11 @@
  * su motivo) Y DESPUÉS si el 409 llega igual —porque la sesión puede no saber
  * quién armó el lote si el back no manda `creadoPorUserId`—. Las dos cosas: la
  * primera es cortesía, la segunda es la que nunca miente.
+ *
+ * 🔴 P-4 aclarado (Nico, 24-09): «si quien propone es ADMINISTRADOR, no se le
+ * pide que se confirme a sí mismo». El lote que arma el administrador ya
+ * vuelve del back APROBADO por él; y si quedó un borrador suyo de antes, el
+ * back se lo deja aprobar, así que a él no se le apaga el botón.
  */
 
 import type {
@@ -93,6 +98,8 @@ export function permisosDelLote(
     'estado' | 'cantidad' | 'creadoPorUserId' | 'pagadoAt' | 'formatoArchivo'
   >,
   usuarioId?: string | null,
+  /** P-4: quien mira es administrador (lo suyo lo aprueba él, en un paso). */
+  esAdministrador = false,
 ): Record<AccionDelLote, Permiso> {
   const estado = lote.estado;
 
@@ -123,9 +130,9 @@ export function permisosDelLote(
            * SABEN las dos partes: si falta alguna, se deja intentar y el 409
            * del back es la autoridad.
            */
-          usuarioId && lote.creadoPorUserId && usuarioId === lote.creadoPorUserId
+          usuarioId && lote.creadoPorUserId && usuarioId === lote.creadoPorUserId && !esAdministrador
           ? no(
-              'Este lote lo armaste vos: lo tiene que aprobar otra persona. Es plata que sale del banco y la aprobación es la segunda firma.',
+              'Este lote lo armaste vos: lo tiene que aprobar otra persona. Es plata que sale del banco y la aprobación es la segunda firma. Sólo lo que arma un administrador queda aprobado por él mismo (P-4).',
             )
           : SI
       : no(`Este lote ${EN_ESTADO[estado]}.`);

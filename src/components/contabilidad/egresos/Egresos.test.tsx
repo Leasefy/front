@@ -47,7 +47,12 @@ const { gastos, escrituraMock, cambioMock, toastMock } = vi.hoisted(() => ({
       anular: vi.fn(),
     },
   },
-  escrituraMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
+  escrituraMock: {
+    puede: true,
+    motivo: null as string | null,
+    usuarioId: 'u-yo',
+    esAdministrador: false as boolean,
+  },
   // El permiso PUNTUAL de corregir un egreso (22-09), aparte de la escritura.
   cambioMock: { puede: true, motivo: null as string | null, usuarioId: 'u-yo' },
   toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
@@ -156,6 +161,7 @@ beforeEach(() => {
   escrituraMock.puede = true;
   escrituraMock.motivo = null;
   escrituraMock.usuarioId = 'u-yo';
+  escrituraMock.esAdministrador = false;
   cambioMock.puede = true;
   cambioMock.motivo = null;
 });
@@ -342,6 +348,77 @@ describe('🔴 la doble firma del lote', () => {
     const mensaje = toastMock.error.mock.calls.at(-1)![0] as string;
     expect(mensaje).toContain('segunda firma');
     expect(mensaje).toContain('CONTADOR');
+  });
+});
+
+/**
+ * P-4 aclarado (Nico, 24-09): «si quien propone es ADMINISTRADOR, no se le
+ * pide que se confirme a sí mismo». El lote de egresos que él arma vuelve del
+ * back APROBADO por él; un borrador suyo de antes no se le apaga.
+ */
+describe('🔴 P-4: el administrador no se confirma a sí mismo', () => {
+  it('al armar, si el back lo devuelve aprobado, lo dice: «armado y aprobado… por ti como administrador (P-4)»', async () => {
+    escrituraMock.esAdministrador = true;
+    gastos.lotes.crear.mockResolvedValue(
+      lote({ id: 'l2', estado: 'APROBADO', creadoPorUserId: 'u-yo', aprobadoPorUserId: 'u-yo', aprobadoAt: '2026-09-24T15:00:00.000Z' }),
+    );
+    await pintar();
+    expect(q('armar-lote-resumen')!.textContent).toContain('queda aprobado al armarlo');
+
+    await act(async () => {
+      (q('marcar-e1') as HTMLElement).click();
+    });
+    const campo = q('concepto-del-lote') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    await act(async () => {
+      setter?.call(campo, 'Proveedores de la quincena');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (q('crear-lote') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(gastos.lotes.crear).toHaveBeenCalledTimes(1);
+    const [mensaje] = toastMock.success.mock.calls.at(-1)!;
+    expect(mensaje).toContain('Lote armado y aprobado');
+    expect(mensaje).toContain('Aprobado por ti como administrador (P-4)');
+    expect(mensaje).not.toContain('Lo tiene que aprobar otra persona');
+  });
+
+  it('un lote aprobado por quien lo armó lleva la nota, y a quien lo mira le dice «por ti»', async () => {
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      lotes: [lote({ estado: 'APROBADO', creadoPorUserId: 'u-yo', aprobadoPorUserId: 'u-yo', aprobadoAt: '2026-09-24T15:00:00.000Z' })],
+    });
+    await pintar('lotes');
+    expect(q('aprobado-por-la-misma-persona-l1')!.textContent).toContain('Aprobado por ti como administrador (P-4)');
+  });
+
+  it('🔴 un borrador que el administrador armó (de antes de la regla): «Aprobar» prendido', async () => {
+    escrituraMock.esAdministrador = true;
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      lotes: [lote({ creadoPorUserId: 'u-yo' })],
+    });
+    await pintar('lotes');
+    expect((q('aprobar-l1') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('un lote aprobado por otra persona no lleva la nota', async () => {
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      lotes: [lote({ estado: 'APROBADO', creadoPorUserId: 'u-otro', aprobadoPorUserId: 'u-yo' })],
+    });
+    await pintar('lotes');
+    expect(q('aprobado-por-la-misma-persona-l1')).toBeNull();
   });
 });
 

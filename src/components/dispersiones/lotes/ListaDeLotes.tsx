@@ -66,6 +66,7 @@ import { useNombresDelEquipo } from './use-nombres-del-equipo';
 import { ElegirAQuienPagarle, type EleccionDelLote } from './ElegirAQuienPagarle';
 import { ElegirBancoDeOrigen, type EleccionDelBanco } from './ElegirBancoDeOrigen';
 import { useI18n } from '@/lib/i18n';
+import { APROBADO_POR_TI } from '@/lib/doble-control/el-administrador';
 
 type Filtro = 'todos' | 'en_curso' | 'PAGADO' | 'ANULADO';
 
@@ -423,6 +424,7 @@ function ArmarLoteDialog({
   });
   const [banco, setBanco] = useState<EleccionDelBanco>({ origen: null, listo: false });
   const { t } = useI18n();
+  const { isAdmin } = usePermissions();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -436,7 +438,7 @@ function ArmarLoteDialog({
     setEnviando(true);
     setError(null);
     try {
-      const { lote, excluidos, descubiertoCop, salieronEnUnArchivoAnulado } = await lotesDeDispersionApi.armar({
+      const { lote, excluidos, descubiertoCop, salieronEnUnArchivoAnulado, mismoPaso } = await lotesDeDispersionApi.armar({
         month: mes,
         // Lista vacía = el mes entero. El back rechaza un `[]` explícito
         // justamente para que «ninguno» y «todos» no sean el mismo cuerpo.
@@ -454,9 +456,24 @@ function ArmarLoteDialog({
       if (descubiertoCop > 0) {
         partes.push(`${formatCurrency(descubiertoCop)} salen de plata de la inmobiliaria`);
       }
-      toast.success(`Lote de ${nombreDelMes(mes)} armado`, {
-        description: `${partes.join(' · ')}.`,
-      });
+      /*
+       * 🔴 P-4 aclarado (Nico, 24-09): lo que arma el ADMINISTRADOR vuelve del
+       * back ya aprobado por él, sin código. Se dice aquí, no se le deja un
+       * «pendiente de aprobación» que nunca llega.
+       */
+      const aprobadoAlArmar = lote.estado === 'APROBADO';
+      toast.success(
+        aprobadoAlArmar
+          ? `Lote de ${nombreDelMes(mes)} armado y aprobado`
+          : `Lote de ${nombreDelMes(mes)} armado`,
+        {
+          description: aprobadoAlArmar
+            ? `${partes.join(' · ')}. ${APROBADO_POR_TI}: sin código y en el mismo paso.`
+            : `${partes.join(' · ')}.`,
+        },
+      );
+      // Administrador, pero la base todavía no lo admite: que no crea que quedó aprobado.
+      if (mismoPaso?.porQueNo === 'FALTA_LA_MIGRACION') toast.warning(mismoPaso.nota);
       // 🔴 Pagos que ya salieron en el archivo de un lote anulado (23-09): el
       // detalle del lote lo muestra con nombres; acá se avisa de una vez.
       const yaSalieron = salieronEnUnArchivoAnulado?.length ?? 0;
@@ -481,6 +498,8 @@ function ArmarLoteDialog({
           <DialogDescription>
             Elige desde qué banco giras, a quién le pagas y cuánto. Se congelan las dispersiones con los
             datos bancarios de hoy; todavía no se gira nada.
+            {isAdmin &&
+              ' Como eres administrador, queda aprobado al armarlo, sin código (P-4): en la bitácora queda que fuiste la misma persona.'}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-5 overflow-y-auto px-6 py-4 text-sm">

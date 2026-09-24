@@ -8,6 +8,8 @@
  * monto lo exige), se genera el archivo y alguien confirma que el banco pagó.
  */
 
+import type { MismoPaso } from '@/lib/doble-control/el-administrador';
+
 /** En qué punto está el lote. Es el enum `EstadoDelLote` del back. */
 export type EstadoDelLote =
   | 'BORRADOR'
@@ -366,6 +368,11 @@ export interface LoteArmado {
   salieronEnUnArchivoAnulado?: SalioEnUnArchivoAnulado[];
   /** El banco elegido. `null` sin la migración. */
   origen?: OrigenDelLote | null;
+  /**
+   * P-4 aclarado (24-09): el lote que arma un ADMINISTRADOR vuelve ya
+   * APROBADO por él (sin código). Opcional: back anterior.
+   */
+  mismoPaso?: MismoPaso;
 }
 
 /**
@@ -455,6 +462,12 @@ export interface SolicitudDeAprobacion {
   expiraAt: string | null;
   /** `con***@portofino.co`. */
   enviadoA: string[];
+  /**
+   * P-4 aclarado (24-09): si quien pide la aprobación es el administrador que
+   * armó el lote, queda APROBADO en este paso (sin código). Opcional: back
+   * anterior.
+   */
+  mismoPaso?: MismoPaso;
 }
 
 /**

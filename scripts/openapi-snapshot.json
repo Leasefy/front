@@ -3370,109 +3370,60 @@
             "example": 0.05
           },
           "wasiAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "datacreditoAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "transunionAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "certicamaraAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "alegraAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "wompiAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "boldAccountId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
           },
           "allowedPaymentPlans": {
             "type": "array",
@@ -3516,38 +3467,31 @@
             "example": "alegra_full"
           },
           "dailyReportThresholds": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "pkrPctAlertBelow": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 100
-                  },
-                  "indiceMorosidadPctAlertAbove": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 100
-                  },
-                  "complianceViolationsCriticalAtLeast": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "callsOutsideWindowCriticalAtLeast": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "additionalProperties": false
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "object",
+              "null"
             ],
+            "properties": {
+              "pkrPctAlertBelow": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "indiceMorosidadPctAlertAbove": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "complianceViolationsCriticalAtLeast": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "callsOutsideWindowCriticalAtLeast": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
             "example": {
               "pkrPctAlertBelow": 85
             }
@@ -3557,19 +3501,12 @@
             "example": false
           },
           "siniestroCanonesThreshold": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 12
-              },
-              {
-                "type": "null"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "integer",
+              "null"
             ],
+            "minimum": 1,
+            "maximum": 12,
             "example": 3
           }
         }
@@ -5459,7 +5396,8 @@
                 "type": "string"
               },
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"
@@ -5482,7 +5420,8 @@
                 "type": "string"
               },
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               }
             ]
           }
@@ -22340,7 +22279,8 @@
                 "type": "string"
               },
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               }
             ]
           },
@@ -22350,7 +22290,8 @@
                 "type": "string"
               },
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               }
             ]
           }

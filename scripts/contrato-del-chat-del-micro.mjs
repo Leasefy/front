@@ -69,6 +69,22 @@ const RUTAS = [
     archivo: 'src/server/routes/agency-ai-hub-chat.ts',
     camposDeLaRespuesta: ['turnoId'],
   },
+  // «¿Aprendo esto?» (24-09): el administrador decide qué aprende el chat.
+  {
+    metodo: 'get',
+    camino: '/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}',
+    archivo: 'src/server/routes/agency-ai-hub-chat-aprender.ts',
+    camposDeLaRespuesta: ['disponible', 'aprendizajes', 'motivo', 'leccionesEnUso'],
+  },
+  {
+    metodo: 'post',
+    camino: '/api/agency/{agencyId}/ai-hub/chat/aprender/{turnoId}',
+    archivo: 'src/server/routes/agency-ai-hub-chat-aprender.ts',
+    cuerpo: true,
+    // `estado` es nullable (`type: [string, null]` en 3.1) y el validador del
+    // contrato sólo entiende tipos simples: se extraen los que el front mira.
+    camposDeLaRespuesta: ['aplicado', 'motivo', 'leccionesEnUso'],
+  },
 ];
 
 let spec;

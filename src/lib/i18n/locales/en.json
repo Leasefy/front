@@ -11205,6 +11205,30 @@
       "endYes": "End",
       "endCancel": "Cancel"
     },
+    "cerebro": {
+      "boton": "Should I learn this?",
+      "ayuda": "Only you see this, as the administrator: decide what the chat learns from this answer.",
+      "titulo": "What I would learn from this answer",
+      "cargando": "Checking what can be learned…",
+      "error": "I couldn't check it. Try again.",
+      "reintentar": "Retry",
+      "errorGuardar": "I couldn't save it. Try again.",
+      "nada": "There is nothing to learn from this answer yet.",
+      "aprender": "Yes, learn it",
+      "descartar": "No",
+      "aprendido": "Learned",
+      "descartado": "Not learning it",
+      "aprendidoToast": "Done: I learned it",
+      "descartadoToast": "Done: I won't learn it",
+      "sinUso": "It was learned. Using what the chat learns is turned off in this installation: I'll take it into account once it is turned on.",
+      "cerrar": "Close",
+      "origen": {
+        "accion_deshecha": "From an action that was undone",
+        "ambiguedad": "From the card picked among several",
+        "definicion": "From what something is called here",
+        "apodo": "From a nickname used here"
+      }
+    },
     "actions": {
       "copy": "Copy response",
       "copied": "Response copied",

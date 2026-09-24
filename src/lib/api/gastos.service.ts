@@ -323,7 +323,7 @@ export function totalesQueNoCuadran(error: unknown): TotalesQueNoCuadran | null 
   return { totalDeLaFacturaCop, totalDeLasLineasCop, subtotalCop, ivaCop };
 }
 
-/** `AnularDto`: un solo campo. Un asiento no se borra, se reversa con motivo. */
+/** `GastoMotivoDto`: un solo campo. Un asiento no se borra, se reversa con motivo. */
 export const CLAVES_DE_ANULAR = ['motivo'] as const;
 
 // ── La liquidación, antes de escribir nada ─────────────────────────────────
@@ -734,7 +734,7 @@ export interface LoteNuevo {
   egresoIds: string[];
 }
 
-/** `MarcarPagadoDto`. */
+/** `MarcarLotePagadoDto`. */
 export const CLAVES_DE_PAGADO = ['fecha', 'referenciaBanco'] as const;
 
 export interface PagoDelLote {

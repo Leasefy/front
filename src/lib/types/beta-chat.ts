@@ -347,6 +347,12 @@ export interface ChatMessage {
    * Ver `src/lib/chat/tarjetas-de-ejecucion.ts`.
    */
   ejecucion?: import('@/lib/chat/tarjetas-de-ejecucion').TarjetaDeEjecucion;
+  /**
+   * (24-09, paquete H) La tarjeta del PLAN: varias acciones del registro
+   * pedidas en una frase, con UNA confirmación y el avance paso a paso. Ver
+   * `src/lib/chat/plan-del-chat.ts`.
+   */
+  plan?: import('@/lib/chat/plan-del-chat').TarjetaDePlan;
   /** El turno corrió en modo ensayo del servidor: nada se ejecutó ni se programó. */
   ensayo?: boolean;
   /**

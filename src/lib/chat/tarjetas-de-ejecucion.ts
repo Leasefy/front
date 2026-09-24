@@ -37,7 +37,10 @@
  */
 
 import {
+  ACCIONES_SOBRE_UN_PLAN,
+  datosDelPlan,
   leerEntidadDeLaIntencion,
+  type AccionSobreUnPlan,
   type IntencionDelChat,
   type ModoDelChat,
 } from '@/lib/chat/acciones-del-hilo';
@@ -200,6 +203,15 @@ export function leerIntencionDelBoton(v: unknown): IntencionDelChat | null {
     const propuestaId = texto(v.propuestaId);
     return propuestaId ? { accion, propuestaId } : null;
   }
+  // (24-09, paquete H) «Hacer todo», «No», «Seguir desde aquí» sobre un plan.
+  if ((ACCIONES_SOBRE_UN_PLAN as string[]).includes(accion)) {
+    const planId = texto(v.planId);
+    if (!planId) return null;
+    const datos = datosDelPlan(v.datos);
+    return Object.keys(datos).length > 0
+      ? { accion: accion as AccionSobreUnPlan, planId, datos }
+      : { accion: accion as AccionSobreUnPlan, planId };
+  }
   const entidad = leerEntidadDeLaIntencion(v.entidad);
   if (!entidad || !/^[a-z][a-z_]{1,59}$/.test(accion)) return null;
   const datos: Record<string, string | number> = {};
@@ -213,7 +225,7 @@ export function leerIntencionDelBoton(v: unknown): IntencionDelChat | null {
   return Object.keys(datos).length > 0 ? { accion, entidad, datos } : { accion, entidad };
 }
 
-function leerBoton(v: unknown): BotonDeLaTarjeta | null {
+export function leerBoton(v: unknown): BotonDeLaTarjeta | null {
   if (!esObjeto(v)) return null;
   const etiqueta = texto(v.etiqueta);
   const intencion = leerIntencionDelBoton(v.intencion ?? v.reintento);

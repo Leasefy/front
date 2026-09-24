@@ -11492,6 +11492,51 @@
           "codigoIncorrecto": "That code didn’t work. Try the next one.",
           "noPudeVerificar": "I couldn’t verify the code: {{motivo}}"
         }
+      },
+      "plan": {
+        "estado": {
+          "propuesto": "Waiting for your answer",
+          "contestado": "Answered",
+          "ejecutando": "In progress",
+          "hecho": "Done",
+          "detenido": "Stopped",
+          "cancelado": "Not done",
+          "vencido": "Expired"
+        },
+        "loQuePediste": "What you asked: “{{cita}}”",
+        "pasos": "Plan steps",
+        "paso": {
+          "estado": {
+            "pendiente": "Pending",
+            "hecho": "Done",
+            "fallido": "Failed",
+            "en_curso": "Still running",
+            "omitido": "Not needed"
+          },
+          "dependeDe": "Possible once step {{n}} is done.",
+          "pedisteDeshacer": "You asked to undo it: the answer is below."
+        },
+        "seDetieneAntesDe": "The plan stops before step {{n}} ({{que}}):",
+        "detenidoEn": "Stopped at step {{n}}:",
+        "hacerTodo": "Do it all",
+        "no": "No",
+        "noSeguir": "Don’t continue",
+        "reintentarDesde": "Retry from step {{n}}",
+        "seguirDesde": "Continue from step {{n}}",
+        "llenaLoQueFalta": "Fill in what’s missing in the steps to do it all.",
+        "yaRespondiste": {
+          "hacer_plan": "You said yes: progress is in the answer below.",
+          "cancelar_plan": "You said no.",
+          "seguir_plan": "You asked to continue: progress is in the answer below."
+        },
+        "vencido": "This plan expired: ask me again and I’ll build it with current data.",
+        "ensayo": "Dry run: the plan is complete, but nothing is saved or executed.",
+        "mensaje": {
+          "hacerTodo": "Yes, do it all",
+          "no": "No, don’t do the plan",
+          "seguir": "Continue from step {{n}}",
+          "noSeguir": "Don’t continue the plan"
+        }
       }
     }
   },

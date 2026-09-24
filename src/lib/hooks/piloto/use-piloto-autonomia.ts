@@ -31,7 +31,9 @@ import type { AgenteId } from '@/lib/api/work-item'
  * (2026-08-31) MÁS el chat del panel (P-1, 23-09-2026: «una sola perilla que
  * gobierna también el chat») MÁS los dueños de la operación del back
  * (contratos, facturación, propietarios: la perilla del micro los gobierna
- * desde el 23-09 — prórroga, factura del día, anticipo, extractos).
+ * desde el 23-09 — prórroga, factura del día, anticipo, extractos) MÁS
+ * Contabilidad (Nico, 24-09-2026: «agente Contabilidad en el Piloto, con su
+ * propio modo»: egresos, lote de egresos, causar facturas, el libro).
  */
 export type AgentePiloto =
   | AgenteId
@@ -44,6 +46,7 @@ export type AgentePiloto =
   | 'contratos'
   | 'facturacion'
   | 'propietarios'
+  | 'contabilidad'
 
 /** El orden del panel: primero los que actúan en el día a día, al final los que todavía no. */
 const ORDEN: AgentePiloto[] = [
@@ -53,6 +56,7 @@ const ORDEN: AgentePiloto[] = [
   'contratos',
   'facturacion',
   'propietarios',
+  'contabilidad',
   'pagos',
   'matching',
   'retencion',

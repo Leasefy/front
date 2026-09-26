@@ -32,6 +32,10 @@ export default function RecaudoPage() {
             <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/aseguradoras">
               Aseguradoras
             </Link>
+            {/* 26-09-2026: los inquilinos con cobro automático (sólo lectura). */}
+            <Link className="text-sm underline text-fg" href="/panel/inmobiliaria/pagos/recaudo/autopago">
+              Autopago
+            </Link>
           </div>
         </header>
         <Recaudo />

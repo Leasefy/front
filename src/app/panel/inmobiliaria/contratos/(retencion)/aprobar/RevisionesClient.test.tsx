@@ -49,8 +49,8 @@ const fila = (decisionType: string, payload: Record<string, unknown> = {}) => ({
   payload,
 })
 
-function render(decisiones: unknown[]) {
-  decisionesMock.mockReturnValue({ data: decisiones, isLoading: false, error: null, refetch: vi.fn() })
+function render(decisiones: unknown[], envioHabilitado: boolean | null = true) {
+  decisionesMock.mockReturnValue({ data: { decisiones, envioHabilitado }, isLoading: false, error: null, refetch: vi.fn() })
   act(() => root.render(<RevisionesClient />))
 }
 
@@ -74,6 +74,23 @@ describe('Por aprobar · Vinci', () => {
     expect(container.textContent).toContain('60/100: 70 días de mora (+40)')
     expect(container.querySelector('blockquote')?.textContent).toBe('Hola, Marta. Te escribimos de Inmobiliaria Horizonte.')
     expect([...container.querySelectorAll('button')].map((b) => b.textContent)).toContain('Enviar')
+  })
+
+  it('🔴 con el envío de Vinci apagado no hay «Enviar»: sólo «Ya lo contacté» (QA, 26-09)', () => {
+    render(
+      [
+        fila('mensaje_listo', {
+          nombre: 'Marta Gómez',
+          motivo: 'El envío de Vinci está apagado: el mensaje está listo para que se lo mandes tú; luego marca «Ya lo contacté».',
+          mensaje: { nombre: 'Marta Gómez', texto: 'Hola, Marta.' },
+        }),
+      ],
+      false,
+    )
+    const botones = [...container.querySelectorAll('button')].map((b) => b.textContent)
+    expect(botones).not.toContain('Enviar')
+    expect(botones).toContain('Ya lo contacté')
+    expect(container.textContent).toMatch(/envío de Vinci está apagado/)
   })
 
   it('una oferta que cuesta plata: sólo el administrador ve «Aprobar»', () => {

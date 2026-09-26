@@ -324,7 +324,8 @@ function Plan({ caso }: { caso: CasoDeVinci }) {
 }
 
 function Historial({ caseId }: { caseId: string }) {
-  const { data, error, isLoading, refetch } = useDecisionesDeVinci({ caseId, limit: 50 })
+  const { data: cola, error, isLoading, refetch } = useDecisionesDeVinci({ caseId, limit: 50 })
+  const data = cola?.decisiones
   return (
     <section aria-label="Lo que Vinci hizo" className="rounded-lg border border-border bg-surface p-5">
       <h2 className="text-base font-semibold text-fg">Lo que Vinci hizo</h2>

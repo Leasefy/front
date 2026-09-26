@@ -144,6 +144,16 @@ export interface MetricasDeVinci {
 export type ReviewOutcome = 'upheld' | 'overridden' | 'escalated';
 
 /** Una fila de la cola de Vinci (`GET /retencion/decisions`). */
+/**
+ * La cola de Vinci como la manda el agente: las decisiones (con el mensaje
+ * que saldría AHORA) y si la llave de envío está prendida. `null`: el agente
+ * no lo dijo (versión anterior); la pantalla no lo adivina.
+ */
+export interface ColaDeVinci {
+  decisiones: DecisionDeVinci[]
+  envioHabilitado: boolean | null
+}
+
 export interface DecisionDeVinci {
   id: string;
   caseId: string;

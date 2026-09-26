@@ -13569,6 +13569,7 @@ export interface components {
         };
         RetencionDecisionsList: {
             decisions: components["schemas"]["RetencionDecisionRow"][];
+            envioHabilitado?: boolean;
         };
         RetencionDecisionReviewResult: {
             decision: components["schemas"]["RetencionDecisionRow"];

@@ -11,6 +11,7 @@
  */
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import type {
+  ColaDeVinci,
   DecisionDeVinci,
   DetalleDeLaOferta,
   MetricasDeVinci,
@@ -110,14 +111,14 @@ export async function fetchDecisiones(
   agencyId: string,
   opts: { reviewableOnly?: boolean; caseId?: string; limit?: number } = {},
   signal?: AbortSignal,
-): Promise<DecisionDeVinci[]> {
+): Promise<ColaDeVinci> {
   const q = new URLSearchParams()
   if (opts.reviewableOnly) q.set('reviewableOnly', 'true')
   if (opts.caseId) q.set('caseId', opts.caseId)
   if (typeof opts.limit === 'number') q.set('limit', String(opts.limit))
   const qs = q.toString()
-  const r = await pedir<{ decisions: DecisionDeVinci[] }>(`${base(agencyId)}/decisions${qs ? `?${qs}` : ''}`, { signal })
-  return r.decisions
+  const r = await pedir<{ decisions: DecisionDeVinci[]; envioHabilitado?: boolean }>(`${base(agencyId)}/decisions${qs ? `?${qs}` : ''}`, { signal })
+  return { decisiones: r.decisions, envioHabilitado: typeof r.envioHabilitado === 'boolean' ? r.envioHabilitado : null }
 }
 
 export function revisarDecision(agencyId: string, decisionId: string, reviewOutcome: ReviewOutcome): Promise<unknown> {

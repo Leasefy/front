@@ -47,7 +47,7 @@ function porQue(d: DecisionDeVinci): string | null {
   return [puntaje, partes.join('; ')].filter(Boolean).join(': ') || null
 }
 
-function Fila({ d, onListo }: { d: DecisionDeVinci; onListo: () => Promise<void> }) {
+function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: boolean; onListo: () => Promise<void> }) {
   const { agency } = useAuth()
   const { isAdmin } = usePermissionsContext()
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -107,8 +107,9 @@ function Fila({ d, onListo }: { d: DecisionDeVinci; onListo: () => Promise<void>
     )
   } else if (d.decisionType === 'mensaje_listo') {
     titulo = `Mensaje de Vinci listo para ${nombreDe(d)}`
+    // Sin la llave de envío, «Enviar» no haría nada: sólo «Ya lo contacté».
     acciones =
-      p.sinContacto === true ? (
+      p.sinContacto === true || envioApagado ? (
         confirmar('Ya lo contacté')
       ) : (
         <div className="flex gap-2">
@@ -196,7 +197,8 @@ function Fila({ d, onListo }: { d: DecisionDeVinci; onListo: () => Promise<void>
 }
 
 export default function RevisionesClient() {
-  const { data, isLoading, error, refetch } = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
+  const { data: cola, isLoading, error, refetch } = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
+  const data = cola?.decisiones
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <header className="flex flex-col gap-1">
@@ -216,7 +218,7 @@ export default function RevisionesClient() {
       >
         <ul className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
           {(data ?? []).map((d) => (
-            <Fila key={d.id} d={d} onListo={refetch} />
+            <Fila key={d.id} d={d} envioApagado={cola?.envioHabilitado === false} onListo={refetch} />
           ))}
         </ul>
       </EstadoDeDatos>

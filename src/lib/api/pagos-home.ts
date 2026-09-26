@@ -23,13 +23,12 @@
  * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders + 404→notAvailable
  * pattern of `agent-workspace.ts`.
  *
- * ── 🔴 Quién lo usa hoy (2026-09-16) ───────────────────────────────────────
+ * ── 🔴 Quién lo usa hoy (2026-09-26) ───────────────────────────────────────
  *
- * `fetchPagosHome` lo consume la pantalla «Agente de pagos» de «Agentes IA»
- * (`/pagos/agente`, vía `useAgenteDePagos`): muestra el tablero del equipo SÓLO
- * cuando esto devuelve datos, y mientras devuelva `notAvailable` dice con
- * palabras que el tablero todavía no está publicado. Así se prende sola el día
- * que el micro publique estas rutas, sin tocar el front.
+ * Nadie. Lo consumía «Agente de pagos» (`/pagos/agente`) para un tablero que
+ * el micro nunca publicó; desde el 26-09 esa pantalla lee el resumen y los
+ * links de Payu del BACK (`lib/api/payu.service.ts`, rutas fijadas en
+ * `payu-api-front.md`).
  *
  * `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
  * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` siguen sin consumidor. No

@@ -10246,6 +10246,40 @@
       "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
       "anularAnulado": "This disbursement is already cancelled.",
       "anulado": "Disbursement cancelled. It is unpaid again."
+    },
+    "recaudo": {
+      "comparativa": {
+        "queEs": "the comparison with the previous month",
+        "fecha": "{{mes}} {{dia}}",
+        "vs": {
+          "cambio": "{{pct}} vs. {{fecha}}",
+          "igual": "Same as {{fecha}}",
+          "subio": "Up",
+          "bajo": "Down",
+          "sinComparacion": "No comparison with {{mes}}",
+          "noSePudoLeer": "Comparison with the previous month: could not be read",
+          "aEsaFecha": "On day {{dia}}: {{valor}}"
+        },
+        "diaADia": {
+          "titulo": "Day by day: {{mes}} vs. {{mesAnterior}}",
+          "descripcionEnCurso": "What came in through cash receipts, accumulated by day of the month. {{mesAnterior}} is shown in full; {{mes}}, up to today (day {{dia}}).",
+          "descripcionCerrado": "What came in through cash receipts, accumulated by day of the month, with both months in full.",
+          "resumen": "By day {{dia}} of {{mes}}, {{actual}} came in; by day {{diaAnterior}} of {{mesAnterior}}, {{anterior}} had come in.",
+          "sinRecibos": "No cash receipts in {{mes}} or {{mesAnterior}}: there are no lines to draw. Once a payment is recorded, it shows up here.",
+          "dia": "Day {{dia}}"
+        },
+        "proyeccion": {
+          "titulo": "Month-end projection",
+          "tituloCerrado": "Month close",
+          "sinDatos": "No data",
+          "formula": "Came in {{llego}} + still to fall due {{porVencer}} × {{tasa}} (what was paid within the month in {{meses}}) = {{cierre}}.",
+          "rango": "Between {{min}} and {{max}}: depending on the month, between {{peor}} and {{mejor}} of what fell due was paid.",
+          "historiaCorta": "With {{n}} of {{pedidos}} months of history: the others had no debt.",
+          "sinHistoria": "None of the previous {{pedidos}} months had debt, so there is no payment rate to measure and no projection.",
+          "sinHistoriaCifras": "So far {{llego}} came in and {{porVencer}} is still to fall due.",
+          "cerrado": "{{mes}} is closed: what came in is the close."
+        }
+      }
     }
   },
   "validation": {

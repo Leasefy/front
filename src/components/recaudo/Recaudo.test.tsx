@@ -9,20 +9,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 
-import type { ResumenDeRecaudo } from '@/lib/api/recaudo.types';
-import { mesActual, sumarMeses } from '@/lib/recaudo/meses';
+import type { ComparativaDelMes, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
+import { mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/meses';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const resumenMock = vi.fn();
 const serieMock = vi.fn();
+const comparativaMock = vi.fn();
 
 vi.mock('@/lib/api/recaudo.service', () => ({
   recaudoApi: {
     resumen: (...args: unknown[]) => resumenMock(...args),
     serie: (...args: unknown[]) => serieMock(...args),
+    comparativa: (...args: unknown[]) => comparativaMock(...args),
   },
+}));
+
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
+
+vi.mock('./GraficoDiaADia', () => ({
+  GraficoDiaADia: ({ dias }: { dias: unknown[] }) =>
+    React.createElement('div', { 'data-testid': 'grafico-dia-a-dia', 'data-dias': dias.length }),
 }));
 
 vi.mock('@/lib/api/refresco-de-datos', () => ({
@@ -71,6 +80,36 @@ function tasa(over: Partial<TasaDeRecaudo> = {}): TasaDeRecaudo {
 
 const HOY = mesActual();
 const ANTERIOR = sumarMeses(HOY, -1);
+
+/** Una comparativa del mes pedido: el back siempre contesta la del `month`. */
+function comparativaDe(month: string): ComparativaDelMes {
+  const sinCambio = (v: number) => ({ actualCop: v, anteriorCop: v, pct: 0 });
+  return {
+    month,
+    mesAnterior: sumarMeses(month, -1),
+    enCurso: month === HOY,
+    dia: 10,
+    diaDelMesAnterior: 10,
+    dias: [{ dia: 1, esteMesCop: 1_500_000, mesAnteriorCop: 750_000 }],
+    vsMesAnterior: {
+      seDebe: sinCambio(3_000_000),
+      llego: { actualCop: 1_500_000, anteriorCop: 750_000, pct: 100 },
+      falta: sinCambio(1_500_000),
+      salio: sinCambio(1_000_000),
+      queda: sinCambio(2_850_000),
+    },
+    proyeccion: {
+      estado: 'SIN_HISTORIA',
+      llegoCop: 1_500_000,
+      porVencerCop: 0,
+      tasa: null,
+      historia: [],
+      mesesPedidos: 3,
+      cierreCop: null,
+      rango: null,
+    },
+  };
+}
 
 function resumen(over: Partial<ResumenDeRecaudo> = {}): ResumenDeRecaudo {
   return {
@@ -157,6 +196,8 @@ async function clic(el: HTMLElement) {
 beforeEach(() => {
   resumenMock.mockReset();
   serieMock.mockReset();
+  comparativaMock.mockReset();
+  comparativaMock.mockImplementation((month: string) => Promise.resolve(comparativaDe(month)));
   serieMock.mockResolvedValue([
     { month: ANTERIOR, deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0, tasaDeRecaudo: tasa() },
     {
@@ -178,6 +219,37 @@ afterEach(async () => {
 });
 
 describe('Recaudo', () => {
+  it('cada cifra dice cómo va contra el mismo día del mes anterior', async () => {
+    resumenMock.mockResolvedValue(resumen());
+    await montar();
+
+    expect(comparativaMock).toHaveBeenCalledWith(HOY);
+    const mesAnterior = nombreDelMes(ANTERIOR).replace(/ de \d{4}$/, '');
+    expect($('[data-testid="vs-llego"]').textContent).toContain(`+100 % vs. el 10 de ${mesAnterior}`);
+    expect($('[data-testid="vs-se-debe"]').textContent).toBe(`Igual que el 10 de ${mesAnterior}`);
+    for (const id of ['se-debe', 'llego', 'pendiente', 'dispersado', 'disponible']) {
+      expect($(`[data-testid="cifra-${id}"]`).contains($(`[data-testid="vs-${id}"]`))).toBe(true);
+    }
+    expect($('[data-testid="grafico-dia-a-dia"]')).toBeTruthy();
+    expect($('[data-testid="proyeccion-cifra"]').textContent).toBe('Sin datos');
+  });
+
+  /** 🔴 La comparación falla sola: las cinco cifras siguen en pantalla. */
+  it('si la comparativa no se pudo leer, las cifras siguen y la comparación lo dice', async () => {
+    resumenMock.mockResolvedValue(resumen());
+    comparativaMock.mockRejectedValue(new Error('503 del back'));
+    await montar();
+
+    expect($('[data-testid="valor-llego"]').textContent).toBe('$ 1.500.000');
+    expect($('[data-testid="vs-llego"]').textContent).toBe(
+      'Comparación con el mes anterior: no se pudo leer',
+    );
+    expect($('[data-testid="fallo-de-carga"]').textContent).toContain(
+      'la comparación con el mes anterior',
+    );
+    expect(host.querySelector('[data-testid="proyeccion"]')).toBeNull();
+  });
+
   it('muestra las cinco cifras con su definición, los cobros emitidos y el detalle por medio', async () => {
     resumenMock.mockResolvedValue(resumen());
     await montar();

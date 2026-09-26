@@ -51,9 +51,18 @@
  *   - 🔴 Decir «nada que contar» sobre un mes que SÍ hace deber plata. Un mes
  *     sin cobros, sin recibos y sin giros pero con cuotas es un mes normal de
  *     la inmobiliaria migrada, no un mes vacío.
+ *
+ * ── La comparativa con el mes anterior (Nico, 2026-09-25) ───────────────────
+ *
+ * Debajo de cada cifra va el «% vs mes anterior» A LA MISMA FECHA (día N
+ * contra día N), y después de las cifras el recaudo día a día de los dos meses
+ * y la proyección del cierre. Todo sale de `GET …/recaudo/comparativa` por un
+ * hook APARTE (`useComparativaDelRecaudo`): si esa lectura falla, las cifras
+ * siguen y sólo la comparación dice «no se pudo leer». El detalle —qué nunca
+ * se muestra como «0 %» ni «$ 0»— está en `ComparativaDelMes.tsx`.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CaretLeft, CaretRight, Coins, Receipt } from '@phosphor-icons/react';
 
@@ -73,9 +82,11 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import type { PuntoDeLaSerie, ResumenDeRecaudo } from '@/lib/api/recaudo.types';
 import { formatCurrency } from '@/lib/format';
 import { useRecaudo } from '@/lib/hooks/use-recaudo';
+import { useComparativaDelRecaudo } from '@/lib/hooks/use-comparativa-del-recaudo';
 import { esFuturo, mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/meses';
 import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
+import { ComparativaDelMes, VsMesAnterior, type SentidoDeLaCifra } from './ComparativaDelMes';
 
 const formateadorDeNumero = new Intl.NumberFormat('es-CO');
 
@@ -161,6 +172,25 @@ export function serieParaLaTabla(serie: readonly PuntoDeLaSerie[]): PuntoDeLaSer
 export function Recaudo() {
   const [month, setMonth] = useState(() => mesActual());
   const { resumen, serie, cargando, error, recargar } = useRecaudo(month);
+  const comparativaDelMes = useComparativaDelRecaudo(month);
+  const { comparativa } = comparativaDelMes;
+  const falloLaComparativa = Boolean(comparativaDelMes.error) && !comparativaDelMes.cargando;
+  /** La línea «vs mes anterior» de una cifra. */
+  const vs = (
+    id: string,
+    cifra: 'seDebe' | 'llego' | 'falta' | 'salio' | 'queda',
+    sentido: SentidoDeLaCifra,
+    valorMostrado: number,
+  ) => (
+    <VsMesAnterior
+      id={id}
+      comparativa={comparativa}
+      cifra={cifra}
+      sentido={sentido}
+      fallo={falloLaComparativa}
+      valorMostrado={valorMostrado}
+    />
+  );
 
   const siguiente = sumarMeses(month, 1);
   const puedeAvanzar = !esFuturo(siguiente);
@@ -265,12 +295,14 @@ export function Recaudo() {
                 id="se-debe"
                 etiqueta="Se debe"
                 valor={resumen.deudaDelMesCop}
+                comparacion={vs('se-debe', 'seDebe', 'neutro', resumen.deudaDelMesCop)}
                 definicion={`Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`}
               />
               <Cifra
                 id="llego"
                 etiqueta="Llegó"
                 valor={resumen.recaudadoCop}
+                comparacion={vs('llego', 'llego', 'subirEsBueno', resumen.recaudadoCop)}
                 definicion={`Recibos de caja con fecha en el mes. ${formatCurrency(resumen.recaudadoDelMesCop)} son de cobros de este mes; el resto, de meses anteriores.`}
               />
               <Cifra
@@ -278,6 +310,7 @@ export function Recaudo() {
                 etiqueta="Pendiente"
                 valor={resumen.pendienteCop}
                 tono={resumen.pendienteCop > 0 ? 'warning' : undefined}
+                comparacion={vs('pendiente', 'falta', 'subirEsMalo', resumen.pendienteCop)}
                 /* 🔴 CUOTAS, no cobros. Con 0 cobros emitidos esta línea decía
                    «Saldo de los 0 cobros del mes sin pagar» encima de $1.251
                    millones. Y la cartera se cuenta aparte porque no es lo
@@ -289,6 +322,7 @@ export function Recaudo() {
                 id="dispersado"
                 etiqueta="Dispersado"
                 valor={resumen.dispersadoCop}
+                comparacion={vs('dispersado', 'salio', 'neutro', resumen.dispersadoCop)}
                 definicion={`Lotes pagados y giros uno a uno con fecha en el mes. La inmobiliaria se quedó ${formatCurrency(resumen.comisionesCop)} de comisión.`}
               />
               <Cifra
@@ -296,6 +330,7 @@ export function Recaudo() {
                 etiqueta="Disponible"
                 valor={resumen.disponibleCop}
                 tono={resumen.disponibleCop < 0 ? 'danger' : undefined}
+                comparacion={vs('disponible', 'queda', 'neutro', resumen.disponibleCop)}
                 definicion={
                   resumen.disponibleCop < 0
                     ? 'Recaudado menos dispersado y comisiones, acumulado al cierre del mes. Negativo: se giró plata que nunca pasó por un recibo de caja.'
@@ -331,6 +366,17 @@ export function Recaudo() {
                 </span>
               )}
             </p>
+
+            {/* 🔴 Este mes contra el anterior (Nico, 25-09): el día a día y la
+                proyección del cierre. Va pegado a las cifras porque las explica;
+                su propio estado de carga/fallo no toca el resto. */}
+            <ComparativaDelMes
+              month={month}
+              comparativa={comparativa}
+              cargando={comparativaDelMes.cargando}
+              error={comparativaDelMes.error}
+              onReintentar={() => void comparativaDelMes.recargar()}
+            />
 
             {/* El gráfico sí lleva su nombre: es un gráfico, no una tabla. */}
             <section
@@ -516,12 +562,15 @@ function Cifra({
   valor,
   definicion,
   tono,
+  comparacion,
 }: {
   id: string;
   etiqueta: string;
   valor: number;
   definicion: string;
   tono?: 'warning' | 'danger';
+  /** La línea «vs mes anterior», a la misma fecha. */
+  comparacion?: ReactNode;
 }) {
   return (
     <section
@@ -539,6 +588,7 @@ function Cifra({
       >
         {formatCurrency(valor)}
       </p>
+      {comparacion}
       <p className="text-xs leading-relaxed text-fg-muted">{definicion}</p>
     </section>
   );

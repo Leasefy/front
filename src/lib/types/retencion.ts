@@ -124,6 +124,9 @@ export interface UmbralDeVinci {
   umbral: number;
   umbralPorDefecto: number;
   topeDescuentoComisionPct: number;
+  /** Frecuencia (Nico, 26-09): 1 mensaje cada 7 días al inquilino y cada 15 al propietario, por defecto. */
+  diasEntreMensajesInquilino: number;
+  diasEntreMensajesPropietario: number;
   guardable: boolean;
   actualizadaEn: string | null;
 }

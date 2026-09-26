@@ -68,7 +68,12 @@ export function fetchUmbral(agencyId: string, signal?: AbortSignal): Promise<Umb
 
 export function guardarUmbral(
   agencyId: string,
-  cambio: { umbral?: number; topeDescuentoComisionPct?: number },
+  cambio: {
+    umbral?: number
+    topeDescuentoComisionPct?: number
+    diasEntreMensajesInquilino?: number
+    diasEntreMensajesPropietario?: number
+  },
 ): Promise<UmbralDeVinci> {
   return pedir<UmbralDeVinci>(`${base(agencyId)}/umbral`, { method: 'PUT', body: JSON.stringify(cambio) })
 }

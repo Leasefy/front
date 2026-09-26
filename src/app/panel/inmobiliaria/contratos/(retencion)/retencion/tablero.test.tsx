@@ -86,7 +86,15 @@ beforeEach(() => {
     refetch: vi.fn(),
   })
   umbral.mockReturnValue({
-    data: { umbral: 60, umbralPorDefecto: 60, topeDescuentoComisionPct: 20, guardable: true, actualizadaEn: null },
+    data: {
+      umbral: 60,
+      umbralPorDefecto: 60,
+      topeDescuentoComisionPct: 20,
+      diasEntreMensajesInquilino: 7,
+      diasEntreMensajesPropietario: 15,
+      guardable: true,
+      actualizadaEn: null,
+    },
     isLoading: false,
     error: null,
     refetch: vi.fn(),
@@ -123,6 +131,9 @@ describe('tablero de Vinci', () => {
     esAdmin.valor = true
     act(() => root.render(<RetencionDashboardPage />))
     expect((container.querySelector('[data-testid="vinci-umbral"]') as HTMLInputElement | null)?.value).toBe('60')
+    // Nico (26-09): la frecuencia —7 días al inquilino, 15 al propietario— también la configura el administrador.
+    expect((container.querySelector('[data-testid="vinci-dias-inquilino"]') as HTMLInputElement | null)?.value).toBe('7')
+    expect((container.querySelector('[data-testid="vinci-dias-propietario"]') as HTMLInputElement | null)?.value).toBe('15')
   })
 
   it('🔴 el cliente no cae a un mock: un error del agente es un error', async () => {

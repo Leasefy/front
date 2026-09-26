@@ -326,7 +326,7 @@ export function PilotoBandeja({
             return (
               <li
                 key={item.id}
-                className="group relative flex items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover"
+                className="group relative flex flex-wrap items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover sm:flex-nowrap"
               >
                 <span
                   className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
@@ -380,8 +380,12 @@ export function PilotoBandeja({
                 </div>
 
                 {/* `relative z-10`: por encima del área clicable de la fila,
-                    para que la acción rápida no abra además el cajón. */}
-                <div className="relative z-10 flex shrink-0 items-center gap-1.5 self-center">
+                    para que la acción rápida no abra además el cajón.
+                    A 390 px el botón compartía la fila con el ícono y la hora
+                    y el título quedaba en «Mens… de…» (26-09): debajo de `sm`
+                    baja a su propia línea, alineado con el texto (pl-11 =
+                    ícono de 32 px + el espacio de 12 px). */}
+                <div className="relative z-10 flex w-full shrink-0 items-center gap-1.5 pl-11 sm:w-auto sm:self-center sm:pl-0">
                   {item.accion ? (
                     <Button
                       size="sm"

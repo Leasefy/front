@@ -280,6 +280,14 @@ const DECLARADAS: readonly string[] = [
   'tenant-acuerdos.accept',
   'tenant-acuerdos.listMine',
   'tenant-acuerdos.requestPremoraPlan',
+  // Payu (26-09-2026): las tres rutas las FIJÓ el integrador
+  // (`payu-api-front.md`) y el back las construye en paralelo en `nico10/payu`.
+  // Mientras no estén, las tres pantallas dicen «no se pudo leer» con
+  // reintento: ni una cifra ni un «apagado» inventado. Cuando el back entre,
+  // `node scripts/rutas-del-back.mjs` y se borran de acá.
+  'payuApi.autopagos',
+  'payuApi.links',
+  'payuApi.resumen',
 ];
 
 describe('🔴 ninguna llamada del front pide una ruta que el back no tiene', () => {

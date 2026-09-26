@@ -123,7 +123,7 @@ export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen }: LinksDe
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {data && (
-            <span className="text-xs tabular-nums text-fg-muted" data-testid="conteo-de-links">
+            <span className="text-caption tabular-nums text-fg-muted" data-testid="conteo-de-links">
               {total === 1 ? t('inmobiliaria.cobros.linksDePago.conteoUno') : t('inmobiliaria.cobros.linksDePago.conteoVarios', { total })}
             </span>
           )}
@@ -152,7 +152,7 @@ export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen }: LinksDe
         cargando={cargando && !data}
         error={error}
         queEs="los links de pago"
-        onReintentar={() => void recargar()}
+        onReintentar={recargar}
         vacio={Boolean(data) && total === 0}
         esqueleto={<EsqueletoTabla filas={5} columnas={4} />}
         cuandoVacio={

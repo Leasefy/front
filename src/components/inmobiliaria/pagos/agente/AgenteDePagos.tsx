@@ -73,7 +73,7 @@ function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
       cargando={lectura.cargando && !lectura.data}
       error={lectura.error}
       queEs="el resumen de Payu"
-      onReintentar={() => void lectura.recargar()}
+      onReintentar={lectura.recargar}
       esqueleto={<div className="h-5 w-full max-w-xl animate-pulse rounded-sm bg-surface-muted" aria-hidden="true" />}
     >
       {lectura.data && (

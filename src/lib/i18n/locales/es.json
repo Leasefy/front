@@ -10280,6 +10280,40 @@
       "anularPagado": "Un egreso pagado no se anula: la plata ya salió del banco y el comprobante tiene número. Si la devolvieron, regístralo como ingreso con tu contador; si la fecha está mal, cámbiala desde el egreso.",
       "anularAnulado": "Este egreso ya está anulado.",
       "anulado": "Egreso anulado. Vuelve a quedar sin pagar."
+    },
+    "recaudo": {
+      "comparativa": {
+        "queEs": "la comparación con el mes anterior",
+        "fecha": "{{dia}} de {{mes}}",
+        "vs": {
+          "cambio": "{{pct}} vs. el {{fecha}}",
+          "igual": "Igual que el {{fecha}}",
+          "subio": "Subió",
+          "bajo": "Bajó",
+          "sinComparacion": "Sin comparación con {{mes}}",
+          "noSePudoLeer": "Comparación con el mes anterior: no se pudo leer",
+          "aEsaFecha": "Al día {{dia}}: {{valor}}"
+        },
+        "diaADia": {
+          "titulo": "Día a día: {{mes}} contra {{mesAnterior}}",
+          "descripcionEnCurso": "Lo que llegó por recibos de caja, acumulado por día del mes. {{mesAnterior}} va entero; {{mes}}, hasta hoy (día {{dia}}).",
+          "descripcionCerrado": "Lo que llegó por recibos de caja, acumulado por día del mes, con los dos meses enteros.",
+          "resumen": "Al día {{dia}} de {{mes}} llegaron {{actual}}; al día {{diaAnterior}} de {{mesAnterior}} habían llegado {{anterior}}.",
+          "sinRecibos": "Ningún recibo de caja en {{mes}} ni en {{mesAnterior}}: no hay líneas que dibujar. Cuando se registre un pago, aparece acá.",
+          "dia": "Día {{dia}}"
+        },
+        "proyeccion": {
+          "titulo": "Proyección del cierre",
+          "tituloCerrado": "Cierre del mes",
+          "sinDatos": "Sin datos",
+          "formula": "Llegó {{llego}} + por vencer {{porVencer}} × {{tasa}} (lo que se pagó dentro del mes en {{meses}}) = {{cierre}}.",
+          "rango": "Entre {{min}} y {{max}}: según el mes, se pagó entre {{peor}} y {{mejor}} de lo que vencía.",
+          "historiaCorta": "Con {{n}} de {{pedidos}} meses de historia: los demás no tenían deuda.",
+          "sinHistoria": "Ninguno de los {{pedidos}} meses anteriores tenía deuda, así que no hay tasa de pago que medir y no se proyecta.",
+          "sinHistoriaCifras": "Hasta hoy llegó {{llego}} y faltan por vencer {{porVencer}}.",
+          "cerrado": "{{mes}} ya cerró: lo que llegó es el cierre."
+        }
+      }
     }
   },
   "validation": {

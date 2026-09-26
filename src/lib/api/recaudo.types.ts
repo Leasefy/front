@@ -83,3 +83,66 @@ export interface PuntoDeLaSerie {
   /** La tasa de recaudo de ese mes, como la eligió la inmobiliaria. */
   tasaDeRecaudo?: TasaDeRecaudo;
 }
+
+// ── La comparativa: `GET /inmobiliaria/recaudo/comparativa` (2026-09-25) ──────
+//
+// El mes contra el anterior A LA MISMA FECHA (día N contra día N), el recaudo
+// acumulado día a día de los dos y la proyección del cierre. Las definiciones
+// viven en el back (`recaudo/comparativa-del-mes.ts`); acá sólo se copian.
+
+export interface VariacionDeLaCifra {
+  /** El valor del mes en foco, al día de corte. */
+  actualCop: number;
+  /** El del mes anterior al mismo día. `null` = no hay dato. */
+  anteriorCop: number | null;
+  /** 🔴 `null` = SIN COMPARACIÓN (anterior 0, negativo o sin dato). Nunca «0 %» ni «∞». */
+  pct: number | null;
+}
+
+export interface MesDeHistoria {
+  month: string;
+  vencioCop: number;
+  pagadoDentroCop: number;
+  /** Entre 0 y 1. */
+  tasa: number;
+}
+
+export interface ProyeccionDelCierre {
+  estado: 'PROYECTADA' | 'SIN_HISTORIA' | 'MES_CERRADO';
+  llegoCop: number;
+  porVencerCop: number;
+  /** Σ pagado dentro ÷ Σ lo que vencía. `null` sin historia o con el mes cerrado. */
+  tasa: number | null;
+  /** Sólo los meses con deuda que SÍ se usaron. */
+  historia: MesDeHistoria[];
+  mesesPedidos: number;
+  /** `null` = no se proyecta (sin historia). Nunca pintarlo como `$ 0`. */
+  cierreCop: number | null;
+  rango: { minCop: number; maxCop: number } | null;
+}
+
+export interface DiaDeLaComparativa {
+  dia: number;
+  /** `null` = el día todavía no pasó. */
+  esteMesCop: number | null;
+  /** `null` = el mes anterior no tiene ese día. */
+  mesAnteriorCop: number | null;
+}
+
+export interface ComparativaDelMes {
+  month: string;
+  mesAnterior: string;
+  enCurso: boolean;
+  /** Hoy si el mes está en curso; su último día si ya cerró. */
+  dia: number;
+  diaDelMesAnterior: number;
+  dias: DiaDeLaComparativa[];
+  vsMesAnterior: {
+    seDebe: VariacionDeLaCifra;
+    llego: VariacionDeLaCifra;
+    falta: VariacionDeLaCifra;
+    salio: VariacionDeLaCifra;
+    queda: VariacionDeLaCifra;
+  };
+  proyeccion: ProyeccionDelCierre;
+}

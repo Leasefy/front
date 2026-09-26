@@ -13689,6 +13689,7 @@ export interface components {
             suma: number;
             umbral: number;
             enRiesgo: boolean;
+            enCobranza?: boolean;
             senales: components["schemas"]["VinciSenal"][];
             contratos: {
                 contratoId: string;
@@ -13721,6 +13722,7 @@ export interface components {
                 inquilinos: number;
                 propietarios: number;
             };
+            enCobranza?: number;
             casos: components["schemas"]["VinciCaso"][];
         };
         VinciError: {
@@ -18824,7 +18826,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resultado del pedido: retenida en la bandeja, programada (Automático), ya pendiente, sin mora, excluida por una valla, o no disponible */
+            /** @description Resultado del pedido: retenida en la bandeja (Manual), programada (Copiloto o Automático, con quien la pidió como aprobador), ya pendiente, sin mora, excluida por una valla, o no disponible */
             200: {
                 headers: {
                     [name: string]: unknown;

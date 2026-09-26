@@ -20149,6 +20149,9 @@
           "enRiesgo": {
             "type": "boolean"
           },
+          "enCobranza": {
+            "type": "boolean"
+          },
           "senales": {
             "type": "array",
             "items": {
@@ -20302,6 +20305,9 @@
               "inquilinos",
               "propietarios"
             ]
+          },
+          "enCobranza": {
+            "type": "number"
           },
           "casos": {
             "type": "array",
@@ -36485,7 +36491,7 @@
         },
         "responses": {
           "200": {
-            "description": "Resultado del pedido: retenida en la bandeja, programada (Automático), ya pendiente, sin mora, excluida por una valla, o no disponible",
+            "description": "Resultado del pedido: retenida en la bandeja (Manual), programada (Copiloto o Automático, con quien la pidió como aprobador), ya pendiente, sin mora, excluida por una valla, o no disponible",
             "content": {
               "application/json": {
                 "schema": {

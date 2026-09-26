@@ -20348,6 +20348,12 @@
           "topeDescuentoComisionPct": {
             "type": "number"
           },
+          "diasEntreMensajesInquilino": {
+            "type": "number"
+          },
+          "diasEntreMensajesPropietario": {
+            "type": "number"
+          },
           "guardable": {
             "type": "boolean"
           },
@@ -20362,6 +20368,8 @@
           "umbral",
           "umbralPorDefecto",
           "topeDescuentoComisionPct",
+          "diasEntreMensajesInquilino",
+          "diasEntreMensajesPropietario",
           "guardable",
           "actualizadaEn"
         ]
@@ -20378,6 +20386,16 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 100
+          },
+          "diasEntreMensajesInquilino": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "diasEntreMensajesPropietario": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
           }
         }
       },

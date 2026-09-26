@@ -13730,12 +13730,16 @@ export interface components {
             umbral: number;
             umbralPorDefecto: number;
             topeDescuentoComisionPct: number;
+            diasEntreMensajesInquilino: number;
+            diasEntreMensajesPropietario: number;
             guardable: boolean;
             actualizadaEn: string | null;
         };
         VinciCambioDeUmbral: {
             umbral?: number;
             topeDescuentoComisionPct?: number;
+            diasEntreMensajesInquilino?: number;
+            diasEntreMensajesPropietario?: number;
         };
         VinciMetricas: {
             enGestion: {

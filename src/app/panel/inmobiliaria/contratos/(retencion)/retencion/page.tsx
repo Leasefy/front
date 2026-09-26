@@ -30,24 +30,41 @@ function Umbral() {
   const { agency } = useAuth()
   const [umbral, setUmbral] = useState<string>('')
   const [tope, setTope] = useState<string>('')
+  const [diasInq, setDiasInq] = useState<string>('')
+  const [diasProp, setDiasProp] = useState<string>('')
   const [guardando, setGuardando] = useState(false)
   const valorUmbral = umbral !== '' ? umbral : data ? String(data.umbral) : ''
   const valorTope = tope !== '' ? tope : data ? String(data.topeDescuentoComisionPct) : ''
+  const valorDiasInq = diasInq !== '' ? diasInq : data ? String(data.diasEntreMensajesInquilino) : ''
+  const valorDiasProp = diasProp !== '' ? diasProp : data ? String(data.diasEntreMensajesPropietario) : ''
 
   const guardar = async () => {
     if (!agency?.id) return
     const u = Number(valorUmbral)
     const t = Number(valorTope)
+    const di = Number(valorDiasInq)
+    const dp = Number(valorDiasProp)
     if (!Number.isInteger(u) || u < 0 || u > 100 || !Number.isInteger(t) || t < 0 || t > 100) {
       toast.error('El umbral y el tope van de 0 a 100, en números enteros.')
       return
     }
+    if (!Number.isInteger(di) || di < 1 || di > 365 || !Number.isInteger(dp) || dp < 1 || dp > 365) {
+      toast.error('Los días entre mensajes van de 1 a 365.')
+      return
+    }
     setGuardando(true)
     try {
-      await guardarUmbral(agency.id, { umbral: u, topeDescuentoComisionPct: t })
+      await guardarUmbral(agency.id, {
+        umbral: u,
+        topeDescuentoComisionPct: t,
+        diasEntreMensajesInquilino: di,
+        diasEntreMensajesPropietario: dp,
+      })
       toast.success('Guardado: Vinci usa el nuevo umbral desde ya.')
       setUmbral('')
       setTope('')
+      setDiasInq('')
+      setDiasProp('')
       await refetch()
     } catch (e) {
       toast.error('No se pudo guardar', { description: e instanceof Error ? e.message : undefined })
@@ -60,10 +77,12 @@ function Umbral() {
     <section aria-label="Umbral de Vinci" className="rounded-lg border border-border bg-surface p-5">
       <h2 className="text-base font-semibold text-fg">Umbral de riesgo</h2>
       <p className="mt-1 text-sm text-fg-muted">
-        Desde este puntaje un propietario o un inquilino entra en riesgo (60 por defecto). Sólo el administrador lo cambia.
+        Desde este puntaje un propietario o un inquilino entra en riesgo (60 por defecto), el tope del descuento en la
+        comisión (20 % por defecto) y cada cuántos días Vinci le puede volver a escribir a la misma persona (7 al
+        inquilino, 15 al propietario). Sólo el administrador lo cambia.
       </p>
       <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => void refetch()}>
-        <div className="mt-4 grid gap-4 sm:grid-cols-[repeat(2,minmax(0,12rem))_auto] sm:items-end">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,11rem))_auto] lg:items-end">
           <div className="space-y-1.5">
             <Label htmlFor="vinci-umbral">Umbral (0–100)</Label>
             <Input
@@ -89,6 +108,34 @@ function Umbral() {
               className="font-mono"
               value={valorTope}
               onChange={(e) => setTope(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vinci-dias-inquilino">Días entre mensajes al inquilino</Label>
+            <Input
+              id="vinci-dias-inquilino"
+              data-testid="vinci-dias-inquilino"
+              type="number"
+              min={1}
+              max={365}
+              step={1}
+              className="font-mono"
+              value={valorDiasInq}
+              onChange={(e) => setDiasInq(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vinci-dias-propietario">Días entre mensajes al propietario</Label>
+            <Input
+              id="vinci-dias-propietario"
+              data-testid="vinci-dias-propietario"
+              type="number"
+              min={1}
+              max={365}
+              step={1}
+              className="font-mono"
+              value={valorDiasProp}
+              onChange={(e) => setDiasProp(e.target.value)}
             />
           </div>
           <Button type="button" onClick={() => void guardar()} isLoading={guardando} disabled={!data?.guardable} hideArrow>

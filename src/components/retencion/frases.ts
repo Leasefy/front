@@ -11,7 +11,7 @@ const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
 /** EL MOLDE: el resumen es una FRASE, no fichas sueltas. */
 export function fraseDelRiesgo(r: RiesgoDeVinci): string {
   const quienes = `${plural(r.enRiesgo.inquilinos, 'inquilino', 'inquilinos')} y ${plural(r.enRiesgo.propietarios, 'propietario', 'propietarios')}`
-  const cuando = r.deLoGuardado ? `medido ${fechaYHora(r.leidoEn)} (el barrido de la mañana)` : `medido ahora (${fechaYHora(r.leidoEn)})`
+  const cuando = r.deLoGuardado ? `medido ${fechaYHora(r.leidoEn)} (el último barrido)` : `medido ahora (${fechaYHora(r.leidoEn)})`
   return `Vinci ve ${quienes} en riesgo (umbral ${r.umbral}/100) entre ${plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')}; ${cuando}.`
 }
 

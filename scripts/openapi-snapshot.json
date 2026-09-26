@@ -19649,6 +19649,9 @@
             "items": {
               "$ref": "#/components/schemas/RetencionDecisionRow"
             }
+          },
+          "envioHabilitado": {
+            "type": "boolean"
           }
         },
         "required": [

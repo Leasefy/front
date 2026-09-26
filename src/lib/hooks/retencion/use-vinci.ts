@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { fetchDecisiones, fetchMetricas, fetchOfertas, fetchPlan, fetchRiesgo, fetchUmbral } from '@/lib/api/retencion'
-import type { DecisionDeVinci, MetricasDeVinci, OfertaDeVinci, PlanConTareas, RiesgoDeVinci, UmbralDeVinci } from '@/lib/types/retencion'
+import type { ColaDeVinci, MetricasDeVinci, OfertaDeVinci, PlanConTareas, RiesgoDeVinci, UmbralDeVinci } from '@/lib/types/retencion'
 
 /** Medir en vivo la inmobiliaria de Nico tarda ≈6 s desde dev: el corte deja margen. */
 const CORTE_MS = 30_000
@@ -81,7 +81,7 @@ export function useOfertasDelCaso(caseId: string): Carga<OfertaDeVinci[]> {
   return useCarga((id, s) => fetchOfertas(id, caseId, s), `ofertas:${caseId}`)
 }
 
-export function useDecisionesDeVinci(opts: { reviewableOnly?: boolean; caseId?: string; limit?: number } = {}): Carga<DecisionDeVinci[]> {
+export function useDecisionesDeVinci(opts: { reviewableOnly?: boolean; caseId?: string; limit?: number } = {}): Carga<ColaDeVinci> {
   return useCarga((id, s) => fetchDecisiones(id, opts, s), `decisiones:${JSON.stringify(opts)}`)
 }
 

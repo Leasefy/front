@@ -86,7 +86,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-09 noche: 2753 al unir la tercera ronda de seguridad.
 // 24-09: 2746 al retirar `ActionProposalCard` (la tarjeta F5 que ninguna
 // pantalla montaba; las tarjetas del ejecutor del chat no usan 12 px).
-const CUANTOS_HABIA = 2746;
+// 26-09: 2716 al rehacer Retención (Vinci) sobre las rutas reales: el tablero,
+// la bandeja y el caso de ejemplo se fueron, y lo nuevo va en 13 y 14.
+const CUANTOS_HABIA = 2716;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

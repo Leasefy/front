@@ -1,155 +1,156 @@
 /**
- * Cliente del agente de Retención ("Laura"). Llama
- * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con bearer
- * (`agentAuthHeaders`). Mock-first: sin URL del agente, o si el backend responde
- * error/404/flag-OFF, cae a mock data para que la demo siempre renderice.
+ * Cliente de Vinci (retención). Llama al micro
+ * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con el bearer
+ * (`agentAuthHeaders`).
+ *
+ * 🔴 26-09-2026 — SIN DATOS DE EJEMPLO. Este cliente caía a un mock
+ * (`mock-retencion.ts`) ante cualquier error, 404 o flag apagado, y la
+ * pantalla decía «las rutas no están montadas» aunque sí lo estaban. Ahora
+ * un error es un error (con su código y su frase) y la pantalla lo dice; un
+ * 404 con Vinci apagado se lee como «Vinci no está encendido», no como datos.
  */
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
-import {
-  getMockBandeja,
-  getMockCaseBundle,
-  getMockDashboard,
-  getMockDecisions,
-  patchMockDecision,
-} from '@/lib/data/mock-retencion'
 import type {
-  BandejaResult,
-  BandejaTab,
-  CaseBundle,
-  DecisionsResult,
-  PatchDecisionResult,
-  RetencionDashboard,
+  DecisionDeVinci,
+  DetalleDeLaOferta,
+  MetricasDeVinci,
+  OfertaDeVinci,
+  PlanConTareas,
+  ResultadoDelClic,
   ReviewOutcome,
+  RiesgoDeVinci,
+  TipoDeOferta,
+  UmbralDeVinci,
 } from '@/lib/types/retencion'
 
-export interface Fetched<T> {
-  data: T
-  /** true = se devolvió mock (backend ausente, flag-OFF o error). */
-  usingMock: boolean
+/** Un fallo de Vinci con el código HTTP y la frase que devolvió el micro. */
+export class ErrorDeVinci extends Error {
+  constructor(
+    readonly status: number,
+    mensaje: string,
+    readonly code: string | null = null,
+  ) {
+    super(mensaje)
+    this.name = 'ErrorDeVinci'
+  }
 }
 
-function agentBase(agencyId: string): string | null {
+function base(agencyId: string): string {
   const url = process.env.NEXT_PUBLIC_AGENT_URL
-  if (!url) return null
-  return `${url}/api/agency/${agencyId}/retencion`
+  if (!url) throw new ErrorDeVinci(0, 'El panel no tiene configurada la dirección del agente (NEXT_PUBLIC_AGENT_URL).')
+  return `${url}/api/agency/${encodeURIComponent(agencyId)}/retencion`
 }
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await globalThis.fetch(path, { headers: agentAuthHeaders(), signal })
-  if (!res.ok) throw new Error(`${res.status}`)
+async function pedir<T>(url: string, init: RequestInit = {}): Promise<T> {
+  const res = await globalThis.fetch(url, {
+    ...init,
+    headers: agentAuthHeaders(init.body ? { 'content-type': 'application/json' } : undefined),
+  })
+  if (!res.ok) {
+    const cuerpo = (await res.json().catch(() => null)) as { error?: string; code?: string } | null
+    throw new ErrorDeVinci(res.status, cuerpo?.error ?? `El agente respondió ${res.status}.`, cuerpo?.code ?? null)
+  }
   return (await res.json()) as T
 }
 
-export async function fetchDashboard(
-  agencyId: string,
-  signal?: AbortSignal,
-): Promise<Fetched<RetencionDashboard>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: getMockDashboard(), usingMock: true }
-  try {
-    return { data: await getJson<RetencionDashboard>(`${base}/dashboard`, signal), usingMock: false }
-  } catch {
-    return { data: getMockDashboard(), usingMock: true }
-  }
+export function fetchRiesgo(agencyId: string, opts: { fresco?: boolean } = {}, signal?: AbortSignal): Promise<RiesgoDeVinci> {
+  return pedir<RiesgoDeVinci>(`${base(agencyId)}/riesgo${opts.fresco ? '?fresco=true' : ''}`, { signal })
 }
 
-export async function fetchBandeja(
-  agencyId: string,
-  tab: BandejaTab | 'todos' = 'todos',
-  signal?: AbortSignal,
-): Promise<Fetched<BandejaResult>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: getMockBandeja(), usingMock: true }
-  const qs = tab && tab !== 'todos' ? `?tab=${encodeURIComponent(tab)}` : ''
-  try {
-    return { data: await getJson<BandejaResult>(`${base}/bandeja${qs}`, signal), usingMock: false }
-  } catch {
-    return { data: getMockBandeja(), usingMock: true }
-  }
+export function fetchMetricas(agencyId: string, signal?: AbortSignal): Promise<MetricasDeVinci> {
+  return pedir<MetricasDeVinci>(`${base(agencyId)}/metricas`, { signal })
 }
 
-/**
- * Bundle de un caso: perfil + plan propuesto + guardrails + borrador de mensaje.
- * El backend expone estos como rutas separadas; aquí se ensamblan en paralelo y,
- * ante cualquier fallo, se cae al bundle mock completo.
- */
-export async function fetchCaseBundle(
+/** Sólo el administrador: a otros roles el micro les responde 403. */
+export function fetchUmbral(agencyId: string, signal?: AbortSignal): Promise<UmbralDeVinci> {
+  return pedir<UmbralDeVinci>(`${base(agencyId)}/umbral`, { signal })
+}
+
+export function guardarUmbral(
+  agencyId: string,
+  cambio: { umbral?: number; topeDescuentoComisionPct?: number },
+): Promise<UmbralDeVinci> {
+  return pedir<UmbralDeVinci>(`${base(agencyId)}/umbral`, { method: 'PUT', body: JSON.stringify(cambio) })
+}
+
+export async function fetchOfertas(agencyId: string, caseId: string, signal?: AbortSignal): Promise<OfertaDeVinci[]> {
+  const r = await pedir<{ ofertas: OfertaDeVinci[] }>(`${base(agencyId)}/casos/${encodeURIComponent(caseId)}/ofertas`, { signal })
+  return r.ofertas
+}
+
+export function proponerOferta(
   agencyId: string,
   caseId: string,
-  signal?: AbortSignal,
-): Promise<Fetched<CaseBundle>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: getMockCaseBundle(caseId), usingMock: true }
-  const enc = encodeURIComponent(caseId)
-  const ownerId = caseId.startsWith('owner:') ? caseId.slice('owner:'.length) : caseId
-  try {
-    const [profile, plan, guard, message] = await Promise.all([
-      getJson<CaseBundle['profile']>(`${base}/propietarios/${encodeURIComponent(ownerId)}/perfil`, signal),
-      getJson<CaseBundle['plan']>(`${base}/casos/${enc}/plan-propuesto`, signal).catch(() => null),
-      getJson<CaseBundle['guard']>(`${base}/casos/${enc}/guardrails`, signal),
-      getJson<CaseBundle['message']>(`${base}/casos/${enc}/mensaje`, signal),
-    ])
-    return { data: { caseId, profile, plan, guard, message }, usingMock: false }
-  } catch {
-    return { data: getMockCaseBundle(caseId), usingMock: true }
-  }
+  oferta: { tipo: TipoDeOferta; detalle: DetalleDeLaOferta },
+): Promise<OfertaDeVinci> {
+  return pedir<OfertaDeVinci>(`${base(agencyId)}/casos/${encodeURIComponent(caseId)}/ofertas`, {
+    method: 'POST',
+    body: JSON.stringify(oferta),
+  })
 }
 
-export interface FetchDecisionsOpts {
-  reviewableOnly?: boolean
-  caseId?: string
-  limit?: number
-}
-
-/**
- * Cola de revisión de decisiones autónomas (T-323). `base` ya incluye
- * `/retencion`, así que la ruta final es `${base}/decisions`. Mock-first.
- */
-export async function fetchDecisions(
+export function resolverOferta(
   agencyId: string,
-  opts: FetchDecisionsOpts = {},
-  signal?: AbortSignal,
-): Promise<Fetched<DecisionsResult>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: getMockDecisions(opts), usingMock: true }
-  const params = new URLSearchParams()
-  if (opts.reviewableOnly) params.set('reviewableOnly', 'true')
-  if (opts.caseId) params.set('caseId', opts.caseId)
-  if (typeof opts.limit === 'number') params.set('limit', String(opts.limit))
-  const qs = params.toString()
-  try {
-    return {
-      data: await getJson<DecisionsResult>(`${base}/decisions${qs ? `?${qs}` : ''}`, signal),
-      usingMock: false,
-    }
-  } catch {
-    return { data: getMockDecisions(opts), usingMock: true }
-  }
+  ofertaId: string,
+  accion: 'aprobar' | 'rechazar',
+  body: { aceptadaPorElPropietario?: boolean } = {},
+): Promise<OfertaDeVinci> {
+  return pedir<OfertaDeVinci>(`${base(agencyId)}/ofertas/${encodeURIComponent(ofertaId)}/${accion}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
-/**
- * Revisa una decisión autónoma. `PATCH ${base}/decisions/:id`. Mock-first.
- * `agentAuthHeaders({ 'content-type': 'application/json' })` conserva el bearer
- * (construye `new Headers(extra)` y luego setea Authorization — no se pierde).
- */
-export async function patchDecisionReview(
+export async function fetchDecisiones(
   agencyId: string,
-  decisionId: string,
-  body: { reviewOutcome: ReviewOutcome; reviewedBy?: string },
+  opts: { reviewableOnly?: boolean; caseId?: string; limit?: number } = {},
   signal?: AbortSignal,
-): Promise<Fetched<PatchDecisionResult>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: patchMockDecision(decisionId, body), usingMock: true }
-  try {
-    const res = await globalThis.fetch(`${base}/decisions/${encodeURIComponent(decisionId)}`, {
-      method: 'PATCH',
-      headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify(body),
-      signal,
-    })
-    if (!res.ok) throw new Error(`${res.status}`)
-    return { data: (await res.json()) as PatchDecisionResult, usingMock: false }
-  } catch {
-    return { data: patchMockDecision(decisionId, body), usingMock: true }
-  }
+): Promise<DecisionDeVinci[]> {
+  const q = new URLSearchParams()
+  if (opts.reviewableOnly) q.set('reviewableOnly', 'true')
+  if (opts.caseId) q.set('caseId', opts.caseId)
+  if (typeof opts.limit === 'number') q.set('limit', String(opts.limit))
+  const qs = q.toString()
+  const r = await pedir<{ decisions: DecisionDeVinci[] }>(`${base(agencyId)}/decisions${qs ? `?${qs}` : ''}`, { signal })
+  return r.decisions
+}
+
+export function revisarDecision(agencyId: string, decisionId: string, reviewOutcome: ReviewOutcome): Promise<unknown> {
+  return pedir(`${base(agencyId)}/decisions/${encodeURIComponent(decisionId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reviewOutcome }),
+  })
+}
+
+/** El clic de «Hacerlo» / «Enviar»: abre el plan propuesto y/o programa el mensaje (deshacible). */
+export function hacerlo(agencyId: string, decisionId: string): Promise<ResultadoDelClic> {
+  return pedir<ResultadoDelClic>(`${base(agencyId)}/decisions/${encodeURIComponent(decisionId)}/hacerlo`, { method: 'POST' })
+}
+
+export function fetchPlan(agencyId: string, planId: string, signal?: AbortSignal): Promise<PlanConTareas> {
+  return pedir<PlanConTareas>(`${base(agencyId)}/planes/${encodeURIComponent(planId)}`, { signal })
+}
+
+/** Cerrar el plan a mano: «se quedó» (logrado) o «se fue» (perdido), con el resultado. */
+export function cerrarPlan(
+  agencyId: string,
+  planId: string,
+  cierre: { status: 'logrado' | 'perdido' | 'activo'; actualResult?: string },
+): Promise<PlanConTareas> {
+  return pedir<PlanConTareas>(`${base(agencyId)}/planes/${encodeURIComponent(planId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(cierre),
+  })
+}
+
+export function actualizarTarea(
+  agencyId: string,
+  planId: string,
+  taskId: string,
+  cambio: { status: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada'; result?: string },
+): Promise<unknown> {
+  return pedir(`${base(agencyId)}/planes/${encodeURIComponent(planId)}/tareas/${encodeURIComponent(taskId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(cambio),
+  })
 }

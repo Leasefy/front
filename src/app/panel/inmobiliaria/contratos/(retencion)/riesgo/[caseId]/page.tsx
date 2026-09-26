@@ -3,8 +3,8 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import CasoDetailClient from './CasoDetailClient'
 
 export const metadata: Metadata = {
-  title: 'Caso de retención · Laura',
-  description: 'Perfil 360, plan de retención y mensaje para un propietario en riesgo.',
+  title: 'Caso de retención · Vinci',
+  description: 'Por qué está en riesgo, las ofertas, el plan y lo que Vinci hizo.',
 }
 
 interface PageProps {

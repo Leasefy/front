@@ -3,6 +3,7 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
+import type { RiesgoDeRetencion } from '@/lib/types/retencion';
 import type {
   CargoAlInquilino,
   DeduccionesDeLaLiquidacion,
@@ -2173,6 +2174,13 @@ export interface Renovacion {
   /** Recalculado por el back en cada lectura desde `leaseEndDate`. */
   daysUntilExpiry: number;
   urgencyBucket: '0-30' | '31-60' | '61-90' | '90+';
+
+  /**
+   * P-7 (26-09-2026): el riesgo de Vinci en la propuesta. El back lo trae en
+   * lo ABIERTO dentro de los 90 días; `null` = fuera de la ventana o no se
+   * pudo medir; ausente = back anterior.
+   */
+  riesgoDeRetencion?: RiesgoDeRetencion | null;
 
   // IPC calculation
   ipcRate?: number;        // IPC rate applied

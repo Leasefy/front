@@ -1,224 +1,205 @@
 /**
- * Tipos del frontend del agente de Retención ("Laura").
- * Reflejan el contrato del backend `GET /api/agency/:agencyId/retencion/*`
- * (agente flag-OFF `RETENCION_ENABLED` — ver `~/rent/agent` rama
- * feat/agente-retencion-laura). Mientras el backend no esté vivo, los hooks
- * caen a mock data (mock-first).
+ * Tipos de Vinci (retención) — lo que devuelven las rutas del micro con las
+ * SEÑALES REALES del ERP (26-09-2026):
+ *
+ *   GET  /api/agency/:id/retencion/riesgo          quién está en riesgo y por qué
+ *   GET  /api/agency/:id/retencion/metricas        lo retenido
+ *   GET  /api/agency/:id/retencion/umbral          umbral y tope (sólo administrador)
+ *   GET  /api/agency/:id/retencion/casos/:caseId/ofertas
+ *   GET  /api/agency/:id/retencion/decisions       la cola (con lo que cada una dice)
+ *
+ * Reemplazan a los del tablero de la v1, que se alimentaba de un portafolio de
+ * EJEMPLO (`mock-retencion.ts`, retirado).
  */
 
-export type RetentionState =
-  | 'saludable'
-  | 'observacion'
-  | 'riesgo_medio'
-  | 'alto_riesgo'
-  | 'critico'
-  | 'recuperado'
-  | 'perdido'
+export type Poblacion = 'inquilino' | 'propietario';
+export type ModoDelPiloto = 'sombra' | 'copiloto' | 'autonomo';
 
-export type Confidence = 'alta' | 'media' | 'baja'
+export type TipoDeOferta =
+  | 'llamada_del_asesor'
+  | 'visita_del_asesor'
+  | 'resolver_pendiente'
+  | 'congelar_incremento'
+  | 'bajar_incremento'
+  | 'descuento_comision';
 
-export interface RootCause {
-  key: string
-  label: string
-  pct: number
+/** Una señal del ERP y cuánto sumó al puntaje. */
+export interface SenalDeVinci {
+  clave: string;
+  texto: string;
+  puntos: number;
 }
 
-export interface RetentionCase {
-  caseId: string
-  ownerId: string
-  ownerName: string
-  ownerType: string
-  city: string | null
-  propertyCount: number
-  drivingProperty?: { id: string; address: string | null } | null
-  score: number
-  state: RetentionState
-  rootCause: RootCause
-  lastSignal?: { label: string; at: string } | null
-  monthlyIncomeAtRisk: number
-  expectedCommissionLoss: number
-  responsible: { role: string; name?: string | null }
-  dueDate?: { at: string; reason: string } | null
-  nextAction: { code: string; label: string }
-  confidence: Confidence
+export interface OfertaSugerida {
+  tipo: TipoDeOferta;
+  nombre: string;
+  porque: string;
+  cuestaPlata: boolean;
+  quienAprueba: string | null;
 }
 
-export interface BandejaFacets {
-  byState: Record<string, number>
-  byCause: Record<string, number>
-  byCity: Record<string, number>
-  byExecutive: Record<string, number>
+export type EstadoDeLaOferta = 'por_aprobar' | 'aprobada' | 'rechazada';
+
+export interface DetalleDeLaOferta {
+  descuentoPct?: number;
+  meses?: number;
+  incrementoPct?: number;
+  aceptadaPorElPropietario?: boolean;
+  nota?: string;
 }
 
-export type BandejaTab =
-  | 'critico'
-  | 'alto'
-  | 'medio'
-  | 'renovaciones'
-  | 'vacancia'
-  | 'mantenimiento'
-  | 'finanzas'
-  | 'comunicacion'
-  | 'recuperados'
-  | 'perdidos'
-
-export interface BandejaResult {
-  cases: RetentionCase[]
-  facets: BandejaFacets
-  total: number
+export interface OfertaDeVinci {
+  id: string;
+  caseId: string;
+  poblacion: Poblacion;
+  tipo: TipoDeOferta;
+  nombre: string;
+  detalle: DetalleDeLaOferta;
+  cuestaPlata: boolean;
+  estado: EstadoDeLaOferta;
+  propuestaPor: string | null;
+  resueltaPor: string | null;
+  resueltaEn: string | null;
+  /** P-4: el administrador la propuso y quedó aprobada en el mismo paso. */
+  mismaPersona: boolean;
+  creadaEn: string;
 }
 
-export type DashboardState = 'empty' | 'alert' | 'success' | 'ok'
-export type CardTone = 'default' | 'warning' | 'danger' | 'success'
-
-export interface DashboardCard {
-  key: string
-  label: string
-  value: string | number
-  hint?: string
-  tone?: CardTone
+export interface ContratoDelCaso {
+  contratoId: string;
+  numero: string;
+  inmueble: string | null;
+  canonCop: number;
+  fechaDeFin: string | null;
+  diasParaVencer: number | null;
 }
 
-export interface UrgentCase {
-  caseId: string
-  ownerName: string
-  score: number
-  state: RetentionState
-  rootCauseLabel: string
-  expectedCommissionLoss: number
-  nextActionLabel: string
+export interface PlanDelCaso {
+  id: string;
+  estado: string;
+  objetivo: string;
+  tareasAbiertas: number;
+  resultado: string | null;
 }
 
-export interface RetencionDashboard {
-  cards: DashboardCard[]
-  urgent: UrgentCase[]
-  state: DashboardState
-  generatedAt?: string
+export interface CasoDeVinci {
+  /** `inquilino:<contrato>` | `propietario:<id>`. */
+  caseId: string;
+  poblacion: Poblacion;
+  nombre: string | null;
+  puntaje: number;
+  /** La suma sin tope (si pasa de 100, el tope recortó). */
+  suma: number;
+  umbral: number;
+  enRiesgo: boolean;
+  senales: SenalDeVinci[];
+  contratos: ContratoDelCaso[];
+  canonEnJuegoCop: number;
+  tieneTelefono: boolean;
+  tieneCorreo: boolean;
+  ofertasSugeridas: OfertaSugerida[];
+  ofertas: OfertaDeVinci[];
+  plan: PlanDelCaso | null;
 }
 
-/** Sección que puede no tener fuente desplegada todavía (honesto, no inventa). */
-export interface NoSource<T> {
-  available: boolean
-  reason?: string
-  note?: string
-  items: T[]
+export interface RiesgoDeVinci {
+  /** `false` = faltan vistas del ERP: no hay nada honesto que mostrar. */
+  disponible: boolean;
+  faltan: string[];
+  notas: string[];
+  leidoEn: string;
+  /** `true` = lo midió el barrido de la mañana (a la hora de `leidoEn`). */
+  deLoGuardado: boolean;
+  umbral: number;
+  modo: ModoDelPiloto | null;
+  /** La llave de envío de Vinci (RETENCION_AUTONOMY_ENABLED). */
+  envioHabilitado: boolean;
+  contratosLeidos: number;
+  propietariosLeidos: number;
+  enRiesgo: { inquilinos: number; propietarios: number };
+  casos: CasoDeVinci[];
 }
 
-export interface OwnerPropertyRow {
-  id: string
-  address: string | null
-  canon: number | null
-  estado: string
-  diasVacio?: number | null
-  score?: number
+export interface UmbralDeVinci {
+  umbral: number;
+  umbralPorDefecto: number;
+  topeDescuentoComisionPct: number;
+  guardable: boolean;
+  actualizadaEn: string | null;
 }
 
-export interface OwnerProfile {
-  header: RetentionCase
-  resumenSalud: {
-    state: RetentionState
-    score: number
-    rootCause: RootCause
-    diagnosis: string
-    confidence: Confidence
-  }
-  inmuebles: NoSource<OwnerPropertyRow>
-  financiero: NoSource<{ label: string; value: string }>
-  interacciones: NoSource<{ at: string; kind: string; summary: string }>
-  casos: NoSource<{ id: string; label: string; state: string }>
-  mantenimientos: NoSource<{ at: string; label: string; status: string }>
-  contratos: NoSource<{ id: string; label: string; vence?: string | null }>
-  documentos: NoSource<{ id: string; label: string }>
-  plan: NoSource<{ id: string; objective: string; status: string }>
-  bitacora: NoSource<{ at: string; label: string }>
+export interface MetricasDeVinci {
+  enGestion: { inquilinos: number; propietarios: number };
+  contratosRetenidos: number;
+  propietariosQueSeQuedaron: number;
+  inmueblesRetenidos: number;
+  canonConservadoCop: number;
+  perdidos: { inquilinos: number; propietarios: number; canonPerdidoCop: number };
+  tasaDeRetencion: number | null;
 }
 
-export type PlanStatus = 'activo' | 'logrado' | 'perdido' | 'cancelado'
-export type TaskStatus = 'pendiente' | 'en_progreso' | 'completada' | 'cancelada'
+export type ReviewOutcome = 'upheld' | 'overridden' | 'escalated';
 
-export interface RetencionTaskDTO {
-  id?: string
-  code: string
-  title: string
-  description?: string | null
-  responsibleRole: string
-  dueDate?: string | null
-  status: TaskStatus
+/** Una fila de la cola de Vinci (`GET /retencion/decisions`). */
+export interface DecisionDeVinci {
+  id: string;
+  caseId: string;
+  ownerId: string | null;
+  decisionType: string;
+  tier: number;
+  reviewable: boolean;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewOutcome: ReviewOutcome | null;
+  createdAt: string;
+  payload?: Record<string, unknown>;
 }
 
-export interface RetencionPlanDTO {
-  id?: string
-  caseId: string
-  playbookId: string
-  rootCauseKey: string
-  objective: string
-  responsibleRole: string
-  expectedResult?: string | null
-  actualResult?: string | null
-  status: PlanStatus
-  nextFollowUpAt?: string | null
-  tasks: RetencionTaskDTO[]
-  /** true = propuesto on-the-fly (no persistido todavía). */
-  proposed?: boolean
+export interface ResultadoDelClic {
+  estado: 'programado' | 'mensaje_listo';
+  mensaje: string;
+  graciaId?: string;
+  ejecutarEn?: string;
 }
 
-export type MessageChannel = 'whatsapp' | 'email' | 'guion'
-export type MessageTone = 'neutral' | 'formal'
-
-export interface OwnerMessageDraft {
-  channel: MessageChannel
-  tone: MessageTone
-  subject?: string | null
-  body: string
-  source: 'template' | 'llm'
-  /** true = el LLM intentó algo no-compliant y se cayó al template (piso). */
-  barrierApplied: boolean
+export interface TareaDelPlan {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  responsibleRole: string;
+  dueDate: string | null;
+  status: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+  result: string | null;
 }
 
-export interface RetentionGuard {
-  canDraftMessage: boolean
-  retentionRecommended: boolean
-  escalateLegal: boolean
-  financialDataConsistent: boolean
-  reasons: string[]
+export interface PlanConTareas {
+  plan: {
+    id: string;
+    caseId: string;
+    objective: string;
+    expectedResult: string | null;
+    actualResult: string | null;
+    status: 'activo' | 'logrado' | 'perdido' | 'cancelado';
+    createdAt: string;
+  };
+  tasks: TareaDelPlan[];
 }
 
-export interface CaseBundle {
-  caseId: string
-  profile: OwnerProfile
-  plan: RetencionPlanDTO | null
-  guard: RetentionGuard
-  message: OwnerMessageDraft
+// ── P-7: lo que la renovación trae del back (`riesgoDeRetencion`) ────────────
+
+export interface CasoEnLaRenovacion {
+  puntaje: number;
+  umbral: number;
+  enRiesgo: boolean;
+  senales: SenalDeVinci[];
+  ofertaSugerida: OfertaSugerida | null;
 }
 
-// ── Cola de revisión de decisiones autónomas (T-323) ──
-// Contrato del backend `GET /retencion/decisions` + `PATCH /retencion/decisions/:id`.
-// `tier` es un número (0–3) — el nivel de autonomía con el que Laura actuó.
-
-export type DecisionType = 'plan_created' | 'escalated_legal' | 'parked_review' | 'notified'
-
-export type ReviewOutcome = 'upheld' | 'overridden' | 'escalated'
-
-export interface AutonomousDecision {
-  id: string
-  caseId: string
-  ownerId: string
-  decisionType: DecisionType
-  /** Nivel de autonomía (0–3) con el que se tomó la decisión. NO es enum. */
-  tier: number
-  reviewable: boolean
-  reviewedBy: string | null
-  reviewedAt: string | null
-  reviewOutcome: ReviewOutcome | null
-  createdAt: string
-}
-
-export interface DecisionsResult {
-  decisions: AutonomousDecision[]
-}
-
-export interface PatchDecisionResult {
-  decision: AutonomousDecision
-  /** true = otra persona ya había revisado esta decisión (carrera de revisión). */
-  alreadyReviewed: boolean
+/** `null` en una población = Vinci lo leyó y NO tiene señales. */
+export interface RiesgoDeRetencion {
+  inquilino: CasoEnLaRenovacion | null;
+  propietario: CasoEnLaRenovacion | null;
+  umbral: number;
+  medidoEn: string | null;
 }

@@ -12233,7 +12233,8 @@
               "pagos",
               "documentos",
               "reportes",
-              "comunicacion"
+              "comunicacion",
+              "retencion"
             ]
           },
           "actionType": {
@@ -12315,7 +12316,8 @@
               "pagos",
               "documentos",
               "reportes",
-              "comunicacion"
+              "comunicacion",
+              "retencion"
             ]
           },
           "taskDescription": {
@@ -12682,7 +12684,8 @@
                   "pagos",
                   "documentos",
                   "reportes",
-                  "comunicacion"
+                  "comunicacion",
+                  "retencion"
                 ]
               },
               "tags": {
@@ -19617,6 +19620,10 @@
               "null"
             ]
           },
+          "payload": {
+            "type": "object",
+            "additionalProperties": {}
+          },
           "createdAt": {
             "type": "string"
           }
@@ -19930,6 +19937,605 @@
         },
         "required": [
           "role"
+        ]
+      },
+      "VinciSenal": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "texto": {
+            "type": "string"
+          },
+          "puntos": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "clave",
+          "texto",
+          "puntos"
+        ]
+      },
+      "VinciOfertaSugerida": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "llamada_del_asesor",
+              "visita_del_asesor",
+              "resolver_pendiente",
+              "congelar_incremento",
+              "bajar_incremento",
+              "descuento_comision"
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "porque": {
+            "type": "string"
+          },
+          "cuestaPlata": {
+            "type": "boolean"
+          },
+          "quienAprueba": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "tipo",
+          "nombre",
+          "porque",
+          "cuestaPlata",
+          "quienAprueba"
+        ]
+      },
+      "VinciOferta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "caseId": {
+            "type": "string"
+          },
+          "poblacion": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario"
+            ]
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "llamada_del_asesor",
+              "visita_del_asesor",
+              "resolver_pendiente",
+              "congelar_incremento",
+              "bajar_incremento",
+              "descuento_comision"
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "cuestaPlata": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "por_aprobar",
+              "aprobada",
+              "rechazada"
+            ]
+          },
+          "propuestaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resueltaPor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resueltaEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mismaPersona": {
+            "type": "boolean"
+          },
+          "creadaEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "caseId",
+          "poblacion",
+          "tipo",
+          "nombre",
+          "detalle",
+          "cuestaPlata",
+          "estado",
+          "propuestaPor",
+          "resueltaPor",
+          "resueltaEn",
+          "mismaPersona",
+          "creadaEn"
+        ]
+      },
+      "VinciPlanDelCaso": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "objetivo": {
+            "type": "string"
+          },
+          "tareasAbiertas": {
+            "type": "number"
+          },
+          "resultado": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "objetivo",
+          "tareasAbiertas",
+          "resultado"
+        ]
+      },
+      "VinciCaso": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": "string"
+          },
+          "poblacion": {
+            "type": "string",
+            "enum": [
+              "inquilino",
+              "propietario"
+            ]
+          },
+          "nombre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "puntaje": {
+            "type": "number"
+          },
+          "suma": {
+            "type": "number"
+          },
+          "umbral": {
+            "type": "number"
+          },
+          "enRiesgo": {
+            "type": "boolean"
+          },
+          "senales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VinciSenal"
+            }
+          },
+          "contratos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "contratoId": {
+                  "type": "string"
+                },
+                "numero": {
+                  "type": "string"
+                },
+                "inmueble": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "canonCop": {
+                  "type": "number"
+                },
+                "fechaDeFin": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "diasParaVencer": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "contratoId",
+                "numero",
+                "inmueble",
+                "canonCop",
+                "fechaDeFin",
+                "diasParaVencer"
+              ]
+            }
+          },
+          "canonEnJuegoCop": {
+            "type": "number"
+          },
+          "tieneTelefono": {
+            "type": "boolean"
+          },
+          "tieneCorreo": {
+            "type": "boolean"
+          },
+          "ofertasSugeridas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VinciOfertaSugerida"
+            }
+          },
+          "ofertas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VinciOferta"
+            }
+          },
+          "plan": {
+            "$ref": "#/components/schemas/VinciPlanDelCaso"
+          }
+        },
+        "required": [
+          "caseId",
+          "poblacion",
+          "nombre",
+          "puntaje",
+          "suma",
+          "umbral",
+          "enRiesgo",
+          "senales",
+          "contratos",
+          "canonEnJuegoCop",
+          "tieneTelefono",
+          "tieneCorreo",
+          "ofertasSugeridas",
+          "ofertas",
+          "plan"
+        ]
+      },
+      "VinciRiesgo": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "faltan": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "leidoEn": {
+            "type": "string"
+          },
+          "deLoGuardado": {
+            "type": "boolean"
+          },
+          "umbral": {
+            "type": "number"
+          },
+          "modo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "envioHabilitado": {
+            "type": "boolean"
+          },
+          "contratosLeidos": {
+            "type": "number"
+          },
+          "propietariosLeidos": {
+            "type": "number"
+          },
+          "enRiesgo": {
+            "type": "object",
+            "properties": {
+              "inquilinos": {
+                "type": "number"
+              },
+              "propietarios": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "inquilinos",
+              "propietarios"
+            ]
+          },
+          "casos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VinciCaso"
+            }
+          }
+        },
+        "required": [
+          "disponible",
+          "faltan",
+          "notas",
+          "leidoEn",
+          "deLoGuardado",
+          "umbral",
+          "modo",
+          "envioHabilitado",
+          "contratosLeidos",
+          "propietariosLeidos",
+          "enRiesgo",
+          "casos"
+        ]
+      },
+      "VinciError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "VinciUmbral": {
+        "type": "object",
+        "properties": {
+          "umbral": {
+            "type": "number"
+          },
+          "umbralPorDefecto": {
+            "type": "number"
+          },
+          "topeDescuentoComisionPct": {
+            "type": "number"
+          },
+          "guardable": {
+            "type": "boolean"
+          },
+          "actualizadaEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "umbral",
+          "umbralPorDefecto",
+          "topeDescuentoComisionPct",
+          "guardable",
+          "actualizadaEn"
+        ]
+      },
+      "VinciCambioDeUmbral": {
+        "type": "object",
+        "properties": {
+          "umbral": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "topeDescuentoComisionPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "VinciMetricas": {
+        "type": "object",
+        "properties": {
+          "enGestion": {
+            "type": "object",
+            "properties": {
+              "inquilinos": {
+                "type": "number"
+              },
+              "propietarios": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "inquilinos",
+              "propietarios"
+            ]
+          },
+          "contratosRetenidos": {
+            "type": "number"
+          },
+          "propietariosQueSeQuedaron": {
+            "type": "number"
+          },
+          "inmueblesRetenidos": {
+            "type": "number"
+          },
+          "canonConservadoCop": {
+            "type": "number"
+          },
+          "perdidos": {
+            "type": "object",
+            "properties": {
+              "inquilinos": {
+                "type": "number"
+              },
+              "propietarios": {
+                "type": "number"
+              },
+              "canonPerdidoCop": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "inquilinos",
+              "propietarios",
+              "canonPerdidoCop"
+            ]
+          },
+          "tasaDeRetencion": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enGestion",
+          "contratosRetenidos",
+          "propietariosQueSeQuedaron",
+          "inmueblesRetenidos",
+          "canonConservadoCop",
+          "perdidos",
+          "tasaDeRetencion"
+        ]
+      },
+      "VinciPropuestaDeOferta": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "llamada_del_asesor",
+              "visita_del_asesor",
+              "resolver_pendiente",
+              "congelar_incremento",
+              "bajar_incremento",
+              "descuento_comision"
+            ]
+          },
+          "detalle": {
+            "type": "object",
+            "properties": {
+              "descuentoPct": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "meses": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 36
+              },
+              "incrementoPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "aceptadaPorElPropietario": {
+                "type": "boolean"
+              },
+              "nota": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "default": {}
+          }
+        },
+        "required": [
+          "tipo"
+        ]
+      },
+      "VinciAprobacionDeOferta": {
+        "type": "object",
+        "properties": {
+          "aceptadaPorElPropietario": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "si",
+                  "no"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "VinciResultadoDelClic": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "programado",
+              "mensaje_listo"
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "graciaId": {
+            "type": "string"
+          },
+          "ejecutarEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "estado",
+          "mensaje"
         ]
       },
       "InspeccionIngestErrorEntry": {
@@ -53827,6 +54433,726 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RetencionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/riesgo": {
+      "get": {
+        "operationId": "getVinciRiesgo",
+        "summary": "Vinci — quién está en riesgo (propietarios e inquilinos), con qué señal sumó cuánto",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "inquilino",
+                "propietario"
+              ]
+            },
+            "required": false,
+            "name": "poblacion",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "soloEnRiesgo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "fresco",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Casos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciRiesgo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/umbral": {
+      "get": {
+        "operationId": "getVinciUmbral",
+        "summary": "Vinci — el umbral de riesgo (60 por defecto) y el tope del descuento en la comisión. Sólo el administrador.",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Umbral",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciUmbral"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putVinciUmbral",
+        "summary": "Vinci — cambia el umbral (0–100) o el tope del descuento. Sólo el administrador.",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinciCambioDeUmbral"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guardado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciUmbral"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Sin la migración de la config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/metricas": {
+      "get": {
+        "operationId": "getVinciMetricas",
+        "summary": "Vinci — contratos retenidos, propietarios que se quedaron y canon conservado",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciMetricas"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/ofertas": {
+      "get": {
+        "operationId": "getVinciOfertas",
+        "summary": "Vinci — las ofertas de un caso y su aprobación",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 80
+            },
+            "required": true,
+            "name": "caseId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ofertas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ofertas": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VinciOferta"
+                      }
+                    }
+                  },
+                  "required": [
+                    "ofertas"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postVinciOferta",
+        "summary": "Vinci — proponer una oferta. Si la propone el administrador, queda aprobada en el mismo paso (P-4).",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 80
+            },
+            "required": true,
+            "name": "caseId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinciPropuestaDeOferta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciOferta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Oferta inválida (tope, población, falta el sí del propietario)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/ofertas/{ofertaId}/aprobar": {
+      "post": {
+        "operationId": "postVinciOfertaAprobar",
+        "summary": "Vinci — aprobar una oferta que cuesta plata. Sólo el administrador.",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ofertaId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinciAprobacionDeOferta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resuelta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciOferta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No se puede aprobar así",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya estaba resuelta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/ofertas/{ofertaId}/rechazar": {
+      "post": {
+        "operationId": "postVinciOfertaRechazar",
+        "summary": "Vinci — rechazar una oferta que cuesta plata. Sólo el administrador.",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ofertaId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinciAprobacionDeOferta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resuelta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciOferta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No se puede aprobar así",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya estaba resuelta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/retencion/decisions/{decisionId}/hacerlo": {
+      "post": {
+        "operationId": "postVinciHacerlo",
+        "summary": "Vinci — el clic de la Bandeja: abrir el plan propuesto y/o mandar el mensaje listo (en horario de ley, deshacible)",
+        "tags": [
+          "agency",
+          "retencion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "decisionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hecho",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciResultadoDelClic"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vinci apagado o no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya resuelta, o el envío de Vinci está apagado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
                 }
               }
             }

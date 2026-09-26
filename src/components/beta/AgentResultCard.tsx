@@ -78,6 +78,7 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   documentos: '5 contratos vigentes. 1 vence en 18 días.',
   comunicacion: '2 notificaciones programadas. 1 recordatorio enviado.',
   reportes: 'Rentabilidad neta 85.4%. +2.1% vs mes anterior.',
+  retencion: 'Quién está en riesgo de irse, según Vinci.',
 };
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
@@ -93,6 +94,7 @@ const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   documentos: 'Error al acceder repositorio de documentos.',
   comunicacion: 'Fallo al preparar notificaciones. Servicio no disponible.',
   reportes: 'Error al generar el reporte. Datos incompletos.',
+  retencion: 'No se pudo consultar a Vinci en este momento.',
 };
 
 // ============================================================================

@@ -1,140 +1,232 @@
 'use client'
 
-import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
+/**
+ * Retención · Vinci — el tablero.
+ *
+ * 26-09-2026 (decisiones de Nico sobre Vinci): el tablero mostraba un
+ * portafolio de EJEMPLO con el aviso «las rutas no están montadas» —las rutas
+ * sí estaban—. Ahora lee las rutas reales del micro: quién está en riesgo con
+ * las señales del ERP (propietarios E inquilinos), lo que Vinci ya retuvo, y
+ * el umbral que decide quién entra (sólo el administrador lo cambia).
+ */
+import { useState } from 'react'
 import Link from 'next/link'
-import { Users, House, CurrencyDollar, HeartStraight, ArrowsClockwise, Warning, CaretRight, FolderOpen } from '@phosphor-icons/react'
-import type { Icon } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretRight, HeartStraight, Warning } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { useRetencionDashboard } from '@/lib/hooks/retencion/use-retencion'
-import { formatCop } from '@/lib/data/mock-retencion'
-import type { CardTone, DashboardCard } from '@/lib/types/retencion'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { useAuth } from '@/lib/auth'
+import { guardarUmbral } from '@/lib/api/retencion'
+import { useMetricasDeVinci, useRiesgoDeVinci, useUmbralDeVinci } from '@/lib/hooks/retencion/use-vinci'
+import { NOMBRE_DEL_MODO, PuntajeDeVinci, QUE_HACE_EN_CADA_MODO, QUIEN } from '@/components/retencion/vinci'
+import { fraseDeLasMetricas, fraseDelRiesgo } from '@/components/retencion/frases'
 
-const TONE_TEXT: Record<CardTone, string> = {
-  default: 'text-fg-muted',
-  warning: 'text-warning',
-  danger: 'text-danger',
-  success: 'text-success',
-}
+function Umbral() {
+  const { data, isLoading, error, refetch } = useUmbralDeVinci(true)
+  const { agency } = useAuth()
+  const [umbral, setUmbral] = useState<string>('')
+  const [tope, setTope] = useState<string>('')
+  const [guardando, setGuardando] = useState(false)
+  const valorUmbral = umbral !== '' ? umbral : data ? String(data.umbral) : ''
+  const valorTope = tope !== '' ? tope : data ? String(data.topeDescuentoComisionPct) : ''
 
-const CARD_ICON: Record<string, Icon> = {
-  propietarios_riesgo: Users,
-  inmuebles_riesgo: House,
-  ingreso_riesgo: CurrencyDollar,
-  salud_portafolio: HeartStraight,
-  recuperados_mes: ArrowsClockwise,
-  renovaciones_criticas: Warning,
-}
+  const guardar = async () => {
+    if (!agency?.id) return
+    const u = Number(valorUmbral)
+    const t = Number(valorTope)
+    if (!Number.isInteger(u) || u < 0 || u > 100 || !Number.isInteger(t) || t < 0 || t > 100) {
+      toast.error('El umbral y el tope van de 0 a 100, en números enteros.')
+      return
+    }
+    setGuardando(true)
+    try {
+      await guardarUmbral(agency.id, { umbral: u, topeDescuentoComisionPct: t })
+      toast.success('Guardado: Vinci usa el nuevo umbral desde ya.')
+      setUmbral('')
+      setTope('')
+      await refetch()
+    } catch (e) {
+      toast.error('No se pudo guardar', { description: e instanceof Error ? e.message : undefined })
+    } finally {
+      setGuardando(false)
+    }
+  }
 
-function KpiCard({ card }: { card: DashboardCard }) {
-  const Icon = CARD_ICON[card.key] ?? Users
-  const tone = card.tone ?? 'default'
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon size={18} weight="duotone" className={TONE_TEXT[tone]} />
-        <p className="text-xs text-fg-muted leading-tight">{card.label}</p>
-      </div>
-      <p className="text-xl font-semibold text-fg mt-1">{card.value}</p>
-      {card.hint ? <p className="text-xs text-fg-subtle mt-1">{card.hint}</p> : null}
-    </div>
+    <section aria-label="Umbral de Vinci" className="rounded-lg border border-border bg-surface p-5">
+      <h2 className="text-base font-semibold text-fg">Umbral de riesgo</h2>
+      <p className="mt-1 text-sm text-fg-muted">
+        Desde este puntaje un propietario o un inquilino entra en riesgo (60 por defecto). Sólo el administrador lo cambia.
+      </p>
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => void refetch()}>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[repeat(2,minmax(0,12rem))_auto] sm:items-end">
+          <div className="space-y-1.5">
+            <Label htmlFor="vinci-umbral">Umbral (0–100)</Label>
+            <Input
+              id="vinci-umbral"
+              data-testid="vinci-umbral"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              className="font-mono"
+              value={valorUmbral}
+              onChange={(e) => setUmbral(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vinci-tope">Tope del descuento (% de la comisión)</Label>
+            <Input
+              id="vinci-tope"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              className="font-mono"
+              value={valorTope}
+              onChange={(e) => setTope(e.target.value)}
+            />
+          </div>
+          <Button type="button" onClick={() => void guardar()} isLoading={guardando} disabled={!data?.guardable} hideArrow>
+            Guardar
+          </Button>
+        </div>
+        {data && !data.guardable ? (
+          <p className="mt-2 text-caption text-fg-muted">Falta la tabla de configuración de Vinci en esta base: no se puede guardar.</p>
+        ) : null}
+      </EstadoDeDatos>
+    </section>
   )
 }
 
 export default function RetencionDashboardPage() {
-  const { data, isLoading, error, usingMock, refetch } = useRetencionDashboard()
-  const hayIndicadores = (data?.cards.length ?? 0) > 0
-  const urgentes = data?.urgent ?? []
+  const [fresco, setFresco] = useState(false)
+  const riesgo = useRiesgoDeVinci(fresco)
+  const metricas = useMetricasDeVinci()
+  const { isAdmin } = usePermissionsContext()
+  const r = riesgo.data
+  const urgentes = (r?.casos ?? []).filter((c) => c.enRiesgo).slice(0, 8)
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">Retención · Laura</h1>
+        <h1 className="text-xl font-semibold text-fg">Retención · Vinci</h1>
         <p className="text-sm text-fg-muted">
-          Detecto propietarios e inmuebles en riesgo de salir del portafolio, explico la causa raíz y propongo qué hacer.
+          Mide con las señales del ERP —mora de las cuotas, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados—
+          quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva.
         </p>
-        {usingMock ? (
-          <AvisoDatosDeEjemplo
-            className="mt-3"
-            queEsInventado="Los indicadores, los propietarios en riesgo y la comisión en pesos"
-            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
-          />
-        ) : null}
       </header>
 
-      {/* Cargando → falló → vacío → datos, en ese orden. Antes, con la
-          consulta caída, la pantalla afirmaba «Sin datos de portafolio» y «No
-          hay casos urgentes 🎉» —tranquilizando justo cuando no sabía nada— y
-          el fallo quedaba en un cartel rojo al fondo, sin reintentar. */}
       <EstadoDeDatos
-        cargando={isLoading && !data}
-        error={error}
-        vacio={!hayIndicadores && urgentes.length === 0}
-        queEs="el tablero de retención"
-        onReintentar={refetch ? () => void refetch() : undefined}
-        esqueleto={
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="retencion-cargando">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-lg border border-border p-4">
-                <div className="h-4 w-24 rounded bg-surface-muted animate-pulse mb-3" />
-                <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
-              </div>
-            ))}
-          </div>
-        }
-        cuandoVacio={
-          <EmptyState
-            icon={FolderOpen}
-            title="Sin datos de portafolio todavía."
-            description="Cuando haya propietarios e inmuebles en el portafolio vas a ver acá los indicadores de retención."
-          />
-        }
+        cargando={riesgo.isLoading && !r}
+        error={riesgo.error}
+        queEs="el riesgo de retención"
+        onReintentar={() => void riesgo.refetch()}
+        principal
       >
-      {hayIndicadores ? (
-        <section aria-label="Indicadores de retención">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {data!.cards.map((c) => (
-              <KpiCard key={c.key} card={c} />
+        {r ? (
+          <section aria-label="Resumen" className="space-y-3">
+            {!r.disponible ? (
+              <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3" role="status">
+                <Warning className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="fill" aria-hidden="true" />
+                <p className="text-sm text-fg">
+                  Vinci no puede medir todavía: faltan datos del ERP ({r.faltan.join(', ')}). No muestra casos inventados.
+                </p>
+              </div>
+            ) : (
+              <p className="text-body text-fg" data-testid="vinci-frase">
+                {fraseDelRiesgo(r)}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {r.modo ? (
+                <p className="text-sm text-fg-muted">
+                  Piloto en <span className="font-medium text-fg">{NOMBRE_DEL_MODO[r.modo]}</span>. {QUE_HACE_EN_CADA_MODO[r.modo]}
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                isLoading={riesgo.isLoading && fresco}
+                onClick={() => (fresco ? void riesgo.refetch() : setFresco(true))}
+              >
+                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+                Medir ahora
+              </Button>
+            </div>
+            {!r.envioHabilitado ? (
+              <p className="text-caption text-fg-muted" data-testid="vinci-envio-apagado">
+                El envío de Vinci está apagado en esta plataforma: aun en Automático, deja el mensaje listo para que lo mandes tú.
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+      </EstadoDeDatos>
+
+      <section aria-label="Lo que Vinci retuvo" className="rounded-lg border border-border bg-surface p-5">
+        <h2 className="text-base font-semibold text-fg">Lo retenido</h2>
+        <EstadoDeDatos
+          cargando={metricas.isLoading && !metricas.data}
+          error={metricas.error}
+          queEs="lo que Vinci retuvo"
+          onReintentar={() => void metricas.refetch()}
+        >
+          {metricas.data ? (
+            <p className="mt-2 text-sm text-fg" data-testid="vinci-metricas">
+              {fraseDeLasMetricas(metricas.data)}
+            </p>
+          ) : null}
+        </EstadoDeDatos>
+      </section>
+
+      {isAdmin ? <Umbral /> : null}
+
+      {r?.disponible ? (
+        <section aria-label="Lo más urgente">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-fg">Lo más urgente</h2>
+            <Link href="/panel/inmobiliaria/contratos/riesgo" className="text-sm font-medium text-primary hover:underline">
+              Ver todos los casos
+            </Link>
+          </div>
+          <div className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+            {urgentes.map((c) => (
+              <Link
+                key={c.caseId}
+                href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(c.caseId)}`}
+                className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-hover"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-fg">
+                    {c.nombre ?? 'Sin nombre registrado'} <span className="text-fg-muted">· {QUIEN[c.poblacion]}</span>
+                  </p>
+                  <p className="truncate text-caption text-fg-muted">
+                    {c.senales
+                      .slice(0, 2)
+                      .map((s) => `${s.texto} (+${s.puntos})`)
+                      .join(' · ')}
+                  </p>
+                </div>
+                <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} />
+                <CaretRight size={16} className="shrink-0 text-fg-subtle" />
+              </Link>
             ))}
+            {urgentes.length === 0 ? (
+              <EmptyState
+                icon={HeartStraight}
+                title="Nadie pasa el umbral hoy."
+                description="Con las señales del ERP de hoy, ningún propietario ni inquilino llega al umbral de riesgo."
+              />
+            ) : null}
           </div>
         </section>
       ) : null}
-
-      <section aria-label="Lo más urgente">
-        <h2 className="text-base font-semibold text-fg mb-3">Lo más urgente</h2>
-        <div className="rounded-lg border border-border divide-y divide-border-faint overflow-hidden">
-          {urgentes.map((u) => (
-            <Link
-              key={u.caseId}
-              href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(u.caseId)}`}
-              className="flex items-center gap-4 px-4 py-3 hover:bg-surface-hover transition-colors"
-            >
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-sm font-semibold text-danger">
-                {u.score}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{u.ownerName}</p>
-                <p className="truncate text-xs text-fg-muted">
-                  {u.rootCauseLabel} · {u.nextActionLabel}
-                </p>
-              </div>
-              <div className="hidden sm:block text-right">
-                <p className="text-xs text-fg-subtle">Comisión en riesgo</p>
-                <p className="text-sm font-semibold text-fg">{formatCop(u.expectedCommissionLoss)}</p>
-              </div>
-              <CaretRight size={16} className="text-fg-subtle shrink-0" />
-            </Link>
-          ))}
-          {urgentes.length === 0 ? (
-            <EmptyState
-              icon={HeartStraight}
-              title="No hay casos urgentes ahora mismo. 🎉"
-              description="Ningún propietario del portafolio quedó priorizado por comisión en riesgo."
-            />
-          ) : null}
-        </div>
-      </section>
-      </EstadoDeDatos>
     </div>
   )
 }

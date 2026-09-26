@@ -1,97 +1,89 @@
 /**
- * Revisiones de Retención — una cola caída no es «no hay decisiones».
- *
- * El vacío se evaluaba sin mirar el error: con la consulta rota la tabla decía
- * «No hay decisiones en este filtro» y, abajo, un cartel rojo con el mensaje
- * crudo y sin reintentar. Ahora el orden es cargando → falló → vacío → datos.
+ * «Por aprobar» de Vinci dice QUÉ es cada cosa (26-09-2026):
+ *   · 🔴 `notified` fue un correo INTERNO: nunca «propietario notificado»;
+ *   · el mensaje listo se muestra TAL CUAL sale, con «Enviar»;
+ *   · una oferta de plata la aprueba sólo el administrador.
  */
+import * as React from 'react'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
 
-import * as React from 'react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createRoot, type Root } from 'react-dom/client';
-import { act } from 'react';
+const { decisionesMock, esAdmin } = vi.hoisted(() => ({ decisionesMock: vi.fn(), esAdmin: { valor: false } }))
 
-const { decisionesMock } = vi.hoisted(() => ({ decisionesMock: vi.fn() }));
-
-vi.mock('@/lib/hooks/retencion/use-decisiones', () => ({
-  useDecisiones: decisionesMock,
-  useReviewDecision: () => ({ review: vi.fn(), isReviewing: false }),
-}));
-
+vi.mock('@/lib/hooks/retencion/use-vinci', () => ({ useDecisionesDeVinci: decisionesMock }))
+vi.mock('@/lib/context/PermissionsContext', () => ({ usePermissionsContext: () => ({ isAdmin: esAdmin.valor }) }))
+vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { id: 'a1' } }) }))
 vi.mock('next/link', () => ({
-  default: ({ children, href }: { children?: React.ReactNode; href: string }) =>
-    React.createElement('a', { href }, children),
-}));
+  default: ({ children, href }: { children?: React.ReactNode; href: string }) => React.createElement('a', { href }, children),
+}))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn() } }))
 
-vi.mock('@/components/ui/toast', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
+import RevisionesClient from './RevisionesClient'
 
-import RevisionesClient from './RevisionesClient';
-
-void React;
-
-let container: HTMLDivElement;
-let root: Root;
-
+let container: HTMLDivElement
+let root: Root
 beforeEach(() => {
-  decisionesMock.mockReset();
-  container = document.createElement('div');
-  document.body.appendChild(container);
-  root = createRoot(container);
-});
-
+  decisionesMock.mockReset()
+  esAdmin.valor = false
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+})
 afterEach(() => {
-  act(() => root.unmount());
-  container.remove();
-});
+  act(() => root.unmount())
+  container.remove()
+})
 
-function render(estado: Record<string, unknown>) {
-  decisionesMock.mockReturnValue({
-    data: null,
-    isLoading: false,
-    error: null,
-    usingMock: false,
-    refetch: vi.fn(),
-    ...estado,
-  });
-  act(() => root.render(<RevisionesClient />));
+const fila = (decisionType: string, payload: Record<string, unknown> = {}) => ({
+  id: `d-${decisionType}`,
+  caseId: 'inquilino:c1',
+  ownerId: null,
+  decisionType,
+  tier: 0,
+  reviewable: true,
+  reviewedBy: null,
+  reviewedAt: null,
+  reviewOutcome: null,
+  createdAt: '2026-09-28T12:00:00.000Z',
+  payload,
+})
+
+function render(decisiones: unknown[]) {
+  decisionesMock.mockReturnValue({ data: decisiones, isLoading: false, error: null, refetch: vi.fn() })
+  act(() => root.render(<RevisionesClient />))
 }
 
-describe('Revisiones — cargando → falló → vacío → datos (C33)', () => {
-  it('🔴 con la cola caída pinta el fallo, no «No hay decisiones en este filtro»', async () => {
-    const refetch = vi.fn();
-    render({ error: 'Failed to fetch', refetch });
+describe('Por aprobar · Vinci', () => {
+  it('🔴 un aviso interno se llama aviso interno: nunca «propietario notificado»', () => {
+    render([fila('notified', { channel: 'email' })])
+    expect(container.textContent).toContain('Aviso interno al responsable (al propietario no se le escribió)')
+    expect(container.textContent).not.toMatch(/propietario notificado/i)
+  })
 
-    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull();
-    expect(container.textContent).not.toContain('No hay decisiones en este filtro');
-    expect(container.textContent).not.toContain('No pude cargar la cola de revisión');
+  it('el mensaje listo se ve tal cual sale, con el porqué y «Enviar»', () => {
+    render([
+      fila('mensaje_listo', {
+        nombre: 'Marta Gómez',
+        puntaje: 60,
+        senales: [{ clave: 'mora', texto: '70 días de mora', puntos: 40 }],
+        mensaje: { nombre: 'Marta Gómez', texto: 'Hola, Marta. Te escribimos de Inmobiliaria Horizonte.' },
+      }),
+    ])
+    expect(container.textContent).toContain('Mensaje de Vinci listo para Marta Gómez')
+    expect(container.textContent).toContain('60/100: 70 días de mora (+40)')
+    expect(container.querySelector('blockquote')?.textContent).toBe('Hola, Marta. Te escribimos de Inmobiliaria Horizonte.')
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).toContain('Enviar')
+  })
 
-    const reintentar = container.querySelector<HTMLButtonElement>('[data-testid="reintentar"]');
-    expect(reintentar).not.toBeNull();
-    await act(async () => {
-      reintentar!.click();
-    });
-    expect(refetch).toHaveBeenCalled();
-  });
-
-  it('con un 403 no ofrece reintentar', () => {
-    render({ error: '403' });
-    expect(container.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo')).toBe(
-      'sinPermiso',
-    );
-    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull();
-  });
-
-  it('mientras carga muestra el esqueleto y ningún vacío', () => {
-    render({ isLoading: true });
-    expect(container.querySelector('[data-testid="revisiones-cargando"]')).not.toBeNull();
-    expect(container.textContent).not.toContain('No hay decisiones en este filtro');
-  });
-
-  it('con la respuesta vacía (y sin error) sí dice que no hay decisiones', () => {
-    render({ data: { decisions: [] } });
-    expect(container.textContent).toContain('No hay decisiones en este filtro');
-    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
-  });
-});
+  it('una oferta que cuesta plata: sólo el administrador ve «Aprobar»', () => {
+    render([fila('oferta', { tipo: 'descuento_comision', poblacion: 'propietario', detalle: { descuentoPct: 10 } })])
+    expect(container.textContent).toContain('sólo el administrador la aprueba')
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Aprobar')
+    act(() => root.unmount())
+    root = createRoot(container)
+    esAdmin.valor = true
+    render([fila('oferta', { tipo: 'descuento_comision', poblacion: 'propietario', detalle: { descuentoPct: 10 } })])
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).toContain('Aprobar')
+  })
+})

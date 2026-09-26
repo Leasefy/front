@@ -30,7 +30,9 @@ export type AgentType =
   | 'mantenimiento'
   | 'documentos'
   | 'comunicacion'
-  | 'reportes';
+  | 'reportes'
+  // 26-09-2026: Vinci (retención) — el chat le pregunta quién está en riesgo.
+  | 'retencion';
 
 export type AgentExecutionStatus = 'dispatching' | 'running' | 'completed' | 'failed';
 
@@ -454,6 +456,7 @@ export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; co
   documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },
   comunicacion:  { label: 'Comunicacion',  icon: 'ChatCircle',     color: 'pink' },
   reportes:      { label: 'Reportes',      icon: 'ChartBar',       color: 'indigo' },
+  retencion:     { label: 'Retención',     icon: 'ChartBar',       color: 'purple' },
 };
 
 // ============================================================================

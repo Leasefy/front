@@ -503,3 +503,46 @@ describe('el riel', () => {
     expect(porTestId<HTMLTextAreaElement>('riel-nota')?.value).toBe('');
   });
 });
+
+describe('P-7: el riesgo de Vinci va DENTRO de la propuesta (26-09-2026)', () => {
+  it('la propuesta muestra el puntaje de Vinci, qué sumó cada señal y la oferta sugerida', async () => {
+    await montar({
+      renovacion: {
+        ...base,
+        riesgoDeRetencion: {
+          umbral: 60,
+          medidoEn: '2026-09-08T12:00:00.000Z',
+          inquilino: {
+            puntaje: 65,
+            umbral: 60,
+            enRiesgo: true,
+            senales: [
+              { clave: 'mora', texto: '45 días de mora ($1.550.000 vencido)', puntos: 30 },
+              { clave: 'fin_del_contrato', texto: 'el contrato termina en 23 días', puntos: 20 },
+              { clave: 'incremento_alto', texto: 'incremento del 10 %', puntos: 15 },
+            ],
+            ofertaSugerida: {
+              tipo: 'visita_del_asesor',
+              nombre: 'Visita del asesor',
+              porque: 'x',
+              cuestaPlata: false,
+              quienAprueba: null,
+            },
+          },
+          propietario: null,
+        },
+      },
+    });
+    const bloque = porTestId('renovacion-riesgo-vinci');
+    expect(porTestId('paso-propuesta')?.contains(bloque)).toBe(true);
+    expect(bloque?.textContent).toContain('65/100');
+    expect(bloque?.textContent).toContain('45 días de mora ($1.550.000 vencido)+30');
+    expect(bloque?.textContent).toContain('Vinci sugiere: visita del asesor');
+  });
+
+  it('con un back que todavía no lo trae, la propuesta sale igual y sin el bloque', async () => {
+    await montar();
+    expect(porTestId('renovacion-riesgo-vinci')).toBeNull();
+    expect(porTestId('paso-propuesta')).not.toBeNull();
+  });
+});

@@ -92,6 +92,8 @@ export interface CasoDeVinci {
   suma: number;
   umbral: number;
   enRiesgo: boolean;
+  /** Nico (26-09): inquilino con más de 60 días de mora — lo lleva cobranza, Vinci no lo retiene. */
+  enCobranza?: boolean;
   senales: SenalDeVinci[];
   contratos: ContratoDelCaso[];
   canonEnJuegoCop: number;
@@ -117,6 +119,8 @@ export interface RiesgoDeVinci {
   contratosLeidos: number;
   propietariosLeidos: number;
   enRiesgo: { inquilinos: number; propietarios: number };
+  /** Cuántos inquilinos pasaron a cobranza (más de 60 días de mora). */
+  enCobranza?: number;
   casos: CasoDeVinci[];
 }
 
@@ -205,6 +209,7 @@ export interface CasoEnLaRenovacion {
   puntaje: number;
   umbral: number;
   enRiesgo: boolean;
+  enCobranza?: boolean;
   senales: SenalDeVinci[];
   ofertaSugerida: OfertaSugerida | null;
 }

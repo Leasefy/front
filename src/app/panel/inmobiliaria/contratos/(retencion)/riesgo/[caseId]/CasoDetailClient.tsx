@@ -385,7 +385,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
             <section aria-label="Por qué" className="rounded-lg border border-border bg-surface p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-base font-semibold text-fg">Por qué</h2>
-                <PuntajeDeVinci puntaje={caso.puntaje} enRiesgo={caso.enRiesgo} />
+                <PuntajeDeVinci puntaje={caso.puntaje} enRiesgo={caso.enRiesgo} enCobranza={caso.enCobranza} />
               </div>
               <p className="mt-1 text-sm text-fg-muted">Cada señal del ERP y lo que sumó. En riesgo desde {caso.umbral}/100.</p>
               <div className="mt-4">

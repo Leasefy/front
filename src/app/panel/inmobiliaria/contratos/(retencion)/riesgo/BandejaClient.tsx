@@ -116,7 +116,7 @@ export default function BandejaClient() {
                       </p>
                     </td>
                     <td className="px-4 py-3">
-                      <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} />
+                      <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
                     </td>
                     <td className="hidden px-4 py-3 text-fg-muted md:table-cell">
                       {c.senales

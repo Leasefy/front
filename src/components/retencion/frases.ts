@@ -12,7 +12,10 @@ const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno
 export function fraseDelRiesgo(r: RiesgoDeVinci): string {
   const quienes = `${plural(r.enRiesgo.inquilinos, 'inquilino', 'inquilinos')} y ${plural(r.enRiesgo.propietarios, 'propietario', 'propietarios')}`
   const cuando = r.deLoGuardado ? `medido ${fechaYHora(r.leidoEn)} (el último barrido)` : `medido ahora (${fechaYHora(r.leidoEn)})`
-  return `Vinci ve ${quienes} en riesgo (umbral ${r.umbral}/100) entre ${plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')}; ${cuando}.`
+  const cobranza = r.enCobranza
+    ? `; ${r.enCobranza === 1 ? '1 inquilino pasa' : `${r.enCobranza} inquilinos pasan`} de 60 días de mora: ésos no se retienen, los lleva cobranza`
+    : ''
+  return `Vinci ve ${quienes} en riesgo (umbral ${r.umbral}/100) entre ${plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')}; ${cuando}${cobranza}.`
 }
 
 export function fraseDeLasMetricas(m: MetricasDeVinci): string {

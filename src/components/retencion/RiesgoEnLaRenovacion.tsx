@@ -13,7 +13,7 @@
  * (Vinci apagado o sin respuesta): se dice, no se inventa.
  */
 import Link from 'next/link'
-import { DesgloseDelPuntaje, PuntajeDeVinci, fechaYHora } from '@/components/retencion/vinci'
+import { DesgloseDelPuntaje, POR_QUE_EN_COBRANZA, PuntajeDeVinci, fechaYHora } from '@/components/retencion/vinci'
 import type { CasoEnLaRenovacion, RiesgoDeRetencion } from '@/lib/types/retencion'
 
 function Caso({ titulo, caso }: { titulo: string; caso: CasoEnLaRenovacion | null }) {
@@ -21,10 +21,11 @@ function Caso({ titulo, caso }: { titulo: string; caso: CasoEnLaRenovacion | nul
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-fg">{titulo}</p>
-        {caso ? <PuntajeDeVinci puntaje={caso.puntaje} enRiesgo={caso.enRiesgo} /> : null}
+        {caso ? <PuntajeDeVinci puntaje={caso.puntaje} enRiesgo={caso.enRiesgo} enCobranza={caso.enCobranza} /> : null}
       </div>
       {caso ? (
         <>
+          {caso.enCobranza ? <p className="text-sm text-fg-muted">{POR_QUE_EN_COBRANZA}</p> : null}
           <DesgloseDelPuntaje senales={caso.senales} puntaje={caso.puntaje} />
           {caso.ofertaSugerida ? (
             <p className="text-sm text-fg">

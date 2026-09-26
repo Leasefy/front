@@ -24,6 +24,13 @@ import { esNoExiste } from '@/lib/errores/clasificar';
 // useProperties - list with filters & pagination
 // ============================================================================
 
+/**
+ * Tope de páginas a traer. Corta un `hasNext` que nunca baje a falso: sin él,
+ * un back con ese bug dejaría el buscador pidiendo para siempre.
+ * 20 × 100 = 2.000 propiedades, muy por encima del catálogo actual.
+ */
+const MAX_PAGINAS = 20;
+
 export function useProperties(filters: PropertyFiltersParams = {}) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
@@ -35,14 +42,44 @@ export function useProperties(filters: PropertyFiltersParams = {}) {
   const filtersKey = JSON.stringify(filters);
   const prevFiltersKey = useRef(filtersKey);
 
+  /*
+   * El back pagina de a 100 como máximo (`limit must not be greater than 100`) y
+   * el buscador pedía UNA sola página. Con 155 propiedades publicadas, 55 eran
+   * inalcanzables y la pantalla anunciaba «100 DISPONIBLES» como si ese fuera el
+   * total. «Cargar más» tampoco alcanzaba: sólo destapa lo que ya está en
+   * memoria, nunca pide la página siguiente.
+   *
+   * Se traen todas las páginas y se acumulan. Sirve mientras el catálogo sea de
+   * unos cientos; si crece mucho habrá que paginar de verdad —pedir la siguiente
+   * al pulsar «Cargar más»— en vez de traerlo todo al entrar.
+   */
   const fetchProperties = useCallback(async (params: PropertyFiltersParams) => {
     setIsLoading(true);
     setError(null);
     setErrorCrudo(null);
     try {
-      const result = await propertiesApi.list(params);
-      setProperties(result.data);
-      setMeta(result.meta);
+      const primera = await propertiesApi.list(params);
+      let todas = primera.data;
+      let ultima = primera.meta;
+
+      for (let i = 1; i < MAX_PAGINAS && ultima.hasNext; i++) {
+        try {
+          const siguiente = await propertiesApi.list({ ...params, page: ultima.page + 1 });
+          todas = [...todas, ...siguiente.data];
+          ultima = siguiente.meta;
+        } catch {
+          // Si una página intermedia falla, se muestra lo que ya se trajo: 100
+          // propiedades son mejor que ninguna. El total de `meta` sigue siendo
+          // el real, así que la pantalla no miente sobre cuántas hay.
+          break;
+        }
+      }
+
+      setProperties(todas);
+      // `page` y `hasNext` describen la última página pedida, no el conjunto que
+      // quedó en pantalla. Se ajustan para que nadie lea `meta` y crea que falta
+      // cargar algo que ya está.
+      setMeta({ ...ultima, page: 1, hasNext: false });
     } catch (err) {
       setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando propiedades';

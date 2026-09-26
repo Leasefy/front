@@ -260,7 +260,7 @@ export default function RetencionDashboardPage() {
                       .join(' · ')}
                   </p>
                 </div>
-                <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} />
+                <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
                 <CaretRight size={16} className="shrink-0 text-fg-subtle" />
               </Link>
             ))}

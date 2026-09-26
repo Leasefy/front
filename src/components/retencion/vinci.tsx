@@ -55,15 +55,24 @@ export function fechaYHora(iso: string | null | undefined): string {
   })
 }
 
-/** «72/100» en mono, y si pasa el umbral, «En riesgo». */
-export function PuntajeDeVinci({ puntaje, enRiesgo }: { puntaje: number; enRiesgo: boolean }) {
+/** Lo que dice la marca «En cobranza» (Nico, 26-09). */
+export const POR_QUE_EN_COBRANZA = 'Más de 60 días de mora: lo lleva cobranza y Vinci no lo retiene.'
+
+/** «72/100» en mono, y si pasa el umbral, «En riesgo»; si pasó a cobranza, «En cobranza». */
+export function PuntajeDeVinci({ puntaje, enRiesgo, enCobranza }: { puntaje: number; enRiesgo: boolean; enCobranza?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2" data-testid="vinci-puntaje">
       <span>
         <span className="font-mono tabular-nums text-fg">{puntaje}</span>
         <span className="text-sm text-fg-muted">/100</span>
       </span>
-      {enRiesgo ? <Badge variant="destructive">En riesgo</Badge> : null}
+      {enCobranza ? (
+        <Badge variant="warning" title={POR_QUE_EN_COBRANZA}>
+          En cobranza
+        </Badge>
+      ) : enRiesgo ? (
+        <Badge variant="destructive">En riesgo</Badge>
+      ) : null}
     </span>
   )
 }

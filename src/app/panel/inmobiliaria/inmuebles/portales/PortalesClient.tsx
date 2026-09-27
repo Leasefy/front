@@ -57,6 +57,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
@@ -912,9 +913,35 @@ function ComoFunciona() {
 /** Las dos pestañas: la de siempre y la de Niti · calidad (26-09-2026). */
 type Pestana = 'publicar' | 'calidad'
 
+/**
+ * La pestaña vive en la URL (`?pestana=calidad`) para poder enlazarla desde la
+ * Bandeja o compartirla. Sin parámetro —o con uno que no es pestaña— es
+ * «Publicar», y elegir «Publicar» QUITA el parámetro: la URL de siempre no
+ * cambia para quien sólo viene a publicar.
+ */
+const PARAMETRO_DE_PESTANA = 'pestana'
+const pestanaDe = (valor: string | null): Pestana => (valor === 'calidad' ? 'calidad' : 'publicar')
+
 export function PortalesClient() {
   const { t } = useI18n()
-  const [pestana, setPestana] = useState<Pestana>('publicar')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const deLaUrl = pestanaDe(searchParams.get(PARAMETRO_DE_PESTANA))
+  const [pestana, setPestana] = useState<Pestana>(deLaUrl)
+  // Atrás/adelante del navegador cambia la URL sin pasar por el clic.
+  useEffect(() => setPestana(deLaUrl), [deLaUrl])
+
+  function elegirPestana(valor: string) {
+    const siguiente = pestanaDe(valor)
+    setPestana(siguiente)
+    const params = new URLSearchParams(searchParams.toString())
+    if (siguiente === 'calidad') params.set(PARAMETRO_DE_PESTANA, 'calidad')
+    else params.delete(PARAMETRO_DE_PESTANA)
+    const q = params.toString()
+    // `replace`: cambiar de pestaña no recarga ni llena el historial.
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false })
+  }
   const cuentas = useCrm(() => publicacionApi.cuentas(), [], ['portafolio'])
   const tablero = useCrm(() => publicacionApi.tablero(), [], ['portafolio'])
   const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones()
@@ -1036,7 +1063,7 @@ export function PortalesClient() {
           (DESIGN §15); el contenido inactivo no se monta. */}
       <Tabs
         value={pestana}
-        onValueChange={(v) => setPestana(v === 'calidad' ? 'calidad' : 'publicar')}
+        onValueChange={elegirPestana}
         className="space-y-6"
       >
         <TabsList

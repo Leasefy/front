@@ -300,10 +300,16 @@ export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiEr
    * reenvío" de "rate limit de infraestructura") y el mensaje propio del
    * back. Un 429 sin `code` (limitador genérico, o el proxy sin cuerpo) cae
    * igual que siempre al genérico.
+   *
+   * El `message` del cuerpo SOLO se respeta cuando viene junto a un `code`
+   * propio (mismo gate que `code`) — si no, un 429 genérico del limitador de
+   * infraestructura (p. ej. `{ message: 'Too many requests' }`, sin `code`)
+   * filtraría el string crudo en inglés en vez del mensaje localizado.
    */
-  const code = typeof cuerpo.code === 'string' ? cuerpo.code : CODIGO_DEMASIADAS_SOLICITUDES
+  const tieneCodePropio = typeof cuerpo.code === 'string'
+  const code = tieneCodePropio ? (cuerpo.code as string) : CODIGO_DEMASIADAS_SOLICITUDES
   const message =
-    typeof cuerpo.message === 'string' && cuerpo.message
+    tieneCodePropio && typeof cuerpo.message === 'string' && cuerpo.message
       ? cuerpo.message
       : mensajeDeDemasiadasSolicitudes(segundos)
   return new ApiError(429, message, code, { ...cuerpo, reintentarEnSegundos: segundos })

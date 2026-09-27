@@ -4,7 +4,7 @@ import { apiClient, ApiError, setAccessToken } from '../client'
 import { applicationsApi } from '../applications.service'
 import { resetSessionTerminal } from '@/lib/auth/session-terminal'
 import { clasificarFallo } from '@/lib/errores/clasificar'
-import { cuantoEsperar, segundosDeEspera } from '../demasiadas-solicitudes'
+import { cuantoEsperar, mensajeDeDemasiadasSolicitudes, segundosDeEspera } from '../demasiadas-solicitudes'
 
 /**
  * 🔴 Auditoría de seguridad (23-09-2026): el back empezó a responder 429 con
@@ -156,6 +156,29 @@ describe('apiClient ante un 429 con code propio (T-0109 CODIGO_EN_ESPERA)', () =
       status: 429,
       code: 'DEMASIADAS_SOLICITUDES',
       message: 'Hiciste demasiadas solicitudes seguidas. Espera 15 segundos y vuelve a intentar.',
+    })
+  })
+
+  /**
+   * 🔴 Regresión detectada en revisión (commit 0686fda3): el `message` del
+   * cuerpo se usaba con solo chequear que fuera un string no vacío, SIN
+   * exigir que viniera acompañado de un `code` propio. El limitador de
+   * infraestructura del agent manda 429 genéricos tipo
+   * `{ message: 'Too many requests' }` — sin `code` — y esa rama dejaba
+   * pasar el string crudo en inglés en vez del mensaje localizado.
+   */
+  it('un 429 genérico con message propio pero SIN code no filtra el string crudo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        respuesta429({ message: 'Too many requests' }, { 'Retry-After': '45' }),
+      ),
+    )
+
+    await expect(apiClient.get('/inmobiliaria/x')).rejects.toMatchObject({
+      status: 429,
+      code: 'DEMASIADAS_SOLICITUDES',
+      message: mensajeDeDemasiadasSolicitudes(45),
     })
   })
 })

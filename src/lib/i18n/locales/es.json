@@ -1179,7 +1179,14 @@
           "autonomo": "Automático"
         },
         "noActuaSolo": "Todavía no actúa solo",
-        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
+        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos.",
+        "porAgente": {
+          "calidad": {
+            "sombra": "Niti audita tus inmuebles y propone arreglos en Portales › Calidad y en la Bandeja. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario.",
+            "copiloto": "Igual que en Manual: Niti audita y propone. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario.",
+            "autonomo": "Automático no le da más permiso: Niti audita y propone, pero no aplica nada solo. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario."
+          }
+        }
       },
       "pulso": {
         "titulo": "Pulso del Piloto",
@@ -8032,7 +8039,7 @@
           "avaluos": "Avalúos",
           "gerente": "Gerente",
           "retencion": "Retención",
-          "calidad": "Calidad de publicación",
+          "calidad": "Niti · calidad",
           "prospectos": "Prospectos",
           "aprobaciones": "Aprobaciones del propietario",
           "mantenimiento": "Mantenimiento",
@@ -10360,6 +10367,62 @@
           "cerrado": "{{mes}} ya cerró: lo que llegó es el cierre."
         }
       }
+    },
+    "calidad": {
+      "pestanas": {
+        "aria": "Publicar o revisar la calidad",
+        "publicar": "Publicar",
+        "calidad": "Calidad"
+      },
+      "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. Ningún cambio sale sin el clic de una persona.",
+      "ultimaPasada": "Última pasada: {{fecha}}",
+      "sinPasada": "Todavía no ha hecho su primera pasada.",
+      "queEsResumen": "el resumen de Niti",
+      "queEsLista": "los inmuebles auditados",
+      "queSon": "inmuebles auditados",
+      "puntajePromedio": "Puntaje promedio",
+      "porArreglar": "Con algo por arreglar",
+      "porArreglarDe": "de {{total}}",
+      "fotosIA": "Fotos con IA este mes",
+      "fotosIARevisadas": "revisadas",
+      "fotosIAGasto": "Gasto estimado {{gasto}} de {{tope}}",
+      "apagadoTitulo": "Niti está apagado para esta inmobiliaria",
+      "apagadoDescripcion": "No audita tus inmuebles ni propone arreglos. Lo prende el equipo técnico.",
+      "errorPasadaTitulo": "La última pasada de Niti falló",
+      "filtroAria": "Filtrar los inmuebles auditados",
+      "filtro": {
+        "todos": "Todos",
+        "con_problemas": "Con algo por arreglar",
+        "posible_tomado": "Posible tomado",
+        "fotos": "Fotos señaladas"
+      },
+      "conteoUno": "1 inmueble",
+      "conteoVarios": "{{total}} inmuebles",
+      "vacioTitulo": "Niti todavía no ha auditado ningún inmueble",
+      "vacioDescripcion": "Revisa los publicados, los que están por publicar y los arrendados con preaviso. Cuando termine su pasada, aparecen aquí de peor a mejor.",
+      "motivo": {
+        "publicado": "Publicado",
+        "por_publicar": "Por publicar",
+        "arrendado_con_preaviso": "Arrendado con preaviso"
+      },
+      "negocio": {
+        "arriendo": "Arriendo",
+        "venta": "Venta"
+      },
+      "puntajeAria": "Puntaje {{n}} de 100",
+      "posibleTomado": "Posible tomado",
+      "posibleTomadoDetalle": "Está publicado, pero arrendado sin preaviso: el aviso ofrece algo que no está disponible.",
+      "queFalta": "Qué falta para publicar",
+      "problemas": "Problemas",
+      "fotos": "Fotos señaladas",
+      "propuestas": "Propuestas de Niti",
+      "abrirFicha": "Abrir ficha",
+      "aprobarYAplicar": "Aprobar y aplicar",
+      "despublicar": "Despublicar",
+      "marcarHecha": "Marcar como hecha",
+      "rechazar": "Rechazar",
+      "decisionSinMensaje": "Listo.",
+      "decisionFallo": "No se pudo guardar la decisión: {{error}}"
     }
   },
   "validation": {

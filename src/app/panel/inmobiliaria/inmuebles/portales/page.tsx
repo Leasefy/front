@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+
 import { PageGuard } from '@/components/auth/PageGuard'
 
 import { PortalesClient } from './PortalesClient'
@@ -12,7 +14,11 @@ import { PortalesClient } from './PortalesClient'
 export default function PortalesPage() {
   return (
     <PageGuard module="portafolio">
-      <PortalesClient />
+      {/* `PortalesClient` lee `?pestana=` con `useSearchParams`: sin este
+          límite, Next no puede prerenderizar la ruta. */}
+      <Suspense fallback={null}>
+        <PortalesClient />
+      </Suspense>
     </PageGuard>
   )
 }

@@ -120,7 +120,6 @@ const COBERTURA: string[] = [
   'app/panel/inmobiliaria/contratos/(retencion)/layout.tsx',
   'app/panel/inmobiliaria/contratos/(retencion)/retencion/page.tsx',
   'app/panel/inmobiliaria/contratos/(retencion)/riesgo/BandejaClient.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoSidebar.tsx',
   'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx',
   'app/panel/inmobiliaria/contratos/(retencion)/aprobar/RevisionesClient.tsx',
   'app/panel/inmobiliaria/contratos/[id]/page.tsx',
@@ -430,9 +429,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Celda `role="gridcell"` del mapa de calor.',
   'components/inmobiliaria/cobranza/DebtorPicker.tsx':
     'Fila de sugerencia del buscador de deudores.',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx':
-    'Pestaña subrayada, sin superficie ni pill: un `Button` le pondría pill y foco ' +
-    'de CTA a algo que es una pestaña.',
 }
 
 // ============================================================================

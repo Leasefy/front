@@ -41,7 +41,8 @@ export interface EstadoDeDatosProps {
   cuandoVacio?: ReactNode
   /** Qué se estaba cargando: «las postulaciones», «el contrato»… */
   queEs?: string
-  onReintentar?: () => void
+  /** Devuelve la promesa: el botón espera a que termine (no se tira con `void`). */
+  onReintentar?: () => void | Promise<unknown>
   volverA?: { label: string; href: string }
   /** Si ya se mostró contenido, un fallo de refresco no lo borra. */
   conservarContenido?: boolean

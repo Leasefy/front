@@ -269,7 +269,7 @@ export function ComparativaDelMes({
   comparativa: Comparativa | null;
   cargando: boolean;
   error: unknown;
-  onReintentar: () => void;
+  onReintentar: () => void | Promise<unknown>;
 }) {
   const { t } = useI18n();
   const mes = soloElMes(month);

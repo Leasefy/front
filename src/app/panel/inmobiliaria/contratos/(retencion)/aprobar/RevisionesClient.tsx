@@ -13,9 +13,10 @@
  */
 import { useState } from 'react'
 import Link from 'next/link'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { CheckCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -134,10 +135,12 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
     acciones = isAdmin ? (
       <div className="flex flex-wrap items-center gap-2">
         {incremento ? (
-          <label className="flex items-center gap-2 text-sm text-fg">
-            <input type="checkbox" checked={aceptada} onChange={(e) => setAceptada(e.target.checked)} />
-            El propietario ya aceptó
-          </label>
+          <div className="flex items-center gap-2">
+            <Checkbox id={`vinci-aceptada-${d.id}`} checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
+            <label htmlFor={`vinci-aceptada-${d.id}`} className="cursor-pointer text-sm text-fg">
+              El propietario ya aceptó
+            </label>
+          </div>
         ) : null}
         <Button
           type="button"
@@ -212,7 +215,7 @@ export default function RevisionesClient() {
         error={error}
         vacio={(data?.length ?? 0) === 0}
         queEs="lo que espera tu aprobación"
-        onReintentar={() => void refetch()}
+        onReintentar={() => refetch()}
         principal
         cuandoVacio={<EmptyState icon={CheckCircle} title="Nada esperando." description="Vinci no tiene nada pendiente de tu clic." />}
       >

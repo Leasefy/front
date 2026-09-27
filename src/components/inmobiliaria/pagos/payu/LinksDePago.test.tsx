@@ -164,7 +164,23 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     expect(fila('c-ninguno')?.querySelector('[data-testid="hitos-del-link"]')).toBeNull();
   });
 
+  it('🔴 una cuota que ya pasó su «3 días después» sin link no dice «todavía»: la lleva cobranza (Nico, 26-09)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-28T15:00:00.000Z'));
+    try {
+      const enMora = { ...LOS_CINCO.find((l) => l.estado === 'ninguno')!, cuotaId: 'c-mora', fechaDeVencimiento: '2026-01-05' };
+      get.mockResolvedValue(pagina([enMora]));
+      await montar(<LinksDePago mes="2026-10" />);
+      expect(fila('c-mora')?.textContent).toContain('la lleva cobranza');
+      expect(fila('c-mora')?.textContent).not.toContain('todavía no le ha escrito');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('cada estado dice qué significa', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-28T15:00:00.000Z'));
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
     expect(fila('c-ninguno')?.textContent).toContain('Payu todavía no le ha escrito por esta cuota.');
@@ -172,6 +188,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     expect(fila('c-pagado')?.textContent).toContain('Pagado el');
     expect(fila('c-vencido')?.textContent).toContain('la sigue cobranza');
     expect(fila('c-fallido')?.textContent).toContain('la pasarela no aprobó el pago');
+    vi.useRealTimers();
   });
 
   it('el valor con formatCurrency y la fecha de vencimiento como día (sin correrse por el huso)', async () => {

@@ -52,6 +52,10 @@ export function TablePagination({ className, ...props }: TablePaginationProps) {
         '[@media(pointer:coarse)]:h-auto [@media(pointer:coarse)]:min-h-11',
         '[@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11',
         '[@media(pointer:coarse)]:[&_select]:min-h-11',
+        // A 390 px el grupo de la derecha (filas + flechas + hasta 7 páginas)
+        // no cabía en una línea y empujaba la página de lado (Payu, 26-09):
+        // que ese grupo también se parta.
+        '[&>div]:flex-wrap [&>div]:gap-y-2',
         className
       )}
       {...props}

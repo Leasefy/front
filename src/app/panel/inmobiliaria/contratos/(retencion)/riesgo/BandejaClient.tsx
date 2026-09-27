@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { SegmentedControl } from '@leasefy/cadence'
 import { HeartStraight } from '@phosphor-icons/react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { formatCurrency } from '@/lib/format'
 import { useRiesgoDeVinci } from '@/lib/hooks/retencion/use-vinci'
@@ -49,7 +50,7 @@ export default function BandejaClient() {
         error={error}
         vacio={Boolean(data) && !data!.disponible}
         queEs="los casos de retención"
-        onReintentar={() => void refetch()}
+        onReintentar={() => refetch()}
         principal
         cuandoVacio={
           <EmptyState
@@ -71,15 +72,17 @@ export default function BandejaClient() {
                 { value: 'propietario', label: `Propietarios (${cuenta('propietario')})` },
               ]}
             />
-            <label className="flex items-center gap-2 text-sm text-fg">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="vinci-solo-en-riesgo"
                 checked={soloEnRiesgo}
-                onChange={(e) => setSoloEnRiesgo(e.target.checked)}
+                onCheckedChange={(v) => setSoloEnRiesgo(v === true)}
                 data-testid="vinci-solo-en-riesgo"
               />
-              Sólo los que pasan el umbral ({data?.umbral ?? 60}/100)
-            </label>
+              <label htmlFor="vinci-solo-en-riesgo" className="cursor-pointer text-sm text-fg">
+                Sólo los que pasan el umbral ({data?.umbral ?? 60}/100)
+              </label>
+            </div>
           </div>
           {casos.length === 0 ? (
             <EmptyState

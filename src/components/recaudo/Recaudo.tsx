@@ -375,7 +375,7 @@ export function Recaudo() {
               comparativa={comparativa}
               cargando={comparativaDelMes.cargando}
               error={comparativaDelMes.error}
-              onReintentar={() => void comparativaDelMes.recargar()}
+              onReintentar={() => comparativaDelMes.recargar()}
             />
 
             {/* El gráfico sí lleva su nombre: es un gráfico, no una tabla. */}

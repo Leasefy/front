@@ -11,12 +11,14 @@
  * (P-4)—. Vinci nunca ofrece lo que no está aprobado.
  */
 import { useState } from 'react'
-import Link from 'next/link'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -130,18 +132,18 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
       <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,16rem)_repeat(2,minmax(0,8rem))_auto] sm:items-end">
         <div className="space-y-1.5">
           <Label htmlFor="vinci-oferta-tipo">Oferta</Label>
-          <select
-            id="vinci-oferta-tipo"
-            className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as TipoDeOferta)}
-          >
-            {OFERTAS_POR_POBLACION[caso.poblacion].map((o) => (
-              <option key={o.tipo} value={o.tipo}>
-                {o.nombre}
-              </option>
-            ))}
-          </select>
+          <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeOferta)}>
+            <SelectTrigger id="vinci-oferta-tipo">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {OFERTAS_POR_POBLACION[caso.poblacion].map((o) => (
+                <SelectItem key={o.tipo} value={o.tipo}>
+                  {o.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {tipo === 'descuento_comision' || tipo === 'bajar_incremento' ? (
           <div className="space-y-1.5">
@@ -160,13 +162,15 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
         </Button>
       </div>
       {incremento ? (
-        <label className="mt-3 flex items-center gap-2 text-sm text-fg">
-          <input type="checkbox" checked={aceptada} onChange={(e) => setAceptada(e.target.checked)} />
-          El propietario ya aceptó (es su canon)
-        </label>
+        <div className="mt-3 flex items-center gap-2">
+          <Checkbox id="vinci-oferta-aceptada" checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
+          <label htmlFor="vinci-oferta-aceptada" className="cursor-pointer text-sm text-fg">
+            El propietario ya aceptó (es su canon)
+          </label>
+        </div>
       ) : null}
 
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="las ofertas" onReintentar={() => void refetch()}>
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="las ofertas" onReintentar={() => refetch()}>
         {data && data.length > 0 ? (
           <ul className="mt-5 divide-y divide-border-faint rounded-lg border border-border" data-testid="vinci-ofertas">
             {data.map((o) => (
@@ -254,7 +258,7 @@ function Plan({ caso }: { caso: CasoDeVinci }) {
   return (
     <section aria-label="Plan" className="rounded-lg border border-border bg-surface p-5">
       <h2 className="text-base font-semibold text-fg">Plan</h2>
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el plan" onReintentar={() => void refetch()}>
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el plan" onReintentar={() => refetch()}>
         {data ? (
           <div className="mt-2 space-y-4">
             <p className="text-sm text-fg">
@@ -329,7 +333,7 @@ function Historial({ caseId }: { caseId: string }) {
   return (
     <section aria-label="Lo que Vinci hizo" className="rounded-lg border border-border bg-surface p-5">
       <h2 className="text-base font-semibold text-fg">Lo que Vinci hizo</h2>
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="lo que Vinci hizo" onReintentar={() => void refetch()}>
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="lo que Vinci hizo" onReintentar={() => refetch()}>
         {data && data.length > 0 ? (
           <ul className="mt-3 space-y-2">
             {data.map((d) => (
@@ -357,10 +361,8 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <Link href="/panel/inmobiliaria/contratos/riesgo" className="text-sm font-medium text-primary hover:underline">
-        Volver a los casos
-      </Link>
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el caso" onReintentar={() => void refetch()} principal>
+      <VolverALaLista href="/panel/inmobiliaria/contratos/riesgo" label="Volver a los casos" />
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el caso" onReintentar={() => refetch()} principal>
         {data && !caso ? (
           <div className="rounded-lg border border-border bg-surface p-5">
             <p className="text-sm text-fg">Hoy este caso no tiene señales de irse (o ya no está vigente). Vinci no lo muestra con datos viejos.</p>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, ArrowRight, SealCheck, FileText } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
 import { OTPVerification } from './OTPVerification';
 import { SignaturePad } from './SignaturePad';
 import { Button } from '@/components/ui/button';
+import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
 
 // ============================================================================
 // TextTs
@@ -22,8 +23,15 @@ export interface SignaturePayload {
 }
 
 export interface SignatureFormProps {
-  /** Callback when user signs the contract */
-  onSign: (payload: SignaturePayload) => void;
+  /**
+   * Callback when user signs the contract. Puede devolver una `Promise` —
+   * si rechaza con `TOKEN_DE_FIRMA_INVALIDO`/`CODIGO_DE_FIRMA_REQUERIDO`
+   * (contract.md §3.3), el formulario limpia el token guardado y vuelve a
+   * abrir el modal de OTP en vez de reintentar con un token que el back ya
+   * rechazó (lo repetiría en bucle). Cualquier otro rechazo se ignora acá —
+   * el caller ya lo muestra (toast).
+   */
+  onSign: (payload: SignaturePayload) => void | Promise<void>;
   /** Contract ID — used to send/verify OTP against the backend */
   contractId: string;
   /** Whether this is the landlord or tenant signing */
@@ -85,13 +93,33 @@ export function SignatureForm({
   const role = isLandlord ? 'Arrendador' : 'Arrendatario';
   const otpRole = isLandlord ? 'landlord' : 'tenant';
 
+  /**
+   * Llama a `onSign` y, si devuelve una promesa que rechaza con un código
+   * que invalida el token (contract.md §3.3: `TOKEN_DE_FIRMA_INVALIDO` —
+   * vencido/consumido/no coincide, o `CODIGO_DE_FIRMA_REQUERIDO` — nunca se
+   * mandó), limpia el token guardado y reabre el OTP. El caller (la página)
+   * sigue siendo dueño de mostrar el motivo (toast) — acá sólo se reacciona
+   * al ESTADO del token, nunca al mensaje.
+   */
+  const callOnSign = useCallback((payload: SignaturePayload) => {
+    const resultado = onSign(payload);
+    if (resultado && typeof (resultado as Promise<void>).catch === 'function') {
+      (resultado as Promise<void>).catch((err: unknown) => {
+        if (debeReiniciarOtp(err)) {
+          setOtpToken(null);
+          setShowOTP(true);
+        }
+      });
+    }
+  }, [onSign]);
+
   // Handle sign button click
   const handleSignClick = () => {
     if (!signatureData) return;
     if (requireOTP && !otpToken) {
       setShowOTP(true);
     } else {
-      onSign({
+      callOnSign({
         otpVerified: !!otpToken,
         signatureData,
         otpVerificationToken: otpToken ?? undefined,
@@ -106,7 +134,7 @@ export function SignatureForm({
     setShowOTP(false);
     const data = signatureData;
     setTimeout(() => {
-      onSign({
+      callOnSign({
         otpVerified: true,
         signatureData: data,
         otpVerificationToken: verificationToken,

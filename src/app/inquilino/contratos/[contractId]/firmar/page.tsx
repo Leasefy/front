@@ -20,6 +20,7 @@ import { DownloadContractPdfButton } from '@/components/contract/DownloadContrac
 import Link from 'next/link';
 import { useContract, useContractActions, useContractPreview, useSignedPdfUrl, useContractRejections } from '@/lib/hooks/useContracts';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
 import type { ContractPreview as ContractPreviewResponse } from '@/lib/api/contracts.types';
 import { getTemplateById } from '@/lib/constants/contract-templates';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
@@ -356,6 +357,10 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
       toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract', {
         description: mensajeDelFallo(err, ''),
       });
+      // T-0109 contract.md §3.3 — igual que en el panel de la inmobiliaria:
+      // un token ya inservible se relanza para que SignatureForm lo limpie
+      // y reabra el OTP.
+      if (debeReiniciarOtp(err)) throw err;
     } finally {
       setIsSigning(false);
     }

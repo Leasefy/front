@@ -25,7 +25,7 @@ import type {
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
+import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
@@ -52,11 +52,6 @@ const CONTRACT_TYPE_MAP: Record<string, ContractType> = {
   AMOBLADO: 'amoblado',
   COMPARTIDO: 'compartido',
   CUSTOM: 'custom',
-};
-
-const SIGNATURE_STATUS_MAP: Record<string, SignatureStatus> = {
-  PENDING: 'pending',
-  SIGNED: 'signed',
 };
 
 const AUDIT_TYPE_MAP: Record<string, ContractAuditEventType> = {
@@ -167,28 +162,32 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Deprecated: garantías no modeladas en backend todavía.
     guaranteeType: (bc.guaranteeType ?? 'poliza') as 'poliza' | 'codeudor',
     guaranteeDetails: bc.guaranteeDetails,
+    // T-0109 contract.md §3.2 nota 4 — el back manda `signerName` y
+    // `codigoVerificado` (nunca mandó `signedBy`/`status`/`otpVerified`/
+    // `otpVerifiedAt`, que este mapper leía antes sin que llegaran jamás).
+    // `codigoVerificado` ausente (firma anterior al 2026-09-23, o back
+    // viejo) se pasa como `undefined`, no `false` — «sin dato» ≠ «no
+    // verificado». `otpChannels` es passthrough puro, ausente en back viejo.
     landlordSignature: bc.landlordSignature
       ? {
           signedAt: bc.landlordSignature.signedAt,
-          signedBy: bc.landlordSignature.signedBy,
+          signedBy: bc.landlordSignature.signerName,
           signerId: bc.landlordSignature.signerId,
           ipAddress: bc.landlordSignature.ipAddress,
           userAgent: bc.landlordSignature.userAgent,
-          status: (SIGNATURE_STATUS_MAP[bc.landlordSignature.status] ?? bc.landlordSignature.status) as SignatureStatus,
-          otpVerified: bc.landlordSignature.otpVerified,
-          otpVerifiedAt: bc.landlordSignature.otpVerifiedAt,
+          otpVerified: bc.landlordSignature.codigoVerificado,
+          otpChannels: bc.landlordSignature.otpChannels,
         }
       : null,
     tenantSignature: bc.tenantSignature
       ? {
           signedAt: bc.tenantSignature.signedAt,
-          signedBy: bc.tenantSignature.signedBy,
+          signedBy: bc.tenantSignature.signerName,
           signerId: bc.tenantSignature.signerId,
           ipAddress: bc.tenantSignature.ipAddress,
           userAgent: bc.tenantSignature.userAgent,
-          status: (SIGNATURE_STATUS_MAP[bc.tenantSignature.status] ?? bc.tenantSignature.status) as SignatureStatus,
-          otpVerified: bc.tenantSignature.otpVerified,
-          otpVerifiedAt: bc.tenantSignature.otpVerifiedAt,
+          otpVerified: bc.tenantSignature.codigoVerificado,
+          otpChannels: bc.tenantSignature.otpChannels,
         }
       : null,
     nonNegotiableClauses: bc.nonNegotiableClauses,

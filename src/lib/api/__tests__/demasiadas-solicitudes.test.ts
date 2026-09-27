@@ -113,12 +113,66 @@ describe('apiClient ante un 429 del limitador', () => {
   })
 })
 
+/**
+ * T-0109 contract.md §3.3 — `CODIGO_EN_ESPERA` es un 429 DISTINTO del
+ * limitador genérico (`DEMASIADAS_SOLICITUDES`): el back lo manda cuando se
+ * reintenta un `/otp/send` dentro del cooldown de 60s, con su propio
+ * `message` autosuficiente y `{ segundos }` (no `reintentarEnSegundos`).
+ * Antes de esto `errorDeDemasiadasSolicitudes` pisaba CUALQUIER 429 con
+ * `code: 'DEMASIADAS_SOLICITUDES'` y el mensaje genérico, así que el código
+ * específico y el mensaje del back (útil para OTPVerification) se perdían.
+ */
+describe('apiClient ante un 429 con code propio (T-0109 CODIGO_EN_ESPERA)', () => {
+  it('conserva el code y el message del back en vez de pisarlos con el genérico', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        respuesta429({
+          statusCode: 429,
+          code: 'CODIGO_EN_ESPERA',
+          segundos: 42,
+          message: 'Espera antes de pedir un código nuevo.',
+        }),
+      ),
+    )
+
+    const error = (await apiClient
+      .post('/contracts/x/otp/send', { role: 'landlord' })
+      .catch((e: unknown) => e)) as ApiError
+
+    expect(error).toMatchObject({
+      status: 429,
+      code: 'CODIGO_EN_ESPERA',
+      message: 'Espera antes de pedir un código nuevo.',
+    })
+    expect(error.detalle?.segundos).toBe(42)
+    expect(error.detalle?.reintentarEnSegundos).toBe(42)
+  })
+
+  it('sin code propio en el cuerpo, sigue cayendo al genérico DEMASIADAS_SOLICITUDES', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta429({ reintentarEnSegundos: 15 })))
+
+    await expect(apiClient.get('/inmobiliaria/x')).rejects.toMatchObject({
+      status: 429,
+      code: 'DEMASIADAS_SOLICITUDES',
+      message: 'Hiciste demasiadas solicitudes seguidas. Espera 15 segundos y vuelve a intentar.',
+    })
+  })
+})
+
 describe('segundosDeEspera', () => {
   it('prefiere el cuerpo, después el encabezado, y si no hay nada devuelve null', () => {
     expect(segundosDeEspera(new Headers({ 'Retry-After': '10' }), { reintentarEnSegundos: 20 })).toBe(20)
     expect(segundosDeEspera(new Headers({ 'Retry-After': '10' }), {})).toBe(10)
     expect(segundosDeEspera(new Headers(), {})).toBeNull()
     expect(segundosDeEspera(null, null)).toBeNull()
+  })
+
+  it('T-0109: también lee `segundos` (CODIGO_EN_ESPERA no usa `reintentarEnSegundos`)', () => {
+    expect(segundosDeEspera(new Headers(), { segundos: 42 })).toBe(42)
+    expect(segundosDeEspera(new Headers({ 'Retry-After': '10' }), { segundos: 42 })).toBe(42)
+    // `reintentarEnSegundos` sigue ganando cuando ambos vienen.
+    expect(segundosDeEspera(new Headers(), { reintentarEnSegundos: 5, segundos: 42 })).toBe(5)
   })
 
   it('entiende Retry-After como fecha HTTP', () => {

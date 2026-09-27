@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "descripcion": "Contrato de Niti · calidad (26-09-2026). Copia VERBATIM en el micro (tests/contract/niti-contrato.json), en el back (test/contratos/niti-contrato.json) y en el front (src/lib/api/__tests__/niti-contrato.json). Cada lado prueba su parte contra este archivo. Si cambia, se cambia en ~/rent/sesion-2026-09-22/cierre-de-agentes/niti-contrato.json y se copia a los tres. Llave del inmueble en todo el contrato: propertyId (Property.id del back), NO consignacionId.",
+  "auth": {
+    "s2s": "Todas las rutas /internal/calidad/* del back: Authorization: Bearer <AGENT_API_KEY> (AgentApiKeyGuard) + header x-tenant-id: <agencyId> (el back también acepta ?tenantId; si falta los dos → 400). Un propertyId de otra inmobiliaria → 404 (nunca 403, para no revelar que existe).",
+    "microBaseEnv": "El micro usa LEASIFY_BACKEND_URL + AGENT_API_KEY (como payments/cobros-client.ts). Si faltan, NO usa datos de ejemplo: la pasada falla con motivo 'sin conexión con el back' visible en GET /calidad/resumen.",
+    "panel": "Rutas /api/agency/{agencyId}/calidad/* del micro: la misma auth de panel que el resto de /api/agency/* del micro (agentFetch del front)."
+  },
+  "inventario": {
+    "ruta": "GET /internal/calidad/inmuebles?cursor=<propertyId|vacío>&limit=200",
+    "direccion": "micro → back",
+    "limitMaximo": 500,
+    "universo": "Sólo inmuebles de la agencia (no borrados) que cumplen UNA de: (a) publicado: Property.status = AVAILABLE o alguna PublicacionEnPortal viva (PENDIENTE|POR_EXPORTAR|PUBLICADA); (b) por_publicar: consignación vigente (no retirada/terminada) y puedeOfrecerse(...).puede = true y porQue = SIN_CONTRATO; (c) arrendado_con_preaviso: puedeOfrecerse(...).puede = true con porQue ≠ SIN_CONTRATO. Un inmueble publicado y arrendado SIN preaviso entra como 'publicado' con ocupacion.puede = false (eso es «posible tomado»). Orden estable por propertyId ASC; cursor = último propertyId de la página anterior.",
+    "reglaUnica": "revision.falta es EXACTAMENTE la salida de loQueFaltaParaPublicar(inmueble, minimoDeFotos(ConfiguracionComercial.minimoDeFotosParaPublicar)) del back (inmobiliaria/publicacion/minimo-para-publicar.ts). El micro NO recalcula D-01: lo toma tal cual y le suma sus extras.",
+    "respuesta": {
+      "status": 200,
+      "cuerpo": {
+        "items": [
+          {
+            "propertyId": "f0000000-0000-4000-8000-000000000001",
+            "codigo": 43,
+            "titulo": "Apartamento 101 en Chicó",
+            "tipo": "APARTMENT",
+            "tipoDeNegocio": "RENT",
+            "estadoDelInmueble": "AVAILABLE",
+            "motivo": "publicado",
+            "ciudad": "Bogotá",
+            "barrio": "Chicó",
+            "direccion": "Cra 37 10-08 apto 101",
+            "estrato": 5,
+            "canon": 2500000,
+            "precioDeVenta": null,
+            "area": 72,
+            "habitaciones": 3,
+            "banos": 2,
+            "descripcion": "Apartamento iluminado…",
+            "actualizadoEn": "2026-09-26T15:04:05.000Z",
+            "fotos": [
+              { "id": "a1000000-0000-4000-8000-000000000001", "url": "https://storage.example.com/inmuebles/f000/1.jpg", "orden": 0, "creadaEn": "2026-09-20T10:00:00.000Z" }
+            ],
+            "revision": {
+              "fotosMinimas": 5,
+              "falta": [
+                { "campo": "fotos", "que": "4 fotos más (el aviso necesita al menos 5)" }
+              ],
+              "sePuedePublicar": false
+            },
+            "ocupacion": {
+              "puede": true,
+              "porQue": "SIN_CONTRATO",
+              "disponibleDesde": null
+            },
+            "portales": [
+              { "portal": "SITIO_PROPIO", "estado": "PUBLICADA" },
+              { "portal": "FINCARAIZ", "estado": "POR_EXPORTAR" }
+            ],
+            "sugerencias": [
+              { "campo": "neighborhood", "valor": "Chicó Norte", "fuente": "consignacion" }
+            ]
+          }
+        ],
+        "siguienteCursor": null
+      }
+    },
+    "notas": [
+      "tipoDeNegocio: 'RENT' | 'SALE'. canon sólo aplica a RENT; precioDeVenta (número en pesos) sólo a SALE. BigInt se serializa como número.",
+      "motivo: 'publicado' | 'por_publicar' | 'arrendado_con_preaviso'.",
+      "ocupacion.porQue: SIN_CONTRATO | TERMINACION_CON_FECHA | AVISO_DE_NO_RENOVACION | NO_SE_PRORROGA | OCUPADO_SIN_FECHA (salida de puedeOfrecerse).",
+      "portales: sólo filas de PublicacionEnPortal que existan; estado es el VarChar tal cual.",
+      "sugerencias: valores CONCRETOS que el ERP ya tiene en otra parte (p. ej. la consignación o la ficha) para un campo que el inmueble tiene vacío. Campos posibles: neighborhood | bedrooms | bathrooms | area | stratum. Si no hay fuente, []. El back NUNCA inventa un valor.",
+      "descripcion: texto completo (el micro sólo mide longitud y coherencia; no lo muestra en la Bandeja).",
+      "La consulta va por lotes (sin N+1): una página de 200 = pocas consultas."
+    ]
+  },
+  "inventarioDeUno": {
+    "ruta": "GET /internal/calidad/inmuebles/{propertyId}",
+    "direccion": "micro → back",
+    "respuesta": {
+      "status": 200,
+      "cuerpo": "El mismo objeto de inventario.respuesta.cuerpo.items[0] MÁS el campo enElUniverso: boolean. Si enElUniverso = false (p. ej. arrendado sin preaviso y ya despublicado), el micro cierra lo abierto de ese inmueble como 'resuelta' y no lo audita."
+    },
+    "errores": { "404": "no existe o es de otra inmobiliaria" }
+  },
+  "aplicar": {
+    "ruta": "POST /internal/calidad/inmuebles/{propertyId}/aplicar",
+    "direccion": "micro → back",
+    "cuando": "Sólo cuando una persona aprueba en la Bandeja o en la pestaña Calidad (en cualquier modo). Lo que no tiene valor concreto (faltan fotos, falta la descripción…) NUNCA llega aquí: es tarea del asesor.",
+    "cuerpo": {
+      "correccionId": "c1000000-0000-4000-8000-000000000001",
+      "operacion": "campo",
+      "campo": "neighborhood",
+      "valorAnterior": null,
+      "valorNuevo": "Chicó Norte",
+      "aprobadoPor": { "userId": "u0000000-0000-4000-8000-000000000001", "nombre": "Ana Pérez", "email": "ana@example.com" }
+    },
+    "otrasOperaciones": [
+      { "correccionId": "c1000000-0000-4000-8000-000000000002", "operacion": "despublicar", "portales": "todos", "aprobadoPor": { "userId": "u0000000-0000-4000-8000-000000000001", "nombre": "Ana Pérez", "email": "ana@example.com" } },
+      { "correccionId": "c1000000-0000-4000-8000-000000000003", "operacion": "portada", "fotoId": "a1000000-0000-4000-8000-000000000002", "aprobadoPor": { "userId": "u0000000-0000-4000-8000-000000000001", "nombre": "Ana Pérez", "email": "ana@example.com" } }
+    ],
+    "reglas": [
+      "operacion 'campo': campo ∈ { neighborhood, bedrooms, bathrooms, area, stratum } (lista blanca; canon y precio de venta NO se aplican solos: son plata, quedan como tarea). valorNuevo con el tipo del campo (texto para neighborhood, entero ≥ 0 para el resto; stratum 1–6). Si el valor actual del inmueble ≠ valorAnterior → 409 (alguien lo cambió desde la propuesta).",
+      "operacion 'despublicar': llama a PublicacionService.despublicar(agencyId, propertyId, <todos los portales vivos>, aprobadoPor.userId). portales: 'todos' (única opción en v1).",
+      "operacion 'portada': pone la foto fotoId en orden 0 y corre las demás (mismo camino que reorderImages). 404 si la foto no es del inmueble.",
+      "aprobadoPor.userId debe ser usuario activo de esa inmobiliaria; si no → 403 con motivo.",
+      "Auditoría: cada aplicación queda en AccionDelPiloto (agente 'calidad', proceso 'calidad.aplicar', estado EJECUTADA, clave 'calidad:{correccionId}', payload = cuerpo, resultado = {antes, despues}, resueltoPorUserId/Nombre = aprobadoPor).",
+      "Idempotente por correccionId: si ya existe la acción con esa clave y quedó EJECUTADA, devuelve 200 con el MISMO resultado sin volver a aplicar."
+    ],
+    "respuesta": {
+      "status": 200,
+      "cuerpo": {
+        "aplicado": true,
+        "propertyId": "f0000000-0000-4000-8000-000000000001",
+        "operacion": "campo",
+        "antes": { "neighborhood": null },
+        "despues": { "neighborhood": "Chicó Norte" },
+        "accionId": "p0000000-0000-4000-8000-000000000001"
+      }
+    },
+    "errores": {
+      "404": { "aplicado": false, "motivo": "El inmueble no existe en esta inmobiliaria." },
+      "409": { "aplicado": false, "motivo": "El dato cambió desde que Niti lo propuso.", "valorActual": "Chicó" },
+      "422": { "aplicado": false, "motivo": "Ese cambio no se puede aplicar solo." },
+      "403": { "aplicado": false, "motivo": "Quien aprueba no pertenece a esta inmobiliaria." }
+    }
+  },
+  "evento": {
+    "nombre": "inmueble.guardado",
+    "direccion": "back → micro por el puente de eventos (AgentBridgeEventName + DOMAIN_EVENT_NAMES), POST {AGENT_MICRO_URL}/internal/events/domain",
+    "cuerpo": {
+      "eventId": "inmueble.guardado:f0000000-0000-4000-8000-000000000001:2026-09-26T15:04:05.000Z",
+      "name": "inmueble.guardado",
+      "agencyId": "a0000000-0000-4000-8000-000000000001",
+      "occurredAt": "2026-09-26T15:04:05.000Z",
+      "data": { "propertyId": "f0000000-0000-4000-8000-000000000001", "cambio": "fotos" }
+    },
+    "notas": [
+      "cambio: 'datos' (create/update del inmueble) | 'fotos' (subir, borrar u ordenar fotos) | 'publicacion' (publicar/despublicar/confirmar en portales).",
+      "Se emite DESPUÉS de que la escritura quedó guardada; un fallo al emitir nunca rompe el guardado.",
+      "El micro agrupa por propertyId (debounce ~2 min) y re-audita ESE inmueble con inventarioDeUno; si cambio='fotos' y la IA de fotos está prendida para la agencia, revisa sólo las fotos nuevas o cambiadas, dentro del tope del mes."
+    ]
+  },
+  "panel": {
+    "descripcion": "Rutas del micro que consume el front (pestaña Calidad en Inmuebles › Portales). Textos en español listos para mostrar; el front no traduce códigos.",
+    "resumen": {
+      "ruta": "GET /api/agency/{agencyId}/calidad/resumen",
+      "cuerpo": {
+        "activo": true,
+        "nombre": "Niti · calidad",
+        "ultimaPasada": "2026-09-26T10:00:12.000Z",
+        "errorDeLaUltimaPasada": null,
+        "inmueblesAuditados": 120,
+        "conProblemas": 37,
+        "puntajePromedio": 81,
+        "fotosIA": { "activo": true, "revisadasEsteMes": 42, "gastoEstimadoUsdEsteMes": 0.42, "topeUsdMes": 5 }
+      },
+      "notas": ["activo = interruptor de Niti abierto para ESTA inmobiliaria. Si es false, el front muestra el estado apagado y no pide la lista."]
+    },
+    "inmuebles": {
+      "ruta": "GET /api/agency/{agencyId}/calidad/inmuebles?page=1&limit=20&filtro=todos|con_problemas|posible_tomado|fotos",
+      "cuerpo": {
+        "items": [
+          {
+            "propertyId": "f0000000-0000-4000-8000-000000000001",
+            "codigo": 43,
+            "titulo": "Apartamento 101 en Chicó",
+            "barrio": "Chicó",
+            "ciudad": "Bogotá",
+            "tipoDeNegocio": "arriendo",
+            "motivo": "publicado",
+            "puntaje": 63,
+            "posibleTomado": false,
+            "falta": [{ "campo": "fotos", "que": "4 fotos más (el aviso necesita al menos 5)" }],
+            "problemas": [{ "codigo": "PRECIO_FUERA_DE_RANGO", "severidad": "media", "texto": "El canon está 2,4 veces por encima de la mediana de apartamentos estrato 5 en Bogotá." }],
+            "fotosSenaladas": [{ "fotoId": "a1000000-0000-4000-8000-000000000001", "url": "https://storage.example.com/inmuebles/f000/1.jpg", "motivo": "Tiene la marca de agua de otro portal." }],
+            "propuestas": [{ "id": "c1000000-0000-4000-8000-000000000001", "tipo": "aplicable", "texto": "Poner el barrio «Chicó Norte» (lo tiene la consignación).", "accion": "campo" }],
+            "auditadoEn": "2026-09-26T10:00:12.000Z",
+            "href": "/panel/inmobiliaria/inmuebles/f0000000-0000-4000-8000-000000000001"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 20
+      },
+      "notas": [
+        "Orden: de peor a mejor puntaje (empates: posibleTomado primero, luego codigo).",
+        "tipoDeNegocio: 'arriendo' | 'venta'. motivo: 'publicado' | 'por_publicar' | 'arrendado_con_preaviso'.",
+        "falta: la de D-01 del back, verbatim. problemas: los extras de Niti con texto en español (nunca códigos crudos en 'texto').",
+        "propuestas[].tipo: 'aplicable' (tiene valor concreto; Aprobar lo aplica) | 'tarea' (para el asesor; no hay nada que aplicar). accion: 'campo' | 'despublicar' | 'portada' | 'tarea'."
+      ]
+    },
+    "decidir": {
+      "ruta": "POST /api/agency/{agencyId}/calidad/propuestas/{correccionId}/decision",
+      "cuerpo": { "decision": "approve" },
+      "otras": [{ "decision": "reject" }],
+      "respuesta": {
+        "status": 200,
+        "cuerpo": { "id": "c1000000-0000-4000-8000-000000000001", "estado": "aplicada", "mensaje": "Listo: se puso el barrio «Chicó Norte»." }
+      },
+      "estados": "propuesta → aplicada (approve de una aplicable, el back respondió 200) | fallida (el back respondió 409/422/403; mensaje = motivo) | rechazada (reject) | resuelta (el problema desapareció en una auditoría posterior) | hecha (approve de una tarea = el asesor la marcó hecha; se re-audita y si sigue el problema, vuelve a propuesta).",
+      "reglas": [
+        "Una propuesta rechazada NO vuelve a crearse mientras su firma (propertyId + codigo + campo + valor propuesto; para tareas, propertyId + conjunto ordenado de faltas) sea la misma.",
+        "Quien aprueba viaja al back como aprobadoPor (usuario del panel)."
+      ]
+    }
+  },
+  "interruptores": {
+    "micro": {
+      "CALIDAD_PUBLICACION_ENABLED": "'*' | lista de UUIDs separada por comas | vacío (apagado). Mismo helper que PAGOS_ENABLED (src/lib/llave-por-agencia.ts). Apagado por defecto.",
+      "CALIDAD_PUBLICACION_VISION_ENABLED": "igual; además requiere que CALIDAD_PUBLICACION_ENABLED esté abierto para la agencia.",
+      "CALIDAD_PUBLICACION_VISION_TOPE_USD_MES": "tope por defecto por inmobiliaria y mes (5). Cada inmobiliaria lo puede bajar/subir en su configuración.",
+      "CALIDAD_PUBLICACION_FOTOS_HOSTS": "hosts permitidos para descargar fotos (coma). Vacío = no descarga ninguna."
+    },
+    "back": {
+      "nota": "El back no tiene interruptor propio de Niti: las rutas /internal/calidad/* sólo responden al micro (Bearer) y el evento inmueble.guardado sale por el puente, que ya tiene AGENT_EVENTS_BRIDGE_ENABLED."
+    }
+  }
+}

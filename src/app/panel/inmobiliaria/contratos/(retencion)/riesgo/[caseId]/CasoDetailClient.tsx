@@ -31,7 +31,7 @@ import {
   usePlanDelCaso,
   useRiesgoDeVinci,
 } from '@/lib/hooks/retencion/use-vinci'
-import { DesgloseDelPuntaje, PuntajeDeVinci, QUE_ES_CADA_DECISION, QUIEN, fechaYHora } from '@/components/retencion/vinci'
+import { DesgloseDelPuntaje, POR_QUE_EN_COBRANZA, PuntajeDeVinci, QUE_ES_CADA_DECISION, QUIEN, fechaYHora } from '@/components/retencion/vinci'
 import type { CasoDeVinci, OfertaDeVinci, Poblacion, TipoDeOferta } from '@/lib/types/retencion'
 
 const OFERTAS_POR_POBLACION: Record<Poblacion, Array<{ tipo: TipoDeOferta; nombre: string }>> = {
@@ -129,46 +129,55 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,16rem)_repeat(2,minmax(0,8rem))_auto] sm:items-end">
-        <div className="space-y-1.5">
-          <Label htmlFor="vinci-oferta-tipo">Oferta</Label>
-          <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeOferta)}>
-            <SelectTrigger id="vinci-oferta-tipo">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OFERTAS_POR_POBLACION[caso.poblacion].map((o) => (
-                <SelectItem key={o.tipo} value={o.tipo}>
-                  {o.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {tipo === 'descuento_comision' || tipo === 'bajar_incremento' ? (
+      {/* Nico (26-09): al que pasó a cobranza no se le ofrece nada (el micro también lo niega). */}
+      {caso.enCobranza ? (
+        <p className="mt-5 text-sm text-fg-muted" data-testid="vinci-oferta-en-cobranza">
+          {POR_QUE_EN_COBRANZA}
+        </p>
+      ) : (
+        <>
+        <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,16rem)_repeat(2,minmax(0,8rem))_auto] sm:items-end">
           <div className="space-y-1.5">
-            <Label htmlFor="vinci-oferta-pct">{tipo === 'descuento_comision' ? '% de la comisión' : 'Incremento %'}</Label>
-            <Input id="vinci-oferta-pct" type="number" min={0} max={100} className="font-mono" value={pct} onChange={(e) => setPct(e.target.value)} />
+            <Label htmlFor="vinci-oferta-tipo">Oferta</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeOferta)}>
+              <SelectTrigger id="vinci-oferta-tipo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OFERTAS_POR_POBLACION[caso.poblacion].map((o) => (
+                  <SelectItem key={o.tipo} value={o.tipo}>
+                    {o.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {tipo === 'descuento_comision' || tipo === 'bajar_incremento' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="vinci-oferta-pct">{tipo === 'descuento_comision' ? '% de la comisión' : 'Incremento %'}</Label>
+              <Input id="vinci-oferta-pct" type="number" min={0} max={100} className="font-mono" value={pct} onChange={(e) => setPct(e.target.value)} />
+            </div>
+          ) : null}
+          {tipo === 'descuento_comision' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="vinci-oferta-meses">Meses</Label>
+              <Input id="vinci-oferta-meses" type="number" min={1} max={36} className="font-mono" value={meses} onChange={(e) => setMeses(e.target.value)} />
+            </div>
+          ) : null}
+          <Button type="button" hideArrow isLoading={ocupado === 'registrar'} onClick={() => void registrar()}>
+            {isAdmin ? 'Registrar y aprobar' : 'Registrar'}
+          </Button>
+        </div>
+        {incremento ? (
+          <div className="mt-3 flex items-center gap-2">
+            <Checkbox id="vinci-oferta-aceptada" checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
+            <label htmlFor="vinci-oferta-aceptada" className="cursor-pointer text-sm text-fg">
+              El propietario ya aceptó (es su canon)
+            </label>
           </div>
         ) : null}
-        {tipo === 'descuento_comision' ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="vinci-oferta-meses">Meses</Label>
-            <Input id="vinci-oferta-meses" type="number" min={1} max={36} className="font-mono" value={meses} onChange={(e) => setMeses(e.target.value)} />
-          </div>
-        ) : null}
-        <Button type="button" hideArrow isLoading={ocupado === 'registrar'} onClick={() => void registrar()}>
-          {isAdmin ? 'Registrar y aprobar' : 'Registrar'}
-        </Button>
-      </div>
-      {incremento ? (
-        <div className="mt-3 flex items-center gap-2">
-          <Checkbox id="vinci-oferta-aceptada" checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
-          <label htmlFor="vinci-oferta-aceptada" className="cursor-pointer text-sm text-fg">
-            El propietario ya aceptó (es su canon)
-          </label>
-        </div>
-      ) : null}
+        </>
+      )}
 
       <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="las ofertas" onReintentar={() => refetch()}>
         {data && data.length > 0 ? (

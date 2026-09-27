@@ -68,6 +68,25 @@ export const AGENTES_NO_DISPONIBLES: ReadonlySet<AgentePiloto> = new Set<AgenteP
   'prospectos',
 ])
 
+/**
+ * Agentes cuya frase por modo la pone el FRONT y no el micro (`efectoReal`).
+ *
+ * Hoy sólo Niti · calidad (26-09-2026, `niti-spec.md`): en los tres modos
+ * audita y propone, todo cambio al inmueble espera el clic de una persona y no
+ * le escribe al propietario. Debajo de su selector se leía la frase genérica
+ * de la flota o la del micro vieja —la de Automático habla del horario de
+ * cobranza y de «actuar sin preguntarte»—, que prometían justo lo que Niti no
+ * hace. Los demás agentes siguen con la frase del micro, sin cambios.
+ */
+const AGENTES_CON_EFECTO_PROPIO: ReadonlySet<string> = new Set(['calidad'])
+
+/** La clave i18n de lo que hace este modo para este agente, o `null` si lo dice el micro. */
+export function claveDelEfectoPropio(agente: string, modo: AutonomiaModo): string | null {
+  return AGENTES_CON_EFECTO_PROPIO.has(agente)
+    ? `inmobiliaria.piloto.autonomia.porAgente.${agente}.${modo}`
+    : null
+}
+
 
 export interface PilotoAutonomiaProps {
   /**
@@ -257,6 +276,8 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
             // T-0051: agente en pausa de producto — la tarjeta entera se lee
             // como no disponible, sin importar lo que diga el gobierno real.
             const noDisponible = AGENTES_NO_DISPONIBLES.has(row.agente)
+            const efectoPropio = claveDelEfectoPropio(row.agente, row.modo)
+            const efecto = efectoPropio ? t(efectoPropio) : row.efectoReal
             const estadoTexto = noDisponible
               ? t('inmobiliaria.piloto.gobierno.proximamente')
               : gob
@@ -329,9 +350,15 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
 
                 {/* Qué significa HOY el modo elegido PARA ESTE AGENTE — la
                     frase la publica el micro y describe lo que el código hace,
-                    no lo que promete el marketing. */}
-                {row.efectoReal && (
-                  <p className="text-caption leading-snug text-fg-muted">{row.efectoReal}</p>
+                    no lo que promete el marketing. Niti · calidad trae la suya
+                    (`claveDelEfectoPropio`). */}
+                {efecto && (
+                  <p
+                    className="text-caption leading-snug text-fg-muted"
+                    data-testid={efectoPropio ? `piloto-autonomia-efecto-propio-${row.agente}` : undefined}
+                  >
+                    {efecto}
+                  </p>
                 )}
 
                 {/* Las vallas que publica el micro: reglas que ningún modo

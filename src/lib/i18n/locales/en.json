@@ -1179,7 +1179,14 @@
         },
         "noActuaSolo": "Doesn't act on its own yet",
         "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own.",
-        "contadorTitulo": "{{n}} of {{total}} agents act on their own, with nobody approving"
+        "contadorTitulo": "{{n}} of {{total}} agents act on their own, with nobody approving",
+        "porAgente": {
+          "calidad": {
+            "sombra": "Niti audits your properties and suggests fixes in Portals › Quality and in the Inbox. Every change to a property waits for a person's click, and it never writes to the owner.",
+            "copiloto": "Same as Manual: Niti audits and suggests. Every change to a property waits for a person's click, and it never writes to the owner.",
+            "autonomo": "Automatic gives it no extra room: Niti audits and suggests, but applies nothing on its own. Every change to a property waits for a person's click, and it never writes to the owner."
+          }
+        }
       },
       "pulso": {
         "titulo": "Pilot pulse",
@@ -7997,7 +8004,7 @@
           "avaluos": "Appraisals",
           "gerente": "Manager",
           "retencion": "Retention",
-          "calidad": "Listing quality",
+          "calidad": "Niti · quality",
           "prospectos": "Prospects",
           "aprobaciones": "Owner approvals",
           "mantenimiento": "Maintenance",

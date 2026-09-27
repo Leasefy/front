@@ -18,9 +18,66 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
-import { AGENTES_NO_DISPONIBLES } from './PilotoAutonomia'
+import { AGENTES_NO_DISPONIBLES, claveDelEfectoPropio } from './PilotoAutonomia'
 import es from '@/lib/i18n/locales/es.json'
 import en from '@/lib/i18n/locales/en.json'
+
+/** Lee una clave con puntos de un diccionario, como `t()`. */
+function leer(dic: unknown, clave: string): unknown {
+  return clave.split('.').reduce<unknown>(
+    (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+    dic,
+  )
+}
+
+/*
+ * 🔴 Niti · calidad (26-09-2026, `niti-spec.md`): en los TRES modos Niti audita
+ * y propone; todo cambio al inmueble espera el clic de una persona y no le
+ * escribe al propietario. La frase genérica de Automático
+ * (`flota.que.autonomo`) habla del horario de cobranza y de agentes que
+ * «actúan sin preguntarte»: puesta debajo de Niti, prometía justo lo que Niti
+ * no hace. Su fila dice lo suyo; las de los demás agentes no cambian.
+ */
+describe('Niti · calidad en Autonomía', () => {
+  const MODOS = ['sombra', 'copiloto', 'autonomo'] as const
+
+  it('la fila de calidad usa una frase propia por modo; los demás agentes siguen con la del micro', () => {
+    for (const modo of MODOS) {
+      expect(claveDelEfectoPropio('calidad', modo)).toBe(`inmobiliaria.piloto.autonomia.porAgente.calidad.${modo}`)
+    }
+    for (const otro of ['cobranza', 'pagos', 'conciliacion', 'retencion']) {
+      expect(claveDelEfectoPropio(otro, 'autonomo')).toBeNull()
+    }
+    const fuente = readFileSync(join(__dirname, 'PilotoAutonomia.tsx'), 'utf8')
+    expect(fuente).toContain('claveDelEfectoPropio(row.agente, row.modo)')
+  })
+
+  it('en los tres modos dice lo mismo que el código: propone, espera el clic y no le escribe al propietario', () => {
+    for (const modo of MODOS) {
+      const frase = leer(es, `inmobiliaria.piloto.autonomia.porAgente.calidad.${modo}`)
+      expect(typeof frase).toBe('string')
+      expect(frase).toMatch(/audita/)
+      expect(frase).toMatch(/propone/)
+      expect(frase).toMatch(/clic de una persona/)
+      expect(frase).toMatch(/no le escribe al propietario/)
+      // Nada del horario de cobranza ni de «actuar sin preguntarte».
+      expect(frase).not.toMatch(/cobranza|8 a\. m\.|sin preguntarte/)
+
+      const inglés = leer(en, `inmobiliaria.piloto.autonomia.porAgente.calidad.${modo}`)
+      expect(typeof inglés).toBe('string')
+      expect(inglés).toMatch(/owner/)
+    }
+    // Automático lo dice explícito: no aplica nada solo.
+    expect(leer(es, 'inmobiliaria.piloto.autonomia.porAgente.calidad.autonomo')).toMatch(/no aplica nada solo/)
+    // La frase genérica de los demás agentes queda como estaba.
+    expect(es.inmobiliaria.piloto.flota.que.autonomo).toContain('8 a. m.–7 p. m.')
+  })
+
+  it('se llama «Niti · calidad» (y «Niti · quality» en inglés), no «Calidad de publicación»', () => {
+    expect(es.inmobiliaria.ai.workspace.agente.calidad).toBe('Niti · calidad')
+    expect(en.inmobiliaria.ai.workspace.agente.calidad).toBe('Niti · quality')
+  })
+})
 
 describe('AGENTES_NO_DISPONIBLES', () => {
   it('marca retención y prospectos como no disponibles, y a nadie más', () => {

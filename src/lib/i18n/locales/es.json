@@ -1179,7 +1179,14 @@
           "autonomo": "Automático"
         },
         "noActuaSolo": "Todavía no actúa solo",
-        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
+        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos.",
+        "porAgente": {
+          "calidad": {
+            "sombra": "Niti audita tus inmuebles y propone arreglos en Portales › Calidad y en la Bandeja. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario.",
+            "copiloto": "Igual que en Manual: Niti audita y propone. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario.",
+            "autonomo": "Automático no le da más permiso: Niti audita y propone, pero no aplica nada solo. Todo cambio al inmueble espera el clic de una persona, y no le escribe al propietario."
+          }
+        }
       },
       "pulso": {
         "titulo": "Pulso del Piloto",
@@ -8031,7 +8038,7 @@
           "avaluos": "Avalúos",
           "gerente": "Gerente",
           "retencion": "Retención",
-          "calidad": "Calidad de publicación",
+          "calidad": "Niti · calidad",
           "prospectos": "Prospectos",
           "aprobaciones": "Aprobaciones del propietario",
           "mantenimiento": "Mantenimiento",

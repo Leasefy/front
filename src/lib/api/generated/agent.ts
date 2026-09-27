@@ -29259,6 +29259,15 @@ export interface operations {
                     "application/json": components["schemas"]["VinciError"];
                 };
             };
+            /** @description El inquilino pasó a cobranza (más de 60 días de mora): no se le ofrece nada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
             /** @description Base no disponible */
             503: {
                 headers: {

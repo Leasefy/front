@@ -54903,6 +54903,16 @@
               }
             }
           },
+          "409": {
+            "description": "El inquilino pasó a cobranza (más de 60 días de mora): no se le ofrece nada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinciError"
+                }
+              }
+            }
+          },
           "503": {
             "description": "Base no disponible",
             "content": {

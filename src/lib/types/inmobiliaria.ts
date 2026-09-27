@@ -2477,6 +2477,26 @@ export interface AgencyProfile {
   /** Techo legal del interés de mora (% efectivo anual). `null` = sin validar.
    *  Decimal de Prisma: puede llegar como texto — pasar por `decimalANumero`. */
   topeInteresMoraEaPorcentaje?: number | string | null;
+  /**
+   * D4: si la inmobiliaria es responsable de IVA sobre su comisión
+   * (`cobraIvaSobreLaComision`, back: `!== false` cobra). `null`/ausente =
+   * no declarado, y ENTONCES SE COBRA — sólo `false` exime, y es una
+   * declaración legal. Ya tiene un control dedicado en Configuración →
+   * Mandato (`SeccionMandato.tsx`, `IvaDeLaComision`); acá se muestra de
+   * sólo lectura, no se duplica la escritura.
+   */
+  responsableIva?: boolean | null;
+  /**
+   * Si la inmobiliaria misma es agente de retención de renta/IVA/ICA.
+   * Tres estados, igual que `responsableIva`: `null` = no declarado. Hoy el
+   * back sólo lee el perfil del PROPIETARIO para las retenciones sobre la
+   * comisión (`liquidacion-del-propietario.ts`) — estos tres campos de la
+   * agencia no tienen consumidor todavía, pero ya viajan en el DTO
+   * (`update-agency.dto.ts:705-715`) y el schema (`Agency.agente_retenedor_*`).
+   */
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
   legalRepresentative?: string | null;
   legalDocumentNumber?: string | null;
   /** Caller's membership in this agency */
@@ -2551,6 +2571,10 @@ export interface UpdateAgencyPayload {
    * de administración lleva IVA (con `ivaPorcentaje`). `null` = no se sabe: sin IVA.
    */
   responsableIva?: boolean | null;
+  /** Tres estados igual que `responsableIva`: `null` = no declarado, se manda tal cual. */
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
   diasAntesCartaIncremento?: number | null;
   pactaGastosDeCobranza?: boolean | null;
   garantiaServiciosMomento?: 'INICIO' | 'ENTREGA' | null;

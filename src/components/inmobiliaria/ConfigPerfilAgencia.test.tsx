@@ -593,3 +593,138 @@ describe('<ConfigPerfilAgencia> — impuestos y retenciones', () => {
     expect(props.onSave).not.toHaveBeenCalled()
   })
 })
+
+describe('<ConfigPerfilAgencia> — perfil fiscal de la agencia (agenteRetenedor*)', () => {
+  // 🔴 T-0107: Agency.responsableIva es de TRES estados
+  // (`liquidacion-del-propietario.ts:cobraIvaSobreLaComision`, `!== false`
+  // cobra IVA). null = no declarado → SE COBRA; false = declarado no
+  // responsable → NO se cobra, y es una declaración legal (commit 90720fc3,
+  // 22-09, evitó repetir los 40.132 cuotas con IVA en cero). Un checkbox sin
+  // marcar que mande `false` apagaría el IVA de una agencia en silencio.
+  // Estas pruebas cubren los tres campos `agenteRetenedor*`, que comparten la
+  // misma semántica de tres estados (ver back: hoy sin consumidor propio,
+  // pero guardados igual de protegidos por si mañana lo tienen).
+
+  it('sin tocar nada, guardar NUNCA manda false para un campo fiscal no declarado (null)', async () => {
+    const props = render({
+      agency: {
+        ...AGENCY,
+        agenteRetenedorRenta: null,
+        agenteRetenedorIva: null,
+        agenteRetenedorIca: null,
+      },
+    })
+    enterEditMode()
+
+    // Toca un campo cualquiera, no los fiscales
+    const nameInput = Array.from(container.querySelectorAll('input')).find(
+      (i) => i.value === 'Inmobiliaria ABC',
+    ) as HTMLInputElement
+    act(() => {
+      setInputValue(nameInput, 'Inmobiliaria XYZ')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledTimes(1)
+    const payload = (props.onSave as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(payload).not.toHaveProperty('agenteRetenedorRenta')
+    expect(payload).not.toHaveProperty('agenteRetenedorIva')
+    expect(payload).not.toHaveProperty('agenteRetenedorIca')
+    expect(payload).toEqual({ name: 'Inmobiliaria XYZ' })
+  })
+
+  it('simplemente entrar y salir de edición sin tocar nada no manda ningún campo fiscal', async () => {
+    const props = render({
+      agency: { ...AGENCY, agenteRetenedorRenta: null, agenteRetenedorIva: null, agenteRetenedorIca: null },
+    })
+    enterEditMode()
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+  })
+
+  it('muestra «Sin definir» en modo lectura cuando el campo es null, no "No"', () => {
+    render({
+      agency: { ...AGENCY, agenteRetenedorRenta: null, agenteRetenedorIva: true, agenteRetenedorIca: false },
+    })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Sin definir')
+  })
+
+  it('clickear «No» en un campo sin definir manda { agenteRetenedorIca: false } explícitamente', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorIca: null } })
+    enterEditMode()
+
+    const btnNo = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorIca-false"]',
+    ) as HTMLButtonElement
+    expect(btnNo).toBeTruthy()
+    act(() => {
+      btnNo.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorIca: false })
+  })
+
+  it('clickear «Sí» manda { agenteRetenedorRenta: true }', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorRenta: null } })
+    enterEditMode()
+
+    const btnSi = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorRenta-true"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnSi.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorRenta: true })
+  })
+
+  it('volver a declarar «Sin definir» sobre un campo ya en true manda null explícito', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorIva: true } })
+    enterEditMode()
+
+    const btnVacio = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorIva-null"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnVacio.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorIva: null })
+  })
+
+  it('cancelar la edición después de tocar un campo fiscal no manda nada', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorRenta: null } })
+    enterEditMode()
+
+    const btnSi = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorRenta-true"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnSi.click()
+    })
+
+    act(() => {
+      findButton('Cancelar').click()
+    })
+
+    enterEditMode()
+    await clickSave()
+
+    expect(props.onSave).not.toHaveBeenCalled()
+  })
+
+  it('responsableIva se muestra de sólo lectura (no hay botones para tocarlo acá) y enlaza a Mandato', () => {
+    render({ agency: { ...AGENCY, responsableIva: null } })
+    expect(container.querySelector('[data-testid^="fiscal-responsableIva-"]')).toBeNull()
+    const link = container.querySelector('a[href="/panel/inmobiliaria/configuracion/mandato"]')
+    expect(link).toBeTruthy()
+  })
+})

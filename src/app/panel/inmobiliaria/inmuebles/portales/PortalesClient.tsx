@@ -69,6 +69,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CalidadDeLasPublicaciones } from '@/components/inmobiliaria/calidad/CalidadDeLasPublicaciones'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -86,6 +87,7 @@ import {
   Label,
   Textarea,
 } from '@/components/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   publicacionApi,
   type EstadoDePublicacion,
@@ -98,6 +100,7 @@ import { EL_CATALOGO_DE_LEASEFY, marcaDelPortal } from '@/lib/portales/marca'
 import { comoSeConecta } from '@/lib/portales/como-se-conecta'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /** Cómo se lee cada estado, y con qué tono. */
@@ -906,7 +909,12 @@ function ComoFunciona() {
 // La pantalla
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Las dos pestañas: la de siempre y la de Niti · calidad (26-09-2026). */
+type Pestana = 'publicar' | 'calidad'
+
 export function PortalesClient() {
+  const { t } = useI18n()
+  const [pestana, setPestana] = useState<Pestana>('publicar')
   const cuentas = useCrm(() => publicacionApi.cuentas(), [], ['portafolio'])
   const tablero = useCrm(() => publicacionApi.tablero(), [], ['portafolio'])
   const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones()
@@ -1022,6 +1030,29 @@ export function PortalesClient() {
         </ParaEntenderMas>
       </header>
 
+      {/* «Publicar» es todo lo que esta pantalla era; «Calidad» es Niti ·
+          calidad (`niti-spec.md`, decisión 7): junto a donde ya se publica.
+          Pestañas subrayadas porque cambian el contenido de la página
+          (DESIGN §15); el contenido inactivo no se monta. */}
+      <Tabs
+        value={pestana}
+        onValueChange={(v) => setPestana(v === 'calidad' ? 'calidad' : 'publicar')}
+        className="space-y-6"
+      >
+        <TabsList
+          variant="underline"
+          aria-label={t('inmobiliaria.calidad.pestanas.aria')}
+          className="justify-start"
+        >
+          <TabsTrigger value="publicar" data-testid="pestana-publicar">
+            {t('inmobiliaria.calidad.pestanas.publicar')}
+          </TabsTrigger>
+          <TabsTrigger value="calidad" data-testid="pestana-calidad">
+            {t('inmobiliaria.calidad.pestanas.calidad')}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="publicar" className="mt-0 space-y-6">
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
@@ -1206,6 +1237,12 @@ export function PortalesClient() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="calidad" className="mt-0">
+          <CalidadDeLasPublicaciones />
+        </TabsContent>
+      </Tabs>
 
       {cuentaAbierta ? (
         <DialogoDeCuenta

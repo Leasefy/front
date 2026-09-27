@@ -72,6 +72,12 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => ({
 vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
 }))
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+// La pestaña «Calidad» tiene sus propias pruebas (CalidadDeLasPublicaciones.test.tsx):
+// acá sólo importa que se monte al elegirla, y que no se monte antes.
+vi.mock('@/components/inmobiliaria/calidad/CalidadDeLasPublicaciones', () => ({
+  CalidadDeLasPublicaciones: () => <div data-testid="pestana-calidad-montada">Niti</div>,
+}))
 
 import { ApiError } from '@/lib/api/client'
 import { PortalesClient } from './PortalesClient'
@@ -584,5 +590,35 @@ describe('las tarjetas de portal', () => {
     expect(t).toContain('Se publica automático')
     // Y NO le dice que «no puede recibir avisos»: ese texto es de los de afuera.
     expect(t).not.toContain('necesitamos los datos de tu cuenta')
+  })
+})
+
+/*
+ * P8 — Portales tiene dos pestañas (Niti · calidad, 26-09-2026): «Publicar» es
+ *      todo lo de antes y es la de entrada; «Calidad» monta Niti sólo al
+ *      elegirla (no se le pide nada al micro a quien sólo vino a publicar).
+ */
+describe('P8 · pestañas Publicar y Calidad', () => {
+  it('entra en «Publicar» con todo lo de antes, y «Calidad» se monta sólo al elegirla', async () => {
+    h.api.cuentas.mockResolvedValue({ disponible: true, motivo: null, portales: [FINCARAIZ, METRO] })
+    h.api.tablero.mockResolvedValue({ disponible: true, motivo: null, filas: [POR_SUBIR] })
+    await montar()
+
+    const publicar = contenedor.querySelector('[data-testid="pestana-publicar"]')
+    const calidad = contenedor.querySelector('[data-testid="pestana-calidad"]')
+    expect(publicar?.textContent).toBe('Publicar')
+    expect(calidad?.textContent).toBe('Calidad')
+    expect(publicar?.getAttribute('aria-selected')).toBe('true')
+    expect(contenedor.querySelector('[data-testid="lista-de-portales"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="tabla-publicaciones"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="pestana-calidad-montada"]')).toBeNull()
+
+    // Radix activa la pestaña con el mousedown del botón principal.
+    await act(async () => {
+      calidad?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+    })
+    expect(calidad?.getAttribute('aria-selected')).toBe('true')
+    expect(contenedor.querySelector('[data-testid="pestana-calidad-montada"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="tabla-publicaciones"]')).toBeNull()
   })
 })

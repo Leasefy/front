@@ -105,6 +105,16 @@ const boton = (id: string) =>
   container.querySelector(`[data-testid="piloto-bandeja-accion-${id}"]`) as HTMLButtonElement | null
 
 describe('PilotoBandeja', () => {
+  it('🔴 la fuente calidad se llama «Niti · calidad» en su chip (niti-spec.md: nombre visible)', () => {
+    render({
+      items: [
+        base({ id: 'c-1', fuente: 'calidad', agente: 'calidad', accion: undefined }),
+        base({ id: 'r-1' }),
+      ],
+    })
+    expect(container.querySelector('[data-testid="piloto-chip-calidad"]')?.textContent).toContain('Niti · calidad')
+  })
+
   it('🔴 una acción con advertencia NO se ejecuta desde la fila: abre el cajón con esa acción lista', async () => {
     const item = base({
       accion: {

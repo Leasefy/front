@@ -79,7 +79,7 @@ const FUENTE_META: Record<string, { icon: Icon; label: string }> = {
   whatsapp: { icon: ChatCircleDots, label: 'WhatsApp' },
   plan_de_pago: { icon: Handshake, label: 'Planes de pago' },
   retencion: { icon: HandCoins, label: 'Retención' },
-  calidad: { icon: Sparkle, label: 'Calidad' },
+  calidad: { icon: Sparkle, label: 'Niti · calidad' },
   factura_ap: { icon: Receipt, label: 'Cuentas por pagar' },
   // Lo que la autonomía retuvo (copiloto): el botón lo LIBERA de verdad.
   retenido: { icon: HandPalm, label: 'Retenidos' },

@@ -72,6 +72,7 @@ import {
 } from '@/components/migracion/VeredictoDeMigracion';
 import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -801,6 +802,14 @@ function CobrosContent() {
           </div>
         )}
       </motion.div>
+
+      {/*
+        Payu (26-09-2026): el estado del link de pago de CADA CUOTA. Va aparte
+        y con su propio mes y estado porque la tabla de arriba es de COBROS —el
+        documento— y un cobro no trae su cuota. Sin «Enviar link»: los manda
+        el cron del back (decisión de Nico).
+      */}
+      <LinksDePago />
 
       {/* Cobro Detail Modal */}
       <CobroDetail

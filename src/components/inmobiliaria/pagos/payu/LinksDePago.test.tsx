@@ -178,6 +178,53 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     }
   });
 
+  it('🔴 QA 26-09: con enMora del back, una cuota que por sí sola no venció pero cuyo inquilino debe una anterior en mora no dice «todavía»', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-06T15:00:00.000Z'));
+    try {
+      const ninguno = LOS_CINCO.find((l) => l.estado === 'ninguno')!;
+      get.mockResolvedValue(
+        pagina([
+          // Vence el 10: por su fecha todavía es de Payu, pero el contrato debe septiembre.
+          { ...ninguno, cuotaId: 'c-debe-otra', fechaDeVencimiento: '2026-10-10', enMora: true },
+          // Vence el 1: ella misma pasó su «3 días después».
+          { ...ninguno, cuotaId: 'c-vencida', fechaDeVencimiento: '2026-10-01', enMora: true },
+          // El back dice que no: manda el back, no la fecha.
+          { ...ninguno, cuotaId: 'c-al-dia', fechaDeVencimiento: '2026-10-10', enMora: false },
+        ]),
+      );
+      await montar(<LinksDePago mes="2026-10" />);
+      expect(fila('c-debe-otra')?.textContent).toContain('debe una cuota anterior en mora');
+      expect(fila('c-debe-otra')?.textContent).toContain('la lleva cobranza');
+      expect(fila('c-debe-otra')?.textContent).not.toContain('todavía no le ha escrito');
+      expect(fila('c-vencida')?.textContent).toContain('Venció hace más de 3 días sin pagar');
+      expect(fila('c-al-dia')?.textContent).toContain('Payu todavía no le ha escrito por esta cuota.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('enMora del back gana sobre la fecha; sin el campo (back viejo) se sigue mirando la fecha', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-06T15:00:00.000Z'));
+    try {
+      const ninguno = LOS_CINCO.find((l) => l.estado === 'ninguno')!;
+      get.mockResolvedValue(
+        pagina([
+          // Fecha vieja pero el back dice que Payu no la excluye por mora (la cuota ya no debe).
+          { ...ninguno, cuotaId: 'c-back-no', fechaDeVencimiento: '2026-09-01', enMora: false },
+          // Back viejo: sin el campo, la fecha decide.
+          { ...ninguno, cuotaId: 'c-sin-campo', fechaDeVencimiento: '2026-09-01' },
+        ]),
+      );
+      await montar(<LinksDePago mes="2026-10" />);
+      expect(fila('c-back-no')?.textContent).not.toContain('la lleva cobranza');
+      expect(fila('c-sin-campo')?.textContent).toContain('Venció hace más de 3 días sin pagar');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('cada estado dice qué significa', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-28T15:00:00.000Z'));

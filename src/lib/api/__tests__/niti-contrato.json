@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "descripcion": "Contrato de Niti · calidad (26-09-2026). Copia VERBATIM en el micro (tests/contract/niti-contrato.json), en el back (test/contratos/niti-contrato.json) y en el front (src/lib/api/__tests__/niti-contrato.json). Cada lado prueba su parte contra este archivo. Si cambia, se cambia en ~/rent/sesion-2026-09-22/cierre-de-agentes/niti-contrato.json y se copia a los tres. Llave del inmueble en todo el contrato: propertyId (Property.id del back), NO consignacionId. v2 (26-09, integrador): ids de ejemplo que no eran UUID (aprobadoPor.userId, accionId) pasan a UUID válidos; el ejemplo de inventario ya no trae barrio y sugerencia de barrio a la vez (el back sólo sugiere cuando el barrio está vacío, y entonces D-01 lo lista en falta); se fijan disponibleDesde (YYYY-MM-DD), motivo null fuera del universo, páginas cortas con cursor no nulo, rangos de aplicar como CreatePropertyDto, cuerpos de error con llaves extra del filtro global, y resumen con ultimaPasada/puntajePromedio null antes de la primera pasada.",
+  "version": 3,
+  "descripcion": "Contrato de Niti · calidad (26-09-2026). Copia VERBATIM en el micro (tests/contract/niti-contrato.json), en el back (test/contratos/niti-contrato.json) y en el front (src/lib/api/__tests__/niti-contrato.json). Cada lado prueba su parte contra este archivo. Si cambia, se cambia en ~/rent/sesion-2026-09-22/cierre-de-agentes/niti-contrato.json y se copia a los tres. Llave del inmueble en todo el contrato: propertyId (Property.id del back), NO consignacionId. v2 (26-09, integrador): ids de ejemplo que no eran UUID (aprobadoPor.userId, accionId) pasan a UUID válidos; el ejemplo de inventario ya no trae barrio y sugerencia de barrio a la vez (el back sólo sugiere cuando el barrio está vacío, y entonces D-01 lo lista en falta); se fijan disponibleDesde (YYYY-MM-DD), motivo null fuera del universo, páginas cortas con cursor no nulo, rangos de aplicar como CreatePropertyDto, cuerpos de error con llaves extra del filtro global, y resumen con ultimaPasada/puntajePromedio null antes de la primera pasada. v3 (26-09, integrador): todo error de aplicar trae 'codigo' estable (NO_EXISTE | FOTO_AJENA | VALOR_CAMBIO | OTRO_INMUEBLE | SE_ESTA_APLICANDO | NO_APLICABLE | APROBADOR_AJENO | SIN_AUDITORIA); el micro decide por el código, nunca por el texto del motivo.",
   "auth": {
     "s2s": "Todas las rutas /internal/calidad/* del back: Authorization: Bearer <AGENT_API_KEY> (AgentApiKeyGuard) + header x-tenant-id: <agencyId> (el back también acepta ?tenantId; si falta los dos → 400). Un propertyId de otra inmobiliaria → 404 (nunca 403, para no revelar que existe).",
     "microBaseEnv": "El micro usa LEASIFY_BACKEND_URL + AGENT_API_KEY (como payments/cobros-client.ts). Si faltan, NO usa datos de ejemplo: la pasada falla con motivo 'sin conexión con el back' visible en GET /calidad/resumen.",
@@ -179,21 +179,41 @@
     "errores": {
       "404": {
         "aplicado": false,
-        "motivo": "El inmueble no existe en esta inmobiliaria."
+        "motivo": "El inmueble no existe en esta inmobiliaria.",
+        "codigo": "NO_EXISTE"
       },
       "409": {
         "aplicado": false,
         "motivo": "El dato cambió desde que Niti lo propuso.",
-        "valorActual": "Chicó"
+        "valorActual": "Chicó",
+        "codigo": "VALOR_CAMBIO"
       },
       "422": {
         "aplicado": false,
-        "motivo": "Ese cambio no se puede aplicar solo."
+        "motivo": "Ese cambio no se puede aplicar solo.",
+        "codigo": "NO_APLICABLE"
       },
       "403": {
         "aplicado": false,
-        "motivo": "Quien aprueba no pertenece a esta inmobiliaria."
+        "motivo": "Quien aprueba no pertenece a esta inmobiliaria.",
+        "codigo": "APROBADOR_AJENO"
+      },
+      "503": {
+        "aplicado": false,
+        "motivo": "Falta aplicar la migración del Piloto: sin la bitácora no se aplica nada.",
+        "codigo": "SIN_AUDITORIA"
       }
+    },
+    "codigos": {
+      "NO_EXISTE": 404,
+      "FOTO_AJENA": 404,
+      "VALOR_CAMBIO": 409,
+      "OTRO_INMUEBLE": 409,
+      "SE_ESTA_APLICANDO": 409,
+      "NO_APLICABLE": 422,
+      "APROBADOR_AJENO": 403,
+      "SIN_AUDITORIA": 503,
+      "nota": "SE_ESTA_APLICANDO y SIN_AUDITORIA no son fallos de la propuesta: el micro la deja 'propuesta' y avisa. El resto la deja 'fallida' con el motivo."
     }
   },
   "evento": {

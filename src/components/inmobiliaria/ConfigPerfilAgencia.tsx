@@ -182,12 +182,6 @@ function textoEstadoFiscal(valor: boolean | null | undefined): string {
   return 'Sin definir';
 }
 
-const OPCIONES_ESTADO_FISCAL: ReadonlyArray<readonly [boolean | null, string]> = [
-  [true, 'Sí'],
-  [false, 'No'],
-  [null, 'Sin definir'],
-];
-
 /**
  * Control de un campo fiscal de TRES estados (`Agency.agenteRetenedor*`):
  * tres botones que muestran y escriben el valor exacto que se clickeó —
@@ -197,19 +191,34 @@ const OPCIONES_ESTADO_FISCAL: ReadonlyArray<readonly [boolean | null, string]> =
  * pantalla: acá NO escribe de inmediato, sólo actualiza `formData` — el
  * envío real pasa por `buildChangedPayload`, que sólo manda el campo si
  * cambió frente al valor cargado de la agencia.
+ *
+ * 🔴 T-0107 ronda 2: `etiquetaSinDefinir` es OBLIGATORIO, sin default. Los
+ * tres campos fiscales de la agencia NO comparten lo que «sin definir»
+ * significa (ver `facturas-de-proveedor.service.ts:tarifasPara` — reteIVA es
+ * opt-in, reteICA es opt-out); un botón «Sin definir» idéntico en los tres
+ * escondería que dos filas hacen lo contrario. El call site tiene que
+ * decidir el texto a partir del comportamiento real del campo, no de una
+ * plantilla genérica.
  */
 function EstadoFiscalControl({
   valor,
   onChange,
   testIdPrefix,
+  etiquetaSinDefinir,
 }: {
   valor: boolean | null;
   onChange: (v: boolean | null) => void;
   testIdPrefix: string;
+  etiquetaSinDefinir: string;
 }) {
+  const opciones: ReadonlyArray<readonly [boolean | null, string]> = [
+    [true, 'Sí'],
+    [false, 'No'],
+    [null, etiquetaSinDefinir],
+  ];
   return (
     <div className="flex flex-wrap gap-2" role="group">
-      {OPCIONES_ESTADO_FISCAL.map(([v, nombre]) => (
+      {opciones.map(([v, nombre]) => (
         <Button
           key={String(v)}
           type="button"
@@ -224,6 +233,42 @@ function EstadoFiscalControl({
       ))}
     </div>
   );
+}
+
+/**
+ * 🔴 T-0107 ronda 2 — el efecto REAL de cada estado, leído de
+ * `facturas-de-proveedor.service.ts:tarifasPara` (cuentas por pagar, el
+ * único consumidor a nivel agencia):
+ *
+ *   reteivaPorcentaje: agencia?.agenteRetenedorIva === true ? tarifa : null
+ *   reteicaPorMil:      agencia?.agenteRetenedorIca === false ? null : tarifa
+ *
+ * reteIVA es OPT-IN (sólo `true` practica); reteICA es OPT-OUT (sólo `false`
+ * no practica). Nunca mostrar los dos con el mismo texto neutro para «sin
+ * definir» — son comportamientos opuestos.
+ */
+function efectoDeRetencionIva(valor: boolean | null): string {
+  if (valor === true) return 'Practica reteIVA a los proveedores.';
+  if (valor === false) return 'No practica reteIVA.';
+  return 'Sin definir — hoy se comporta como «No»: no practica reteIVA.';
+}
+
+function efectoDeRetencionIca(valor: boolean | null): string {
+  if (valor === false) return 'No practica reteICA.';
+  if (valor === true) return 'Practica reteICA a los proveedores.';
+  return 'Sin definir — hoy se comporta como «Sí»: sí practica reteICA.';
+}
+
+/**
+ * `Agency.responsableIva` (`cobraIvaSobreLaComision`, back): `!== false`
+ * cobra. Mismo patrón opt-out que reteICA — se muestra acá aunque el campo
+ * sea de sólo lectura (se edita en Mandato) para no dejarlo sin leyenda
+ * mientras sus dos hermanos sí la tienen.
+ */
+function efectoDeResponsableIva(valor: boolean | null | undefined): string {
+  if (valor === false) return 'No cobra IVA sobre la comisión.';
+  if (valor === true) return 'Cobra IVA sobre la comisión.';
+  return 'Sin definir — hoy se comporta como «Sí»: sí cobra IVA sobre la comisión.';
 }
 
 /**
@@ -1517,12 +1562,28 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-semibold tabular-nums">
                 {agency.reteicaPorMil != null ? `${agency.reteicaPorMil} por mil` : 'Sin configurar — no se practica'}
               </div>
+              {/* T-0107 ronda 2: reteICA es OPT-OUT (`facturas-de-proveedor.service.ts:
+                  tarifasPara`, `agenteRetenedorIca === false ? null : tarifa`) — mostrar
+                  la tarifa sin avisar que no se aplica sería la misma mentira que produjo
+                  los 40.132 cuotas con IVA en cero. */}
+              {agency.reteicaPorMil != null && agency.agenteRetenedorIca === false ? (
+                <div className="text-[11px] text-warning" data-testid="reteica-no-se-aplica">
+                  No se aplica: declarado que no es agente de reteICA
+                </div>
+              ) : null}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-xs">ReteIVA</div>
               <div className="text-foreground font-semibold tabular-nums">
                 {agency.reteivaPorcentaje ?? TARIFAS_POR_DEFECTO.reteivaPorcentaje} % del IVA
               </div>
+              {/* reteIVA es OPT-IN (`agenteRetenedorIva === true ? tarifa : null`): a
+                  diferencia de reteICA, el default (null) NO aplica. */}
+              {agency.agenteRetenedorIva !== true ? (
+                <div className="text-[11px] text-warning" data-testid="reteiva-no-se-aplica">
+                  No se aplica hoy: sólo si es agente de reteIVA
+                </div>
+              ) : null}
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-xs">Base mínima de retefuente</div>
@@ -1562,8 +1623,18 @@ export function ConfigPerfilAgencia({
                 <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground" data-testid="efecto-responsableIva">
+              {efectoDeResponsableIva(agency.responsableIva)}
+            </p>
           </div>
 
+          {/* T-0107 ronda 2: reteIVA (opt-in) y reteICA (opt-out) son
+              money-bearing vía cuentas por pagar (`facturas-de-proveedor.service.ts:
+              tarifasPara`) — sus «Sin definir» significan lo OPUESTO y cada botón lo
+              dice, no sólo la leyenda de abajo. `agenteRetenedorRenta` no tiene
+              consumidor a nivel agencia (confirmado, exhaustivo): se declara igual,
+              pero con una leyenda fija que lo dice, para no sugerir un efecto que
+              no existe. */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de renta</span>
@@ -1572,10 +1643,14 @@ export function ConfigPerfilAgencia({
                   valor={formData.agenteRetenedorRenta}
                   onChange={(v) => updateField('agenteRetenedorRenta', v)}
                   testIdPrefix="fiscal-agenteRetenedorRenta"
+                  etiquetaSinDefinir="Sin definir"
                 />
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorRenta)}</span>
               )}
+              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorRenta">
+                No tiene ningún efecto en el sistema todavía: se guarda, pero ningún cálculo lo usa.
+              </p>
             </div>
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de IVA</span>
@@ -1584,10 +1659,14 @@ export function ConfigPerfilAgencia({
                   valor={formData.agenteRetenedorIva}
                   onChange={(v) => updateField('agenteRetenedorIva', v)}
                   testIdPrefix="fiscal-agenteRetenedorIva"
+                  etiquetaSinDefinir="Sin definir (no practica)"
                 />
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIva)}</span>
               )}
+              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIva">
+                {efectoDeRetencionIva(isEditing ? formData.agenteRetenedorIva : (agency.agenteRetenedorIva ?? null))}
+              </p>
             </div>
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-foreground">Agente retenedor de ICA</span>
@@ -1596,15 +1675,19 @@ export function ConfigPerfilAgencia({
                   valor={formData.agenteRetenedorIca}
                   onChange={(v) => updateField('agenteRetenedorIca', v)}
                   testIdPrefix="fiscal-agenteRetenedorIca"
+                  etiquetaSinDefinir="Sin definir (sí practica)"
                 />
               ) : (
                 <span className="text-sm text-foreground">{textoEstadoFiscal(agency.agenteRetenedorIca)}</span>
               )}
+              <p className="text-xs text-muted-foreground" data-testid="efecto-agenteRetenedorIca">
+                {efectoDeRetencionIca(isEditing ? formData.agenteRetenedorIca : (agency.agenteRetenedorIca ?? null))}
+              </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Si la inmobiliaria misma practica retenciones al pagar a un tercero. «Sin definir» se guarda tal
-            cual — no se asume que sí ni que no.
+            Si la inmobiliaria misma practica retenciones al pagar a un proveedor. «Sin definir» no es
+            neutro: cada campo dice arriba qué hace hoy.
           </p>
         </div>
       </div>

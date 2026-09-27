@@ -55,11 +55,25 @@ export function PastillaDelLink({ estado }: { estado: EstadoDelLinkDePago }) {
  * «En mora escribe sólo Laura» (Nico, 26-09): una cuota que pasó su «3 días
  * después» ya no es de Payu. Se compara el día de hoy en Bogotá.
  */
-function yaEnMora(fechaDeVencimiento: string): boolean {
+function vencioHaceMasDe3Dias(fechaDeVencimiento: string): boolean {
   const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
   const limite = new Date(`${fechaDeVencimiento}T00:00:00Z`);
   limite.setUTCDate(limite.getUTCDate() + 3);
   return hoy > limite.toISOString().slice(0, 10);
+}
+
+/**
+ * Qué decir de una cuota sin link. 🔴 QA 26-09: Payu cobra la cuota MÁS VIEJA
+ * con saldo del contrato, así que también deja fuera las cuotas nuevas de un
+ * inquilino que debe una anterior en mora — mirando sólo la fecha de ESTA
+ * cuota la pantalla les decía «Payu todavía no le ha escrito». Manda `enMora`
+ * del back (la misma regla que usa Payu); sin el campo (back viejo), la fecha.
+ */
+function detalleSinLink(link: LinkDePagoDeCuota): 'ninguno' | 'enMora' | 'enMoraPorOtra' {
+  const vencida = vencioHaceMasDe3Dias(link.fechaDeVencimiento);
+  const enMora = link.enMora ?? vencida;
+  if (!enMora) return 'ninguno';
+  return vencida ? 'enMora' : 'enMoraPorOtra';
 }
 
 export function EstadoDelLink({ link }: { link: LinkDePagoDeCuota }) {
@@ -73,7 +87,7 @@ export function EstadoDelLink({ link }: { link: LinkDePagoDeCuota }) {
       : estado === 'enviado' && link.ultimoEnvioEn
         ? t('inmobiliaria.cobros.linksDePago.ultimoAviso', { fecha: instanteEnBogota(link.ultimoEnvioEn, locale) })
         : estado === 'ninguno'
-          ? t(`inmobiliaria.cobros.linksDePago.detalle.${yaEnMora(link.fechaDeVencimiento) ? 'enMora' : 'ninguno'}`)
+          ? t(`inmobiliaria.cobros.linksDePago.detalle.${detalleSinLink(link)}`)
           : estado === 'vencido'
             ? t('inmobiliaria.cobros.linksDePago.detalle.vencido')
             : estado === 'fallido'

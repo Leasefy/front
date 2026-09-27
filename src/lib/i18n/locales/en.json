@@ -2493,6 +2493,7 @@
         "detalle": {
           "ninguno": "Payu has not written about this installment yet.",
           "enMora": "More than 3 days overdue: Payu no longer writes about this installment; collections takes it.",
+          "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Payu does not write to them; collections takes it.",
           "vencido": "The link expired unpaid. Payu no longer writes about this installment: collections takes it from here.",
           "fallido": "The tenant tried to pay and the payment gateway did not approve it."
         },
@@ -7991,7 +7992,7 @@
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
-          "pagos": "Vendor payments",
+          "pagos": "Payu · tenant collections",
           "estudio": "Candidate evaluation",
           "matching": "Matching",
           "avaluos": "Appraisals",

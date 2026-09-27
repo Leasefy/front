@@ -18,6 +18,7 @@
 import { describe, it, expect } from 'vitest'
 
 import es from '@/lib/i18n/locales/es.json'
+import en from '@/lib/i18n/locales/en.json'
 import { clave } from './PilotoPreparacion'
 
 /** El MISMO regex que usa el interpolador de verdad. */
@@ -75,5 +76,17 @@ describe('singular y plural: «Falta 2 cosa» delata una pantalla sin cuidar', (
     }
     expect(prep.noListoPlural).toContain('Faltan')
     expect(prep.noListo).toContain('Falta ')
+  })
+})
+
+describe('el nombre de cada agente en la Actividad en vivo (QA de Payu, 26-09)', () => {
+  const agente = (d: unknown) =>
+    (d as { inmobiliaria: { ai: { workspace: { agente: Record<string, string> } } } }).inmobiliaria.ai.workspace.agente
+
+  it('🔴 `pagos` es Payu, que les cobra a los INQUILINOS — no «Pagos a proveedores»', () => {
+    expect(agente(es).pagos).toBe('Payu · cobros a inquilinos')
+    expect(agente(en).pagos).toBe('Payu · tenant collections')
+    expect(agente(es).pagos).not.toMatch(/proveedor/i)
+    expect(agente(en).pagos).not.toMatch(/vendor|supplier/i)
   })
 })

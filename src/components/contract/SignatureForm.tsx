@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, ArrowRight, SealCheck, FileText } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
-import { OTPVerification } from './OTPVerification';
+import { OTPVerification, type OtpAdapter } from './OTPVerification';
 import { SignaturePad } from './SignaturePad';
 import { Button } from '@/components/ui/button';
 import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
@@ -32,8 +32,13 @@ export interface SignatureFormProps {
    * el caller ya lo muestra (toast).
    */
   onSign: (payload: SignaturePayload) => void | Promise<void>;
-  /** Contract ID — used to send/verify OTP against the backend */
-  contractId: string;
+  /**
+   * Contract ID — used to send/verify OTP against the DEFAULT contract
+   * transport. Opcional cuando se pasa `adapter`: el transporte inyectado no
+   * necesita un id de contrato (T-0109 — firma del representante de la
+   * agencia y del copropietario en la consignación, contract.md §3.1.C7/D4).
+   */
+  contractId?: string;
   /** Whether this is the landlord or tenant signing */
   isLandlord: boolean;
   /** Loading state during signing */
@@ -54,6 +59,19 @@ export interface SignatureFormProps {
    * mismo trazo y el mismo OTP— con sus propias palabras.
    */
   textos?: { firmado?: string; aceptacion?: string; boton?: string };
+  /**
+   * T-0109 — el transporte de envío/verificación de OTP inyectado, igual que
+   * `OTPVerification.adapter`. Con `adapter`, `contractId`/`isLandlord` dejan
+   * de construir el transporte por defecto — sólo `isLandlord` sigue
+   * decidiendo el badge de rol, a menos que `rolLabel` lo reemplace.
+   */
+  adapter?: OtpAdapter;
+  /**
+   * Reemplaza el badge "Arrendador"/"Arrendatario" (derivado de `isLandlord`)
+   * cuando quien firma no es ninguna de las dos partes del arriendo —el
+   * representante de la agencia o un copropietario en la consignación.
+   */
+  rolLabel?: string;
 }
 
 // ============================================================================
@@ -81,6 +99,8 @@ export function SignatureForm({
   requireOTP = true,
   className,
   textos,
+  adapter,
+  rolLabel,
 }: SignatureFormProps) {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -90,7 +110,7 @@ export function SignatureForm({
   const [otpToken, setOtpToken] = useState<string | null>(null);
 
   const canSign = !!signatureData && acceptedTerms && acceptedLegal && acceptedData;
-  const role = isLandlord ? 'Arrendador' : 'Arrendatario';
+  const role = rolLabel ?? (isLandlord ? 'Arrendador' : 'Arrendatario');
   const otpRole = isLandlord ? 'landlord' : 'tenant';
 
   /**
@@ -342,6 +362,7 @@ export function SignatureForm({
         isOpen={showOTP}
         contractId={contractId}
         role={otpRole}
+        adapter={adapter}
         onVerified={handleOTPVerified}
         onCancel={handleOTPCancel}
       />

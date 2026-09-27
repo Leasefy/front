@@ -52,6 +52,7 @@ import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectionsHistory } from '@/components/contract/RejectionsHistory';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
+import { SealStatusBadge } from '@/components/contract/SealStatusBadge';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
 import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
@@ -421,6 +422,15 @@ function ContratoDetalleContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back
+              no manda `documentoFirmado` (viejo), es legacy (null) o el
+              contrato todavía no tiene versión FINAL (parcial). */}
+          <SealStatusBadge
+            contractId={contract.id}
+            documentoFirmado={contract.documentoFirmado}
+            canEdit={canEditContracts}
+            onReintentado={() => void refetch()}
+          />
           <DownloadContractPdfButton
             contractId={contract.id}
             contractStatus={contract.status}

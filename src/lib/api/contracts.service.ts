@@ -208,6 +208,9 @@ export function mapBackendContract(bc: BackendContract): Contract {
       metadata: ae.metadata as ContractAuditEventMetadata,
     })),
     documentHash: bc.documentHash,
+    // T-0109 contract.md §3.1.B2 — passthrough puro (undefined sobrevive:
+    // back anterior a T-0109; null = contrato legacy sin fila de versión).
+    documentoFirmado: bc.documentoFirmado,
   };
 }
 
@@ -655,6 +658,17 @@ export const contractsApi = {
    */
   async getSignedPdfUrl(id: string): Promise<ContractSignedPdf> {
     return apiClient.get<ContractSignedPdf>(`/contracts/${id}/pdf`);
+  },
+
+  /**
+   * POST /contracts/:id/pdf/sellar — T-0109 contract.md §3.1.B3. Reintenta
+   * el sello de la versión FINAL cuando quedó `FAILED`. 404 si el contrato
+   * no tiene versión final (el caller oculta el botón); 409
+   * `SELLO_NO_REINTENTABLE` si el estado no es `FAILED` (el caller refresca
+   * en vez de reintentar).
+   */
+  async reintentarSello(id: string): Promise<{ sealStatus: 'PENDING' }> {
+    return apiClient.post<{ sealStatus: 'PENDING' }>(`/contracts/${id}/pdf/sellar`, {});
   },
 
   /** POST /contracts/:id/send - send a DRAFT contract into the signing flow (→ PENDING_LANDLORD_SIGNATURE) */

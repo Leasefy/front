@@ -3,7 +3,7 @@
  * Types for rental contracts, signatures, and signing flow
  */
 
-import type { OtpChannel } from '@/lib/api/contracts.types';
+import type { OtpChannel, SealStatus } from '@/lib/api/contracts.types';
 
 // ============================================================================
 // Contract Type Enums
@@ -183,6 +183,19 @@ export interface Signature {
   otpVerified?: boolean;
   /** Canales por los que se envió el código que se verificó. */
   otpChannels?: OtpChannel[];
+}
+
+/**
+ * T-0109 contract.md §3.1.B2 — la última versión estampada/sellada del PDF
+ * (`GET /contracts/:id` → `documentoFirmado`).
+ */
+export interface DocumentoFirmado {
+  version: number;
+  kind: 'CONTRACT_PARTIAL' | 'CONTRACT_FINAL';
+  /** `null` para `CONTRACT_PARTIAL` (nunca se sella un parcial). */
+  sealStatus: SealStatus | null;
+  sealedAt: string | null;
+  createdAt: string;
 }
 
 // ============================================================================
@@ -609,6 +622,13 @@ export interface Contract {
   // Signatures
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
+
+  /**
+   * T-0109 contract.md §3.1.B2/§3.2 — la última versión estampada/sellada
+   * del PDF. `undefined` = back anterior a T-0109 (se oculta toda la
+   * sección de sello); `null` = contrato legacy sin fila de versión.
+   */
+  documentoFirmado?: DocumentoFirmado | null;
 
   // Uploaded PDF flow. `MIGRATED` = entró por la migración (casi siempre sin PDF).
   contractOrigin?: 'GENERATED' | 'UPLOADED_PDF' | 'MIGRATED';

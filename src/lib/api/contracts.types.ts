@@ -245,6 +245,13 @@ export interface BackendContract {
   landlordSignature?: BackendSignature | null;
   tenantSignature?: BackendSignature | null;
   documentHash?: string;
+  /**
+   * T-0109 contract.md §3.1.B2 — la última versión estampada/sellada del
+   * PDF. `null` = contrato legacy sin fila de versión (ninguna, no fallo);
+   * ausente = back anterior a T-0109 → se oculta la sección de sello y el
+   * botón de reintentar (B3).
+   */
+  documentoFirmado?: BackendDocumentoFirmado | null;
 
   // ─── Metadata ────────────────────────────────────────────────────────────
   createdAt: string;
@@ -410,6 +417,27 @@ export type ContractPreview =
 export interface ContractSignedPdf {
   url: string;
   expiresAt: string;
+  /**
+   * NUEVO (WU-2), opcional — sólo tiene sentido para la versión FINAL
+   * sellada; `null`/ausente en un contrato parcial, borrador o legacy sin
+   * fila de versión. Ausente = back anterior a T-0109: no se muestra sello.
+   */
+  sealStatus?: SealStatus | null;
+  version?: number | null;
+  sealedAt?: string | null;
+}
+
+/**
+ * NUEVO (WU-2) — `GET /contracts/:id` → `documentoFirmado`. La ÚLTIMA
+ * `SignedDocumentVersion`, `null` en un contrato legacy sin fila de
+ * versión, ausente (`undefined`) contra un back anterior a T-0109.
+ */
+export interface BackendDocumentoFirmado {
+  version: number;
+  kind: 'CONTRACT_PARTIAL' | 'CONTRACT_FINAL';
+  sealStatus: SealStatus | null;
+  sealedAt: string | null;
+  createdAt: string;
 }
 
 // ============================================================================

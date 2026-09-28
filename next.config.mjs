@@ -58,6 +58,9 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   images: {
+    // Next 16 rejects any quality not listed here. 75 is the default; 90 is
+    // used by the login poster and other hero images.
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",

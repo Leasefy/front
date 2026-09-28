@@ -87,7 +87,7 @@ export function OwnerNameStepForm({
       nitBueno: nitRevisado.ok ? nitRevisado : null,
       // Cuando el tilde está puesto, el representante ES el nombre de arriba:
       // pedir que lo revise por separado sería pintar dos veces el mismo error.
-      representante: esElRepresentante ? null : revisarNombreCompleto(representante),
+      representante: esElRepresentante ? null : revisarNombreCompleto(representante, { deQuien: 'representante' }),
     }
   }, [displayName, agencyName, nit, esElRepresentante, representante])
 

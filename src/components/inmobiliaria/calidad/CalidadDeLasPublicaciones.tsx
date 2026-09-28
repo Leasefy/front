@@ -78,7 +78,7 @@ export function CalidadDeLasPublicaciones() {
 
   const [filtro, setFiltro] = useState<FiltroDeCalidad>('todos');
   const [limit, setLimit] = useState(TAMANO_POR_DEFECTO);
-  // La página vale sólo para el filtro con que se eligió (como en Payu).
+  // La página vale sólo para el filtro con que se eligió (como en Cobri).
   const alcance = `${filtro}|${limit}`;
   const [pagina, setPagina] = useState({ alcance, n: 1 });
   const page = pagina.alcance === alcance ? pagina.n : 1;

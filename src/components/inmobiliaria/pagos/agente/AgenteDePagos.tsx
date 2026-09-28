@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * AgenteDePagos — la pantalla de Payu en «Agentes IA» (`/pagos/agente`).
+ * AgenteDePagos — la pantalla de Cobri en «Agentes IA» (`/pagos/agente`).
  *
  * 26-09-2026: decía «Apagado» y «tablero no publicado» porque leía rutas del
  * micro (`/pagos/home/*`) que nunca existieron. Ahora lee las del back que
@@ -11,7 +11,7 @@
  *      frase —el molde del panel, `components/retencion/frases.ts`—, y
  *   2. la lista del link de cada cuota (`LinksDePago`), con el mismo mes.
  *
- * 🔴 Con `payuActivo=false` lo dice con las palabras de Nico —«Payu está
+ * 🔴 Con `payuActivo=false` lo dice con las palabras de Nico —«Cobri está
  * apagado en el servidor: lo prende Leasefy»— y no inventa números. Si el
  * resumen no se pudo leer, la píldora dice «Sin verificar», nunca «Apagado»:
  * decir apagado sin haber preguntado es la misma mentira que decir prendido.
@@ -72,7 +72,7 @@ function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
     <EstadoDeDatos
       cargando={lectura.cargando && !lectura.data}
       error={lectura.error}
-      queEs="el resumen de Payu"
+      queEs="el resumen de Cobri"
       onReintentar={lectura.recargar}
       esqueleto={<div className="h-5 w-full max-w-xl animate-pulse rounded-sm bg-surface-muted" aria-hidden="true" />}
     >
@@ -94,11 +94,11 @@ export function AgenteDePagos() {
       <header className="space-y-3">
         <SectionLabel>Agentes IA</SectionLabel>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-h2 text-fg">Agente de pagos · Payu</h1>
+          <h1 className="text-h2 text-fg">Agente de pagos · Cobri</h1>
           <PildoraDePayu estado={estadoDePayu(resumen)} />
         </div>
         <p className="max-w-2xl text-body-sm text-fg-muted">
-          Payu le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto:
+          Cobri le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto:
           3 días antes del vencimiento, el día y 3 días después. Son máximo tres mensajes por cuota y siempre el mismo
           link, que también va en los correos de aviso de cobro. Después del tercero ya no escribe: la sigue cobranza.
         </p>

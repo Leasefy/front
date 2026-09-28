@@ -1,5 +1,5 @@
 /**
- * Payu y el autopago, vistos por la inmobiliaria — sólo lectura, contra las
+ * Cobri y el autopago, vistos por la inmobiliaria — sólo lectura, contra las
  * tres rutas del back que fijó el integrador el 26-09-2026
  * (`payu-api-front.md`). Mismos guards que el resto de `/inmobiliaria/*`.
  *
@@ -25,7 +25,7 @@ export const payuApi = {
     return apiClient.get<PaginaDeLinksDePago>(`/inmobiliaria/cobros/links?${q.toString()}`);
   },
 
-  /** El mes de Payu en cifras, y si el cron está prendido. */
+  /** El mes de Cobri en cifras, y si el cron está prendido. */
   resumen(mes: string): Promise<ResumenDeLinksDePago> {
     return apiClient.get<ResumenDeLinksDePago>(
       `/inmobiliaria/cobros/links/resumen?mes=${encodeURIComponent(mes)}`,

@@ -27,7 +27,7 @@
  *
  * Nadie. Lo consumía «Agente de pagos» (`/pagos/agente`) para un tablero que
  * el micro nunca publicó; desde el 26-09 esa pantalla lee el resumen y los
- * links de Payu del BACK (`lib/api/payu.service.ts`, rutas fijadas en
+ * links de Cobri del BACK (`lib/api/payu.service.ts`, rutas fijadas en
  * `payu-api-front.md`).
  *
  * `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
@@ -36,7 +36,7 @@
  * obligaría a reescribir el contrato cuando llegue.
  *
  * Dónde está ese backend (verificado con `git ls-tree` en el micro,
- * `~/rent/agent`): el equipo —Payu, el conductor, cuya persona pública es
+ * `~/rent/agent`): el equipo —Cobri, el conductor, cuya persona pública es
  * Gabriela; y Laura, Nicolás, Valentina, Samuel y Sofía— está en
  * `src/mastra/agents/pagos/` en `cambios-nico-6` (tip `6ddd953b`) y registrado
  * en `src/mastra/index.ts`. Corre por un solo camino: `POST /pagos/dispatch` →

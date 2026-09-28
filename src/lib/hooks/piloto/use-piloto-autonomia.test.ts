@@ -118,7 +118,7 @@ const flota = {
       porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.',
       gobierna: true,
       actua: false,
-      efectoReal: 'Payu prepara el cobro…',
+      efectoReal: 'Cobri prepara el cobro…',
       valla: [],
       t323: true,
     },

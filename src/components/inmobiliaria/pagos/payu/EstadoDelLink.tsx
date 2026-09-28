@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * El estado del link de Payu de UNA cuota: la pastilla (icono + palabra, nunca
+ * El estado del link de Cobri de UNA cuota: la pastilla (icono + palabra, nunca
  * sólo color), los tres avisos con cuáles ya salieron, y una línea que dice qué
  * significa. Sin «Enviar»: los links los manda el cron (decisión de Nico).
  */
@@ -53,7 +53,7 @@ export function PastillaDelLink({ estado }: { estado: EstadoDelLinkDePago }) {
 
 /**
  * «En mora escribe sólo Laura» (Nico, 26-09): una cuota que pasó su «3 días
- * después» ya no es de Payu. Se compara el día de hoy en Bogotá.
+ * después» ya no es de Cobri. Se compara el día de hoy en Bogotá.
  */
 function vencioHaceMasDe3Dias(fechaDeVencimiento: string): boolean {
   const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -63,11 +63,11 @@ function vencioHaceMasDe3Dias(fechaDeVencimiento: string): boolean {
 }
 
 /**
- * Qué decir de una cuota sin link. 🔴 QA 26-09: Payu cobra la cuota MÁS VIEJA
+ * Qué decir de una cuota sin link. 🔴 QA 26-09: Cobri cobra la cuota MÁS VIEJA
  * con saldo del contrato, así que también deja fuera las cuotas nuevas de un
  * inquilino que debe una anterior en mora — mirando sólo la fecha de ESTA
- * cuota la pantalla les decía «Payu todavía no le ha escrito». Manda `enMora`
- * del back (la misma regla que usa Payu); sin el campo (back viejo), la fecha.
+ * cuota la pantalla les decía «Cobri todavía no le ha escrito». Manda `enMora`
+ * del back (la misma regla que usa Cobri); sin el campo (back viejo), la fecha.
  */
 function detalleSinLink(link: LinkDePagoDeCuota): 'ninguno' | 'enMora' | 'enMoraPorOtra' {
   const vencida = vencioHaceMasDe3Dias(link.fechaDeVencimiento);

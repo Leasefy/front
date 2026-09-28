@@ -1,5 +1,5 @@
 /**
- * Las tres rutas de Payu, exactas: lo que viaja en la query es contrato con el
+ * Las tres rutas de Cobri, exactas: lo que viaja en la query es contrato con el
  * back (`payu-api-front.md`, formas fijadas el 26-09).
  */
 

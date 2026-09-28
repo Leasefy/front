@@ -4,7 +4,7 @@
  *
  * El defecto que no puede volver: la pantalla decía «Apagado» y «tablero no
  * publicado» porque le preguntaba al micro por rutas que no existían. Ahora el
- * resumen es UNA frase con los números del back, y con Payu apagado lo dice
+ * resumen es UNA frase con los números del back, y con Cobri apagado lo dice
  * con las palabras de Nico sin inventar cifras.
  */
 
@@ -116,7 +116,7 @@ const q = (sel: string) => contenedor.querySelector(sel)
 const pildora = () => q('[data-testid="estado-de-payu"]')
 const frase = () => q('[data-testid="frase-de-payu"]')?.textContent ?? ''
 
-describe('AgenteDePagos — Payu apagado', () => {
+describe('AgenteDePagos — Cobri apagado', () => {
   it('🔴 lo dice con honestidad, con icono y palabra, y sin un número inventado', async () => {
     rutas.resumen.mockResolvedValue(
       resumen({ payuActivo: false, linksEnviados: 0, pagadosPorLink: 0, montoCobradoPorLinkCop: 0, pendientesCop: 0 }),
@@ -125,14 +125,14 @@ describe('AgenteDePagos — Payu apagado', () => {
     expect(pildora()?.getAttribute('data-estado')).toBe('apagado')
     expect(pildora()?.textContent).toContain('Apagado')
     expect(pildora()?.querySelector('svg')).not.toBeNull()
-    expect(frase().startsWith('Payu está apagado en el servidor: lo prende Leasefy.')).toBe(true)
+    expect(frase().startsWith('Cobri está apagado en el servidor: lo prende Leasefy.')).toBe(true)
     expect(frase()).not.toContain('$')
   })
 
   it('si alcanzó a mandar links mientras estuvo prendido, cuenta los del back y no otros', async () => {
     rutas.resumen.mockResolvedValue(resumen({ payuActivo: false }))
     await montar()
-    expect(frase()).toContain('Payu está apagado en el servidor: lo prende Leasefy.')
+    expect(frase()).toContain('Cobri está apagado en el servidor: lo prende Leasefy.')
     expect(frase()).toContain('mandó el link de 40 de 105 cuotas')
     expect(frase()).toContain('$ 18.000.000')
   })
@@ -145,13 +145,13 @@ describe('AgenteDePagos — Payu apagado', () => {
   })
 })
 
-describe('AgenteDePagos — Payu prendido', () => {
+describe('AgenteDePagos — Cobri prendido', () => {
   it('el resumen del mes en una frase, y debajo el link de cada cuota', async () => {
     rutas.resumen.mockResolvedValue(resumen())
     await montar()
     expect(pildora()?.getAttribute('data-estado')).toBe('prendido')
     expect(pildora()?.textContent).toContain('Prendido')
-    expect(frase()).toContain('Payu mandó el link de 40 de 105 cuotas; 12 se pagaron por link ($ 18.000.000)')
+    expect(frase()).toContain('Cobri mandó el link de 40 de 105 cuotas; 12 se pagaron por link ($ 18.000.000)')
     expect(q('[data-testid="link-c1"]')?.textContent).toContain('Marta Gómez')
   })
 

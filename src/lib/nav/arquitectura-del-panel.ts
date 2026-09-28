@@ -354,7 +354,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Sin `agente`: no es una Sala. Su Sala —el tercer renglón de Pagos— se
       // retiró el 2026-09-16 y lo que tenía vivo se mudó (fallidos y
       // recordatorios a Cobranza, por aprobar a Liquidaciones); esta pantalla
-      // NO lo repite. Desde el 26-09 es la pantalla de Payu: el resumen del mes
+      // NO lo repite. Desde el 26-09 es la pantalla de Cobri: el resumen del mes
       // en una frase y el link de pago de cada cuota, leídos del back
       // (`app/panel/inmobiliaria/pagos/agente/page.tsx`).
       //

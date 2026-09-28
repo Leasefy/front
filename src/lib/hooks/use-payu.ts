@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Las lecturas de Payu y del autopago para la inmobiliaria (las tres rutas de
+ * Las lecturas de Cobri y del autopago para la inmobiliaria (las tres rutas de
  * `payu-api-front.md`). Cada una con { data, cargando, error, recargar }.
  *
  * 🔴 `data` es SIEMPRE la de los filtros pedidos: mientras llega la del mes
@@ -81,7 +81,7 @@ export function useLinksDePago(filtros: Required<Pick<FiltrosDeLinksDePago, 'mes
   );
 }
 
-/** El mes de Payu en cifras, y si el cron está prendido. */
+/** El mes de Cobri en cifras, y si el cron está prendido. */
 export function useResumenDePayu(mes: string): Lectura<ResumenDeLinksDePago> {
   return useLectura(mes, () => payuApi.resumen(mes));
 }

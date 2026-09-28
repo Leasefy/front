@@ -3,6 +3,8 @@
  * Types for rental contracts, signatures, and signing flow
  */
 
+import type { OtpChannel, SealStatus } from '@/lib/api/contracts.types';
+
 // ============================================================================
 // Contract Type Enums
 // ============================================================================
@@ -162,7 +164,14 @@ export interface ContractTemplate {
 // ============================================================================
 
 /**
- * Electronic signature with legal compliance metadata
+ * Electronic signature with legal compliance metadata.
+ *
+ * T-0109 contract.md §3.2 nota 4 — corregido el drift preexistente: el back
+ * nunca mandó `status` ni `otpVerifiedAt` (no se leen en ningún consumidor
+ * de este tipo), y `otpVerified` puede venir ausente (`codigoVerificado` es
+ * opcional en firmas anteriores al 2026-09-23) — «sin dato», no «no
+ * verificado». `otpChannels` es nuevo (WU-1): canales SENT del código
+ * verificado, ausente en un back viejo.
  */
 export interface Signature {
   signedAt: string;      // ISO date string
@@ -170,9 +179,23 @@ export interface Signature {
   signerId: string;      // User ID
   ipAddress: string;     // IP for legal record
   userAgent: string;     // Browser info for legal record
-  status: SignatureStatus;
-  otpVerified: boolean;       // Whether OTP verification was completed
-  otpVerifiedAt?: string;     // ISO date string when OTP was verified
+  /** `undefined` = sin dato (back viejo, o firma anterior al 2026-09-23). */
+  otpVerified?: boolean;
+  /** Canales por los que se envió el código que se verificó. */
+  otpChannels?: OtpChannel[];
+}
+
+/**
+ * T-0109 contract.md §3.1.B2 — la última versión estampada/sellada del PDF
+ * (`GET /contracts/:id` → `documentoFirmado`).
+ */
+export interface DocumentoFirmado {
+  version: number;
+  kind: 'CONTRACT_PARTIAL' | 'CONTRACT_FINAL';
+  /** `null` para `CONTRACT_PARTIAL` (nunca se sella un parcial). */
+  sealStatus: SealStatus | null;
+  sealedAt: string | null;
+  createdAt: string;
 }
 
 // ============================================================================
@@ -599,6 +622,13 @@ export interface Contract {
   // Signatures
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
+
+  /**
+   * T-0109 contract.md §3.1.B2/§3.2 — la última versión estampada/sellada
+   * del PDF. `undefined` = back anterior a T-0109 (se oculta toda la
+   * sección de sello); `null` = contrato legacy sin fila de versión.
+   */
+  documentoFirmado?: DocumentoFirmado | null;
 
   // Uploaded PDF flow. `MIGRATED` = entró por la migración (casi siempre sin PDF).
   contractOrigin?: 'GENERATED' | 'UPLOADED_PDF' | 'MIGRATED';

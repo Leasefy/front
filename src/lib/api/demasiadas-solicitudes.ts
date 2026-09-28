@@ -33,9 +33,14 @@ export function segundosDeEspera(
   cabeceras: Pick<Headers, 'get'> | null | undefined,
   cuerpo: unknown,
 ): number | null {
+  // `reintentarEnSegundos` es el limitador genérico (`@Limite`); `segundos`
+  // es el 429 propio de T-0109 (`CODIGO_EN_ESPERA` — reenvío de OTP dentro
+  // del cooldown). Se prueba primero el genérico por compatibilidad: si
+  // algún día un cuerpo trajera los dos, gana el de siempre.
   const delCuerpo =
     cuerpo && typeof cuerpo === 'object'
-      ? (cuerpo as { reintentarEnSegundos?: unknown }).reintentarEnSegundos
+      ? ((cuerpo as { reintentarEnSegundos?: unknown; segundos?: unknown }).reintentarEnSegundos ??
+         (cuerpo as { segundos?: unknown }).segundos)
       : undefined
   if (typeof delCuerpo === 'number' && Number.isFinite(delCuerpo) && delCuerpo > 0) {
     return Math.ceil(delCuerpo)

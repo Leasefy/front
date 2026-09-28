@@ -52,6 +52,9 @@ import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectionsHistory } from '@/components/contract/RejectionsHistory';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
+import { SealStatusBadge } from '@/components/contract/SealStatusBadge';
+import { CodeudoresSection } from '@/components/contract/CodeudoresSection';
+import { PagareSection } from '@/components/contract/PagareSection';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
 import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
@@ -421,6 +424,15 @@ function ContratoDetalleContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {/* T-0109 contract.md §3.1.B/§3.2 — se oculta sola cuando el back
+              no manda `documentoFirmado` (viejo), es legacy (null) o el
+              contrato todavía no tiene versión FINAL (parcial). */}
+          <SealStatusBadge
+            contractId={contract.id}
+            documentoFirmado={contract.documentoFirmado}
+            canEdit={canEditContracts}
+            onReintentado={() => void refetch()}
+          />
           <DownloadContractPdfButton
             contractId={contract.id}
             contractStatus={contract.status}
@@ -653,6 +665,10 @@ function ContratoDetalleContent() {
               <CondicionesDelContrato contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
               {/* D10: la garantía de servicios públicos (anticipo del inquilino). */}
               <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
+              {/* T-0109 contract.md §3.1.E — codeudores y su pagaré. Se ocultan
+                  solos contra un back sin WU-4 (404 en E1/E5). */}
+              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts} />
+              <PagareSection contractId={contract.id} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}

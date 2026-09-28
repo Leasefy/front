@@ -291,12 +291,28 @@ export class ApiError extends Error {
 export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiError> {
   const cuerpo: Record<string, unknown> = await res.json().catch(() => ({}))
   const segundos = segundosDeEspera(res.headers, cuerpo)
-  return new ApiError(
-    429,
-    mensajeDeDemasiadasSolicitudes(segundos),
-    CODIGO_DEMASIADAS_SOLICITUDES,
-    { ...cuerpo, reintentarEnSegundos: segundos },
-  )
+  /*
+   * T-0109 contract.md §3.3 — `CODIGO_EN_ESPERA` (reenvío de OTP dentro del
+   * cooldown) es un 429 con SU PROPIO `code` y `message` autosuficiente
+   * (§3.0), distinto del limitador genérico `DEMASIADAS_SOLICITUDES`. Antes
+   * esta rama pisaba TODO 429 con el código y el texto genéricos — perdía el
+   * code específico (OTPVerification no podía distinguir "cooldown de
+   * reenvío" de "rate limit de infraestructura") y el mensaje propio del
+   * back. Un 429 sin `code` (limitador genérico, o el proxy sin cuerpo) cae
+   * igual que siempre al genérico.
+   *
+   * El `message` del cuerpo SOLO se respeta cuando viene junto a un `code`
+   * propio (mismo gate que `code`) — si no, un 429 genérico del limitador de
+   * infraestructura (p. ej. `{ message: 'Too many requests' }`, sin `code`)
+   * filtraría el string crudo en inglés en vez del mensaje localizado.
+   */
+  const tieneCodePropio = typeof cuerpo.code === 'string'
+  const code = tieneCodePropio ? (cuerpo.code as string) : CODIGO_DEMASIADAS_SOLICITUDES
+  const message =
+    tieneCodePropio && typeof cuerpo.message === 'string' && cuerpo.message
+      ? cuerpo.message
+      : mensajeDeDemasiadasSolicitudes(segundos)
+  return new ApiError(429, message, code, { ...cuerpo, reintentarEnSegundos: segundos })
 }
 
 function getAuthHeaders(): Record<string, string> {

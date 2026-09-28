@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   useConsignacion,
   usePropietario,
@@ -48,6 +49,7 @@ import {
   CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
+import { FirmaElectronicaDeConsignacionSection } from '@/components/inmobiliaria/consignacion/FirmaElectronicaDeConsignacionSection';
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
 import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
@@ -191,6 +193,10 @@ function ConsignacionDetailContent() {
    * cuanto el back contesta, manda él.
    */
   const consignacion = consignacionData || fetchedConsignacion || copiaLocal.copia?.consignacion;
+  // T-0109 contract.md §3.1.C — la sección de firma electrónica sólo ofrece
+  // sus acciones (iniciar, cancelar, reenviar) con `portafolio:edit`.
+  const { canAccess } = usePermissions();
+  const puedeEditarPortafolio = canAccess('portafolio', 'edit');
   /** Se está mostrando lo guardado porque el back no contestó. */
   const mostrandoCopia = Boolean(
     !consignacionData && !fetchedConsignacion && copiaLocal.copia,
@@ -684,6 +690,20 @@ function ConsignacionDetailContent() {
             transition={{ delay: 0.3 }}
           >
             <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
+          </motion.div>
+
+          {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
+              electrónica reforzada del contrato de consignación. Se oculta
+              sola contra un back sin WU-3 (404 en C2). */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.31 }}
+          >
+            <FirmaElectronicaDeConsignacionSection
+              consignacionId={consignacion.id}
+              puedeEditar={puedeEditarPortafolio}
+            />
           </motion.div>
 
           {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos

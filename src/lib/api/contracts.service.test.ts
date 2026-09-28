@@ -373,3 +373,63 @@ describe('esContratoSinDocumento', () => {
     ).toBe(false)
   })
 })
+
+/**
+ * T-0109 contract.md §3.2 nota 4 — drift preexistente: el mapper leía
+ * `signedBy`/`status`/`otpVerified`/`otpVerifiedAt`, que el back NUNCA
+ * mandó. El back manda `signerName` y `codigoVerificado` (opcional). Estas
+ * pruebas fallaban contra el mapper viejo (`signedBy`/`otpVerified` salían
+ * `undefined` porque el back no los manda con esos nombres).
+ */
+describe('mapBackendContract — evidencia de OTP de la firma (T-0109)', () => {
+  it('lee signerName → signedBy y codigoVerificado → otpVerified', async () => {
+    const { mapBackendContract } = await import('./contracts.service')
+
+    const mapeado = mapBackendContract({
+      ...contratoSinInmueble(),
+      landlordSignature: {
+        signedAt: '2026-09-27T00:00:00.000Z',
+        signerName: 'Juan Pérez',
+        signerId: 'user-1',
+        ipAddress: '190.0.0.1',
+        userAgent: 'Mozilla/5.0',
+        codigoVerificado: true,
+        otpChannels: ['EMAIL', 'WHATSAPP'],
+      },
+    } as never)
+
+    expect(mapeado.landlordSignature).toMatchObject({
+      signedBy: 'Juan Pérez',
+      otpVerified: true,
+      otpChannels: ['EMAIL', 'WHATSAPP'],
+    })
+  })
+
+  it('codigoVerificado ausente (firma anterior al 2026-09-23) pasa como undefined, no false', async () => {
+    const { mapBackendContract } = await import('./contracts.service')
+
+    const mapeado = mapBackendContract({
+      ...contratoSinInmueble(),
+      tenantSignature: {
+        signedAt: '2026-01-01T00:00:00.000Z',
+        signerName: 'Ana Gómez',
+        signerId: 'user-2',
+        ipAddress: '190.0.0.2',
+        userAgent: 'Mozilla/5.0',
+        // codigoVerificado ausente a propósito.
+      },
+    } as never)
+
+    expect(mapeado.tenantSignature?.otpVerified).toBeUndefined()
+    expect(mapeado.tenantSignature?.signedBy).toBe('Ana Gómez')
+  })
+
+  it('sin firma, sigue devolviendo null (comportamiento sin cambios)', async () => {
+    const { mapBackendContract } = await import('./contracts.service')
+
+    const mapeado = mapBackendContract({ ...contratoSinInmueble() } as never)
+
+    expect(mapeado.landlordSignature).toBeNull()
+    expect(mapeado.tenantSignature).toBeNull()
+  })
+})

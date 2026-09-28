@@ -10,15 +10,62 @@ import type {
   InquilinoDelContrato,
 } from '@/lib/types/contract';
 
+/**
+ * T-0109 contract.md §3.2 nota 4 (drift preexistente) — el back manda
+ * `signerName` y `codigoVerificado`; nunca mandó `signedBy`, `status`,
+ * `otpVerified` ni `otpVerifiedAt` (este tipo los pedía y jamás llegaban).
+ * `codigoVerificado` es opcional: ausente en firmas anteriores al
+ * 2026-09-23, y eso se lee como «sin dato», no como «no verificado».
+ * `otpEvidenceId`/`otpChannels` son NUEVOS (WU-1, opcionales — back viejo no
+ * los manda). `signerRole` se ensancha para consignación/pagaré.
+ */
 export interface BackendSignature {
   signedAt: string;
-  signedBy: string;
+  signerName: string;
   signerId: string;
   ipAddress: string;
   userAgent: string;
-  status: string;
-  otpVerified: boolean;
-  otpVerifiedAt?: string;
+  codigoVerificado?: boolean;
+  /** id del `SigningOtpEvent` VERIFIED — no se muestra, sólo se reenvía. */
+  otpEvidenceId?: string;
+  /** Canales SENT del código que se verificó. Ausente → se omite la línea de canal. */
+  otpChannels?: OtpChannel[];
+  signerRole?: 'LANDLORD' | 'TENANT' | 'PROPIETARIO' | 'REPRESENTANTE_DE_LA_AGENCIA';
+}
+
+// ============================================================================
+// T-0109 — shared wire types (contract.md §3.0.1)
+// ============================================================================
+
+export type OtpChannel = 'EMAIL' | 'WHATSAPP';
+export type OtpDeliveryStatus = 'SENT' | 'FAILED' | 'SKIPPED' | 'SUPPRESSED';
+export type OtpDeliveryReason =
+  | 'CHANNEL_DISABLED'
+  | 'PROVIDER_NOT_CONFIGURED'
+  | 'NO_PHONE'
+  | 'PHONE_AMBIGUOUS'
+  | 'PHONE_INVALID'
+  | 'PHONE_NOT_COLOMBIAN_MOBILE'
+  | 'PROVIDER_ERROR'
+  | 'NO_EMAIL'
+  | 'EMAIL_SUPPRESSED'
+  | 'SEND_ERROR';
+
+export interface OtpChannelResult {
+  channel: OtpChannel;
+  status: OtpDeliveryStatus;
+  /** Enmascarado (email u E.164 parcial). `null` cuando no hay destino. */
+  destination: string | null;
+  /** `null` sólo cuando `status === 'SENT'`. */
+  reason: OtpDeliveryReason | null;
+}
+
+/** `SealStatus` del wire — `NOT_APPLICABLE` (interno del back) nunca viaja: llega `null`. */
+export type SealStatus = 'SEALED' | 'PENDING' | 'FAILED';
+
+export interface DocumentLink {
+  url: string;
+  expiresAt: string;
 }
 
 export interface BackendAuditEvent {
@@ -198,6 +245,13 @@ export interface BackendContract {
   landlordSignature?: BackendSignature | null;
   tenantSignature?: BackendSignature | null;
   documentHash?: string;
+  /**
+   * T-0109 contract.md §3.1.B2 — la última versión estampada/sellada del
+   * PDF. `null` = contrato legacy sin fila de versión (ninguna, no fallo);
+   * ausente = back anterior a T-0109 → se oculta la sección de sello y el
+   * botón de reintentar (B3).
+   */
+  documentoFirmado?: BackendDocumentoFirmado | null;
 
   // ─── Metadata ────────────────────────────────────────────────────────────
   createdAt: string;
@@ -309,12 +363,23 @@ export interface SendOtpDto {
 }
 
 export interface SendOtpResponse {
-  /** Email del destinatario enmascarado por el backend (ej: "ni***s@example.com"). */
+  /**
+   * Destinatario enmascarado del ÚLTIMO canal que sí entregó el código
+   * (correo si EMAIL fue SENT o SUPPRESSED; si no, el celular del WHATSAPP
+   * SENT). Con un back WU-1+ conviene preferir `channels` para el detalle
+   * por canal — esta clave queda por compat con un back anterior.
+   */
   sentTo: string;
   /** ISO — el código vence a esta hora (10 min por default). */
   expiresAt: string;
   /** Segundos hasta poder pedir un nuevo código (rate limit del backend). */
   cooldownSeconds: number;
+  /**
+   * NUEVO (WU-1), opcional — un entry por canal intentado (correo primero,
+   * WhatsApp después). Ausente = back anterior a T-0109: se cae al texto
+   * genérico con `sentTo`, nunca se asume WhatsApp.
+   */
+  channels?: OtpChannelResult[];
 }
 
 export interface VerifyOtpDto {
@@ -352,6 +417,27 @@ export type ContractPreview =
 export interface ContractSignedPdf {
   url: string;
   expiresAt: string;
+  /**
+   * NUEVO (WU-2), opcional — sólo tiene sentido para la versión FINAL
+   * sellada; `null`/ausente en un contrato parcial, borrador o legacy sin
+   * fila de versión. Ausente = back anterior a T-0109: no se muestra sello.
+   */
+  sealStatus?: SealStatus | null;
+  version?: number | null;
+  sealedAt?: string | null;
+}
+
+/**
+ * NUEVO (WU-2) — `GET /contracts/:id` → `documentoFirmado`. La ÚLTIMA
+ * `SignedDocumentVersion`, `null` en un contrato legacy sin fila de
+ * versión, ausente (`undefined`) contra un back anterior a T-0109.
+ */
+export interface BackendDocumentoFirmado {
+  version: number;
+  kind: 'CONTRACT_PARTIAL' | 'CONTRACT_FINAL';
+  sealStatus: SealStatus | null;
+  sealedAt: string | null;
+  createdAt: string;
 }
 
 // ============================================================================

@@ -97,8 +97,31 @@ export function OwnerNameStepForm({
 
   const errorDe = (campo: Campo) => (revisados[campo] ? revision[campo] : null)
 
+  /*
+   * Salir de un campo lo pone en rojo SÓLO si la persona escribió algo en él.
+   *
+   * El primer campo llega enfocado (autoFocus), así que quien hace clic en el
+   * tilde de abajo —lo primero que muchos quieren responder— lo estaba dejando
+   * en rojo sin haber escrito nunca. Regañar por un campo que nadie tocó es
+   * mal primer contacto, y lo mismo pasaba tabulando de largo.
+   *
+   * Lo que no cambia: al enviar se revisa todo, tocado o no; y una vez en rojo,
+   * el campo se revisa en cada tecla para que el rojo se vaya solo.
+   */
+  const [tocados, setTocados] = useState<Record<Campo, boolean>>({
+    nombre: false,
+    razonSocial: false,
+    nit: false,
+    representante: false,
+  })
+
+  const marcarTocado = (campo: Campo) =>
+    setTocados((previo) => (previo[campo] ? previo : { ...previo, [campo]: true }))
+
   const marcarRevisado = (campo: Campo) =>
-    setRevisados((previo) => (previo[campo] ? previo : { ...previo, [campo]: true }))
+    setRevisados((previo) =>
+      previo[campo] || !tocados[campo] ? previo : { ...previo, [campo]: true },
+    )
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -171,7 +194,10 @@ export function OwnerNameStepForm({
                   value={displayName}
                   invalid={!!errorDe('nombre')}
                   onBlur={() => marcarRevisado('nombre')}
-                  onChange={(event) => setDisplayName(event.target.value)}
+                  onChange={(event) => {
+                      marcarTocado('nombre')
+                      setDisplayName(event.target.value)
+                    }}
                 />
               </FormControl>
               {errorDe('nombre') ? (
@@ -219,7 +245,10 @@ export function OwnerNameStepForm({
                     value={representante}
                     invalid={!!errorDe('representante')}
                     onBlur={() => marcarRevisado('representante')}
-                    onChange={(event) => setRepresentante(event.target.value)}
+                    onChange={(event) => {
+                      marcarTocado('representante')
+                      setRepresentante(event.target.value)
+                    }}
                   />
                 </FormControl>
                 {errorDe('representante') ? (
@@ -259,7 +288,10 @@ export function OwnerNameStepForm({
                   value={agencyName}
                   invalid={!!errorDe('razonSocial')}
                   onBlur={() => marcarRevisado('razonSocial')}
-                  onChange={(event) => setAgencyName(event.target.value)}
+                  onChange={(event) => {
+                      marcarTocado('razonSocial')
+                      setAgencyName(event.target.value)
+                    }}
                 />
               </FormControl>
               {errorDe('razonSocial') ? (
@@ -286,7 +318,10 @@ export function OwnerNameStepForm({
                   onBlur={() => marcarRevisado('nit')}
                   // El guion lo pone el campo; la persona sólo teclea números y
                   // no puede pasarse del largo (ver `formatearNitAlEscribir`).
-                  onChange={(event) => setNit(formatearNitAlEscribir(event.target.value))}
+                  onChange={(event) => {
+                    marcarTocado('nit')
+                    setNit(formatearNitAlEscribir(event.target.value))
+                  }}
                 />
               </FormControl>
               {errorDe('nit') ? (

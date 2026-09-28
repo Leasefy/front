@@ -141,6 +141,30 @@ describe('OwnerNameStepForm — representante legal', () => {
     expect(onSubmit.mock.calls[0][0].legalDocumentNumber).toBeUndefined()
   })
 
+  it('no regaña por un campo que nadie tocó: el tilde no pinta en rojo el nombre', () => {
+    render()
+
+    // El campo llega enfocado (autoFocus). Pulsar el tilde lo hace perder el
+    // foco, y antes eso bastaba para pintarlo en rojo sin haber escrito nunca.
+    expect(document.activeElement?.id).toBe('ownerFullName')
+    act(() => { tildeDeRepresentante().click() })
+
+    expect(container.textContent).not.toContain('Escribe tu nombre completo')
+  })
+
+  it('pero si escribió y lo borró, al salir sí lo avisa', () => {
+    render()
+
+    escribir('ownerFullName', 'Ana')
+    escribir('ownerFullName', '')
+    // React escucha `focusout` (delegado), no `blur`, que no burbujea.
+    act(() => {
+      byId<HTMLInputElement>('ownerFullName')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+
+    expect(container.textContent).toContain('Escribe tu nombre completo')
+  })
+
   it('volver a tildarlo descarta lo escrito y reasume a quien se registra', () => {
     const onSubmit = render()
 

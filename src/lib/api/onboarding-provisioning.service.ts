@@ -50,8 +50,6 @@ export interface UsersMeOnboardingAgency {
    * Perfil de agencia; lo que faltaba era poder mandarlas al crearla.
    */
   legalRepresentative?: string
-  /** Documento del representante legal. Opcional: puede no tenerlo a mano. */
-  legalDocumentNumber?: string
 }
 
 export interface UsersMeOnboardingRequest {

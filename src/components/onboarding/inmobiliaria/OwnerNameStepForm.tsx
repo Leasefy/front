@@ -27,7 +27,6 @@ export interface OwnerNameStepFormProps {
     razonSocial?: string
     nit?: string
     representanteLegal?: string
-    documentoRepresentante?: string
   }
 }
 
@@ -67,9 +66,6 @@ export function OwnerNameStepForm({
     valoresIniciales?.representanteLegal ? valoresIniciales.representanteLegal === valoresIniciales.nombreCompleto : true,
   )
   const [representante, setRepresentante] = useState(valoresIniciales?.representanteLegal ?? '')
-  const [documentoRepresentante, setDocumentoRepresentante] = useState(
-    valoresIniciales?.documentoRepresentante ?? '',
-  )
 
   /** Lo que se guarda como representante legal de la agencia. */
   const representanteEfectivo = esElRepresentante ? displayName : representante
@@ -142,9 +138,6 @@ export function OwnerNameStepForm({
       // la persona no lo haya escrito.
       nit: revision.nitBueno.normalizado,
       legalRepresentative: representanteEfectivo.trim().replace(/\s+/g, ' '),
-      // Vacío se omite en vez de viajar como '': el back lo tiene opcional y
-      // una cadena vacía escribiría '' donde debería quedar null.
-      ...(documentoRepresentante.trim() ? { legalDocumentNumber: documentoRepresentante.trim() } : {}),
     })
   }
 
@@ -259,23 +252,6 @@ export function OwnerNameStepForm({
               </FormField>
             )}
 
-            {!esElRepresentante && (
-              <FormField id="legalDocumentNumber">
-                <FormLabel>Documento del representante legal</FormLabel>
-                <FormControl>
-                  <Input
-                    id="legalDocumentNumber"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder="Ej: 80123456"
-                    value={documentoRepresentante}
-                    onChange={(event) => setDocumentoRepresentante(event.target.value)}
-                  />
-                </FormControl>
-                <FormHint>Opcional. Puedes completarlo después en Configuración.</FormHint>
-              </FormField>
-            )}
 
             <FormField id="agencyName" required invalid={!!errorDe('razonSocial')}>
               <FormLabel>Razón social</FormLabel>

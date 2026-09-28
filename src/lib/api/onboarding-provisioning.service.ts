@@ -39,6 +39,19 @@ export interface UsersMeOnboardingAgency {
   nit: string
   /** Optional — the back falls back to the user's email. */
   email?: string
+  /**
+   * Representante legal de la inmobiliaria, tal como figura en el RUT.
+   *
+   * NO es quien se registra: la cuenta puede crearla un contador o un asesor
+   * para la inmobiliaria de otra persona. `firstName`/`lastName` son de quien
+   * se registra —van atados a su correo—; esto es de la empresa.
+   *
+   * Las columnas ya existen en la agencia y se editan desde Configuración >
+   * Perfil de agencia; lo que faltaba era poder mandarlas al crearla.
+   */
+  legalRepresentative?: string
+  /** Documento del representante legal. Opcional: puede no tenerlo a mano. */
+  legalDocumentNumber?: string
 }
 
 export interface UsersMeOnboardingRequest {

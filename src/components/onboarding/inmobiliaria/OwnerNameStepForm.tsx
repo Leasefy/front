@@ -22,10 +22,16 @@ export interface OwnerNameStepFormProps {
   /** Disables submit while `POST /users/me/onboarding` is in flight. */
   isSubmitting: boolean
   /** Prefill al retomar: la persona ya escribió esto en una visita anterior. */
-  valoresIniciales?: { nombreCompleto?: string; razonSocial?: string; nit?: string }
+  valoresIniciales?: {
+    nombreCompleto?: string
+    razonSocial?: string
+    nit?: string
+    representanteLegal?: string
+    documentoRepresentante?: string
+  }
 }
 
-type Campo = 'nombre' | 'razonSocial' | 'nit'
+type Campo = 'nombre' | 'razonSocial' | 'nit' | 'representante'
 
 /**
  * Paso previo al aprovisionamiento (`useOnboardingProvisioning` responde
@@ -53,12 +59,27 @@ export function OwnerNameStepForm({
   const [displayName, setDisplayName] = useState(valoresIniciales?.nombreCompleto ?? '')
   const [agencyName, setAgencyName] = useState(valoresIniciales?.razonSocial ?? '')
   const [nit, setNit] = useState(valoresIniciales?.nit ?? '')
+  // Quien crea la cuenta no siempre es el dueño: puede ser el contador o un
+  // asesor registrando a la inmobiliaria de otra persona. Por defecto se asume
+  // el caso común —el dueño se registra a sí mismo— y el tilde copia el nombre
+  // de arriba, así nadie escribe lo mismo dos veces.
+  const [esElRepresentante, setEsElRepresentante] = useState(
+    valoresIniciales?.representanteLegal ? valoresIniciales.representanteLegal === valoresIniciales.nombreCompleto : true,
+  )
+  const [representante, setRepresentante] = useState(valoresIniciales?.representanteLegal ?? '')
+  const [documentoRepresentante, setDocumentoRepresentante] = useState(
+    valoresIniciales?.documentoRepresentante ?? '',
+  )
+
+  /** Lo que se guarda como representante legal de la agencia. */
+  const representanteEfectivo = esElRepresentante ? displayName : representante
   // Sólo los campos que ya se revisaron pueden pintarse en rojo: nadie ve un
   // error en un campo que todavía no ha tocado.
   const [revisados, setRevisados] = useState<Record<Campo, boolean>>({
     nombre: false,
     razonSocial: false,
     nit: false,
+    representante: false,
   })
 
   const revision = useMemo(() => {
@@ -68,8 +89,11 @@ export function OwnerNameStepForm({
       razonSocial: revisarRazonSocial(agencyName),
       nit: nitRevisado.ok ? null : nitRevisado.mensaje,
       nitBueno: nitRevisado.ok ? nitRevisado : null,
+      // Cuando el tilde está puesto, el representante ES el nombre de arriba:
+      // pedir que lo revise por separado sería pintar dos veces el mismo error.
+      representante: esElRepresentante ? null : revisarNombreCompleto(representante),
     }
-  }, [displayName, agencyName, nit])
+  }, [displayName, agencyName, nit, esElRepresentante, representante])
 
   const errorDe = (campo: Campo) => (revisados[campo] ? revision[campo] : null)
 
@@ -83,8 +107,8 @@ export function OwnerNameStepForm({
     if (isSubmitting) return
 
     // Al enviar se revisa todo, incluso lo que nadie tocó.
-    setRevisados({ nombre: true, razonSocial: true, nit: true })
-    if (revision.nombre || revision.razonSocial || !revision.nitBueno) return
+    setRevisados({ nombre: true, razonSocial: true, nit: true, representante: true })
+    if (revision.nombre || revision.razonSocial || !revision.nitBueno || revision.representante) return
 
     const { firstName, lastName } = partirNombre(displayName)
     onSubmit({
@@ -94,6 +118,10 @@ export function OwnerNameStepForm({
       // Normalizado: sin puntos y siempre con su dígito de verificación, aunque
       // la persona no lo haya escrito.
       nit: revision.nitBueno.normalizado,
+      legalRepresentative: representanteEfectivo.trim().replace(/\s+/g, ' '),
+      // Vacío se omite en vez de viajar como '': el back lo tiene opcional y
+      // una cadena vacía escribiría '' donde debería quedar null.
+      ...(documentoRepresentante.trim() ? { legalDocumentNumber: documentoRepresentante.trim() } : {}),
     })
   }
 
@@ -154,6 +182,71 @@ export function OwnerNameStepForm({
                 </FormHint>
               )}
             </FormField>
+
+            {/*
+              El dueño y quien se registra no siempre son la misma persona: un
+              contador o un asesor puede crear la cuenta de la inmobiliaria de
+              otro. Antes esto se pedía en un solo campo y el correo de quien se
+              registraba quedaba atado al nombre del dueño.
+              El tilde cubre el caso común sin obligar a escribir dos veces.
+            */}
+            <label className="-mt-2 flex items-start gap-2 text-body-sm text-fg-muted">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                checked={esElRepresentante}
+                onChange={(event) => {
+                  setEsElRepresentante(event.target.checked)
+                  if (event.target.checked) setRepresentante('')
+                }}
+              />
+              <span>Soy el representante legal de la inmobiliaria</span>
+            </label>
+
+            {!esElRepresentante && (
+              <FormField
+                id="legalRepresentative"
+                required
+                invalid={!!errorDe('representante')}
+              >
+                <FormLabel>Representante legal</FormLabel>
+                <FormControl>
+                  <Input
+                    id="legalRepresentative"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Ej: Roberto Gómez Díaz"
+                    value={representante}
+                    invalid={!!errorDe('representante')}
+                    onBlur={() => marcarRevisado('representante')}
+                    onChange={(event) => setRepresentante(event.target.value)}
+                  />
+                </FormControl>
+                {errorDe('representante') ? (
+                  <FormError>{errorDe('representante')}</FormError>
+                ) : (
+                  <FormHint>Nombre de quien figura como representante legal en el RUT.</FormHint>
+                )}
+              </FormField>
+            )}
+
+            {!esElRepresentante && (
+              <FormField id="legalDocumentNumber">
+                <FormLabel>Documento del representante legal</FormLabel>
+                <FormControl>
+                  <Input
+                    id="legalDocumentNumber"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Ej: 80123456"
+                    value={documentoRepresentante}
+                    onChange={(event) => setDocumentoRepresentante(event.target.value)}
+                  />
+                </FormControl>
+                <FormHint>Opcional. Puedes completarlo después en Configuración.</FormHint>
+              </FormField>
+            )}
 
             <FormField id="agencyName" required invalid={!!errorDe('razonSocial')}>
               <FormLabel>Razón social</FormLabel>

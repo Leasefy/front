@@ -280,6 +280,42 @@ const DECLARADAS: readonly string[] = [
   'tenant-acuerdos.accept',
   'tenant-acuerdos.listMine',
   'tenant-acuerdos.requestPremoraPlan',
+
+  // ── T-0109 firma-electronica-reforzada — contract.md FROZEN, back en
+  // paralelo (WU-1..WU-4 no existen todavía). El wire está congelado en
+  // `.orchestration/tasks/T-0109-firma-electronica-reforzada/contract.md`;
+  // cada fila de acá tiene su § exacto. Front implementó contra el
+  // contrato con todo mockeado en tests (worker-bootstrap §5, TDD) — el
+  // 404 real hasta que el back integre es degradación esperada
+  // (contract.md §3.2), no un defecto: cada sección se oculta sola.
+  // B3 — sello PAdES, WU-2.
+  'contractsApi.reintentarSello',
+  // C3-C8 — firma electrónica de la consignación, panel de agencia, WU-3.
+  // (C1 usa multipart/`fetch` a mano, C9 wet-upload es la ruta existente
+  // `consignacionesApi.subirContrato` — ninguna de las dos pasa por
+  // `apiClient`, así que este barrido no las ve.)
+  'firmaDeConsignacionApi.cancelar',
+  'firmaDeConsignacionApi.documento',
+  'firmaDeConsignacionApi.firmar',
+  'firmaDeConsignacionApi.obtener',
+  'firmaDeConsignacionApi.otpSend',
+  'firmaDeConsignacionApi.otpVerify',
+  'firmaDeConsignacionApi.reenviar',
+  // (D1-D4, la página pública `/firmar/consignacion/[token]`, usan su
+  // propio `sinSesion`/`fetch` — PUBLIC-LINK, sin apiClient — y tampoco
+  // aparecen acá.)
+  // E1-E4 — codeudores del contrato, WU-4.
+  'codeudoresApi.create',
+  'codeudoresApi.list',
+  'codeudoresApi.remove',
+  'codeudoresApi.update',
+  // E5-E9, E11 — pagaré y carta de instrucciones, WU-4.
+  'pagareApi.cancelar',
+  'pagareApi.documento',
+  'pagareApi.emitir',
+  'pagareApi.miFirma',
+  'pagareApi.obtener',
+  'pagareApi.simular',
 ];
 
 describe('🔴 ninguna llamada del front pide una ruta que el back no tiene', () => {

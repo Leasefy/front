@@ -256,6 +256,10 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
       lastName: 'María Pérez Gómez',
       agencyName: 'Inmobiliaria Andes SAS',
       nit: '900123456-8',
+      // El tilde «Soy el representante legal» viene puesto: quien se registra
+      // es también el representante, así que va el mismo nombre. Destildarlo
+      // abre los campos del dueño (ver OwnerNameStepForm.representante.test).
+      legalRepresentative: 'Ana María Pérez Gómez',
     })
   })
 
@@ -309,6 +313,10 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
       lastName: 'Pérez',
       agencyName: 'Inmobiliaria Andes SAS',
       nit: '900123456-8',
+      // El tilde «Soy el representante legal» viene puesto: quien se registra
+      // es también el representante, así que va el mismo nombre. Destildarlo
+      // abre los campos del dueño (ver OwnerNameStepForm.representante.test).
+      legalRepresentative: 'Ana Pérez',
     })
   })
 

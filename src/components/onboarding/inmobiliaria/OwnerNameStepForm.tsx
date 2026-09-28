@@ -132,7 +132,7 @@ export function OwnerNameStepForm({
             </div>
 
             <FormField id="ownerFullName" required invalid={!!errorDe('nombre')}>
-              <FormLabel>Nombre completo</FormLabel>
+              <FormLabel>Tu nombre completo</FormLabel>
               <FormControl>
                 <Input
                   id="ownerFullName"
@@ -149,7 +149,9 @@ export function OwnerNameStepForm({
               {errorDe('nombre') ? (
                 <FormError>{errorDe('nombre')}</FormError>
               ) : (
-                <FormHint>Como aparece en tu documento.</FormHint>
+                <FormHint>
+                  Como aparece en tu documento de identidad. Quedarás como administrador de la cuenta.
+                </FormHint>
               )}
             </FormField>
 

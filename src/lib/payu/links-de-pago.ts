@@ -1,5 +1,5 @@
 /**
- * Lo que la lista de links de Payu necesita y no es React: hasta qué mes se
+ * Lo que la lista de links de Cobri necesita y no es React: hasta qué mes se
  * puede avanzar y cómo se escribe un instante.
  */
 import { mesActual, sumarMeses } from '@/lib/recaudo/meses'
@@ -10,7 +10,7 @@ import { mesActual, sumarMeses } from '@/lib/recaudo/meses'
  * No el corriente, como en Cobros: el primer aviso sale 3 días antes del
  * vencimiento, así que la cuota que vence el 1, el 2 o el 3 del mes que viene
  * ya tiene link ESTE mes. Más allá no hay aviso posible, y una tabla vacía de
- * un mes que no llegó se leería como «Payu no hizo nada».
+ * un mes que no llegó se leería como «Cobri no hizo nada».
  */
 export function mesTopeDeLosLinks(hoy: string = mesActual()): string {
   return sumarMeses(hoy, 1)

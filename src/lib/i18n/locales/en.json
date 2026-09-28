@@ -2483,11 +2483,11 @@
         "sinAnulados": "There are no voided charges this month."
       },
       "linksDePago": {
-        "titulo": "Payment links (Payu)",
-        "descripcion": "Every installment of the month with the status of its payment link and the reminders Payu already sent. Links go out on their own, 3 days before the due date, on the day and 3 days after; they are not sent on request.",
+        "titulo": "Payment links (Cobri)",
+        "descripcion": "Every installment of the month with the status of its payment link and the reminders Cobri already sent. Links go out on their own, 3 days before the due date, on the day and 3 days after; they are not sent on request.",
         "mesAnterior": "Previous month",
         "mesSiguiente": "Next month",
-        "mesTope": "There are no Payu reminders further ahead yet.",
+        "mesTope": "There are no Cobri reminders further ahead yet.",
         "filtroEstado": "Link status",
         "todos": "All statuses",
         "estado": {
@@ -2498,16 +2498,16 @@
           "fallido": "Payment failed"
         },
         "detalle": {
-          "ninguno": "Payu has not written about this installment yet.",
-          "enMora": "More than 3 days overdue: Payu no longer writes about this installment; collections takes it.",
-          "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Payu does not write to them; collections takes it.",
-          "vencido": "The link expired unpaid. Payu no longer writes about this installment: collections takes it from here.",
+          "ninguno": "Cobri has not written about this installment yet.",
+          "enMora": "More than 3 days overdue: Cobri no longer writes about this installment; collections takes it.",
+          "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
+          "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
           "fallido": "The tenant tried to pay and the payment gateway did not approve it."
         },
         "pagadoEl": "Paid on {{fecha}}",
         "ultimoAviso": "Last reminder: {{fecha}}",
         "hitos": {
-          "titulo": "Payu reminders",
+          "titulo": "Cobri reminders",
           "antes": "3 days before",
           "dia": "On the day",
           "despues": "3 days after",
@@ -2526,7 +2526,7 @@
         "conteoUno": "1 installment",
         "conteoVarios": "{{total}} installments",
         "vacioTitulo": "No installments due in {{mes}}",
-        "vacioDescripcion": "Payu works on contract installments: when a contract has an installment this month, it shows up here with the status of its link."
+        "vacioDescripcion": "Cobri works on contract installments: when a contract has an installment this month, it shows up here with the status of its link."
       }
     },
     "dispersiones": {
@@ -7999,7 +7999,7 @@
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
-          "pagos": "Payu · tenant collections",
+          "pagos": "Cobri · tenant collections",
           "estudio": "Candidate evaluation",
           "matching": "Matching",
           "avaluos": "Appraisals",

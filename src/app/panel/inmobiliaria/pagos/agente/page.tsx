@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * /pagos/agente — «Agente de pagos», la fila de Payu en «Agentes IA».
+ * /pagos/agente — «Agente de pagos», la fila de Cobri en «Agentes IA».
  *
  * 26-09-2026: el resumen del mes en una frase y el link de cada cuota, leídos
  * del back (`GET /inmobiliaria/cobros/links[/resumen]`). Antes pedía un tablero

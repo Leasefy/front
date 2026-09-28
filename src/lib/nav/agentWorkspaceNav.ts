@@ -558,7 +558,7 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * con `payu.ts` (el conductor; «Gabriela» es su persona pública, ver
  * `naming-registry.ts` del micro) y los cinco especialistas, registrados en
  * `src/mastra/index.ts`. Lo que corre es un solo camino: `POST /pagos/dispatch`
- * → `payment-orchestration-workflow` → Payu, y ese workflow sólo se registra
+ * → `payment-orchestration-workflow` → Cobri, y ese workflow sólo se registra
  * con `PAGOS_ENABLED`. Las rutas del tablero (`/pagos/home/*`) siguen sin
  * existir; por eso `src/lib/api/pagos-home.ts` trata 404 y 503 como «no
  * disponible» y no como error. El equipo tiene su fila en «Agentes IA»

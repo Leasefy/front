@@ -804,7 +804,7 @@ function CobrosContent() {
       </motion.div>
 
       {/*
-        Payu (26-09-2026): el estado del link de pago de CADA CUOTA. Va aparte
+        Cobri (26-09-2026): el estado del link de pago de CADA CUOTA. Va aparte
         y con su propio mes y estado porque la tabla de arriba es de COBROS —el
         documento— y un cobro no trae su cuota. Sin «Enviar link»: los manda
         el cron del back (decisión de Nico).

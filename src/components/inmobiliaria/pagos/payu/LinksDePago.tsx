@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * «Links de pago (Payu)» — el estado del link de cada cuota del mes.
+ * «Links de pago (Cobri)» — el estado del link de cada cuota del mes.
  *
  * Vive en dos pantallas: en Cartera › Cobros emitidos (con su propio mes,
  * porque la tabla de cobros es de DOCUMENTOS y no trae la cuota) y en

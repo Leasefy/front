@@ -1,9 +1,9 @@
 /**
- * Payu y el autopago — axe (critical + serious) y 390 px sin desborde.
+ * Cobri y el autopago — axe (critical + serious) y 390 px sin desborde.
  *
  * Las tres rutas del back se mockean con `route.fulfill` con las formas FIJADAS
  * en `payu-api-front.md` (26-09-2026). El axe se acota a lo que construyó
- * esta rama —la sección de links, la pantalla de Payu y la de autopago— para
+ * esta rama —la sección de links, la pantalla de Cobri y la de autopago— para
  * que los problemas viejos del sidebar (MOCKS-DEBT.md) no tapen ni inventen
  * resultados de estas pantallas.
  *
@@ -106,9 +106,9 @@ test.beforeEach(async ({ page }) => {
   await seedAuthState(page)
 })
 
-test.describe('Payu — /pagos/agente', () => {
+test.describe('Cobri — /pagos/agente', () => {
   for (const payuActivo of [false, true]) {
-    test(`axe sin violaciones bloqueantes (Payu ${payuActivo ? 'prendido' : 'apagado'})`, async ({ page }) => {
+    test(`axe sin violaciones bloqueantes (Cobri ${payuActivo ? 'prendido' : 'apagado'})`, async ({ page }) => {
       await mockPayu(page, payuActivo)
       await page.goto('/panel/inmobiliaria/pagos/agente', { waitUntil: 'domcontentloaded' })
       await waitForPageReady(page)
@@ -136,7 +136,7 @@ test.describe('Payu — /pagos/agente', () => {
   })
 })
 
-test.describe('Payu — la sección de links en Cobros emitidos', () => {
+test.describe('Cobri — la sección de links en Cobros emitidos', () => {
   test('axe sin violaciones bloqueantes en la sección', async ({ page }) => {
     await mockPayu(page, true)
     await page.goto('/panel/inmobiliaria/pagos/cartera/cobros', { waitUntil: 'domcontentloaded' })

@@ -1,5 +1,5 @@
 /**
- * «Links de pago (Payu)» contra DOBLES de `GET /inmobiliaria/cobros/links` (el
+ * «Links de pago (Cobri)» contra DOBLES de `GET /inmobiliaria/cobros/links` (el
  * back se construye en paralelo; la forma está fijada en `payu-api-front.md`).
  *
  * Lo que no puede pasar:
@@ -185,7 +185,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
       const ninguno = LOS_CINCO.find((l) => l.estado === 'ninguno')!;
       get.mockResolvedValue(
         pagina([
-          // Vence el 10: por su fecha todavía es de Payu, pero el contrato debe septiembre.
+          // Vence el 10: por su fecha todavía es de Cobri, pero el contrato debe septiembre.
           { ...ninguno, cuotaId: 'c-debe-otra', fechaDeVencimiento: '2026-10-10', enMora: true },
           // Vence el 1: ella misma pasó su «3 días después».
           { ...ninguno, cuotaId: 'c-vencida', fechaDeVencimiento: '2026-10-01', enMora: true },
@@ -198,7 +198,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
       expect(fila('c-debe-otra')?.textContent).toContain('la lleva cobranza');
       expect(fila('c-debe-otra')?.textContent).not.toContain('todavía no le ha escrito');
       expect(fila('c-vencida')?.textContent).toContain('Venció hace más de 3 días sin pagar');
-      expect(fila('c-al-dia')?.textContent).toContain('Payu todavía no le ha escrito por esta cuota.');
+      expect(fila('c-al-dia')?.textContent).toContain('Cobri todavía no le ha escrito por esta cuota.');
     } finally {
       vi.useRealTimers();
     }
@@ -211,7 +211,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
       const ninguno = LOS_CINCO.find((l) => l.estado === 'ninguno')!;
       get.mockResolvedValue(
         pagina([
-          // Fecha vieja pero el back dice que Payu no la excluye por mora (la cuota ya no debe).
+          // Fecha vieja pero el back dice que Cobri no la excluye por mora (la cuota ya no debe).
           { ...ninguno, cuotaId: 'c-back-no', fechaDeVencimiento: '2026-09-01', enMora: false },
           // Back viejo: sin el campo, la fecha decide.
           { ...ninguno, cuotaId: 'c-sin-campo', fechaDeVencimiento: '2026-09-01' },
@@ -230,7 +230,7 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     vi.setSystemTime(new Date('2026-09-28T15:00:00.000Z'));
     get.mockResolvedValue(pagina(LOS_CINCO));
     await montar(<LinksDePago mes="2026-10" />);
-    expect(fila('c-ninguno')?.textContent).toContain('Payu todavía no le ha escrito por esta cuota.');
+    expect(fila('c-ninguno')?.textContent).toContain('Cobri todavía no le ha escrito por esta cuota.');
     expect(fila('c-enviado')?.textContent).toContain('Último aviso:');
     expect(fila('c-pagado')?.textContent).toContain('Pagado el');
     expect(fila('c-vencido')?.textContent).toContain('la sigue cobranza');

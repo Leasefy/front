@@ -79,13 +79,13 @@ describe('singular y plural: «Falta 2 cosa» delata una pantalla sin cuidar', (
   })
 })
 
-describe('el nombre de cada agente en la Actividad en vivo (QA de Payu, 26-09)', () => {
+describe('el nombre de cada agente en la Actividad en vivo (QA de Cobri, 26-09)', () => {
   const agente = (d: unknown) =>
     (d as { inmobiliaria: { ai: { workspace: { agente: Record<string, string> } } } }).inmobiliaria.ai.workspace.agente
 
-  it('🔴 `pagos` es Payu, que les cobra a los INQUILINOS — no «Pagos a proveedores»', () => {
-    expect(agente(es).pagos).toBe('Payu · cobros a inquilinos')
-    expect(agente(en).pagos).toBe('Payu · tenant collections')
+  it('🔴 `pagos` es Cobri, que les cobra a los INQUILINOS — no «Pagos a proveedores»', () => {
+    expect(agente(es).pagos).toBe('Cobri · cobros a inquilinos')
+    expect(agente(en).pagos).toBe('Cobri · tenant collections')
     expect(agente(es).pagos).not.toMatch(/proveedor/i)
     expect(agente(en).pagos).not.toMatch(/vendor|supplier/i)
   })

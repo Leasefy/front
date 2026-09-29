@@ -144,3 +144,20 @@ export function humanizarClave(clave: string): string {
   const s = clave.replace(/[._-]+/g, ' ').trim().toLowerCase()
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : clave
 }
+
+/**
+ * ¿El plan del director reemplaza la lectura del Gerente en el pulso?
+ * (ARQUITECTURA §7: la tarjeta «Hoy» reemplaza la narrativa del briefing de
+ * las 06:15; dos textos que resumen el mismo día se leen como repetición.)
+ * Sólo con un plan de HOY terminado (listo o hecho sin modelo) y con resumen:
+ * si el director está apagado, planeando, falló o no planeó hoy, la lectura
+ * del Gerente sigue donde estaba.
+ */
+export function elPlanReemplazaLaLectura(
+  hoy: { encendido: boolean; fecha: string | null; ciclo: { estado: string } | null; resumen: string | null } | null,
+  hoyEnBogota: string = fechaDeHoyEnBogota(),
+): boolean {
+  if (!hoy?.encendido || hoy.fecha !== hoyEnBogota || !hoy.ciclo) return false
+  if (hoy.ciclo.estado !== 'listo' && hoy.ciclo.estado !== 'sin_modelo') return false
+  return (hoy.resumen ?? '').trim().length > 0
+}

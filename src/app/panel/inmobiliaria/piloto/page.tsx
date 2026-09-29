@@ -140,6 +140,9 @@ function PilotoContent() {
    * una banda propia: dos resúmenes del mismo momento, uno encima del otro,
    * se leen como repetición.
    */
+  // Con el plan de hoy del director, su resumen es la voz del día y la lectura
+  // del Gerente se calla (ARQUITECTURA §7; `elPlanReemplazaLaLectura`).
+  const [planDelDirectorHoy, setPlanDelDirectorHoy] = useState(false)
   const lecturaDelGerente = useMemo(() => {
     const b = briefing.data
     if (!b || briefing.error) return undefined
@@ -208,7 +211,7 @@ function PilotoContent() {
       </header>
 
       {/* El director: el plan de hoy y sus metas (fase 1). Arriba de todo. */}
-      <PilotoDirector onAbrirAccion={abrirDesdeElDirector} />
+      <PilotoDirector onAbrirAccion={abrirDesdeElDirector} onPlanDeHoy={setPlanDelDirectorHoy} />
 
       {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
       <PilotoPulso
@@ -216,7 +219,7 @@ function PilotoContent() {
         isLoading={pulso.isLoading}
         error={pulso.error}
         notAvailable={pulso.notAvailable}
-        lectura={lecturaDelGerente}
+        lectura={planDelDirectorHoy ? undefined : lecturaDelGerente}
         {...(typeof briefing.data?.numeros?.recuperadoMesCop === 'number'
           ? { recuperadoMesCop: briefing.data.numeros.recuperadoMesCop }
           : {})}

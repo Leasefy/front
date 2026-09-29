@@ -80,3 +80,18 @@ describe('saludo', () => {
     expect(saludo(entrada as string | null)).toBe('Bienvenido a Leasefy')
   })
 })
+
+describe('revisarNombreCompleto — el del representante legal habla de él, no de «tu»', () => {
+  it('vacío y sin apellido', () => {
+    expect(revisarNombreCompleto('', { deQuien: 'representante' })).toBe('Escribe el nombre completo del representante legal.')
+    expect(revisarNombreCompleto('Roberto', { deQuien: 'representante' })).toBe(
+      'Falta el apellido: escribe el nombre y el apellido del representante legal.',
+    )
+    expect(revisarNombreCompleto('Roberto Gómez', { deQuien: 'representante' })).toBeNull()
+  })
+
+  it('el propio sigue igual', () => {
+    expect(revisarNombreCompleto('')).toBe('Escribe tu nombre completo para continuar.')
+    expect(revisarNombreCompleto('Ana')).toBe('Falta el apellido: escribe tu nombre y tu apellido.')
+  })
+})

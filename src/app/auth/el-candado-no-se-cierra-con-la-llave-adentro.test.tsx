@@ -101,13 +101,20 @@ describe('/auth/mfa-verify', () => {
     // El SDK de Supabase se queda sin resolver ni rechazar cuando el contexto
     // de auth tiene el candado tomado: es el mismo problema que `enroll` ya
     // había tenido. Sin este botón, esa promesa colgada = el muro otra vez.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     supa.listFactors.mockReturnValue(new Promise(() => {}));
     await montar();
 
     const salida = document.querySelector<HTMLElement>('[data-testid="no-tengo-la-app"]');
     expect(salida).not.toBeNull();
     await act(async () => salida!.click());
+    // 29-09: el botón espera la respuesta de la cuenta (con tope) antes de
+    // decidir; si nadie contesta, al vencer el tope abre la inscripción.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
     expect(document.querySelector('[data-testid="mfa-setup"]')).not.toBeNull();
+    vi.useRealTimers();
   });
 
   it('si ni siquiera se pudo preguntar, ofrece inscribirlo: es la salida que sirve', async () => {

@@ -18,10 +18,19 @@ export const RAZON_SOCIAL_MAXIMO = 120
  * Nombre de persona. Se pide completo porque el back guarda nombre y apellido
  * por separado, así que un solo palabra deja el apellido repitiendo el nombre.
  */
-export function revisarNombreCompleto(crudo: string): string | null {
+export function revisarNombreCompleto(
+  crudo: string,
+  /** De quién es el nombre: el propio («tu») o el del representante legal (otra persona). */
+  { deQuien = 'propio' }: { deQuien?: 'propio' | 'representante' } = {},
+): string | null {
   const valor = crudo.trim().replace(/\s+/g, ' ')
+  const delRepresentante = deQuien === 'representante'
 
-  if (!valor) return 'Escribe tu nombre completo para continuar.'
+  if (!valor) {
+    return delRepresentante
+      ? 'Escribe el nombre completo del representante legal.'
+      : 'Escribe tu nombre completo para continuar.'
+  }
   if (valor.length > NOMBRE_MAXIMO) {
     return `El nombre no puede pasar de ${NOMBRE_MAXIMO} caracteres.`
   }
@@ -31,7 +40,9 @@ export function revisarNombreCompleto(crudo: string): string | null {
     return 'El nombre lleva un carácter que no va. Usa sólo letras.'
   }
   if (valor.split(' ').length < 2) {
-    return 'Falta el apellido: escribe tu nombre y tu apellido.'
+    return delRepresentante
+      ? 'Falta el apellido: escribe el nombre y el apellido del representante legal.'
+      : 'Falta el apellido: escribe tu nombre y tu apellido.'
   }
   return null
 }

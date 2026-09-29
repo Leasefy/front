@@ -4,12 +4,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, SignOut } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
+import { getAccessToken } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
+import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
+import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
@@ -30,9 +34,53 @@ function returnUrlDeLaBarra(): string | null {
   return saneado === '/' ? null : saneado;
 }
 
+/** La primera promesa que se RESUELVA (las que fallan no ganan); si fallan todas, falla. */
+function primeroQueConteste<T>(promesas: Promise<T>[]): Promise<T> {
+  return new Promise((resolver, rechazar) => {
+    let fallidas = 0;
+    for (const p of promesas) {
+      p.then(resolver, () => {
+        fallidas += 1;
+        if (fallidas === promesas.length) rechazar(new Error('no se pudo saber si hay factor'));
+      });
+    }
+  });
+}
+
+function conTope<T>(promesa: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<T>((_, rechazar) => setTimeout(() => rechazar(new Error('sin respuesta')), ms)),
+  ]);
+}
+
+/**
+ * El factor verificado por HTTP (`GET /auth/v1/user`), sin pasar por el
+ * candado del SDK. Falla si no hay token o Supabase no contesta en 10 s.
+ */
+async function factorVerificadoPorHttp(): Promise<string | null> {
+  const token = getAccessToken();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!token || !url || !anonKey) throw new Error('sin sesión');
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), 10_000);
+  try {
+    const res = await fetch(`${url}/auth/v1/user`, {
+      signal: control.signal,
+      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const usuario = (await res.json()) as { factors?: Array<{ id: string; factor_type: string; status: string }> };
+    return usuario.factors?.find((f) => f.factor_type === 'totp' && f.status === 'verified')?.id ?? null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
 export default function MfaVerifyPage() {
   const router = useRouter();
-  const { user, setMfaVerified, signOut, mfaRequired, mfaEnrollRequired } = useAuth();
+  const { user, setMfaVerified, signOut, mfaRequired, mfaEnrollRequired, isLoading: cargandoLaSesion } = useAuth();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   /**
@@ -71,7 +119,42 @@ export default function MfaVerifyPage() {
   const [quiereInscribir, setQuiereInscribir] = useState(false);
   /** El código no era: las casillas se pintan hasta que se escriba otro. */
   const [hayError, setHayError] = useState(false);
-  const inscribiendo = tieneFactor === false || quiereInscribir;
+  /**
+   * 🔴 29-09-2026 · «No tengo la app» con un factor YA verificado (caso B).
+   *
+   * Antes montaba `MfaSetupSection`, que mostraba el factor «Activado» con un
+   * «Desactivar» que Supabase rechazaba (422: quitar un factor verificado
+   * exige `aal2`, y sin la app no hay `aal2`). Ahora se ofrece restablecerlo
+   * con un código que llega al correo de la cuenta: la contraseña sola no
+   * alcanza, porque entonces quien la robe quitaría el factor y pondría el suyo.
+   */
+  const [sinLaApp, setSinLaApp] = useState(false);
+  /** El código del correo sirvió: los factores ya no están, toca inscribir uno nuevo. */
+  const [restablecido, setRestablecido] = useState(false);
+  /** Caso A: cambiando el factor CON la app desde `MfaSetupSection`. */
+  const [cambiandoElFactor, setCambiandoElFactor] = useState(false);
+  const inscribiendo = restablecido || (!sinLaApp && (tieneFactor === false || quiereInscribir));
+  /**
+   * Mientras la persona cambia o restablece el factor, la pantalla NO se va
+   * sola: pasar el código de la app sube la sesión a `aal2` (y el efecto de
+   * abajo la mandaría al panel antes de inscribir el nuevo), y quitar los
+   * factores hace que el contexto pida «inscribir» (y la mandaría a
+   * `/auth/mfa-enroll` a mitad de camino). Al terminar, sale por
+   * `alActivarElNuevo`, como la verificación normal.
+   */
+  const enUnFlujoPropio = sinLaApp || restablecido || cambiandoElFactor || quiereInscribir;
+
+  /**
+   * 🔴 Nico, 29-09: pidió el código al correo, la página se montó de nuevo
+   * mientras lo buscaba y volvió a las casillas de la APP; escribió ahí el
+   * código del correo y le dijo «Código incorrecto». Si hay un restablecimiento
+   * pedido y vigente para esta cuenta, se vuelve solo a las casillas del correo
+   * (`restablecimiento-pendiente.ts`).
+   */
+  const usuarioId = typeof user?.id === 'string' ? user.id : null;
+  useEffect(() => {
+    if (usuarioId && tieneFactor === true && leerRestablecimientoPendiente(usuarioId)) setSinLaApp(true);
+  }, [usuarioId, tieneFactor]);
 
   // If MFA is not required, redirect away. T-0099: if enrollment turns out to
   // be what's actually pending (defensive — these two states are meant to be
@@ -80,7 +163,13 @@ export default function MfaVerifyPage() {
   // nothing is pending, go to the destination the person was headed to (the
   // saneado `returnUrl`) or the start of their panel.
   useEffect(() => {
-    if (!user) return;
+    // 🔴 Nico, 29-09: recién llegado del login, el usuario ya está pero el
+    // chequeo del segundo factor no ha terminado y `mfaRequired` sigue en su
+    // valor de fábrica (false). Sin esperar a `cargandoLaSesion`, esta pantalla
+    // creía que ya no hacía falta, mandaba al panel, el panel la devolvía acá
+    // y se montaba de nuevo — y se perdía lo que la persona ya había tocado
+    // («No tengo la app» había que tocarlo dos veces).
+    if (!user || cargandoLaSesion || enUnFlujoPropio) return;
     if (mfaEnrollRequired) {
       router.replace('/auth/mfa-enroll');
       return;
@@ -88,27 +177,40 @@ export default function MfaVerifyPage() {
     if (!mfaRequired) {
       router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role));
     }
-  }, [user, mfaRequired, mfaEnrollRequired, router]);
+  }, [user, cargandoLaSesion, mfaRequired, mfaEnrollRequired, router, enUnFlujoPropio]);
 
-  // Get the TOTP factor on mount
+  /**
+   * ¿Tiene un factor verificado? Se pregunta por el SDK Y por HTTP a la vez y
+   * gana el primero que conteste: `listFactors()` puede quedarse esperando el
+   * candado del SDK (ver `MfaSetupSection`). La promesa queda guardada para
+   * que «No tengo la app» espere la respuesta en vez de adivinar.
+   */
+  const consultaDelFactorRef = useRef<Promise<string | null> | null>(null);
   useEffect(() => {
-    const loadFactor = async () => {
-      try {
-        const supabase = getSupabase();
-        if (!supabase) return;
-        const { data: factors } = await supabase.auth.mfa.listFactors();
-        const verified = factors?.totp?.find(f => f.status === 'verified');
-        if (verified) {
-          setFactorId(verified.id);
-        }
-        setTieneFactor(Boolean(verified));
-      } catch {
+    let vivo = true;
+    const porElSdk = (async () => {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('sin Supabase');
+      const { data: factors, error } = await supabase.auth.mfa.listFactors();
+      if (error) throw error;
+      return factors?.totp?.find((f) => f.status === 'verified')?.id ?? null;
+    })();
+    const consulta = primeroQueConteste([porElSdk, factorVerificadoPorHttp()]);
+    consultaDelFactorRef.current = consulta;
+    consulta
+      .then((id) => {
+        if (!vivo) return;
+        if (id) setFactorId(id);
+        setTieneFactor(Boolean(id));
+      })
+      .catch(() => {
         // Si ni siquiera se pudo preguntar, se ofrece inscribirlo: es la
         // única de las dos salidas que sirve cuando no se sabe.
-        setTieneFactor(false);
-      }
+        if (vivo) setTieneFactor(false);
+      });
+    return () => {
+      vivo = false;
     };
-    loadFactor();
   }, []);
 
   /**
@@ -163,7 +265,9 @@ export default function MfaVerifyPage() {
       if (msg.includes('invalid') || msg.includes('expired')) {
         toast.error('Código incorrecto. Intenta con el siguiente.');
       } else {
-        toast.error(msg || 'No se pudo verificar el código.');
+        // Nada en inglés ni un «Error 422» pelado (29-09).
+        const e = err as { status?: number; code?: string };
+        toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
       }
       setCode('');
     }
@@ -176,6 +280,38 @@ export default function MfaVerifyPage() {
     },
     [factorId, handleVerify],
   );
+
+  /**
+   * El factor nuevo quedó activo por el SDK (`MfaSetupSection` con
+   * `enElIngreso`): la sesión ya es `aal2`. Sale como la verificación normal.
+   */
+  const alActivarElNuevo = useCallback(() => {
+    setMfaVerified();
+    router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user?.role));
+  }, [setMfaVerified, router, user]);
+
+  /** «No tengo la app»: con factor verificado, al correo; sin factor, a inscribirlo. */
+  const [revisandoLaCuenta, setRevisandoLaCuenta] = useState(false);
+  const noTengoLaApp = useCallback(async () => {
+    let tiene = tieneFactor;
+    if (tiene === null) {
+      // Todavía no se sabe: se espera la respuesta (con tope) en vez de
+      // mandar a inscribir a quien ya tiene un factor.
+      setRevisandoLaCuenta(true);
+      try {
+        const id = await conTope(consultaDelFactorRef.current ?? Promise.resolve(null), 10_000);
+        tiene = Boolean(id);
+        if (id) setFactorId(id);
+        setTieneFactor(tiene);
+      } catch {
+        tiene = false;
+      } finally {
+        setRevisandoLaCuenta(false);
+      }
+    }
+    if (tiene) setSinLaApp(true);
+    else setQuiereInscribir(true);
+  }, [tieneFactor]);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -232,12 +368,22 @@ export default function MfaVerifyPage() {
                     de 480. (`DESIGN.md` dice que `.text-h2` son 22 px y no es
                     cierto — medido: 36.) */}
                 <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
-                  {inscribiendo ? 'Activa tu segundo factor' : 'Verificación de seguridad'}
+                  {restablecido
+                    ? 'Activa tu segundo factor de nuevo'
+                    : sinLaApp
+                      ? 'Restablece tu segundo factor'
+                      : inscribiendo
+                        ? 'Activa tu segundo factor'
+                        : 'Verificación de seguridad'}
                 </h1>
                 <p className="text-pretty text-body-sm text-fg-muted">
-                  {inscribiendo
-                    ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
-                    : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
+                  {restablecido
+                    ? 'Listo: quitamos el anterior. Escanea el código QR con tu app de autenticación y escribe el primer código; al terminar entras.'
+                    : sinLaApp
+                      ? 'Si perdiste la app de autenticación o el celular donde la tenías, lo restableces con un código que te mandamos al correo.'
+                      : inscribiendo
+                        ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
+                        : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
               </div>
 
@@ -246,9 +392,31 @@ export default function MfaVerifyPage() {
                 ofrece inscribirlo, acá mismo, porque Configuración → Seguridad
                 está del otro lado del muro que esta pantalla levanta.
               */}
-              {inscribiendo ? (
+              {sinLaApp && !restablecido ? (
+                <RestablecerSegundoFactorPorCorreo
+                  correo={user?.email}
+                  usuarioId={usuarioId}
+                  onRestablecido={() => {
+                    setRestablecido(true);
+                    setSinLaApp(false);
+                  }}
+                  onVolver={() => setSinLaApp(false)}
+                />
+              ) : inscribiendo ? (
                 <div data-testid="inscribir-el-segundo-factor">
-                  <MfaSetupSection />
+                  <MfaSetupSection
+                    // `key`: tras restablecer se monta DE NUEVO, para que vuelva
+                    // a mirar los factores (ya no hay) y arranque la inscripción.
+                    key={restablecido ? 'nuevo' : 'actual'}
+                    enElIngreso
+                    inscribirAlAbrir={restablecido}
+                    onActivado={alActivarElNuevo}
+                    onSinLaApp={() => {
+                      setQuiereInscribir(false);
+                      setSinLaApp(true);
+                    }}
+                    onCambioDeFactor={setCambiandoElFactor}
+                  />
                 </div>
               ) : (
                 <div className="space-y-5" aria-busy={isLoading}>
@@ -286,16 +454,21 @@ export default function MfaVerifyPage() {
 
               {/* 🔴 La puerta de emergencia: sin app no hay código, y hay que
                   poder decirlo aunque el SDK no conteste. */}
-              {!inscribiendo && (
+              {!inscribiendo && !sinLaApp && (
                 <div className="border-t border-border-faint pt-5 text-center">
-                  <button
-                    onClick={() => setQuiereInscribir(true)}
-                    disabled={isLoading}
-                    className="text-body-sm text-primary underline-offset-4 hover:underline disabled:pointer-events-none disabled:opacity-50"
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => void noTengoLaApp()}
+                    disabled={isLoading || revisandoLaCuenta}
                     data-testid="no-tengo-la-app"
                   >
-                    No tengo la app de autenticación — activarla ahora
-                  </button>
+                    {revisandoLaCuenta
+                      ? 'Revisando tu cuenta…'
+                      : tieneFactor === true
+                      ? 'No tengo la app de autenticación'
+                      : 'No tengo la app de autenticación — activarla ahora'}
+                  </Button>
                 </div>
               )}
 

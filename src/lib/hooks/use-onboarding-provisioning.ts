@@ -55,8 +55,6 @@ export interface ProvisioningInput {
   nit: string
   /** Representante legal de la inmobiliaria — NO es quien se registra. */
   legalRepresentative?: string
-  /** Documento del representante legal. Opcional. */
-  legalDocumentNumber?: string
 }
 
 /** Razón social + NIT captured by the pre-step — feeds the "Agencia" step's prefill. */
@@ -236,7 +234,6 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         // Se omiten si vienen vacíos: el back los tiene como opcionales y
         // mandar '' escribiría una cadena vacía donde debería haber null.
         ...(input.legalRepresentative ? { legalRepresentative: input.legalRepresentative } : {}),
-        ...(input.legalDocumentNumber ? { legalDocumentNumber: input.legalDocumentNumber } : {}),
       },
     })
       .then((res) => {

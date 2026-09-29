@@ -21,6 +21,7 @@ const { replaceMock, signOutMock, authState } = vi.hoisted(() => ({
     user: null as Record<string, unknown> | null,
     mfaRequired: true,
     mfaEnrollRequired: false,
+    isLoading: false,
   },
 }))
 
@@ -53,6 +54,7 @@ beforeEach(() => {
   authState.user = null
   authState.mfaRequired = true
   authState.mfaEnrollRequired = false
+  authState.isLoading = false
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -99,5 +101,18 @@ describe('/auth/mfa-verify', () => {
     await render()
 
     expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+  })
+
+  it('🔴 no se va mientras la sesión todavía carga (Nico, 29-09: el rebote al panel borraba lo que tocaba)', async () => {
+    // Recién llegado del login: el usuario ya está, pero el chequeo del segundo
+    // factor no terminó y `mfaRequired` sigue en su valor de fábrica (false).
+    authState.user = { id: 'u1', role: 'agency' }
+    authState.mfaRequired = false
+    authState.mfaEnrollRequired = false
+    authState.isLoading = true
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 })

@@ -106,7 +106,7 @@ describe('/auth/mfa-verify: todo bloqueado mientras se verifica', () => {
     expect(supa.verify).toHaveBeenCalledTimes(1);
   });
 
-  it('mientras se verifica: el botón, las casillas, «activarla ahora» y «Cerrar sesión» quedan deshabilitados', async () => {
+  it('mientras se verifica: el botón, las casillas, «No tengo la app» y «Cerrar sesión» quedan deshabilitados', async () => {
     supa.verify.mockReturnValue(new Promise(() => {}));
     await montar();
 
@@ -117,7 +117,9 @@ describe('/auth/mfa-verify: todo bloqueado mientras se verifica', () => {
     for (const c of document.querySelectorAll<HTMLInputElement>('[data-testid^="casilla-"]')) {
       expect(c.disabled).toBe(true);
     }
-    expect(botonPorTexto(/activarla ahora/).disabled).toBe(true);
+    // Con un factor verificado ya no dice «activarla ahora» (29-09: lleva a
+    // restablecerlo por correo); la puerta es la misma.
+    expect(botonPorTexto(/No tengo la app/).disabled).toBe(true);
     expect(botonPorTexto(/Cerrar sesión/).disabled).toBe(true);
   });
 

@@ -283,7 +283,7 @@ function TarjetaDeMeta({
             onClick={abrirAjuste}
             data-testid={`piloto-director-meta-ajustar-${m.metrica}`}
           >
-            {t('inmobiliaria.piloto.director.metas.ajustar')}
+            {t('inmobiliaria.piloto.director.metas.ajustarMeta')}
           </Button>
           {estado === 'activa' && (
             <Button

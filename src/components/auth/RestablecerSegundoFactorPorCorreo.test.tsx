@@ -186,3 +186,52 @@ describe('RestablecerSegundoFactorPorCorreo', () => {
     expect(onVolver).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('🔴 el paso del correo sobrevive a que la página se monte de nuevo (Nico, 29-09)', () => {
+  async function montarCon(usuarioId: string) {
+    await act(async () => {
+      root.render(
+        <RestablecerSegundoFactorPorCorreo
+          correo="duenio@inmobiliaria.co"
+          usuarioId={usuarioId}
+          onRestablecido={onRestablecido}
+          onVolver={onVolver}
+        />,
+      )
+    })
+  }
+
+  beforeEach(() => {
+    window.sessionStorage.clear()
+  })
+
+  it('pedir el código lo deja anotado y, al montarse otra vez, arranca en las casillas del correo', async () => {
+    await montarCon('u-1')
+    await pedirElCodigo()
+    expect(host.querySelector('[data-testid="codigo-del-correo"]')).not.toBeNull()
+
+    // La página se monta de nuevo (volvió de buscar el correo).
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await montarCon('u-1')
+
+    expect(host.querySelector('[data-testid="codigo-del-correo"]')).not.toBeNull()
+    expect(api.solicitarRestablecimiento).toHaveBeenCalledTimes(1)
+    await escribirCodigo('123456')
+    expect(api.confirmarRestablecimiento).toHaveBeenCalledWith('123456')
+  })
+
+  it('al confirmar o al volver a la app, se olvida', async () => {
+    await montarCon('u-1')
+    await pedirElCodigo()
+    await escribirCodigo('123456')
+    expect(window.sessionStorage.length).toBe(0)
+
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await montarCon('u-1')
+    await pedirElCodigo()
+    await clic(boton('Volver a escribir el código de la app'))
+    expect(window.sessionStorage.length).toBe(0)
+  })
+})

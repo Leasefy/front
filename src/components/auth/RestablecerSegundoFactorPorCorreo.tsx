@@ -8,6 +8,11 @@ import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ApiError } from '@/lib/api/client';
 import { segundoFactorApi } from '@/lib/api/segundo-factor.service';
 import { mensajeDelRestablecimiento } from '@/lib/auth/errores-del-segundo-factor';
+import {
+  leerRestablecimientoPendiente,
+  marcarRestablecimientoPendiente,
+  olvidarRestablecimientoPendiente,
+} from '@/lib/auth/restablecimiento-pendiente';
 
 /** Cuánto se espera para dejar pedir otro código. */
 const ESPERA_PARA_REENVIAR_S = 60;
@@ -15,6 +20,11 @@ const ESPERA_PARA_REENVIAR_S = 60;
 export interface RestablecerSegundoFactorPorCorreoProps {
   /** El correo de la cuenta, para decir a dónde llega el código. */
   correo?: string | null;
+  /**
+   * Quién lo pide: con él, el paso pedido se anota y sobrevive a que la página
+   * se monte de nuevo (`restablecimiento-pendiente.ts`).
+   */
+  usuarioId?: string | null;
   /** El código sirvió: los factores ya no están. Toca inscribir uno nuevo. */
   onRestablecido: () => void;
   /** Tiene la app al final: vuelve a pedir el código de la app. */
@@ -37,16 +47,20 @@ type Paso = 'ofrecer' | 'codigo';
  */
 export function RestablecerSegundoFactorPorCorreo({
   correo,
+  usuarioId,
   onRestablecido,
   onVolver,
 }: RestablecerSegundoFactorPorCorreoProps) {
-  const [paso, setPaso] = useState<Paso>('ofrecer');
+  // Si el código ya salió (la página se montó de nuevo mientras la persona lo
+  // buscaba en el correo), se arranca en las casillas del correo.
+  const [pendiente] = useState(() => (usuarioId ? leerRestablecimientoPendiente(usuarioId) : null));
+  const [paso, setPaso] = useState<Paso>(pendiente ? 'codigo' : 'ofrecer');
   const [codigo, setCodigo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Hasta cuándo no se puede pedir otro código (epoch ms). */
-  const [reenviarDesde, setReenviarDesde] = useState(0);
+  const [reenviarDesde, setReenviarDesde] = useState(pendiente?.reenviarDesde ?? 0);
   const [ahora, setAhora] = useState(() => Date.now());
   /** Candado inmediato contra el doble envío (el estado tarda un render). */
   const confirmandoRef = useRef(false);
@@ -76,6 +90,7 @@ export function RestablecerSegundoFactorPorCorreo({
       setPaso('codigo');
       setCodigo('');
       esperar(ESPERA_PARA_REENVIAR_S);
+      if (usuarioId) marcarRestablecimientoPendiente(usuarioId, Date.now() + ESPERA_PARA_REENVIAR_S * 1000);
     } catch (err) {
       setError(mensajeDelRestablecimiento(err));
       const espera = err instanceof ApiError ? err.detalle?.reintentarEnSegundos : undefined;
@@ -83,7 +98,7 @@ export function RestablecerSegundoFactorPorCorreo({
     } finally {
       setEnviando(false);
     }
-  }, [esperar]);
+  }, [esperar, usuarioId]);
 
   const confirmar = useCallback(
     async (explicito?: string) => {
@@ -94,6 +109,7 @@ export function RestablecerSegundoFactorPorCorreo({
       setError(null);
       try {
         await segundoFactorApi.confirmarRestablecimiento(valor);
+        olvidarRestablecimientoPendiente();
         // Se queda bloqueado: la tarjeta cambia a la inscripción del nuevo.
         onRestablecido();
       } catch (err) {
@@ -105,6 +121,12 @@ export function RestablecerSegundoFactorPorCorreo({
     },
     [codigo, onRestablecido],
   );
+
+  /** Tiene la app al final: lo pedido se olvida y vuelve al código de la app. */
+  const volver = useCallback(() => {
+    olvidarRestablecimientoPendiente();
+    onVolver();
+  }, [onVolver]);
 
   const destino = correo ? (
     <span className="font-medium text-fg">{correo}</span>
@@ -139,7 +161,7 @@ export function RestablecerSegundoFactorPorCorreo({
         </Button>
 
         <div className="text-center">
-          <Button variant="link" size="sm" onClick={onVolver} disabled={enviando}>
+          <Button variant="link" size="sm" onClick={volver} disabled={enviando}>
             Volver a escribir el código de la app
           </Button>
         </div>
@@ -194,7 +216,7 @@ export function RestablecerSegundoFactorPorCorreo({
         >
           {esperaS > 0 ? `Reenviar código en ${esperaS} s` : 'Reenviar código'}
         </Button>
-        <Button variant="link" size="sm" onClick={onVolver} disabled={confirmando}>
+        <Button variant="link" size="sm" onClick={volver} disabled={confirmando}>
           Volver a escribir el código de la app
         </Button>
       </div>

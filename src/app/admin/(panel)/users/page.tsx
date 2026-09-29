@@ -6,6 +6,7 @@ import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
+import { RestablecerSegundoFactor } from '@/components/admin/RestablecerSegundoFactor'
 
 // ── Types co-located with the screen (BACK.md §8.21 · FRONT.md §6.29) ────────
 
@@ -173,6 +174,13 @@ export default function UsersPage() {
           emptyTitle="Sin admins configurados"
           emptyHint="Verificar ADMIN_EMAILS en el env."
         />
+      </div>
+
+      {/* Soporte: restablecer el segundo factor de UNA cuenta de la plataforma
+          (29-09-2026). Vive acá porque es la pantalla de usuarios del
+          backoffice; no hay ficha de usuario de la plataforma. */}
+      <div className="mb-8">
+        <RestablecerSegundoFactor />
       </div>
 
       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">

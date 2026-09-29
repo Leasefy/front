@@ -94,13 +94,14 @@ let root: Root
 function render(
   apertura: PilotoApertura | null,
   onAbrirItem: (id: string) => void = () => {},
+  extra: Partial<React.ComponentProps<typeof PilotoCajon>> = {},
 ) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
     root.render(
-      <PilotoCajon apertura={apertura} onClose={() => {}} onAbrirItem={onAbrirItem} />,
+      <PilotoCajon apertura={apertura} onClose={() => {}} onAbrirItem={onAbrirItem} {...extra} />,
     )
   })
 }
@@ -317,5 +318,57 @@ describe('PilotoCajon — una carta se lee acá mismo', () => {
     render({ tipo: 'item', id: 'esc:e-1' })
     expect(texto()).toContain('Ver la llamada')
     expect(document.body.querySelector('[data-testid="piloto-cajon-leer-pdf"]')).toBeNull()
+  })
+})
+
+/*
+ * Fase 1 del director (28-09-2026): el cajón muestra el por qué, la evidencia,
+ * la meta y lo descartado cuando la fila es del director, y SIEMPRE el motivo
+ * de la perilla.
+ */
+describe('PilotoCajon — el por qué del director', () => {
+  const DIRECTOR = {
+    prioridad: 80,
+    porQue: 'Vence en 88 días y Vinci lo marca con riesgo alto.',
+    evidencia: [
+      { tipo: 'deteccion', ref: 'renovaciones:contrato:c-1', texto: 'Renovación P-7: faltan 88 días', enlace: '/panel/inmobiliaria/contratos/c-1' },
+      { tipo: 'metrica', ref: 'recaudo', texto: 'Recaudo 84 %', enlace: null },
+    ],
+    meta: { id: 'm-1', metrica: 'renovacion', nombre: 'Renovación' },
+    alternativaDescartada: 'Esperar a la carta de incremento.',
+  }
+  const MOTIVO = 'Fase 1 del director: toda orden del director espera tu clic.'
+
+  it('con lo que manda el micro en el detalle: por qué, evidencia enlazada, meta, lo descartado y el motivo', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-1', director: DIRECTOR, motivo: MOTIVO }
+    render({ tipo: 'item', id: 'acc:a-1' })
+    const seccion = document.body.querySelector('[data-testid="piloto-cajon-director"]')
+    expect(seccion?.textContent).toContain('Vence en 88 días y Vinci lo marca con riesgo alto.')
+    expect(seccion?.textContent).toContain('inmobiliaria.piloto.director.porQue.meta')
+    expect(seccion?.textContent).toContain('inmobiliaria.piloto.director.porQue.descarto')
+    const enlace = document.body.querySelector('[data-testid="piloto-cajon-evidencia"] a')
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/c-1')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-evidencia"]')?.textContent).toContain('Recaudo 84 %')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain(MOTIVO)
+  })
+
+  it('si el detalle no lo trae, usa el respaldo de la fila (la Bandeja o la tarjeta «Hoy»)', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-1' }
+    render({ tipo: 'item', id: 'acc:a-1' }, () => {}, { porQueDeRespaldo: { director: DIRECTOR, motivo: MOTIVO } })
+    expect(document.body.querySelector('[data-testid="piloto-cajon-director"]')?.textContent).toContain('riesgo alto')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain(MOTIVO)
+  })
+
+  it('🔴 el motivo va SIEMPRE que venga, aunque la fila no sea del director', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-2', motivo: 'Copiloto: espera tu clic.' }
+    render({ tipo: 'item', id: 'acc:a-2' })
+    expect(document.body.querySelector('[data-testid="piloto-cajon-director"]')).toBeNull()
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain('Copiloto: espera tu clic.')
+  })
+
+  it('sin director ni motivo no pinta la sección', () => {
+    estado.detalle = DETALLE
+    render({ tipo: 'item', id: 'esc:e-1' })
+    expect(document.body.querySelector('[data-testid^="piloto-cajon-porque-"]')).toBeNull()
   })
 })

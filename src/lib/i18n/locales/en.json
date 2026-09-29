@@ -1338,6 +1338,198 @@
           "cobranza": "Collections",
           "aviso": "Notices"
         }
+      },
+      "director": {
+        "titulo": "The director",
+        "queEs": "Every morning it lays out your agents' day: what each one does, on whom and why. Everything it asks for waits for your click in the Inbox.",
+        "apagado": "The director is not turned on for your agency yet",
+        "cargando": "Reading today's plan…",
+        "queEsFallo": "the director's plan",
+        "sinNombre": "No name",
+        "sinPlan": "There is no plan yet. The director plans every morning, Monday to Saturday.",
+        "pestanas": {
+          "hoy": "Today",
+          "metas": "Goals",
+          "porAceptar": "{{n}} to accept"
+        },
+        "replanear": {
+          "boton": "Plan again",
+          "planeando": "Planning…",
+          "arranco": "The director is planning again. It takes a minute or two.",
+          "enCurso": "A plan is already in progress. I'll show it as soon as it's done.",
+          "soloAdmin": "Only an administrator can plan again.",
+          "fallo": "Could not plan again. Try again in a moment.",
+          "seCanso": "Still planning. Check back in a few minutes."
+        },
+        "ciclo": {
+          "listo": "Plan from {{hora}}",
+          "replan": "Re-planned at {{hora}}",
+          "enCurso": "Planning since {{hora}}…",
+          "enCursoSinHora": "Planning…",
+          "fallido": "The plan did not come out",
+          "sinModelo": "Plan from {{hora}}, with fixed rules",
+          "sinModeloSinHora": "Plan with fixed rules",
+          "costo": "cost",
+          "otroDia": "This is the plan from {{fecha}}: there is no plan for today yet.",
+          "fallidoTitulo": "The director could not put the plan together",
+          "fallidoTexto": "Your agents keep doing their usual work.",
+          "fallidoAdmin": "You can plan again.",
+          "sinModeloTitulo": "Today it planned with fixed rules, without AI",
+          "sinModeloPorque": "Why: {{porque}}."
+        },
+        "secciones": {
+          "prioridades": "Priorities",
+          "ordenes": "Today's orders",
+          "retenciones": "Holds",
+          "sugerencias": "Suggestions",
+          "propuestas": "Autonomy proposals",
+          "alertas": "Alerts",
+          "pensamiento": "How it thought it through",
+          "rechazadas": "What the director wanted and the rules did not allow"
+        },
+        "orden": {
+          "cuando": "When: {{cuando}}",
+          "conflicto": "Conflict resolved: {{que}}",
+          "decidir": "Decide",
+          "verDetalle": "See details",
+          "verTodas": "See all {{n}} orders",
+          "verMenos": "See less",
+          "ninguna": "The director gave no orders today.",
+          "estado": {
+            "en_bandeja": "Waiting for your click",
+            "aprobada": "Approved",
+            "ejecutada": "Done",
+            "descartada": "Dismissed",
+            "fallida": "Failed",
+            "deshecha": "Undone",
+            "vencida": "Expired",
+            "la_hace_el_agente": "The agent does it on its own"
+          }
+        },
+        "retencion": {
+          "agentes": "Not contacted by: {{agentes}}",
+          "hasta": "until {{fecha}}",
+          "estado": {
+            "en_bandeja": "Waiting for your click",
+            "activa": "Active",
+            "vencida": "Expired",
+            "descartada": "Dismissed"
+          }
+        },
+        "propuesta": {
+          "cambio": "move from {{de}} to {{a}}"
+        },
+        "grupoDeControl": {
+          "omitidas": "Control group on · orders not given today because they are in the group: {{n}}",
+          "ninguna": "Control group on · no order was left out today."
+        },
+        "porQue": {
+          "titulo": "Why the director asks for it",
+          "elDirector": "The director:",
+          "meta": "Goal: {{meta}}",
+          "descarto": "Ruled out: {{que}}",
+          "motivo": "Why it waits for your click: {{motivo}}",
+          "motivoTitulo": "Why it waits for your click"
+        },
+        "metas": {
+          "queEs": "The director proposes five goals from your agency's history. You accept or adjust them.",
+          "queEsFallo": "the director's goals",
+          "cargando": "Reading the goals…",
+          "sinFuente": "I could not read the goals: the Pilot does not publish them yet.",
+          "soloAdmin": "Only an administrator can accept, adjust or pause the goals.",
+          "vacia": "No goals yet.",
+          "vaciaHint": "The director proposes them from your agency's history as soon as it is turned on.",
+          "lineaBase": "Baseline",
+          "objetivo": "Target",
+          "actual": "Today",
+          "estimado": "Estimate",
+          "estimadoPorQue": "It is an estimate: it counts approved or completed actions that were not undone, by the time each one saves.",
+          "hasta": "until {{fecha}}",
+          "direccion": {
+            "subir": "Raise",
+            "bajar": "Lower"
+          },
+          "estado": {
+            "propuesta": "Proposed",
+            "activa": "Active",
+            "pausada": "Paused",
+            "cumplida": "Met",
+            "vencida": "Expired"
+          },
+          "aceptar": "Accept",
+          "reactivar": "Reactivate",
+          "ajustar": "Adjust",
+          "pausar": "Pause",
+          "guardar": "Save",
+          "cancelar": "Cancel",
+          "nuevoObjetivo": "New target ({{unidad}})",
+          "unidad": {
+            "porcentaje": "%",
+            "dias": "days",
+            "horas": "hours"
+          },
+          "escribeUnNumero": "Type a number.",
+          "objetivoInvalido": "That target is not allowed. Check the number.",
+          "fallo": "Could not save the goal. Try again.",
+          "toast": {
+            "aceptar": "Goal accepted: {{meta}}",
+            "ajustar": "Goal adjusted: {{meta}}",
+            "pausar": "Goal paused: {{meta}}"
+          },
+          "serie": "{{meta}}: went from {{desde}} to {{hasta}} over the days shown.",
+          "historial": "History ({{n}})",
+          "hito": {
+            "propuso": "proposed it",
+            "acepto": "accepted it",
+            "ajusto": "adjusted it",
+            "pauso": "paused it",
+            "cumplio": "was met",
+            "vencio": "expired"
+          },
+          "hitoObjetivo": "target {{valor}}"
+        },
+        "gasto": {
+          "titulo": "AI spend this month",
+          "tituloDelMes": "AI spend for {{mes}}",
+          "queEsFallo": "the AI spend",
+          "de": "of",
+          "barra": "AI spend against the monthly cap",
+          "tramo": {
+            "pequena": "Cap for a small agency (fewer than 150 active leases).",
+            "mediana": "Cap for a mid-size agency (150 to 999 active leases).",
+            "grande": "Cap for a large agency (1,000 active leases or more)."
+          },
+          "escalon": {
+            "normal": "Normal: the director plans with the usual AI.",
+            "ahorro": "Saving: to stay under the cap, the director plans with a cheaper AI.",
+            "sinModelo": "No AI: the cap was reached; the director plans with fixed rules until next month."
+          },
+          "porComponente": "By component",
+          "porDia": "Day by day",
+          "noCuenta": "Doesn't count",
+          "componente": {
+            "directorPlan": "Director's daily plan",
+            "directorReplan": "Plan again",
+            "chat": "Pilot chat",
+            "cobranza": "Collections (Laura)"
+          },
+          "laura": "Collections (Laura) doesn't count: it is billed separately.",
+          "excluido": "So far this month:"
+        },
+        "experimento": {
+          "titulo": "Control group",
+          "queEsFallo": "the control group",
+          "explicacion": "{{porcentaje}}% of your debtors, leases and properties, at random and always the same ones, receive no orders from the director. That is how we measure whether the director improves your goals. They still get everything that runs automatically today and everything the law requires.",
+          "prendido": "On · entities in the group: {{n}}",
+          "prendidoDesde": "On since {{fecha}} · entities in the group: {{n}}",
+          "apagado": "Off",
+          "apagarNoBorra": "Turning it off doesn't change the group: if you turn it back on, it's the same entities.",
+          "switchAria": "Director's control group",
+          "soloAdmin": "Only an administrator can turn it on or off.",
+          "toastPrendido": "Control group on.",
+          "toastApagado": "Control group off.",
+          "fallo": "Could not change the control group. Try again."
+        }
       }
     },
     "mobileNav": {

@@ -30,6 +30,13 @@
  * 2. «No se pudo consultar» NO es «no hay información». Un 404 o un error
  *    se dicen con esas palabras; jamás con un cajón vacío que parezca que el
  *    caso no tiene nada adentro.
+ *
+ * ── El director (fase 1, 28-09-2026) ──────────────────────────────────────
+ * Arriba de todo, el por qué: si la fila la pidió el director, su `porQue`,
+ * la evidencia enlazada, la meta y lo que descartó; y SIEMPRE el `motivo` de
+ * la perilla. Lo manda el detalle del micro; si un micro todavía no lo manda,
+ * se usa lo que ya traía la fila (`porQueDeRespaldo`: la Bandeja o la
+ * tarjeta «Hoy»).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -69,7 +76,14 @@ import { useI18n } from '@/lib/i18n'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
-import { runInboxAccion, type InboxAccion, type PulsoAlerta } from '@/lib/api/piloto'
+import {
+  runInboxAccion,
+  type DirectorDeLaAccion,
+  type InboxAccion,
+  type PulsoAlerta,
+} from '@/lib/api/piloto'
+import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
+import { PorQueEnElCajon } from './PilotoDirectorPorQue'
 
 /** Qué está abierto en el cajón. `null` = cerrado. */
 export type PilotoApertura =
@@ -78,7 +92,16 @@ export type PilotoApertura =
    * bandeja. El cajón la deja lista para confirmar (auditoría del Piloto,
    * hallazgo 9: el botón de la lista no se salta lo que el cajón pregunta).
    */
-  | { tipo: 'item'; id: string; accion?: string }
+  | {
+      tipo: 'item'
+      id: string
+      accion?: string
+      /**
+       * El por qué que ya traía la fila con que se abrió (una orden de la
+       * tarjeta del director). Lo usa la página como respaldo del cajón.
+       */
+      porQue?: { director?: DirectorDeLaAccion | null; motivo?: string | null }
+    }
   | { tipo: 'alerta'; alerta: PulsoAlerta }
 
 export interface PilotoCajonProps {
@@ -94,6 +117,11 @@ export interface PilotoCajonProps {
   onAbrirItem: (id: string) => void
   /** Se llama tras ejecutar una acción, para refrescar las listas de atrás. */
   onAccionEjecutada?: () => Promise<void> | void
+  /**
+   * El por qué que ya traía la fila con que se abrió (Bandeja o tarjeta
+   * «Hoy»). Se usa sólo si el detalle del micro no lo trae.
+   */
+  porQueDeRespaldo?: { director?: DirectorDeLaAccion | null; motivo?: string | null } | null
 }
 
 /** Un enlace externo (http…) sale del panel; uno relativo navega adentro. */
@@ -195,6 +223,7 @@ export function PilotoCajon({
   onVolver,
   onAbrirItem,
   onAccionEjecutada,
+  porQueDeRespaldo,
 }: PilotoCajonProps) {
   const { t } = useI18n()
 
@@ -256,6 +285,11 @@ export function PilotoCajon({
     },
     [onAccionEjecutada, refetch, t],
   )
+
+  /** El por qué del director y el motivo de la perilla: del detalle, o de la fila. */
+  const directorDelCaso =
+    normalizarDirectorDeLaAccion(data?.director) ?? normalizarDirectorDeLaAccion(porQueDeRespaldo?.director)
+  const motivoDelCaso = data?.motivo || porQueDeRespaldo?.motivo || null
 
   const titulo = alerta
     ? alerta.titulo
@@ -429,6 +463,7 @@ export function PilotoCajon({
 
           {!alerta && data && (
             <div className="space-y-5">
+              <PorQueEnElCajon director={directorDelCaso} motivo={motivoDelCaso} id={data.id} />
               {data.nota && <Aviso tono="info" texto={data.nota} />}
 
               {data.contexto.map((grupo) => (

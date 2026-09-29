@@ -29,6 +29,7 @@ import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
+import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { sanitizeReturnUrl } from '@/lib/utils'
 import { DESTINO_POR_DEFECTO, tipoDeConfirmacion } from '@/lib/auth/regreso-del-correo'
 
@@ -49,6 +50,10 @@ function ConfirmarContent() {
   const [estado, setEstado] = useState<Estado>(tokenHash ? 'listo' : 'incompleto')
   const sesion = useRef<Session | null>(null)
   const enCurso = useRef(false)
+  // El HTML del servidor llega antes que React: un clic en ese hueco no hace
+  // nada y la persona cree que el botón no sirve. Apagado hasta hidratar, como
+  // los formularios de acceso (`use-hidratado.ts`).
+  const hidratado = useHidratado()
 
   useEffect(() => {
     const sb = getSupabase()
@@ -143,7 +148,7 @@ function ConfirmarContent() {
             <Button
               type="button"
               onClick={confirmar}
-              disabled={estado === 'confirmando'}
+              disabled={estado === 'confirmando' || !hidratado}
               className="h-12 w-full rounded-full text-[14px]"
             >
               {estado === 'confirmando' ? 'Confirmando…' : 'Confirmar mi correo'}

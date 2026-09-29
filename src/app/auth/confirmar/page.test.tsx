@@ -30,7 +30,10 @@ const st = vi.hoisted(() => ({
   authCb: null as AuthCb | null,
   verifyOtp: null as unknown as Mock<(...a: unknown[]) => unknown>,
   getSessionCalls: 0,
+  hidratado: true,
 }))
+
+vi.mock('@/lib/hooks/use-hidratado', () => ({ useHidratado: () => st.hidratado }))
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(st.search),
@@ -65,6 +68,7 @@ beforeEach(() => {
   st.search = 'token_hash=pkce_abc&type=email&returnUrl=%2Fonboarding%2Finmobiliaria'
   st.authCb = null
   st.getSessionCalls = 0
+  st.hidratado = true
   st.verifyOtp = vi.fn().mockResolvedValue({ data: { session: {} }, error: null })
   Object.defineProperty(window, 'location', { value: { href: '' }, writable: true, configurable: true })
   container = document.createElement('div')
@@ -104,6 +108,15 @@ describe('/auth/confirmar', () => {
     expect(boton()).toBeDefined()
     expect(st.verifyOtp).not.toHaveBeenCalled()
     expect(window.location.href).toBe('')
+  })
+
+  it('antes de hidratar el botón está apagado: un clic en el HTML del servidor no se pierde en silencio', async () => {
+    st.hidratado = false
+    await montar()
+    const b = boton() as HTMLButtonElement
+    expect(b.disabled).toBe(true)
+    await tocar(b)
+    expect(st.verifyOtp).not.toHaveBeenCalled()
   })
 
   it('el clic confirma con verifyOtp(token_hash) y va al destino', async () => {

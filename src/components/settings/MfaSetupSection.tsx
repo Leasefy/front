@@ -3,9 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
 import { getAccessToken } from '@/lib/api/client';
+import { decodeAccessToken } from '@/lib/auth/jwt';
+import { errorDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
+import { getSupabase } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/toast';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -54,12 +58,19 @@ async function apiDeAuth<T>(
     });
     const cuerpo = (await res.json().catch(() => ({}))) as {
       message?: string;
+      msg?: string;
+      error_code?: string;
       error_description?: string;
     };
     if (!res.ok) {
-      throw new Error(
-        cuerpo.message || cuerpo.error_description || `Error ${res.status}`,
-      );
+      // 🔴 GoTrue contesta `{ error_code, msg }`, no `message`: leer sólo
+      // `message` es lo que dejaba el toast en «Error 422» a secas (Nico,
+      // 29-09). Todo sale traducido (`errores-del-segundo-factor.ts`).
+      throw errorDeSupabaseAuth({
+        status: res.status,
+        codigo: cuerpo.error_code,
+        mensaje: cuerpo.msg || cuerpo.message || cuerpo.error_description,
+      });
     }
     return cuerpo as T;
   } catch (err) {
@@ -84,6 +95,56 @@ export function qrParaImagen(crudo: string): string {
   if (!valor) return '';
   if (valor.startsWith('data:') || valor.startsWith('http')) return valor;
   return `data:image/svg+xml;utf8,${encodeURIComponent(valor)}`;
+}
+
+/**
+ * Una promesa del SDK con el mismo tope de 15 s que `apiDeAuth`: el candado
+ * de auth del SDK puede dejarla sin resolver ni rechazar.
+ */
+function conTope<T>(promesa: Promise<T>): Promise<T> {
+  let reloj: ReturnType<typeof setTimeout> | undefined;
+  const tope = new Promise<never>((_, rechazar) => {
+    reloj = setTimeout(
+      () => rechazar(new Error('Supabase no respondió a tiempo. Intenta de nuevo.')),
+      TOPE_MS,
+    );
+  });
+  return Promise.race([promesa, tope]).finally(() => clearTimeout(reloj));
+}
+
+/**
+ * Un código de la app contra un factor, POR EL SDK (`mfa.challenge` +
+ * `mfa.verify`), como `/auth/mfa-verify`. A diferencia del camino HTTP de
+ * esta pantalla, el SDK GUARDA la sesión que devuelve Supabase: queda en
+ * `aal2`, con el refresh token nuevo, y el AuthProvider se entera
+ * (`MFA_CHALLENGE_VERIFIED`). Devuelve el access token nuevo.
+ */
+async function verificarConElSdk(factorId: string, codigo: string): Promise<string | null> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Falta la configuración de Supabase');
+  const { data: desafio, error: errorDelDesafio } = await conTope(
+    supabase.auth.mfa.challenge({ factorId }),
+  );
+  if (errorDelDesafio || !desafio) {
+    throw errorDeSupabaseAuth({
+      status: errorDelDesafio?.status,
+      codigo: errorDelDesafio?.code,
+      mensaje: errorDelDesafio?.message,
+    });
+  }
+  const { data, error } = await conTope(
+    supabase.auth.mfa.verify({ factorId, challengeId: desafio.id, code: codigo }),
+  );
+  if (error) {
+    throw errorDeSupabaseAuth({ status: error.status, codigo: error.code, mensaje: error.message });
+  }
+  return data?.access_token ?? null;
+}
+
+/** ¿Esta sesión ya pasó un segundo factor? (`aal2`, o más si algún día existe). */
+function sesionConSegundoFactor(token: string | null): boolean {
+  const aal = decodeAccessToken(token)?.aal;
+  return aal === 'aal2' || aal === 'aal3';
 }
 
 type MfaState = 'idle' | 'enrolling' | 'enrolled';
@@ -116,9 +177,38 @@ export interface MfaSetupSectionProps {
    * ahí no hay `factorId` recién generado que ofrecer.
    */
   onActivado?: (factorId: string) => void;
+  /**
+   * 🔴 Está en el LOGIN (`/auth/mfa-verify`, sesión `aal1`). El primer código
+   * del factor nuevo va por el SDK y no por HTTP: así la sesión queda en
+   * `aal2` como en la verificación normal y la persona entra sin escribir un
+   * segundo código (29-09-2026).
+   */
+  enElIngreso?: boolean;
+  /** Sin factor verificado, arranca la inscripción sola (tras restablecerlo). */
+  inscribirAlAbrir?: boolean;
+  /**
+   * «¿No tienes la app?» dentro de «Desactivar» con la sesión en `aal1`: el
+   * login lo manda a restablecerlo con un código al correo.
+   */
+  onSinLaApp?: () => void;
+  /**
+   * `true` cuando empieza a cambiar el factor desde el login (pidió el código
+   * de la app para quitarlo); `false` si se echó atrás o falló antes de
+   * quitarlo. El login lo usa para no irse solo mientras tanto: pasar el
+   * código sube la sesión a `aal2`, y eso lo sacaría de la pantalla antes de
+   * inscribir el nuevo.
+   */
+  onCambioDeFactor?: (enCurso: boolean) => void;
 }
 
-export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps = {}) {
+export function MfaSetupSection({
+  onEnrolled,
+  onActivado,
+  enElIngreso = false,
+  inscribirAlAbrir = false,
+  onSinLaApp,
+  onCambioDeFactor,
+}: MfaSetupSectionProps = {}) {
   const [state, setState] = useState<MfaState>('idle');
   const [enrollData, setEnrollData] = useState<EnrollData | null>(null);
   const [code, setCode] = useState('');
@@ -127,6 +217,16 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
   const [factorId, setFactorId] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const accessTokenRef = useRef<string | null>(null);
+  /**
+   * 🔴 «Desactivar» con la sesión en `aal1` (el login): Supabase no deja
+   * quitar un factor verificado sin `aal2` (respondía 422). Se pide primero
+   * el código de la app. Se decide al abrir el modal, leyendo el token.
+   */
+  const [pideCodigo, setPideCodigo] = useState(false);
+  const [codigoDeLaApp, setCodigoDeLaApp] = useState('');
+  const [errorDelModal, setErrorDelModal] = useState<string | null>(null);
+  const quitandoRef = useRef(false);
+  const yaArrancoRef = useRef(false);
 
   // Check if MFA is already enrolled on mount
   useEffect(() => {
@@ -178,7 +278,7 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleStartEnroll = useCallback(async () => {
+  const handleStartEnroll = useCallback(async (tokenExplicito?: string | null) => {
     setIsLoading(true);
     try {
       // Ni siquiera `getSession()`: ESE es el que se cuelga. Toma el mismo
@@ -187,7 +287,7 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
       // El token vivo ya lo tiene el cliente HTTP en memoria — lo escribe el
       // AuthProvider en cada cambio de sesión — y es el mismo que va en el
       // Authorization de todas las llamadas del panel.
-      const token = getAccessToken();
+      const token = tokenExplicito ?? getAccessToken();
       accessTokenRef.current = token;
       if (!token) throw new Error('No hay sesión activa');
 
@@ -237,21 +337,28 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
       // `fetch` suelto: éstos eran los dos ÚNICOS pedidos de la pantalla sin el
       // tope de 15 s, así que una red colgada dejaba «Verificando...» para
       // siempre — exactamente el síntoma que el tope existe para evitar.
-      const token = getAccessToken() ?? accessTokenRef.current;
-      if (!token) throw new Error('No hay sesión activa');
+      if (enElIngreso) {
+        // En el login, por el SDK: deja la sesión guardada en `aal2` (con su
+        // refresh token nuevo) y el AuthProvider se entera. Por HTTP la
+        // respuesta se perdía y la persona tenía que escribir otro código.
+        await verificarConElSdk(currentEnroll.factorId, currentCode);
+      } else {
+        const token = getAccessToken() ?? accessTokenRef.current;
+        if (!token) throw new Error('No hay sesión activa');
 
-      // Paso 1: el desafío.
-      const desafio = await apiDeAuth<{ id: string }>(
-        `/factors/${currentEnroll.factorId}/challenge`,
-        token,
-        { method: 'POST' },
-      );
+        // Paso 1: el desafío.
+        const desafio = await apiDeAuth<{ id: string }>(
+          `/factors/${currentEnroll.factorId}/challenge`,
+          token,
+          { method: 'POST' },
+        );
 
-      // Paso 2: verificar con el código.
-      await apiDeAuth(`/factors/${currentEnroll.factorId}/verify`, token, {
-        method: 'POST',
-        body: { challenge_id: desafio.id, code: currentCode },
-      });
+        // Paso 2: verificar con el código.
+        await apiDeAuth(`/factors/${currentEnroll.factorId}/verify`, token, {
+          method: 'POST',
+          body: { challenge_id: desafio.id, code: currentCode },
+        });
+      }
 
       setState('enrolled');
       setFactorId(currentEnroll.factorId);
@@ -261,12 +368,8 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
       onEnrolled?.();
       onActivado?.(currentEnroll.factorId);
     } catch (err) {
-      const msg = (err as Error).message || '';
-      if (msg.includes('invalid') || msg.includes('expired')) {
-        toast.error('Código incorrecto. Intenta de nuevo.');
-      } else {
-        toast.error(msg || 'Error al verificar código');
-      }
+      // Ya viene en español (`errores-del-segundo-factor.ts`).
+      toast.error((err as Error).message || 'No se pudo verificar el código.');
     } finally {
       setIsLoading(false);
     }
@@ -312,6 +415,66 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
       setIsLoading(false);
     }
   }, [factorId]);
+
+  const abrirDesactivar = useCallback(() => {
+    setPideCodigo(!sesionConSegundoFactor(getAccessToken() ?? accessTokenRef.current));
+    setCodigoDeLaApp('');
+    setErrorDelModal(null);
+    setShowDisableModal(true);
+  }, []);
+
+  const cerrarDesactivar = useCallback(() => {
+    setShowDisableModal(false);
+    setCodigoDeLaApp('');
+    setErrorDelModal(null);
+  }, []);
+
+  /**
+   * 🔴 Caso A (Nico, 29-09-2026): quitar el factor desde el login, CON la
+   * app. Primero el código actual por el SDK (sube la sesión a `aal2`),
+   * después se quita el factor con ESE token nuevo y enseguida arranca la
+   * inscripción del reemplazo en la misma tarjeta.
+   */
+  const handleQuitarConCodigo = useCallback(
+    async (codigo: string) => {
+      if (!factorId || codigo.length !== 6 || quitandoRef.current) return;
+      quitandoRef.current = true;
+      setIsLoading(true);
+      setErrorDelModal(null);
+      onCambioDeFactor?.(true);
+
+      let tokenNuevo: string | null;
+      try {
+        tokenNuevo = await verificarConElSdk(factorId, codigo);
+        const token = tokenNuevo ?? getAccessToken();
+        if (!token) throw new Error('No hay sesión activa');
+        await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
+      } catch (err) {
+        quitandoRef.current = false;
+        setIsLoading(false);
+        setCodigoDeLaApp('');
+        setErrorDelModal((err as Error).message || 'No se pudo quitar el segundo factor.');
+        onCambioDeFactor?.(false);
+        return;
+      }
+
+      quitandoRef.current = false;
+      setState('idle');
+      setFactorId(null);
+      setShowDisableModal(false);
+      setCodigoDeLaApp('');
+      toast.success('Quitamos el segundo factor anterior. Ahora actívalo de nuevo con tu app.');
+      await handleStartEnroll(tokenNuevo);
+    },
+    [factorId, onCambioDeFactor, handleStartEnroll],
+  );
+
+  // Tras restablecerlo por correo: sin factor, la inscripción arranca sola.
+  useEffect(() => {
+    if (!inscribirAlAbrir || initializing || state !== 'idle' || yaArrancoRef.current) return;
+    yaArrancoRef.current = true;
+    void handleStartEnroll();
+  }, [inscribirAlAbrir, initializing, state, handleStartEnroll]);
 
   const handleCopySecret = useCallback(() => {
     if (enrollData?.secret) {
@@ -360,7 +523,7 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
             variant="outline"
             size="sm"
             hideArrow
-            onClick={() => setShowDisableModal(true)}
+            onClick={abrirDesactivar}
             className="rounded-md text-xs text-danger border-danger/30 hover:bg-danger-soft"
           >
             Desactivar
@@ -369,39 +532,101 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
 
         <SettingsModal
           open={showDisableModal}
-          onClose={() => setShowDisableModal(false)}
-          title="Desactivar 2FA"
+          onClose={cerrarDesactivar}
+          title={pideCodigo ? 'Quitar el segundo factor' : 'Desactivar 2FA'}
         >
-          <div className="space-y-4">
-            <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                <Warning className="w-5 h-5 text-danger" />
-              </div>
-              <p className="text-sm text-danger">
-                Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.
+          {pideCodigo ? (
+            <div className="space-y-4" aria-busy={isLoading}>
+              <p className="text-pretty text-sm text-fg-muted">
+                Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app
+                de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.
               </p>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                hideArrow
-                onClick={() => setShowDisableModal(false)}
-                className="flex-1 rounded-lg"
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                hideArrow
-                isLoading={isLoading}
-                onClick={handleUnenroll}
+              <CasillasDeCodigo
+                aria-label="Código de 6 dígitos de tu app de autenticación"
+                value={codigoDeLaApp}
+                onChange={(v) => {
+                  setCodigoDeLaApp(v);
+                  if (errorDelModal) setErrorDelModal(null);
+                }}
+                onCompleto={(v) => void handleQuitarConCodigo(v)}
+                hayError={Boolean(errorDelModal)}
                 disabled={isLoading}
-                className="flex-1 rounded-lg"
-              >
-                {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
-              </Button>
+                autoFocus
+              />
+              {errorDelModal ? (
+                <p role="alert" className="text-pretty text-center text-sm text-danger">
+                  {errorDelModal}
+                </p>
+              ) : null}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={cerrarDesactivar}
+                  disabled={isLoading}
+                  className="flex-1 rounded-lg"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
+                  isLoading={isLoading}
+                  onClick={() => void handleQuitarConCodigo(codigoDeLaApp)}
+                  disabled={isLoading || codigoDeLaApp.length !== 6}
+                  className="flex-1 rounded-lg"
+                >
+                  {isLoading ? 'Verificando…' : 'Verificar y quitar'}
+                </Button>
+              </div>
+              {onSinLaApp ? (
+                <div className="text-center">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    disabled={isLoading}
+                    onClick={() => {
+                      cerrarDesactivar();
+                      onSinLaApp();
+                    }}
+                  >
+                    ¿No tienes la app? Restablécelo con un código a tu correo
+                  </Button>
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
+                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
+                  <Warning className="w-5 h-5 text-danger" />
+                </div>
+                <p className="text-sm text-danger">
+                  Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={cerrarDesactivar}
+                  className="flex-1 rounded-lg"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
+                  isLoading={isLoading}
+                  onClick={handleUnenroll}
+                  disabled={isLoading}
+                  className="flex-1 rounded-lg"
+                >
+                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                </Button>
+              </div>
+            </div>
+          )}
         </SettingsModal>
       </>
     );
@@ -513,7 +738,7 @@ export function MfaSetupSection({ onEnrolled, onActivado }: MfaSetupSectionProps
         variant="secondary"
         size="sm"
         hideArrow
-        onClick={handleStartEnroll}
+        onClick={() => void handleStartEnroll()}
         disabled={isLoading}
         className="rounded-md text-xs bg-success text-white hover:bg-success"
       >

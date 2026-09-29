@@ -28,7 +28,7 @@
  * (`useDirectorHoy`); mientras tanto el botón dice «Planeando…».
  */
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ArrowsClockwise, Compass } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 
@@ -39,6 +39,7 @@ import { toast } from '@/components/ui/toast'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { elPlanReemplazaLaLectura } from '@/lib/piloto/director'
 import {
   useDirectorHoy,
   useDirectorMetas,
@@ -222,12 +223,18 @@ export function PilotoDirectorVista({
 
 export interface PilotoDirectorProps {
   onAbrirAccion: (accionId: string, porQue: PorQueDeRespaldo) => void
+  /** Avisa si el plan de hoy ya reemplaza la lectura del Gerente (`elPlanReemplazaLaLectura`). */
+  onPlanDeHoy?: (reemplazaLaLectura: boolean) => void
 }
 
 /** La tarjeta con sus lecturas. La página le pasa cómo abrir el cajón. */
-export function PilotoDirector({ onAbrirAccion }: PilotoDirectorProps) {
+export function PilotoDirector({ onAbrirAccion, onPlanDeHoy }: PilotoDirectorProps) {
   const hoy = useDirectorHoy()
   const metas = useDirectorMetas()
   const { isAdmin } = usePermissionsContext()
+  const reemplaza = elPlanReemplazaLaLectura(hoy.data)
+  useEffect(() => {
+    onPlanDeHoy?.(reemplaza)
+  }, [onPlanDeHoy, reemplaza])
   return <PilotoDirectorVista hoy={hoy} metas={metas} isAdmin={isAdmin} onAbrirAccion={onAbrirAccion} />
 }

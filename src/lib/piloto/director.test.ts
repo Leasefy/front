@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   fechaDeHoyEnBogota,
+  elPlanReemplazaLaLectura,
   formatoUsd,
   horaConArticulo,
   mesLargo,
@@ -103,5 +104,30 @@ describe('lo demás', () => {
   it('una clave desconocida se lee como palabra, no como código', () => {
     expect(humanizarClave('niti')).toBe('Niti')
     expect(humanizarClave('director.plan_extra')).toBe('Director plan extra')
+  })
+})
+
+describe('el plan del director reemplaza la lectura del Gerente (ARQUITECTURA §7: una sola voz del día)', () => {
+  const HOY = '2026-09-29'
+  const base = {
+    encendido: true,
+    fecha: HOY,
+    ciclo: { estado: 'listo' },
+    resumen: 'Hoy el foco es el recaudo.',
+  }
+
+  it('con un plan de HOY listo (o hecho sin modelo) y con resumen, la lectura vieja se calla', () => {
+    expect(elPlanReemplazaLaLectura(base, HOY)).toBe(true)
+    expect(elPlanReemplazaLaLectura({ ...base, ciclo: { estado: 'sin_modelo' } }, HOY)).toBe(true)
+  })
+
+  it('sin director, apagado, sin plan de hoy, en curso, fallido o sin resumen, la lectura del Gerente sigue', () => {
+    expect(elPlanReemplazaLaLectura(null, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, encendido: false }, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, fecha: '2026-09-28' }, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, ciclo: null }, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, ciclo: { estado: 'en_curso' } }, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, ciclo: { estado: 'fallido' } }, HOY)).toBe(false)
+    expect(elPlanReemplazaLaLectura({ ...base, resumen: '  ' }, HOY)).toBe(false)
   })
 })

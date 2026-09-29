@@ -130,6 +130,7 @@ describe('/auth/mfa-verify — sin la app', () => {
     await llamar(propsDeLaInscripcion.actual!.onActivado, 'f-nuevo')
     expect(auth.setMfaVerified).toHaveBeenCalledTimes(1)
     expect(replace).toHaveBeenCalledWith('/panel/inmobiliaria')
+    vi.useRealTimers()
   })
 
   it('🔴 mientras restablece, no se va sola aunque cambie el estado del segundo factor', async () => {
@@ -159,9 +160,14 @@ describe('/auth/mfa-verify — sin la app', () => {
   it('caso A: al cambiar el factor con la app, el aal2 intermedio no la saca de la pantalla', async () => {
     // `listFactors` colgado: la puerta de emergencia monta la inscripción,
     // que encuentra el factor verificado y ofrece «Desactivar» (pidiendo código).
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     supa.listFactors.mockReturnValue(new Promise(() => {}))
     await pintar()
     await tocarNoTengoLaApp()
+    // Nadie contesta si hay factor: al vencer el tope se abre la inscripción.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
     expect(hay('mfa-setup')).toBe(true)
     expect(propsDeLaInscripcion.actual).toMatchObject({ enElIngreso: true })
 
@@ -176,11 +182,33 @@ describe('/auth/mfa-verify — sin la app', () => {
   })
 
   it('caso A: «¿No tienes la app?» desde el modal también lleva al código por correo', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     supa.listFactors.mockReturnValue(new Promise(() => {}))
     await pintar()
     await tocarNoTengoLaApp()
+    // Nadie contesta si hay factor: al vencer el tope se abre la inscripción.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
     await llamar(propsDeLaInscripcion.actual!.onSinLaApp)
 
     expect(hay('restablecer-por-correo')).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('🔴 el primer clic espera saber si hay factor (Nico, 29-09): con factor, va directo al correo', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    let contestar: (v: unknown) => void = () => {}
+    supa.listFactors.mockReturnValue(new Promise((r) => { contestar = r }))
+    await pintar()
+    await tocarNoTengoLaApp()
+    expect(hay('mfa-setup')).toBe(false)
+    await act(async () => {
+      contestar({ data: { totp: [{ id: 'f-1', status: 'verified' }] } })
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(hay('restablecer-por-correo')).toBe(true)
+    expect(hay('mfa-setup')).toBe(false)
+    vi.useRealTimers()
   })
 })

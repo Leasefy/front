@@ -176,7 +176,8 @@ function render(hoy: UseDirectorHoy, { isAdmin = true, onAbrirAccion = vi.fn() }
 
 const q = (testid: string) => container.querySelector(`[data-testid="${testid}"]`)
 const texto = () => container.textContent ?? ''
-const conCiclo = (ciclo: Partial<(typeof PLAN)['ciclo']>, resto: Partial<typeof PLAN> = {}) => ({
+/** El plan con otro ciclo. Tipado suelto a propósito: es lo que manda el micro, sin normalizar. */
+const conCiclo = (ciclo: Record<string, unknown>, resto: Record<string, unknown> = {}): unknown => ({
   ...PLAN,
   ...resto,
   ciclo: { ...PLAN.ciclo, ...ciclo },
@@ -236,7 +237,7 @@ describe('PilotoDirector — estados', () => {
   })
 
   it('fallido: lo dice; sólo al administrador le sugiere volver a planear', () => {
-    const plan = conCiclo({ estado: 'fallido', costoUsd: null }, { resumen: null, ordenes: [] } as never)
+    const plan = conCiclo({ estado: 'fallido', costoUsd: null }, { resumen: null, ordenes: [] })
     render(hoyCon(plan), { isAdmin: true })
     expect(q('piloto-director-fallido')?.textContent).toContain('inmobiliaria.piloto.director.ciclo.fallidoAdmin')
     act(() => root.unmount())

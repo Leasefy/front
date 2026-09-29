@@ -35,6 +35,8 @@ import { DESTINO_POR_DEFECTO, tipoDeConfirmacion } from '@/lib/auth/regreso-del-
 
 type Estado = 'listo' | 'confirmando' | 'confirmado' | 'ya-confirmado' | 'gastado' | 'fallo' | 'incompleto'
 
+const ESPERA_DE_LA_SESION_MS = 4000
+
 /** Supabase contesta `otp_expired` (403) tanto si el token venció como si ya se usó. */
 function esEnlaceGastado(error: unknown): boolean {
   const e = error as { code?: string; status?: number; message?: string } | null
@@ -49,6 +51,18 @@ function ConfirmarContent() {
   const destino = sanitizeReturnUrl(sp.get('returnUrl'), DESTINO_POR_DEFECTO)
   const [estado, setEstado] = useState<Estado>(tokenHash ? 'listo' : 'incompleto')
   const sesion = useRef<Session | null>(null)
+  // Se suelta con el primer evento de auth (el INITIAL_SESSION). Puede llegar
+  // DESPUÉS de la respuesta de verifyOtp: el AuthProvider también se suscribe
+  // y los eventos pasan por el mismo candado (visto en el navegador headless,
+  // 28-09: la sesión estaba y la pantalla decía «ya no sirve»).
+  const primeraSesion = useRef<{ promesa: Promise<void>; soltar: () => void } | null>(null)
+  if (primeraSesion.current === null) {
+    let soltar = () => {}
+    const promesa = new Promise<void>((r) => {
+      soltar = r
+    })
+    primeraSesion.current = { promesa, soltar }
+  }
   const enCurso = useRef(false)
   // El HTML del servidor llega antes que React: un clic en ese hueco no hace
   // nada y la persona cree que el botón no sirve. Apagado hasta hidratar, como
@@ -62,6 +76,7 @@ function ConfirmarContent() {
       data: { subscription },
     } = sb.auth.onAuthStateChange((_evento, s) => {
       sesion.current = s
+      primeraSesion.current?.soltar()
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -89,7 +104,12 @@ function ConfirmarContent() {
       }
       if (esEnlaceGastado(error)) {
         // Segundo clic en el correo (o recargar): el primero ya confirmó y dejó
-        // la sesión abierta en este navegador. No es «vencido».
+        // la sesión abierta en este navegador. No es «vencido». Antes de
+        // decidir, se espera a saber si hay sesión (hasta 4 s).
+        await Promise.race([
+          primeraSesion.current?.promesa,
+          new Promise((r) => setTimeout(r, ESPERA_DE_LA_SESION_MS)),
+        ])
         if (sesion.current?.user?.email_confirmed_at) {
           setEstado('ya-confirmado')
           ir()

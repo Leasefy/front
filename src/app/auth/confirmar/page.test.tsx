@@ -151,6 +151,18 @@ describe('/auth/confirmar', () => {
     expect(window.location.href).toBe('/onboarding/inmobiliaria')
   })
 
+  it('token ya gastado y el INITIAL_SESSION llega DESPUÉS del error (visto en el navegador headless): espera y dice «ya quedó confirmado»', async () => {
+    st.verifyOtp = vi.fn().mockResolvedValue(GASTADO)
+    await montar()
+    await tocar(boton())
+    await emitir('INITIAL_SESSION', SESION_CONFIRMADA)
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(container.textContent).toContain('Tu correo ya quedó confirmado')
+    expect(window.location.href).toBe('/onboarding/inmobiliaria')
+  })
+
   it('token ya gastado y sin sesión: lo dice sin afirmar que venció y ofrece entrar', async () => {
     st.verifyOtp = vi.fn().mockResolvedValue(GASTADO)
     await montar()

@@ -120,6 +120,27 @@ describe('useDirectorHoy — volver a planear', () => {
     expect(api.fetchDirectorHoy).toHaveBeenCalledTimes(4)
   })
 
+  it('🔴 no se da por terminado con el plan VIEJO: espera a que aparezca el ciclo que arrancó', async () => {
+    const conId = (id: string, estado: string) => {
+      const r = hoyCon(estado)
+      return { ...r, data: { ...r.data, ciclo: { ...r.data.ciclo, id } } }
+    }
+    api.fetchDirectorHoy
+      .mockResolvedValueOnce(conId('c-1', 'listo')) // el de la mañana
+      .mockResolvedValueOnce(conId('c-1', 'listo')) // el micro todavía muestra el viejo
+      .mockResolvedValueOnce(conId('c-2', 'listo')) // el nuevo, ya listo
+    api.postDirectorReplanear.mockResolvedValue({ estado: 'arranco', cicloId: 'c-2' })
+    await act(async () => root.render(React.createElement(PruebaHoy)))
+    await act(async () => {
+      await hoy!.replanear()
+    })
+    await avanzar(CADA_CUANTO_PREGUNTA_MS)
+    expect(hoy!.esperando).toBe(true)
+    await avanzar(CADA_CUANTO_PREGUNTA_MS)
+    expect(hoy!.esperando).toBe(false)
+    expect(hoy!.data?.ciclo?.id).toBe('c-2')
+  })
+
   it('409: ya había uno en curso — se espera ese mismo, igual que con 202', async () => {
     api.fetchDirectorHoy.mockResolvedValueOnce(hoyCon('listo')).mockResolvedValue(hoyCon('listo'))
     api.postDirectorReplanear.mockResolvedValue({ estado: 'en_curso', cicloId: 'c-1' })

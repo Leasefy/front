@@ -22,6 +22,10 @@
  * preguntar y se dice («sigue planeando»): no es un error, el ciclo puede
  * terminar después y se verá en la próxima lectura. Un plan que YA viene en
  * curso (el de la mañana, a las 5) se espera igual.
+ *
+ * 🔴 Se espera AL CICLO QUE ARRANCÓ (el `cicloId` del 202/409), no a
+ * cualquiera: si la primera consulta todavía devuelve el plan viejo (listo),
+ * eso no es «terminó». Sin `cicloId`, basta con que no esté en curso.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -146,6 +150,8 @@ export function useDirectorHoy(): UseDirectorHoy {
   const relojRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hastaRef = useRef(0)
   const esperandoRef = useRef(false)
+  /** El ciclo al que se espera (el que arrancó el replan o el que ya venía en curso). */
+  const cicloEsperadoRef = useRef<string | null>(null)
   const vivoRef = useRef(true)
 
   const dejarDeEsperar = useCallback(() => {
@@ -160,8 +166,12 @@ export function useDirectorHoy(): UseDirectorHoy {
     const leido = await leerCallado()
     if (!vivoRef.current || !esperandoRef.current) return
     // Un fallo de red en medio de la espera no la corta: se sigue preguntando
-    // hasta el tope. Sólo un ciclo que ya no está en curso la termina.
-    if (leido && leido.ciclo?.estado !== 'en_curso') {
+    // hasta el tope. Sólo el ciclo esperado, ya fuera de curso, la termina.
+    const ciclo = leido?.ciclo ?? null
+    const esperado = cicloEsperadoRef.current
+    const termino =
+      ciclo !== null && ciclo.estado !== 'en_curso' && (esperado === null || ciclo.id === esperado)
+    if (termino) {
       dejarDeEsperar()
       return
     }
@@ -173,8 +183,9 @@ export function useDirectorHoy(): UseDirectorHoy {
     relojRef.current = setTimeout(() => void preguntar(), CADA_CUANTO_PREGUNTA_MS)
   }, [leerCallado, dejarDeEsperar])
 
-  const esperar = useCallback(() => {
+  const esperar = useCallback((cicloId: string | null) => {
     if (relojRef.current) clearTimeout(relojRef.current)
+    cicloEsperadoRef.current = cicloId
     hastaRef.current = Date.now() + CUANTO_ESPERA_MS
     esperandoRef.current = true
     setEsperando(true)
@@ -184,9 +195,10 @@ export function useDirectorHoy(): UseDirectorHoy {
 
   // Un plan que YA viene en curso (el de la mañana) se espera igual.
   const estado = data?.ciclo?.estado
+  const cicloId = data?.ciclo?.id || null
   useEffect(() => {
-    if (estado === 'en_curso' && !esperandoRef.current && !seCansoDeEsperar) esperar()
-  }, [estado, esperar, seCansoDeEsperar])
+    if (estado === 'en_curso' && !esperandoRef.current && !seCansoDeEsperar) esperar(cicloId)
+  }, [estado, cicloId, esperar, seCansoDeEsperar])
 
   useEffect(() => {
     vivoRef.current = true
@@ -203,7 +215,7 @@ export function useDirectorHoy(): UseDirectorHoy {
     setPidiendoReplan(true)
     try {
       const r = await postDirectorReplanear(agencyId)
-      if (r.estado !== 'error') esperar()
+      if (r.estado !== 'error') esperar(r.cicloId)
       return r
     } finally {
       if (vivoRef.current) setPidiendoReplan(false)

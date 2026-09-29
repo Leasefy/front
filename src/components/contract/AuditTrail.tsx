@@ -20,6 +20,14 @@ import {
   PencilSimple,
 } from '@phosphor-icons/react';
 import type { Contract, ContractRejection } from '@/lib/types/contract';
+import type { OtpChannel } from '@/lib/api/contracts.types';
+
+/** «por correo» · «por correo y WhatsApp» — nunca el enum crudo (T-0109). */
+function nombresDeCanales(channels: OtpChannel[] | undefined): string | null {
+  if (!channels?.length) return null;
+  const nombres = channels.map((c) => (c === 'WHATSAPP' ? 'WhatsApp' : 'correo'));
+  return nombres.length === 1 ? `por ${nombres[0]}` : `por ${nombres.join(' y ')}`;
+}
 
 // ============================================================================
 // Types
@@ -58,6 +66,8 @@ interface TimelineEvent {
   ipAddress?: string;
   userAgent?: string;
   otpVerified?: boolean;
+  /** Canales por los que se envió el código verificado (T-0109). Ausente → se omite la línea. */
+  otpChannels?: OtpChannel[];
   reason?: string;
 }
 
@@ -119,6 +129,7 @@ function buildTimelineEvents(
       ipAddress: contract.tenantSignature.ipAddress,
       userAgent: contract.tenantSignature.userAgent,
       otpVerified: contract.tenantSignature.otpVerified,
+      otpChannels: contract.tenantSignature.otpChannels,
     });
   }
 
@@ -134,6 +145,7 @@ function buildTimelineEvents(
       ipAddress: contract.landlordSignature.ipAddress,
       userAgent: contract.landlordSignature.userAgent,
       otpVerified: contract.landlordSignature.otpVerified,
+      otpChannels: contract.landlordSignature.otpChannels,
     });
   }
 
@@ -257,7 +269,10 @@ function TimelineEventItem({
             {event.otpVerified && (
               <div className="flex items-center gap-2 text-xs">
                 <Shield className="h-3 w-3 text-success" />
-                <span className="text-success font-medium">Identidad verificada por código de un solo uso</span>
+                <span className="text-success font-medium">
+                  Identidad verificada por código de un solo uso
+                  {nombresDeCanales(event.otpChannels) ? ` (${nombresDeCanales(event.otpChannels)})` : ''}
+                </span>
               </div>
             )}
           </div>

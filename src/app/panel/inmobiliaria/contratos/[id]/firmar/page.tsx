@@ -12,6 +12,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
 import { isPermissionError, mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
@@ -67,6 +68,10 @@ function FirmarContratoContent() {
       } else {
         toast.error('No se pudo firmar el contrato.', { description: msg || 'Intenta de nuevo.' });
       }
+      // T-0109 contract.md §3.3 — TOKEN_DE_FIRMA_INVALIDO/CODIGO_DE_FIRMA_REQUERIDO
+      // dejan el token guardado inservible: se relanza para que SignatureForm
+      // (dueño del token) lo limpie y reabra el OTP en vez de reintentar en bucle.
+      if (debeReiniciarOtp(err)) throw err;
     } finally {
       setIsSigning(false);
     }
@@ -264,7 +269,11 @@ function FirmarContratoContent() {
         isLandlord
         isLoading={isSigning}
         signerName={contract.landlordName}
-        requireOTP={false}
+        // T-0109 contract.md §3.1.A3/§7 — SIGNING_OTP_LANDLORD_REQUIRED
+        // default true en el back; el deploy debe ir front primero (este
+        // cambio) para que el back nunca reciba una firma de arrendador sin
+        // `otpVerificationToken` mientras hace el corte.
+        requireOTP={true}
       />
     </div>
   );

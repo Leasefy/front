@@ -37,7 +37,31 @@ describe('resolveOtpAdapter — default contract transport (ACUE-02 enabler)', (
 
     expect(mockedSendOtp).toHaveBeenCalledTimes(1);
     expect(mockedSendOtp).toHaveBeenCalledWith('c1', { role: 'tenant' });
-    expect(res).toEqual({ sentTo: 'a***@b.com', cooldownSeconds: 90 });
+    expect(res).toEqual({ sentTo: 'a***@b.com', cooldownSeconds: 90, channels: undefined });
+  });
+
+  /**
+   * T-0109 contract.md §3.0.1 — `SendOtpResponse.channels` es NUEVO y
+   * opcional (back WU-1+). El adapter tiene que pasarlo tal cual, sin
+   * inventar nada cuando falta.
+   */
+  it('send() pasa `channels` cuando el back WU-1+ lo manda', async () => {
+    mockedSendOtp.mockResolvedValueOnce({
+      sentTo: 'a***@b.com',
+      expiresAt: '2026-07-20T00:10:00.000Z',
+      cooldownSeconds: 60,
+      channels: [
+        { channel: 'EMAIL', status: 'SENT', destination: 'a***@b.com', reason: null },
+        { channel: 'WHATSAPP', status: 'SKIPPED', destination: null, reason: 'CHANNEL_DISABLED' },
+      ],
+    });
+
+    const res = await resolveOtpAdapter({ contractId: 'c1', role: 'landlord' }).send();
+
+    expect(res.channels).toEqual([
+      { channel: 'EMAIL', status: 'SENT', destination: 'a***@b.com', reason: null },
+      { channel: 'WHATSAPP', status: 'SKIPPED', destination: null, reason: 'CHANNEL_DISABLED' },
+    ]);
   });
 
   it('send() defaults cooldownSeconds to 60 when the API omits it', async () => {

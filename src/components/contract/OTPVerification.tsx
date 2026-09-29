@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
 import { contractsApi } from '@/lib/api/contracts.service';
-import type { ContractOtpRole } from '@/lib/api/contracts.types';
+import type { ContractOtpRole, OtpChannelResult } from '@/lib/api/contracts.types';
+import { describirCanales } from '@/lib/contratos/otp-channels';
+import { describirErrorDeOtp } from '@/lib/contratos/otp-errors';
 
 // ============================================================================
 // Transport seam (additive)
@@ -21,7 +23,7 @@ import type { ContractOtpRole } from '@/lib/api/contracts.types';
  * Ley 527/1999 flow for a non-contract entity (e.g. an acuerdo de pago).
  */
 export interface OtpAdapter {
-  send: () => Promise<{ sentTo: string; cooldownSeconds: number }>;
+  send: () => Promise<{ sentTo: string; cooldownSeconds: number; channels?: OtpChannelResult[] }>;
   verify: (code: string) => Promise<{ verificationToken: string }>;
 }
 
@@ -44,7 +46,10 @@ export function resolveOtpAdapter(opts: {
     return {
       send: async () => {
         const r = await contractsApi.sendOtp(contractId, { role });
-        return { sentTo: r.sentTo, cooldownSeconds: r.cooldownSeconds ?? 60 };
+        // T-0109 contract.md §3.0.1 — `channels` es opcional (back anterior
+        // a WU-1 no lo manda): passthrough puro, `describirCanales` ya sabe
+        // caer a `[]` cuando viene ausente.
+        return { sentTo: r.sentTo, cooldownSeconds: r.cooldownSeconds ?? 60, channels: r.channels };
       },
       verify: async (code: string) => {
         const r = await contractsApi.verifyOtp(contractId, { role, code });
@@ -114,6 +119,8 @@ export function OTPVerification({
   const [sentTo, setSentTo] = useState<string>('');
   const [cooldown, setCooldown] = useState(0);
   const [sendError, setSendError] = useState<string | null>(null);
+  /** T-0109 — `SendOtpResponse.channels`, opcional. `[]` con un back anterior a WU-1. */
+  const [channels, setChannels] = useState<OtpChannelResult[]>([]);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const hasSentRef = useRef(false);
@@ -130,13 +137,22 @@ export function OTPVerification({
     setStatus('sending');
     setSendError(null);
     try {
-      const { sentTo: maskedEmail, cooldownSeconds } = await otp.send();
+      const { sentTo: maskedEmail, cooldownSeconds, channels: canales } = await otp.send();
       setSentTo(maskedEmail);
       setCooldown(cooldownSeconds || 60);
+      setChannels(canales ?? []);
       setStatus('idle');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo enviar el código. Intenta de nuevo.';
-      setSendError(msg);
+      const d = describirErrorDeOtp(err);
+      setSendError(d.mensaje || 'No se pudo enviar el código. Intenta de nuevo.');
+      // CODIGO_EN_ESPERA (reenvío dentro del cooldown, contract.md §3.3):
+      // el back YA está contando ese cooldown — se refleja acá para que
+      // "Reenviar" no vuelva a pegarle antes de tiempo y repita el mismo 429.
+      if (d.segundosDeEspera) setCooldown(d.segundosDeEspera);
+      // CODIGO_NO_ENTREGADO trae el detalle por canal aunque el envío haya
+      // fallado — se muestra igual que un envío exitoso, para que la
+      // persona vea CUÁL canal falló y por qué.
+      if (d.channels?.length) setChannels(d.channels);
       setStatus('error');
     }
   }, [otp]);
@@ -156,6 +172,7 @@ export function OTPVerification({
       setSentTo('');
       setCooldown(0);
       setSendError(null);
+      setChannels([]);
     }
   }, [isOpen, sendOtp]);
 
@@ -184,7 +201,14 @@ export function OTPVerification({
       setStatus('verified');
       setTimeout(() => onVerified(verificationToken), 600);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Código incorrecto.';
+      const d = describirErrorDeOtp(err);
+      // CODIGO_INCORRECTO trae cuántos intentos quedan (contract.md §3.3) —
+      // se suma al mensaje del back, que ya es autosuficiente sin ese dato.
+      const msg = d.mensaje
+        ? d.intentosRestantes != null
+          ? `${d.mensaje} Te quedan ${d.intentosRestantes} ${d.intentosRestantes === 1 ? 'intento' : 'intentos'}.`
+          : d.mensaje
+        : 'Código incorrecto.';
       setStatus('error');
       setError(msg);
       setDigits(Array(OTP_LENGTH).fill(''));
@@ -259,13 +283,41 @@ export function OTPVerification({
             Verificación de identidad
           </DialogTitle>
           <DialogDescription>
-            {sentTo
-              ? <>Enviamos un código de 6 dígitos a <span className="font-medium text-fg">{sentTo}</span></>
-              : 'Preparando el envío del código a tu correo...'}
+            {/* T-0109 — con `channels` (back WU-1+) el detalle por canal de
+                abajo reemplaza este texto genérico; sin `channels` (back
+                anterior) se cae al texto de siempre. */}
+            {channels.length > 0
+              ? 'Enviamos tu código de verificación:'
+              : sentTo
+                ? <>Enviamos un código de 6 dígitos a <span className="font-medium text-fg">{sentTo}</span></>
+                : 'Preparando el envío del código...'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Detalle por canal (T-0109 contract.md §3.0.1/§3.3 — SendOtpResponse.channels
+              / CODIGO_NO_ENTREGADO.details.channels). Ausente en un back anterior a WU-1. */}
+          {channels.length > 0 && (
+            <ul className="space-y-1.5" data-testid="otp-canales">
+              {describirCanales(channels).map((linea) => (
+                <li
+                  key={linea.channel}
+                  className={cn(
+                    'flex items-center gap-2 text-sm',
+                    linea.enviado ? 'text-fg' : 'text-fg-muted'
+                  )}
+                >
+                  {linea.enviado ? (
+                    <CheckCircle className="h-4 w-4 flex-shrink-0 text-success" />
+                  ) : (
+                    <WarningCircle className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                  )}
+                  <span>{linea.detalle}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {/* Error de envío (antes de poder ingresar código) */}
           {sendError && (
             <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">

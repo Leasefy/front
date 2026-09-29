@@ -593,3 +593,270 @@ describe('<ConfigPerfilAgencia> — impuestos y retenciones', () => {
     expect(props.onSave).not.toHaveBeenCalled()
   })
 })
+
+describe('<ConfigPerfilAgencia> — perfil fiscal de la agencia (agenteRetenedor*)', () => {
+  // 🔴 T-0107: Agency.responsableIva es de TRES estados
+  // (`liquidacion-del-propietario.ts:cobraIvaSobreLaComision`, `!== false`
+  // cobra IVA). null = no declarado → SE COBRA; false = declarado no
+  // responsable → NO se cobra, y es una declaración legal (commit 90720fc3,
+  // 22-09, evitó repetir los 40.132 cuotas con IVA en cero). Un checkbox sin
+  // marcar que mande `false` apagaría el IVA de una agencia en silencio.
+  // Estas pruebas cubren los tres campos `agenteRetenedor*`, que comparten la
+  // misma semántica de tres estados (ver back: hoy sin consumidor propio,
+  // pero guardados igual de protegidos por si mañana lo tienen).
+
+  it('sin tocar nada, guardar NUNCA manda false para un campo fiscal no declarado (null)', async () => {
+    const props = render({
+      agency: {
+        ...AGENCY,
+        agenteRetenedorRenta: null,
+        agenteRetenedorIva: null,
+        agenteRetenedorIca: null,
+      },
+    })
+    enterEditMode()
+
+    // Toca un campo cualquiera, no los fiscales
+    const nameInput = Array.from(container.querySelectorAll('input')).find(
+      (i) => i.value === 'Inmobiliaria ABC',
+    ) as HTMLInputElement
+    act(() => {
+      setInputValue(nameInput, 'Inmobiliaria XYZ')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledTimes(1)
+    const payload = (props.onSave as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(payload).not.toHaveProperty('agenteRetenedorRenta')
+    expect(payload).not.toHaveProperty('agenteRetenedorIva')
+    expect(payload).not.toHaveProperty('agenteRetenedorIca')
+    expect(payload).toEqual({ name: 'Inmobiliaria XYZ' })
+  })
+
+  it('simplemente entrar y salir de edición sin tocar nada no manda ningún campo fiscal', async () => {
+    const props = render({
+      agency: { ...AGENCY, agenteRetenedorRenta: null, agenteRetenedorIva: null, agenteRetenedorIca: null },
+    })
+    enterEditMode()
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+  })
+
+  it('muestra «Sin definir» en modo lectura cuando el campo es null, no "No"', () => {
+    render({
+      agency: { ...AGENCY, agenteRetenedorRenta: null, agenteRetenedorIva: true, agenteRetenedorIca: false },
+    })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Sin definir')
+  })
+
+  it('clickear «No» en un campo sin definir manda { agenteRetenedorIca: false } explícitamente', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorIca: null } })
+    enterEditMode()
+
+    const btnNo = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorIca-false"]',
+    ) as HTMLButtonElement
+    expect(btnNo).toBeTruthy()
+    act(() => {
+      btnNo.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorIca: false })
+  })
+
+  it('clickear «Sí» manda { agenteRetenedorRenta: true }', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorRenta: null } })
+    enterEditMode()
+
+    const btnSi = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorRenta-true"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnSi.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorRenta: true })
+  })
+
+  it('volver a declarar «Sin definir» sobre un campo ya en true manda null explícito', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorIva: true } })
+    enterEditMode()
+
+    const btnVacio = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorIva-null"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnVacio.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorIva: null })
+  })
+
+  it('cancelar la edición después de tocar un campo fiscal no manda nada', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorRenta: null } })
+    enterEditMode()
+
+    const btnSi = container.querySelector(
+      '[data-testid="fiscal-agenteRetenedorRenta-true"]',
+    ) as HTMLButtonElement
+    act(() => {
+      btnSi.click()
+    })
+
+    act(() => {
+      findButton('Cancelar').click()
+    })
+
+    enterEditMode()
+    await clickSave()
+
+    expect(props.onSave).not.toHaveBeenCalled()
+  })
+
+  it('responsableIva se muestra de sólo lectura (no hay botones para tocarlo acá) y enlaza a Mandato', () => {
+    render({ agency: { ...AGENCY, responsableIva: null } })
+    expect(container.querySelector('[data-testid^="fiscal-responsableIva-"]')).toBeNull()
+    const link = container.querySelector('a[href="/panel/inmobiliaria/configuracion/mandato"]')
+    expect(link).toBeTruthy()
+  })
+})
+
+// ── T-0107 ronda 2 ──────────────────────────────────────────────────────────
+// Verificación encontró: `agenteRetenedorIva` y `agenteRetenedorIca` SÍ tienen
+// consumidor a nivel agencia — `facturas-de-proveedor.service.ts:tarifasPara`
+// (cuentas por pagar). Y no comparten semántica: IVA es opt-in (sólo `true`
+// practica), ICA es opt-out (sólo `false` NO practica). Un control uniforme
+// "Sin definir" en los tres da a entender que las dos filas se comportan
+// igual, y no es así. `agenteRetenedorRenta` sigue sin ningún consumidor a
+// nivel agencia (confirmado de nuevo, exhaustivo, sin match fuera de
+// Propietario/Contrato) — se lo trata distinto: mismo control, pero con una
+// leyenda fija que dice que no tiene efecto todavía.
+describe('<ConfigPerfilAgencia> — semántica real de cada campo (T-0107 ronda 2)', () => {
+  it('el botón «Sin definir» de reteIVA dice que hoy NO practica (opt-in)', () => {
+    render()
+    enterEditMode()
+    const boton = container.querySelector('[data-testid="fiscal-agenteRetenedorIva-null"]')
+    expect(boton?.textContent ?? '').toMatch(/no practica/i)
+  })
+
+  it('el botón «Sin definir» de reteICA dice que hoy SÍ practica (opt-out)', () => {
+    render()
+    enterEditMode()
+    const boton = container.querySelector('[data-testid="fiscal-agenteRetenedorIca-null"]')
+    expect(boton?.textContent ?? '').toMatch(/sí practica|si practica/i)
+  })
+
+  it('reteIVA en null: la leyenda dice que se comporta como «No» y no practica', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIva: null } })
+    const leyenda = container.querySelector('[data-testid="efecto-agenteRetenedorIva"]')
+    expect(leyenda?.textContent ?? '').toMatch(/no practica/i)
+    expect(leyenda?.textContent ?? '').toMatch(/«no»|como no/i)
+  })
+
+  it('reteIVA en true: la leyenda dice que sí practica', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIva: true } })
+    const leyenda = container.querySelector('[data-testid="efecto-agenteRetenedorIva"]')
+    expect(leyenda?.textContent ?? '').toMatch(/practica reteiva/i)
+    expect(leyenda?.textContent).not.toMatch(/no practica/i)
+  })
+
+  it('reteICA en null: la leyenda dice que se comporta como «Sí» y sí practica', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIca: null } })
+    const leyenda = container.querySelector('[data-testid="efecto-agenteRetenedorIca"]')
+    expect(leyenda?.textContent ?? '').toMatch(/sí practica|si practica/i)
+    expect(leyenda?.textContent ?? '').toMatch(/«sí»|como sí|como si/i)
+  })
+
+  it('reteICA en false: la leyenda dice que no practica', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIca: false } })
+    const leyenda = container.querySelector('[data-testid="efecto-agenteRetenedorIca"]')
+    expect(leyenda?.textContent ?? '').toMatch(/no practica/i)
+  })
+
+  it('la leyenda de reteIVA/reteICA reacciona en vivo al click, antes de guardar', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIva: null } })
+    enterEditMode()
+    const leyendaAntes = container.querySelector('[data-testid="efecto-agenteRetenedorIva"]')?.textContent ?? ''
+    expect(leyendaAntes).toMatch(/no practica/i)
+
+    const btnSi = container.querySelector('[data-testid="fiscal-agenteRetenedorIva-true"]') as HTMLButtonElement
+    act(() => {
+      btnSi.click()
+    })
+
+    const leyendaDespues = container.querySelector('[data-testid="efecto-agenteRetenedorIva"]')?.textContent ?? ''
+    expect(leyendaDespues).toMatch(/practica reteiva/i)
+    expect(leyendaDespues).not.toMatch(/no practica/i)
+  })
+
+  it('agenteRetenedorRenta muestra que no tiene efecto en el sistema todavía, sea cual sea el valor', () => {
+    const propsTrue = render({ agency: { ...AGENCY, agenteRetenedorRenta: true } })
+    expect(
+      container.querySelector('[data-testid="efecto-agenteRetenedorRenta"]')?.textContent ?? '',
+    ).toMatch(/no tiene (ningún )?efecto/i)
+    void propsTrue
+  })
+
+  it('clickear «No» en reteIVA sin definir manda { agenteRetenedorIva: false } explícitamente', async () => {
+    const props = render({ agency: { ...AGENCY, agenteRetenedorIva: null } })
+    enterEditMode()
+
+    const btnNo = container.querySelector('[data-testid="fiscal-agenteRetenedorIva-false"]') as HTMLButtonElement
+    act(() => {
+      btnNo.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ agenteRetenedorIva: false })
+  })
+
+  it('sin tocar reteIVA/reteICA, guardar otro campo nunca los manda (aunque tengan defaults opuestos)', async () => {
+    const props = render({
+      agency: { ...AGENCY, agenteRetenedorIva: null, agenteRetenedorIca: null },
+    })
+    enterEditMode()
+
+    const nameInput = Array.from(container.querySelectorAll('input')).find(
+      (i) => i.value === 'Inmobiliaria ABC',
+    ) as HTMLInputElement
+    act(() => {
+      setInputValue(nameInput, 'Inmobiliaria XYZ')
+    })
+
+    await clickSave()
+
+    const payload = (props.onSave as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(payload).not.toHaveProperty('agenteRetenedorIva')
+    expect(payload).not.toHaveProperty('agenteRetenedorIca')
+    expect(payload).toEqual({ name: 'Inmobiliaria XYZ' })
+  })
+
+  it('ReteIVA se marca «no se aplica» cuando la agencia no es agente de reteIVA (null u false)', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIva: null, reteivaPorcentaje: 15 } })
+    expect(container.querySelector('[data-testid="reteiva-no-se-aplica"]')).toBeTruthy()
+  })
+
+  it('ReteIVA NO se marca cuando sí es agente de reteIVA', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIva: true, reteivaPorcentaje: 15 } })
+    expect(container.querySelector('[data-testid="reteiva-no-se-aplica"]')).toBeNull()
+  })
+
+  it('ReteICA se marca «no se aplica» sólo cuando está declarado que no es agente (false)', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIca: false, reteicaPorMil: 9.66 } })
+    expect(container.querySelector('[data-testid="reteica-no-se-aplica"]')).toBeTruthy()
+  })
+
+  it('ReteICA NO se marca cuando está sin definir (se sigue practicando por defecto)', () => {
+    render({ agency: { ...AGENCY, agenteRetenedorIca: null, reteicaPorMil: 9.66 } })
+    expect(container.querySelector('[data-testid="reteica-no-se-aplica"]')).toBeNull()
+  })
+})

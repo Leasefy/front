@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest'
 import {
   fechaDeHoyEnBogota,
   formatoUsd,
+  horaConArticulo,
+  mesLargo,
   humanizarClave,
   nombreDelModelo,
   objetivoDesdeElCampo,
@@ -85,6 +87,17 @@ describe('lo demás', () => {
   it('hoy en Bogotá, no en UTC (a las 9 p. m. de Bogotá ya es mañana en UTC)', () => {
     expect(fechaDeHoyEnBogota(new Date('2026-09-30T02:00:00.000Z'))).toBe('2026-09-29')
     expect(fechaDeHoyEnBogota(new Date('2026-09-29T15:00:00.000Z'))).toBe('2026-09-29')
+  })
+
+  it('la hora de Bogotá con su artículo: «las 5:02», pero «la 1:15»', () => {
+    expect(horaConArticulo('2026-09-29T10:02:11.000Z')).toMatch(/^las 5:02\s?a/)
+    expect(horaConArticulo('2026-09-29T18:15:00.000Z')).toMatch(/^la 1:15\s?p/)
+    expect(horaConArticulo(null)).toBeNull()
+  })
+
+  it('el mes del gasto, en palabras', () => {
+    expect(mesLargo('2026-09')).toBe('septiembre de 2026')
+    expect(mesLargo('sep')).toBeNull()
   })
 
   it('una clave desconocida se lee como palabra, no como código', () => {

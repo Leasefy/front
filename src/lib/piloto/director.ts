@@ -105,6 +105,16 @@ export function horaEnBogota(iso: string | null, idioma: Idioma = 'es'): string 
   })
 }
 
+/**
+ * La hora con su artículo, para frases como «Plan de las 5:02 a. m.»:
+ * «la 1:15 p. m.» y «las 5:02 a. m.». En inglés, la hora sola.
+ */
+export function horaConArticulo(iso: string | null, idioma: Idioma = 'es'): string | null {
+  const hora = horaEnBogota(iso, idioma)
+  if (!hora || idioma === 'en') return hora
+  return /^1:/.test(hora) ? `la ${hora}` : `las ${hora}`
+}
+
 /** «29 de septiembre» (o con año si no es el año en curso). Acepta `YYYY-MM-DD` o ISO. */
 export function fechaLarga(fecha: string | null, idioma: Idioma = 'es', ahora: Date = new Date()): string | null {
   if (!fecha) return null
@@ -115,6 +125,16 @@ export function fechaLarga(fecha: string | null, idioma: Idioma = 'es', ahora: D
     day: 'numeric',
     month: 'long',
     ...(mismoAno ? {} : { year: 'numeric' }),
+    timeZone: 'America/Bogota',
+  })
+}
+
+/** «septiembre de 2026» para `2026-09`. */
+export function mesLargo(mes: string | null, idioma: Idioma = 'es'): string | null {
+  if (!mes || !/^\d{4}-\d{2}$/.test(mes)) return null
+  return new Date(`${mes}-15T12:00:00-05:00`).toLocaleDateString(localeDe(idioma), {
+    month: 'long',
+    year: 'numeric',
     timeZone: 'America/Bogota',
   })
 }

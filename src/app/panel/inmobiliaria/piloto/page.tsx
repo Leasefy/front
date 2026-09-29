@@ -55,6 +55,13 @@
  *
  * Fail-soft POR WIDGET: cada pieza maneja su propio cargando/error/vacío;
  * un endpoint caído no tumba la pantalla.
+ *
+ * ── El director (fase 1, 28-09-2026) ───────────────────────────────────────
+ * Arriba de todo, antes del pulso, la tarjeta del director: el plan del día y
+ * sus metas. Es la respuesta a una pregunta anterior a las tres de arriba:
+ * «¿qué hay que hacer hoy, y por qué?». Sus órdenes abren el MISMO cajón de
+ * la Bandeja (`acc:<accionId>`), con el por qué de la orden como respaldo.
+ * Apagado para la inmobiliaria, es una sola línea.
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -75,6 +82,8 @@ import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
 import { PilotoOperaSola } from '@/components/inmobiliaria/piloto/PilotoOperaSola'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
+import { PilotoDirector } from '@/components/inmobiliaria/piloto/PilotoDirector'
+import type { PorQueDeRespaldo } from '@/components/inmobiliaria/piloto/PilotoDirectorHoy'
 import {
   PilotoCajon,
   type PilotoApertura,
@@ -127,6 +136,12 @@ function PilotoContent() {
     const unico = alerta.items?.length === 1 ? alerta.items[0] : undefined
     setPila((p) => [...p, unico ? { tipo: 'item', id: unico.id } : { tipo: 'alerta', alerta }])
   }, [])
+  /** Una orden del director abre la fila de la Bandeja que la espera, con su por qué. */
+  const abrirDesdeElDirector = useCallback(
+    (accionId: string, porQue: PorQueDeRespaldo) =>
+      setPila((p) => [...p, { tipo: 'item', id: `acc:${accionId}`, porQue }]),
+    [],
+  )
   const volver = useCallback(() => setPila((p) => p.slice(0, -1)), [])
   const cerrarCajon = useCallback(() => setPila([]), [])
 
@@ -154,6 +169,17 @@ function PilotoContent() {
     ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
     return frases.length > 0 ? frases : undefined
   }, [briefing.data, briefing.error])
+
+  /**
+   * El por qué del caso abierto, por si el detalle del micro no lo trae: el
+   * de la orden del director con que se abrió, o el de su fila en la Bandeja.
+   */
+  const porQueDeRespaldo = useMemo(() => {
+    if (apertura?.tipo !== 'item') return null
+    if (apertura.porQue) return apertura.porQue
+    const fila = inbox.items.find((i) => i.id === apertura.id)
+    return fila ? { director: fila.director ?? null, motivo: fila.motivo ?? null } : null
+  }, [apertura, inbox.items])
 
   /** Cuántas decisiones llevan más de una semana paradas — la urgencia real. */
   const atrasadas = useMemo(() => {
@@ -210,6 +236,8 @@ function PilotoContent() {
           de 30 días, prenderlo (un administrador, con su código) y lo que le
           falta a la operación para que trabaje (CR-31: los días de plazo…). */}
       <PilotoActivacion />
+      {/* El director: el plan de hoy y sus metas (fase 1). Arriba de todo. */}
+      <PilotoDirector onAbrirAccion={abrirDesdeElDirector} />
 
       {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
       <PilotoPulso
@@ -261,6 +289,7 @@ function PilotoContent() {
         {...(pila.length > 1 ? { onVolver: volver } : {})}
         onAbrirItem={abrirItem}
         onAccionEjecutada={refetchTrasAccion}
+        porQueDeRespaldo={porQueDeRespaldo}
       />
 
       {/* La presentación: sola la primera vez; a mano desde el cajón */}

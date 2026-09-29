@@ -188,3 +188,70 @@ describe('PilotoBandeja', () => {
     expect(container.textContent).toContain('inmobiliaria.piloto.bandeja.queEs')
   })
 })
+
+/*
+ * Fase 1 del director (28-09-2026, director-api-front.md «Bandeja»): la fila
+ * dice por qué la pidió el director y a qué meta apunta, y SIEMPRE el motivo
+ * de la perilla — que se guardaba NOT NULL y ninguna pantalla pintaba.
+ */
+describe('PilotoBandeja — el director', () => {
+  const delDirector = (id: string, prioridad: number, desde: string): InboxItem =>
+    base({
+      id,
+      desde,
+      director: {
+        prioridad,
+        porQue: `Prioridad ${prioridad}: vence mañana.`,
+        evidencia: [{ tipo: 'deteccion', ref: 'r', texto: 'Cuota vencida', enlace: null }],
+        meta: { id: 'm-1', metrica: 'recaudo_a_tiempo', nombre: 'Recaudo a tiempo' },
+        alternativaDescartada: null,
+      },
+      motivo: 'Fase 1 del director: toda orden del director espera tu clic.',
+    })
+
+  const filas = () =>
+    [...container.querySelectorAll('[data-testid^="piloto-bandeja-fila-"]')].map((b) =>
+      b.getAttribute('data-testid')!.replace('piloto-bandeja-fila-', ''),
+    )
+
+  it('la fila del director dice su por qué y su meta', () => {
+    render({ items: [delDirector('acc:1', 80, '2026-09-28T10:00:00.000-05:00')] })
+    const d = container.querySelector('[data-testid="piloto-bandeja-director-acc:1"]')
+    expect(d?.textContent).toContain('Prioridad 80: vence mañana.')
+    expect(d?.textContent).toContain('inmobiliaria.piloto.director.porQue.meta(Recaudo a tiempo)')
+  })
+
+  it('🔴 el motivo de la perilla se lee SIEMPRE que venga, también en filas que no son del director', () => {
+    render({
+      items: [
+        delDirector('acc:1', 80, '2026-09-28T10:00:00.000-05:00'),
+        base({ id: 'acc:2', motivo: 'Copiloto: espera tu clic antes de enviar.' }),
+      ],
+    })
+    expect(container.querySelector('[data-testid="piloto-bandeja-motivo-acc:1"]')?.textContent).toContain(
+      'Fase 1 del director: toda orden del director espera tu clic.',
+    )
+    expect(container.querySelector('[data-testid="piloto-bandeja-motivo-acc:2"]')?.textContent).toContain(
+      'Copiloto: espera tu clic antes de enviar.',
+    )
+    expect(container.querySelector('[data-testid="piloto-bandeja-director-acc:2"]')).toBeNull()
+  })
+
+  it('ordena primero lo del director (de mayor a menor prioridad) y después quien más espera', () => {
+    render({
+      items: [
+        base({ id: 'viejo', desde: '2026-09-01T10:00:00.000-05:00' }),
+        delDirector('dir-40', 40, '2026-09-28T10:00:00.000-05:00'),
+        base({ id: 'nuevo', desde: '2026-09-27T10:00:00.000-05:00' }),
+        delDirector('dir-80', 80, '2026-09-28T11:00:00.000-05:00'),
+      ],
+    })
+    expect(filas()).toEqual(['dir-80', 'dir-40', 'viejo', 'nuevo'])
+  })
+
+  it('un `director` a medias (sin porQue) no pinta nada ni rompe la fila', () => {
+    render({ items: [base({ id: 'acc:3', director: { prioridad: 10 } as never })] })
+    expect(container.querySelector('[data-testid="piloto-bandeja-director-acc:3"]')).toBeNull()
+    expect(filas()).toEqual(['acc:3'])
+  })
+})

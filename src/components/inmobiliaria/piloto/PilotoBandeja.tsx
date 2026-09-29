@@ -36,6 +36,13 @@
  *     total real y se dice «Mostrando N de M» (hallazgo 6).
  *   · El toast dice lo que pasó («programé la llamada para mañana a las
  *     8:00»), no «listo» (hallazgo 2).
+ *
+ * ── El director (fase 1, 28-09-2026) ──────────────────────────────────────
+ *   · La fila que pidió el director dice su `porQue` y su meta
+ *     (`PorQueEnLaFila`), y va PRIMERO, de mayor a menor prioridad; después
+ *     el orden de siempre (`ordenarBandeja`, director-api-front.md).
+ *   · El `motivo` de la perilla se lee SIEMPRE que venga: se guardaba NOT
+ *     NULL y ninguna pantalla lo pintaba.
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -68,6 +75,9 @@ import { useI18n } from '@/lib/i18n'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
 import { accionPregunta, runInboxAccion, type InboxItem } from '@/lib/api/piloto'
+import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
+import { ordenarBandeja } from '@/lib/piloto/director'
+import { PorQueEnLaFila } from './PilotoDirectorPorQue'
 
 const POR_PAGINA = 10
 
@@ -159,11 +169,15 @@ export function PilotoBandeja({
     return [...cuenta.entries()].sort((a, b) => b[1] - a[1])
   }, [items])
 
-  /** Quien más espera, primero: la bandeja se lee de arriba hacia abajo. */
+  /**
+   * Lo que pidió el director primero (de mayor a menor prioridad); después,
+   * quien más espera: la bandeja se lee de arriba hacia abajo. El `director`
+   * se normaliza acá: uno a medias (sin `porQue`) cuenta como sin director.
+   */
   const visibles = useMemo(() => {
     const filtrados = fuenteFiltro ? items.filter((i) => i.fuente === fuenteFiltro) : items
-    return [...filtrados].sort(
-      (a, b) => new Date(a.desde).getTime() - new Date(b.desde).getTime(),
+    return ordenarBandeja(
+      filtrados.map((i) => ({ ...i, director: normalizarDirectorDeLaAccion(i.director) })),
     )
   }, [items, fuenteFiltro])
 
@@ -368,6 +382,9 @@ export function PilotoBandeja({
                       </span>
                     )}
                   </p>
+                  {/* Fase 1 del director: su por qué y su meta, y el motivo
+                      de la perilla SIEMPRE que venga. */}
+                  <PorQueEnLaFila director={item.director} motivo={item.motivo} id={item.id} />
                   {item.accion?.permitida === false && item.accion.porQueNo && (
                     <p
                       className="mt-1 text-caption text-fg-subtle"

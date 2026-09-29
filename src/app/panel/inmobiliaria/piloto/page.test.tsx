@@ -68,6 +68,9 @@ vi.mock('@/components/inmobiliaria/piloto/PilotoAutonomia', () => ({ PilotoAuton
 vi.mock('@/components/inmobiliaria/piloto/PilotoOperaSola', () => ({ PilotoOperaSola: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoFeed', () => ({ PilotoFeed: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCajon', () => ({ PilotoCajon: () => null }))
+vi.mock('@/components/inmobiliaria/piloto/PilotoDirector', () => ({
+  PilotoDirector: () => <div data-testid="piloto-director-doble" />,
+}))
 vi.mock('@/components/inmobiliaria/piloto/PilotoProcesos', () => ({ PilotoProcesos: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCatalogo', () => ({ PilotoCatalogo: () => null }))
 
@@ -112,6 +115,17 @@ describe('/piloto — detrás de PageGuard', () => {
     expect(container.querySelector('[data-testid="piloto-page"]')).not.toBeNull()
     expect(h.usePilotoInbox).toHaveBeenCalled()
     expect(h.replace).not.toHaveBeenCalled()
+  })
+
+  it('la tarjeta del director va arriba de todo, antes del pulso (fase 1)', async () => {
+    h.permisos = { isLoading: false, isAdmin: false, agencyRole: 'AGENTE' }
+    await render(<PilotoPage />)
+    const pagina = container.querySelector('[data-testid="piloto-page"]')!
+    const director = pagina.querySelector('[data-testid="piloto-director-doble"]')
+    expect(director).not.toBeNull()
+    // Hija directa, justo después del encabezado.
+    expect(director?.parentElement).toBe(pagina)
+    expect(director?.previousElementSibling?.tagName).toBe('HEADER')
   })
 })
 

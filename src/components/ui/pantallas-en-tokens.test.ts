@@ -187,6 +187,14 @@ const COBERTURA: string[] = [
   // Nace en tokens (2026-09-08): entra acá el mismo día, para que no haya que
   // «pasarla» después.
   'components/contabilidad/ComprobantesDelSistemaAnterior.tsx',
+  // — el director del Piloto (fase 1, 2026-09-28) ————————————————
+  // Nace en tokens y en primitivas: la tarjeta «Hoy», las metas, el por qué
+  // de la Bandeja y la configuración (gasto de IA y grupo de control).
+  'components/inmobiliaria/piloto/PilotoDirector.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorHoy.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorMetas.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorPorQue.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorAjustes.tsx',
   // — listados diarios ————————————————————————————————————————
   'components/inmobiliaria/InquilinosTable.tsx',
   'components/inmobiliaria/InquilinoDrawer.tsx',

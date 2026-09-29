@@ -111,6 +111,37 @@ export function accionPregunta(accion: InboxAccion): boolean {
   return (accion.campos?.length ?? 0) > 0 || Boolean(accion.confirmacion)
 }
 
+// ── El director (fase 1, 28-09-2026): lo que la Bandeja gana ───────────────
+//
+// Cambio ADITIVO de `director-api-front.md`: cada ítem que venga de
+// `acciones_del_piloto` gana `director` (cuando la fila la pidió el director) y
+// `motivo` (la frase de la perilla, que se guardaba NOT NULL y ninguna
+// pantalla pintaba). Los dos son opcionales: un micro anterior no los manda.
+
+/** La meta a la que apunta algo del director. */
+export interface MetaDelDirectorRef {
+  id: string
+  metrica: string
+  nombre: string
+}
+
+/** Una evidencia que el director cita. Sólo sale de la foto del día (I-5). */
+export interface EvidenciaDelDirector {
+  tipo: string
+  ref: string
+  texto: string
+  enlace: string | null
+}
+
+/** Por qué el director pidió esta fila de la Bandeja. */
+export interface DirectorDeLaAccion {
+  prioridad: number
+  porQue: string
+  evidencia: EvidenciaDelDirector[]
+  meta: MetaDelDirectorRef | null
+  alternativaDescartada: string | null
+}
+
 export interface InboxItem {
   id: string
   fuente: string
@@ -124,6 +155,10 @@ export interface InboxItem {
   desde: string
   href: string
   accion?: InboxAccion
+  /** La fila la pidió el director: su por qué, su evidencia y su meta. */
+  director?: DirectorDeLaAccion | null
+  /** La frase de la perilla: por qué esto espera un clic. Se muestra SIEMPRE que venga. */
+  motivo?: string
 }
 
 export interface PilotoInboxResponse {
@@ -197,7 +232,8 @@ export interface PilotoFetchResult<T> {
  */
 export const ERROR_SIN_RESPUESTA = 'timeout: el Piloto no contestó a tiempo'
 
-async function getJson<T>(
+/** La lectura GET del micro que usan todas las tarjetas del Piloto (también las del director). */
+export async function getJson<T>(
   path: string,
   signal?: AbortSignal,
   /** Tope de espera (ms). Sin tope, una lectura colgada dejaba el esqueleto para siempre. */
@@ -436,6 +472,9 @@ export interface PilotoDetalle {
   acciones: InboxAccion[]
   enlaces: DetalleEnlace[]
   nota?: string
+  /** Lo mismo que el ítem de la Bandeja (cambio aditivo del director). */
+  director?: DirectorDeLaAccion | null
+  motivo?: string
 }
 
 /**

@@ -11,6 +11,7 @@ import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
+import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
@@ -97,6 +98,18 @@ export default function MfaVerifyPage() {
    * `alActivarElNuevo`, como la verificación normal.
    */
   const enUnFlujoPropio = sinLaApp || restablecido || cambiandoElFactor;
+
+  /**
+   * 🔴 Nico, 29-09: pidió el código al correo, la página se montó de nuevo
+   * mientras lo buscaba y volvió a las casillas de la APP; escribió ahí el
+   * código del correo y le dijo «Código incorrecto». Si hay un restablecimiento
+   * pedido y vigente para esta cuenta, se vuelve solo a las casillas del correo
+   * (`restablecimiento-pendiente.ts`).
+   */
+  const usuarioId = typeof user?.id === 'string' ? user.id : null;
+  useEffect(() => {
+    if (usuarioId && tieneFactor === true && leerRestablecimientoPendiente(usuarioId)) setSinLaApp(true);
+  }, [usuarioId, tieneFactor]);
 
   // If MFA is not required, redirect away. T-0099: if enrollment turns out to
   // be what's actually pending (defensive — these two states are meant to be
@@ -301,6 +314,7 @@ export default function MfaVerifyPage() {
               {sinLaApp && !restablecido ? (
                 <RestablecerSegundoFactorPorCorreo
                   correo={user?.email}
+                  usuarioId={usuarioId}
                   onRestablecido={() => {
                     setRestablecido(true);
                     setSinLaApp(false);

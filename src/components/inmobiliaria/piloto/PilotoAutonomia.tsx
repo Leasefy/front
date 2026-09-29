@@ -25,6 +25,11 @@
  * distinciones. Por agente, la frase la pone el micro (su tabla de verdad), y
  * los agentes cuyo modo no cambia nada lo dicen: «Todavía no actúa solo».
  * Los datos vienen de UNA petición (la flota), no de doce.
+ *
+ * ── El director (fase 1, 28-09-2026) ───────────────────────────────────────
+ * Al final del panel, la configuración del director: el gasto de IA del mes
+ * contra su tope (sólo un administrador) y el grupo de control
+ * (`PilotoDirectorAjustes`). Se lee al abrir el panel, como todo lo de acá.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -54,6 +59,7 @@ import {
   type GobiernoItem,
 } from '@/lib/api/piloto'
 import { useAuth } from '@/lib/auth'
+import { PilotoDirectorAjustes } from './PilotoDirectorAjustes'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
 
@@ -385,6 +391,9 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
             )
           })}
         </div>
+
+        {/* La configuración del director: gasto de IA y grupo de control. */}
+        <PilotoDirectorAjustes />
       </SheetContent>
     </Sheet>
   )

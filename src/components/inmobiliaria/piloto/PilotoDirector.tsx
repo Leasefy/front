@@ -187,19 +187,23 @@ export function PilotoDirectorVista({
       )}
 
       <Tabs value={pestana} onValueChange={(v) => setPestana(v as PestanaDelDirector)}>
-        <TabsList className="mx-6 mt-4 justify-start" aria-label={t('inmobiliaria.piloto.director.titulo')}>
-          <TabsTrigger value="hoy" data-testid="piloto-director-pestana-hoy">
-            {t('inmobiliaria.piloto.director.pestanas.hoy')}
-          </TabsTrigger>
-          <TabsTrigger value="metas" data-testid="piloto-director-pestana-metas">
-            {t('inmobiliaria.piloto.director.pestanas.metas')}
-            {porAceptar > 0 && (
-              <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
-                {t('inmobiliaria.piloto.director.pestanas.porAceptar', { n: String(porAceptar) })}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        {/* Padding en el envoltorio y no margen en la lista: la lista trae
+            `max-w-full` y, con margen, pasaría del ancho de la tarjeta. */}
+        <div className="px-6 pt-4">
+          <TabsList className="justify-start" aria-label={t('inmobiliaria.piloto.director.titulo')}>
+            <TabsTrigger value="hoy" data-testid="piloto-director-pestana-hoy">
+              {t('inmobiliaria.piloto.director.pestanas.hoy')}
+            </TabsTrigger>
+            <TabsTrigger value="metas" data-testid="piloto-director-pestana-metas">
+              {t('inmobiliaria.piloto.director.pestanas.metas')}
+              {porAceptar > 0 && (
+                <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
+                  {t('inmobiliaria.piloto.director.pestanas.porAceptar', { n: String(porAceptar) })}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="hoy" className="px-6 pb-6 pt-5">
           <PilotoDirectorHoy
             hoy={data}

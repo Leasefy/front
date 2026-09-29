@@ -1502,6 +1502,198 @@
           "texto": "Manual, Copiloto o Automático: el modo dice quién decide antes de que algo salga. Lo ves en «Piloto», en la barra de arriba."
         },
         "cta": "Entendido"
+      },
+      "director": {
+        "titulo": "El director",
+        "queEs": "Cada mañana ordena el día de tus agentes: qué hace cada uno, sobre quién y por qué. Todo lo que pide espera tu clic en la Bandeja.",
+        "apagado": "El director todavía no está prendido para tu inmobiliaria",
+        "cargando": "Leyendo el plan de hoy…",
+        "queEsFallo": "el plan del director",
+        "sinNombre": "Sin nombre",
+        "sinPlan": "Todavía no hay un plan. El director planea cada mañana, de lunes a sábado.",
+        "pestanas": {
+          "hoy": "Hoy",
+          "metas": "Metas",
+          "porAceptar": "{{n}} por aceptar"
+        },
+        "replanear": {
+          "boton": "Volver a planear",
+          "planeando": "Planeando…",
+          "arranco": "El director está volviendo a planear. Toma uno o dos minutos.",
+          "enCurso": "Ya hay un plan en curso. Te lo muestro apenas termine.",
+          "soloAdmin": "Solo un administrador puede volver a planear.",
+          "fallo": "No se pudo volver a planear. Intenta de nuevo en un momento.",
+          "seCanso": "Sigue planeando. Vuelve a mirar en unos minutos."
+        },
+        "ciclo": {
+          "listo": "Plan de {{hora}}",
+          "replan": "Replaneado a {{hora}}",
+          "enCurso": "Planeando desde {{hora}}…",
+          "enCursoSinHora": "Planeando…",
+          "fallido": "El plan no salió",
+          "sinModelo": "Plan de {{hora}}, con reglas fijas",
+          "sinModeloSinHora": "Plan con reglas fijas",
+          "costo": "costó",
+          "otroDia": "Es el plan del {{fecha}}: hoy todavía no hay uno.",
+          "fallidoTitulo": "El director no pudo armar el plan",
+          "fallidoTexto": "Los agentes siguen con su trabajo de siempre.",
+          "fallidoAdmin": "Puedes volver a planear.",
+          "sinModeloTitulo": "Hoy planeó con reglas fijas, sin IA",
+          "sinModeloPorque": "Por qué: {{porque}}."
+        },
+        "secciones": {
+          "prioridades": "Prioridades",
+          "ordenes": "Órdenes de hoy",
+          "retenciones": "Retenciones",
+          "sugerencias": "Sugerencias",
+          "propuestas": "Propuestas de autonomía",
+          "alertas": "Alertas",
+          "pensamiento": "Cómo lo pensó",
+          "rechazadas": "Lo que el director quiso y la regla no dejó"
+        },
+        "orden": {
+          "cuando": "Cuándo: {{cuando}}",
+          "conflicto": "Choque resuelto: {{que}}",
+          "decidir": "Decidir",
+          "verDetalle": "Ver el detalle",
+          "verTodas": "Ver las {{n}} órdenes",
+          "verMenos": "Ver menos",
+          "ninguna": "Hoy el director no dio órdenes.",
+          "estado": {
+            "en_bandeja": "Espera tu clic",
+            "aprobada": "Aprobada",
+            "ejecutada": "Hecha",
+            "descartada": "Descartada",
+            "fallida": "Falló",
+            "deshecha": "Deshecha",
+            "vencida": "Venció",
+            "la_hace_el_agente": "La hace el agente solo"
+          }
+        },
+        "retencion": {
+          "agentes": "No le escriben: {{agentes}}",
+          "hasta": "hasta el {{fecha}}",
+          "estado": {
+            "en_bandeja": "Espera tu clic",
+            "activa": "Activa",
+            "vencida": "Venció",
+            "descartada": "Descartada"
+          }
+        },
+        "propuesta": {
+          "cambio": "pasar de {{de}} a {{a}}"
+        },
+        "grupoDeControl": {
+          "omitidas": "Grupo de control prendido · órdenes que no se dieron hoy por estar en el grupo: {{n}}",
+          "ninguna": "Grupo de control prendido · hoy no dejó por fuera ninguna orden."
+        },
+        "porQue": {
+          "titulo": "Por qué lo pide el director",
+          "elDirector": "El director:",
+          "meta": "Meta: {{meta}}",
+          "descarto": "Descartó: {{que}}",
+          "motivo": "Por qué espera tu clic: {{motivo}}",
+          "motivoTitulo": "Por qué espera tu clic"
+        },
+        "metas": {
+          "queEs": "El director propone cinco metas con la historia de tu inmobiliaria. Tú las aceptas o las ajustas.",
+          "queEsFallo": "las metas del director",
+          "cargando": "Leyendo las metas…",
+          "sinFuente": "No pude leer las metas: el Piloto no las publica todavía.",
+          "soloAdmin": "Solo un administrador puede aceptar, ajustar o pausar las metas.",
+          "vacia": "Todavía no hay metas.",
+          "vaciaHint": "El director las propone con la historia de tu inmobiliaria apenas se prende.",
+          "lineaBase": "Línea base",
+          "objetivo": "Objetivo",
+          "actual": "Hoy",
+          "estimado": "Estimado",
+          "estimadoPorQue": "Es un estimado: cuenta las acciones aprobadas o hechas que no se deshicieron, por el tiempo que ahorra cada una.",
+          "hasta": "hasta el {{fecha}}",
+          "direccion": {
+            "subir": "Subir",
+            "bajar": "Bajar"
+          },
+          "estado": {
+            "propuesta": "Propuesta",
+            "activa": "Activa",
+            "pausada": "Pausada",
+            "cumplida": "Cumplida",
+            "vencida": "Vencida"
+          },
+          "aceptar": "Aceptar",
+          "reactivar": "Reactivar",
+          "ajustar": "Ajustar",
+          "pausar": "Pausar",
+          "guardar": "Guardar",
+          "cancelar": "Cancelar",
+          "nuevoObjetivo": "Nuevo objetivo ({{unidad}})",
+          "unidad": {
+            "porcentaje": "%",
+            "dias": "días",
+            "horas": "horas"
+          },
+          "escribeUnNumero": "Escribe un número.",
+          "objetivoInvalido": "Ese objetivo no se puede. Revisa el número.",
+          "fallo": "No se pudo guardar la meta. Intenta de nuevo.",
+          "toast": {
+            "aceptar": "Meta aceptada: {{meta}}",
+            "ajustar": "Meta ajustada: {{meta}}",
+            "pausar": "Meta pausada: {{meta}}"
+          },
+          "serie": "{{meta}}: pasó de {{desde}} a {{hasta}} en los días que se muestran.",
+          "historial": "Historial ({{n}})",
+          "hito": {
+            "propuso": "la propuso",
+            "acepto": "la aceptó",
+            "ajusto": "la ajustó",
+            "pauso": "la pausó",
+            "cumplio": "se cumplió",
+            "vencio": "venció"
+          },
+          "hitoObjetivo": "objetivo {{valor}}"
+        },
+        "gasto": {
+          "titulo": "Gasto de IA del mes",
+          "tituloDelMes": "Gasto de IA de {{mes}}",
+          "queEsFallo": "el gasto de IA",
+          "de": "de",
+          "barra": "Gasto de IA contra el tope del mes",
+          "tramo": {
+            "pequena": "Tope de una inmobiliaria pequeña (menos de 150 contratos activos).",
+            "mediana": "Tope de una inmobiliaria mediana (de 150 a 999 contratos activos).",
+            "grande": "Tope de una inmobiliaria grande (1.000 contratos activos o más)."
+          },
+          "escalon": {
+            "normal": "Normal: el director planea con la IA de siempre.",
+            "ahorro": "Ahorro: para no pasarse del tope, el director planea con una IA más económica.",
+            "sinModelo": "Sin IA: se llegó al tope; el director planea con reglas fijas hasta el mes que viene."
+          },
+          "porComponente": "Por componente",
+          "porDia": "Día a día",
+          "noCuenta": "No cuenta",
+          "componente": {
+            "directorPlan": "Plan del día del director",
+            "directorReplan": "Volver a planear",
+            "chat": "Chat del Piloto",
+            "cobranza": "Cobranza (Laura)"
+          },
+          "laura": "Lo de cobranza (Laura) no cuenta: se cobra aparte.",
+          "excluido": "Este mes van"
+        },
+        "experimento": {
+          "titulo": "Grupo de control",
+          "queEsFallo": "el grupo de control",
+          "explicacion": "El {{porcentaje}} % de tus deudores, contratos e inmuebles, al azar y siempre los mismos, no recibe órdenes del director. Así se mide si el director mejora tus metas. Siguen recibiendo todo lo automático de hoy y lo que exige la ley.",
+          "prendido": "Prendido · entidades en el grupo: {{n}}",
+          "prendidoDesde": "Prendido desde el {{fecha}} · entidades en el grupo: {{n}}",
+          "apagado": "Apagado",
+          "apagarNoBorra": "Apagarlo no cambia el grupo: si lo vuelves a prender, son las mismas entidades.",
+          "switchAria": "Grupo de control del director",
+          "soloAdmin": "Solo un administrador puede prenderlo o apagarlo.",
+          "toastPrendido": "Grupo de control prendido.",
+          "toastApagado": "Grupo de control apagado.",
+          "fallo": "No se pudo cambiar el grupo de control. Intenta de nuevo."
+        }
       }
     },
     "mobileNav": {

@@ -103,7 +103,6 @@ describe('OwnerNameStepForm — representante legal', () => {
     escribir('agencyName', 'Inmobiliaria Andes SAS')
     escribir('agencyNit', '900123456')
     escribir('legalRepresentative', 'Roberto Gómez') // el dueño
-    escribir('legalDocumentNumber', '80123456')
     enviar()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -111,7 +110,6 @@ describe('OwnerNameStepForm — representante legal', () => {
       firstName: 'Alex',
       lastName: 'Ramírez',
       legalRepresentative: 'Roberto Gómez',
-      legalDocumentNumber: '80123456',
     })
   })
 
@@ -127,19 +125,6 @@ describe('OwnerNameStepForm — representante legal', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('el documento del representante es opcional', () => {
-    const onSubmit = render()
-
-    act(() => { tildeDeRepresentante().click() })
-    escribir('ownerFullName', 'Alex Ramírez')
-    escribir('agencyName', 'Inmobiliaria Andes SAS')
-    escribir('agencyNit', '900123456')
-    escribir('legalRepresentative', 'Roberto Gómez')
-    enviar()
-
-    expect(onSubmit).toHaveBeenCalledTimes(1)
-    expect(onSubmit.mock.calls[0][0].legalDocumentNumber).toBeUndefined()
-  })
 
   it('no regaña por un campo que nadie tocó: el tilde no pinta en rojo el nombre', () => {
     render()

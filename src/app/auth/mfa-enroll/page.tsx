@@ -149,11 +149,14 @@ export default function MfaEnrollPage() {
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
           <div
-            className="relative flex w-full flex-col justify-center px-4 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[500px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-lg lg:ring-1 lg:ring-border-faint"
+            className="relative flex w-full flex-col justify-center px-4 py-10 sm:px-10 lg:max-h-[calc(100vh-4rem)] lg:w-[540px] lg:justify-start lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-lg lg:ring-1 lg:ring-border-faint"
             data-lenis-prevent
             data-testid="mfa-enroll-tarjeta"
           >
-            <div className="mx-auto w-full max-w-md space-y-7">
+            {/* `my-auto` y no `justify-center`: si el contenido es más alto que
+                la tarjeta, `justify-center` corta el principio y no se puede
+                subir a verlo (pasaba a 1440×900 con el paso 1). */}
+            <div className="mx-auto w-full max-w-md space-y-7 lg:my-auto lg:max-w-none">
               <ActivarSegundoFactorPasoAPaso
                 onActivado={alActivar}
                 onYaTeniaFactor={alYaTenerFactor}

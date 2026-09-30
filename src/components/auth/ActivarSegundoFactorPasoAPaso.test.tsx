@@ -117,7 +117,7 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     expect(porTestId('indicador-escanear')?.textContent).toContain('Escanea el código')
     expect(porTestId('indicador-codigo')?.textContent).toContain('Escribe el código')
     expect(texto).toContain('Paso 1 de 3')
-    expect(texto).toContain('Authy o 1Password')
+    expect(texto).toContain('Authy, 1Password')
     // Qué hacer si cambia de celular: el flujo que YA existe, sin inventar otro.
     expect(texto).toContain('No tengo la app de autenticación')
   })

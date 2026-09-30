@@ -45,10 +45,10 @@ import {
   CheckCircle,
   Copy,
   DeviceMobile,
+  EnvelopeSimple,
   GoogleLogo,
   GooglePlayLogo,
   Key,
-  QrCode,
   ShieldCheck,
   WarningCircle,
   WindowsLogo,
@@ -620,7 +620,7 @@ function PasoDescargar({
       aria-label={`Descargar ${app} en ${etiqueta} (se abre en otra pestaña)`}
       className={cn(
         buttonVariants({ variant: resaltada ? 'default' : 'outline', size: 'sm' }),
-        'flex-1 justify-center gap-1.5',
+        'flex-1 justify-center gap-1.5 sm:flex-none',
       )}
     >
       {etiqueta === 'App Store' ? (
@@ -635,11 +635,11 @@ function PasoDescargar({
   return (
     <div className="space-y-5" data-testid="paso-descargar">
       <p className="text-pretty text-body-sm text-fg-muted">
-        Es gratis y genera un código nuevo cada 30 segundos que solo ves tú. Te recomendamos una de
-        estas dos:
+        Es gratis y genera un código nuevo cada 30 segundos que solo ves tú. Te recomendamos
+        una de estas dos, aunque sirve cualquier app de códigos de 6 dígitos (Authy, 1Password…).
       </p>
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 sm:grid-cols-2">
         {APPS_RECOMENDADAS.map((app) => (
           <li
             key={app.id}
@@ -655,7 +655,7 @@ function PasoDescargar({
                 <span className="block text-caption text-fg-subtle">{app.de}</span>
               </span>
             </div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2 sm:flex-col">
               {plataforma !== 'android'
                 ? tienda(app.appStore, 'App Store', app.nombre, plataforma === 'ios')
                 : null}
@@ -668,9 +668,6 @@ function PasoDescargar({
       </ul>
 
       <div className="space-y-2 text-pretty text-caption text-fg-muted">
-        <p>
-          Sirve cualquier app de códigos de 6 dígitos, como Authy o 1Password. Si ya tienes una, úsala.
-        </p>
         {plataforma === 'escritorio' ? (
           <p className="flex gap-2">
             <DeviceMobile className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -681,7 +678,7 @@ function PasoDescargar({
           </p>
         ) : null}
         <p className="flex gap-2">
-          <QrCode className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <EnvelopeSimple className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
             ¿Cambias de celular o pierdes la app? Al entrar, toca «No tengo la app de autenticación» y
             lo restableces con un código que te mandamos al correo.

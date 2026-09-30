@@ -16,6 +16,8 @@ import { useMemo, useState } from 'react'
 import { SegmentedControl } from '@leasefy/cadence'
 import { HeartStraight, UsersThree } from '@phosphor-icons/react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { useRiesgoDeVinci } from '@/lib/hooks/retencion/use-vinci'
@@ -39,6 +41,12 @@ export default function BandejaClient() {
         .sort((a, b) => b.puntaje - a.puntaje),
     [data, filtro, soloEnRiesgo],
   )
+  // La paginación de Contratos: sin el filtro del umbral son todos los que
+  // Vinci midió (cientos en una inmobiliaria grande). Cambiar un filtro vuelve
+  // a la página 1.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } = useTablePagination(casos, {
+    resetKey: `${filtro}:${soloEnRiesgo}`,
+  })
   const cuenta = (p: Filtro) =>
     (data?.casos ?? []).filter((c) => (p === 'todos' || c.poblacion === p) && (soloEnRiesgo ? c.enRiesgo : true)).length
   // Los que el filtro «Sólo los que pasan el umbral» esconde: por debajo del umbral o en cobranza.
@@ -103,7 +111,7 @@ export default function BandejaClient() {
               </div>
             </div>
             <TablaDeCasos
-              casos={casos}
+              casos={pageItems}
               conPlan
               vacio={
                 <SinDatos
@@ -118,6 +126,19 @@ export default function BandejaClient() {
                 />
               }
             />
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate ? (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            ) : null}
           </TarjetaDeVinci>
         ) : null}
       </EstadoDeDatos>

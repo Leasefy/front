@@ -86,7 +86,9 @@ export function TarjetaDeVinci({
       data-testid={rest['data-testid']}
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="flex min-w-0 items-center gap-3">
+        {/* Arriba, no al centro: con una descripción de varias líneas (el
+            teléfono) el ícono quedaba flotando a media altura del párrafo. */}
+        <div className="flex min-w-0 items-start gap-3">
           {Icono ? (
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted">
               <Icono className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />

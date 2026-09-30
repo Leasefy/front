@@ -1679,6 +1679,73 @@ describe('al resolverse la migración se refresca la sesión (para pedir el segu
     expect(refreshUser).toHaveBeenCalledTimes(1);
   });
 
+  /*
+   * 🔴 Resuelta la migración, la ruta del estado ya pide el segundo factor:
+   * volver a preguntar da 403. El muro tiene que salir con lo que devolvió
+   * `terminar`/`omitir`, o la persona queda encerrada sin bienvenida.
+   */
+  it('🔴 «Ya terminé» sale aunque el estado ya pida el segundo factor (403): usa lo que devolvió terminar', async () => {
+    const completada = { bloquea: false, resuelta: 'completada', pasos: LISTOS };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: LISTOS })
+      .mockRejectedValue(new Error('403 SEGUNDO_FACTOR_REQUERIDO'));
+    estadoMock.terminar.mockResolvedValue(completada);
+    await pintarConSesion();
+
+    await click('muro-ya-termine');
+    await act(async () => {});
+
+    expect(q('muro-migracion')).toBeNull();
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('🔴 la ✕ sale aunque el estado ya pida el segundo factor (403): usa lo que devolvió omitir', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockRejectedValue(new Error('403 SEGUNDO_FACTOR_REQUERIDO'));
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintarConSesion();
+
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(q('muro-migracion')).toBeNull();
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('«No requiero migración» guarda el recordatorio ANTES de omitir (después ya pide el segundo factor)', async () => {
+    localStorage.removeItem('leasefy:migracion:decision:agencia');
+    const orden: string[] = [];
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockRejectedValue(new Error('403'));
+    estadoMock.recordatorio.mockImplementation(async () => {
+      orden.push('recordatorio');
+      return abierto;
+    });
+    estadoMock.omitir.mockImplementation(async () => {
+      orden.push('omitir');
+      return abierto;
+    });
+    await pintarConSesion();
+
+    const boton = document.querySelector('[data-testid="no-requiero-migracion"]') as HTMLElement;
+    await act(async () => {
+      boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {});
+
+    expect(orden).toEqual(['recordatorio', 'omitir']);
+    expect(q('muro-migracion')).toBeNull();
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
   it('si el omitir falla el muro sigue y NO se pide el segundo factor', async () => {
     estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
     estadoMock.omitir.mockRejectedValue(new Error('500'));
@@ -1732,5 +1799,45 @@ describe('🔴 la primera consulta del estado falla: se vuelve a preguntar (Nico
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('la señal para lo que no puede salir encima del muro (el recorrido del panel)', () => {
+  function Espia({ ver }: { ver: (tapado: boolean | undefined) => void }) {
+    ver(useMigracion()?.panelTapado);
+    return null;
+  }
+
+  it('`panelTapado` vale true con el muro y con la bienvenida, y false al entrar', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    const LISTOS = RECIEN_LLEGADA.map((p) => ({ ...p, estado: 'listo' as const, conteo: 3 }));
+    const completada = { bloquea: false, resuelta: 'completada', pasos: LISTOS };
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: LISTOS });
+    estadoMock.terminar.mockResolvedValue(completada);
+    let ultimo: boolean | undefined;
+
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <MuroDeMigracion>
+          <Espia ver={(t) => (ultimo = t)} />
+        </MuroDeMigracion>,
+      );
+    });
+    await act(async () => {});
+    expect(ultimo).toBe(true);
+
+    await click('muro-ya-termine');
+    await act(async () => {});
+    // La bienvenida sigue tapando.
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    expect(ultimo).toBe(true);
+
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+    expect(ultimo).toBe(false);
   });
 });

@@ -231,7 +231,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
 
       <div>
         <label htmlFor="primaryContactEmail" className="block text-sm font-medium text-fg mb-2">
-          Correo de contacto principal <span className="text-danger">*</span>
+          Correo de la cuenta <span className="text-danger">*</span>
         </label>
         <Input
           id="primaryContactEmail"
@@ -241,12 +241,18 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           spellCheck={false}
           {...register('primaryContactEmail')}
         />
+        {/* No es «el del representante legal» (eso se preguntó antes): queda
+            asociado a la cuenta de la inmobiliaria y es a donde el micro manda
+            el reporte diario de cartera y los avisos (Nico, 30-09-2026). */}
+        <p className="mt-1.5 text-xs text-fg-subtle">
+          Queda asociado a la cuenta de la inmobiliaria: ahí te llegan los reportes y avisos de Leasefy.
+        </p>
         <FieldError message={errors.primaryContactEmail?.message} />
       </div>
 
       <div>
         <label htmlFor="primaryContactPhone" className="block text-sm font-medium text-fg mb-2">
-          Teléfono de contacto principal <span className="text-danger">*</span>
+          Teléfono de la cuenta <span className="text-danger">*</span>
         </label>
         {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
             que viaja al back sigue siendo el número sin indicativo, igual que

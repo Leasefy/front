@@ -131,8 +131,8 @@ const FIELD_LABELS_ES: Record<string, string> = {
   ciudad: 'Ciudad',
   departamento: 'Departamento',
   codigoPostal: 'Código postal',
-  primaryContactEmail: 'Correo de contacto',
-  primaryContactPhone: 'Teléfono de contacto',
+  primaryContactEmail: 'Correo de la cuenta',
+  primaryContactPhone: 'Teléfono de la cuenta',
 }
 
 function issueFieldLabel(issue: ZodIssueLike): string {

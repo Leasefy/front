@@ -342,6 +342,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * it sets.
    */
   const segundoFactorExigidoRef = useRef(false)
+  /** `checkMfaLevel` se declara más abajo; `refreshUser` lo llama por acá. */
+  const checkMfaLevelRef = useRef<((miGeneracion?: number) => Promise<void>) | null>(null)
 
   /**
    * Fetch the user profile from the backend.
@@ -696,6 +698,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // like this function did before WU-2b.
         await probeAgencyMembership()
       }
+      /*
+       * 🔴 Primero la migración (Nico, 30-09-2026): `fetchBootstrap` ya dejó
+       * `segundoFactor.exigido` en `segundoFactorExigidoRef`, pero nadie
+       * recalculaba `mfaEnrollRequired` con él — sólo lo hacían los eventos
+       * de sesión. Al resolver la migración el back pasa `exigido` a `true`,
+       * y sin esto la persona seguía en el panel sin segundo factor hasta
+       * recargar. Afuera del lock de auth-js: esto no corre dentro de
+       * `onAuthStateChange`.
+       */
+      await checkMfaLevelRef.current?.(miGeneracion)
     }
   }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult])
 
@@ -814,6 +826,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // MFA not available — ignore
     }
   }, [])
+
+  checkMfaLevelRef.current = checkMfaLevel
 
   const setMfaVerified = useCallback(() => {
     setMfaRequired(false)

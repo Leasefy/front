@@ -146,6 +146,9 @@ export type { ContextoDeMigracion } from "./migracion-context";
  */
 export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 
+/** Cuándo se vuelve a pedir el estado si la primera consulta falló. Ver `consultar`. */
+export const ESPERAS_SI_LA_CONSULTA_FALLA_MS = [2_000, 8_000, 30_000] as const;
+
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
 // ══════════════════════════════════════════════════════════════════════════
@@ -185,7 +188,24 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   // no requiero. Vive en localStorage por agencia (ver decision-de-migracion.ts).
   // Contexto crudo y no `useAuth()`: ese lanza sin AuthProvider, y el muro no
   // puede ser lo que tumba el panel (mismo criterio que SalirDelRegistro).
-  const agency = useContext(AuthContext)?.agency ?? null;
+  const sesion = useContext(AuthContext);
+  const agency = sesion?.agency ?? null;
+  /*
+   * 🔴 Primero la migración, después el segundo factor (Nico, 30-09-2026).
+   * Mientras el muro está puesto el back no exige el segundo factor; en
+   * cuanto la migración se resuelve —terminar, omitir, la ✕, o el muro que
+   * baja solo con el último paso— el bootstrap vuelve a decir `exigido`, y
+   * hay que pedírselo para que `ProtectedRoute` lleve a activarlo. Sin esto
+   * la persona seguía en el panel, sin segundo factor, hasta recargar.
+   * En ref porque `refrescar` tiene dependencias vacías a propósito.
+   */
+  const refrescarSesionRef = useRef(sesion?.refreshUser);
+  refrescarSesionRef.current = sesion?.refreshUser;
+  const pedirSegundoFactor = useCallback(() => {
+    void refrescarSesionRef.current?.().catch(() => {
+      // Si no se pudo, lo pide la próxima carga: el back ya lo exige igual.
+    });
+  }, []);
   const agencyId = agency?.id ?? null;
   /*
    * Espejo en ref porque `refrescar` es un `useCallback` con dependencias
@@ -218,6 +238,26 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   /** `false` hasta que la primera consulta vuelve. Ver `consultar`. */
   const [consultado, setConsultado] = useState(false);
 
+  /*
+   * 🔴 Si la PRIMERA consulta falla, se vuelve a preguntar — pocas veces.
+   *
+   * Nico, 30-09-2026, con una inmobiliaria recién creada: «esto entró y no me
+   * preguntó si quería hacer la migración, no me está mostrando el estado de
+   * la migración en la sidebar». Ni la pregunta, ni el muro, ni la tarjeta:
+   * los tres cuelgan de ESTA consulta, y un fallo acá —el 403 de la ventana
+   * justo después de pasar el segundo factor, un back lento— dejaba `estado`
+   * en null para toda la sesión, porque el refresco de abajo sólo corre con
+   * el muro puesto. «Ante la duda no se bloquea» sigue en pie: mientras falla
+   * el panel se ve; lo que cambia es que la duda ya no es para siempre.
+   */
+  const reintentos = useRef(0);
+  const reintento = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (reintento.current) clearTimeout(reintento.current);
+    },
+    [],
+  );
   const consultar = useCallback(async () => {
     try {
       const bruto = await migracionEstadoApi.estado();
@@ -228,6 +268,10 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     } catch {
       setConocido(null);
       setEstado(null);
+      const espera = ESPERAS_SI_LA_CONSULTA_FALLA_MS[reintentos.current++];
+      if (espera != null) {
+        reintento.current = setTimeout(() => void consultarRef.current(), espera);
+      }
     } finally {
       // Recién ahora se sabe si el muro va puesto. Antes de esto, `estado`
       // vale null por «todavía no sé», no por «no bloquea» — y la bienvenida
@@ -235,6 +279,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       setConsultado(true);
     }
   }, []);
+  const consultarRef = useRef(consultar);
+  consultarRef.current = consultar;
 
   /*
    * El refresco es distinto de la consulta inicial en una sola cosa: un
@@ -271,13 +317,17 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
          * sobrevive a la navegación y la borra `onEntrar`.
          */
         marcarBienvenidaPendiente(agencyIdRef.current, recien);
+      } else if (previo !== null && nuevo === null) {
+        // Salió sin celebración («en otro momento», la ✕, «no requiero»):
+        // el segundo factor se pide ya. Con bienvenida, al tocar su botón.
+        pedirSegundoFactor();
       }
       saltarBienvenida.current = false;
       setEstado(nuevo);
     } catch {
       // Se queda como estaba.
     }
-  }, []);
+  }, [pedirSegundoFactor]);
 
   useEffect(() => {
     void consultar();
@@ -447,6 +497,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
             // Vista una vez, no vuelve: entrar es lo que la cierra.
             olvidarBienvenidaPendiente(agencyId);
             setBienvenida(null);
+            // Terminó la migración: ahora sí, el segundo factor.
+            pedirSegundoFactor();
           }}
         />
       ) : null}

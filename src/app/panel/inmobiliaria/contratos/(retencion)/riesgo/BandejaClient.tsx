@@ -6,19 +6,22 @@
  * del ERP sumó cuánto. Antes era la bandeja de un portafolio de EJEMPLO que
  * sólo cuidaba al propietario.
  *
- * EL MOLDE: la frase afuera; filtros + tabla = una tarjeta; la fila abre el caso.
+ * 29-09-2026 · glow-up: la cabecera del panel, y filtros + tabla en UNA
+ * tarjeta con el patrón de tablas de Contratos (`TablaDeCasos`). La frase
+ * larga del encabezado se fue: repetía las cuentas que ya dicen los filtros
+ * («Inquilinos (8)»); lo único que no decían —cuándo midió— quedó en la
+ * cabecera de la tarjeta.
  */
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { SegmentedControl } from '@leasefy/cadence'
-import { HeartStraight } from '@phosphor-icons/react'
-import { EmptyState } from '@/components/ui/empty-state'
+import { HeartStraight, UsersThree } from '@phosphor-icons/react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { formatCurrency } from '@/lib/format'
 import { useRiesgoDeVinci } from '@/lib/hooks/retencion/use-vinci'
-import { PuntajeDeVinci, QUIEN } from '@/components/retencion/vinci'
-import { fraseDelRiesgo } from '@/components/retencion/frases'
+import { fechaYHora } from '@/components/retencion/vinci'
+import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
 import type { Poblacion } from '@/lib/types/retencion'
 
 type Filtro = Poblacion | 'todos'
@@ -32,18 +35,21 @@ export default function BandejaClient() {
     () =>
       (data?.casos ?? [])
         .filter((c) => (filtro === 'todos' ? true : c.poblacion === filtro))
-        .filter((c) => (soloEnRiesgo ? c.enRiesgo : true)),
+        .filter((c) => (soloEnRiesgo ? c.enRiesgo : true))
+        .sort((a, b) => b.puntaje - a.puntaje),
     [data, filtro, soloEnRiesgo],
   )
   const cuenta = (p: Filtro) =>
     (data?.casos ?? []).filter((c) => (p === 'todos' || c.poblacion === p) && (soloEnRiesgo ? c.enRiesgo : true)).length
+  // Los que el filtro «Sólo los que pasan el umbral» esconde: por debajo del umbral o en cobranza.
+  const escondidos = (data?.casos ?? []).filter((c) => (filtro === 'todos' || c.poblacion === filtro) && !c.enRiesgo).length
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">Riesgo de retención</h1>
-        {data?.disponible ? <p className="text-sm text-fg-muted">{fraseDelRiesgo(data)}</p> : null}
-      </header>
+      <CabeceraDeVinci
+        titulo="Casos en riesgo"
+        descripcion="Propietarios que pueden sacar su inmueble e inquilinos que pueden no renovar, con qué señal del ERP sumó cuánto."
+      />
 
       <EstadoDeDatos
         cargando={isLoading && !data}
@@ -53,92 +59,67 @@ export default function BandejaClient() {
         onReintentar={() => refetch()}
         principal
         cuandoVacio={
-          <EmptyState
-            icon={HeartStraight}
-            title="Vinci no puede medir todavía."
-            description={`Faltan datos del ERP (${data?.faltan.join(', ') ?? ''}). No se muestran casos inventados.`}
-          />
+          <div className="rounded-lg border border-border bg-card">
+            <SinDatos
+              queSon="casos"
+              icono={HeartStraight}
+              titulo="Vinci no puede medir todavía"
+              descripcion={`Faltan datos del ERP (${data?.faltan.join(', ') ?? ''}). No se muestran casos inventados.`}
+            />
+          </div>
         }
       >
-        <section aria-label="Casos" className="rounded-lg border border-border bg-surface">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <SegmentedControl<Filtro>
-              aria-label="Inquilinos o propietarios"
-              value={filtro}
-              onChange={setFiltro}
-              options={[
-                { value: 'todos', label: `Todos (${cuenta('todos')})` },
-                { value: 'inquilino', label: `Inquilinos (${cuenta('inquilino')})` },
-                { value: 'propietario', label: `Propietarios (${cuenta('propietario')})` },
-              ]}
-            />
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="vinci-solo-en-riesgo"
-                checked={soloEnRiesgo}
-                onCheckedChange={(v) => setSoloEnRiesgo(v === true)}
-                data-testid="vinci-solo-en-riesgo"
-              />
-              <label htmlFor="vinci-solo-en-riesgo" className="cursor-pointer text-sm text-fg">
-                Sólo los que pasan el umbral ({data?.umbral ?? 60}/100)
-              </label>
+        {data ? (
+          <TarjetaDeVinci
+            id="vinci-casos"
+            icono={UsersThree}
+            titulo="Casos"
+            descripcion={`${data.deLoGuardado ? `Medido ${fechaYHora(data.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(data.leidoEn)})`}. En riesgo desde ${data.umbral}/100. Toca un caso para ver por qué, qué ofrecerle y el plan.`}
+            cuerpo={false}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+              <div className="max-w-full overflow-x-auto">
+                <SegmentedControl<Filtro>
+                  aria-label="Inquilinos o propietarios"
+                  value={filtro}
+                  onChange={setFiltro}
+                  options={[
+                    { value: 'todos', label: `Todos (${cuenta('todos')})` },
+                    { value: 'inquilino', label: `Inquilinos (${cuenta('inquilino')})` },
+                    { value: 'propietario', label: `Propietarios (${cuenta('propietario')})` },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="vinci-solo-en-riesgo"
+                  checked={soloEnRiesgo}
+                  onCheckedChange={(v) => setSoloEnRiesgo(v === true)}
+                  data-testid="vinci-solo-en-riesgo"
+                />
+                <label htmlFor="vinci-solo-en-riesgo" className="cursor-pointer text-sm text-fg">
+                  Sólo los que pasan el umbral
+                </label>
+              </div>
             </div>
-          </div>
-          {casos.length === 0 ? (
-            <EmptyState
-              icon={HeartStraight}
-              title={soloEnRiesgo ? 'Nadie pasa el umbral.' : 'Nadie con señales de irse.'}
-              description="Con las señales del ERP de hoy no hay casos para mostrar con este filtro."
+            <TablaDeCasos
+              casos={casos}
+              conPlan
+              vacio={
+                <SinDatos
+                  queSon="casos"
+                  icono={HeartStraight}
+                  titulo={soloEnRiesgo ? 'Nadie pasa el umbral' : 'Nadie con señales de irse'}
+                  descripcion={
+                    soloEnRiesgo && escondidos > 0
+                      ? `Con las señales del ERP de hoy nadie llega a ${data.umbral}/100. ${escondidos === 1 ? 'Otro está' : `Otros ${escondidos} están`} por debajo o los lleva cobranza: quita «Sólo los que pasan el umbral» para ${escondidos === 1 ? 'verlo' : 'verlos'}.`
+                      : 'Con las señales del ERP de hoy no hay casos para mostrar con este filtro.'
+                  }
+                />
+              }
             />
-          ) : (
-            <table className="w-full text-left text-sm" data-testid="vinci-casos">
-              <thead>
-                <tr className="border-b border-border text-fg-muted">
-                  <th className="px-4 py-2.5 font-medium">Quién</th>
-                  <th className="px-4 py-2.5 font-medium">Riesgo</th>
-                  <th className="hidden px-4 py-2.5 font-medium md:table-cell">Por qué</th>
-                  <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Canon en juego</th>
-                  <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Plan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-faint">
-                {casos.map((c) => (
-                  <tr key={c.caseId} className="hover:bg-surface-hover">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(c.caseId)}`}
-                        className="font-medium text-fg hover:underline"
-                      >
-                        {c.nombre ?? 'Sin nombre registrado'}
-                      </Link>
-                      <p className="text-caption text-fg-muted">
-                        {QUIEN[c.poblacion]}
-                        {c.poblacion === 'inquilino'
-                          ? ` · contrato ${c.contratos[0]?.numero ?? ''}`
-                          : ` · ${c.contratos.length} ${c.contratos.length === 1 ? 'inmueble' : 'inmuebles'}`}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
-                    </td>
-                    <td className="hidden px-4 py-3 text-fg-muted md:table-cell">
-                      {c.senales
-                        .slice(0, 2)
-                        .map((s) => `${s.texto} (+${s.puntos})`)
-                        .join(' · ')}
-                    </td>
-                    <td className="hidden px-4 py-3 text-right font-mono tabular-nums text-fg sm:table-cell">
-                      {formatCurrency(c.canonEnJuegoCop)}
-                    </td>
-                    <td className="hidden px-4 py-3 text-fg-muted lg:table-cell">
-                      {c.plan ? `${c.plan.estado}${c.plan.tareasAbiertas ? ` · ${c.plan.tareasAbiertas} tareas` : ''}` : 'Sin plan'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+          </TarjetaDeVinci>
+        ) : null}
       </EstadoDeDatos>
     </div>
   )

@@ -7,7 +7,7 @@
  * número (Nico, 26-09-2026).
  */
 import { Badge } from '@/components/ui/badge'
-import type { ModoDelPiloto, Poblacion, SenalDeVinci } from '@/lib/types/retencion'
+import type { DetalleDeLaOferta, ModoDelPiloto, Poblacion, SenalDeVinci, TipoDeOferta } from '@/lib/types/retencion'
 
 export const NOMBRE_DEL_MODO: Record<ModoDelPiloto, string> = {
   sombra: 'Manual',
@@ -15,11 +15,48 @@ export const NOMBRE_DEL_MODO: Record<ModoDelPiloto, string> = {
   autonomo: 'Automático',
 }
 
-/** Qué hace Vinci en cada modo (la regla única del Piloto), en una frase. */
+/**
+ * Qué hace Vinci en cada modo (la regla única del Piloto), en una frase. Sin
+ * el nombre del modo adelante: va al lado del chip que ya lo dice (antes se
+ * leía «Piloto en Automático. Automático: …»).
+ */
 export const QUE_HACE_EN_CADA_MODO: Record<ModoDelPiloto, string> = {
-  sombra: 'Manual: Vinci sólo propone; nada se crea ni sale sin tu clic.',
-  copiloto: 'Copiloto: deja el plan, las tareas y el mensaje listos, y espera tu clic.',
-  autonomo: 'Automático: además escribe solo (WhatsApp o correo) en horario de ley, con 1 minuto para deshacerlo.',
+  sombra: 'Vinci sólo propone; nada se crea ni sale sin tu clic.',
+  copiloto: 'Deja el plan, las tareas y el mensaje listos, y espera tu clic.',
+  autonomo: 'Además escribe solo (WhatsApp o correo) en horario de ley, con 1 minuto para deshacerlo.',
+}
+
+/** El nombre de cada oferta, el mismo en el caso y en «Por aprobar». */
+export const NOMBRE_DE_LA_OFERTA: Record<TipoDeOferta, string> = {
+  llamada_del_asesor: 'Llamada del asesor',
+  visita_del_asesor: 'Visita del asesor',
+  resolver_pendiente: 'Resolver primero lo pendiente',
+  congelar_incremento: 'Congelar el incremento',
+  bajar_incremento: 'Bajar el incremento',
+  descuento_comision: 'Descuento en la comisión',
+}
+
+/** «10 % de la comisión · 12 meses · el propietario aceptó». */
+export function detalleEnPalabras(d: DetalleDeLaOferta): string {
+  const partes: string[] = []
+  if (typeof d.descuentoPct === 'number') partes.push(`${d.descuentoPct} % de la comisión`)
+  if (typeof d.meses === 'number') partes.push(`${d.meses} meses`)
+  if (typeof d.incrementoPct === 'number') partes.push(`incremento de ${d.incrementoPct} %`)
+  if (d.aceptadaPorElPropietario) partes.push('el propietario aceptó')
+  return partes.join(' · ')
+}
+
+/**
+ * «20 oct 2026» desde un DATE «2026-10-20». Se lee la parte YYYY-MM-DD como
+ * fecha local: `new Date('2026-10-20')` es medianoche UTC y en Bogotá cae al
+ * día anterior.
+ */
+export function fechaCorta(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  const d = partes ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])) : new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '').replace(/ de /g, ' ')
 }
 
 export const QUIEN: Record<Poblacion, string> = { inquilino: 'Inquilino', propietario: 'Propietario' }
@@ -85,30 +122,37 @@ export function DesgloseDelPuntaje({
   senales,
   puntaje,
   suma,
+  sinTotal = false,
 }: {
   senales: SenalDeVinci[]
   puntaje: number
   suma?: number
+  /** Sin la fila del puntaje: para la pantalla que ya lo dice en su franja (no repetirlo). */
+  sinTotal?: boolean
 }) {
   if (senales.length === 0) {
     return <p className="text-sm text-fg-muted">Sin señales: al día, sin PQRS ni mantenimientos abiertos, lejos del fin.</p>
   }
   return (
     <div data-testid="vinci-desglose">
-      <ul className="divide-y divide-border-faint rounded-lg border border-border">
+      {/* `overflow-hidden`: la fila del total pinta su fondo hasta el borde y
+          sin el recorte asomaba en las esquinas redondeadas (se veía en oscuro). */}
+      <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
         {senales.map((s) => (
           <li key={s.clave} className="flex items-baseline justify-between gap-4 px-4 py-2.5">
             <span className="text-sm text-fg">{s.texto}</span>
             <span className="shrink-0 font-mono text-sm tabular-nums text-fg">+{s.puntos}</span>
           </li>
         ))}
-        <li className="flex items-baseline justify-between gap-4 bg-surface-muted/40 px-4 py-2.5">
-          <span className="text-sm font-medium text-fg">Puntaje</span>
-          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-fg">
-            {puntaje}
-            <span className="text-fg-muted">/100</span>
-          </span>
-        </li>
+        {sinTotal ? null : (
+          <li className="flex items-baseline justify-between gap-4 bg-surface-muted/40 px-4 py-2.5">
+            <span className="text-sm font-medium text-fg">Puntaje</span>
+            <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-fg">
+              {puntaje}
+              <span className="text-fg-muted">/100</span>
+            </span>
+          </li>
+        )}
       </ul>
       {suma !== undefined && suma > puntaje ? (
         <p className="mt-2 text-caption text-fg-muted">Las señales suman {suma}; el puntaje tiene tope en 100.</p>

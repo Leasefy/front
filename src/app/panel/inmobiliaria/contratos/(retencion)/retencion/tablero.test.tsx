@@ -2,7 +2,10 @@
  * El tablero de Vinci SIN datos de ejemplo (26-09-2026):
  *   · 🔴 ya no hay aviso de «datos de ejemplo» ni «las rutas no están
  *     montadas»: lee las rutas reales, y si fallan lo dice;
- *   · el resumen es una frase con el umbral; lo retenido, otra;
+ *   · 29-09 (glow-up): el resumen ya no son dos frases sino la franja de
+ *     números del DS (en riesgo, en cobranza, en gestión, retenidos) con un
+ *     pie que dice el modo, la llave de envío y cuándo midió;
+ *   · lo que espera tu clic lleva a «Por aprobar» sólo si hay algo;
  *   · el umbral lo edita SÓLO el administrador;
  *   · el cliente no cae a un mock: un error del agente es un error.
  */
@@ -12,17 +15,20 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { riesgo, metricas, umbral, esAdmin } = vi.hoisted(() => ({
+const { riesgo, metricas, umbral, decisiones, esAdmin } = vi.hoisted(() => ({
   riesgo: vi.fn(),
   metricas: vi.fn(),
   umbral: vi.fn(),
+  decisiones: vi.fn(),
   esAdmin: { valor: false },
 }))
 vi.mock('@/lib/hooks/retencion/use-vinci', () => ({
   useRiesgoDeVinci: riesgo,
   useMetricasDeVinci: metricas,
   useUmbralDeVinci: umbral,
+  useDecisionesDeVinci: decisiones,
 }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/lib/context/PermissionsContext', () => ({ usePermissionsContext: () => ({ isAdmin: esAdmin.valor }) }))
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { id: 'a1' } }) }))
 vi.mock('next/link', () => ({
@@ -45,6 +51,7 @@ const RIESGO = {
   contratosLeidos: 105,
   propietariosLeidos: 50,
   enRiesgo: { inquilinos: 1, propietarios: 0 },
+  enCobranza: 3,
   casos: [
     {
       caseId: 'inquilino:c1',
@@ -70,6 +77,7 @@ let container: HTMLDivElement
 let root: Root
 beforeEach(() => {
   esAdmin.valor = false
+  decisiones.mockReturnValue({ data: { decisiones: [], envioHabilitado: false }, isLoading: false, error: null, refetch: vi.fn() })
   riesgo.mockReturnValue({ data: RIESGO, isLoading: false, error: null, refetch: vi.fn() })
   metricas.mockReturnValue({
     data: {
@@ -110,17 +118,41 @@ afterEach(() => {
 })
 
 describe('tablero de Vinci', () => {
-  it('🔴 sin aviso de datos de ejemplo: la frase con el umbral, lo más urgente y lo retenido', () => {
+  it('🔴 sin aviso de datos de ejemplo: la franja de números, cuándo midió, lo más urgente', () => {
     act(() => root.render(<RetencionDashboardPage />))
     const t = container.textContent ?? ''
     expect(t).not.toMatch(/ejemplo|no está desplegado|no están montadas/i)
-    expect(container.querySelector('[data-testid="vinci-frase"]')?.textContent).toMatch(
-      /^Vinci ve 1 inquilino y 0 propietarios en riesgo \(umbral 60\/100\) entre 105 contratos vigentes/,
+    // La franja: cada cifra con su etiqueta, en el orden en que se lee.
+    const franja = container.querySelector('[data-testid="vinci-resumen"]')?.textContent ?? ''
+    expect(franja).toMatch(/En riesgo\s*1\s*1 inquilino · 0 propietarios/)
+    expect(franja).toMatch(/En cobranza\s*3/)
+    expect(franja).toMatch(/En gestión\s*1/)
+    expect(franja).toMatch(/Retenidos\s*0\s*Ningún caso cerrado todavía/)
+    expect(container.querySelector('[data-testid="vinci-medido"]')?.textContent).toMatch(
+      /^Medido .*\(el último barrido\) entre 105 contratos vigentes y 50 propietarios\. En riesgo desde 60\/100\.$/,
     )
     expect(t).toContain('Marta Gómez')
-    expect(container.querySelector('[data-testid="vinci-metricas"]')?.textContent).toContain('hay 1 plan de retención en gestión')
     // La llave de envío apagada se dice, no se finge que Automático escribe.
     expect(container.querySelector('[data-testid="vinci-envio-apagado"]')).not.toBeNull()
+    // El modo va en el chip y la frase no lo repite («Copiloto. Copiloto: …»).
+    expect(t).not.toMatch(/Copiloto\W+Copiloto/)
+  })
+
+  it('lo que espera tu clic lleva a «Por aprobar», y sólo si hay algo', () => {
+    act(() => root.render(<RetencionDashboardPage />))
+    expect(container.querySelector('[data-testid="vinci-por-aprobar-aviso"]')).toBeNull()
+    act(() => root.unmount())
+    root = createRoot(container)
+    decisiones.mockReturnValue({
+      data: { decisiones: [{ id: 'd1' }, { id: 'd2' }], envioHabilitado: false },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    act(() => root.render(<RetencionDashboardPage />))
+    const aviso = container.querySelector('[data-testid="vinci-por-aprobar-aviso"]')
+    expect(aviso?.textContent).toContain('2 decisiones de Vinci esperan tu clic.')
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/aprobar')
   })
 
   it('el umbral lo edita sólo el administrador', () => {

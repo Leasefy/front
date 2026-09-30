@@ -10,23 +10,50 @@
  *   · «El mensaje no salió» → el porqué, y «Enterado».
  * Antes: «propietario notificado» para un correo INTERNO al responsable, y
  * un «Confirmar» igual para todo.
+ *
+ * 29-09-2026 · glow-up: la cabecera del panel; la lista en una tarjeta con un
+ * ícono de dominio por fila (mensaje, propuesta, oferta, aviso); el mensaje
+ * que saldría en un pozo, tal cual. La llave de envío apagada se dice UNA vez
+ * arriba: antes cada mensaje listo repetía la misma frase del micro debajo.
  */
 import { useState } from 'react'
 import Link from 'next/link'
+import type { Icon } from '@phosphor-icons/react'
+import {
+  ChatText,
+  CheckCircle,
+  CurrencyCircleDollar,
+  EnvelopeSimple,
+  Lightbulb,
+  ListChecks,
+  WarningCircle,
+} from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
-import { CheckCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { EmptyState } from '@/components/ui/empty-state'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useAuth } from '@/lib/auth'
 import { ErrorDeVinci, hacerlo, resolverOferta, revisarDecision } from '@/lib/api/retencion'
 import { useDecisionesDeVinci } from '@/lib/hooks/retencion/use-vinci'
-import { QUE_ES_CADA_DECISION, fechaYHora } from '@/components/retencion/vinci'
-import type { DecisionDeVinci } from '@/lib/types/retencion'
+import { NOMBRE_DE_LA_OFERTA, QUE_ES_CADA_DECISION, QUIEN, detalleEnPalabras, fechaYHora } from '@/components/retencion/vinci'
+import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import type { DecisionDeVinci, DetalleDeLaOferta, Poblacion } from '@/lib/types/retencion'
 
 const texto = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null)
+
+/** La frase del micro cuando la llave de envío está apagada: ya se dice arriba, una vez. */
+const ES_LA_LLAVE_APAGADA = /env[ií]o de vinci est[aá] apagado/i
+
+const ICONO_DE_CADA_DECISION: Record<string, Icon> = {
+  propuesta: Lightbulb,
+  mensaje_listo: ChatText,
+  mensaje_no_salio: WarningCircle,
+  oferta: CurrencyCircleDollar,
+  notified: EnvelopeSimple,
+}
 
 function nombreDe(d: DecisionDeVinci): string {
   const p = d.payload ?? {}
@@ -89,11 +116,12 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
   )
 
   let titulo = QUE_ES_CADA_DECISION[d.decisionType] ?? d.decisionType
+  let subtitulo: string | null = null
   let acciones: React.ReactNode = confirmar('Confirmar')
   if (d.decisionType === 'propuesta') {
     titulo = `Vinci propone retener a ${nombreDe(d)}`
     acciones = (
-      <div className="flex gap-2">
+      <>
         <Button
           type="button"
           size="sm"
@@ -104,7 +132,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
           Hacerlo
         </Button>
         {confirmar('Descartar', 'overridden')}
-      </div>
+      </>
     )
   } else if (d.decisionType === 'mensaje_listo') {
     titulo = `Mensaje de Vinci listo para ${nombreDe(d)}`
@@ -113,7 +141,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
       p.sinContacto === true || envioApagado ? (
         confirmar('Ya lo contacté')
       ) : (
-        <div className="flex gap-2">
+        <>
           <Button
             type="button"
             size="sm"
@@ -124,16 +152,21 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
             Enviar
           </Button>
           {confirmar('Ya lo contacté')}
-        </div>
+        </>
       )
   } else if (d.decisionType === 'mensaje_no_salio') {
     titulo = `El mensaje de Vinci a ${nombreDe(d)} no salió`
     acciones = confirmar('Enterado')
   } else if (d.decisionType === 'oferta') {
-    titulo = `Oferta por aprobar (${String(p.poblacion ?? '')})`
+    const tipo = texto(p.tipo)
+    const nombre = texto(p.nombre)
+    titulo = `Oferta por aprobar: ${tipo && NOMBRE_DE_LA_OFERTA[tipo as keyof typeof NOMBRE_DE_LA_OFERTA] ? NOMBRE_DE_LA_OFERTA[tipo as keyof typeof NOMBRE_DE_LA_OFERTA] : 'retención'}`
+    const poblacion = p.poblacion === 'inquilino' || p.poblacion === 'propietario' ? QUIEN[p.poblacion as Poblacion] : null
+    const detalle = p.detalle && typeof p.detalle === 'object' ? detalleEnPalabras(p.detalle as DetalleDeLaOferta) : ''
+    subtitulo = [poblacion ? (nombre ? `${poblacion}: ${nombre}` : poblacion) : nombre, detalle || null].filter(Boolean).join(' · ') || null
     const incremento = p.tipo === 'congelar_incremento' || p.tipo === 'bajar_incremento'
     acciones = isAdmin ? (
-      <div className="flex flex-wrap items-center gap-2">
+      <>
         {incremento ? (
           <div className="flex items-center gap-2">
             <Checkbox id={`vinci-aceptada-${d.id}`} checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
@@ -163,7 +196,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
         >
           Rechazar
         </Button>
-      </div>
+      </>
     ) : (
       <span className="text-caption text-fg-muted">Cuesta plata: sólo el administrador la aprueba.</span>
     )
@@ -172,29 +205,40 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
     acciones = confirmar('Enterado')
   }
 
+  const Icono = ICONO_DE_CADA_DECISION[d.decisionType] ?? ListChecks
   const mensaje = textoDelMensaje(d)
   const razon = d.decisionType === 'mensaje_no_salio' ? texto(p.mensaje) : null
-  const motivo = texto(p.motivo)
+  const motivoCrudo = texto(p.motivo)
+  // La llave apagada ya se dijo arriba, una vez: no se repite en cada fila.
+  const motivo = motivoCrudo && envioApagado && ES_LA_LLAVE_APAGADA.test(motivoCrudo) ? null : motivoCrudo
   const causa = porQue(d)
   return (
-    <li className="space-y-2 px-4 py-4" data-testid="vinci-por-aprobar">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-fg">{titulo}</p>
-          <p className="text-caption text-fg-muted">
-            {fechaYHora(d.createdAt)}
-            {' · '}
-            <Link href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(d.caseId)}`} className="text-primary hover:underline">
-              ver el caso
-            </Link>
-          </p>
-        </div>
-        {acciones}
+    <li className="flex gap-4 px-5 py-5" data-testid="vinci-por-aprobar">
+      <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted sm:flex">
+        <Icono className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
       </div>
-      {causa ? <p className="text-sm text-fg-muted">{causa}</p> : null}
-      {mensaje ? <blockquote className="rounded-lg border border-border bg-surface-muted/40 px-4 py-3 text-sm text-fg">{mensaje}</blockquote> : null}
-      {razon ? <p className="text-sm text-fg">{razon}</p> : null}
-      {motivo && !razon ? <p className="text-caption text-fg-muted">{motivo}</p> : null}
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-fg">{titulo}</p>
+            {subtitulo ? <p className="mt-0.5 text-sm text-fg-muted">{subtitulo}</p> : null}
+            <p className="mt-0.5 text-caption text-fg-muted">
+              {fechaYHora(d.createdAt)}
+              {' · '}
+              <Link href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(d.caseId)}`} className="text-primary hover:underline">
+                ver el caso
+              </Link>
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{acciones}</div>
+        </div>
+        {causa ? <p className="text-sm text-fg-muted">{causa}</p> : null}
+        {mensaje ? (
+          <blockquote className="whitespace-pre-line rounded-md bg-surface-muted px-4 py-3 text-sm leading-relaxed text-fg">{mensaje}</blockquote>
+        ) : null}
+        {razon ? <p className="text-sm text-fg">{razon}</p> : null}
+        {motivo && !razon ? <p className="text-caption text-fg-muted">{motivo}</p> : null}
+      </div>
     </li>
   )
 }
@@ -202,28 +246,56 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
 export default function RevisionesClient() {
   const { data: cola, isLoading, error, refetch } = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
   const data = cola?.decisiones
+  const envioApagado = cola?.envioHabilitado === false
+  const n = data?.length ?? 0
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">Por aprobar · Vinci</h1>
-        <p className="text-sm text-fg-muted">
-          Lo que Vinci dejó esperando tu clic: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron.
-        </p>
-      </header>
+      <CabeceraDeVinci
+        titulo="Por aprobar"
+        descripcion="Lo que Vinci dejó esperando tu clic: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron."
+      />
       <EstadoDeDatos
         cargando={isLoading && !data}
         error={error}
-        vacio={(data?.length ?? 0) === 0}
+        vacio={n === 0}
         queEs="lo que espera tu aprobación"
         onReintentar={() => refetch()}
         principal
-        cuandoVacio={<EmptyState icon={CheckCircle} title="Nada esperando." description="Vinci no tiene nada pendiente de tu clic." />}
+        cuandoVacio={
+          <div className="rounded-lg border border-border bg-card">
+            <SinDatos
+              queSon="decisiones por aprobar"
+              icono={CheckCircle}
+              titulo="Nada esperando tu clic"
+              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece acá."
+            />
+          </div>
+        }
       >
-        <ul className="divide-y divide-border-faint rounded-lg border border-border bg-surface">
-          {(data ?? []).map((d) => (
-            <Fila key={d.id} d={d} envioApagado={cola?.envioHabilitado === false} onListo={refetch} />
-          ))}
-        </ul>
+        <div className="space-y-4">
+          {envioApagado ? (
+            <AlertaAccionable
+              severidad="info"
+              titulo="El envío de Vinci está apagado en esta plataforma."
+              data-testid="vinci-envio-apagado"
+            >
+              Cada mensaje está listo para que se lo mandes tú; después márcalo con «Ya lo contacté».
+            </AlertaAccionable>
+          ) : null}
+          <TarjetaDeVinci
+            id="vinci-cola"
+            icono={ListChecks}
+            titulo="Esperando tu clic"
+            descripcion={`${n} ${n === 1 ? 'decisión' : 'decisiones'} de Vinci.`}
+            cuerpo={false}
+          >
+            <ul className="divide-y divide-border-faint">
+              {(data ?? []).map((d) => (
+                <Fila key={d.id} d={d} envioApagado={envioApagado} onListo={refetch} />
+              ))}
+            </ul>
+          </TarjetaDeVinci>
+        </div>
       </EstadoDeDatos>
     </div>
   )

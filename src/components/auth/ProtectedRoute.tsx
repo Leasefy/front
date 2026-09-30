@@ -154,7 +154,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // no factor to step up to must enroll one first (they're mutually
     // exclusive states per contract.md T-0099 §3, but the check order still
     // matters if that ever changes).
-    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
       router.replace('/auth/mfa-enroll')
       return
     }
@@ -259,7 +259,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   }
 
   // T-0099: no factor enrolled yet - will redirect to the enroll page.
-  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
@@ -359,4 +359,21 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
 
   // User is authenticated and has required role
   return <>{children}</>
+}
+
+/**
+ * 🔴 Producción (Nico, 30-09-2026): una cuenta nueva llegaba al error de
+ * aprovisionamiento de «Antes de comenzar», tocaba «Reintentar» y aparecía
+ * «Activa tu segundo factor» en medio del registro. Desde el primer intento el
+ * back ya la tiene como ADMIN de una inmobiliaria a medio crear, así que
+ * `segundoFactor.exigido` sale en true y esta guarda la sacaba del registro.
+ *
+ * Dentro de `/onboarding` no se pide INSCRIBIR el segundo factor: el registro
+ * no toca plata, y el back lo sigue exigiendo en cada endpoint que sí
+ * (`AgencyMemberGuard`). Se pide al entrar al panel, que es donde la pantalla
+ * dice «Actívalo una vez». Verificar uno ya inscrito (`mfaRequired`) sí se
+ * exige en todas partes: eso es el inicio de sesión, no una configuración.
+ */
+function enElRegistro(pathname: string): boolean {
+  return pathname === '/onboarding' || pathname.startsWith('/onboarding/')
 }

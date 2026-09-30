@@ -31,6 +31,7 @@ vi.mock('@supabase/ssr', () => ({
 }))
 
 import { GET } from './route'
+import { COOKIE_DE_RECUPERACION } from '@/lib/auth/sesion-de-recuperacion'
 
 const ORIGEN = 'http://localhost:3011'
 const pedir = (qs: string) => GET(new NextRequest(`${ORIGEN}/auth/callback?${qs}`))
@@ -111,5 +112,26 @@ describe('/auth/callback — sin code ni token_hash', () => {
   it('un destino que sale del sitio no se sigue', async () => {
     const res = await pedir('returnUrl=https%3A%2F%2Fevil.example')
     expect(destinoDe(res)).toBe('/auth/enlace?returnUrl=%2Fauth%2Fpost-login')
+  })
+})
+
+describe('/auth/callback — enlace de «¿Olvidaste tu contraseña?»', () => {
+  const canjeOk = () =>
+    sb.exchangeCodeForSession.mockImplementation(async () => {
+      sb.setAll?.([{ name: 'sb-x-auth-token', value: 'v', options: { path: '/' } }])
+      return { data: {}, error: null }
+    })
+
+  it('deja la marca de la sesión de recuperación (la cierra el guard si se va sin terminar)', async () => {
+    canjeOk()
+    const res = await pedir('code=c0de&returnUrl=%2Fauth%2Fupdate-password')
+    expect(destinoDe(res)).toBe('/auth/update-password')
+    expect(res.headers.get('set-cookie')).toContain(`${COOKIE_DE_RECUPERACION}=1`)
+  })
+
+  it('la invitación del inquilino migrado (?nuevo=1) no la deja', async () => {
+    canjeOk()
+    const res = await pedir(`code=c0de&returnUrl=${encodeURIComponent('/auth/update-password?nuevo=1')}`)
+    expect(res.headers.get('set-cookie') ?? '').not.toContain(COOKIE_DE_RECUPERACION)
   })
 })

@@ -1,7 +1,21 @@
 'use client';
 
 /**
- * Pestaña «Calidad» de Inmuebles › Portales — Niti · calidad (26-09-2026).
+ * Niti · calidad (26-09-2026). Vive en DOS lugares con el mismo cuerpo:
+ *   · `variante="pagina"` — su fila en «Agentes IA»
+ *     (`/inmuebles/calidad-de-publicaciones`): el margen del panel, el
+ *     encabezado de las demás pantallas (Eyebrow, `h1`, bajada) y la píldora
+ *     de estado, como «Agente de pagos».
+ *   · `variante="pestana"` (por defecto) — la pestaña «Calidad» de Inmuebles ›
+ *     Portales, que ya pone su propio `h1` y su margen.
+ *
+ * Glow up (Nico, 29-09-2026: «mira eso como se ve de horrible»): la tarjeta
+ * pegada a los bordes y el «apagado» suelto en el medio de la nada pasan a ser
+ * un encabezado de panel + un estado por caso, cada uno en su tarjeta:
+ *   consultando · sin verificar (no se pudo preguntar) · apagado (quién lo
+ *   prende) · prendido sin primera pasada (la lista vacía lo dice; sin cifras
+ *   en cero que parezcan datos) · prendido con datos (franja de cifras + lista)
+ *   · la última pasada falló (alerta arriba de las cifras).
  *
  * Qué pidió Nico (`niti-spec.md`, decisión 7): junto a donde ya se publica,
  * los inmuebles de peor a mejor con su puntaje, qué les falta, sus problemas y
@@ -20,15 +34,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowSquareOut, Power, Sparkle, WarningCircle } from '@phosphor-icons/react';
-import { SegmentedControl } from '@leasefy/cadence';
+import { ArrowSquareOut, Power, Sparkle } from '@phosphor-icons/react';
+import { Eyebrow, SegmentedControl } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { Badge, Button, EmptyState } from '@/components/ui';
+import { PildoraDelAgente, estadoDeLaLectura } from '@/components/inmobiliaria/agentes/EstadoDelAgente';
+import { Badge, Button } from '@/components/ui';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { TablePagination } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
 import { useInmueblesDeNiti, useResumenDeNiti } from '@/lib/hooks/use-niti';
@@ -66,7 +85,14 @@ function tonoDelPuntaje(n: number): string {
   return 'bg-danger';
 }
 
-export function CalidadDeLasPublicaciones() {
+export type VarianteDeCalidad = 'pagina' | 'pestana';
+
+export interface CalidadDeLasPublicacionesProps {
+  /** `pagina`: su fila en «Agentes IA». `pestana` (por defecto): dentro de Portales. */
+  variante?: VarianteDeCalidad;
+}
+
+export function CalidadDeLasPublicaciones({ variante = 'pestana' }: CalidadDeLasPublicacionesProps = {}) {
   const { t } = useI18n();
   const { agency } = useAuth();
   const agencyId = agency?.id ?? null;
@@ -75,6 +101,7 @@ export function CalidadDeLasPublicaciones() {
 
   const resumen = useResumenDeNiti(agencyId);
   const activo = resumen.data?.activo === true;
+  const estado = estadoDeLaLectura({ activo: resumen.data?.activo, error: resumen.error });
 
   const [filtro, setFiltro] = useState<FiltroDeCalidad>('todos');
   const [limit, setLimit] = useState(TAMANO_POR_DEFECTO);
@@ -103,38 +130,53 @@ export function CalidadDeLasPublicaciones() {
   }
 
   const total = lista.data?.total ?? 0;
+  const esPagina = variante === 'pagina';
+  const r = resumen.data;
+  /*
+   * Prendido pero sin primera pasada: «0 de 0» y «—» se leen como datos. La
+   * lista vacía de abajo ya lo dice con palabras («todavía no ha auditado
+   * ningún inmueble»), así que la franja no se pinta.
+   */
+  const hayCifras = Boolean(r && r.activo && (r.ultimaPasada !== null || r.inmueblesAuditados > 0));
 
   return (
-    <div className="space-y-6" data-testid="calidad-de-las-publicaciones">
-      <EstadoDeDatos
-        cargando={resumen.cargando && !resumen.data}
-        error={resumen.error}
-        queEs={t(`${K}.queEsResumen`)}
-        onReintentar={resumen.recargar}
-        conservarContenido
-        esqueleto={<div className="h-36 animate-pulse rounded-lg bg-surface-muted" />}
-      >
-        {resumen.data ? <Encabezado resumen={resumen.data} /> : null}
-      </EstadoDeDatos>
+    <div className={cn('space-y-6', esPagina && 'p-6 lg:p-8')} data-testid="calidad-de-las-publicaciones">
+      <Cabecera variante={variante} estado={estado} resumen={r ?? null} />
 
-      {resumen.data && !activo ? (
-        <EmptyState
-          icon={Power}
-          title={t(`${K}.apagadoTitulo`)}
-          description={t(`${K}.apagadoDescripcion`)}
-        />
+      {!r ? (
+        resumen.error ? (
+          // Es lo único que hay en la pantalla: el cartel lleva su marco.
+          <FalloDeCarga error={resumen.error} queEs={t(`${K}.queEsResumen`)} onReintentar={resumen.recargar} />
+        ) : (
+          <div className="space-y-6" aria-hidden="true" data-testid="calidad-cargando">
+            <div className="h-[5.5rem] animate-pulse rounded-lg bg-surface-muted motion-reduce:animate-none" />
+            <div className="h-64 animate-pulse rounded-lg bg-surface-muted motion-reduce:animate-none" />
+          </div>
+        )
       ) : null}
 
+      {r && !activo ? <Apagado variante={variante} /> : null}
+
+      {r && activo && r.errorDeLaUltimaPasada ? (
+        <AlertaAccionable
+          severidad="danger"
+          titulo={t(`${K}.errorPasadaTitulo`)}
+          data-testid="calidad-error-de-la-pasada"
+        >
+          {r.errorDeLaUltimaPasada}
+        </AlertaAccionable>
+      ) : null}
+
+      {r && hayCifras ? <Cifras resumen={r} /> : null}
+
       {activo ? (
-        <section className="rounded-lg border border-border bg-surface" data-testid="calidad-lista">
+        <section
+          className="rounded-lg border border-border bg-surface"
+          aria-label={t(`${K}.listaAria`)}
+          data-testid="calidad-lista"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <SegmentedControl<FiltroDeCalidad>
-              aria-label={t(`${K}.filtroAria`)}
-              size="sm"
-              value={filtro}
-              onChange={setFiltro}
-              options={FILTROS_DE_CALIDAD.map((f) => ({ value: f, label: t(`${K}.filtro.${f}`) }))}
-            />
+            <FiltroDeLaLista filtro={filtro} onCambiar={setFiltro} />
             {lista.data ? (
               <span className="text-caption tabular-nums text-fg-muted" data-testid="calidad-conteo">
                 {total === 1 ? t(`${K}.conteoUno`) : t(`${K}.conteoVarios`, { total })}
@@ -194,18 +236,83 @@ export function CalidadDeLasPublicaciones() {
   );
 }
 
-// ── El encabezado: cómo va Niti en esta inmobiliaria ────────────────────────
+// ── El encabezado: el mismo de las demás pantallas del panel ────────────────
 
-function Cifra({ etiqueta, children, testid }: { etiqueta: string; children: React.ReactNode; testid?: string }) {
+function Cabecera({
+  variante,
+  estado,
+  resumen,
+}: {
+  variante: VarianteDeCalidad;
+  estado: ReturnType<typeof estadoDeLaLectura>;
+  resumen: ResumenDeCalidad | null;
+}) {
+  const { t, locale } = useI18n();
+  const loc = locale === 'en' ? 'en' : 'es';
+  const esPagina = variante === 'pagina';
+  const Titulo = esPagina ? 'h1' : 'h2';
   return (
-    <div className="space-y-1" data-testid={testid}>
-      <dt className="text-label text-fg-muted">{etiqueta}</dt>
-      <dd className="text-fg">{children}</dd>
+    <header className="space-y-1" data-testid="calidad-encabezado">
+      {esPagina ? <Eyebrow>{t(`${K}.seccion`)}</Eyebrow> : null}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Titulo className={esPagina ? 'text-h2 text-fg' : 'text-subtitle text-fg'}>
+          {esPagina ? t(`${K}.titulo`) : t('inmobiliaria.ai.workspace.agente.calidad')}
+        </Titulo>
+        <PildoraDelAgente estado={estado} data-testid="estado-de-niti" />
+      </div>
+      <p className="max-w-2xl text-sm text-fg-muted">{t(`${K}.descripcion`)}</p>
+      {/* Sólo cuando hubo pasada: «todavía no pasó» lo dice la lista vacía. */}
+      {resumen?.ultimaPasada ? (
+        <p className="text-caption text-fg-muted" data-testid="calidad-ultima-pasada">
+          {t(`${K}.ultimaPasada`, { fecha: formatDateTime(resumen.ultimaPasada, loc) })}
+        </p>
+      ) : null}
+    </header>
+  );
+}
+
+// ── Apagado: cómo está hoy y quién lo prende, sin cara de error ─────────────
+
+function Apagado({ variante }: { variante: VarianteDeCalidad }) {
+  const { t } = useI18n();
+  const Titulo = variante === 'pagina' ? 'h2' : 'h3';
+  return (
+    <section className="rounded-lg border border-border bg-surface p-6" data-testid="calidad-apagado">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-muted">
+          <Power className="h-5 w-5 text-fg-muted" weight="bold" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 space-y-1">
+          <Titulo className="text-subtitle text-fg">{t(`${K}.apagadoTitulo`)}</Titulo>
+          <p className="max-w-2xl text-body-sm text-fg-muted">{t(`${K}.apagadoDescripcion`)}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── La franja de cifras (el molde de la de Contratos) ───────────────────────
+
+function Cifra({
+  etiqueta,
+  children,
+  className,
+  testid,
+}: {
+  etiqueta: string;
+  children: React.ReactNode;
+  className?: string;
+  testid?: string;
+}) {
+  return (
+    <div className={cn('min-w-0 px-5 py-4', className)} data-testid={testid}>
+      <dt className="text-caption text-fg-muted">{etiqueta}</dt>
+      <dd className="mt-1.5 text-fg">{children}</dd>
     </div>
   );
 }
 
-function Encabezado({ resumen }: { resumen: ResumenDeCalidad }) {
+function Cifras({ resumen }: { resumen: ResumenDeCalidad }) {
   const { t, locale } = useI18n();
   const loc = locale === 'en' ? 'en' : 'es';
   const usd = (n: number) =>
@@ -215,71 +322,96 @@ function Encabezado({ resumen }: { resumen: ResumenDeCalidad }) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(n);
+  const conFotos = resumen.fotosIA.activo;
+  const promedio = resumen.puntajePromedio === null ? null : Math.max(0, Math.min(100, resumen.puntajePromedio));
 
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm" data-testid="calidad-encabezado">
-      <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-          <Sparkle className="h-5 w-5 text-primary" weight="fill" aria-hidden="true" />
-        </div>
-        <div className="min-w-0 space-y-0.5">
-          <h2 className="text-subtitle text-fg">{t('inmobiliaria.ai.workspace.agente.calidad')}</h2>
-          <p className="text-body-sm text-fg-muted">{t(`${K}.descripcion`)}</p>
-          <p className="text-caption text-fg-muted" data-testid="calidad-ultima-pasada">
-            {resumen.ultimaPasada
-              ? t(`${K}.ultimaPasada`, { fecha: formatDateTime(resumen.ultimaPasada, loc) })
-              : t(`${K}.sinPasada`)}
-          </p>
-        </div>
-      </div>
-
-      {resumen.errorDeLaUltimaPasada ? (
-        <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
-          role="status"
-          data-testid="calidad-error-de-la-pasada"
-        >
-          <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
-          <div>
-            <p className="text-sm font-medium text-danger">{t(`${K}.errorPasadaTitulo`)}</p>
-            <p className="mt-0.5 text-body-sm text-fg-muted">{resumen.errorDeLaUltimaPasada}</p>
-          </div>
-        </div>
-      ) : null}
-
-      {resumen.activo ? (
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Cifra etiqueta={t(`${K}.puntajePromedio`)}>
-            {resumen.puntajePromedio === null ? (
-              <span className="font-mono text-h2 tabular-nums text-fg-subtle">—</span>
-            ) : (
-              <>
-                <span className="font-mono text-h2 tabular-nums">{resumen.puntajePromedio}</span>
-                <span className="text-sm text-fg-muted">/100</span>
-              </>
-            )}
-          </Cifra>
-          <Cifra etiqueta={t(`${K}.porArreglar`)}>
-            <span className="font-mono text-h2 tabular-nums">{resumen.conProblemas}</span>{' '}
-            <span className="text-sm text-fg-muted">
-              {t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}
+    /*
+     * Dos columnas a 390 px (la tercera baja a su propia fila, entera) y tres
+     * desde `sm`. Los números en mono y tabulares: sólo ahí, nunca en la frase
+     * de abajo (la coma se ensancha).
+     */
+    <dl
+      className={cn(
+        'grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-surface',
+        conFotos && 'sm:grid-cols-3',
+      )}
+      data-testid="calidad-cifras"
+    >
+      <Cifra etiqueta={t(`${K}.puntajePromedio`)}>
+        {promedio === null ? (
+          <span className="font-mono text-2xl font-medium tabular-nums text-fg-subtle">—</span>
+        ) : (
+          <>
+            <span className="whitespace-nowrap">
+              <span className="font-mono text-2xl font-medium tabular-nums">{promedio}</span>
+              <span className="text-sm text-fg-muted">/100</span>
             </span>
-          </Cifra>
-          {resumen.fotosIA.activo ? (
-            <Cifra etiqueta={t(`${K}.fotosIA`)} testid="calidad-fotos-ia">
-              <span className="font-mono text-h2 tabular-nums">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
-              <span className="text-sm text-fg-muted">{t(`${K}.fotosIARevisadas`)}</span>
-              <span className="block text-caption text-fg-muted">
-                {t(`${K}.fotosIAGasto`, {
-                  gasto: usd(resumen.fotosIA.gastoEstimadoUsdEsteMes),
-                  tope: usd(resumen.fotosIA.topeUsdMes),
-                })}
-              </span>
-            </Cifra>
-          ) : null}
-        </dl>
+            <span className="mt-2 block h-1.5 w-full max-w-[8rem] overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
+              <span className={cn('block h-full rounded-full', tonoDelPuntaje(promedio))} style={{ width: `${promedio}%` }} />
+            </span>
+          </>
+        )}
+      </Cifra>
+      <Cifra etiqueta={t(`${K}.porArreglar`)} className="border-l border-border">
+        <span className="font-mono text-2xl font-medium tabular-nums">{resumen.conProblemas}</span>{' '}
+        <span className="text-sm text-fg-muted">{t(`${K}.porArreglarDe`, { total: resumen.inmueblesAuditados })}</span>
+      </Cifra>
+      {conFotos ? (
+        <Cifra
+          etiqueta={t(`${K}.fotosIA`)}
+          className="col-span-2 border-t border-border sm:col-span-1 sm:border-l sm:border-t-0"
+          testid="calidad-fotos-ia"
+        >
+          <span className="font-mono text-2xl font-medium tabular-nums">{resumen.fotosIA.revisadasEsteMes}</span>{' '}
+          <span className="text-sm text-fg-muted">{t(`${K}.fotosIARevisadas`)}</span>
+          <span className="mt-0.5 block text-caption text-fg-muted">
+            {t(`${K}.fotosIAGasto`, {
+              gasto: usd(resumen.fotosIA.gastoEstimadoUsdEsteMes),
+              tope: usd(resumen.fotosIA.topeUsdMes),
+            })}
+          </span>
+        </Cifra>
       ) : null}
-    </section>
+    </dl>
+  );
+}
+
+// ── El filtro: segmentos en escritorio, un select en el teléfono ────────────
+
+function FiltroDeLaLista({ filtro, onCambiar }: { filtro: FiltroDeCalidad; onCambiar: (f: FiltroDeCalidad) => void }) {
+  const { t } = useI18n();
+  const esMovil = useIsMobile();
+  const opciones = FILTROS_DE_CALIDAD.map((f) => ({ value: f, label: t(`${K}.filtro.${f}`) }));
+  /*
+   * Cuatro segmentos («Con algo por arreglar», «Fotos señaladas»…) miden más
+   * que 390 px: en el teléfono va el mismo filtro en un select, como el estado
+   * de los links de Cobri.
+   */
+  if (esMovil) {
+    return (
+      <Select value={filtro} onValueChange={(v) => onCambiar(v as FiltroDeCalidad)}>
+        <SelectTrigger className="w-56" aria-label={t(`${K}.filtroAria`)} data-testid="calidad-filtro-movil">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {opciones.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+  return (
+    <SegmentedControl<FiltroDeCalidad>
+      aria-label={t(`${K}.filtroAria`)}
+      size="sm"
+      value={filtro}
+      onChange={onCambiar}
+      options={opciones}
+    />
   );
 }
 
@@ -325,7 +457,8 @@ function FilaDeInmueble({
               .join(' · ')}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        {/* En el teléfono baja a su propia línea: puntaje a la izquierda, ficha a la derecha. */}
+        <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
           <div className="w-28 space-y-1" aria-label={t(`${K}.puntajeAria`, { n: puntaje })}>
             <p className="text-right">
               <span className="font-mono tabular-nums text-fg">{puntaje}</span>

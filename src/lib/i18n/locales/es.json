@@ -10568,6 +10568,9 @@
         "publicar": "Publicar",
         "calidad": "Calidad"
       },
+      "seccion": "Agentes IA",
+      "titulo": "Calidad de publicaciones · Niti",
+      "listaAria": "Inmuebles auditados, de peor a mejor",
       "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. Ningún cambio sale sin el clic de una persona.",
       "ultimaPasada": "Última pasada: {{fecha}}",
       "sinPasada": "Todavía no ha hecho su primera pasada.",
@@ -10580,8 +10583,8 @@
       "fotosIA": "Fotos con IA este mes",
       "fotosIARevisadas": "revisadas",
       "fotosIAGasto": "Gasto estimado {{gasto}} de {{tope}}",
-      "apagadoTitulo": "Niti está apagado para esta inmobiliaria",
-      "apagadoDescripcion": "No audita tus inmuebles ni propone arreglos. Lo prende el equipo técnico.",
+      "apagadoTitulo": "Lo prende el equipo técnico de Leasefy",
+      "apagadoDescripcion": "Mientras tanto no audita tus inmuebles ni propone arreglos. Cuando lo prendan, aquí verás tus inmuebles de peor a mejor: qué les falta para publicar, sus problemas y las fotos que señala.",
       "errorPasadaTitulo": "La última pasada de Niti falló",
       "filtroAria": "Filtrar los inmuebles auditados",
       "filtro": {

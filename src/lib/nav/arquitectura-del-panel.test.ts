@@ -70,7 +70,9 @@ const pantallas = modulos.flatMap((m) => pestanasDelModulo(m));
  * pantallas de Retención viven en `contratos/(retencion)/…`.
  */
 function tienePagina(href: string): boolean {
-  const segmentos = href.replace(PANEL, '').split('/').filter(Boolean);
+  // La consulta (`?pestana=calidad`) no es parte de la ruta: el navegador la
+  // manda a la misma page.tsx.
+  const segmentos = href.replace(PANEL, '').split(/[?#]/)[0]!.split('/').filter(Boolean);
   const buscar = (dir: string, i: number): boolean => {
     if (i === segmentos.length) return existsSync(join(dir, 'page.tsx'));
     if (!existsSync(dir)) return false;
@@ -205,7 +207,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 25 módulos en 5 grupos con nombre (+ Inicio y Chat = 27 filas)', () => {
+  it('el sidebar tiene 27 módulos en 5 grupos con nombre (+ Inicio y Chat = 29 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -235,7 +237,10 @@ describe('arquitectura del panel — sidebar', () => {
     // a quién se llama para cada oficio. Va como FILA por la misma regla de
     // Portales — Mantenimientos no tiene secciones, y una sola card no dibuja
     // el riel, así que colgarla de ahí la volvería inalcanzable.
-    expect(modulos).toHaveLength(25);
+    // 🔴 29-09-2026: 27. Entraron a «Agentes IA» Retención (Vinci) y Calidad de
+    // publicaciones (Niti) — Nico: «no los veo en la sección de agentes para
+    // poder probarlos».
+    expect(modulos).toHaveLength(27);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -389,13 +394,11 @@ describe('arquitectura del panel — agentes', () => {
     }
   });
 
-  it('Retención NO está en el catálogo: no va a producción todavía (Nico, 2026-09-03)', () => {
-    // Las rutas existen bajo `contratos/(retencion)/`, pero ninguna pestaña,
-    // fila ni píldora las ofrece.
-    const hrefs = pantallas.map((p) => p.href);
-    for (const seg of ['/contratos/retencion', '/contratos/riesgo', '/contratos/aprobar']) {
-      expect(hrefs).not.toContain(`${PANEL}${seg}`);
-    }
+  it('Retención vuelve al catálogo como fila de «Agentes IA» (Nico, 2026-09-29), con el gate de su layout', () => {
+    // Estuvo fuera desde el 03-09 («no va a producción todavía»). Vinci se
+    // cerró el 26-09 y Nico lo quiere en el menú para probarlo.
+    const retencion = pantallas.find((p) => p.href === `${PANEL}/contratos/retencion`);
+    expect(retencion?.module).toBe('retencion');
   });
 
   it('Evaluación de candidatos NO está en el catálogo: oculta por ahora (Nico, 2026-09-08)', () => {
@@ -755,8 +758,10 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
   it('trae lo que funciona hoy en el orden de los módulos de donde vino; después el equipo de pagos y Desempeño IA', () => {
     expect(agentes.modulos.map((m) => m.key)).toEqual([
       'avaluos',
+      'calidad-publicaciones',
       'matching',
       'asegurabilidad',
+      'retencion',
       'cobranza',
       'conciliacion',
       'agente-de-pagos',
@@ -770,8 +775,10 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // sin mover nada (ver el test del módulo dueño, abajo).
     expect(agentes.modulos.map((m) => m.href.replace(PANEL, ''))).toEqual([
       '/inmuebles/avaluos',
+      '/inmuebles/calidad-de-publicaciones',
       '/postulaciones/matching',
       '/postulaciones/asegurabilidad',
+      '/contratos/retencion',
       '/pagos/cobranza',
       '/conciliacion',
       '/pagos/agente',
@@ -855,15 +862,21 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       filterAgencyNav(filasDelSidebar(t, ctx), ctx)
         .map((f) => f.href.replace(PANEL, ''))
         .filter((h) => agentes.modulos.some((m) => m.href === `${PANEL}${h}`));
-    // El comercial no ve finanzas —no veía Cobranza dentro de Pagos—.
+    // El comercial no ve finanzas —no veía Cobranza dentro de Pagos—. Ve
+    // Calidad (encuadre de Inmuebles) y Retención (el de Contratos) porque ya
+    // veía esos dos módulos (29-09-2026).
     expect(visibles({ canAccess: () => true, isAdmin: false, agencyRole: AGENCY_ROLES.AGENTE })).toEqual([
       '/inmuebles/avaluos',
+      '/inmuebles/calidad-de-publicaciones',
       '/postulaciones/matching',
       '/postulaciones/asegurabilidad',
+      '/contratos/retencion',
       '/reportes/ia',
     ]);
     // El contador no ve comercial —no veía Avalúos dentro de Inmuebles—.
+    // Ve Retención porque ve Contratos (mismo encuadre, 29-09-2026).
     expect(visibles({ canAccess: () => true, isAdmin: false, agencyRole: AGENCY_ROLES.CONTADOR })).toEqual([
+      '/contratos/retencion',
       '/pagos/cobranza',
       '/conciliacion',
       '/pagos/agente',
@@ -885,8 +898,11 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // Los agentes son del plan Flex: sin plan, el micro no concede sus
     // módulos y `canAccess` los niega. Sin ninguna fila, la cabecera no se
     // queda sola (`filterAgencyNav` borra la cabecera vacía).
+    // Sin `portafolio`: desde el 29-09-2026 «Calidad de publicaciones» (Niti)
+    // cuelga de ese módulo —no tiene uno de plan propio—, así que con él la
+    // sección ya no queda vacía.
     const sinAgentes: NavFilterContext = {
-      canAccess: (m) => ['portafolio', 'pipeline', 'contratos'].includes(m),
+      canAccess: (m) => ['pipeline', 'contratos'].includes(m),
       isAdmin: false,
       agencyRole: AGENCY_ROLES.AGENTE,
     };
@@ -902,10 +918,11 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     expect(conUna[i + 1]?.href).toBe(`${PANEL}/reportes/ia`);
   });
 
-  it('lo que está sin sacar NO entra: Retención, Mantenimiento (tickets), Evaluación de candidatos', () => {
-    const hrefs = agentes.modulos.map((m) => m.href);
+  it('lo que está sin sacar NO entra: Mantenimiento (tickets), Evaluación de candidatos', () => {
+    // Retención salió de esta lista el 29-09-2026: ya tiene su fila.
+    const hrefs = agentes.modulos.map((m) => m.href)
     for (const h of hrefs) {
-      expect(h, h).not.toMatch(/\/contratos\/|\/mantenimientos|\/postulaciones\/estudio/);
+      expect(h, h).not.toMatch(/\/mantenimientos|\/postulaciones\/estudio|\/contratos\/(riesgo|aprobar)/);
     }
   });
 

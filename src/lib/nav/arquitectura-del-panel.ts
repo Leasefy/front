@@ -43,6 +43,8 @@ import {
   Vault,
   ArrowsLeftRight,
   HourglassMedium,
+  HandHeart,
+  SealCheck,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -334,12 +336,24 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Venía de Inmuebles (`scope: 'comercial'` heredado). Gate `avaluos` con
       // el fallback ABSENT = ALLOWED (agent-module-access.ts).
       { key: 'avaluos', labelKey: 'inmobiliaria.ai.nav.avaluos', href: r('/inmuebles/avaluos'), icon: Scales, module: 'avaluos', scope: 'comercial', agente: 'avaluos' },
+      // 29-09-2026 (Nico: «no los veo en la sección de agentes para poder
+      // probarlos»). Niti · calidad de las publicaciones: su propia ruta con el
+      // componente de la pestaña «Calidad» de Portales (que salió del menú el
+      // 22-09 y sigue viva). Mismo `module`/`scope` que Portales e Inmuebles:
+      // no abre ninguna puerta nueva. Niti no tiene módulo de plan propio, así
+      // que con esta fila la sección se ve para quien tenga `portafolio`.
+      { key: 'calidad-publicaciones', labelKey: 'inmobiliaria.nav.calidadPublicaciones', href: r('/inmuebles/calidad-de-publicaciones'), icon: SealCheck, module: 'portafolio', scope: 'comercial' },
       // Venían de Postulaciones (`scope: 'comercial'` heredado), en el orden en
       // que se recorre un candidato.
       { key: 'matching', labelKey: 'inmobiliaria.ai.nav.matching', href: r('/postulaciones/matching'), icon: GitMerge, module: 'matching', scope: 'comercial', agente: 'matching' },
       { key: 'asegurabilidad', labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', scope: 'comercial', agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },
       // Venía de Pagos, cara inquilinos (`scope: 'finanzas'` heredado). Sin
       // `cara`: las caras son de Pagos, y Cobranza ya no es una de sus pantallas.
+      // 29-09-2026 (Nico): Vinci · retención, de vuelta en el menú para
+      // probarlo. Tablero, riesgo de salida y decisiones por aprobar, bajo
+      // `contratos/(retencion)/`; el tablero enlaza a Riesgo. Gate `retencion`,
+      // el mismo que ya exige su layout; encuadre de Contratos.
+      { key: 'retencion', labelKey: 'inmobiliaria.nav.retencion', href: r('/contratos/retencion'), icon: HandHeart, module: 'retencion', scope: 'administracion' },
       { key: 'cobranza', labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/pagos/cobranza'), icon: ChatCircleText, module: 'cobranza', scope: 'finanzas', agente: 'cobranza', dataTourTarget: 'sidebar-cobranza' },
       // Venía de Dinero, donde ya era la raíz de su propio módulo: sólo cambió
       // de grupo. Sus pestañas son las suyas.
@@ -488,10 +502,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // SECCIÓN de Contratos y no como fila: Contratos ya tiene riel, y
           // una cláusula sólo tiene sentido dentro de un contrato.
           { labelKey: 'inmobiliaria.nav.clausulasPropias', href: r('/contratos/clausulas'), icon: Scroll, module: 'contratos' },
-          // Retención (el agente Laura: tablero, riesgo de salida y decisiones
-          // por aprobar) NO está en el catálogo a propósito: no va a producción
-          // todavía (Nico, 2026-09-03). Las tres rutas siguen existiendo bajo
-          // `contratos/(retencion)/` y sólo se alcanzan escribiendo la URL.
+          // Retención (Vinci: tablero, riesgo de salida y decisiones por
+          // aprobar) no va acá: desde el 29-09-2026 tiene su fila en «Agentes
+          // IA». Las tres rutas siguen bajo `contratos/(retencion)/`.
         ],
       },
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento

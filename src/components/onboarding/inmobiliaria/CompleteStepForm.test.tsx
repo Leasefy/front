@@ -11,8 +11,20 @@ import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
 // `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
 // 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+const { refreshUser, confettiMock, movimiento } = vi.hoisted(() => {
+  const confettiMock = Object.assign(vi.fn(), { reset: vi.fn() })
+  return { refreshUser: vi.fn(async () => {}), confettiMock, movimiento: { reducido: false } }
+})
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+  useAuth: () => ({ refreshUser, user: null, isAuthenticated: false, isLoading: false }),
+}))
+
+// La celebración: el confeti se espía (en happy-dom no hay canvas) y
+// `prefers-reduced-motion` se controla desde la prueba.
+vi.mock('canvas-confetti', () => ({ default: confettiMock }))
+vi.mock('framer-motion', async (original) => ({
+  ...(await original<typeof import('framer-motion')>()),
+  useReducedMotion: () => movimiento.reducido,
 }))
 
 /**
@@ -31,6 +43,10 @@ let root: Root
 
 beforeEach(() => {
   routerReplace.mockClear()
+  refreshUser.mockClear()
+  confettiMock.mockClear()
+  confettiMock.reset.mockClear()
+  movimiento.reducido = false
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -64,6 +80,27 @@ function byTestId(testId: string): HTMLElement {
   return el as HTMLElement
 }
 
+function enElDocumento(testId: string): HTMLElement | null {
+  // La celebración va por portal a `document.body`, fuera del contenedor.
+  return document.body.querySelector(`[data-testid="${testId}"]`)
+}
+
+async function clickIrAlPanel() {
+  const btn = enElDocumento('inmobiliaria-creada-ir-al-panel') as HTMLButtonElement
+  await act(async () => {
+    btn.click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
+}
+
+const RESPUESTA_OK = {
+  tenantId: 'tenant-1',
+  agencyId: 'agency-1',
+  sessionId: 'sess-1',
+  status: 'COMPLETED',
+  dashboardUrl: '/panel/inmobiliaria',
+}
+
 async function clickFinish() {
   const btn = byTestId('complete-step-finish') as HTMLButtonElement
   await act(async () => {
@@ -86,6 +123,7 @@ describe('<CompleteStepForm>', () => {
     render({ onSubmit })
 
     await clickFinish()
+    await clickIrAlPanel()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(routerReplace).toHaveBeenCalledTimes(1)
@@ -101,6 +139,77 @@ describe('<CompleteStepForm>', () => {
     render({ onSubmit: vi.fn().mockResolvedValue(null) })
     await clickFinish()
     expect(routerReplace).not.toHaveBeenCalled()
+    expect(enElDocumento('inmobiliaria-creada')).toBeNull()
+  })
+
+  it('el botón dice en español lo que hace: «Crear mi inmobiliaria»', () => {
+    render()
+    const btn = byTestId('complete-step-finish')
+    expect(btn.textContent).toContain('Crear mi inmobiliaria')
+    expect(btn.textContent).not.toMatch(/onboarding/i)
+  })
+
+  it('🔴 al crearla se celebra con confeti y su nombre, y NO se va sola al panel', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render({
+        onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK),
+        draft: { legalName: 'Inmobiliaria Altavista S.A.S.' },
+      })
+      await clickFinish()
+
+      const celebracion = enElDocumento('inmobiliaria-creada')
+      expect(celebracion?.getAttribute('role')).toBe('dialog')
+      expect(celebracion?.textContent).toContain('Tu inmobiliaria quedó creada')
+      expect(enElDocumento('inmobiliaria-creada-nombre')?.textContent).toBe('Inmobiliaria Altavista S.A.S.')
+      expect(confettiMock).toHaveBeenCalled()
+
+      // Sin cuenta regresiva: pasa el tiempo y sigue ahí, sin navegar.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000)
+      })
+      expect(routerReplace).not.toHaveBeenCalled()
+      expect(refreshUser).not.toHaveBeenCalled()
+      expect(enElDocumento('inmobiliaria-creada')).not.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('su único botón refresca la sesión y LUEGO lleva al panel (el arreglo del bucle del 07-09)', async () => {
+    const orden: string[] = []
+    refreshUser.mockImplementationOnce(async () => {
+      orden.push('refresh')
+    })
+    routerReplace.mockImplementationOnce(() => orden.push('replace'))
+    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
+    await clickFinish()
+
+    const botones = enElDocumento('inmobiliaria-creada')?.querySelectorAll('button') ?? []
+    expect(botones).toHaveLength(1)
+
+    await clickIrAlPanel()
+
+    expect(orden).toEqual(['refresh', 'replace'])
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+  })
+
+  it('con `prefers-reduced-motion` celebra igual, pero sin confeti', async () => {
+    movimiento.reducido = true
+    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
+    await clickFinish()
+
+    expect(enElDocumento('inmobiliaria-creada')).not.toBeNull()
+    expect(confettiMock).not.toHaveBeenCalled()
+  })
+
+  it('sin razón social en el borrador se celebra igual, sin inventar un nombre', async () => {
+    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK), draft: null })
+    await clickFinish()
+
+    expect(enElDocumento('inmobiliaria-creada')?.textContent).toContain('Tu inmobiliaria quedó creada')
+    expect(enElDocumento('inmobiliaria-creada-nombre')).toBeNull()
+    expect(enElDocumento('inmobiliaria-creada')?.textContent).not.toContain('undefined')
   })
 
   it('🔴 muestra el resumen de lo cargado: «revisa que todo esté en orden» sin nada que revisar no significa nada', () => {

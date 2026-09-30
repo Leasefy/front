@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/spinner'
 import type { OnboardingSessionCompleteResponse, OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 import type { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
+import { InmobiliariaCreada } from './InmobiliariaCreada'
 
 /** El destino del asistente al terminar. Ruta propia, siempre relativa. */
 export const RUTA_DEL_PANEL = '/panel/inmobiliaria'
@@ -135,8 +136,9 @@ export function resumenDelRegistro(
  * Form for the wizard's terminal `complete` step — no fields, just a confirm CTA
  * that calls `completeOnboarding()`.
  *
- *  - Success → redirects with `window.location.href` (the response's `dashboardUrl`
- *    is potentially cross-domain, so the Next.js router is deliberately not used here).
+ *  - Success → celebración (`InmobiliariaCreada`, con confeti) y, cuando la persona
+ *    aprieta «Ir a mi panel», refresca la sesión y navega a una ruta PROPIA
+ *    (nunca al `dashboardUrl` absoluto: ver `irAlPanel`).
  *  - 409 conflict → NOT a hard error: the session isn't actually done yet. See
  *    `extractMissingSteps` above for how the two possible 409 shapes are discriminated.
  *  - Any other error kind is NOT handled here — the parent renders the generic
@@ -151,8 +153,11 @@ export function CompleteStepForm({
 }: CompleteStepFormProps) {
   const router = useRouter()
   const { refreshUser } = useAuth()
+  /** `/complete` salió bien: se celebra antes de ir al panel (Nico, 30-09). */
+  const [creada, setCreada] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
   const resumen = resumenDelRegistro(draft)
+  const nombre = textoDelDraft(draft, 'legalName') ?? textoDelDraft(draft, 'proposedAgencyName')
 
   /**
    * 🔴 NO se navega a `result.dashboardUrl`.
@@ -170,29 +175,36 @@ export function CompleteStepForm({
    */
   const handleFinish = async () => {
     const result = await onSubmit()
-    if (result) {
-      setRedirecting(true)
-      /*
-       * 🔴 Refrescar la sesión ANTES de navegar (Nico, 2026-09-07: «me dejó en
-       * un bucle, no me deja crear cuenta»).
-       *
-       * `/complete` creaba la inmobiliaria bien, pero el contexto de auth
-       * seguía con el `/users/me` de antes —sin membresía— y `ProtectedRoute`,
-       * al ver `needsOnboarding`, devolvía al selector de rol. De ahí el rol
-       * de nuevo, el «Ya casi está» de golpe (la sesión del back ya estaba en
-       * el paso 4) y el selector otra vez. El flujo de inquilino ya hace este
-       * refresco; éste no lo hacía.
-       *
-       * Si el refresco falla igual se navega: el guardián vuelve a sondear la
-       * membresía por su cuenta, y quedarse acá sería otro callejón.
-       */
-      try {
-        await refreshUser()
-      } catch {
-        // ver arriba
-      }
-      router.replace(RUTA_DEL_PANEL)
+    // Primero se celebra; la sesión se refresca y se navega cuando la persona
+    // aprieta «Ir a mi panel» (`irAlPanel`). Refrescar antes haría que los
+    // guardianes vieran la membresía nueva y se la llevaran a mitad de la
+    // celebración.
+    if (result) setCreada(true)
+  }
+
+  const irAlPanel = async () => {
+    if (redirecting) return
+    setRedirecting(true)
+    /*
+     * 🔴 Refrescar la sesión ANTES de navegar (Nico, 2026-09-07: «me dejó en
+     * un bucle, no me deja crear cuenta»).
+     *
+     * `/complete` creaba la inmobiliaria bien, pero el contexto de auth
+     * seguía con el `/users/me` de antes —sin membresía— y `ProtectedRoute`,
+     * al ver `needsOnboarding`, devolvía al selector de rol. De ahí el rol
+     * de nuevo, el «Ya casi está» de golpe (la sesión del back ya estaba en
+     * el paso 4) y el selector otra vez. El flujo de inquilino ya hace este
+     * refresco; éste no lo hacía.
+     *
+     * Si el refresco falla igual se navega: el guardián vuelve a sondear la
+     * membresía por su cuenta, y quedarse acá sería otro callejón.
+     */
+    try {
+      await refreshUser()
+    } catch {
+      // ver arriba
     }
+    router.replace(RUTA_DEL_PANEL)
   }
 
   if (error?.kind === 'conflict') {
@@ -250,8 +262,8 @@ export function CompleteStepForm({
         <h2 className="text-h2">Ya casi está</h2>
         <p className="text-body-sm text-fg-muted mt-1">
           {resumen.length > 0
-            ? 'Revisa que todo esté en orden y confirma para finalizar tu registro.'
-            : 'Confirma para finalizar tu registro.'}
+            ? 'Revisa que todo esté en orden y crea tu inmobiliaria.'
+            : 'Confirma para crear tu inmobiliaria.'}
         </p>
       </div>
 
@@ -274,27 +286,26 @@ export function CompleteStepForm({
         hideArrow
         size="lg"
         className="w-full"
-        disabled={isSubmitting || redirecting}
+        disabled={isSubmitting || creada}
         onClick={handleFinish}
         data-testid="complete-step-finish"
       >
-        {redirecting ? (
+        {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Redirigiendo a tu panel...
-          </>
-        ) : isSubmitting ? (
-          <>
-            <Spinner size="xs" variant="current" />
-            Finalizando...
+            Creando tu inmobiliaria…
           </>
         ) : (
           <>
-            Finalizar onboarding
+            Crear mi inmobiliaria
             <ArrowRight className="w-4 h-4" />
           </>
         )}
       </Button>
+
+      {creada ? (
+        <InmobiliariaCreada nombre={nombre} onIrAlPanel={() => void irAlPanel()} yendo={redirecting} />
+      ) : null}
     </div>
   )
 }

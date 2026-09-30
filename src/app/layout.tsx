@@ -11,6 +11,7 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { SessionRevocationHandler } from "@/components/auth/SessionRevocationHandler";
 import { IdleSessionGuard } from "@/components/auth/IdleSessionGuard";
+import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacionGuard";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
 
@@ -138,6 +139,7 @@ export default async function RootLayout({
               <PushNotificationHandler />
               <SessionRevocationHandler />
               <IdleSessionGuard />
+              <SesionDeRecuperacionGuard />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>

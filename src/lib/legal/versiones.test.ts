@@ -41,6 +41,13 @@ describe('las versiones legales no se separan de lo publicado', () => {
     )
   })
 
+  it('el registro de inmobiliaria acepta la MISMA versión de los términos que muestra (no «2026-08»)', async () => {
+    // 🔴 30-09-2026: el paso «Habeas Data» mandaba `'2026-08'` escrito a mano
+    // mientras en pantalla estaba la v2.0 del 5 de septiembre.
+    const { CURRENT_TERMS_VERSION } = await import('@/lib/api/onboarding-session.service')
+    expect(CURRENT_TERMS_VERSION).toBe(VERSION_TERMINOS)
+  })
+
   it('nadie vuelve a clavar una versión a mano en el portal del inquilino', () => {
     // El guardián de la regresión concreta: la cadena suelta que estuvo meses.
     const portal = leer('src/app/inquilino/documentos/page.tsx')

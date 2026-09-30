@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
+import { Lock, Eye, EyeSlash, CheckCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
@@ -15,6 +15,22 @@ import { sanitizeReturnUrl } from '@/lib/utils';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { borrarMarcaDeRecuperacion } from '@/lib/auth/sesion-de-recuperacion';
+
+/**
+ * Supabase no deja cambiar la contraseña de una cuenta con segundo factor
+ * desde una sesión `aal1` (la que abre el enlace de recuperación): responde
+ * 403 `insufficient_aal` con «AAL2 session is required to update email or
+ * password when MFA is enabled.» (Nico, 30-09-2026, producción). Antes eso
+ * salía tal cual, en inglés, y no había forma de seguir.
+ */
+class FaltaElSegundoFactor extends Error {
+  constructor() {
+    super('Para cambiar la contraseña primero confirma el código de tu app de autenticación.');
+    this.name = 'FaltaElSegundoFactor';
+  }
+}
 
 /**
  * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
@@ -43,10 +59,13 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
 
   if (!res.ok) {
     let message = `Error ${res.status}`;
+    let codigo: string | undefined;
     try {
       const body = await res.json();
       message = body.msg || body.error_description || body.error || message;
+      codigo = body.error_code || body.code;
     } catch { /* keep default */ }
+    if (codigo === 'insufficient_aal' || /aal2/i.test(message)) throw new FaltaElSegundoFactor();
     throw new Error(enEspanol(message));
   }
 }
@@ -91,7 +110,7 @@ function enEspanol(mensaje: string): string {
 function UpdatePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, mfaRequired } = useAuth();
 
   const esPrimeraVez = searchParams.get('nuevo') === '1';
   const destino = sanitizeReturnUrl(searchParams.get('next'), '/');
@@ -111,6 +130,21 @@ function UpdatePasswordContent() {
    */
   const hidratado = useHidratado();
 
+  /*
+   * Cuenta con segundo factor: primero el código y después la contraseña. La
+   * pantalla del código ya resuelve todo (incluido «No tengo la app») y vuelve
+   * acá con la sesión en `aal2`. Mismo destino si Supabase lo exige al guardar
+   * y el contexto no lo había detectado.
+   */
+  const alSegundoFactor = () => {
+    const aqui = `/auth/update-password${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    router.replace(rutaAlSegundoFactor(aqui));
+  };
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && mfaRequired) alSegundoFactor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sólo cuando cambia la sesión
+  }, [authLoading, isAuthenticated, mfaRequired]);
+
   const passwordsMatch = password === confirm;
   // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
   const isStrong = fortalezaDeContrasena(password).cumpleMinimo;
@@ -118,7 +152,7 @@ function UpdatePasswordContent() {
   // el AuthProvider terminó su init (fetchUser + checkMfaLevel) y no
   // chocan los locks de @supabase/auth-js cuando llamamos updateUser.
   const canSubmit =
-    hidratado && password && confirm && passwordsMatch && isStrong && !authLoading && !isSubmitting;
+    hidratado && password && confirm && passwordsMatch && isStrong && !authLoading && !mfaRequired && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,9 +172,15 @@ function UpdatePasswordContent() {
 
     try {
       await updatePasswordDirect(password);
+      // Ya no es una sesión «sólo para cambiar la contraseña».
+      borrarMarcaDeRecuperacion();
       setSuccess(true);
       setTimeout(() => router.push(destino), 2000);
     } catch (err) {
+      if (err instanceof FaltaElSegundoFactor) {
+        alSegundoFactor();
+        return;
+      }
       const msg = err instanceof Error ? err.message : 'Ocurrió un error. Intenta de nuevo.';
       console.error('[update-password] error:', err);
       setError(msg);
@@ -261,12 +301,13 @@ function UpdatePasswordContent() {
                   className="w-full h-12 text-[14px]"
                   disabled={!canSubmit}
                 >
-                  {authLoading
+                  {/* Una sola flecha: la ↗ que ya pone el botón (antes se sumaba
+                      otra → a mano y quedaban dos). */}
+                  {authLoading || mfaRequired
                     ? 'Cargando sesión...'
                     : isSubmitting
                       ? 'Guardando...'
                       : 'Guardar contraseña'}
-                  {!authLoading && !isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
               </form>
 

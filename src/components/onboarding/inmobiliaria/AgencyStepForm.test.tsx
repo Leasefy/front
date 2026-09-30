@@ -105,6 +105,17 @@ describe('<AgencyStepForm> — prefill', () => {
   })
 })
 
+describe('<AgencyStepForm> — el correo y el teléfono son de la cuenta', () => {
+  it('dice «de la cuenta» y para qué sirve el correo, no «contacto principal» (Nico 30-09)', () => {
+    render()
+    const etiquetas = [...container.querySelectorAll('label')].map((l) => l.textContent ?? '')
+    expect(etiquetas.some((t) => t.includes('Correo de la cuenta'))).toBe(true)
+    expect(etiquetas.some((t) => t.includes('Teléfono de la cuenta'))).toBe(true)
+    expect(container.textContent).not.toContain('contacto principal')
+    expect(container.textContent).toContain('Queda asociado a la cuenta de la inmobiliaria')
+  })
+})
+
 describe('<AgencyStepForm> — razón social + NIT read-only', () => {
   it('renders legalName and nit as read-only when both come prefilled', () => {
     render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' } })

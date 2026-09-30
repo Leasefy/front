@@ -21,6 +21,7 @@
  * so the SPA can redirect the user to the step the session is actually on.
  */
 
+import { VERSION_TERMINOS } from '@/lib/legal/versiones'
 import { agentAuthHeaders } from './agent-auth'
 import type {
   OnboardingSessionAgencyRequest,
@@ -131,8 +132,8 @@ const FIELD_LABELS_ES: Record<string, string> = {
   ciudad: 'Ciudad',
   departamento: 'Departamento',
   codigoPostal: 'Código postal',
-  primaryContactEmail: 'Correo de contacto',
-  primaryContactPhone: 'Teléfono de contacto',
+  primaryContactEmail: 'Correo de la cuenta',
+  primaryContactPhone: 'Teléfono de la cuenta',
 }
 
 function issueFieldLabel(issue: ZodIssueLike): string {
@@ -278,11 +279,16 @@ export function submitPolicy(
  */
 
 /**
- * Version identifier of the Terms & Conditions text currently rendered by
- * `TermsStepForm`. Sent verbatim to the agent for legal traceability. BUMP THIS
- * whenever the T&C copy changes so acceptances are attributed to the right text.
+ * La versión de los Términos que se registra como aceptada en el paso
+ * «Habeas Data». Sale de `lib/legal/versiones.ts`, el mismo lugar que sube la
+ * versión cuando cambia el texto de `/terminos`.
+ *
+ * 🔴 Hasta el 30-09-2026 era `'2026-08'` escrito a mano: cada inmobiliaria
+ * quedaba registrada aceptando una versión que no es la v2.0 (vigente desde el
+ * 5 de septiembre) que tenía en pantalla. La aceptación dejaba de servir como
+ * prueba de A QUÉ dijo que sí.
  */
-export const CURRENT_TERMS_VERSION = '2026-08'
+export const CURRENT_TERMS_VERSION = VERSION_TERMINOS
 
 export function acceptTerms(
   sessionId: string,

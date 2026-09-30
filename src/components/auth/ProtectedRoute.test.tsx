@@ -15,9 +15,10 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, refreshUserMock, authState } = vi.hoisted(() => {
+const { replaceMock, refreshUserMock, authState, ruta } = vi.hoisted(() => {
   const refreshUserMock = vi.fn().mockResolvedValue(undefined)
   return {
+    ruta: { actual: '/panel/inmobiliaria' },
     replaceMock: vi.fn(),
     refreshUserMock,
     authState: {
@@ -38,7 +39,7 @@ const { replaceMock, refreshUserMock, authState } = vi.hoisted(() => {
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
-  usePathname: () => '/panel/inmobiliaria',
+  usePathname: () => ruta.actual,
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -52,6 +53,7 @@ let root: Root
 
 beforeEach(() => {
   localStorage.clear()
+  ruta.actual = '/panel/inmobiliaria'
   replaceMock.mockClear()
   refreshUserMock.mockClear()
   authState.user = null
@@ -191,6 +193,28 @@ describe('ProtectedRoute — T-0099: MFA-pending gate (session assurance level, 
     expect(childMounted()).toBe(false)
     expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
     expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('en el registro (/onboarding) NO manda a inscribir el segundo factor (Nico 30-09: «Reintentar» → «Activa tu segundo factor»)', async () => {
+    ruta.actual = '/onboarding/inmobiliaria'
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: false }
+    authState.mfaEnrollRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+
+  it('en el registro, un segundo factor YA inscrito se sigue verificando', async () => {
+    ruta.actual = '/onboarding/inmobiliaria'
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: false }
+    authState.mfaRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
   })
 
   it('once mfaEnrollRequired flips back to false (enrolled + verified): children mount normally, no redirect', async () => {

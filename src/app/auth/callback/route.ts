@@ -3,6 +3,11 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { sanitizeReturnUrl } from '@/lib/utils'
+import {
+  COOKIE_DE_RECUPERACION,
+  DURACION_DE_LA_MARCA_S,
+  esEnlaceDeRecuperacion,
+} from '@/lib/auth/sesion-de-recuperacion'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -49,6 +54,18 @@ export async function GET(request: NextRequest) {
       cookiesToSet.forEach(({ name, value, options }) => {
         response.cookies.set(name, value, options)
       })
+
+      // La sesión del enlace de «¿Olvidaste tu contraseña?» sólo sirve para
+      // poner la nueva: si la persona se va sin terminar, la cierra
+      // `SesionDeRecuperacionGuard` (ver `lib/auth/sesion-de-recuperacion.ts`).
+      if (esEnlaceDeRecuperacion(returnUrl)) {
+        response.cookies.set(COOKIE_DE_RECUPERACION, '1', {
+          path: '/',
+          maxAge: DURACION_DE_LA_MARCA_S,
+          sameSite: 'lax',
+          secure: origin.startsWith('https://'),
+        })
+      }
 
       return response
     }

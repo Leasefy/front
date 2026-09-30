@@ -143,7 +143,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
           </p>
         ) : (
           <div className="space-y-3">
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_repeat(2,minmax(0,8rem))_auto] sm:items-end">
+            <div className="grid gap-4 sm:grid-cols-[minmax(14rem,1fr)_repeat(2,minmax(0,8rem))_auto] sm:items-end">
               <div className="space-y-1.5">
                 <Label htmlFor="vinci-oferta-tipo">Registrar una oferta</Label>
                 <Select value={tipo} onValueChange={(v) => setTipo(v as TipoDeOferta)}>

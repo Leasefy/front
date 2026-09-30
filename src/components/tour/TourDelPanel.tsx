@@ -41,6 +41,12 @@
  *    la casa, no con un negro clavado.
  * 6. **`prefers-reduced-motion` apaga la respiración del halo** y acorta las
  *    transiciones a cero.
+ * 7. **Es lo ÚLTIMO de una cuenta nueva** (Nico, 30-09-2026): con migración,
+ *    muro → confeti → segundo factor → recorrido; sin migración, la pregunta
+ *    previa → segundo factor → recorrido. Arranca solo cuando no queda nada
+ *    delante (`motivoParaEsperar`), lo mira cada `LATIDO` en vez de una vez, y
+ *    si algo aparece con él abierto se PAUSA: se esconde sin marcarse visto y
+ *    vuelve en la misma pantalla.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -53,13 +59,17 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { useMigracion } from '@/components/migracion/migracion-context';
 import {
   PASOS_DEL_TOUR,
   elPanelEstaBloqueado,
+  motivoParaEsperar,
   pantallasDelTour,
   pasosVisibles,
+  type MotivoParaEsperar,
   type PantallaDelTour,
   type PasoDelTour,
+  type SenalesDelPanel,
 } from './pasos-del-tour';
 
 /** Aire alrededor del elemento resaltado. */
@@ -83,6 +93,21 @@ const LATIDO = 300;
 const ESTABLES = 3;
 const MIN_INTENTOS = 4;
 const INTENTOS = 20;
+/**
+ * Después de que cae una capa (el muro, el confeti, el segundo factor), la
+ * calma que se pide antes de arrancar es más larga: al tocar «Entrar a
+ * Leasefy» la sesión se refresca y RECIÉN AHÍ se sabe si hay que pedir el
+ * segundo factor. Con los 1,2 s de siempre el recorrido alcanzaba a asomarse
+ * antes de que `ProtectedRoute` se llevara a la persona a activarlo.
+ */
+const MIN_INTENTOS_TRAS_UNA_CAPA = 8;
+/**
+ * Cuánto se espera a que el muro conteste antes de arrancar igual. Sin esto,
+ * con un back lento el recorrido salía y a los pocos segundos lo tapaba la
+ * pregunta «¿Migramos tu inmobiliaria?». Con tope: si el muro nunca contesta
+ * (el back falló), el recorrido no se pierde — ante la duda, el panel se ve.
+ */
+const ESPERA_POR_EL_MURO_MS = 6000;
 /** Ancho de la tarjeta anclada; también su tope en pantallas chicas. */
 const ANCHO = 340;
 /** Hasta dónde llega la columna del sidebar (240 px + aire): lo que termina antes, se señala desde el costado. */
@@ -224,7 +249,7 @@ function focusables(caja: HTMLElement): HTMLElement[] {
 
 export function TourDelPanel() {
   const { t } = useI18n();
-  const { user, agency } = useAuth();
+  const { user, agency, mfaRequired, mfaEnrollRequired } = useAuth();
   const { tourDismissed, cerrarRecorrido } = usePanelPrefs();
   const reducirMovimiento = useReducedMotion();
   // Los permisos deciden qué filas del sidebar existen. Medir antes de que
@@ -232,6 +257,32 @@ export function TourDelPanel() {
   // poder montarse (y probarse) sin el provider.
   const permisos = usePermissionsContextSafe();
   const permisosListos = permisos == null || !permisos.isLoading;
+
+  // ── Lo que hay delante (ver `motivoParaEsperar`) ─────────────────────────
+  // Se LEE de lo que ya existe: la sesión (segundo factor), el contexto del
+  // muro y el DOM. `null` fuera del panel de la inmobiliaria ⇒ no hay muro.
+  const migracion = useMigracion();
+  const senales: SenalesDelPanel = {
+    segundoFactorPendiente: Boolean(mfaRequired || mfaEnrollRequired),
+    muro:
+      migracion == null
+        ? 'libre'
+        : migracion.estado == null
+          ? 'sin-contestar'
+          : migracion.estado.bloquea
+            ? 'bloquea'
+            : 'libre',
+  };
+  // Espejo para el latido, que corre fuera del render.
+  const senalesRef = useRef(senales);
+  senalesRef.current = senales;
+  /**
+   * El último motivo medido por el latido. `'sin-mirar'` hasta la primera
+   * medición: arrancar a contar antes de mirar es justo lo que no se quiere.
+   */
+  const [delante, setDelante] = useState<MotivoParaEsperar | 'sin-mirar' | null>('sin-mirar');
+  /** Hubo algo delante en esta sesión del recorrido ⇒ la calma pedida es más larga. */
+  const vioAlgoDelanteRef = useRef(false);
 
   const [pasos, setPasos] = useState<PasoDelTour[] | null>(null);
   const [indice, setIndice] = useState(0);
@@ -249,23 +300,75 @@ export function TourDelPanel() {
 
   const activo = tourDismissed === false;
 
+  /*
+   * 🔴 EL LATIDO: qué hay delante, medido cada `LATIDO` mientras el recorrido
+   * está pendiente (y también con él abierto, para pausarlo).
+   *
+   * Hasta el 30-09 esto se miraba UNA vez, dentro del conteo, y si había una
+   * capa el conteo se cortaba sin volver a programarse. El comentario decía
+   * «para que el recorrido salga solo cuando la capa caiga», pero nadie lo
+   * despertaba: las dependencias del efecto eran `[activo, permisosListos]` y
+   * ninguna cambia cuando el muro baja. La cuenta nueva que entraba con el
+   * muro puesto se quedaba sin recorrido toda la sesión (Nico, 30-09: «no se
+   * está mostrando de manera automática a las cuentas nuevas»).
+   *
+   * Son cinco `querySelector` cada 300 ms, y sólo mientras la inmobiliaria no
+   * lo haya visto: una vez por agencia.
+   */
+  useEffect(() => {
+    if (!activo) {
+      setDelante('sin-mirar');
+      return;
+    }
+    const desde = Date.now();
+    let id: ReturnType<typeof setTimeout>;
+    const mirar = () => {
+      const actuales = senalesRef.current;
+      const motivo = motivoParaEsperar((sel) => document.querySelector(sel) != null, {
+        ...actuales,
+        // El muro sin respuesta se espera, pero no para siempre.
+        muro:
+          actuales.muro === 'sin-contestar' && Date.now() - desde >= ESPERA_POR_EL_MURO_MS
+            ? 'libre'
+            : actuales.muro,
+      });
+      // Esperar la PRIMERA respuesta del muro no es que algo haya caído: no
+      // alarga la calma de quien entra a un panel que ya estaba abierto.
+      if (motivo && motivo !== 'muro-sin-contestar') vioAlgoDelanteRef.current = true;
+      setDelante(motivo);
+      id = setTimeout(mirar, LATIDO);
+    };
+    mirar();
+    return () => clearTimeout(id);
+  }, [activo]);
+
+  // Lo que viene de React (sesión y muro) se obedece en el mismo render, sin
+  // esperar al latido: un segundo factor pendiente esconde el recorrido YA.
+  const libre =
+    delante === null && !senales.segundoFactorPendiente && senales.muro !== 'bloquea';
+
   // Los pasos se resuelven al arrancar el recorrido, no al montar: el panel
   // tarda en pintar el sidebar y la píldora, y medir antes daría un recorrido
-  // recortado (ver `LATIDO`).
+  // recortado (ver `LATIDO`). Mientras haya algo delante no se cuenta; cuando
+  // cae, el efecto vuelve a correr con `libre` y el conteo empieza de cero.
   useEffect(() => {
     if (!activo) {
       setPasos(null);
       setIndice(0);
       yaArrancoRef.current = false;
+      vioAlgoDelanteRef.current = false;
       return;
     }
-    // Un refetch de permisos no puede reiniciar un recorrido ya empezado.
-    if (!permisosListos || yaArrancoRef.current) return;
+    // Un refetch de permisos no puede reiniciar un recorrido ya empezado, y
+    // una capa que aparece con el recorrido abierto lo PAUSA (ver `abierto`),
+    // no lo vuelve a armar.
+    if (!permisosListos || !libre || yaArrancoRef.current) return;
     let cancelado = false;
     let anterior = -1;
     let estables = 0;
     let intentos = 0;
     let id: ReturnType<typeof setTimeout>;
+    const minimo = vioAlgoDelanteRef.current ? MIN_INTENTOS_TRAS_UNA_CAPA : MIN_INTENTOS;
 
     const arrancar = (visibles: PasoDelTour[]) => {
       yaArrancoRef.current = true;
@@ -280,13 +383,14 @@ export function TourDelPanel() {
 
     const contar = () => {
       if (cancelado) return;
-      const hay = (sel: string) => document.querySelector(sel) != null;
-
-      // Con el muro de la puesta en marcha —o un modal que la persona abrió—
-      // no se arranca, y la preferencia se deja COMO ESTÁ, para que el
-      // recorrido salga solo cuando la capa caiga, en vez de perderse.
-      if (elPanelEstaBloqueado(hay)) {
-        setPasos(null);
+      // Una capa que aparece ENTRE dos latidos: se deja de contar hasta que
+      // caiga, y se vuelve a mirar (nunca se corta: ése era el defecto).
+      if (elPanelEstaBloqueado((sel) => document.querySelector(sel) != null)) {
+        vioAlgoDelanteRef.current = true;
+        anterior = -1;
+        estables = 0;
+        intentos = 0;
+        id = setTimeout(contar, LATIDO);
         return;
       }
 
@@ -294,7 +398,7 @@ export function TourDelPanel() {
       intentos += 1;
       estables = visibles.length === anterior ? estables + 1 : 0;
       anterior = visibles.length;
-      const asentado = visibles.length > 0 && estables >= ESTABLES && intentos >= MIN_INTENTOS;
+      const asentado = visibles.length > 0 && estables >= ESTABLES && intentos >= minimo;
       if (asentado || intentos >= INTENTOS) {
         arrancar(visibles);
         return;
@@ -307,7 +411,7 @@ export function TourDelPanel() {
       cancelado = true;
       clearTimeout(id);
     };
-  }, [activo, permisosListos]);
+  }, [activo, permisosListos, libre]);
 
   const pantallas = useMemo<PantallaDelTour[]>(
     () => (pasos ? pantallasDelTour(pasos) : []),
@@ -324,6 +428,10 @@ export function TourDelPanel() {
       setRecuadro(null);
       return;
     }
+    // En pausa (una capa delante) no se mide ni se escucha nada: detrás de un
+    // muro el elemento puede medir cero y el paso se saltaría sin que nadie
+    // lo viera. Al reanudar, el efecto vuelve a correr y mide de nuevo.
+    if (!libre) return;
     const abrio = abrirSuSeccion(selectorActual);
     acercar(selectorActual, !reducirMovimiento);
     const medida = medir(selectorActual);
@@ -358,7 +466,7 @@ export function TourDelPanel() {
       window.removeEventListener('scroll', remedir, true);
       window.removeEventListener('resize', remedir);
     };
-  }, [selectorActual, reducirMovimiento]);
+  }, [selectorActual, reducirMovimiento, libre]);
 
   const cerrar = useCallback((estado: 'completo' | 'omitido') => {
     void cerrarRecorrido(estado);
@@ -371,7 +479,12 @@ export function TourDelPanel() {
     if (previo && typeof previo.focus === 'function' && previo.isConnected) previo.focus();
   }, [cerrarRecorrido]);
 
-  const abierto = activo && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
+  // `libre` también cuenta con el recorrido ya empezado: una capa que aparece
+  // encima (el muro abierto a mano, un modal que la persona pidió) lo PAUSA.
+  // Se esconde sin marcar nada, sin teclado vivo —Esc no lo «omite» a
+  // ciegas— y vuelve en la misma pantalla cuando la capa cae.
+  const abierto =
+    activo && libre && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
 
   useLayoutEffect(() => {
     const caja = tarjetaRef.current;

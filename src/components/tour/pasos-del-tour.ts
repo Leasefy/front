@@ -132,20 +132,27 @@ export function pantallasDelTour(pasos: readonly PasoDelTour[]): PantallaDelTour
 
 /**
  * Selectores de las capas que bloquean el panel entero. Mientras alguna esté
- * en pantalla, el recorrido NO arranca: guiar por un panel que todavía no se
- * puede tocar es señalar cosas que no responden, y además el recorrido pelearía
- * con la capa por quién está encima.
+ * en pantalla, el recorrido NO arranca —y si ya había arrancado, se PAUSA—:
+ * guiar por un panel que todavía no se puede tocar es señalar cosas que no
+ * responden, y además el recorrido pelearía con la capa por quién está encima.
  *
- * Dos familias:
- *  · el muro de migración (la puesta en marcha de una inmobiliaria nueva);
+ * Tres familias:
+ *  · la puesta en marcha de una inmobiliaria nueva, en sus TRES pantallas: la
+ *    pregunta previa («¿Migramos tu inmobiliaria?»), el muro, y la bienvenida
+ *    con confeti cuando el muro baja. 🔴 Las dos de las puntas son diálogos
+ *    SIN `data-state` (no son de Radix): hasta el 30-09 no contaban como capa,
+ *    y el recorrido arrancaba debajo de la pregunta y, al elegir «Migrar
+ *    ahora», quedaba ENCIMA del muro (z-400 contra z-120).
  *  · cualquier modal de Radix abierto (`data-state="open"`), porque el
  *    recorrido no va encima de un diálogo que la persona abrió a propósito.
  *
- * En los dos casos la preferencia se deja COMO ESTÁ: el recorrido sale solo
+ * En todos los casos la preferencia se deja COMO ESTÁ: el recorrido sale solo
  * cuando la capa cae, en vez de perderse.
  */
 export const CAPAS_QUE_BLOQUEAN = [
+  '[data-testid="decision-de-migracion"]',
   '[data-testid="muro-migracion"]',
+  '[data-testid="bienvenida-a-leasefy"]',
   '[role="dialog"][data-state="open"]',
   '[role="alertdialog"][data-state="open"]',
 ];
@@ -160,4 +167,47 @@ export function elPanelEstaBloqueado(
       return false;
     }
   });
+}
+
+/**
+ * Por qué el recorrido todavía no puede salir, o `null` si ya puede.
+ *
+ * El orden de una cuenta nueva (Nico, 30-09-2026): «si la persona pide
+ * migracion pues debe hacer la migracion y luego de la migracion pasamos al
+ * usuario por el 2fa activation, si no hace migracion le pedimos el 2fa y
+ * luego el onboarding o tour del panel». El recorrido es lo ÚLTIMO: espera a
+ * que no quede nada de eso delante.
+ *
+ *  · `segundo-factor`     → falta inscribirlo o verificarlo. `ProtectedRoute`
+ *                           desmonta el panel y lleva a activarlo; esto cubre
+ *                           el instante antes de que lo haga.
+ *  · `muro`               → el back dice que el muro va puesto (aunque todavía
+ *                           no se haya dibujado: la pregunta previa espera a
+ *                           leer la decisión guardada).
+ *  · `muro-sin-contestar` → el muro todavía no tiene respuesta del back. Quien
+ *                           llama decide cuánto esperar esto: «ante la duda,
+ *                           el panel se ve» vale también para el recorrido.
+ *  · `capa`               → algo de `CAPAS_QUE_BLOQUEAN` está en pantalla.
+ *
+ * Las señales se LEEN de lo que ya existe (el contexto de la migración, el de
+ * la sesión y el DOM); el recorrido no le pide nada a nadie.
+ */
+export type MotivoParaEsperar = 'segundo-factor' | 'muro' | 'muro-sin-contestar' | 'capa';
+
+export interface SenalesDelPanel {
+  /** `mfaRequired || mfaEnrollRequired` de la sesión. */
+  segundoFactorPendiente: boolean;
+  /** Lo que dice el contexto del muro: `libre` si contestó que no bloquea o si no hay muro. */
+  muro: 'bloquea' | 'sin-contestar' | 'libre';
+}
+
+export function motivoParaEsperar(
+  existe: (selector: string) => boolean,
+  senales: SenalesDelPanel,
+): MotivoParaEsperar | null {
+  if (senales.segundoFactorPendiente) return 'segundo-factor';
+  if (senales.muro === 'bloquea') return 'muro';
+  if (elPanelEstaBloqueado(existe)) return 'capa';
+  if (senales.muro === 'sin-contestar') return 'muro-sin-contestar';
+  return null;
 }

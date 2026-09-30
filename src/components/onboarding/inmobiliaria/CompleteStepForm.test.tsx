@@ -307,8 +307,8 @@ describe('resumenDelRegistro', () => {
     })
     expect(lineas).toEqual([
       { etiqueta: 'Razón social', valor: 'Altavista' },
-      { etiqueta: 'Correo de contacto', valor: 'hola@altavista.co' },
-      { etiqueta: 'Teléfono', valor: '3105551234' },
+      { etiqueta: 'Correo de la cuenta', valor: 'hola@altavista.co' },
+      { etiqueta: 'Teléfono de la cuenta', valor: '3105551234' },
     ])
   })
 

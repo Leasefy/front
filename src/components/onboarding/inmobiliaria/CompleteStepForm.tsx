@@ -112,12 +112,12 @@ export function resumenDelRegistro(
     { etiqueta: 'Dirección', valor: calle ?? '' },
     { etiqueta: 'Ciudad', valor: ubicacion },
     {
-      etiqueta: 'Correo de contacto',
+      etiqueta: 'Correo de la cuenta',
       valor:
         textoDelDraft(draft, 'primaryContactEmail') ?? textoDelDraft(draft, 'contactEmail') ?? '',
     },
     {
-      etiqueta: 'Teléfono',
+      etiqueta: 'Teléfono de la cuenta',
       valor:
         textoDelDraft(draft, 'primaryContactPhone') ?? textoDelDraft(draft, 'contactPhone') ?? '',
     },

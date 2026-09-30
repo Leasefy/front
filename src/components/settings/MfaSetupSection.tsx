@@ -3,9 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
 import { getAccessToken } from '@/lib/api/client';
-import { decodeAccessToken } from '@/lib/auth/jwt';
-import { errorDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
-import { getSupabase } from '@/lib/supabase/client';
+import {
+  apiDeAuth,
+  crearFactorTotp,
+  descartarFactorSinVerificar,
+  factorTotpVerificado,
+  qrParaImagen,
+  sesionConSegundoFactor,
+  verificarConElSdk,
+  verificarFactorNuevo,
+} from '@/lib/auth/inscripcion-del-segundo-factor';
 import { toast } from '@/components/ui/toast';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -16,136 +23,12 @@ import { Spinner } from '@/components/ui/spinner';
 import { SettingsModal } from './SettingsModal';
 
 /**
- * Cuánto se espera a Supabase antes de rendirse. Sin tope, el candado interno
- * del SDK deja la promesa colgada para siempre y el botón se queda en
- * «Cargando...» sin decir nada — que es exactamente lo que pasaba al activar.
+ * El transporte (HTTP con tope, el SDK con tope, el QR) vive en
+ * `inscripcion-del-segundo-factor.ts` desde el 30-09-2026: lo comparte con el
+ * paso a paso de `/auth/mfa-enroll`. Los porqués del candado del SDK están
+ * documentados allá.
  */
-const TOPE_MS = 15000;
-
-/**
- * Llama la API de auth de Supabase por HTTP, sin el SDK.
- *
- * Por qué no el SDK: `supabase.auth.mfa.*` serializa todo detrás de un candado
- * (`navigator.locks`) compartido con el refresco de sesión. Si otra pestaña o
- * el propio contexto de auth lo tiene tomado, `enroll()` NO resuelve ni
- * rechaza: se queda esperando. `verify` ya lo evitaba así; ahora lo evitan
- * también `enroll` y `unenroll`, que eran los que colgaban.
- *
- * El `AbortController` es el cinturón: si la red se cuelga, esto falla con un
- * mensaje en vez de dejar el botón girando.
- */
-async function apiDeAuth<T>(
-  ruta: string,
-  token: string,
-  init: { method: string; body?: unknown } = { method: 'GET' },
-): Promise<T> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) throw new Error('Falta la configuración de Supabase');
-
-  const control = new AbortController();
-  const reloj = setTimeout(() => control.abort(), TOPE_MS);
-  try {
-    const res = await fetch(`${url}/auth/v1${ruta}`, {
-      method: init.method,
-      signal: control.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: anonKey,
-        Authorization: `Bearer ${token}`,
-      },
-      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
-    });
-    const cuerpo = (await res.json().catch(() => ({}))) as {
-      message?: string;
-      msg?: string;
-      error_code?: string;
-      error_description?: string;
-    };
-    if (!res.ok) {
-      // 🔴 GoTrue contesta `{ error_code, msg }`, no `message`: leer sólo
-      // `message` es lo que dejaba el toast en «Error 422» a secas (Nico,
-      // 29-09). Todo sale traducido (`errores-del-segundo-factor.ts`).
-      throw errorDeSupabaseAuth({
-        status: res.status,
-        codigo: cuerpo.error_code,
-        mensaje: cuerpo.msg || cuerpo.message || cuerpo.error_description,
-      });
-    }
-    return cuerpo as T;
-  } catch (err) {
-    if ((err as Error).name === 'AbortError') {
-      throw new Error('Supabase no respondió a tiempo. Intenta de nuevo.');
-    }
-    throw err;
-  } finally {
-    clearTimeout(reloj);
-  }
-}
-
-/**
- * El QR listo para un `<img src>`.
- *
- * El SDK devolvía el código ya envuelto como data URI; la API REST lo devuelve
- * como SVG crudo («<svg …>»), y puesto tal cual en un `src` la imagen sale
- * rota. Se envuelve acá. Si ya viene como data URI o como URL, se deja igual.
- */
-export function qrParaImagen(crudo: string): string {
-  const valor = (crudo ?? '').trim();
-  if (!valor) return '';
-  if (valor.startsWith('data:') || valor.startsWith('http')) return valor;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(valor)}`;
-}
-
-/**
- * Una promesa del SDK con el mismo tope de 15 s que `apiDeAuth`: el candado
- * de auth del SDK puede dejarla sin resolver ni rechazar.
- */
-function conTope<T>(promesa: Promise<T>): Promise<T> {
-  let reloj: ReturnType<typeof setTimeout> | undefined;
-  const tope = new Promise<never>((_, rechazar) => {
-    reloj = setTimeout(
-      () => rechazar(new Error('Supabase no respondió a tiempo. Intenta de nuevo.')),
-      TOPE_MS,
-    );
-  });
-  return Promise.race([promesa, tope]).finally(() => clearTimeout(reloj));
-}
-
-/**
- * Un código de la app contra un factor, POR EL SDK (`mfa.challenge` +
- * `mfa.verify`), como `/auth/mfa-verify`. A diferencia del camino HTTP de
- * esta pantalla, el SDK GUARDA la sesión que devuelve Supabase: queda en
- * `aal2`, con el refresh token nuevo, y el AuthProvider se entera
- * (`MFA_CHALLENGE_VERIFIED`). Devuelve el access token nuevo.
- */
-async function verificarConElSdk(factorId: string, codigo: string): Promise<string | null> {
-  const supabase = getSupabase();
-  if (!supabase) throw new Error('Falta la configuración de Supabase');
-  const { data: desafio, error: errorDelDesafio } = await conTope(
-    supabase.auth.mfa.challenge({ factorId }),
-  );
-  if (errorDelDesafio || !desafio) {
-    throw errorDeSupabaseAuth({
-      status: errorDelDesafio?.status,
-      codigo: errorDelDesafio?.code,
-      mensaje: errorDelDesafio?.message,
-    });
-  }
-  const { data, error } = await conTope(
-    supabase.auth.mfa.verify({ factorId, challengeId: desafio.id, code: codigo }),
-  );
-  if (error) {
-    throw errorDeSupabaseAuth({ status: error.status, codigo: error.code, mensaje: error.message });
-  }
-  return data?.access_token ?? null;
-}
-
-/** ¿Esta sesión ya pasó un segundo factor? (`aal2`, o más si algún día existe). */
-function sesionConSegundoFactor(token: string | null): boolean {
-  const aal = decodeAccessToken(token)?.aal;
-  return aal === 'aal2' || aal === 'aal3';
-}
+export { qrParaImagen };
 
 type MfaState = 'idle' | 'enrolling' | 'enrolled';
 
@@ -245,17 +128,12 @@ export function MfaSetupSection({
         // factores y, con ellos, el id que hace falta para poder desactivar.
         const token = getAccessToken();
         if (!token) return;
-        const usuario = await apiDeAuth<{
-          factors?: Array<{ id: string; factor_type: string; status: string }>;
-        }>('/user', token);
+        const verificado = await factorTotpVerificado(token);
         if (cancelled) return;
 
-        const totp = usuario.factors?.find(
-          (f) => f.factor_type === 'totp' && f.status === 'verified',
-        );
-        if (totp) {
+        if (verificado) {
           setState('enrolled');
-          setFactorId(totp.id);
+          setFactorId(verificado);
           onEnrolled?.();
         }
       } catch {
@@ -291,24 +169,9 @@ export function MfaSetupSection({
       accessTokenRef.current = token;
       if (!token) throw new Error('No hay sesión activa');
 
-      // Por HTTP, no por el SDK: `mfa.enroll()` se colgaba sin resolver ni
-      // rechazar cuando el candado de auth estaba tomado, y el botón se
-      // quedaba en «Cargando...» para siempre.
-      // El nombre lleva la marca de tiempo para no chocar con factores
-      // huérfanos de intentos anteriores (mfa_factor_name_conflict).
-      const data = await apiDeAuth<{
-        id: string;
-        totp: { qr_code: string; secret: string };
-      }>('/factors', token, {
-        method: 'POST',
-        body: { factor_type: 'totp', friendly_name: `Leasefy ${Date.now()}` },
-      });
-
-      setEnrollData({
-        factorId: data.id,
-        qrCode: qrParaImagen(data.totp.qr_code),
-        secret: data.totp.secret,
-      });
+      // Por HTTP, no por el SDK (`crearFactorTotp` explica por qué).
+      const nuevo = await crearFactorTotp(token);
+      setEnrollData({ factorId: nuevo.factorId, qrCode: nuevo.qrCode, secret: nuevo.secret });
       setState('enrolling');
     } catch (err) {
       toast.error((err as Error).message || 'Error al iniciar la configuración de 2FA');
@@ -332,33 +195,14 @@ export function MfaSetupSection({
 
     setIsLoading(true);
     try {
-      // Fuera del SDK, como todo lo demás de esta pantalla: el candado interno
-      // de auth cuelga después de `enroll()`. Y por `apiDeAuth`, no por un
-      // `fetch` suelto: éstos eran los dos ÚNICOS pedidos de la pantalla sin el
-      // tope de 15 s, así que una red colgada dejaba «Verificando...» para
-      // siempre — exactamente el síntoma que el tope existe para evitar.
-      if (enElIngreso) {
-        // En el login, por el SDK: deja la sesión guardada en `aal2` (con su
-        // refresh token nuevo) y el AuthProvider se entera. Por HTTP la
-        // respuesta se perdía y la persona tenía que escribir otro código.
-        await verificarConElSdk(currentEnroll.factorId, currentCode);
-      } else {
-        const token = getAccessToken() ?? accessTokenRef.current;
-        if (!token) throw new Error('No hay sesión activa');
-
-        // Paso 1: el desafío.
-        const desafio = await apiDeAuth<{ id: string }>(
-          `/factors/${currentEnroll.factorId}/challenge`,
-          token,
-          { method: 'POST' },
-        );
-
-        // Paso 2: verificar con el código.
-        await apiDeAuth(`/factors/${currentEnroll.factorId}/verify`, token, {
-          method: 'POST',
-          body: { challenge_id: desafio.id, code: currentCode },
-        });
-      }
+      // En el login, por el SDK (la sesión queda en `aal2`); en Configuración,
+      // por HTTP con tope. Los porqués, en `verificarFactorNuevo`.
+      await verificarFactorNuevo({
+        factorId: currentEnroll.factorId,
+        codigo: currentCode,
+        enElIngreso,
+        token: getAccessToken() ?? accessTokenRef.current,
+      });
 
       setState('enrolled');
       setFactorId(currentEnroll.factorId);
@@ -385,14 +229,7 @@ export function MfaSetupSection({
     setCode('');
     setState('idle');
 
-    if (aLimpiar && token) {
-      void apiDeAuth(`/factors/${aLimpiar}`, token, { method: 'DELETE' }).catch(
-        () => {
-          // Un factor huérfano no rompe nada: el próximo intento usa otro
-          // nombre (lleva marca de tiempo) y no choca con este.
-        },
-      );
-    }
+    if (aLimpiar && token) descartarFactorSinVerificar(aLimpiar, token);
   }, [enrollData]);
 
   const handleUnenroll = useCallback(async () => {

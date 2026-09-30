@@ -1034,7 +1034,7 @@
     },
     "piloto": {
       "titulo": "Piloto automático",
-      "descripcion": "Lo que tus agentes hicieron y lo que necesitan de ti, en un solo lugar.",
+      "descripcion": "Tus agentes de IA hacen parte de la operación: cobran, concilian los pagos del banco y hacen seguimiento a contratos, facturas y propietarios. Aquí ves lo que hicieron y lo que te dejaron para decidir.",
       "kpis": {
         "pendientes": "Esperan tu decisión",
         "actividadHoy": "Actividad de hoy",
@@ -1365,6 +1365,111 @@
           "cobranza": "Cobranza",
           "aviso": "Avisos"
         }
+      },
+      "comoFunciona": {
+        "boton": "¿Cómo funciona?",
+        "titulo": "Cómo funciona el Piloto automático",
+        "descripcion": "Qué hacen tus agentes, qué decides tú y qué ves en esta pantalla.",
+        "modoActual": "Modo {{modo}}",
+        "modoCorto": {
+          "sombra": "Los agentes preparan cada acción y tú la ejecutas con un clic. Nada sale sin ti.",
+          "copiloto": "Los agentes preparan cada acción y te la dejan en la Bandeja. Nada sale sin tu visto bueno.",
+          "autonomo": "Los agentes que ya saben actuar solos lo hacen sin preguntarte. Lo dudoso te lo dejan en la Bandeja."
+        },
+        "apagadoCorto": "El Piloto está apagado: ningún agente actúa por su cuenta.",
+        "queEs": {
+          "titulo": "Qué es",
+          "p1": "El Piloto automático es la forma en que tus agentes de IA hacen parte del trabajo de la inmobiliaria. Cada agente se encarga de una tarea: cobrar, conciliar los pagos del banco, hacer seguimiento a contratos, facturas y propietarios.",
+          "p2": "Esta pantalla es tu Inicio: aquí ves lo que hicieron y lo que te dejaron para decidir.",
+          "noEsElChat": "No es el chat. El chat es donde tú y tu equipo preguntan; el Piloto es el trabajo que los agentes hacen por su cuenta."
+        },
+        "modos": {
+          "titulo": "Los tres modos",
+          "intro": "El modo dice quién decide antes de que algo salga: tú o el agente.",
+          "ahora": "Tu modo ahora",
+          "siempre": "Aunque estés en Automático, esto siempre espera a una persona: la plata que sale, los reportes a centrales de riesgo, lo jurídico, lo que va a la DIAN y las terminaciones de contrato. Los mensajes salen solo en horario hábil, nunca domingos ni festivos, y por encima de tus topes te piden el clic.",
+          "quienLoCambia": "Lo cambia un administrador desde «Piloto», en la barra de arriba, para todos los agentes a la vez. En «Autonomía» se ajusta agente por agente. Si nadie lo ha cambiado, los agentes arrancan en Copiloto.",
+          "apagado": "Ahora el Piloto está apagado: ningún agente actúa por su cuenta, sin importar el modo."
+        },
+        "agentes": {
+          "titulo": "Qué agentes trabajan",
+          "conModo": "Trabajan con el modo que elijas",
+          "aPedido": "Trabajan cuando se lo pides: el modo no les cambia nada",
+          "apagados": "Todavía no trabajan para tu inmobiliaria",
+          "cargando": "Leyendo tus agentes…",
+          "sinLectura": "No pude leer ahora el estado de tus agentes. Estos son los que puede tener el Piloto:"
+        },
+        "agente": {
+          "cobranza": "Llama y escribe por WhatsApp y correo a los inquilinos con pagos pendientes, dentro del horario que permite la ley.",
+          "cotizador": "Evalúa a un candidato con las aseguradoras cuando se lo pides.",
+          "conciliacion": "Cruza los depósitos del banco con tus cobros y emite el recibo de lo que calza exacto. Lo dudoso te lo deja en la Bandeja.",
+          "pagos": "Envía el cobro con enlace de pago y maneja el pago automático con tarjeta.",
+          "estudio": "Verifica identidad, ingresos y antecedentes de un candidato cuando se lo pides.",
+          "matching": "Le manda al candidato que se quedó sin inmueble las opciones que le calzan, máximo un correo al día.",
+          "avaluos": "Hace el avalúo de un inmueble cuando se lo pides.",
+          "retencion": "Detecta a los propietarios en riesgo de irse y arma un plan para tu equipo. Nunca les escribe.",
+          "calidad": "Revisa tus publicaciones y propone correcciones.",
+          "mantenimiento": "Clasifica las solicitudes de mantenimiento cuando se lo pides.",
+          "prospectos": "Recuerda las visitas agendadas y hace el seguimiento después de cada visita.",
+          "aprobaciones": "Lleva el seguimiento del visto bueno del propietario en reparaciones y cambios de precio. Por ahora no le envía mensajes.",
+          "contratos": "Recuerda firmas pendientes, avisa vencimientos y prepara renovaciones y cartas de incremento. El cierre del arriendo siempre lo hace una persona.",
+          "facturacion": "Prepara la factura del mes el día 1 y descuenta el anticipo. La emisión ante la DIAN siempre la hace una persona.",
+          "propietarios": "Envía el extracto mensual a cada propietario. El giro de su plata siempre lo aprueba una persona.",
+          "contabilidad": "Registra los egresos y exporta el libro contable. Los lotes de pago siempre esperan tu clic.",
+          "chat": "Ejecuta las acciones que te propone el chat del panel. En Automático solo hace lo que se puede deshacer y no mueve plata ni le escribe a nadie."
+        },
+        "pantalla": {
+          "titulo": "Qué ves en esta pantalla",
+          "pulso": {
+            "titulo": "Pulso del Piloto",
+            "texto": "Qué pasa ahora. Las llamadas de hoy, las conversaciones de WhatsApp abiertas con inquilinos, las decisiones resueltas hoy y los contactos de cobro agendados para hoy, más lo que está en curso y las alertas."
+          },
+          "bandeja": {
+            "titulo": "Bandeja",
+            "texto": "Lo que los agentes te dejaron para decidir. Cada caso trae su botón para aprobarlo o descartarlo."
+          },
+          "actividad": {
+            "titulo": "Actividad en vivo",
+            "texto": "Lo que los agentes hicieron, en orden, a medida que pasa."
+          }
+        },
+        "botones": {
+          "titulo": "Los botones de arriba",
+          "operaSola": {
+            "titulo": "¿Opera sola?",
+            "texto": "Qué le falta a tu inmobiliaria para operar sola en Automático, y quién lo destraba."
+          },
+          "procesos": {
+            "titulo": "Procesos",
+            "texto": "Lo que el Piloto hizo, caso por caso: depósitos que detectó y concilió, llamadas de cobranza y conversaciones de WhatsApp."
+          },
+          "autonomia": {
+            "titulo": "Autonomía",
+            "texto": "El modo de cada agente, uno por uno. El número dice cuántos actúan solos, sin que nadie apruebe."
+          },
+          "piloto": {
+            "titulo": "«Piloto», en la barra de arriba",
+            "texto": "El modo de todos los agentes y lo que están haciendo en este momento. Está en todas las pantallas del panel."
+          }
+        },
+        "verPresentacion": "Ver la presentación otra vez"
+      },
+      "novedad": {
+        "titulo": "Así funciona tu Piloto automático",
+        "descripcion": "Tus agentes de IA hacen parte del trabajo de la inmobiliaria. Esta pantalla es tu Inicio: aquí ves lo que hicieron y lo que te dejaron para decidir.",
+        "paso1": {
+          "titulo": "Tus agentes trabajan",
+          "texto": "Cada uno en su tarea: cobran, concilian los pagos del banco y hacen seguimiento a contratos, facturas y propietarios."
+        },
+        "paso2": {
+          "titulo": "Lo que necesita de ti queda en la Bandeja",
+          "texto": "Cuando algo requiere tu visto bueno, te lo dejan con su botón. Lo que hicieron por su cuenta queda en Actividad en vivo."
+        },
+        "paso3": {
+          "titulo": "Tú decides cuánto hacen solos",
+          "texto": "Manual, Copiloto o Automático: el modo dice quién decide antes de que algo salga. Lo ves en «Piloto», en la barra de arriba."
+        },
+        "cta": "Entendido"
       }
     },
     "mobileNav": {

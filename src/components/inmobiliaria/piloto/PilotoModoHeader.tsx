@@ -55,9 +55,10 @@ import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { useI18n } from '@/lib/i18n'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
 import { cn } from '@/lib/utils'
-import type { AutonomiaModo, ModoDeLaFlota } from '@/lib/api/piloto'
+import { MODOS_DEL_PILOTO, type AutonomiaModo, type ModoDeLaFlota } from '@/lib/api/piloto'
 
-const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
+/** La lista única de modos (ver `MODOS_DEL_PILOTO`). */
+const MODOS: readonly AutonomiaModo[] = MODOS_DEL_PILOTO
 
 const ICONO: Record<AutonomiaModo, typeof Moon> = {
   sombra: Moon,

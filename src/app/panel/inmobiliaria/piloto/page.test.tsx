@@ -70,6 +70,10 @@ vi.mock('@/components/inmobiliaria/piloto/PilotoFeed', () => ({ PilotoFeed: () =
 vi.mock('@/components/inmobiliaria/piloto/PilotoCajon', () => ({ PilotoCajon: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoProcesos', () => ({ PilotoProcesos: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCatalogo', () => ({ PilotoCatalogo: () => null }))
+// La explicación de la pantalla (30-09) tiene sus propias pruebas; acá sólo
+// importa que la torre se monte detrás del guard.
+vi.mock('@/components/inmobiliaria/piloto/PilotoQueEs', () => ({ PilotoQueEs: () => null }))
+vi.mock('@/components/inmobiliaria/piloto/PilotoNovedad', () => ({ PilotoNovedad: () => null }))
 
 import PilotoPage from './page'
 import PilotoProcesosPage from './procesos/page'

@@ -13,6 +13,7 @@ import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
+import { mensajeDelRegistro, registrarFalloDelRegistro } from '@/lib/auth/errores-del-registro';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
@@ -237,12 +238,10 @@ function RegistroContent() {
       }
       await signInWithEmail(correo, data.password);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setFormError('Este email ya tiene una cuenta. Usa "Ya tengo cuenta" para ingresar.');
-      } else {
-        setFormError('Error al crear la cuenta. Intenta de nuevo.');
-      }
+      registrarFalloDelRegistro('registro', err);
+      setFormError(
+        mensajeDelRegistro(err, { yaExiste: 'Este email ya tiene una cuenta. Usa "Ya tengo cuenta" para ingresar.' }),
+      );
     } finally {
       setIsSubmitting(false);
     }

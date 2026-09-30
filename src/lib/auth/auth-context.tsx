@@ -696,7 +696,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
         setMfaEnrollRequired(false)
-        return aal?.currentLevel !== 'aal2' && aal?.nextLevel === 'aal2' ? 'verify' : 'none'
+        // Only the back's requirement sends anyone to a challenge: a person
+        // with an OPTIONAL factor (tenant) is never routed by this verdict.
+        return segundoFactorExigidoRef.current && aal?.currentLevel !== 'aal2' && aal?.nextLevel === 'aal2'
+          ? 'verify'
+          : 'none'
       } else {
         const { data: factors } = await supabase.auth.mfa.listFactors()
         if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return 'none'
@@ -742,6 +746,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // produce a verdict — fall back to the standalone probe, exactly
         // like this function did before WU-2b.
         await probeAgencyMembership()
+      }
+      // T-0123 WU-3 (owner constraint): the second factor is an INMOBILIARIA
+      // rule. A user with no ACTIVE agency membership (tenant, landlord) is
+      // never routed to a MFA screen, even if a flag went stale.
+      const esDeInmobiliaria = agencyResult?.memberStatus === 'ACTIVE' && !!agencyResult.agency
+      if (!esDeInmobiliaria) {
+        setMfaEnrollRequired(false)
+        return 'none'
       }
       // T-0123 WU-3: `fetchBootstrap` just refreshed `segundoFactorExigidoRef`
       // (a new agency owner goes false -> true when the registration ends), but

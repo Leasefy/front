@@ -125,6 +125,19 @@ describe('TenantOnboardingShell — completion navigation', () => {
     expect(pushMock).toHaveBeenCalledWith('/inquilino')
   })
 
+  it('T-0123: finishing tenant onboarding never navigates to a MFA screen', async () => {
+    submitMock.mockResolvedValue(undefined)
+    await renderShell()
+
+    await act(async () => {
+      submitButton().click()
+    })
+
+    const destinos = pushMock.mock.calls.map((c) => String(c[0]))
+    expect(destinos).toEqual(['/inquilino'])
+    expect(destinos.some((d) => d.startsWith('/auth/mfa'))).toBe(false)
+  })
+
   it('routes a not-yet-hydrated user (null pre-submit) to the tenant dashboard, never to /', async () => {
     authState.user = undefined
     submitMock.mockResolvedValue(undefined)

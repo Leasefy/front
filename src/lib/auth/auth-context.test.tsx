@@ -1230,6 +1230,45 @@ describe('AuthProvider — T-0123 WU-3: refreshUser re-evaluates the MFA require
     expect(destino).toBe('none')
   })
 
+  it('tenant (no ACTIVE agency membership) is never gated: a stale exigido:true still yields "none" and mfaEnrollRequired=false', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    // The back would never say exigido:true without an ACTIVE agency role;
+    // this proves the front does not depend on that to keep tenants out.
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+      [],
+      { exigido: true },
+    ))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(listFactorsMock).not.toHaveBeenCalled()
+    expect(destino).toBe('none')
+  })
+
+  it('tenant with an OPTIONAL factor at aal1 (exigido:false): refreshUser reports "none", not "verify"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('none')
+  })
+
   it('session already aal2: reports "none" even with exigido true', async () => {
     getAalMock.mockResolvedValue({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
     getMock.mockResolvedValue(sinAgencia)

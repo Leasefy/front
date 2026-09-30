@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label'
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena'
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo'
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena'
+import { mensajeDelRegistro, registrarFalloDelRegistro } from '@/lib/auth/errores-del-registro'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { useTf, type Tf } from '@/lib/i18n/use-tf'
@@ -122,11 +123,12 @@ export function CrearCuentaDesdeAprobacion({
       // Mismo destino que el link de confirmación, por la misma razón.
       router.push(DESTINO)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
+      registrarFalloDelRegistro('aprobacion', err)
       setErrorGeneral(
-        /already registered|already exists|User already/i.test(msg)
-          ? tf(`${NS}.err.existe`, 'Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.')
-          : tf(`${NS}.err.generico`, 'No pudimos crear tu cuenta. Intenta de nuevo.'),
+        mensajeDelRegistro(err, {
+          yaExiste: tf(`${NS}.err.existe`, 'Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.'),
+          generico: tf(`${NS}.err.generico`, 'No pudimos crear tu cuenta. Intenta de nuevo.'),
+        }),
       )
     } finally {
       setEnviando(false)

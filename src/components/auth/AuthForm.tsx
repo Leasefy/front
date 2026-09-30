@@ -10,6 +10,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
+import { mensajeDelRegistro, registrarFalloDelRegistro } from '@/lib/auth/errores-del-registro';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -311,6 +312,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
+  // Qué botón está trabajando: los dos se deshabilitan con `isLoading`, pero
+  // sólo el que se tocó muestra el spinner (antes «Registrarse con Google»
+  // giraba mientras se creaba la cuenta con correo).
+  const [conGoogle, setConGoogle] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
   /*
@@ -570,6 +575,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // ── Login ────────────────────────────────────────────────────────────────
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setConGoogle(true);
     setError(null);
     olvidarAviso();
     try {
@@ -581,6 +587,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setError('Error con Google. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
+      setConGoogle(false);
     }
   };
 
@@ -639,6 +646,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // ── Register ─────────────────────────────────────────────────────────────
   const handleGoogleRegister = async () => {
     setIsLoading(true);
+    setConGoogle(true);
     setError(null);
     olvidarAviso();
     try {
@@ -650,6 +658,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setError('Error con Google. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
+      setConGoogle(false);
     }
   };
 
@@ -688,14 +697,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       }
     } catch (err: unknown) {
       setIsLoading(false);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setError('Este correo ya está registrado. Inicia sesión en su lugar.');
-      } else if (msg.includes('Password should be')) {
-        setError('La contraseña debe tener al menos 6 caracteres.');
-      } else {
-        setError('Error al crear la cuenta. Intenta de nuevo.');
-      }
+      // Por código y status, no por el texto en inglés: el tope de correos de
+      // Supabase (segundo correo seguido) caía al genérico sin dejar rastro.
+      registrarFalloDelRegistro('AuthForm', err);
+      setError(mensajeDelRegistro(err));
     }
   };
 
@@ -828,8 +833,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading}>
-              {isLoading ? 'Conectando...' : 'Continuar con Google'}
+            <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={conGoogle}>
+              {conGoogle ? 'Conectando...' : 'Continuar con Google'}
             </GoogleButton>
 
             <MonoDivider>o con email</MonoDivider>
@@ -886,7 +891,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 disabled={isLoading || !hidratado}
                 className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
-                {isLoading ? (
+                {isLoading && !conGoogle ? (
                   <>
                     <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
                     Ingresando…
@@ -921,7 +926,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
+            <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={conGoogle}>
               Registrarse con Google
             </GoogleButton>
 
@@ -982,7 +987,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
+                {isLoading && !conGoogle ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
 

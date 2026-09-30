@@ -170,14 +170,19 @@ export default function MfaVerifyPage() {
     // y se montaba de nuevo — y se perdía lo que la persona ya había tocado
     // («No tengo la app» había que tocarlo dos veces).
     if (!user || cargandoLaSesion || enUnFlujoPropio) return;
+    // T-0123: `mfaEnrollRequired` can be STALE right after a first-time
+    // enroll (the SDK session learns about the new factor a beat later). If
+    // a verified factor exists this is a step-up, never an enroll: stay here
+    // and show the challenge. Only a confirmed "no factor" goes to enroll;
+    // while unknown (`null`) wait instead of guessing.
     if (mfaEnrollRequired) {
-      router.replace('/auth/mfa-enroll');
+      if (tieneFactor === false) router.replace('/auth/mfa-enroll');
       return;
     }
     if (!mfaRequired) {
       router.replace(destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role));
     }
-  }, [user, cargandoLaSesion, mfaRequired, mfaEnrollRequired, router, enUnFlujoPropio]);
+  }, [user, cargandoLaSesion, mfaRequired, mfaEnrollRequired, router, enUnFlujoPropio, tieneFactor]);
 
   /**
    * ¿Tiene un factor verificado? Se pregunta por el SDK Y por HTTP a la vez y

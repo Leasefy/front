@@ -169,6 +169,14 @@ export interface MfaSetupSectionProps {
    */
   onEnrolled?: () => void;
   /**
+   * T-0123: hay un factor verificado YA AL MONTAR (sesión que todavía puede
+   * estar en `aal1`). Si se pasa, el chequeo al montar avisa SÓLO por acá y
+   * `onEnrolled` queda reservado para una inscripción recién verificada: sin
+   * esta separación, `/auth/mfa-enroll` tomaba el factor ya existente por una
+   * inscripción terminada y rebotaba con `/auth/mfa-verify` en bucle.
+   */
+  onYaInscrito?: () => void;
+  /**
    * Quedó inscrito y verificado, con el `factorId` a mano. 🔴 Ojo: la
    * inscripción va por HTTP, fuera del SDK, así que la sesión del SDK sigue
    * en `aal1`; quien necesite `aal2` (el panel de administración, 23-09) pide
@@ -203,6 +211,7 @@ export interface MfaSetupSectionProps {
 
 export function MfaSetupSection({
   onEnrolled,
+  onYaInscrito,
   onActivado,
   enElIngreso = false,
   inscribirAlAbrir = false,
@@ -256,7 +265,8 @@ export function MfaSetupSection({
         if (totp) {
           setState('enrolled');
           setFactorId(totp.id);
-          onEnrolled?.();
+          if (onYaInscrito) onYaInscrito();
+          else onEnrolled?.();
         }
       } catch {
         // MFA no disponible: se queda en 'idle', que ofrece activarlo.

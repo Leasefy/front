@@ -33,9 +33,13 @@ vi.mock('@/lib/auth', () => ({
   useAuth: () => ({ ...authState, setMfaVerified: vi.fn(), signOut: signOutMock }),
 }))
 
+const { factoresDelSdk } = vi.hoisted(() => ({
+  factoresDelSdk: { totp: [] as Array<{ id: string; status: string }> },
+}))
+
 vi.mock('@/lib/supabase/client', () => ({
   getSupabase: () => ({
-    auth: { mfa: { listFactors: vi.fn().mockResolvedValue({ data: { totp: [] } }) } },
+    auth: { mfa: { listFactors: vi.fn(async () => ({ data: { totp: factoresDelSdk.totp } })) } },
   }),
 }))
 
@@ -55,6 +59,7 @@ beforeEach(() => {
   authState.mfaRequired = true
   authState.mfaEnrollRequired = false
   authState.isLoading = false
+  factoresDelSdk.totp = []
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -91,6 +96,21 @@ describe('/auth/mfa-verify', () => {
     await render()
 
     expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+
+  it('T-0123: a stale mfaEnrollRequired WITH a verified factor never bounces to /auth/mfa-enroll — it stays on the challenge (step-up)', async () => {
+    factoresDelSdk.totp = [{ id: 'f1', status: 'verified' }]
+    authState.user = { id: 'u1', role: 'agency' }
+    authState.mfaRequired = false
+    authState.mfaEnrollRequired = true
+
+    await render()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-enroll')
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 
   it('redirects to the dashboard when neither pending state applies', async () => {

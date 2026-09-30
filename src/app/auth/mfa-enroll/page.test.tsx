@@ -17,8 +17,10 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, signOutMock, authState, onEnrolledCapture } = vi.hoisted(() => ({
+const { replaceMock, signOutMock, setMfaVerifiedMock, authState, onEnrolledCapture, propsCapture } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
+  setMfaVerifiedMock: vi.fn(),
+  propsCapture: { current: {} as Record<string, unknown> },
   signOutMock: vi.fn().mockResolvedValue(undefined),
   authState: {
     user: null as Record<string, unknown> | null,
@@ -32,7 +34,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/lib/auth', () => ({
-  useAuth: () => ({ ...authState, signOut: signOutMock }),
+  useAuth: () => ({ ...authState, signOut: signOutMock, setMfaVerified: setMfaVerifiedMock }),
 }))
 
 vi.mock('@/components/providers/ForceLightMode', () => ({
@@ -40,8 +42,9 @@ vi.mock('@/components/providers/ForceLightMode', () => ({
 }))
 
 vi.mock('@/components/settings/MfaSetupSection', () => ({
-  MfaSetupSection: ({ onEnrolled }: { onEnrolled?: () => void }) => {
-    onEnrolledCapture.current = onEnrolled ?? null
+  MfaSetupSection: (props: { onEnrolled?: () => void }) => {
+    propsCapture.current = props as Record<string, unknown>
+    onEnrolledCapture.current = props.onEnrolled ?? null
     return <div data-testid="mfa-setup-section-stub" />
   },
 }))
@@ -53,6 +56,7 @@ let root: Root
 
 beforeEach(() => {
   replaceMock.mockClear()
+  setMfaVerifiedMock.mockClear()
   signOutMock.mockClear()
   authState.user = null
   authState.mfaEnrollRequired = true
@@ -94,18 +98,46 @@ describe('/auth/mfa-enroll', () => {
     expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
   })
 
-  it('onEnrolled hands off to /auth/mfa-verify — this screen verified over raw REST, not the SDK', async () => {
+  it('T-0123: verifies through the SDK (enElIngreso) so the session really becomes aal2', async () => {
+    authState.user = { id: 'u1', role: 'agency' }
+    await render()
+
+    expect(propsCapture.current.enElIngreso).toBe(true)
+  })
+
+  it('T-0123: after a fresh enroll+verify it releases the gate and lands on the panel ONCE — never bounces to /auth/mfa-verify', async () => {
     authState.user = { id: 'u1', role: 'agency' }
     authState.mfaEnrollRequired = true
 
     await render()
-
-    expect(onEnrolledCapture.current).toBeTypeOf('function')
     await act(async () => {
       onEnrolledCapture.current?.()
     })
 
+    expect(setMfaVerifiedMock).toHaveBeenCalledTimes(1)
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+    expect(replaceMock).toHaveBeenCalledTimes(1)
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+
+    // The flags clearing afterwards must not navigate a second time.
+    authState.mfaEnrollRequired = false
+    await render()
+    expect(replaceMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('T-0123: a verified factor found on mount (session still aal1) goes to the verify challenge (step-up), not to the panel', async () => {
+    authState.user = { id: 'u1', role: 'agency' }
+    authState.mfaEnrollRequired = true
+
+    await render()
+    const yaInscrito = propsCapture.current.onYaInscrito as (() => void) | undefined
+    expect(yaInscrito).toBeTypeOf('function')
+    await act(async () => {
+      yaInscrito?.()
+    })
+
     expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+    expect(setMfaVerifiedMock).not.toHaveBeenCalled()
   })
 
   it('sign-out link signs out and returns to /auth', async () => {

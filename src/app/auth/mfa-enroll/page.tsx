@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, SignOut } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import { destinoTrasElSegundoFactor, RUTA_DEL_SEGUNDO_FACTOR } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
 
 /**
  * T-0099 — enroll-pending destination (contract.md T-0099 §3): the back's
@@ -15,35 +17,59 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
  * `mfaEnrollRequired` is true.
  *
  * Reuses `MfaSetupSection` (already the Settings → Seguridad enroll UI) so
- * the enroll flow — QR, secret, code — isn't duplicated. Once a factor is
- * enrolled AND verified, `onEnrolled` hands off to `/auth/mfa-verify`: this
- * screen's verify goes over raw REST (MfaSetupSection's own module doc
- * explains why — the SDK's session lock deadlocks it), which never updates
- * the Supabase JS client's cached session. `/auth/mfa-verify` does the
- * SDK-recognized step-up that actually flips `mfaRequired`/
- * `mfaEnrollRequired` and refreshes `apiClient`'s token
- * (`MFA_CHALLENGE_VERIFIED`, `auth-context.tsx`).
+ * the enroll flow — QR, secret, code — isn't duplicated.
+ *
+ * T-0123: it runs with `enElIngreso`, so the first code is verified through
+ * the SDK (`mfa.challenge` + `mfa.verify`). That upgrades the cached session
+ * to aal2 and emits `MFA_CHALLENGE_VERIFIED`, which refreshes `apiClient`'s
+ * token (`auth-context.tsx`). Verifying over raw REST (the previous wiring)
+ * left the SDK session at aal1, so the hand-off to `/auth/mfa-verify` bounced
+ * back here (stale `mfaEnrollRequired`) and the panel finally loaded with an
+ * aal1 token — every back call 403 SEGUNDO_FACTOR_REQUERIDO.
+ *
+ * - `onEnrolled` (fresh enroll+verify, session now aal2): release the gate and
+ *   go to the destination, once.
+ * - `onYaInscrito` (a verified factor already existed on mount, session still
+ *   aal1): that is a step-up, so it goes to `/auth/mfa-verify`, never enrolls.
  */
 export default function MfaEnrollPage() {
   const router = useRouter();
-  const { user, mfaEnrollRequired, signOut } = useAuth();
+  const { user, mfaEnrollRequired, signOut, setMfaVerified } = useAuth();
+  /** Navigate at most once: `onEnrolled` and the "flags cleared" effect race. */
+  const yaSalioRef = useRef(false);
+
+  const destino = useCallback((): string => {
+    const crudo =
+      typeof window === 'undefined'
+        ? null
+        : new URLSearchParams(window.location.search).get('returnUrl');
+    const saneado = sanitizeReturnUrl(crudo, '/');
+    return destinoTrasElSegundoFactor(saneado === '/' ? null : saneado, user?.role);
+  }, [user?.role]);
 
   // If enrollment isn't (or is no longer) required, don't strand the user
   // here — send them where they belong. Mirrors /auth/mfa-verify's own
   // "not needed, get out" guard.
   useEffect(() => {
-    if (user && !mfaEnrollRequired) {
-      const dashboardPath = user.role === 'agency'
-        ? '/panel/inmobiliaria'
-        : user.role === 'landlord'
-          ? '/panel'
-          : '/inquilino';
-      router.replace(dashboardPath);
+    if (user && !mfaEnrollRequired && !yaSalioRef.current) {
+      yaSalioRef.current = true;
+      router.replace(destino());
     }
-  }, [user, mfaEnrollRequired, router]);
+  }, [user, mfaEnrollRequired, router, destino]);
 
   const handleEnrolled = useCallback(() => {
-    router.replace('/auth/mfa-verify');
+    if (yaSalioRef.current) return;
+    yaSalioRef.current = true;
+    // The SDK verify already made the session aal2; clear the local flags now
+    // instead of waiting for the deferred MFA check.
+    setMfaVerified();
+    router.replace(destino());
+  }, [router, setMfaVerified, destino]);
+
+  const handleYaInscrito = useCallback(() => {
+    if (yaSalioRef.current) return;
+    yaSalioRef.current = true;
+    router.replace(RUTA_DEL_SEGUNDO_FACTOR);
   }, [router]);
 
   const handleSignOut = useCallback(async () => {
@@ -74,7 +100,7 @@ export default function MfaEnrollPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <MfaSetupSection onEnrolled={handleEnrolled} />
+            <MfaSetupSection enElIngreso onEnrolled={handleEnrolled} onYaInscrito={handleYaInscrito} />
           </div>
 
           {/* Sign out link */}

@@ -289,9 +289,17 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * revisando. Con una respuesta válida sí se obedece — incluida una que
    * diga `bloquea: false`, que es como el muro baja al terminar.
    */
-  const refrescar = useCallback(async () => {
+  const refrescar = useCallback(async (respuesta?: EstadoDeMigracion) => {
     try {
-      const bruto = await migracionEstadoApi.estado();
+      /*
+       * 🔴 Con la respuesta de `terminar`/`omitir`, NO se vuelve a preguntar.
+       * Esas dos rutas ya devuelven el estado, y desde el 30-09 la pregunta
+       * siguiente pide el segundo factor (la migración ya se resolvió): el
+       * `GET estado` volvía 403, este `catch` dejaba el muro como estaba y la
+       * persona quedaba encerrada, sin bienvenida y sin salida.
+       */
+      const bruto =
+        respuesta !== undefined ? respuesta : await migracionEstadoApi.estado();
       const nuevo = normalizarEstado(bruto);
       const previo = estadoAnterior.current;
       setConocido(leerEstado(bruto));
@@ -410,17 +418,25 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       setDecision(elegida);
       if (elegida === "ahora") return;
       saltarBienvenida.current = true;
+      // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
+      // para que no reaparezca en otro navegador (Nico, 2026-09-07). ANTES de
+      // omitir: omitida la migración, esta ruta ya pide el segundo factor.
+      if (elegida === "nunca") {
+        try {
+          await migracionEstadoApi.recordatorio(true);
+        } catch {
+          // Sin esto el recordatorio sale en el menú: molesta, no encierra.
+        }
+      }
+      let respuesta: EstadoDeMigracion | undefined;
       try {
-        await migracionEstadoApi.omitir(
+        respuesta = await migracionEstadoApi.omitir(
           elegida === "luego" ? "en_otro_momento" : "no_requiere_migracion",
         );
-        // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
-        // para que no reaparezca en otro navegador (Nico, 2026-09-07).
-        if (elegida === "nunca") await migracionEstadoApi.recordatorio(true);
       } catch {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
       }
-      await refrescar();
+      await refrescar(respuesta);
     },
     [agencyId, refrescar],
   );
@@ -436,12 +452,13 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     guardarDecisionDeMigracion(agencyId, "luego");
     setDecision("luego");
     saltarBienvenida.current = true;
+    let respuesta: EstadoDeMigracion | undefined;
     try {
-      await migracionEstadoApi.omitir("en_otro_momento");
+      respuesta = await migracionEstadoApi.omitir("en_otro_momento");
     } catch {
       // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
     }
-    await refrescar();
+    await refrescar(respuesta);
   }, [agencyId, puesto, refrescar]);
 
   const abrir = useCallback(() => {
@@ -449,13 +466,13 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     void refrescar();
   }, [refrescar]);
 
-  const contexto = useMemo<ContextoDeMigracion>(
-    () => ({ estado: conocido, abrir, recargar: refrescar }),
-    [conocido, abrir, refrescar],
-  );
-
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
+  const contexto = useMemo<ContextoDeMigracion>(
+    () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: tapado }),
+    [conocido, abrir, refrescar, tapado],
+  );
+
   const inerte = { inert: tapado };
 
   return (
@@ -517,7 +534,8 @@ export function PanelDeMigracion({
   onTerminada,
 }: {
   estado: EstadoDeMigracion;
-  onResuelta: () => void | Promise<void>;
+  /** Con el estado que devolvió `terminar`/`omitir`, lo usa sin volver a preguntar. */
+  onResuelta: (respuesta?: EstadoDeMigracion) => void | Promise<void>;
   /** La ✕ de arriba a la derecha. Sin esto no hay ✕. */
   onCerrar?: () => void | Promise<void>;
   /** Abierta a mano: «Entrar al panel» la cierra en vez de dejarla puesta. */
@@ -720,9 +738,11 @@ export function PanelDeMigracion({
     setFallo(false);
     setFalloDetalle(null);
     try {
-      if (via === "terminar") await migracionEstadoApi.terminar();
-      else await migracionEstadoApi.omitir();
-      await onResuelta();
+      const respuesta =
+        via === "terminar"
+          ? await migracionEstadoApi.terminar()
+          : await migracionEstadoApi.omitir();
+      await onResuelta(respuesta);
       if (via === "terminar") onTerminada?.();
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
       // botones tienen que volver a funcionar.

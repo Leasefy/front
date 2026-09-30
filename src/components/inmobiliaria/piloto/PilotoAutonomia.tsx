@@ -49,13 +49,15 @@ import { cn } from '@/lib/utils'
 import type { AgentePiloto, UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import type { AutonomiaModo } from '@/lib/api/piloto'
 import {
+  MODOS_DEL_PILOTO,
   fetchPilotoGobierno,
   putPilotoGobierno,
   type GobiernoItem,
 } from '@/lib/api/piloto'
 import { useAuth } from '@/lib/auth'
 
-const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
+/** La lista única de modos (ver `MODOS_DEL_PILOTO`). */
+const MODOS: readonly AutonomiaModo[] = MODOS_DEL_PILOTO
 
 /**
  * Agentes que hoy NO están disponibles en el Piloto — decisión de producto

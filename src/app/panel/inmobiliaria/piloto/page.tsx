@@ -44,6 +44,15 @@
  * Ahora sigue ese patrón. El carácter propio del Piloto vive DENTRO de la
  * torre (el titular grande, la banda de números), no en el marco.
  *
+ * ── Que se entienda qué es (pedido de Nico, 2026-09-30) ──────────────────
+ * «Si un usuario llega acá no entiende pero nada de lo que hace esa
+ * pantalla». Tres capas, de lo corto a lo completo:
+ *   · en el encabezado: qué es el Piloto y qué ves aquí (la bajada), y en qué
+ *     modo está y qué significa (`PilotoQueEs`);
+ *   · «¿Cómo funciona?» (`ParaEntenderMas`, el patrón del panel): agentes,
+ *     modos, bandeja y botones (`PilotoComoFunciona`);
+ *   · la primera vez, una presentación de tres pasos (`PilotoNovedad`).
+ *
  * Fail-soft POR WIDGET: cada pieza maneja su propio cargando/error/vacío;
  * un endpoint caído no tumba la pantalla.
  */
@@ -70,6 +79,8 @@ import {
   PilotoCajon,
   type PilotoApertura,
 } from '@/components/inmobiliaria/piloto/PilotoCajon'
+import { PilotoQueEs } from '@/components/inmobiliaria/piloto/PilotoQueEs'
+import { PilotoNovedad } from '@/components/inmobiliaria/piloto/PilotoNovedad'
 import type { PulsoAlerta } from '@/lib/api/piloto'
 
 /** Una decisión «atrasada» lleva más de una semana esperando. */
@@ -121,6 +132,14 @@ function PilotoContent() {
   const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
 
   /**
+   * La presentación, vuelta a abrir a mano desde «¿Cómo funciona?» (Nico,
+   * 30-09: quien llega no entiende qué es esta pantalla). El modal de la
+   * explicación se cierra solo antes de abrirla.
+   */
+  const [novedadForzada, setNovedadForzada] = useState(false)
+  const verPresentacion = useCallback(() => setNovedadForzada(true), [])
+
+  /**
    * La lectura del Gerente que va DENTRO del pulso. El briefing dejó de ser
    * una banda propia: dos resúmenes del mismo momento, uno encima del otro,
    * se leen como repetición.
@@ -157,9 +176,14 @@ function PilotoContent() {
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.piloto.titulo')}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
+          {/* Qué es y qué ves aquí, dicho de una vez. Sin `line-clamp`: cortar
+              la única explicación de la pantalla es volver a no explicarla. */}
+          <p className="max-w-2xl text-sm text-fg-muted">
             {t('inmobiliaria.piloto.descripcion')}
           </p>
+          <div className="pt-1">
+            <PilotoQueEs onVerPresentacion={verPresentacion} />
+          </div>
         </div>
         {/* Configuración, no operación: las dos viven en el encabezado.
             «Procesos» es la ventana por la que se ve trabajar al Piloto
@@ -232,6 +256,9 @@ function PilotoContent() {
         onAbrirItem={abrirItem}
         onAccionEjecutada={refetchTrasAccion}
       />
+
+      {/* La presentación: sola la primera vez; a mano desde el cajón */}
+      <PilotoNovedad forzada={novedadForzada} onCerrarForzada={() => setNovedadForzada(false)} />
     </div>
   )
 }

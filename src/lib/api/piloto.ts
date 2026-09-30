@@ -121,6 +121,19 @@ export interface PilotoInboxResponse {
 
 export type AutonomiaModo = 'sombra' | 'copiloto' | 'autonomo'
 
+/**
+ * Los modos del Piloto, en orden de menos a más autonomía. En pantalla:
+ * Manual (`sombra`) / Copiloto / Automático (`autonomo`) — P-1. Es la ÚNICA
+ * lista: la píldora del header, el panel de autonomía y la explicación de
+ * «¿Cómo funciona?» la leen de acá, así que un modo nuevo aparece en las tres
+ * o en ninguna. El `satisfies` y `ModosCompletos` fallan al compilar si el tipo
+ * gana un modo que esta lista no tiene.
+ */
+export const MODOS_DEL_PILOTO = ['sombra', 'copiloto', 'autonomo'] as const satisfies readonly AutonomiaModo[]
+type ModosCompletos = Exclude<AutonomiaModo, (typeof MODOS_DEL_PILOTO)[number]> extends never ? true : never
+const _modosCompletos: ModosCompletos = true
+void _modosCompletos
+
 /** Respuesta del PUT de autonomía (§4). */
 export interface PilotoAutonomiaPutResponse {
   agente: string

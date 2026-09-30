@@ -152,7 +152,13 @@ vi.mock('@/lib/api/migracion-estado.service', async () => {
   return { ...actual, migracionEstadoApi: estadoMock };
 });
 
-import { CADA_CUANTO_SE_REFRESCA_MS, MuroDeMigracion, useMigracion } from './MuroDeMigracion';
+import {
+  CADA_CUANTO_SE_REFRESCA_MS,
+  ESPERAS_SI_LA_CONSULTA_FALLA_MS,
+  MuroDeMigracion,
+  useMigracion,
+} from './MuroDeMigracion';
+import { AuthContext } from '@/lib/auth/auth-context';
 
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -1582,5 +1588,149 @@ describe('la pregunta previa al muro', () => {
     expect(estadoMock.recordatorio).not.toHaveBeenCalled();
     expect(q('bienvenida-a-leasefy')).toBeNull();
     expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('luego');
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// 🔴 Primero la migración, después el segundo factor (Nico, 30-09-2026)
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('al resolverse la migración se refresca la sesión (para pedir el segundo factor)', () => {
+  const refreshUser = vi.fn();
+  const LISTOS = RECIEN_LLEGADA.map((p) => ({ ...p, estado: 'listo' as const, conteo: 3 }));
+
+  async function pintarConSesion() {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <AuthContext.Provider value={{ agency: null, refreshUser } as never}>
+          <MuroDeMigracion>
+            <span data-testid="algo-del-panel">Panel</span>
+          </MuroDeMigracion>
+        </AuthContext.Provider>,
+      );
+    });
+    await act(async () => {});
+  }
+
+  beforeEach(() => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    refreshUser.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('«arranco de cero» (omitir): primero la bienvenida; el segundo factor, al tocar su botón', async () => {
+    const omitida = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(omitida);
+    estadoMock.omitir.mockResolvedValue(omitida);
+    await pintarConSesion();
+
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalled();
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    expect(refreshUser).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Ya terminé» (terminar): la celebración primero, y al entrar se refresca la sesión', async () => {
+    const completada = { bloquea: false, resuelta: 'completada', pasos: LISTOS };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: LISTOS })
+      .mockResolvedValue(completada);
+    estadoMock.terminar.mockResolvedValue(completada);
+    await pintarConSesion();
+
+    await click('muro-ya-termine');
+    await act(async () => {});
+
+    expect(estadoMock.terminar).toHaveBeenCalled();
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    expect(refreshUser).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('la ✕ («en otro momento», sin celebración): se refresca la sesión de una', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintarConSesion();
+
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledWith('en_otro_momento');
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('si el omitir falla el muro sigue y NO se pide el segundo factor', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockRejectedValue(new Error('500'));
+    await pintarConSesion();
+
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(q('muro-migracion')).not.toBeNull();
+    expect(refreshUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('🔴 la primera consulta del estado falla: se vuelve a preguntar (Nico, 30-09-2026)', () => {
+  beforeEach(() => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+  });
+
+  it('un 403 pasajero al entrar no deja el muro apagado toda la sesión', async () => {
+    estadoMock.estado
+      .mockRejectedValueOnce(new Error('403 SEGUNDO_FACTOR_REQUERIDO'))
+      .mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      // Ante la duda no se bloquea: mientras falla, el panel se ve.
+      expect(q('muro-migracion')).toBeNull();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ESPERAS_SI_LA_CONSULTA_FALLA_MS[0]);
+      });
+
+      expect(q('muro-migracion')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pocas veces: si el back sigue caído, deja de preguntar', async () => {
+    estadoMock.estado.mockRejectedValue(new Error('500'));
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+      });
+      expect(estadoMock.estado).toHaveBeenCalledTimes(1 + ESPERAS_SI_LA_CONSULTA_FALLA_MS.length);
+      expect(q('muro-migracion')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

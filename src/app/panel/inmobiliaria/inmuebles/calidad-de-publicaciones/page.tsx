@@ -9,11 +9,14 @@ import { CalidadDeLasPublicaciones } from '@/components/inmobiliaria/calidad/Cal
  * Es el mismo componente de la pestaña «Calidad» de Portales, que salió del
  * menú el 22-09; esa pestaña sigue viva. Cuelga de `portafolio`, igual que
  * Portales: la fila no le abre la pantalla a nadie que no la tuviera.
+ *
+ * `variante="pagina"` le da el margen y el encabezado de las demás pantallas
+ * del panel (30-09-2026: antes la tarjeta quedaba pegada a los bordes).
  */
 export default function CalidadDePublicacionesPage() {
   return (
     <PageGuard module="portafolio">
-      <CalidadDeLasPublicaciones />
+      <CalidadDeLasPublicaciones variante="pagina" />
     </PageGuard>
   )
 }

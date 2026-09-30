@@ -3,8 +3,16 @@
  * micro: los cuerpos salen del contrato (`niti-contrato.json`, sección
  * `panel`), el micro se construye en paralelo.
  *
+ * Vive en dos lugares: la pestaña de Portales (`variante` por defecto) y su
+ * propia fila en «Agentes IA» (`variante="pagina"`). Desde el glow up del
+ * 30-09-2026 cada estado tiene su forma: consultando, sin verificar, apagado,
+ * prendido sin primera pasada, con datos y la última pasada fallida.
+ *
  * Lo que no puede pasar:
- *   · pedir la lista con Niti apagado;
+ *   · pedir la lista con Niti apagado, o que el apagado parezca un error;
+ *   · decir «Apagado» sin haber podido preguntar;
+ *   · cifras en cero antes de la primera pasada (se leen como datos);
+ *   · colores clavados (hex o `dark:bg-[…]`): claro y oscuro salen de tokens;
  *   · ofrecer un botón de aprobar que no corresponde a la acción (o a una que
  *     el front no conoce);
  *   · decidir y no decir qué pasó (el `mensaje` del micro) ni refrescar;
@@ -73,9 +81,29 @@ async function esperar() {
   }
 }
 
-async function montar() {
-  await act(async () => raiz.render(<CalidadDeLasPublicaciones />));
+async function montar(variante?: 'pagina' | 'pestana') {
+  await act(async () => raiz.render(<CalidadDeLasPublicaciones variante={variante} />));
   await esperar();
+}
+
+const q = (sel: string) => contenedor.querySelector(sel);
+const pildora = () => q('[data-testid="estado-de-niti"]');
+
+/**
+ * Toda clase de color sale de un token: nada de hex ni de valores arbitrarios
+ * de color. Se excluye el `disabled:text-[#…]` de los BOTONES de cadence (la
+ * paginación, y «Abrir ficha», que es un `Button asChild` sobre un enlace):
+ * es del sistema de diseño, no de esta pantalla.
+ */
+function clasesConColorClavado(): string[] {
+  const malas: string[] = [];
+  for (const el of Array.from(contenedor.querySelectorAll('[class]'))) {
+    for (const c of (el.getAttribute('class') ?? '').split(/\s+/)) {
+      if ((el.tagName === 'BUTTON' || el.tagName === 'A') && c.startsWith('disabled:')) continue;
+      if (/(^|:)(bg|text|border|from|to|via|fill|stroke)-\[(#|rgb|hsl)/.test(c) || /gradient/.test(c)) malas.push(`${el.tagName}[${el.getAttribute('role') ?? ''}] ${c}`);
+    }
+  }
+  return malas;
 }
 
 const texto = () => contenedor.textContent ?? '';
@@ -91,26 +119,146 @@ async function clic(el: Element | undefined) {
 }
 
 describe('Niti apagado', () => {
-  it('dice que está apagado y NO pide la lista', async () => {
+  it('dice quién lo prende, NO pide la lista y no tiene cara de error', async () => {
     h.api.resumen.mockResolvedValue({ ...RESUMEN, activo: false });
-    await montar();
-    expect(texto()).toContain('Niti está apagado para esta inmobiliaria');
+    await montar('pagina');
+    expect(pildora()?.getAttribute('data-estado')).toBe('apagado');
+    expect(pildora()?.textContent).toContain('Apagado');
+    const apagado = q('[data-testid="calidad-apagado"]')?.textContent ?? '';
+    expect(apagado).toContain('Lo prende el equipo técnico de Leasefy');
+    expect(apagado).toContain('no audita tus inmuebles');
     expect(h.api.inmuebles).not.toHaveBeenCalled();
+    // Apagado no es un fallo: ni alerta, ni «Intentar de nuevo», ni cifras.
+    expect(q('[role="alert"]')).toBeNull();
+    expect(q('[data-severidad="danger"]')).toBeNull();
+    expect(texto()).not.toMatch(/intentar de nuevo/i);
+    expect(q('[data-testid="calidad-cifras"]')).toBeNull();
+    // La píldora ya dice «Apagado»: el cuerpo no lo repite con otras palabras.
+    expect(apagado).not.toMatch(/apagado/i);
+  });
+
+  it('el color del apagado es neutro (no amarillo ni rojo)', async () => {
+    h.api.resumen.mockResolvedValue({ ...RESUMEN, activo: false });
+    await montar('pagina');
+    const clase = pildora()?.getAttribute('class') ?? '';
+    expect(clase).toContain('bg-surface-muted');
+    expect(clase).not.toMatch(/warning|danger/);
+  });
+});
+
+describe('Niti: la pantalla propia y la pestaña de Portales', () => {
+  it('como página: margen del panel, «Agentes IA» y un h1 con el nombre de su fila', async () => {
+    await montar('pagina');
+    const raizDeLaPantalla = q('[data-testid="calidad-de-las-publicaciones"]');
+    expect(raizDeLaPantalla?.className).toContain('p-6');
+    expect(raizDeLaPantalla?.className).toContain('lg:p-8');
+    expect(q('h1')?.textContent).toBe('Calidad de publicaciones · Niti');
+    expect(q('[data-testid="calidad-encabezado"]')?.textContent).toContain('Agentes IA');
+  });
+
+  it('como pestaña: sin h1 propio ni margen (Portales ya los pone)', async () => {
+    await montar();
+    expect(q('h1')).toBeNull();
+    expect(q('h2')?.textContent).toBe('Niti · calidad');
+    expect(q('[data-testid="calidad-de-las-publicaciones"]')?.className).not.toContain('p-6');
+  });
+
+  it('claro y oscuro salen de tokens: ninguna clase con color clavado ni degradado', async () => {
+    await montar('pagina');
+    expect(clasesConColorClavado()).toEqual([]);
+    h.api.resumen.mockResolvedValue({ ...RESUMEN, activo: false });
+    act(() => raiz.unmount());
+    raiz = createRoot(contenedor);
+    await montar('pagina');
+    expect(clasesConColorClavado()).toEqual([]);
+  });
+});
+
+describe('Niti: consultando y sin verificar', () => {
+  it('mientras pregunta: «Consultando…», esqueleto y ninguna cifra', async () => {
+    h.api.resumen.mockReturnValue(new Promise(() => undefined));
+    await montar('pagina');
+    expect(pildora()?.getAttribute('data-estado')).toBe('cargando');
+    expect(q('[data-testid="calidad-cargando"]')).not.toBeNull();
+    expect(q('[data-testid="calidad-cifras"]')).toBeNull();
+    expect(h.api.inmuebles).not.toHaveBeenCalled();
+  });
+
+  it('si el resumen no se pudo leer: «Sin verificar» (nunca «Apagado»), el fallo y reintentar', async () => {
+    h.api.resumen.mockRejectedValue(new Error('500'));
+    await montar('pagina');
+    expect(pildora()?.getAttribute('data-estado')).toBe('sin-verificar');
+    expect(pildora()?.textContent).not.toContain('Apagado');
+    expect(q('[data-testid="calidad-apagado"]')).toBeNull();
+    expect(h.api.inmuebles).not.toHaveBeenCalled();
+    const reintentar = Array.from(contenedor.querySelectorAll('button')).find((b) =>
+      /intentar/i.test(b.textContent ?? ''),
+    );
+    expect(reintentar).toBeTruthy();
+
+    h.api.resumen.mockResolvedValue(RESUMEN);
+    await clic(reintentar);
+    expect(pildora()?.getAttribute('data-estado')).toBe('prendido');
+    expect(q('[data-testid="calidad-cifras"]')).not.toBeNull();
+  });
+});
+
+describe('Niti prendido sin primera pasada', () => {
+  it('sin cifras en cero ni «última pasada»: la lista vacía lo dice con palabras', async () => {
+    h.api.resumen.mockResolvedValue({
+      ...RESUMEN,
+      ultimaPasada: null,
+      inmueblesAuditados: 0,
+      conProblemas: 0,
+      puntajePromedio: null,
+    });
+    h.api.inmuebles.mockResolvedValue(pagina([]));
+    await montar('pagina');
+    expect(pildora()?.getAttribute('data-estado')).toBe('prendido');
+    expect(q('[data-testid="calidad-cifras"]')).toBeNull();
+    expect(q('[data-testid="calidad-ultima-pasada"]')).toBeNull();
+    expect(texto()).toContain('Niti todavía no ha auditado ningún inmueble');
+    // Y no se dice dos veces.
+    expect(texto()).not.toContain('Todavía no ha hecho su primera pasada.');
   });
 });
 
 describe('Niti prendido', () => {
-  it('el encabezado: nombre, puntaje promedio, cuántos por arreglar y las fotos con IA del mes', async () => {
+  it('el encabezado dice quién es, que está prendido y cuándo pasó; la franja, las cifras', async () => {
     await montar();
     expect(h.api.resumen).toHaveBeenCalledWith('agencia-1');
     const encabezado = contenedor.querySelector('[data-testid="calidad-encabezado"]')?.textContent ?? '';
     expect(encabezado).toContain('Niti · calidad');
-    expect(encabezado).toContain('81');
-    expect(encabezado).toContain('37');
-    expect(encabezado).toContain('120');
-    expect(encabezado).toContain('42');
-    expect(encabezado).toMatch(/0[.,]42/);
-    expect(encabezado).toMatch(/5/);
+    expect(pildora()?.getAttribute('data-estado')).toBe('prendido');
+    expect(q('[data-testid="calidad-ultima-pasada"]')?.textContent).toContain('Última pasada');
+    const cifras = contenedor.querySelector('[data-testid="calidad-cifras"]')?.textContent ?? '';
+    expect(cifras).toContain('81');
+    expect(cifras).toContain('37');
+    expect(cifras).toContain('120');
+    expect(cifras).toContain('42');
+    expect(cifras).toMatch(/0[.,]42/);
+    expect(cifras).toMatch(/5/);
+  });
+
+  it('a 390 px el filtro es un select (los cuatro segmentos no caben)', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((consulta: string) => ({
+      matches: /max-width/.test(consulta),
+      media: consulta,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      await montar('pagina');
+      expect(q('[data-testid="calidad-filtro-movil"]')).not.toBeNull();
+      expect(q('[role="radiogroup"], [role="tablist"]')).toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it('sin IA de fotos, el encabezado no habla de fotos con IA', async () => {

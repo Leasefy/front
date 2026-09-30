@@ -815,8 +815,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  // T-0123: a verified step-up (aal2) also means enrollment can no longer be
+  // pending. Clearing only `mfaRequired` left a stale `mfaEnrollRequired` that
+  // bounced /auth/mfa-verify back to /auth/mfa-enroll until the deferred
+  // `checkMfaLevel` (MFA_CHALLENGE_VERIFIED) happened to settle.
   const setMfaVerified = useCallback(() => {
     setMfaRequired(false)
+    setMfaEnrollRequired(false)
   }, [])
 
   // T-0099: `clasificar.ts` no puede leer contexto de React — mirror de

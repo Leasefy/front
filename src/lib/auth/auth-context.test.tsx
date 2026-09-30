@@ -1052,6 +1052,13 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaEnrollRequired).toBe(true)
     expect(captured!.mfaRequired).toBe(false)
     expect(listFactorsMock).toHaveBeenCalled()
+
+    // T-0123: a verified step-up means enrollment can no longer be pending.
+    await act(async () => {
+      captured!.setMfaVerified()
+    })
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
   })
 
   it('exigido:true + a verified TOTP factor exists + aal1 → verify-pending (mfaRequired), NOT enroll-pending — no listFactors needed', async () => {

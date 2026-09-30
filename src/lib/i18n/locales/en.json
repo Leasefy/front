@@ -1034,7 +1034,7 @@
     },
     "piloto": {
       "titulo": "Autopilot",
-      "descripcion": "What your agents did and what they need from you, in one place.",
+      "descripcion": "Your AI agents are part of the operation: they collect, reconcile bank payments and follow up on contracts, invoices and owners. Here you see what they did and what they left for you to decide.",
       "kpis": {
         "pendientes": "Waiting on you",
         "actividadHoy": "Today's activity",
@@ -1331,6 +1331,111 @@
           "cobranza": "Collections",
           "aviso": "Notices"
         }
+      },
+      "comoFunciona": {
+        "boton": "How does it work?",
+        "titulo": "How the Autopilot works",
+        "descripcion": "What your agents do, what you decide and what you see on this screen.",
+        "modoActual": "{{modo}} mode",
+        "modoCorto": {
+          "sombra": "Agents prepare every action and you run it with one click. Nothing goes out without you.",
+          "copiloto": "Agents prepare every action and leave it in the Inbox. Nothing goes out without your approval.",
+          "autonomo": "Agents that already know how to act alone do it without asking. Anything doubtful goes to the Inbox."
+        },
+        "apagadoCorto": "The Autopilot is off: no agent acts on its own.",
+        "queEs": {
+          "titulo": "What it is",
+          "p1": "The Autopilot is how your AI agents take part in the agency's work. Each agent owns one task: collecting, reconciling bank payments, following up on contracts, invoices and owners.",
+          "p2": "This screen is your Home: here you see what they did and what they left for you to decide.",
+          "noEsElChat": "It is not the chat. The chat is where you and your team ask questions; the Autopilot is the work agents do on their own."
+        },
+        "modos": {
+          "titulo": "The three modes",
+          "intro": "The mode says who decides before something goes out: you or the agent.",
+          "ahora": "Your mode now",
+          "siempre": "Even in Automatic, these always wait for a person: money going out, credit bureau reports, legal matters, anything sent to the DIAN and contract terminations. Messages only go out during business hours, never on Sundays or holidays, and above your limits they ask for your click.",
+          "quienLoCambia": "An admin changes it from «Pilot» in the top bar, for all agents at once. In «Autonomy» it is set agent by agent. If nobody has changed it, agents start in Copilot.",
+          "apagado": "The Autopilot is off right now: no agent acts on its own, whatever the mode."
+        },
+        "agentes": {
+          "titulo": "Which agents work",
+          "conModo": "Work with the mode you choose",
+          "aPedido": "Work when you ask them: the mode changes nothing for them",
+          "apagados": "Not working for your agency yet",
+          "cargando": "Reading your agents…",
+          "sinLectura": "I couldn't read your agents' status right now. These are the ones the Autopilot can have:"
+        },
+        "agente": {
+          "cobranza": "Calls and writes by WhatsApp and email to tenants with pending payments, within the hours the law allows.",
+          "cotizador": "Checks a candidate with the insurers when you ask.",
+          "conciliacion": "Matches bank deposits with your charges and issues the receipt for exact matches. Anything doubtful goes to the Inbox.",
+          "pagos": "Sends the charge with a payment link and handles automatic card payments.",
+          "estudio": "Verifies a candidate's identity, income and background when you ask.",
+          "matching": "Sends a candidate who was left without a property the options that fit them, at most one email a day.",
+          "avaluos": "Appraises a property when you ask.",
+          "retencion": "Spots owners at risk of leaving and builds a plan for your team. It never writes to them.",
+          "calidad": "Reviews your listings and suggests fixes.",
+          "mantenimiento": "Classifies maintenance requests when you ask.",
+          "prospectos": "Reminds scheduled viewings and follows up after each one.",
+          "aprobaciones": "Tracks the owner's approval for repairs and price changes. For now it does not send them messages.",
+          "contratos": "Reminds pending signatures, warns about expirations and prepares renewals and increase letters. Closing a lease is always done by a person.",
+          "facturacion": "Prepares the monthly invoice on the 1st and applies the advance. Issuing it to the DIAN is always done by a person.",
+          "propietarios": "Sends each owner their monthly statement. Paying out their money is always approved by a person.",
+          "contabilidad": "Records expenses and exports the ledger. Payment batches always wait for your click.",
+          "chat": "Runs the actions the panel chat suggests. In Automatic it only does what can be undone and never moves money or writes to anyone."
+        },
+        "pantalla": {
+          "titulo": "What you see on this screen",
+          "pulso": {
+            "titulo": "Pilot pulse",
+            "texto": "What is happening now. Today's calls, open WhatsApp conversations with tenants, decisions resolved today and collection contacts scheduled for today, plus what is in progress and the alerts."
+          },
+          "bandeja": {
+            "titulo": "Inbox",
+            "texto": "What the agents left for you to decide. Each case comes with its button to approve or dismiss it."
+          },
+          "actividad": {
+            "titulo": "Live activity",
+            "texto": "What the agents did, in order, as it happens."
+          }
+        },
+        "botones": {
+          "titulo": "The buttons at the top",
+          "operaSola": {
+            "titulo": "Runs on its own?",
+            "texto": "What your agency is missing to run on its own in Automatic, and who unblocks it."
+          },
+          "procesos": {
+            "titulo": "Processes",
+            "texto": "What the Autopilot did, case by case: deposits it detected and reconciled, collection calls and WhatsApp conversations."
+          },
+          "autonomia": {
+            "titulo": "Autonomy",
+            "texto": "Each agent's mode, one by one. The number says how many act alone, without anyone approving."
+          },
+          "piloto": {
+            "titulo": "«Pilot» in the top bar",
+            "texto": "The mode of all agents and what they are doing right now. It is on every panel screen."
+          }
+        },
+        "verPresentacion": "See the introduction again"
+      },
+      "novedad": {
+        "titulo": "This is how your Autopilot works",
+        "descripcion": "Your AI agents take part in the agency's work. This screen is your Home: here you see what they did and what they left for you to decide.",
+        "paso1": {
+          "titulo": "Your agents work",
+          "texto": "Each on its own task: they collect, reconcile bank payments and follow up on contracts, invoices and owners."
+        },
+        "paso2": {
+          "titulo": "What needs you lands in the Inbox",
+          "texto": "When something needs your approval, they leave it with its button. What they did on their own shows up in Live activity."
+        },
+        "paso3": {
+          "titulo": "You decide how much they do alone",
+          "texto": "Manual, Copilot or Automatic: the mode says who decides before something goes out. You see it in «Pilot» in the top bar."
+        },
+        "cta": "Got it"
       }
     },
     "mobileNav": {

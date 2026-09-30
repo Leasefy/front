@@ -155,6 +155,17 @@ describe('AuthForm register — single-picker routing', () => {
     )
   })
 
+  it('(c1) el enlace del correo vuelve por /auth/callback con la marca del registro (QA 28-09)', async () => {
+    // La plantilla nueva de Supabase le pega «&token_hash=…» a este valor, y
+    // /auth/callback usa `tipo=registro` para decir «tu correo quedó
+    // confirmado» cuando el code no se puede canjear (otro navegador).
+    signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
+    await submitRegister({ defaultRole: 'agency' })
+    expect(lastEmailRedirectTo()).toBe(
+      `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent('/onboarding/inmobiliaria')}&tipo=registro`,
+    )
+  })
+
   it('(c2) auto-confirmed with defaultRole=landlord pushes to /onboarding/propietario', async () => {
     signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: false })
     await submitRegister({ defaultRole: 'landlord' })

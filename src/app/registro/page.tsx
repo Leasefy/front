@@ -13,6 +13,7 @@ import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
@@ -225,9 +226,15 @@ function RegistroContent() {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
       }));
-      // Redirect back to this same page so the ?code= exchange happens client-side
-      // and the invitationToken stays in the URL for the auto-accept effect.
-      const redirectTo = window.location.href;
+      // Vuelve a esta misma página (con el invitationToken en la URL, para el
+      // auto-accept) pero PASANDO por /auth/callback: la plantilla del correo
+      // le pega «&token_hash=…» al regreso y sólo /auth/callback sabe leerlo
+      // (QA 28-09, ver `regreso-del-correo.ts`). Los correos viejos, con
+      // `?code=`, se siguen canjeando acá abajo.
+      const redirectTo = urlDeRegresoDelRegistro(
+        window.location.origin,
+        `${window.location.pathname}${window.location.search}`,
+      );
       // Normalizado (minúsculas, sin espacios): es lo que después se escribe al entrar.
       const correo = normalizarCorreo(data.email);
       const result = await signUpWithEmail(correo, data.password, redirectTo);

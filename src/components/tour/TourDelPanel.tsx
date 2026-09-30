@@ -51,10 +51,38 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { X } from '@phosphor-icons/react';
+import {
+  AirTrafficControl,
+  ArrowLeft,
+  ArrowRight,
+  Buildings,
+  ChartLine,
+  ChatsCircle,
+  Check,
+  ClipboardText,
+  Clock,
+  Compass,
+  CurrencyDollar,
+  FilePlus,
+  HandCoins,
+  HouseLine,
+  Lightbulb,
+  MagnifyingGlass,
+  PaperPlaneTilt,
+  Plus,
+  Signature,
+  UserCircle,
+  UserCircleCheck,
+  X,
+  type Icon,
+} from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
+import { LeasefyMonogram } from '@/components/brand/LeasefyMonogram';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
@@ -108,12 +136,31 @@ const MIN_INTENTOS_TRAS_UNA_CAPA = 8;
  * (el back falló), el recorrido no se pierde — ante la duda, el panel se ve.
  */
 const ESPERA_POR_EL_MURO_MS = 6000;
-/** Ancho de la tarjeta anclada; también su tope en pantallas chicas. */
-const ANCHO = 340;
+/**
+ * Ancho de la tarjeta anclada; también su tope en pantallas chicas. Era 340:
+ * con el ícono de la parada, el dato en su pozo y el avance por paradas
+ * (glow up, 30-09) el cuerpo quedaba en renglones de cuatro palabras.
+ */
+export const ANCHO_DE_LA_TARJETA = 360;
+const ANCHO = ANCHO_DE_LA_TARJETA;
 /** Hasta dónde llega la columna del sidebar (240 px + aire): lo que termina antes, se señala desde el costado. */
 const COLUMNA_LATERAL = 320;
-/** Ancho de la bienvenida y el cierre, que no anclan a nada. */
-const ANCHO_CENTRADO = 420;
+/**
+ * Ancho de la bienvenida y el cierre, que no anclan a nada. Era 420: una
+ * tarjeta chica con tres renglones de texto (Nico, 30-09: «super básico, usa
+ * alguna imagen, hazlo más grande, más bonito»). Ahora son dos columnas —la
+ * foto de marca y el contenido— y en pantalla angosta se apilan.
+ */
+const ANCHO_CENTRADO = 760;
+/**
+ * Las fotos de marca del recorrido: la marca instalada en espacios reales.
+ * Las tres que `AgentIntroModal` le reservó al recorrido son la 02, la 09 y la
+ * 15 (ver la nota de `AGENT_INTROS`). La bienvenida abre con una ENTRADA (la
+ * 02: el portal de un edificio al atardecer) y el cierre termina ADENTRO (la
+ * 15: la recepción de noche): se entra al panel y se queda uno en él.
+ */
+const FOTO_DE_LA_BIENVENIDA = '/images/features/leasefy-brand-02.jpg';
+const FOTO_DEL_CIERRE = '/images/features/leasefy-brand-15.jpg';
 /**
  * Por debajo de esto la tarjeta se va abajo, a lo ancho: al lado de un
  * elemento no cabe, y centrada tapa justo lo que está señalando.
@@ -575,11 +622,11 @@ export function TourDelPanel() {
 
   const total = pantalla.tipo === 'paso' ? pantalla.totalDePasos : (pasos?.length ?? 0);
   const nPaso = pantalla.tipo === 'paso' ? pantalla.indiceDelPaso + 1 : 0;
-  const avance =
-    pantalla.tipo === 'bienvenida' ? 0 : pantalla.tipo === 'cierre' ? 1 : nPaso / Math.max(1, total);
+  const hechos = pantalla.tipo === 'bienvenida' ? 0 : pantalla.tipo === 'cierre' ? total : nPaso;
 
   const idTitulo = 'tour-del-panel-titulo';
-  const duracion = reducirMovimiento ? 0 : 0.18;
+  const animar = !reducirMovimiento;
+  const duracion = animar ? 0.18 : 0;
   // El velo se oscurece con la tinta de la casa: en oscuro `--ink` ya es
   // `#0a0a0a`, así que el recorrido no aclara ni ensucia el tema.
   const velo = 'color-mix(in srgb, var(--ink) 62%, transparent)';
@@ -587,6 +634,80 @@ export function TourDelPanel() {
   const nombre = user?.firstName?.trim() || user?.name?.trim() || '';
   const nombreInmobiliaria =
     agency?.name?.trim() || t('inmobiliaria.tour.bienvenida.tuInmobiliaria');
+
+  const titulo =
+    pantalla.tipo === 'paso'
+      ? t(pantalla.paso.tituloKey)
+      : t(
+          pantalla.tipo === 'bienvenida'
+            ? 'inmobiliaria.tour.bienvenida.titulo'
+            : 'inmobiliaria.tour.cierre.titulo',
+          { inmobiliaria: nombreInmobiliaria },
+        );
+
+  const progreso = (
+    <ProgresoPorParadas total={total} hechos={hechos} etiqueta={t('inmobiliaria.tour.progreso')} />
+  );
+
+  const aspa = (
+    <button
+      type="button"
+      onClick={() => cerrar('omitido')}
+      aria-label={t('inmobiliaria.tour.cerrar')}
+      className={ASPA_DE_CIERRE}
+      data-testid="tour-cerrar"
+    >
+      <X size={16} weight="bold" aria-hidden />
+    </button>
+  );
+
+  // Omitir, en TODAS las pantallas: es la promesa del recorrido.
+  const pie = (
+    <div className="flex items-center justify-between gap-3">
+      <Button
+        variant="link"
+        size="sm"
+        hideArrow
+        onClick={() => cerrar('omitido')}
+        className="h-auto px-0 text-fg-muted hover:text-fg"
+        data-testid="tour-saltar"
+      >
+        {t('inmobiliaria.tour.saltar')}
+      </Button>
+
+      <div className="flex items-center gap-2">
+        {indice > 0 && (
+          <Button
+            variant="outline"
+            size={pantalla.tipo === 'paso' ? 'sm' : 'default'}
+            hideArrow
+            onClick={retroceder}
+            data-testid="tour-atras"
+          >
+            <ArrowLeft size={14} weight="bold" aria-hidden className="mr-1.5" />
+            {t('inmobiliaria.tour.atras')}
+          </Button>
+        )}
+        <Button
+          size={pantalla.tipo === 'paso' ? 'sm' : 'default'}
+          hideArrow
+          onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
+          data-testid="tour-siguiente"
+        >
+          {t(
+            pantalla.tipo === 'bienvenida'
+              ? 'inmobiliaria.tour.empezar'
+              : pantalla.tipo === 'cierre'
+                ? 'inmobiliaria.tour.entendido'
+                : 'inmobiliaria.tour.siguiente',
+          )}
+          {pantalla.tipo !== 'cierre' && (
+            <ArrowRight size={14} weight="bold" aria-hidden className="ml-1.5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   return createPortal(
     <div
@@ -616,9 +737,7 @@ export function TourDelPanel() {
             width: recuadro.width + MARGEN * 2,
             height: recuadro.height + MARGEN * 2,
           }}
-          transition={
-            reducirMovimiento ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }
-          }
+          transition={animar ? { type: 'spring', stiffness: 380, damping: 36 } : { duration: 0 }}
           style={{ boxShadow: `0 0 0 9999px ${velo}` }}
         >
           {/* El halo: un anillo con el primario que respira muy despacio. */}
@@ -626,11 +745,9 @@ export function TourDelPanel() {
             aria-hidden
             className="absolute inset-0 rounded-lg"
             style={{ boxShadow: `0 0 0 2px hsl(var(--primary)), 0 0 0 8px hsl(var(--primary) / 0.18)` }}
-            animate={reducirMovimiento ? { opacity: 1 } : { opacity: [0.55, 1, 0.55] }}
+            animate={animar ? { opacity: [0.55, 1, 0.55] } : { opacity: 1 }}
             transition={
-              reducirMovimiento
-                ? { duration: 0 }
-                : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
+              animar ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }
             }
           />
         </motion.div>
@@ -642,7 +759,7 @@ export function TourDelPanel() {
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: duracion }}
+          transition={{ duration: animar ? 0.24 : 0 }}
           style={{ backgroundColor: velo }}
         />
       )}
@@ -672,165 +789,378 @@ export function TourDelPanel() {
             aria-modal="true"
             aria-labelledby={idTitulo}
             tabIndex={-1}
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            // Sólo lo que se ve: la tarjeta sube un poco y aparece. Con
+            // «reducir movimiento» no se mueve nada.
+            initial={animar ? { opacity: 0, y: 10, scale: 0.98 } : false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: duracion }}
+            exit={animar ? { opacity: 0, y: -6, scale: 0.98 } : { opacity: 0 }}
+            transition={{ duration: pantalla.tipo === 'paso' ? duracion : animar ? 0.32 : 0, ease: [0.22, 1, 0.36, 1] }}
             style={ubicacion ? undefined : { width: ANCHO_CENTRADO, maxWidth: '100%' }}
-            className={
+            // La cáscara es la de los modales hechos a mano (`rounded-[20px]`,
+            // DESIGN §17) y la elevación, la de las capas: `shadow-lg`.
+            className={cn(
+              'overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none',
               ubicacion
-                ? 'max-h-[calc(100vh-16px)] w-full overflow-y-auto rounded-lg border border-border bg-surface p-5 shadow-xl outline-none'
-                : 'pointer-events-auto max-h-[calc(100vh-32px)] overflow-y-auto rounded-lg border border-border bg-surface p-6 shadow-xl outline-none'
-            }
+                ? 'max-h-[calc(100dvh-16px)] w-full p-5'
+                : 'pointer-events-auto max-h-[calc(100dvh-32px)]',
+            )}
+            data-lenis-prevent
             data-testid="tour-tarjeta"
           >
             {/* Lo que el lector de pantalla anuncia en cada cambio de pantalla. */}
             <p className="sr-only" aria-live="polite">
               {pantalla.tipo === 'paso'
-                ? `${t('inmobiliaria.tour.paso', { n: nPaso, total })} — ${t(pantalla.paso.tituloKey)}`
-                : t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.bienvenida.titulo'
-                      : 'inmobiliaria.tour.cierre.titulo',
-                    { inmobiliaria: nombreInmobiliaria },
-                  )}
+                ? `${t('inmobiliaria.tour.paso', { n: nPaso, total })} — ${titulo}`
+                : titulo}
             </p>
 
-            <div className="flex items-start justify-between gap-3">
-              <p className="font-mono text-caption uppercase tracking-wide text-fg-subtle">
-                {pantalla.tipo === 'paso'
-                  ? t('inmobiliaria.tour.paso', { n: nPaso, total })
-                  : nombre
-                    ? t('inmobiliaria.tour.bienvenida.saludo', { nombre })
-                    : '\u00A0'}
-              </p>
-              <Button
-                variant="ghost"
-                size="icon"
-                hideArrow
-                onClick={() => cerrar('omitido')}
-                aria-label={t('inmobiliaria.tour.cerrar')}
-                className="-mr-2 -mt-2 h-8 w-8 shrink-0 text-fg-subtle hover:text-fg"
-                data-testid="tour-cerrar"
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            {pantalla.tipo === 'bienvenida' && (
+              <PantallaCentrada foto={FOTO_DE_LA_BIENVENIDA} fotoAl="inicio" animar={animar}>
+                <div className="flex items-start justify-between gap-3">
+                  <Eyebrow>
+                    {nombre ? t('inmobiliaria.tour.bienvenida.saludo', { nombre }) : ' '}
+                  </Eyebrow>
+                  {aspa}
+                </div>
+                <h2
+                  id={idTitulo}
+                  className="mt-3 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[30px]"
+                >
+                  {titulo}
+                </h2>
+                <p className="mt-3 text-body-sm text-fg-muted">
+                  {t('inmobiliaria.tour.bienvenida.cuerpo')}
+                </p>
 
-            {/* El progreso real: cuánto del recorrido va, contando sólo los pasos
-                anclados (la bienvenida arranca en cero y el cierre lo completa). */}
-            <div
-              className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-muted"
-              role="progressbar"
-              aria-label={t('inmobiliaria.tour.progreso')}
-              aria-valuemin={0}
-              aria-valuemax={total}
-              aria-valuenow={pantalla.tipo === 'cierre' ? total : nPaso}
-              data-testid="tour-progreso"
-            >
-              <motion.span
-                className="block h-full rounded-full"
-                style={{ backgroundColor: 'hsl(var(--primary))' }}
-                initial={false}
-                animate={{ width: `${Math.round(avance * 100)}%` }}
-                transition={{ duration: duracion }}
-              />
-            </div>
+                <RutaDelArriendo
+                  titulo={t('inmobiliaria.tour.bienvenida.ruta.titulo')}
+                  etapa={(id) => t(`inmobiliaria.tour.bienvenida.ruta.${id}`)}
+                  animar={animar}
+                />
 
-            <h2 id={idTitulo} className="mt-3 text-base font-semibold text-fg">
-              {pantalla.tipo === 'paso'
-                ? t(pantalla.paso.tituloKey)
-                : t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.bienvenida.titulo'
-                      : 'inmobiliaria.tour.cierre.titulo',
-                    { inmobiliaria: nombreInmobiliaria },
-                  )}
-            </h2>
+                {/* Lo que cuesta: cuántas paradas, cuánto tiempo, y que se
+                    puede dejar. Las paradas se VEN: un segmento por cada una. */}
+                <div className="mt-6 space-y-2.5">
+                  {progreso}
+                  <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[12px] tabular-nums text-fg-subtle">
+                    <li>{t('inmobiliaria.tour.bienvenida.paradas', { total })}</li>
+                    <li className="flex items-center gap-1.5">
+                      <Clock size={13} aria-hidden />
+                      {t('inmobiliaria.tour.bienvenida.duracion')}
+                    </li>
+                    <li>{t('inmobiliaria.tour.bienvenida.omitible')}</li>
+                  </ul>
+                </div>
+
+                <div className="mt-7">{pie}</div>
+              </PantallaCentrada>
+            )}
 
             {pantalla.tipo === 'paso' && (
               <>
-                <p className="mt-1.5 text-body-sm text-fg-muted">{t(pantalla.paso.cuerpoKey)}</p>
+                {progreso}
+                <div className="mt-4 flex items-start gap-3">
+                  <IconoDeLaParada id={pantalla.paso.id} />
+                  <div className="min-w-0 flex-1">
+                    <Eyebrow>{t('inmobiliaria.tour.paso', { n: nPaso, total })}</Eyebrow>
+                    <h2
+                      id={idTitulo}
+                      className="mt-1 font-heading text-[17px] font-semibold leading-snug tracking-[-0.01em] text-fg"
+                    >
+                      {titulo}
+                    </h2>
+                  </div>
+                  <div className="-mr-1 -mt-1">{aspa}</div>
+                </div>
+                <p className="mt-3 text-body-sm text-fg-muted">{t(pantalla.paso.cuerpoKey)}</p>
                 {pantalla.paso.datoKey && (
-                  <p className="mt-2 border-l-2 border-border pl-3 text-body-sm text-fg-subtle">
-                    {t(pantalla.paso.datoKey)}
+                  <p className="mt-3 flex gap-2.5 rounded-md bg-surface-muted px-3 py-2.5 text-caption text-fg-muted">
+                    <Lightbulb size={16} aria-hidden className="mt-px shrink-0 text-primary" />
+                    <span>{t(pantalla.paso.datoKey)}</span>
                   </p>
                 )}
+                <div className="mt-5">{pie}</div>
               </>
-            )}
-
-            {pantalla.tipo === 'bienvenida' && (
-              <p className="mt-1.5 text-body-sm text-fg-muted">
-                {t('inmobiliaria.tour.bienvenida.cuerpo', { total })}
-              </p>
             )}
 
             {pantalla.tipo === 'cierre' && (
-              <>
-                <ul className="mt-3 space-y-2">
-                  {['punto1', 'punto2', 'punto3'].map((k) => (
-                    <li key={k} className="flex gap-2 text-body-sm text-fg-muted">
+              <PantallaCentrada foto={FOTO_DEL_CIERRE} fotoAl="final" animar={animar}>
+                <div className="flex items-start justify-between gap-3">
+                  <Eyebrow>{t('inmobiliaria.tour.cierre.eyebrow')}</Eyebrow>
+                  {aspa}
+                </div>
+                <h2
+                  id={idTitulo}
+                  className="mt-3 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[30px]"
+                >
+                  {titulo}
+                </h2>
+                <div className="mt-5">{progreso}</div>
+                <ul className="mt-5 space-y-3">
+                  {['punto1', 'punto2', 'punto3'].map((k, i) => (
+                    <motion.li
+                      key={k}
+                      initial={animar ? { opacity: 0, y: 6 } : false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: animar ? 0.12 + i * 0.07 : 0, duration: animar ? 0.24 : 0 }}
+                      className="flex gap-3 text-body-sm text-fg-muted"
+                    >
                       <span
                         aria-hidden
-                        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: 'hsl(var(--primary))' }}
-                      />
-                      {t(`inmobiliaria.tour.cierre.${k}`)}
-                    </li>
+                        className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"
+                      >
+                        <Check size={12} weight="bold" />
+                      </span>
+                      <span>{t(`inmobiliaria.tour.cierre.${k}`)}</span>
+                    </motion.li>
                   ))}
                 </ul>
-                <p className="mt-3 text-body-sm text-fg-subtle">
-                  {t('inmobiliaria.tour.cierre.volver')}
+                <p className="mt-5 flex gap-2.5 rounded-md bg-surface-muted px-3 py-2.5 text-caption text-fg-muted">
+                  <Compass size={16} aria-hidden className="mt-px shrink-0 text-primary" />
+                  <span>{t('inmobiliaria.tour.cierre.volver')}</span>
                 </p>
-              </>
+                <div className="mt-7">{pie}</div>
+              </PantallaCentrada>
             )}
-
-            <div className="mt-5 flex items-center justify-between gap-3">
-              {/* Omitir, en TODAS las pantallas: es la promesa del recorrido. */}
-              <Button
-                variant="link"
-                size="sm"
-                hideArrow
-                onClick={() => cerrar('omitido')}
-                className="h-auto px-0 text-fg-muted hover:text-fg"
-                data-testid="tour-saltar"
-              >
-                {t('inmobiliaria.tour.saltar')}
-              </Button>
-
-              <div className="flex items-center gap-2">
-                {indice > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    onClick={retroceder}
-                    data-testid="tour-atras"
-                  >
-                    {t('inmobiliaria.tour.atras')}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  hideArrow
-                  onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
-                  data-testid="tour-siguiente"
-                >
-                  {t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.empezar'
-                      : pantalla.tipo === 'cierre'
-                        ? 'inmobiliaria.tour.entendido'
-                        : 'inmobiliaria.tour.siguiente',
-                  )}
-                </Button>
-              </div>
-            </div>
           </motion.div>
         </AnimatePresence>
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Las piezas de la puesta en escena (glow up, 30-09-2026).
+//
+// Nico, de la bienvenida: «super básico, usa alguna imagen, hazlo más grande,
+// más bonito». Y el mismo nivel en las paradas y en el cierre, para que no se
+// vea un salto: las tres comparten la cáscara, el renglón de arriba (eyebrow
+// en mono + la ✕ de la casa), el avance por paradas y el pie.
+// ══════════════════════════════════════════════════════════════════════════
+
+/** El renglón de arriba: mono, mayúsculas, con el punto cobalto de la marca. */
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+      {children}
+    </p>
+  );
+}
+
+/**
+ * El avance, UN segmento por parada. En la bienvenida está vacío y dice
+ * cuántas son sin contarlas en texto; en cada paso se llena hasta donde va; en
+ * el cierre, lleno. Es el mismo `progressbar` de antes, con sus números.
+ */
+function ProgresoPorParadas({
+  total,
+  hechos,
+  etiqueta,
+}: {
+  total: number;
+  hechos: number;
+  etiqueta: string;
+}) {
+  return (
+    <div
+      role="progressbar"
+      aria-label={etiqueta}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={hechos}
+      className="flex gap-1"
+      data-testid="tour-progreso"
+    >
+      {Array.from({ length: Math.max(1, total) }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={cn(
+            'h-1 flex-1 rounded-full transition-colors duration-200 motion-reduce:transition-none',
+            i < hechos ? 'bg-primary' : 'bg-border',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * El ícono de cada parada es EL MISMO de la fila que señala (sidebar,
+ * `arquitectura-del-panel.ts`; la píldora del Piloto; el perfil): lo que se
+ * aprende en la tarjeta es lo que después se busca en el menú.
+ */
+const ICONO_DE_LA_PARADA: Record<string, Icon> = {
+  buscador: MagnifyingGlass,
+  nuevo: Plus,
+  inmuebles: Buildings,
+  postulaciones: ClipboardText,
+  contratos: FilePlus,
+  pagos: CurrencyDollar,
+  reportes: ChartLine,
+  piloto: AirTrafficControl,
+  chat: ChatsCircle,
+  perfil: UserCircle,
+};
+
+function IconoDeLaParada({ id }: { id: string }) {
+  const Icono = ICONO_DE_LA_PARADA[id] ?? Compass;
+  // Tinted Icon Tile (DESIGN §4): cobalto suave, el único acento del momento.
+  return (
+    <span
+      aria-hidden
+      className="grid size-10 shrink-0 place-items-center rounded-md bg-primary-soft text-primary"
+    >
+      <Icono size={20} />
+    </span>
+  );
+}
+
+/**
+ * Las cinco etapas de un arriendo, en el orden en que se trabaja — el mismo
+ * orden del recorrido («captar un inmueble, estudiar candidatos, firmar,
+ * cobrar y pagar»). Es la «imagen» de lo que se va a ver: una ruta, no un
+ * párrafo.
+ */
+const ETAPAS_DEL_ARRIENDO: ReadonlyArray<{ id: string; Icono: Icon }> = [
+  { id: 'captar', Icono: HouseLine },
+  { id: 'estudiar', Icono: UserCircleCheck },
+  { id: 'firmar', Icono: Signature },
+  { id: 'cobrar', Icono: HandCoins },
+  { id: 'pagar', Icono: PaperPlaneTilt },
+];
+
+function RutaDelArriendo({
+  titulo,
+  etapa,
+  animar,
+}: {
+  titulo: string;
+  etapa: (id: string) => string;
+  animar: boolean;
+}) {
+  return (
+    <div className="mt-6">
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">{titulo}</p>
+      <ol className="relative mt-3 grid grid-cols-5" aria-label={titulo}>
+        {/* La línea que une las paradas pasa POR DETRÁS de los círculos: de
+            centro a centro del primero al último (10 % … 90 %). Se dibuja de
+            izquierda a derecha al abrir; sin movimiento, ya está. */}
+        <span aria-hidden className="absolute left-[10%] right-[10%] top-5 h-px bg-border" />
+        <motion.span
+          aria-hidden
+          className="absolute left-[10%] top-5 h-px w-[80%] origin-left bg-primary"
+          initial={animar ? { scaleX: 0 } : false}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: animar ? 0.2 : 0, duration: animar ? 0.7 : 0, ease: [0.22, 1, 0.36, 1] }}
+        />
+        {ETAPAS_DEL_ARRIENDO.map(({ id, Icono }, i) => (
+          <motion.li
+            key={id}
+            className="relative flex flex-col items-center gap-2 text-center"
+            initial={animar ? { opacity: 0, y: 6 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: animar ? 0.15 + i * 0.08 : 0, duration: animar ? 0.26 : 0 }}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                'grid size-10 place-items-center rounded-full border ring-4 ring-surface',
+                i === 0
+                  ? 'border-primary bg-primary text-primary-fg'
+                  : 'border-border bg-surface text-primary',
+              )}
+            >
+              <Icono size={18} />
+            </span>
+            <span className="text-caption font-medium leading-tight text-fg-muted">{etapa(id)}</span>
+          </motion.li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * La bienvenida y el cierre: dos columnas, la foto de marca y el contenido.
+ * En pantalla angosta la foto se vuelve una franja arriba. `fotoAl` la pone a
+ * la izquierda en la bienvenida y a la derecha en el cierre: el recorrido abre
+ * y cierra como un par.
+ */
+function PantallaCentrada({
+  foto,
+  fotoAl,
+  animar,
+  children,
+}: {
+  foto: string;
+  fotoAl: 'inicio' | 'final';
+  animar: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        'grid sm:min-h-[480px]',
+        fotoAl === 'inicio'
+          ? 'sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'
+          : 'sm:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+      )}
+    >
+      <FotoDeMarca
+        src={foto}
+        animar={animar}
+        className={fotoAl === 'final' ? 'sm:order-last' : undefined}
+      />
+      <div className="flex flex-col p-6 sm:p-8">{children}</div>
+    </div>
+  );
+}
+
+function FotoDeMarca({
+  src,
+  animar,
+  className,
+}: {
+  src: string;
+  animar: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={cn('relative h-36 overflow-hidden bg-surface-muted sm:h-auto', className)}
+    >
+      {/* Un acercamiento lento al abrir, como quien entra. Sin movimiento, quieta. */}
+      <motion.div
+        className="absolute inset-0"
+        initial={animar ? { scale: 1.06 } : false}
+        animate={{ scale: 1 }}
+        transition={{ duration: animar ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes="(min-width: 640px) 320px, 100vw"
+          className="object-cover object-[50%_42%]"
+          priority
+        />
+      </motion.div>
+      {/* Veladura de tinta abajo: la píldora se lee sobre cualquier foto. */}
+      <span
+        className="absolute inset-x-0 bottom-0 h-2/5"
+        style={{
+          background: 'linear-gradient(to top, color-mix(in srgb, var(--ink) 45%, transparent), transparent)',
+        }}
+      />
+      <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-3 shadow-sm">
+        <LeasefyMonogram size={22} />
+        <span className="text-[12px] font-semibold text-fg">Leasefy</span>
+      </span>
+    </div>
   );
 }
 

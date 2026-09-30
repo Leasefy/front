@@ -11,6 +11,12 @@
  *      frase —el molde del panel, `components/retencion/frases.ts`—, y
  *   2. la lista del link de cada cuota (`LinksDePago`), con el mismo mes.
  *
+ * 30-09-2026 (glow up, Nico: «mira eso como se ve de horrible»): el margen y
+ * el encabezado de las demás pantallas del panel (Eyebrow, h1, bajada), la
+ * píldora común con Niti (`EstadoDelAgente`) y las reglas de cuándo escribe en
+ * su propia tarjeta, dichas UNA vez: antes la bajada y la tarjeta de los
+ * links repetían «3 días antes, el día y 3 días después».
+ *
  * 🔴 Con `payuActivo=false` lo dice con las palabras de Nico —«Cobri está
  * apagado en el servidor: lo prende Leasefy»— y no inventa números. Si el
  * resumen no se pudo leer, la píldora dice «Sin verificar», nunca «Apagado»:
@@ -20,68 +26,102 @@
  */
 
 import { useState } from 'react'
-import type { Icon } from '@phosphor-icons/react'
-import { CheckCircle, CircleNotch, Power, Question } from '@phosphor-icons/react'
+import { ChatCircleText, WarningCircle } from '@phosphor-icons/react'
+import { Eyebrow } from '@leasefy/cadence'
 
-import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import {
+  PildoraDelAgente,
+  estadoDeLaLectura,
+  type EstadoDelAgente,
+} from '@/components/inmobiliaria/agentes/EstadoDelAgente'
 import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago'
-import { SectionLabel } from '@/components/ui/section-label'
+import { Button } from '@/components/ui/button'
 import { useResumenDePayu, type Lectura } from '@/lib/hooks/use-payu'
 import { fraseDelMesDePayu } from '@/lib/payu/frases'
 import { mesActual } from '@/lib/recaudo/meses'
 import type { ResumenDeLinksDePago } from '@/lib/types/payu'
-import { cn } from '@/lib/utils'
 
-export type EstadoDePayu = 'cargando' | 'prendido' | 'apagado' | 'sin-verificar'
+export type EstadoDePayu = EstadoDelAgente
 
 export function estadoDePayu(lectura: Lectura<ResumenDeLinksDePago>): EstadoDePayu {
-  if (lectura.data) return lectura.data.payuActivo ? 'prendido' : 'apagado'
-  if (lectura.error) return 'sin-verificar'
-  return 'cargando'
+  return estadoDeLaLectura({ activo: lectura.data?.payuActivo, error: lectura.error })
 }
 
-const PILDORA: Record<EstadoDePayu, { clase: string; icon: Icon; texto: string; gira?: boolean }> = {
-  cargando: { clase: 'bg-surface-muted text-fg-muted', icon: CircleNotch, texto: 'Consultando…', gira: true },
-  prendido: { clase: 'bg-success-soft text-success', icon: CheckCircle, texto: 'Prendido' },
-  apagado: { clase: 'bg-warning-soft text-warning', icon: Power, texto: 'Apagado' },
-  'sin-verificar': { clase: 'bg-surface-muted text-fg-muted', icon: Question, texto: 'Sin verificar' },
-}
+/** Los tres avisos de cada cuota, en el orden en que salen (`payu-contrato`). */
+const AVISOS = [
+  { cuando: '3 días antes', de: 'del vencimiento' },
+  { cuando: 'El día', de: 'del vencimiento' },
+  { cuando: '3 días después', de: 'del vencimiento' },
+] as const
 
-function PildoraDePayu({ estado }: { estado: EstadoDePayu }) {
-  const { clase, icon: Icono, texto, gira } = PILDORA[estado]
+function CuandoEscribe() {
   return (
-    <span
-      role="status"
-      aria-live="polite"
-      data-testid="estado-de-payu"
-      data-estado={estado}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium', clase)}
+    <section
+      aria-labelledby="cobri-cuando-escribe"
+      className="rounded-lg border border-border bg-surface p-5"
+      data-testid="cobri-cuando-escribe"
     >
-      <Icono
-        className={cn('h-4 w-4 flex-shrink-0', gira && 'animate-spin motion-reduce:animate-none')}
-        weight="bold"
-        aria-hidden="true"
-      />
-      {texto}
-    </span>
+      <h2 id="cobri-cuando-escribe" className="text-subtitle text-fg">
+        Cuándo escribe
+      </h2>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+        {AVISOS.map((a, n) => (
+          <li key={a.cuando} className="flex items-start gap-3 rounded-md bg-surface-muted px-4 py-3">
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-surface font-mono text-caption font-medium text-fg"
+              aria-hidden="true"
+            >
+              {n + 1}
+            </span>
+            <p className="min-w-0 text-body-sm">
+              <span className="block font-medium text-fg">{a.cuando}</span>
+              <span className="text-fg-muted">{a.de}</span>
+            </p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 max-w-2xl text-body-sm text-fg-muted">
+        Son máximo tres mensajes por cuota y siempre el mismo link. Después del tercero ya no escribe: la sigue
+        cobranza.
+      </p>
+    </section>
   )
 }
 
+/**
+ * La frase del mes, entre la barra del mes y la tabla. Si no se pudo leer, UNA
+ * línea con reintentar —no el cartel grande de fallo en medio de la tarjeta:
+ * la lista de abajo sigue viva y es lo que se vino a ver.
+ */
 function FraseDelMes({ lectura }: { lectura: Lectura<ResumenDeLinksDePago> }) {
-  return (
-    <EstadoDeDatos
-      cargando={lectura.cargando && !lectura.data}
-      error={lectura.error}
-      queEs="el resumen de Cobri"
-      onReintentar={lectura.recargar}
-      esqueleto={<div className="h-5 w-full max-w-xl animate-pulse rounded-sm bg-surface-muted" aria-hidden="true" />}
-    >
-      {lectura.data && (
+  if (lectura.data) {
+    return (
+      <div className="flex items-start gap-3">
+        <ChatCircleText className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
         <p className="text-body text-fg" data-testid="frase-de-payu">
           {fraseDelMesDePayu(lectura.data)}
         </p>
-      )}
-    </EstadoDeDatos>
+      </div>
+    )
+  }
+  if (lectura.error) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3" data-testid="frase-de-payu-fallo">
+        <p className="flex items-start gap-3 text-body-sm text-fg-muted">
+          <WarningCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+          No se pudo leer el resumen de Cobri, así que no sabemos si está prendido.
+        </p>
+        <Button variant="outline" size="sm" hideArrow onClick={() => void lectura.recargar()}>
+          Intentar de nuevo
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <div
+      className="h-5 w-full max-w-xl animate-pulse rounded-sm bg-surface-muted motion-reduce:animate-none"
+      aria-hidden="true"
+    />
   )
 }
 
@@ -90,21 +130,28 @@ export function AgenteDePagos() {
   const resumen = useResumenDePayu(mes)
 
   return (
-    <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <header className="space-y-3">
-        <SectionLabel>Agentes IA</SectionLabel>
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-6 p-6 lg:p-8" data-testid="agente-de-pagos">
+      <header className="space-y-1">
+        <Eyebrow>Agentes IA</Eyebrow>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-h2 text-fg">Agente de pagos · Cobri</h1>
-          <PildoraDePayu estado={estadoDePayu(resumen)} />
+          <PildoraDelAgente estado={estadoDePayu(resumen)} data-testid="estado-de-payu" />
         </div>
-        <p className="max-w-2xl text-body-sm text-fg-muted">
-          Cobri le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto:
-          3 días antes del vencimiento, el día y 3 días después. Son máximo tres mensajes por cuota y siempre el mismo
-          link, que también va en los correos de aviso de cobro. Después del tercero ya no escribe: la sigue cobranza.
+        <p className="max-w-2xl text-sm text-fg-muted">
+          Le manda al inquilino por WhatsApp el link de pago de su cuota más vieja con saldo, por el valor exacto. Es
+          el mismo link que va en los correos de aviso de cobro.
         </p>
       </header>
 
-      <LinksDePago mes={mes} onCambiarMes={setMes} resumen={<FraseDelMes lectura={resumen} />} />
+      <CuandoEscribe />
+
+      <LinksDePago
+        mes={mes}
+        onCambiarMes={setMes}
+        titulo="El link de cada cuota"
+        descripcion={null}
+        resumen={<FraseDelMes lectura={resumen} />}
+      />
     </div>
   )
 }

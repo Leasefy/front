@@ -199,3 +199,70 @@ describe('AgenteDePagos — el resumen no se pudo leer', () => {
     expect(frase()).toBe('')
   })
 })
+
+describe('AgenteDePagos — el encabezado y la forma del panel (glow up 30-09)', () => {
+  /** Ninguna clase de color clavada (hex/rgb/hsl arbitrario) ni degradado: claro y oscuro salen de tokens. */
+  function clasesConColorClavado(): string[] {
+    const malas: string[] = []
+    for (const el of Array.from(contenedor.querySelectorAll('[class]'))) {
+      for (const c of (el.getAttribute('class') ?? '').split(/\s+/)) {
+        // El estado deshabilitado de los botones de cadence es del sistema de diseño, no de esta pantalla.
+        if ((el.tagName === 'BUTTON' || el.tagName === 'A') && c.startsWith('disabled:')) continue
+        if (/(^|:)(bg|text|border|from|to|via|fill|stroke)-\[(#|rgb|hsl)/.test(c) || /gradient/.test(c)) malas.push(c)
+      }
+    }
+    return malas
+  }
+
+  it('el margen y el encabezado de las demás pantallas: «Agentes IA», h1 y la píldora al lado', async () => {
+    rutas.resumen.mockResolvedValue(resumen())
+    await montar()
+    const raiz = q('[data-testid="agente-de-pagos"]')
+    expect(raiz?.className).toContain('p-6')
+    expect(raiz?.className).toContain('lg:p-8')
+    expect(q('h1')?.textContent).toBe('Agente de pagos · Cobri')
+    expect(q('header')?.textContent).toContain('Agentes IA')
+    expect(q('header [data-testid="estado-de-payu"]')).not.toBeNull()
+  })
+
+  it('cuándo escribe se dice UNA vez: los tres avisos en su tarjeta, sin repetirlos en la de links', async () => {
+    rutas.resumen.mockResolvedValue(resumen())
+    await montar()
+    const cuando = q('[data-testid="cobri-cuando-escribe"]')?.textContent ?? ''
+    expect(cuando).toContain('3 días antes')
+    expect(cuando).toContain('El día')
+    expect(cuando).toContain('3 días después')
+    expect(cuando).toContain('la sigue cobranza')
+    // Ni la bajada de la página ni el encabezado de la tarjeta de links la repiten
+    // (en la FILA sí puede decir «3 días antes»: es qué aviso le salió a esa cuota).
+    expect(q('header')?.textContent).not.toMatch(/\d días (antes|después)/)
+    const links = q('[data-testid="links-de-pago"]')
+    const encabezadoDeLinks = links?.querySelector('header')?.textContent ?? ''
+    expect(links?.querySelector('h2')?.textContent).toBe('El link de cada cuota')
+    expect(encabezadoDeLinks).not.toMatch(/\d días (antes|después)|no se mandan a pedido/)
+  })
+
+  it('🔴 apagado es neutro (no amarillo ni rojo) y no hay alerta de error', async () => {
+    rutas.resumen.mockResolvedValue(resumen({ payuActivo: false, linksEnviados: 0 }))
+    await montar()
+    const clase = pildora()?.getAttribute('class') ?? ''
+    expect(clase).toContain('bg-surface-muted')
+    expect(clase).not.toMatch(/warning|danger/)
+    expect(q('[data-testid="frase-de-payu-fallo"]')).toBeNull()
+  })
+
+  it('si el resumen no se pudo leer: una línea con reintentar, no el cartel grande en medio de la tarjeta', async () => {
+    rutas.resumen.mockRejectedValue(new Error('500'))
+    await montar()
+    const fallo = q('[data-testid="frase-de-payu-fallo"]')
+    expect(fallo?.textContent).toContain('No se pudo leer el resumen de Cobri')
+    expect(fallo?.textContent).not.toMatch(/al día/)
+    expect(fallo?.querySelector('button')?.textContent).toMatch(/intentar/i)
+  })
+
+  it('claro y oscuro salen de tokens: ninguna clase con color clavado ni degradado', async () => {
+    rutas.resumen.mockResolvedValue(resumen())
+    await montar()
+    expect(clasesConColorClavado()).toEqual([])
+  })
+})

@@ -75,7 +75,7 @@ describe('Casos en riesgo', () => {
   it('ordena por puntaje y dice el plan en palabras', () => {
     riesgo.mockReturnValue(
       riesgoCon([
-        caso('1', 62),
+        caso('1', 62, { plan: { id: 'q', estado: 'cancelado', objetivo: 'x', tareasAbiertas: 2, resultado: null } }),
         caso('2', 80, { plan: { id: 'p', estado: 'activo', objetivo: 'x', tareasAbiertas: 2, resultado: null } }),
       ]),
     )
@@ -83,6 +83,9 @@ describe('Casos en riesgo', () => {
     const filas = [...container.querySelectorAll('[data-testid="vinci-casos"] tbody tr')]
     expect(filas.map((f) => f.querySelector('a')?.textContent)).toEqual(['Persona 2', 'Persona 1'])
     expect(filas[0].textContent).toContain('Plan activo · 2 tareas abiertas')
+    // Un plan cancelado no tiene «tareas abiertas» (QA, 29-09).
+    expect(filas[1].textContent).toContain('Plan cancelado')
+    expect(filas[1].textContent).not.toContain('tareas abiertas')
     expect(container.textContent).not.toMatch(/Vinci ve \d/)
   })
 

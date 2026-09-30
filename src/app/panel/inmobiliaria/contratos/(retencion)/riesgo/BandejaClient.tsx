@@ -87,7 +87,11 @@ export default function BandejaClient() {
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
               <div className="max-w-full overflow-x-auto">
+                {/* `sm` y sin partir: a 390 px los tres rótulos se partían en dos
+                    renglones («Todos / (155)»); si no caben, el riel se corre. */}
                 <SegmentedControl<Filtro>
+                  size="sm"
+                  className="[&_button]:whitespace-nowrap"
                   aria-label="Inquilinos o propietarios"
                   value={filtro}
                   onChange={setFiltro}

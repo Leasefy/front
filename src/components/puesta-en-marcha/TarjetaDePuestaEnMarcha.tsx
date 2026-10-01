@@ -166,7 +166,7 @@ function FotoDeLaTarjeta({
       data-foto={foto}
       data-testid={testid}
     >
-      {fundir ? (
+      {fotoAnterior && fundir ? (
         <Image
           src={fotoAnterior}
           alt=""
@@ -176,21 +176,24 @@ function FotoDeLaTarjeta({
           priority
         />
       ) : null}
-      <motion.div
-        className="absolute inset-0"
-        initial={animar ? (fundir ? { opacity: 0 } : { scale: 1.06 }) : false}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: animar ? (fundir ? 0.7 : 1.4) : 0, ease: SUAVE }}
-      >
-        <Image
-          src={foto}
-          alt=""
-          fill
-          sizes={TAMANOS_DE_LA_FOTO}
-          className={cn('object-cover', encuadre)}
-          priority
-        />
-      </motion.div>
+      {/* Sin foto queda el fondo apagado de la columna, nunca un <Image> roto. */}
+      {foto ? (
+        <motion.div
+          className="absolute inset-0"
+          initial={animar ? (fundir ? { opacity: 0 } : { scale: 1.06 }) : false}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: animar ? (fundir ? 0.7 : 1.4) : 0, ease: SUAVE }}
+        >
+          <Image
+            src={foto}
+            alt=""
+            fill
+            sizes={TAMANOS_DE_LA_FOTO}
+            className={cn('object-cover', encuadre)}
+            priority
+          />
+        </motion.div>
+      ) : null}
     </div>
   );
 }

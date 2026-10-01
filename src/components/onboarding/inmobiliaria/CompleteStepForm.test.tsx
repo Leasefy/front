@@ -11,8 +11,9 @@ import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
 // `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
 // 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+const refreshUserMock = vi.fn<() => Promise<unknown>>(async () => undefined)
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+  useAuth: () => ({ refreshUser: refreshUserMock, user: null, isAuthenticated: false, isLoading: false }),
 }))
 
 /**
@@ -31,6 +32,8 @@ let root: Root
 
 beforeEach(() => {
   routerReplace.mockClear()
+  refreshUserMock.mockReset()
+  refreshUserMock.mockResolvedValue(undefined)
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -95,6 +98,43 @@ describe('<CompleteStepForm>', () => {
     expect(destino).not.toContain('localhost:3001')
     expect(destino).not.toContain('http')
     expect(destino).not.toContain('agencyId')
+  })
+
+  const resultadoOk = { tenantId: 't', agencyId: 'a', sessionId: 's', dashboardUrl: 'http://localhost:3001/panel/inmobiliaria' }
+
+  it('T-0123 (a) second factor required and no factor enrolled: goes to /auth/mfa-enroll carrying the panel as returnUrl, never to the panel', async () => {
+    refreshUserMock.mockResolvedValue('enroll')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-enroll?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 verified factor but aal1 session: goes to /auth/mfa-verify carrying the panel as returnUrl', async () => {
+    refreshUserMock.mockResolvedValue('verify')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-verify?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 (b) requirement false or session already aal2: straight to the panel', async () => {
+    refreshUserMock.mockResolvedValue('none')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+  })
+
+  it('T-0123 refreshUser throws: still navigates to the panel (the guard re-checks on its own)', async () => {
+    refreshUserMock.mockRejectedValue(new Error('network'))
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
   })
 
   it('no navega si `/complete` no devolvió nada', async () => {

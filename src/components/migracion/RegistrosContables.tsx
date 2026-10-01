@@ -124,7 +124,7 @@ export function RegistrosContables({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -145,7 +145,7 @@ export function RegistrosContables({
 
       {falloDeAsientos ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-4"
+          className="rounded-lg bg-warning-soft p-4"
           data-testid="contables-cargado-fallo"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -174,13 +174,13 @@ export function RegistrosContables({
 
       {cuentas.length === 0 && !falloDeCuentas ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-5"
+          className="rounded-lg bg-warning-soft p-5"
           data-testid="contables-sin-puc"
         >
           <div className="flex items-start gap-2">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div>
-              <h2 className="font-medium text-fg">
+              <h2 className="text-sm font-medium text-fg">
                 Primero el plan de cuentas
               </h2>
               <p className="mt-0.5 text-sm text-fg-muted">

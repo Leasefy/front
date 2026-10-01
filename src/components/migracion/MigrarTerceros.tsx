@@ -958,7 +958,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         )}
 
         {noSoportadas.length > 0 ? (
-          <div className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
+          <div className="flex items-start gap-2 rounded-md bg-danger-soft p-3">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
             <div>
               <p className="text-sm font-medium text-danger">
@@ -977,7 +977,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             recargar la página entera y perder dónde se estaba parado. */}
         {errorDePlantilla ? (
           <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft p-3"
             data-testid="error-de-plantilla"
           >
             <div className="flex items-start gap-2">
@@ -1149,7 +1149,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           </div>
 
           {faltanObligatorias.length > 0 ? (
-            <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+            <div className="flex items-start gap-2 rounded-md bg-info-soft p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
               <div>
                 <p className="text-sm font-medium text-info">
@@ -1167,7 +1167,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
           {columnasDelNombrePorPartes(mapeo).length > 0 ? (
             <div
-              className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+              className="flex items-start gap-2 rounded-md bg-info-soft p-3"
               data-testid="nombre-por-partes"
             >
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
@@ -1376,7 +1376,7 @@ function ListaDeTrabajo({
               */}
             {tipo === 'INQUILINO' ? (
               <label
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                className="flex cursor-pointer items-start gap-3 rounded-md bg-surface-muted p-3"
                 data-testid="invitar-al-crear"
               >
                 <Checkbox
@@ -1461,7 +1461,7 @@ function ListaDeTrabajo({
 
       {aplicacion ? (
         <section
-          className="space-y-2 rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="space-y-2 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           data-testid="informe-aplicacion"
         >
           <p className="flex items-center gap-2 text-sm font-medium text-fg">

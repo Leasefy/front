@@ -747,7 +747,7 @@ function Revision({
             {revision.cuentasFaltantes.map((c) => (
               <li
                 key={c.codigo}
-                className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-fg"
+                className="rounded-md bg-surface px-2.5 py-1 text-sm text-fg shadow-sm"
               >
                 <span className="font-mono tabular-nums">{c.codigo}</span>
                 <span className="text-fg-subtle">

@@ -124,11 +124,18 @@ export interface ActivarSegundoFactorPasoAPasoProps {
    * justo cuando aparece el «Listo».
    */
   onActivado: (factorId: string) => void;
+  /**
+   * Sin el ícono, el «Activa tu segundo factor» ni el «Tu rol maneja plata…»:
+   * los pone quien la monta. Dentro del panel la tarjeta ya dice qué es y por
+   * qué es obligatorio, y decirlo dos veces era ruido. El «Listo» no cambia.
+   */
+  sinEncabezado?: boolean;
 }
 
 export function ActivarSegundoFactorPasoAPaso({
   onYaTeniaFactor,
   onActivado,
+  sinEncabezado = false,
 }: ActivarSegundoFactorPasoAPasoProps) {
   const [paso, setPaso] = useState<Paso>('app');
   const [plataforma, setPlataforma] = useState<Plataforma | null>(null);
@@ -308,20 +315,22 @@ export function ActivarSegundoFactorPasoAPaso({
   return (
     <div className="space-y-6">
       {/* Qué es y por qué, en una frase. */}
-      <div className="space-y-3 text-center">
-        <div className="flex justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
-            <ShieldCheck className="h-6 w-6 text-primary" weight="fill" aria-hidden="true" />
+      {sinEncabezado ? null : (
+        <div className="space-y-3 text-center">
+          <div className="flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary-soft ring-1 ring-primary/10">
+              <ShieldCheck className="h-6 w-6 text-primary" weight="fill" aria-hidden="true" />
+            </div>
           </div>
+          <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
+            Activa tu segundo factor
+          </h1>
+          <p className="text-pretty text-body-sm text-fg-muted">
+            Tu rol maneja plata: además de la contraseña pedimos un código que solo aparece en tu
+            celular. Son tres pasos, unos dos minutos.
+          </p>
         </div>
-        <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
-          Activa tu segundo factor
-        </h1>
-        <p className="text-pretty text-body-sm text-fg-muted">
-          Tu rol maneja plata: además de la contraseña pedimos un código que solo aparece en tu
-          celular. Son tres pasos, unos dos minutos.
-        </p>
-      </div>
+      )}
 
       <IndicadorDePasos actual={indice} />
 

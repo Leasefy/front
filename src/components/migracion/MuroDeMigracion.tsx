@@ -62,6 +62,7 @@
 
 import { AuthContext } from "@/lib/auth/auth-context";
 import { ModalDecisionDeMigracion } from "./DecisionDeMigracion";
+import { olvidarRelevo } from "@/components/puesta-en-marcha/relevo";
 import {
   guardarDecisionDeMigracion,
   leerDecisionDeMigracion,
@@ -202,8 +203,16 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    */
   const refrescarSesionRef = useRef(sesion?.refreshUser);
   refrescarSesionRef.current = sesion?.refreshUser;
+  /**
+   * La sesión refrescándose tras bajar el muro: cuando vuelve se sabe si lo
+   * que sigue es el segundo factor. La espera la tarjeta de la decisión
+   * (`relevo`), para no destapar el panel medio segundo en el medio.
+   */
+  const sesionRefrescandose = useRef<Promise<unknown> | null>(null);
   const pedirSegundoFactor = useCallback(() => {
-    void refrescarSesionRef.current?.().catch(() => {
+    const pedido = refrescarSesionRef.current?.() ?? null;
+    sesionRefrescandose.current = pedido;
+    void pedido?.catch(() => {
       // Si no se pudo, lo pide la próxima carga: el back ya lo exige igual.
     });
   }, []);
@@ -415,6 +424,45 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    */
   /** Una salida («en otro momento», «no requiero») esperando al back. */
   const saliendo = useRef(false);
+  /*
+   * 🔴 La tarjeta de la decisión se QUEDA un momento después de bajar el muro
+   * (Nico, 30-09-2026: «no se ve que es como un paso que continúa»). Antes se
+   * iba con el muro, el panel se destapaba mientras la sesión se refrescaba y
+   * el segundo factor caía encima como un pop-up nuevo. Ahora:
+   *  - `pasando`: el muro ya bajó y la sesión se está refrescando; la tarjeta,
+   *    sin contenido, sigue tapando el panel (sin avisarle al layout: el
+   *    segundo factor tiene que poder entrar y tomarla).
+   *  - si sigue el segundo factor, el layout cambia el panel por su escena y
+   *    ésta parte de la misma tarjeta (`anunciarRelevo`); esto se desmonta;
+   *  - si no sigue nada, `saliendo`: tarjeta y velo se van juntos.
+   * Sólo presentación: qué se omite, cuándo se refresca y quién decide el
+   * segundo factor no cambia.
+   */
+  const [relevo, setRelevo] = useState<"pasando" | "saliendo" | null>(null);
+  const montadoRef = useRef(true);
+  const temporizadorDelRelevo = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => {
+      montadoRef.current = false;
+      if (temporizadorDelRelevo.current) clearTimeout(temporizadorDelRelevo.current);
+    };
+  }, []);
+  const soltarElRelevo = useCallback(async (pedido: Promise<unknown>) => {
+    // Si la sesión no contesta, la tarjeta no se queda para siempre.
+    await Promise.race([
+      pedido.catch(() => undefined),
+      new Promise((listo) => setTimeout(listo, 8000)),
+    ]);
+    // Si seguía el segundo factor, el layout ya lo montó en lugar de esto.
+    if (!montadoRef.current) return;
+    setRelevo("saliendo");
+    temporizadorDelRelevo.current = setTimeout(() => {
+      if (!montadoRef.current) return;
+      setRelevo(null);
+      olvidarRelevo();
+    }, 320);
+  }, []);
   const decidir = useCallback(
     async (elegida: DecisionDeMigracion) => {
       if (saliendo.current) return;
@@ -450,14 +498,21 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       } catch {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
       }
+      sesionRefrescandose.current = null;
       try {
         await refrescar(respuesta);
       } finally {
+        // El muro bajó y la sesión se está refrescando: la tarjeta se queda
+        // en el mismo render en que el muro se va (ver `relevo`).
+        const pedido = sesionRefrescandose.current;
+        if (pedido) setRelevo("pasando");
+        else olvidarRelevo();
         setDecision(elegida);
         saliendo.current = false;
+        if (pedido) void soltarElRelevo(pedido);
       }
     },
-    [agencyId, refrescar],
+    [agencyId, refrescar, soltarElRelevo],
   );
   /*
    * La ✕ del muro (Nico, 2026-09-07: «que tenga la posibilidad de cerrar si
@@ -487,9 +542,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
+  /** Lo que se ve: además, la tarjeta de la decisión esperando qué sigue. */
+  const cubierto = tapado || relevo === "pasando";
   const contexto = useMemo<ContextoDeMigracion>(
-    () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: tapado }),
-    [conocido, abrir, refrescar, tapado],
+    () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: cubierto }),
+    [conocido, abrir, refrescar, cubierto],
   );
 
   /*
@@ -503,16 +560,16 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   }, [avisarAlLayout, tapado]);
   useEffect(() => () => avisarAlLayout?.(false), [avisarAlLayout]);
 
-  const inerte = { inert: tapado };
+  const inerte = { inert: cubierto };
 
   return (
     <MigracionContext.Provider value={contexto}>
       <div
         {...inerte}
-        aria-hidden={tapado || undefined}
+        aria-hidden={cubierto || undefined}
         data-testid="panel-detras-del-muro"
         className={cn(
-          tapado &&
+          cubierto &&
             "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
         )}
       >
@@ -528,6 +585,14 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
             onCerrar={cerrar}
           />
         )
+      ) : relevo !== null ? (
+        // La MISMA instancia de la decisión (mismo lugar, mismo tipo): la
+        // tarjeta no se desmonta ni vuelve a entrar.
+        <ModalDecisionDeMigracion
+          onDecidir={decidir}
+          pasando
+          saliendo={relevo === "saliendo"}
+        />
       ) : aMano ? (
         <PanelDeMigracion
           estado={conocido}

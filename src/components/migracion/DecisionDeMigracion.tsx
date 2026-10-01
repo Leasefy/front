@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useId, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import Image from 'next/image'
+import { useEffect, useId, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Buildings, Clock, ListNumbers, Stack, Users, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useLenis } from '@/components/providers/SmoothScroll'
+import { SUAVE, TarjetaDePuestaEnMarcha } from '@/components/puesta-en-marcha/TarjetaDePuestaEnMarcha'
+import { anunciarRelevo } from '@/components/puesta-en-marcha/relevo'
 import type { DecisionDeMigracion } from '@/lib/migracion/decision-de-migracion'
 
 /**
@@ -45,6 +46,17 @@ import type { DecisionDeMigracion } from '@/lib/migracion/decision-de-migracion'
  *   · Sin ✕: la pregunta tiene tres salidas explícitas y Esc. Agregar una
  *     cuarta era cambiar la lógica, no el aspecto.
  *
+ * ── El paso que continúa (Nico, 30-09: «cuando uno le da "En otro momento"
+ * a la migración, no se ve que es como un paso que continúa») ──────────────
+ *
+ * La cáscara vive en `TarjetaDePuestaEnMarcha`, compartida con el segundo
+ * factor dentro del panel. Al elegir «en otro momento» o «no requiero» el
+ * contenido se desvanece y la tarjeta se QUEDA (`pasando`) mientras el back
+ * resuelve y la sesión se entera de lo que sigue: si es el segundo factor,
+ * éste toma la misma tarjeta (`anunciarRelevo`); si no hay nada más, la
+ * tarjeta y el velo se van juntos (`saliendo`). Antes la tarjeta desaparecía,
+ * el panel se destapaba medio segundo y el 2FA llegaba como otro pop-up.
+ *
  * A11y: `role="dialog"` modal, nombrado por el título y descrito por el
  * párrafo de entrada. El foco entra a la tarjeta al abrir; el panel de atrás
  * queda `inert` (lo pone el muro), así que el Tab no se escapa. Con «reducir
@@ -53,8 +65,6 @@ import type { DecisionDeMigracion } from '@/lib/migracion/decision-de-migracion'
 
 /** Ver la nota de arriba: la sala amoblada, libre en `AGENT_INTROS`. */
 export const FOTO_DE_LA_DECISION = '/images/features/leasefy-brand-13.jpg'
-/** La columna de la foto en escritorio; todo el ancho en teléfono. */
-const TAMANOS_DE_LA_FOTO = '(min-width: 768px) 360px, 100vw'
 
 /** Lo que se trae, con los íconos de Configuración → Migración (`SeccionMigracion`). */
 const LO_QUE_TRAEMOS: ReadonlyArray<{ icono: Icon; titulo: string; detalle: string }> = [
@@ -75,13 +85,19 @@ const LO_QUE_TRAEMOS: ReadonlyArray<{ icono: Icon; titulo: string; detalle: stri
   },
 ]
 
-/** La curva de las capas de la casa (la misma del recorrido). */
-const SUAVE = [0.22, 1, 0.36, 1] as const
-
 export function ModalDecisionDeMigracion({
   onDecidir,
+  pasando = false,
+  saliendo = false,
 }: {
   onDecidir: (decision: DecisionDeMigracion) => void
+  /**
+   * Ya se decidió «en otro momento» o «no requiero» y el muro bajó: la
+   * tarjeta se queda, sin contenido, hasta que se sepa qué sigue.
+   */
+  pasando?: boolean
+  /** No sigue nada (el panel se abre sin segundo factor): se va con su velo. */
+  saliendo?: boolean
 }) {
   const caja = useRef<HTMLDivElement>(null)
   const idTitulo = useId()
@@ -90,6 +106,25 @@ export function ModalDecisionDeMigracion({
   const lenis = useLenis()
   const lenisRef = useRef(lenis)
   lenisRef.current = lenis
+  /** Ya eligió una salida que no es migrar: el contenido se va y no se vuelve a elegir. */
+  const [eligio, setEligio] = useState(false)
+  const yaDecidido = eligio || pasando || saliendo
+
+  /*
+   * «En otro momento», «no requiero» (y Esc): el contenido se desvanece ahí
+   * mismo —el clic se nota aunque el back tarde— y queda anotado que, si lo
+   * siguiente es el segundo factor, parte de esta tarjeta.
+   */
+  const elegir = (decision: DecisionDeMigracion) => {
+    if (yaDecidido) return
+    if (decision !== 'ahora') {
+      setEligio(true)
+      anunciarRelevo(FOTO_DE_LA_DECISION)
+    }
+    onDecidir(decision)
+  }
+  const elegirRef = useRef(elegir)
+  elegirRef.current = elegir
 
   /*
    * El fondo no scrollea mientras se decide, como en el muro (DESIGN §8):
@@ -112,7 +147,7 @@ export function ModalDecisionDeMigracion({
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onDecidir('luego')
+        elegirRef.current('luego')
       }
     }
     document.addEventListener('keydown', alTeclear)
@@ -120,38 +155,30 @@ export function ModalDecisionDeMigracion({
       cancelAnimationFrame(raf)
       document.removeEventListener('keydown', alTeclear)
     }
-  }, [onDecidir])
+  }, [])
 
   if (typeof document === 'undefined') return null
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
-      // El velo con la tinta de la casa, como el recorrido: en oscuro `--ink`
-      // ya es casi negro, así que no aclara ni ensucia el tema.
-      style={{ backgroundColor: 'color-mix(in srgb, var(--ink) 62%, transparent)' }}
-      data-testid="decision-de-migracion"
+  return (
+    <TarjetaDePuestaEnMarcha
+      foto={FOTO_DE_LA_DECISION}
+      entrada="aparece"
+      saliendo={saliendo}
+      capa="z-[1000]"
+      cajaRef={caja}
+      tituloId={idTitulo}
+      descripcionId={idEntrada}
+      testids={{ velo: 'decision-de-migracion', tarjeta: 'decision-tarjeta', foto: 'decision-foto' }}
     >
-      <motion.div
-        ref={caja}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={idTitulo}
-        aria-describedby={idEntrada}
-        initial={animar ? { opacity: 0, y: 12, scale: 0.98 } : false}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: animar ? 0.36 : 0, ease: SUAVE }}
-        // La cáscara de los modales hechos a mano (`rounded-[20px]`, DESIGN
-        // §17), la de la bienvenida del recorrido. `minmax(0,1fr)` también en
-        // teléfono: con `auto`, lo que no podía partirse la estiraba.
-        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none md:min-h-[560px] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
-        data-lenis-prevent
-        data-testid="decision-tarjeta"
-      >
-        <FotoDeLaDecision animar={animar} />
-
-        <div className="flex flex-col p-6 md:p-10">
+      <div className="relative flex flex-1 flex-col">
+        <motion.div
+          className="flex flex-1 flex-col"
+          initial={false}
+          animate={{ opacity: yaDecidido ? 0 : 1 }}
+          transition={{ duration: animar ? 0.22 : 0, ease: SUAVE }}
+          inert={yaDecidido || undefined}
+          data-testid="decision-contenido"
+        >
           <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
             Antes de empezar
@@ -208,7 +235,7 @@ export function ModalDecisionDeMigracion({
               type="button"
               hideArrow
               className="h-12 w-full rounded-full text-[15px]"
-              onClick={() => onDecidir('ahora')}
+              onClick={() => elegir('ahora')}
               data-testid="migrar-ahora"
             >
               Migrar ahora
@@ -222,7 +249,7 @@ export function ModalDecisionDeMigracion({
                 variant="outline"
                 hideArrow
                 className="h-11 w-full rounded-full"
-                onClick={() => onDecidir('luego')}
+                onClick={() => elegir('luego')}
                 data-testid="migrar-en-otro-momento"
               >
                 En otro momento
@@ -232,7 +259,7 @@ export function ModalDecisionDeMigracion({
                 variant="outline"
                 hideArrow
                 className="h-11 w-full rounded-full text-fg-muted hover:text-fg"
-                onClick={() => onDecidir('nunca')}
+                onClick={() => elegir('nunca')}
                 data-testid="no-requiero-migracion"
               >
                 No requiero migración
@@ -242,40 +269,21 @@ export function ModalDecisionDeMigracion({
               Elijas lo que elijas, puedes migrar cuando quieras desde Configuración.
             </p>
           </div>
-        </div>
-      </motion.div>
-    </div>,
-    document.body,
-  )
-}
+        </motion.div>
 
-/**
- * La foto, limpia: sin píldora ni texto encima. En escritorio es la columna
- * izquierda a todo el alto; en teléfono, una franja baja arriba. Un
- * acercamiento lento al abrir, como quien entra; sin movimiento, quieta.
- */
-function FotoDeLaDecision({ animar }: { animar: boolean }) {
-  return (
-    <div
-      aria-hidden
-      className="relative h-32 overflow-hidden bg-surface-muted sm:h-40 md:h-auto"
-      data-testid="decision-foto"
-    >
-      <motion.div
-        className="absolute inset-0"
-        initial={animar ? { scale: 1.06 } : false}
-        animate={{ scale: 1 }}
-        transition={{ duration: animar ? 1.4 : 0, ease: SUAVE }}
-      >
-        <Image
-          src={FOTO_DE_LA_DECISION}
-          alt=""
-          fill
-          sizes={TAMANOS_DE_LA_FOTO}
-          className="object-cover object-[50%_58%]"
-          priority
-        />
-      </motion.div>
-    </div>
+        {/* Mientras se sabe qué sigue: el logo quieto en el centro, y sólo si tarda. */}
+        {yaDecidido && !saliendo ? (
+          <motion.div
+            className="absolute inset-0 grid place-items-center"
+            initial={animar ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={{ delay: animar ? 0.45 : 0, duration: animar ? 0.3 : 0, ease: SUAVE }}
+            data-testid="decision-pasando"
+          >
+            <CargaDeMarca tamano="xs" texto="Un momento…" />
+          </motion.div>
+        ) : null}
+      </div>
+    </TarjetaDePuestaEnMarcha>
   )
 }

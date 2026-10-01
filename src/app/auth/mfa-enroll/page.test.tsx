@@ -173,6 +173,16 @@ describe('/auth/mfa-enroll', () => {
     expect(replaceMock).toHaveBeenCalledWith('/auth')
   })
 
+  it('🔴 afuera se queda como estaba: con «Cerrar sesión» y el encabezado propio del paso a paso', async () => {
+    // Nico, 30-09: el «Cerrar sesión» se quitó DENTRO del panel; acá sirve
+    // para recuperar el acceso y para lo que llega de afuera.
+    await render()
+    expect(container.textContent).toContain('Cerrar sesión')
+    expect(container.textContent).toContain('Activa tu segundo factor')
+    expect(container.textContent).toContain('Tu rol maneja plata')
+    expect(container.textContent).not.toContain('Protege tu cuenta')
+  })
+
   it('🔴 al completar el código: verifica por el SDK, llama setMfaVerified y sale al panel — NUNCA a /auth/mfa-verify', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     await render()

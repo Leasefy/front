@@ -16,6 +16,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
 import { FOTO_DE_LA_DECISION, ModalDecisionDeMigracion } from './DecisionDeMigracion'
+import { leerRelevo, olvidarRelevo } from '@/components/puesta-en-marcha/relevo'
 
 let container: HTMLDivElement
 let root: Root
@@ -28,6 +29,7 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
+  olvidarRelevo()
   await act(async () => root.unmount())
   container.remove()
 })
@@ -123,5 +125,40 @@ describe('ModalDecisionDeMigracion', () => {
       (s) => s.children.length === 0 && s.textContent?.trim() === 'L',
     )
     expect(monogramas).toHaveLength(0)
+  })
+
+  /*
+   * Nico, 30-09: «cuando uno le da "En otro momento" a la migración, no se ve
+   * que es como un paso que continúa». Qué pasa DESPUÉS lo decide el muro;
+   * acá, que la tarjeta responde al clic y deja el relevo anotado.
+   */
+  it.each(['migrar-en-otro-momento', 'no-requiero-migracion'] as const)('«%s»: el contenido se va al instante, la tarjeta se queda y deja el relevo anotado', async (testid) => {
+    const onDecidir = await pintar()
+    await act(async () => q(testid)?.click())
+
+    expect(q('decision-tarjeta')).not.toBeNull()
+    expect(q('decision-contenido')?.hasAttribute('inert')).toBe(true)
+    expect(q('decision-pasando')).not.toBeNull()
+    expect(leerRelevo()).toBe(FOTO_DE_LA_DECISION)
+    // Ya decidió: ni otro clic ni Esc vuelven a decidir.
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(onDecidir).toHaveBeenCalledTimes(1)
+  })
+
+  it('«Migrar ahora» no anota relevo: lo que sigue es el muro, no el segundo factor', async () => {
+    await pintar()
+    await act(async () => q('migrar-ahora')?.click())
+    expect(leerRelevo()).toBeNull()
+    expect(q('decision-contenido')?.hasAttribute('inert')).toBe(false)
+  })
+
+  it('`saliendo`: el velo y la tarjeta se van juntos, sin el «Un momento…»', async () => {
+    await act(async () => {
+      root.render(<ModalDecisionDeMigracion onDecidir={vi.fn()} pasando saliendo />)
+    })
+    expect(q('decision-de-migracion')?.hasAttribute('data-saliendo')).toBe(true)
+    expect(q('decision-pasando')).toBeNull()
   })
 })

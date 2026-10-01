@@ -159,6 +159,8 @@ import {
   useMigracion,
 } from './MuroDeMigracion';
 import { AvisoDelMuroContext } from './migracion-context';
+import { FOTO_DE_LA_DECISION } from './DecisionDeMigracion';
+import { leerRelevo, olvidarRelevo } from '@/components/puesta-en-marcha/relevo';
 import { AuthContext } from '@/lib/auth/auth-context';
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1784,6 +1786,73 @@ describe('al resolverse la migración se refresca la sesión (para pedir el segu
     expect(orden).toEqual(['recordatorio', 'omitir']);
     expect(q('muro-migracion')).toBeNull();
     expect(refreshUser).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * Nico, 30-09: «cuando uno le da "En otro momento" a la migración, no se ve
+   * que es como un paso que continúa». La tarjeta de la pregunta se QUEDA
+   * mientras la sesión se refresca: el panel no se destapa en el medio, y el
+   * segundo factor (si sigue) la toma desde el layout.
+   */
+  it('«En otro momento»: la tarjeta se queda tapando mientras la sesión se refresca, y se va sola si no sigue nada', async () => {
+    localStorage.removeItem('leasefy:migracion:decision:agencia');
+    olvidarRelevo();
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockRejectedValue(new Error('403'));
+    estadoMock.omitir.mockResolvedValue(abierto);
+    let sesionLista: () => void = () => {};
+    refreshUser.mockReset().mockReturnValue(new Promise<void>((listo) => (sesionLista = listo)));
+    const avisar = vi.fn();
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <AuthContext.Provider value={{ agency: null, refreshUser } as never}>
+          <AvisoDelMuroContext.Provider value={avisar}>
+            <MuroDeMigracion>
+              <span data-testid="algo-del-panel">Panel</span>
+            </MuroDeMigracion>
+          </AvisoDelMuroContext.Provider>
+        </AuthContext.Provider>,
+      );
+    });
+    await act(async () => {});
+
+    // La pregunta va en un portal: se busca en todo el documento.
+    const boton = document.querySelector('[data-testid="migrar-en-otro-momento"]') as HTMLElement;
+    await act(async () => {
+      boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledWith('en_otro_momento');
+    expect(refreshUser).toHaveBeenCalledTimes(1);
+    // La misma tarjeta, sin su contenido, esperando qué sigue.
+    const d = (id: string) => document.querySelector(`[data-testid="${id}"]`);
+    expect(d('decision-de-migracion')).not.toBeNull();
+    expect(d('decision-contenido')?.hasAttribute('inert')).toBe(true);
+    expect(d('decision-pasando')).not.toBeNull();
+    // El panel sigue tapado e inerte…
+    expect(q('panel-detras-del-muro')?.hasAttribute('inert')).toBe(true);
+    // …pero el layout ya sabe que el muro bajó: el segundo factor puede entrar.
+    expect(avisar).toHaveBeenLastCalledWith(false);
+    // Y si entra, parte de esta tarjeta.
+    expect(leerRelevo()).toBe(FOTO_DE_LA_DECISION);
+
+    // La sesión vuelve sin segundo factor: la tarjeta y su velo se van juntos.
+    await act(async () => {
+      sesionLista();
+    });
+    expect(d('decision-de-migracion')?.hasAttribute('data-saliendo')).toBe(true);
+    await act(async () => {
+      await new Promise((listo) => setTimeout(listo, 400));
+    });
+    expect(d('decision-de-migracion')).toBeNull();
+    expect(q('panel-detras-del-muro')?.hasAttribute('inert')).toBe(false);
+    expect(leerRelevo()).toBeNull();
   });
 
   it('si el omitir falla el muro sigue y NO se pide el segundo factor', async () => {

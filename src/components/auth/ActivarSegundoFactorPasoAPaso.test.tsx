@@ -75,7 +75,7 @@ afterEach(async () => {
 
 const props = () => ({ onActivado: vi.fn(), onYaTeniaFactor: vi.fn() })
 
-async function montar(p = props()) {
+async function montar(p: ReturnType<typeof props> & { sinEncabezado?: boolean } = props()) {
   await act(async () => {
     root.render(<ActivarSegundoFactorPasoAPaso {...p} />)
   })
@@ -122,6 +122,17 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     expect(texto).toContain('Sirve cualquier app de códigos')
     // Qué hacer si cambia de celular: el flujo que YA existe, sin inventar otro.
     expect(texto).toContain('No tengo la app de autenticación')
+  })
+
+  it('con `sinEncabezado` (dentro del panel) no repite el porqué: lo pone la tarjeta que la monta', async () => {
+    await montar({ ...props(), sinEncabezado: true })
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('Activa tu segundo factor')
+    expect(texto).not.toContain('Tu rol maneja plata')
+    expect(container.querySelector('h1')).toBeNull()
+    // Los pasos siguen intactos.
+    expect(porTestId('indicador-app')?.getAttribute('aria-current')).toBe('step')
+    expect(texto).toContain('Paso 1 de 3')
   })
 
   it('enlaza las fichas OFICIALES de App Store y Google Play de cada app, en otra pestaña', async () => {

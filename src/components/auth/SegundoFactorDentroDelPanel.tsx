@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { SignOut } from '@phosphor-icons/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
 import { EsqueletoDelPanel } from '@/components/inmobiliaria/EsqueletoDelPanel';
+import { SUAVE, TarjetaDePuestaEnMarcha } from '@/components/puesta-en-marcha/TarjetaDePuestaEnMarcha';
+import { leerRelevo } from '@/components/puesta-en-marcha/relevo';
 import { AvisoDelMuroContext } from '@/components/migracion/migracion-context';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { useSalidaDelSegundoFactor } from '@/lib/auth/use-salida-del-segundo-factor';
@@ -42,6 +43,21 @@ import { useSalidaDelSegundoFactor } from '@/lib/auth/use-salida-del-segundo-fac
  * escena entra cuando el muro deja de tapar. El registro a medias
  * (`AsistentePendienteGuard`) va en el layout por encima de esto y manda
  * antes que las dos cosas.
+ *
+ * ── El siguiente paso, no un pop-up (Nico, 30-09-2026) ──────────────────────
+ * «¿dentro de la plataforma por qué pone el "Cerrar sesión"? … no se siente
+ * que esto del 2FA es obligatorio realmente, y no se siente una interacción
+ * sana con el de migración». Así que:
+ *  - SIN «Cerrar sesión»: adentro no se sale, se termina. (La página de
+ *    afuera, `/auth/mfa-enroll`, lo conserva: sirve para recuperar acceso.)
+ *  - La MISMA tarjeta que «¿Migramos tu inmobiliaria?» (`TarjetaDePuestaEnMarcha`):
+ *    mismo ancho, radio, sombra y velo, la foto de marca a la izquierda y el
+ *    mismo «Antes de empezar». El encabezado lo pone esta escena y dice sin
+ *    rodeos que es obligatorio y que es lo último; el paso a paso no repite
+ *    el suyo (`sinEncabezado`).
+ *  - Viniendo de la decisión (`leerRelevo`), la tarjeta no vuelve a entrar:
+ *    la foto se funde sobre la de la decisión y el contenido aparece suave.
+ *    Llegando sola (al recargar), entra como entra la decisión.
  */
 export function SegundoFactorDentroDelPanel({ children }: { children: ReactNode }) {
   const { mfaEnrollRequired } = useAuth();
@@ -63,6 +79,19 @@ export function SegundoFactorDentroDelPanel({ children }: { children: ReactNode 
 
   return <AvisoDelMuroContext.Provider value={setMuroTapando}>{children}</AvisoDelMuroContext.Provider>;
 }
+
+/**
+ * La foto del segundo factor: la entrada de noche con el logo encendido —es
+ * lo último antes de entrar—. Libre en la secuencia: la decisión usa la 13,
+ * el recorrido la 02 y la 15, `AGENT_INTROS` de la 01 a la 08.
+ */
+export const FOTO_DEL_SEGUNDO_FACTOR = '/images/features/leasefy-brand-11.jpg';
+
+/**
+ * `useLayoutEffect` en el navegador: el portal se pone ANTES de pintar, así el
+ * relevo desde la decisión no deja un cuadro sin velo. En el servidor no corre.
+ */
+const useEfectoAntesDePintar = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /** Los focusables del modal, para que el Tab no se escape al panel de atrás. */
 function focusables(caja: HTMLElement): HTMLElement[] {
@@ -89,15 +118,21 @@ function EscenaDelSegundoFactor({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { agency, mfaEnrollRequired, setMfaVerified, signOut } = useAuth();
+  const { agency, mfaEnrollRequired, setMfaVerified } = useAuth();
   const caja = useRef<HTMLDivElement>(null);
+  const idTitulo = useId();
+  const idEntrada = useId();
+  const animar = !useReducedMotion();
   /**
    * El portal va después de montar: en el servidor no hay `document`, y
    * decidirlo en el render con `typeof document` hace que el HTML del servidor
-   * y el primer render del cliente no coincidan (error de hidratación).
+   * y el primer render del cliente no coincidan (error de hidratación). Antes
+   * de pintar, para que entre en el mismo cuadro en que se fue la decisión.
    */
   const [montado, setMontado] = useState(false);
-  useEffect(() => setMontado(true), []);
+  useEfectoAntesDePintar(() => setMontado(true), []);
+  /** La foto de la decisión si viene de ella; se lee una vez, al montar. */
+  const [fotoAnterior] = useState(leerRelevo);
   const lenis = useLenis();
   const lenisRef = useRef(lenis);
   lenisRef.current = lenis;
@@ -126,11 +161,6 @@ function EscenaDelSegundoFactor({
     yaSalioRef.current = true;
     router.replace(rutaAlSegundoFactor(pathname));
   }, [router, pathname, yaSalioRef]);
-
-  const cerrarSesion = useCallback(async () => {
-    await signOut();
-    router.replace('/auth');
-  }, [signOut, router]);
 
   // El fondo no scrollea mientras el modal está (DESIGN §8).
   useEffect(() => {
@@ -175,6 +205,9 @@ function EscenaDelSegundoFactor({
     };
   }, [montado]);
 
+  const relevo = fotoAnterior !== null;
+  const activado = activadoEn !== null;
+
   return (
     <div className="relative min-h-screen bg-plan-page" data-testid="segundo-factor-dentro-del-panel">
       {/* El panel, dibujado y quieto: se ve, no se toca, no pide nada. */}
@@ -186,47 +219,69 @@ function EscenaDelSegundoFactor({
         <EsqueletoDelPanel nombre={agency?.name} />
       </div>
 
-      {!montado
-        ? null
-        : createPortal(
-            <div
-              className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-              // El velo de los modales hechos a mano (el de la migración), más
-              // suave: el panel tiene que seguir viéndose detrás.
-              style={{ backgroundColor: 'color-mix(in srgb, var(--ink) 40%, transparent)' }}
-              data-testid="segundo-factor-dentro-velo"
-            >
-              <div
-                ref={caja}
-                tabIndex={-1}
-                role="dialog"
-                aria-modal="true"
-                aria-label="Activa tu segundo factor"
-                className="max-h-[calc(100dvh-32px)] w-full max-w-[540px] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface p-6 shadow-lg outline-none sm:p-8"
-                style={{ overscrollBehavior: 'contain' }}
-                data-lenis-prevent
-                data-testid="segundo-factor-dentro-modal"
-              >
-                <div className="space-y-6">
-                  <ActivarSegundoFactorPasoAPaso onActivado={activar} onYaTeniaFactor={alYaTenerFactor} />
-
-                  {activadoEn === null ? (
-                    <div className="border-t border-border-faint pt-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => void cerrarSesion()}
-                        className="inline-flex items-center gap-1.5 text-body-sm text-fg-muted transition-colors hover:text-fg"
-                      >
-                        <SignOut className="h-4 w-4" aria-hidden="true" />
-                        Cerrar sesión
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
+      {!montado ? null : (
+        <TarjetaDePuestaEnMarcha
+          foto={FOTO_DEL_SEGUNDO_FACTOR}
+          encuadre="object-[50%_72%]"
+          entrada={relevo ? 'ya-estaba' : 'aparece'}
+          fotoAnterior={fotoAnterior}
+          capa="z-[300]"
+          cajaRef={caja}
+          tituloId={idTitulo}
+          descripcionId={activado ? undefined : idEntrada}
+          testids={{
+            velo: 'segundo-factor-dentro-velo',
+            tarjeta: 'segundo-factor-dentro-modal',
+            foto: 'segundo-factor-dentro-foto',
+          }}
+        >
+          <motion.div
+            className="flex flex-1 flex-col"
+            // En el relevo, el contenido nuevo entra donde se fue el de la
+            // decisión; llegando sola, entra con la tarjeta.
+            initial={animar && relevo ? { opacity: 0, y: 8 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: animar && relevo ? 0.08 : 0, duration: animar ? 0.34 : 0, ease: SUAVE }}
+          >
+            {activado ? (
+              // El «Listo» trae su propio título a la vista; éste sólo nombra el diálogo.
+              <span id={idTitulo} className="sr-only">
+                Tu cuenta quedó protegida
+              </span>
+            ) : (
+              <div>
+                <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
+                  <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+                  Antes de empezar
+                </p>
+                <h2
+                  id={idTitulo}
+                  className="mt-4 text-balance font-heading text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg md:text-[34px]"
+                >
+                  Protege tu cuenta
+                </h2>
+                <p
+                  id={idEntrada}
+                  className="mt-3 text-pretty text-body text-fg-muted"
+                  data-testid="segundo-factor-dentro-obligatorio"
+                >
+                  Es el último paso antes de entrar y es obligatorio: tu rol maneja plata. Toma
+                  unos dos minutos.
+                </p>
               </div>
-            </div>,
-            document.body,
-          )}
+            )}
+            {/* 🔴 Siempre en este mismo lugar del árbol: si cambiara de sitio
+                al activar, se volvería a montar y perdería su «Listo». */}
+            <div className={activado ? 'flex flex-1 flex-col justify-center' : 'mt-5'}>
+              <ActivarSegundoFactorPasoAPaso
+                onActivado={activar}
+                onYaTeniaFactor={alYaTenerFactor}
+                sinEncabezado
+              />
+            </div>
+          </motion.div>
+        </TarjetaDePuestaEnMarcha>
+      )}
     </div>
   );
 }

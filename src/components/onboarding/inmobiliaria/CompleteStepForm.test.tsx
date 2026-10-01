@@ -5,6 +5,9 @@ import { act } from 'react'
 
 void React
 
+// Se renderiza con `createRoot` + `act` directo (el patrón de la casa).
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
 import { CompleteStepForm, RUTA_DEL_PANEL, resumenDelRegistro } from './CompleteStepForm'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
@@ -149,7 +152,7 @@ describe('<CompleteStepForm>', () => {
     expect(btn.textContent).not.toMatch(/onboarding/i)
   })
 
-  it('🔴 al crearla se celebra con confeti y su nombre, y NO se va sola al panel', async () => {
+  it('🔴 al crearla se celebra con su nombre y, al terminar, se va sola al panel una vez (Nico, 30-09: «para evitar que dé clic clic clic»)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
       render({
@@ -162,15 +165,16 @@ describe('<CompleteStepForm>', () => {
       expect(celebracion?.getAttribute('role')).toBe('dialog')
       expect(celebracion?.textContent).toContain('Tu inmobiliaria quedó creada')
       expect(enElDocumento('inmobiliaria-creada-nombre')?.textContent).toBe('Inmobiliaria Altavista S.A.S.')
-      expect(confettiMock).toHaveBeenCalled()
+      expect(routerReplace).not.toHaveBeenCalled()
 
-      // Sin cuenta regresiva: pasa el tiempo y sigue ahí, sin navegar.
+      // Pasa la celebración (chispa incluida) y se va sola, refrescando antes.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10_000)
       })
-      expect(routerReplace).not.toHaveBeenCalled()
-      expect(refreshUser).not.toHaveBeenCalled()
-      expect(enElDocumento('inmobiliaria-creada')).not.toBeNull()
+      expect(confettiMock).toHaveBeenCalled()
+      expect(refreshUser).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
     } finally {
       vi.useRealTimers()
     }

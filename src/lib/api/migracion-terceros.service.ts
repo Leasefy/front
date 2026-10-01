@@ -25,7 +25,10 @@
  * comparan el juego de claves contra los DTOs y no contra sí mismos.
  */
 
-import { apiClient } from './client';
+import { ApiError, apiClient } from './client';
+
+/** Descartar filas (PATCH filas / filas/masivo con `descartar`) exige `configuracion:delete`. */
+export const SOLO_UN_ADMINISTRADOR_DESCARTA = 'Solo un administrador puede descartar filas.';
 
 // ══ Vocabulario del back ════════════════════════════════════════════════════
 
@@ -334,7 +337,11 @@ export interface ProgresoDeMasivo {
 export interface ResultadoDeFila {
   id: string;
   fila: number;
-  estado: 'aplicado' | 'fallido';
+  /**
+   * `omitido`: otra llamada (doble clic, otra pestaña, un reintento) ya había
+   * aplicado esa fila. No es un fallo ni un aplicado de ESTA corrida.
+   */
+  estado: 'aplicado' | 'fallido' | 'omitido';
   propietarioId?: string;
   userId?: string;
   /** `true` sólo cuando ESTA corrida mandó la invitación al portal. */
@@ -577,7 +584,12 @@ export const migracionTercerosApi = {
         total.aplicadas += r.aplicadas;
         total.fallidas.push(...r.fallidas);
       } catch (e) {
-        const motivo = e instanceof Error ? e.message : 'No pudimos aplicar esta tanda.';
+        const motivo =
+          e instanceof ApiError && e.status === 403 && cambios.descartar
+            ? SOLO_UN_ADMINISTRADOR_DESCARTA
+            : e instanceof Error
+              ? e.message
+              : 'No pudimos aplicar esta tanda.';
         total.pedidas += tanda.length;
         total.fallidas.push(...tanda.map((id) => ({ id, fila: null, motivo })));
       }
@@ -635,7 +647,12 @@ export const migracionTercerosApi = {
           cursor ? { ...base, despuesDe: cursor } : base,
         );
       } catch (e) {
-        if (total.procesadas === 0) throw e;
+        if (total.procesadas === 0) {
+          if (e instanceof ApiError && e.status === 403 && cambios.descartar) {
+            throw new Error(SOLO_UN_ADMINISTRADOR_DESCARTA);
+          }
+          throw e;
+        }
         total.interrumpida = {
           motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
         };

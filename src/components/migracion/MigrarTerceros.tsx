@@ -106,6 +106,7 @@ import {
   valorDeParte,
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
 import { fraseDelMotivo, motivosConFilas } from '@/lib/migracion/motivos-de-fila';
 import {
@@ -1563,6 +1564,9 @@ function ListaDeTrabajo({
   onCambiarInvitar: (valor: boolean) => void;
   onOtroArchivo: () => void;
 }) {
+  // Descartar exige `configuracion:delete` (sólo ADMIN): sin el permiso la acción no se ofrece.
+  const permisos = usePermissionsContextSafe();
+  const puedeDescartar = permisos === null || permisos.canAccess('configuracion', 'delete');
   const porFiltro = alcance.tipo !== 'ids';
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
   const cantidad = cantidadDelAlcance(alcance, seleccion.size, totalPendientes, motivos);
@@ -1801,6 +1805,13 @@ function ListaDeTrabajo({
               )}
             </p>
           ) : null}
+          {aplicacion.resultados.some((r) => r.estado === 'omitido') ? (
+            /* Otra pestaña o un reintento ya la había creado: ni fallo ni aviso. */
+            <p className="text-sm text-fg-muted" data-testid="omitidas">
+              {aplicacion.resultados.filter((r) => r.estado === 'omitido').length} ya las había creado
+              otra pestaña o un reintento: no se repitieron.
+            </p>
+          ) : null}
           {aplicacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-fg-muted">
               {aplicacion.resultados
@@ -1955,6 +1966,7 @@ function ListaDeTrabajo({
               motivos={motivos}
               progreso={progresoMasivo}
               tipo={tipo}
+              puedeDescartar={puedeDescartar}
               columnas={columnas}
               cargando={cargando}
               onAplicar={onMasivo}
@@ -2071,6 +2083,7 @@ function ResolucionMasiva({
   motivos,
   progreso,
   tipo,
+  puedeDescartar,
   columnas,
   cargando,
   onAplicar,
@@ -2081,6 +2094,8 @@ function ResolucionMasiva({
   motivos: MotivosDelLote | null;
   progreso: ProgresoDeMasivo | null;
   tipo: TipoDeTercero;
+  /** `false` = sin `configuracion:delete`: el back respondería 403, así que no se ofrece. */
+  puedeDescartar: boolean;
   columnas: readonly import('@/lib/api/migracion-terceros.service').ColumnaDePlantilla[];
   cargando: boolean;
   onAplicar: (cambios: CambiosMasivos) => void;
@@ -2366,6 +2381,7 @@ function ResolucionMasiva({
           </Button>
         )}
         {/* La salida discreta: descartar nunca es el camino por defecto. */}
+        {puedeDescartar ? (
         <Button
           size="sm"
           variant="ghost"
@@ -2386,6 +2402,11 @@ function ResolucionMasiva({
         >
           No traer {cantidad === 1 ? 'esta fila' : 'ninguna de estas'}
         </Button>
+        ) : (
+          <span className="text-caption text-fg-subtle" data-testid="masivo-sin-permiso-descartar">
+            Solo un administrador puede descartar filas.
+          </span>
+        )}
         {cargando && enVuelo === 'vincular' ? (
           <p className="basis-full text-caption text-fg-muted" data-testid="masivo-progreso">
             {`Vinculando ${cantidad} ${filas} con las personas que ya existen… al terminar salen de esta lista y quedan listas para crear.`}

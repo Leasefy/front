@@ -61,7 +61,16 @@ interface FilaImportacionRowProps {
 
 export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: FilaImportacionRowProps) {
   const [editando, setEditando] = useState(false);
-  const [form, setForm] = useState<FormularioFila>(() => formularioDesde(fila.datos));
+  // T-0129 — con el canon por confirmar, `datos.monthlyRent` es un valor por
+  // defecto (p. ej. $1), NO un canon: el campo arranca vacío y sólo viaja si la
+  // persona escribe uno. Si no, guardar otro campo lo reenviaría y el back lo
+  // leería como un canon tecleado.
+  const canonPorConfirmar = fila.datosPendientes?.includes('canon') === true;
+  const formularioInicial = (): FormularioFila => ({
+    ...formularioDesde(fila.datos),
+    ...(canonPorConfirmar ? { monthlyRent: undefined } : {}),
+  });
+  const [form, setForm] = useState<FormularioFila>(formularioInicial);
 
   const esDuplicado = esPosibleDuplicado(fila.faltantes);
   const isSale = form.listingType === 'sale';
@@ -70,7 +79,15 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
     // The domain -> wire translation lives in `./lib/datosDeFila`, tested
     // there. It is the mapping that produced F-2; keeping it out of the
     // component is what makes it testable at all.
-    await onResolver(fila.id, cambiosDesdeFormulario(form));
+    // Sólo lo que la persona cambió: lo demás ya está guardado y reenviarlo no
+    // aporta nada (y con el canon por defecto, haría daño).
+    const antes = cambiosDesdeFormulario(formularioInicial());
+    const todos = cambiosDesdeFormulario(form);
+    const cambios: ResolverInmuebleDto = {};
+    for (const k of Object.keys(todos) as (keyof ResolverInmuebleDto)[]) {
+      if (todos[k] !== antes[k]) (cambios as Record<string, unknown>)[k] = todos[k];
+    }
+    if (Object.keys(cambios).length > 0) await onResolver(fila.id, cambios);
     setEditando(false);
   };
 
@@ -246,7 +263,11 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           ) : (
             <Input
               type="number"
-              placeholder="Canon mensual"
+              placeholder={
+                canonPorConfirmar
+                  ? `Por confirmar${typeof fila.datos.monthlyRent === 'number' ? ` (valor por defecto $${fila.datos.monthlyRent.toLocaleString('es-CO')})` : ''}`
+                  : 'Canon mensual'
+              }
               value={form.monthlyRent ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, monthlyRent: e.target.value ? Number(e.target.value) : undefined }))}
             />

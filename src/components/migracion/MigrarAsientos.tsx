@@ -691,9 +691,10 @@ export function MigrarAsientos({
               <p className="text-sm text-fg-muted">
                 Este archivo arma {numero(armados.length)}{" "}
                 {armados.length === 1 ? "asiento" : "asientos"} y la carga que
-                continúas esperaba {numero(continuar.esperados)}. Si lo
-                corregiste, puedes seguir: lo que ya entró no se duplica. Si es
-                otro archivo, empieza una carga nueva.
+                continúas esperaba {numero(continuar.esperados)}. Lo
+                idéntico a lo ya cargado se omite; un asiento que corregiste
+                entra como un asiento nuevo y hay que reversar el original. Si
+                es otro archivo, empieza una carga nueva.
               </p>
             </div>
           ) : null}

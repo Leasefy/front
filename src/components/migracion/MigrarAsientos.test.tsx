@@ -396,6 +396,9 @@ describe('continuar una carga que quedó a medias', () => {
     expect(aviso).not.toBeNull();
     expect(aviso!.textContent).toContain('1');
     expect(aviso!.textContent).toContain('5');
+    // Corregir un asiento ya cargado NO es «sin duplicar»: entra como nuevo.
+    expect(aviso!.textContent).toContain('asiento nuevo');
+    expect(aviso!.textContent).not.toContain('si lo corregiste, puedes seguir');
     expect((q('revisar-asientos') as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -423,8 +426,11 @@ describe('el informe cuando parte del archivo ya estaba', () => {
 
     const texto = q('informe-asientos')!.textContent ?? '';
     expect(texto).toContain('2 ya estaban cargados');
-    // Y la regla contable, para quien corrigió un asiento y lo volvió a subir.
+    // Y la regla contable, para quien corrigió un asiento y lo volvió a subir:
+    // el corregido entra como NUEVO y hay que reversar el original.
     expect(texto).toMatch(/revers/i);
+    expect(texto).toContain('entra como un asiento nuevo');
+    expect(texto).not.toContain('no lo reescribe');
   });
 
   it('con la carga abierta dice que el avance quedó guardado y cómo seguir', async () => {

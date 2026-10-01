@@ -103,7 +103,9 @@ describe('la lista de cargas sin terminar', () => {
 
   it('dice la regla de corrección: un asiento ya cargado se reversa, no se reescribe', async () => {
     await pintar();
-    expect(q('cargas-de-asientos')!.textContent).toMatch(/revers/i);
+    const texto = q('cargas-de-asientos')!.textContent ?? '';
+    expect(texto).toMatch(/revers/i);
+    expect(texto).toContain('entra como un asiento nuevo');
   });
 
   it('«Continuar» entrega la carga al padre', async () => {

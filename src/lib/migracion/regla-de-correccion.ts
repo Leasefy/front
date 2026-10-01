@@ -1,12 +1,14 @@
 /**
  * La regla contable que quien vuelve a subir un archivo corregido tiene que
- * conocer: lo que YA está registrado no se reescribe.
+ * conocer.
  *
- * T-0125: un asiento migrado con número se reconoce por su número (y su
- * fecha), aunque el contenido cambie. Subir otra vez el archivo corregido
- * deja el asiento viejo como está y lo cuenta como «ya estaba cargado». Un
- * asiento no se edita: se reversa y se vuelve a registrar.
+ * T-0125 (tras el rework del back): un asiento migrado con número se reconoce
+ * por su número + su día + sus líneas (cuenta, débito, crédito). Un asiento
+ * idéntico se omite como «ya estaba cargado». Si se CORRIGIÓ un monto o una
+ * cuenta de uno ya cargado, el archivo corregido ya no es idéntico: entra como
+ * un asiento NUEVO y el original sigue en el libro. Un asiento no se edita: se
+ * reversa el original.
  */
 export const REGLA_DE_CORRECCION =
-  'Si corregiste un asiento que ya estaba cargado, la corrección no lo reescribe: ' +
-  'un asiento no se edita, se reversa y se vuelve a registrar.';
+  'Los asientos idénticos se omiten. Si corregiste un monto o una cuenta de uno que ya estaba cargado, ' +
+  'el corregido entra como un asiento nuevo y tienes que reversar el original.';

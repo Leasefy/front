@@ -154,8 +154,9 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
   archivo con el MISMO lote: `MigrarAsientos` recibe `continuar` y usa el lote de la carga (campo
   bloqueado) en vez del nombre del reloj (`nombreDeLoteDeAsientos`); con otro nombre el back abre
   una carga nueva y la vieja queda abierta. Lo ya escrito vuelve como `yaMigrados` y se lee como
-  «ya estaba cargado», nunca como error; un asiento con número ya cargado no se reescribe (se
-  reversa y se vuelve a registrar — `REGLA_DE_CORRECCION`).
+  «ya estaba cargado», nunca como error; la identidad de un asiento con número es número + día +
+  líneas (cuenta, débito, crédito): lo idéntico se omite; un asiento CORREGIDO entra como NUEVO y
+  hay que reversar el original (`REGLA_DE_CORRECCION`).
 - **Nunca atascado detrás del muro**: `propietarios`/`inquilinos` quedan `pendiente` mientras haya
   filas `LISTO` sin aplicar y `contables` mientras haya una carga ABIERTA. Invariante probada en
   `muro-reglas.test.ts` (729 combinaciones): el primer paso exigible sin terminar SIEMPRE está

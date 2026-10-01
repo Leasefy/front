@@ -69,6 +69,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api/client';
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
   migracionTercerosApi,
@@ -409,6 +410,14 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     onOcupado?.(cargando);
   }, [cargando, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  /*
+   * T-0125 · aviso nativo antes de cerrar la pestaña. Un archivo leído en el
+   * navegador y todavía sin preparar existe SÓLO ahí; y crear las fichas es un
+   * bucle del navegador. Preparada la carga vive en el back (se retoma), así
+   * que sin operación en vuelo no hay nada que avisar.
+   */
+  useAvisoAlSalir(cargando || (filas.length > 0 && !loteAbierto));
 
   const preparar = useCallback(async () => {
     setCargando(true);

@@ -164,6 +164,12 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
   El `detalle` del back se pinta en «Queda por hacer» (`muro-paso-falta`). Botar una carga o una
   fila de terceros pide `configuracion:delete` (sólo ADMIN): un 403 dice «pídele a un
   administrador», NO se tocan permisos.
+- **Aviso al cerrar la pestaña** (`useAvisoAlSalir`, `src/lib/hooks/use-aviso-al-salir.ts`):
+  registra `beforeunload` SÓLO mientras haya algo que perder — una operación en vuelo o un archivo
+  leído en el navegador y todavía sin aplicar/preparar (preparado, el lote vive en el back y se
+  retoma). Cableado en `MigrarAsientos`, `MigrarTerceros`, `ImportarCuentas`,
+  `DocumentosContables`, `MigrarContratos` e `ImportWizard` (inmuebles). El texto del aviso lo
+  pone el navegador. Un importador nuevo con bucle en el cliente debe usarlo.
 - **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
   `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
 

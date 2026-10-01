@@ -490,3 +490,53 @@ describe('un corte en pleno aplicar', () => {
   });
 });
 
+/*
+ * T-0125 · el bucle de aplicar vive en el navegador: cerrar la pestaña a mitad
+ * corta la carga. El aviso nativo se registra sólo mientras hay algo que perder.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('🔴 sin archivo no hay nada que perder: cerrar no pregunta', async () => {
+    await pintar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('con el archivo leído pero sin aplicar, cerrar pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras se aplica, cerrar pregunta', async () => {
+    api.migracion.aplicar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('terminado el informe ya no pregunta', async () => {
+    api.migracion.aplicar.mockResolvedValue({ ...INFORME_CON_FALLAS, fallasAlEscribir: [], aplicados: 2 });
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+    expect(q('informe-asientos')).not.toBeNull();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('descartar el archivo («Subir otro») suelta el aviso', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+    await click(q('archivo-de-asientos-descartar'));
+    expect(intentarSalir()).toBe(false);
+  });
+});
+

@@ -54,6 +54,7 @@ import {
   useTablePagination,
 } from "@/lib/hooks/use-table-pagination";
 import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
 import {
   contabilidadApi,
   LARGO_MAXIMO_DE_LOTE,
@@ -167,6 +168,15 @@ export function MigrarAsientos({
     onOcupado?.(cargando);
   }, [cargando, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  /*
+   * T-0125 · el bucle de aplicar vive en el navegador. Cerrar la pestaña con el
+   * archivo leído y sin aplicar, o a mitad de una aplicación, corta la carga:
+   * lo escrito queda a salvo y se puede continuar, pero un cierre por
+   * accidente se evita con el aviso nativo. Con el informe a la vista ya no hay
+   * nada en vuelo.
+   */
+  useAvisoAlSalir(cargando || (filas.length > 0 && !informe));
 
   const volverAEmpezar = () => {
     setArchivo(null);

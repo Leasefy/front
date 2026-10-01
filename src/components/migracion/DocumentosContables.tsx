@@ -48,6 +48,7 @@ import {
   type DocumentoMigrado,
   type RevisionDeDocumentos,
 } from "@/lib/api/contabilidad.service";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
 import { leerCsvEnTrozos } from "@/lib/migracion/csv-en-trozos";
 import { armarDocumentos, COLUMNAS_DE_DOCUMENTO } from "@/lib/migracion/columnas-de-documento";
 import {
@@ -143,6 +144,10 @@ export function DocumentosContables({
     onOcupado?.(ocupado);
   }, [ocupado, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  // T-0125 · leyendo o migrando, o con la revisión hecha y sin migrar: el
+  // archivo vive sólo en el navegador. Se avisa antes de perderlo.
+  useAvisoAlSalir(ocupado || fase === "revisado");
 
   const sinMapear = useMemo(
     () => obligatoriasSinMapear(COLUMNAS_DE_DOCUMENTO, mapeo),

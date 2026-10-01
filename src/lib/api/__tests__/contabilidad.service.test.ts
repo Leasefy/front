@@ -18,6 +18,7 @@
  *   (8) asientos.crear    → POST /asientos, claves de CrearAsientoDto + MovimientoDto
  *   (9) asientos.reversar → POST /asientos/:id/reversar, sin movimientos
  *  (10) migracion.revisar / aplicar → mismo cuerpo, claves de MigrarLoteDto
+  (11) migracion.cargas / descartarCarga → T-0125, el avance de un archivo cortado
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -62,8 +63,10 @@ const DTO_LISTAR_CUENTAS = ['soloActivas', 'soloImputables', 'busqueda'];
  *
  * `claveIdempotencia` es la llave del intento: el back devuelve el asiento ya
  * escrito en vez de registrar la apertura dos veces cuando se corta la red.
+ * `esApertura` (T-0125) hace que la llave la ponga el servidor (agencia + fecha
+ * de corte) y que ignore la del cliente.
  */
-const DTO_CREAR_ASIENTO = ['fecha', 'descripcion', 'movimientos', 'claveIdempotencia'];
+const DTO_CREAR_ASIENTO = ['fecha', 'descripcion', 'movimientos', 'claveIdempotencia', 'esApertura'];
 const DTO_MOVIMIENTO = ['cuentaId', 'debitoCop', 'creditoCop', 'terceroTipo', 'terceroId', 'descripcion'];
 
 /** `ListarAsientosDto` (…/asientos/dto/listar-asientos.dto.ts). */
@@ -76,7 +79,7 @@ const DTO_REVERSAR = ['fecha', 'motivo'];
 const DTO_REABRIR = ['hasta', 'motivo'];
 
 /** `MigrarLoteDto` + `MigrarAsientoDto` + `MigrarMovimientoDto` (…/migracion/dto/index.ts). */
-const DTO_LOTE = ['lote', 'asientos'];
+const DTO_LOTE = ['lote', 'asientos', 'totalDelArchivo', 'desde'];
 const DTO_ASIENTO_MIGRADO = ['numeroOriginal', 'fecha', 'descripcion', 'movimientos'];
 const DTO_MOVIMIENTO_MIGRADO = ['codigoCuenta', 'debito', 'credito', 'descripcion', 'terceroTipo', 'terceroId'];
 
@@ -341,6 +344,27 @@ describe('asientos', () => {
     expect(cuerpo).toEqual({ motivo: 'Se cargó dos veces' });
   });
 
+  it('crear con esApertura lo manda tal cual; sin él no viaja ninguna clave de más', async () => {
+    const conFlag = mockFetchOnce({ id: 'a-1', numero: 1, movimientos: [], yaExistia: false });
+    await contabilidadApi.asientos.crear({
+      fecha: '2026-01-01',
+      descripcion: 'Saldos iniciales',
+      movimientos: [{ cuentaId: 'c-1', debitoCop: 10 }],
+      claveIdempotencia: 'k-1',
+      esApertura: true,
+    });
+    expect(cuerpoDe(llamada(conFlag)[1])).toMatchObject({ esApertura: true, claveIdempotencia: 'k-1' });
+
+    const sinFlag = mockFetchOnce({ id: 'a-2', numero: 2, movimientos: [], yaExistia: false });
+    await contabilidadApi.asientos.crear({
+      fecha: '2026-01-01',
+      descripcion: 'Otro',
+      movimientos: [{ cuentaId: 'c-1', debitoCop: 10 }],
+      claveIdempotencia: 'k-2',
+    });
+    expect('esApertura' in cuerpoDe(llamada(sinFlag)[1])).toBe(false);
+  });
+
   it('reversar sin opciones manda un objeto vacío', async () => {
     const fetchMock = mockFetchOnce({ original: {}, reversa: {} });
     await contabilidadApi.asientos.reversar('a-1');
@@ -389,5 +413,52 @@ describe('migracion', () => {
     // El vocabulario de migración, no el del asiento manual.
     expect(movimientos[0]).toEqual({ codigoCuenta: '1105-05', debito: '1.500.000' });
     expect(movimientos[1]).toEqual({ codigoCuenta: '413505', credito: 1_500_000, descripcion: 'Arriendo' });
+  });
+
+  // ── T-0125: el avance de un archivo cortado ────────────────────────────
+
+  it('aplicar manda totalDelArchivo y desde cuando el llamador los declara', async () => {
+    const fetchMock = mockFetchOnce({ lote: 'historico-2025', total: 1 });
+    await contabilidadApi.migracion.aplicar({ ...lote, totalDelArchivo: 116_262, desde: 5_000 });
+    const cuerpo = cuerpoDe(llamada(fetchMock)[1]);
+    expect(sobrantes(cuerpo, DTO_LOTE)).toEqual([]);
+    expect(cuerpo.totalDelArchivo).toBe(116_262);
+    expect(cuerpo.desde).toBe(5_000);
+  });
+
+  it('🔴 sin totalDelArchivo no viaja ni totalDelArchivo ni desde: un llamador viejo no declara avance', async () => {
+    const fetchMock = mockFetchOnce({ lote: 'historico-2025', total: 1 });
+    await contabilidadApi.migracion.aplicar(lote);
+    const cuerpo = cuerpoDe(llamada(fetchMock)[1]);
+    expect('totalDelArchivo' in cuerpo).toBe(false);
+    expect('desde' in cuerpo).toBe(false);
+  });
+
+  it('cargas → GET /migracion/cargas', async () => {
+    const abiertas = [
+      {
+        lote: 'asientos-2026-09-30-1000',
+        esperados: 116_262,
+        procesados: 10_000,
+        creadaAt: '2026-09-30T10:00:00Z',
+        actualizadaAt: '2026-09-30T10:20:00Z',
+      },
+    ];
+    const fetchMock = mockFetchOnce(abiertas);
+    const r = await contabilidadApi.migracion.cargas();
+    const [url, opts] = llamada(fetchMock);
+    expect(url.endsWith(`${BASE}/migracion/cargas`)).toBe(true);
+    expect(opts.method ?? 'GET').toBe('GET');
+    expect(r).toEqual(abiertas);
+  });
+
+  it('descartarCarga → POST /migracion/cargas/descartar con sólo {lote}', async () => {
+    const fetchMock = mockFetchOnce({ lote: 'mi lote/1', estado: 'DESCARTADA' });
+    const r = await contabilidadApi.migracion.descartarCarga('mi lote/1');
+    const [url, opts] = llamada(fetchMock);
+    expect(url.endsWith(`${BASE}/migracion/cargas/descartar`)).toBe(true);
+    expect(opts.method).toBe('POST');
+    expect(cuerpoDe(opts)).toEqual({ lote: 'mi lote/1' });
+    expect(r).toEqual({ lote: 'mi lote/1', estado: 'DESCARTADA' });
   });
 });

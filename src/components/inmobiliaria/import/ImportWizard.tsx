@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/components/ui/toast';
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
 import { describirCargaAbierta } from './lib/describirCargaAbierta';
 import {
   inmueblesImportacionApi,
@@ -161,6 +162,26 @@ export function ImportWizard({
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
+
+  /*
+   * T-0125 · aviso nativo antes de cerrar la pestaña. Dos cosas viven sólo en
+   * el navegador: un archivo leído que todavía no se preparó (`loteRetomado`
+   * se escribe al preparar: desde ahí el lote vive en el servidor y se
+   * retoma), y el trabajo de un paso en vuelo —geocodificar, preparar,
+   * activar—, que el paso reporta con `onOcupado`. El asistente lo escucha y
+   * se lo sigue pasando al muro tal cual.
+   */
+  const [pasoTrabajando, setPasoTrabajando] = useState(false);
+  const avisarOcupado = useCallback(
+    (ocupado: boolean, cancelar?: () => void) => {
+      setPasoTrabajando(ocupado);
+      onOcupado?.(ocupado, cancelar);
+    },
+    [onOcupado],
+  );
+  useAvisoAlSalir(
+    pasoTrabajando || (wizardState.rawRows.length > 0 && !wizardState.loteRetomado),
+  );
 
   /*
    * La tarjeta de «tienes una importación sin terminar» — mismo patrón que
@@ -403,7 +424,7 @@ export function ImportWizard({
       updateState,
       onSalir,
       onContinuar,
-      onOcupado,
+      onOcupado: avisarOcupado,
     };
 
     switch (pasoActual) {

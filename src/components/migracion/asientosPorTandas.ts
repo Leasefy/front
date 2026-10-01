@@ -25,6 +25,7 @@ import {
   type AsientoMigrado,
   type CuentaFaltante,
   type InformeDeMigracion,
+  type LoteDeAsientos,
   type MotivoDeRechazo,
   type RevisionDeLote,
 } from '@/lib/api/contabilidad.service';
@@ -171,11 +172,19 @@ export async function revisarPorTandas(
  * dos particiones distintas y anidadas —por tamaño de request afuera, por
  * tiempo adentro— y ninguna reemplaza a la otra: sin la de afuera el request
  * no cabe; sin la de adentro la llamada no vuelve.
+ *
+ * T-0125 · CADA llamada declara de qué archivo es y en qué posición empieza
+ * (`totalDelArchivo` = el archivo ENTERO, `desde` = índice de la primera fila
+ * de la tanda). Así el back lleva un prefijo contiguo del archivo —cuánto de
+ * este archivo está escrito— y, si el navegador se cierra o se cae la red, la
+ * carga queda ABIERTA y la pantalla puede ofrecer continuarla. Las vueltas por
+ * reloj de una misma tanda reenvían el mismo `desde`: reenviar no avanza el
+ * prefijo, sólo lo hace terminar la tanda.
  */
 export async function aplicarPorTandas(
   lote: string,
   asientos: readonly AsientoMigrado[],
-  aplicar: (lote: { lote: string; asientos: AsientoMigrado[] }) => Promise<InformeDeMigracion>,
+  aplicar: (lote: LoteDeAsientos) => Promise<InformeDeMigracion>,
   onProgreso?: (p: ProgresoDeTandas & { dentroDeLaTanda: ProgresoDeAsientos | null }) => void,
   opciones: { debeParar?: () => boolean; tamano?: number } = {},
 ): Promise<ResultadoDeAplicacion> {
@@ -201,7 +210,13 @@ export async function aplicarPorTandas(
 
   for (const [i, parte] of partes.entries()) {
     const vuelta = await aplicarAsientosCompleto(
-      () => aplicar({ lote, asientos: parte }),
+      () =>
+        aplicar({
+          lote,
+          asientos: parte,
+          totalDelArchivo: asientos.length,
+          desde: i * tamano,
+        }),
       (dentro) =>
         onProgreso?.({
           /*
@@ -254,6 +269,9 @@ export async function aplicarPorTandas(
     // gana.
     if (acumulado.primerNumero === null) acumulado.primerNumero = r.primerNumero;
     if (r.ultimoNumero !== null) acumulado.ultimoNumero = r.ultimoNumero;
+    // El avance guardado es el de la respuesta más reciente que lo trajo. Si el
+    // back no lo manda, no se inventa: ausente es «no sé», no «0» ni «terminó».
+    if (r.carga) acumulado.carga = r.carga;
 
     hechos += parte.length;
     onProgreso?.({

@@ -30,8 +30,39 @@ const { api } = vi.hoisted(() => ({
   api: {
     puc: { listar: vi.fn() },
     asientos: { listar: vi.fn(), crear: vi.fn() },
-    migracion: { revisar: vi.fn(), aplicar: vi.fn() },
+    migracion: {
+      revisar: vi.fn(),
+      aplicar: vi.fn(),
+      cargas: vi.fn(),
+      descartarCarga: vi.fn(),
+    },
   },
+}));
+
+/*
+ * `MigrarAsientos` se reemplaza por un doble que expone lo que ESTE archivo
+ * quiere ver: qué carga recibió para continuar y los avisos que le manda al
+ * padre. El camino real del libro diario tiene su propio archivo de pruebas.
+ */
+vi.mock('./MigrarAsientos', () => ({
+  MigrarAsientos: ({
+    continuar,
+    onAplicado,
+    onOcupado,
+    onDejarDeContinuar,
+  }: {
+    continuar?: { lote: string } | null;
+    onAplicado: (i: unknown) => void;
+    onOcupado?: (o: boolean) => void;
+    onDejarDeContinuar?: () => void;
+  }) => (
+    <div data-testid="doble-migrar-asientos" data-continuar={continuar?.lote ?? ''}>
+      <button data-testid="doble-aplicado" onClick={() => onAplicado({})} />
+      <button data-testid="doble-ocupado" onClick={() => onOcupado?.(true)} />
+      <button data-testid="doble-libre" onClick={() => onOcupado?.(false)} />
+      <button data-testid="doble-dejar" onClick={() => onDejarDeContinuar?.()} />
+    </div>
+  ),
 }));
 
 vi.mock('@/lib/api/contabilidad.service', async () => {
@@ -84,6 +115,8 @@ async function click(el: Element | null) {
 beforeEach(() => {
   api.puc.listar.mockResolvedValue([CUENTA]);
   api.asientos.listar.mockResolvedValue(SIN_ASIENTOS);
+  api.migracion.cargas.mockResolvedValue([]);
+  api.migracion.descartarCarga.mockResolvedValue({ lote: 'x', estado: 'DESCARTADA' });
 });
 
 afterEach(() => {
@@ -160,3 +193,94 @@ describe('la lectura de lo ya cargado caída', () => {
     expect(q('contables-resumen')).not.toBeNull();
   });
 });
+
+/*
+ * T-0125 · el paso `contables` queda «pendiente» mientras haya una carga de
+ * asientos abierta. Quien está detrás del muro llega a la pestaña de saldos
+ * iniciales —la de por defecto—, no a la del libro diario, así que la salida
+ * (continuar o descartar) tiene que estar a la vista desde el primer momento.
+ */
+describe('una carga de asientos a medias', () => {
+  const CARGA = {
+    lote: 'asientos-2026-09-29-0900',
+    esperados: 116_262,
+    procesados: 10_000,
+    creadaAt: '2026-09-29T09:00:00Z',
+    actualizadaAt: '2026-09-29T09:20:00Z',
+  };
+
+  it('🔴 se ve desde la pestaña de saldos iniciales, con sus dos salidas', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+
+    await pintar();
+
+    // La pestaña de por defecto es la de apertura…
+    expect(q('asiento-de-apertura')).not.toBeNull();
+    // …y la salida está a la vista igual.
+    expect(q('cargas-de-asientos')).not.toBeNull();
+    expect(q(`continuar-carga-${CARGA.lote}`)).not.toBeNull();
+    expect(q(`descartar-carga-${CARGA.lote}`)).not.toBeNull();
+  });
+
+  it('«Continuar» abre el libro diario con el lote de ESA carga', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+
+    await click(q(`continuar-carga-${CARGA.lote}`));
+
+    expect(q('asiento-de-apertura')).toBeNull();
+    expect(q('doble-migrar-asientos')?.getAttribute('data-continuar')).toBe(CARGA.lote);
+  });
+
+  it('«Empezar una carga nueva» suelta la carga que se continuaba', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+    await click(q(`continuar-carga-${CARGA.lote}`));
+
+    await click(q('doble-dejar'));
+
+    expect(q('doble-migrar-asientos')?.getAttribute('data-continuar')).toBe('');
+  });
+
+  it('descartar desde acá llama al back sin abrir el libro diario', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+
+    await click(q(`descartar-carga-${CARGA.lote}`));
+    api.migracion.cargas.mockResolvedValue([]);
+    await click(q('descartar-carga-si'));
+
+    expect(api.migracion.descartarCarga).toHaveBeenCalledWith(CARGA.lote);
+    expect(q('cargas-de-asientos')).toBeNull();
+    expect(q('asiento-de-apertura')).not.toBeNull();
+  });
+
+  it('sin cargas abiertas no aparece nada de esto', async () => {
+    await pintar();
+    expect(q('cargas-de-asientos')).toBeNull();
+  });
+
+  it('cuando termina una aplicación se vuelve a leer: el avance de la franja no queda viejo', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+    await click(q(`continuar-carga-${CARGA.lote}`));
+    expect(api.migracion.cargas).toHaveBeenCalledTimes(1);
+
+    await click(q('doble-aplicado'));
+
+    expect(api.migracion.cargas.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('mientras se aplica no se puede continuar ni descartar otra carga', async () => {
+    api.migracion.cargas.mockResolvedValue([CARGA]);
+    await pintar();
+    await click(q(`continuar-carga-${CARGA.lote}`));
+
+    await click(q('doble-ocupado'));
+    expect((q(`descartar-carga-${CARGA.lote}`) as HTMLButtonElement).disabled).toBe(true);
+
+    await click(q('doble-libre'));
+    expect((q(`descartar-carga-${CARGA.lote}`) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+

@@ -314,3 +314,44 @@ describe('subir los comprobantes', () => {
     expect(contenedor.querySelector('[data-testid="documentos-migrar"]')).not.toBeNull();
   });
 });
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. Mientras se lee o se migra, y
+ * mientras hay una revisión sin migrar, el archivo vive sólo en el navegador.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    await montar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('🔴 con la revisión hecha y sin migrar, cerrar pregunta', async () => {
+    api.migracion.documentos.revisar.mockImplementation(
+      async (docs: unknown[]) => revision(docs.length, 0),
+    );
+    await montar();
+    await subir(archivoCon(10));
+
+    expect(contenedor.querySelector('[data-testid="documentos-migrar"]')).not.toBeNull();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras lee, cerrar pregunta', async () => {
+    api.migracion.documentos.revisar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await montar();
+    await act(async () => {
+      entregarArchivo.actual?.([archivoCon(10)]);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(intentarSalir()).toBe(true);
+  });
+});
+

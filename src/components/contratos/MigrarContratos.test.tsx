@@ -2133,3 +2133,38 @@ describe('<MigrarContratos> — 🔴 la fecha de corte antes de activar (QA 22-0
     expect(activar()?.disabled).toBe(false)
   })
 })
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. Un archivo leído en el navegador y
+ * sin preparar existe sólo ahí; preparado vive en el servidor (se retoma).
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(evento)
+    return evento.defaultPrevented
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    render()
+    await esperar()
+    expect(intentarSalir()).toBe(false)
+  })
+
+  it('🔴 con el archivo leído y sin preparar, cerrar pregunta', async () => {
+    render()
+    await esperar()
+    await subirArchivoMinimo()
+    expect(botonRevisar()?.disabled).toBe(false)
+    expect(intentarSalir()).toBe(true)
+  })
+
+  it('con el lote ya preparado en el servidor y nada en vuelo, cerrar no pregunta', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+    expect(container.querySelector('[data-testid="confirmar-revision"]')).not.toBeNull()
+    expect(intentarSalir()).toBe(false)
+  })
+})
+

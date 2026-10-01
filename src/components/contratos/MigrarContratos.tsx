@@ -117,6 +117,7 @@ import {
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { FechaDeCorteDeLaMigracion } from "./FechaDeCorteDeLaMigracion";
 import { TablePagination } from "@/components/ui/pagination";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
@@ -378,6 +379,20 @@ export function MigrarContratos({
   }, [hayOperacionEnVuelo, onOcupado]);
   // Al desmontar (cambio de paso en el muro), el pie recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  /*
+   * T-0125 · aviso nativo antes de cerrar la pestaña: con una operación del
+   * navegador en vuelo (preparar, activar, consignar, descartar, cruzar), o con
+   * un archivo leído que todavía no se preparó. Preparado, el lote vive en el
+   * servidor y se retoma; esperar el job NO cuenta — corre sin el navegador.
+   */
+  useAvisoAlSalir(
+    cargando ||
+      descartandoLote ||
+      consignando ||
+      reconciliando ||
+      (filas.length > 0 && !lote),
+  );
 
   /**
    * Una clave por archivo leído (no por click): si `preparar()` se reintenta

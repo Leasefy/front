@@ -127,6 +127,53 @@ minificador de SWC produjo al inlinear un cierre — el fuente estaba bien, `nex
 las pruebas no lo veían. Un nombre de librería legítimo se agrega a `PERMITIDOS_DE_LIBRERIAS`
 con su motivo; un chunk que no se puede parsear también hace fallar (no se da por limpio).
 
+## Migración contable reanudable (T-0125)
+
+La migración la maneja el navegador (los importadores recorren los endpoints `aplicar` en un
+bucle), así que cerrar la pestaña o perder la red a mitad NO pierde el trabajo: lo escrito queda
+en el back y la pantalla dice cómo seguir. Contrato congelado en
+`.orchestration/tasks/T-0125-migracion-reanudable-sin-duplicados/contract.md`; el back es WU-1.
+
+- **Apertura** (`AsientoDeApertura.tsx`): manda `esApertura: true`; el back identifica la
+  apertura por agencia + fecha de corte y la llave del formulario deja de ser la garantía. Un 409
+  `APERTURA_YA_REGISTRADA` (otra apertura con otros saldos) se traduce en `contabilidad-errores.ts`
+  con el número y la fecha de `details`. `AsientoManual` NO manda la bandera.
+- **Rutas nuevas del back**: `GET .../contabilidad/migracion/cargas` y
+  `POST .../cargas/descartar` (`contabilidadApi.migracion.cargas` / `.descartarCarga`).
+  `rutas-del-back.json` se regeneró con `node scripts/rutas-del-back.mjs <back>` para que el
+  guardián las conozca.
+- **Libro diario por tandas** (`asientosPorTandas.ts`): UN lote para todas las tandas del archivo, y
+  CADA llamada a `aplicar` manda `totalDelArchivo` (el archivo entero) y `desde` (índice de la
+  primera fila de la tanda; las vueltas por reloj de una misma tanda reenvían el mismo `desde`).
+  El back guarda un prefijo contiguo del archivo; el informe trae `carga` sólo si el back la
+  mandó — ausente es «no sé», nunca «0» ni «terminó».
+- **Continuar una carga cortada** (paso `contables`): `CargasDeAsientosAbiertas` lista las cargas
+  ABIERTAS (`GET .../cargas`) con su avance y dos salidas — «Continuar» y «Descartar» (no borra
+  asientos). Vive en `RegistrosContables`, ARRIBA de las pestañas, porque quien está detrás del
+  muro cae en «Saldos iniciales», no en «Subir el libro diario». Continuar = subir el MISMO
+  archivo con el MISMO lote: `MigrarAsientos` recibe `continuar` y usa el lote de la carga (campo
+  bloqueado) en vez del nombre del reloj (`nombreDeLoteDeAsientos`); con otro nombre el back abre
+  una carga nueva y la vieja queda abierta. Lo ya escrito vuelve como `yaMigrados` y se lee como
+  «ya estaba cargado», nunca como error; la identidad de un asiento con número es número + día +
+  líneas (cuenta, débito, crédito): lo idéntico se omite; un asiento CORREGIDO entra como NUEVO y
+  hay que reversar el original (`REGLA_DE_CORRECCION`).
+- **Nunca atascado detrás del muro**: `propietarios`/`inquilinos` quedan `pendiente` mientras haya
+  filas `LISTO` sin aplicar y `contables` mientras haya una carga ABIERTA. Invariante probada en
+  `muro-reglas.test.ts` (729 combinaciones): el primer paso exigible sin terminar SIEMPRE está
+  habilitado (`pasoHabilitado`), así que la persona llega al paso que bloquea. La salida: terceros
+  → «Retomar» / «No la voy a seguir» de `MigrarTerceros`; contables → `CargasDeAsientosAbiertas`.
+  El `detalle` del back se pinta en «Queda por hacer» (`muro-paso-falta`). Botar una carga o una
+  fila de terceros pide `configuracion:delete` (sólo ADMIN): un 403 dice «pídele a un
+  administrador», NO se tocan permisos.
+- **Aviso al cerrar la pestaña** (`useAvisoAlSalir`, `src/lib/hooks/use-aviso-al-salir.ts`):
+  registra `beforeunload` SÓLO mientras haya algo que perder — una operación en vuelo o un archivo
+  leído en el navegador y todavía sin aplicar/preparar (preparado, el lote vive en el back y se
+  retoma). Cableado en `MigrarAsientos`, `MigrarTerceros`, `ImportarCuentas`,
+  `DocumentosContables`, `MigrarContratos` e `ImportWizard` (inmuebles). El texto del aviso lo
+  pone el navegador. Un importador nuevo con bucle en el cliente debe usarlo.
+- **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
+  `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

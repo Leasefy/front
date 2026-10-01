@@ -1,8 +1,8 @@
 {
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
-  "cuando": "2026-09-29",
-  "cuantas": 1191,
+  "cuando": "2026-10-01",
+  "cuantas": 1193,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -295,6 +295,7 @@
     "GET /inmobiliaria/contabilidad/mapeo",
     "GET /inmobiliaria/contabilidad/mapeo/gastos",
     "GET /inmobiliaria/contabilidad/mapeo/rubros",
+    "GET /inmobiliaria/contabilidad/migracion/cargas",
     "GET /inmobiliaria/contabilidad/migracion/documentos",
     "GET /inmobiliaria/contabilidad/migracion/documentos/por-contrato/:contractId",
     "GET /inmobiliaria/contabilidad/migracion/documentos/por-inmueble/:propertyId",
@@ -861,6 +862,7 @@
     "POST /inmobiliaria/contabilidad/mapeo/rubros/semilla",
     "POST /inmobiliaria/contabilidad/mapeo/semilla",
     "POST /inmobiliaria/contabilidad/migracion/aplicar",
+    "POST /inmobiliaria/contabilidad/migracion/cargas/descartar",
     "POST /inmobiliaria/contabilidad/migracion/documentos",
     "POST /inmobiliaria/contabilidad/migracion/documentos/revisar",
     "POST /inmobiliaria/contabilidad/migracion/revisar",

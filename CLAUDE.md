@@ -174,6 +174,33 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
 - **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
   `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
 
+## Terceros incompletos y acciones masivas (T-0128)
+
+La migración de terceros (propietarios/inquilinos) ya no obliga a descartar lo que le falta el
+documento: se crea la ficha **incompleta** y la inmobiliaria la completa después. Contrato congelado
+en `.orchestration/tasks/T-0128-migracion-terceros-incompletos-y-masivo/contract.md`; el back es WU-1.
+
+- **Seleccionar todo** (`MigrarTerceros.tsx`): además de «las 25 de esta página», «Seleccionar las N de la
+  carga» y «a las N que les falta X» (conteos de `GET filas/motivos`, frases en
+  `src/lib/migracion/motivos-de-fila.ts`). El estado `alcance` (`ids` | `todas` | `motivo`) decide el
+  camino: `ids` = `PATCH filas` en tandas de 200 (de siempre); `todas`/`motivo` =
+  `migracionTercerosApi.resolverPorFiltro` → `PATCH filas/masivo`, que da vueltas por cursor
+  (`siguiente`) hasta `null`, muestra avance y, si se corta, devuelve lo acumulado con `interrumpida`.
+  Vincular en masa sólo existe con filas marcadas a mano; descartar por filtro pide confirmación.
+- **Valor por defecto** (`ResolucionMasiva`): cualquier campo menos `CAMPOS_NO_MASIVOS` (documento, DV,
+  nombre, correo, externalId — el back responde 400 `CAMPO_NO_MASIVO`, mapeado en `mensaje()`). Siempre
+  manda `sobrescribir` explícito: `false` llena sólo lo vacío (default), `true` con la casilla.
+- **Crear con datos por completar**: acción masiva y por fila (`crearIncompleta: true`) cuando todos los
+  errores de la fila están en `CODIGOS_COMPLETABLES`. Deja la fila `LISTO`; la ficha nace con el botón
+  «Crear N» de arriba. Descartar es la salida discreta, nunca el default.
+- `VARIAS_PERSONAS_EN_LA_FILA`: la fila muestra el texto crudo y sólo ofrece editar o descartar.
+- **Documento nulo**: `Propietario.documentType/documentNumber` son `string | null`; se muestra «Sin
+  registrar» (`documentoParaMostrar`) y la marca «Datos por completar: …» (`DatosPorCompletar`, desde
+  `datosPendientes`) sale en la lista, tarjeta y ficha del propietario y en la lista/cajón de inquilinos.
+  El formulario de propietario no inventa «CC» al editar una ficha sin tipo. Los 409
+  `PROPIETARIO_SIN_DOCUMENTO` y `PAGARE_DATOS_INCOMPLETOS` se explican en
+  `src/lib/errores/documento-del-propietario.ts` (enchufado en `mensajeDelFallo` y `errorEnCristiano`).
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

@@ -147,7 +147,7 @@ export const REQUISITOS: Record<CampoRequerido, Omit<RequisitoFaltante, 'campo'>
   },
   monthlyRent: {
     etiqueta: 'Canon mensual',
-    ayuda: `Mínimo ${formatearPesos(MINIMO_CANON)}.`,
+    ayuda: `Mínimo ${formatearPesos(MINIMO_CANON)}. Si lo dejas vacío, queda como canon por confirmar.`,
     sufijo: 'COP',
     tipo: 'numero',
   },
@@ -166,6 +166,15 @@ export const REQUISITOS: Record<CampoRequerido, Omit<RequisitoFaltante, 'campo'>
 
 export function requisitoDe(campo: CampoRequerido): RequisitoFaltante {
   return { campo, ...REQUISITOS[campo] };
+}
+
+/**
+ * T-0129 · ¿se va a crear con el canon por confirmar? Un arriendo sin canon
+ * usable. NO es un error: no impide crear el inmueble ni lo deselecciona.
+ */
+export function sinCanon(p: ImportProperty): boolean {
+  if (tipoEfectivo(p) === 'sale') return false;
+  return !p.monthlyRent || p.monthlyRent < MINIMO_CANON;
 }
 
 /**
@@ -200,9 +209,12 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
   // alternative at the column-mapping gate, applied per-row here.
   if (tipoEfectivo(p) === 'sale') {
     if (!p.salePrice || p.salePrice < MINIMO_VENTA) faltan.push('salePrice');
-  } else if (!p.monthlyRent || p.monthlyRent < MINIMO_CANON) {
-    faltan.push('monthlyRent');
   }
+  /*
+   * T-0129 · el CANON ya no frena. Un arriendo sin canon se crea igual y queda
+   * «con el canon por confirmar» (ver `sinCanon`): no se publica ni se le hacen
+   * contratos hasta que alguien lo ponga a mano. El back dejó de pedirlo.
+   */
 
   /*
    * 🔴 Los BAÑOS y el ÁREA tampoco frenan (Nico, 2026-09-09, con el archivo

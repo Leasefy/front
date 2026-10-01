@@ -52,6 +52,8 @@ import type {
   InmuebleSinConsignacion,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
+import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 
 type SortField = 'propertyTitle' | 'propertyZone' | 'monthlyRent' | 'commissionPercent' | 'availability';
 type SortDirection = 'asc' | 'desc';
@@ -468,9 +470,17 @@ export function ConsignacionTable({
                       )
                     ) : (
                       <p className="font-semibold text-foreground tabular-nums">
-                        {row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
+                        {row.canonPorConfirmar
+                          ? TEXTO_CANON_POR_CONFIRMAR
+                          : row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
                       </p>
                     )}
+                    {row.canonPorConfirmar ? (
+                      <CanonPorConfirmarBadge
+                        inmuebleId={row.kind === 'sinMandato' ? row.propertyId : row.propertyId}
+                        className="mt-1"
+                      />
+                    ) : null}
                     {/*
                       Antes: `consignacion.adminFee && consignacion.adminFee > 0 && (…)`.
                       Con `adminFee === 0` la primera guarda devuelve `0` —no `false`—

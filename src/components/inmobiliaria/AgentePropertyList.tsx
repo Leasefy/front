@@ -1,5 +1,6 @@
 'use client';
 
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -183,7 +184,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                           <span className="text-sm font-semibold text-fg dark:text-white">
                             {consignacion.listingType === 'sale'
                               ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
-                              : (consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—')}
+                              : consignacion.canonPorConfirmar ? TEXTO_CANON_POR_CONFIRMAR : (consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—')}
                           </span>
                         </div>
                       </Link>

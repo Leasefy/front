@@ -178,7 +178,7 @@ export const TARGET_FIELDS = [
   { key: 'propertyDepartment', label: 'Departamento', required: false },
   { key: 'propertyType', label: 'Tipo de inmueble', required: true },
   { key: 'listingType', label: 'Tipo de operación (arriendo/venta)', required: false },
-  { key: 'monthlyRent', label: 'Canon mensual', required: true },
+  { key: 'monthlyRent', label: 'Canon mensual', required: false },
   { key: 'salePrice', label: 'Precio de venta', required: false },
   { key: 'adminFee', label: 'Administración', required: false },
   { key: 'commissionPercent', label: 'Comisión %', required: false },

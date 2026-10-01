@@ -276,7 +276,15 @@ export class ApiError extends Error {
      */
     public detalle?: Record<string, unknown>,
   ) {
-    super(Array.isArray(message) ? message.join(' · ') : message)
+    // T-0129 · el 409 de un inmueble sin canon dice siempre lo mismo y lleva a la
+    // misma salida, venga de publicar, consignar o crear un contrato.
+    super(
+      code === 'INMUEBLE_SIN_CANON'
+        ? 'Este inmueble tiene el canon por confirmar. Ponle el canon para continuar.'
+        : Array.isArray(message)
+          ? message.join(' · ')
+          : message,
+    )
     this.name = 'ApiError'
     if (Array.isArray(message)) this.messages = message
   }

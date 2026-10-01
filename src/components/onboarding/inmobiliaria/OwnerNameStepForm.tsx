@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, type FormEvent } from 'react'
-import { ArrowRight, CheckCircle } from '@phosphor-icons/react'
+import { ArrowRight } from '@phosphor-icons/react'
 import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -310,13 +310,11 @@ export function OwnerNameStepForm({
             }}
           />
         </FormControl>
+        {/* Con el NIT bueno la ayuda se calla: el campo ya lo dice con su
+            borde. Repetir el número «mejorado» abajo confundía (Nico, 30-09:
+            «pone un número en el input y el helper pone otra cosa»). */}
         {errorDe('nit') ? (
           <FormError>{errorDe('nit')}</FormError>
-        ) : revision.nitBueno && revisados.nit ? (
-          <FormHint className="flex items-center gap-1.5 text-success">
-            <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" weight="fill" aria-hidden />
-            <span className="font-mono tabular-nums">{revision.nitBueno.bonito}</span>
-          </FormHint>
         ) : (
           <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
         )}

@@ -570,7 +570,7 @@ function IndicadorDePasos({ actual }: { actual: number }) {
             ) : null}
             <span
               className={cn(
-                'relative flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-colors',
+                'relative flex h-7 w-7 items-center justify-center rounded-full font-mono text-caption font-semibold tabular-nums transition-colors',
                 hecho
                   ? 'bg-primary text-primary-fg'
                   : esActual

@@ -10294,23 +10294,24 @@
       "saltar": "Omitir",
       "atras": "Atrás",
       "siguiente": "Siguiente",
-      "empezar": "Empezar",
-      "entendido": "Entendido",
+      "empezar": "Empezar el recorrido",
+      "entendido": "Empezar a trabajar",
       "paso": "Paso {{n}} de {{total}}",
       "progreso": "Avance del recorrido",
       "cerrar": "Cerrar el recorrido",
       "bienvenida": {
-        "saludo": "Hola, {{nombre}}.",
+        "saludo": "Hola, {{nombre}}",
         "titulo": "Este es el panel de {{inmobiliaria}}",
         "tuInmobiliaria": "tu inmobiliaria",
         "cuerpo": "Te muestro {{total}} paradas en el orden en que se trabaja: captar un inmueble, estudiar candidatos, firmar, cobrar y pagar. Toma un minuto y puedes omitirlo cuando quieras."
       },
       "cierre": {
-        "titulo": "Eso es todo",
+        "titulo": "Listo, ya conoces tu panel",
         "punto1": "Empiezas por «Nueva consignación» y sigues el inmueble hasta el contrato.",
         "punto2": "Pagos reúne las dos caras de la plata: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
         "punto3": "El buscador y el chat te llevan a cualquier parte sin recorrer el menú.",
-        "volver": "Puedes volver a verlo desde Configuración → Preferencias."
+        "volver": "Puedes volver a verlo desde Configuración → Preferencias.",
+        "eyebrow": "Recorrido completo"
       },
       "pasos": {
         "buscador": {

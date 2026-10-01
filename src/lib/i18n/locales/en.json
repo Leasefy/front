@@ -10260,23 +10260,24 @@
       "saltar": "Skip",
       "atras": "Back",
       "siguiente": "Next",
-      "empezar": "Start",
-      "entendido": "Got it",
+      "empezar": "Start the tour",
+      "entendido": "Get to work",
       "paso": "Step {{n}} of {{total}}",
       "progreso": "Tour progress",
       "cerrar": "Close the tour",
       "bienvenida": {
-        "saludo": "Hi, {{nombre}}.",
+        "saludo": "Hi, {{nombre}}",
         "titulo": "This is the {{inmobiliaria}} panel",
         "tuInmobiliaria": "your agency",
         "cuerpo": "I'll show you {{total}} stops in the order the work happens: list a property, screen candidates, sign, collect and pay out. It takes a minute, and you can skip it at any point."
       },
       "cierre": {
-        "titulo": "That's it",
+        "titulo": "All set, you know your panel",
         "punto1": "You start at «New listing» and follow the property through to the contract.",
         "punto2": "Payments holds both sides of the money: what comes in from tenants and what goes out to owners.",
         "punto3": "Search and chat take you anywhere without walking the menu.",
-        "volver": "You can see it again from Settings → Preferences."
+        "volver": "You can see it again from Settings → Preferences.",
+        "eyebrow": "Tour complete"
       },
       "pasos": {
         "buscador": {

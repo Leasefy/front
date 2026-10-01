@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { abrirSuSeccion, ubicarTarjeta } from './TourDelPanel'
+import { ANCHO_DE_LA_TARJETA, abrirSuSeccion, ubicarTarjeta } from './TourDelPanel'
 
 const VENTANA = { width: 1440, height: 900 }
 
@@ -16,8 +16,8 @@ describe('ubicarTarjeta', () => {
 
   it('la centra sobre el elemento', () => {
     const { left } = ubicarTarjeta({ top: 100, left: 600, width: 200, height: 40 }, VENTANA, 200)
-    // Centro del elemento = 700; la tarjeta mide 340 ⇒ arranca en 530.
-    expect(left).toBe(530)
+    // Centro del elemento = 700; la tarjeta mide ANCHO ⇒ arranca en 700 − ANCHO/2.
+    expect(left).toBe(700 - ANCHO_DE_LA_TARJETA / 2)
   })
 
   it('nunca se sale por la izquierda', () => {
@@ -31,7 +31,7 @@ describe('ubicarTarjeta', () => {
       VENTANA,
       200,
     )
-    expect(left + 340).toBeLessThanOrEqual(VENTANA.width)
+    expect(left + ANCHO_DE_LA_TARJETA).toBeLessThanOrEqual(VENTANA.width)
   })
 
   it('en una ventana más angosta que la tarjeta no devuelve un left negativo', () => {
@@ -70,7 +70,7 @@ describe('ubicarTarjeta en pantalla angosta', () => {
 
   it('en escritorio la tarjeta conserva su ancho fijo', () => {
     const { ancho } = ubicarTarjeta({ top: 100, left: 400, width: 200, height: 40 }, VENTANA, 200)
-    expect(ancho).toBe(340)
+    expect(ancho).toBe(ANCHO_DE_LA_TARJETA)
   })
 })
 

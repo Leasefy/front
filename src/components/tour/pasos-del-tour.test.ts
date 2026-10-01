@@ -10,8 +10,10 @@ import { describe, it, expect } from 'vitest'
 import {
   PASOS_DEL_TOUR,
   elPanelEstaBloqueado,
+  motivoParaEsperar,
   pantallasDelTour,
   pasosVisibles,
+  type SenalesDelPanel,
 } from './pasos-del-tour'
 
 describe('pasosVisibles', () => {
@@ -113,6 +115,11 @@ describe('elPanelEstaBloqueado', () => {
     expect(elPanelEstaBloqueado((s) => s.includes('muro-migracion'))).toBe(true)
   })
 
+  it('🔴 la pregunta previa al muro y la bienvenida con confeti también tapan (no son de Radix: no traen `data-state`)', () => {
+    expect(elPanelEstaBloqueado((s) => s.includes('decision-de-migracion'))).toBe(true)
+    expect(elPanelEstaBloqueado((s) => s.includes('bienvenida-a-leasefy'))).toBe(true)
+  })
+
   it('con un modal abierto, tampoco arranca encima', () => {
     expect(elPanelEstaBloqueado((s) => s.includes('role="dialog"'))).toBe(true)
     expect(elPanelEstaBloqueado((s) => s.includes('alertdialog'))).toBe(true)
@@ -128,5 +135,35 @@ describe('elPanelEstaBloqueado', () => {
         throw new Error('selector inválido')
       }),
     ).toBe(false)
+  })
+})
+
+describe('motivoParaEsperar — el orden de una cuenta nueva (Nico, 30-09-2026)', () => {
+  const nada = () => false
+  const libre: SenalesDelPanel = { segundoFactorPendiente: false, muro: 'libre' }
+
+  it('sin nada delante, puede salir', () => {
+    expect(motivoParaEsperar(nada, libre)).toBeNull()
+  })
+
+  it('el segundo factor pendiente manda sobre todo lo demás', () => {
+    expect(
+      motivoParaEsperar(() => true, { segundoFactorPendiente: true, muro: 'bloquea' }),
+    ).toBe('segundo-factor')
+  })
+
+  it('el back dice que el muro bloquea, aunque todavía no se haya dibujado', () => {
+    expect(motivoParaEsperar(nada, { ...libre, muro: 'bloquea' })).toBe('muro')
+  })
+
+  it('una capa en pantalla', () => {
+    expect(motivoParaEsperar((s) => s.includes('muro-migracion'), libre)).toBe('capa')
+  })
+
+  it('el muro sin contestar es lo último que se mira (quien llama decide cuánto esperarlo)', () => {
+    expect(motivoParaEsperar(nada, { ...libre, muro: 'sin-contestar' })).toBe('muro-sin-contestar')
+    expect(
+      motivoParaEsperar((s) => s.includes('bienvenida-a-leasefy'), { ...libre, muro: 'sin-contestar' }),
+    ).toBe('capa')
   })
 })

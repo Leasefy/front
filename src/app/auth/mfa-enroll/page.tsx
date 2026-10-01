@@ -6,6 +6,7 @@ import { SignOut } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
+import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
@@ -130,6 +131,11 @@ export default function MfaEnrollPage() {
 
   return (
     <ForceLightMode>
+      {/* 🔴 El asistente de registro a medias manda sobre el segundo factor
+          (Nico, 30-09: «no me llevó al paso donde lo dejé»): misma regla que
+          «primero la migración». Si hay asistente pendiente, este guard se
+          lleva a la persona a terminarlo; el 2FA la espera a la salida. */}
+      <AsistentePendienteGuard />
       {/* La misma caja que `/auth` y `/auth/mfa-verify`: entrar es una sola
           secuencia, con el mismo fondo y la tarjeta en el mismo sitio. */}
       <div className="relative min-h-screen bg-background" data-lenis-prevent>

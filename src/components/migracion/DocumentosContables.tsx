@@ -30,10 +30,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { CheckCircle, FileArrowUp, Info, Warning } from "@phosphor-icons/react";
+import { CheckCircle, Info, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import {
   Table,
   TableBody,
@@ -291,26 +292,15 @@ export function DocumentosContables({
           testid="archivo-de-documentos"
         />
       ) : (
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive ? "border-primary bg-primary-soft" : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-documentos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} data-testid="archivo-documentos" />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              Arrastra el CSV de comprobantes o haz clic para elegirlo
-            </p>
-            <p className="text-caption text-fg-subtle">
-              Se lee por partes, así que un archivo de decenas de miles de filas
-              no congela la pantalla. Nada se escribe hasta que lo pidas.
-            </p>
-          </div>
-        </div>
+        <ZonaDeArchivo
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          activo={isDragActive}
+          testid="dropzone-documentos"
+          inputTestid="archivo-documentos"
+          titulo="Arrastra el CSV de comprobantes o haz clic para elegirlo"
+          detalle="Se lee por partes: decenas de miles de filas no congelan la pantalla. Nada se escribe hasta que lo pidas."
+        />
       )}
 
       {error ? (

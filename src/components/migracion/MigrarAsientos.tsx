@@ -24,7 +24,6 @@ import { useDropzone } from "react-dropzone";
 import {
   ArrowRight,
   CheckCircle,
-  FileArrowUp,
   Info,
   Receipt,
   Warning,
@@ -32,6 +31,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -386,26 +386,15 @@ export function MigrarAsientos({
             />
           </div>
         ) : (
-          <div
-            {...getRootProps()}
-            className={`mt-4 flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-              isDragActive
-                ? "border-primary bg-primary-soft"
-                : "border-border hover:bg-surface-muted"
-            }`}
-            data-testid="dropzone-asientos"
-          >
-            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-            <input {...getInputProps()} />
-            <FileArrowUp className="h-8 w-8 text-fg-muted" />
-            <div>
-              <p className="text-sm font-medium text-fg">
-                Arrastra el archivo o haz clic para elegirlo
-              </p>
-              <p className="text-caption text-fg-subtle">
-                Excel o CSV. Nada se crea todavía.
-              </p>
-            </div>
+          <div className="mt-4">
+            <ZonaDeArchivo
+              rootProps={getRootProps()}
+              inputProps={getInputProps()}
+              activo={isDragActive}
+              testid="dropzone-asientos"
+              titulo="Arrastra el archivo o haz clic para elegirlo"
+              detalle="Excel o CSV. Nada se crea todavía."
+            />
           </div>
         )}
 

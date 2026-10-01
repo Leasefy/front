@@ -28,7 +28,6 @@ import { useDropzone } from 'react-dropzone';
 import {
   CheckCircle,
   DownloadSimple,
-  FileArrowUp,
   Info,
   Trash,
   UserCircle,
@@ -40,6 +39,7 @@ import { SegmentedControl } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
+import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
@@ -992,31 +992,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             testid="archivo-de-terceros"
           />
         ) : (
-          <div
-            {...getRootProps()}
-            className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-              isDragActive ? 'border-primary bg-primary-soft' : 'border-border hover:bg-surface-muted'
-            }`}
-            data-testid="dropzone-terceros"
-          >
-            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-            <input {...getInputProps()} />
-            <FileArrowUp className="h-8 w-8 text-fg-muted" />
-            <div>
-              <p className="text-sm font-medium text-fg">
-                {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
-                    La espera y el fallo de la plantilla se dicen acá mismo. */}
-                {plantilla
-                  ? 'Arrastra el archivo o haz clic para elegirlo'
-                  : errorDePlantilla
-                    ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
-                    : 'Preparando la pantalla: leyendo las columnas esperadas…'}
-              </p>
-              <p className="text-caption text-fg-subtle">
-                Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
-              </p>
-            </div>
-          </div>
+          <ZonaDeArchivo
+            rootProps={getRootProps()}
+            inputProps={getInputProps()}
+            activo={isDragActive}
+            testid="dropzone-terceros"
+            /* Deshabilitado sin decir por qué = un dropzone que «no anda».
+               La espera y el fallo de la plantilla se dicen acá mismo. */
+            titulo={
+              plantilla
+                ? 'Arrastra el archivo o haz clic para elegirlo'
+                : errorDePlantilla
+                  ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
+                  : 'Preparando la pantalla: leyendo las columnas esperadas…'
+            }
+            detalle="Excel o CSV exportado de tu sistema actual. Nada se crea todavía."
+          />
         )}
 
         {error ? (

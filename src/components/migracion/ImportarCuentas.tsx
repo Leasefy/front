@@ -19,7 +19,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   CheckCircle,
-  FileArrowUp,
   Info,
   Warning,
   X,
@@ -27,6 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import {
   Select,
   SelectContent,
@@ -416,27 +416,15 @@ export function ImportarCuentas({
           testid="archivo-de-cuentas"
         />
       ) : (
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary-soft"
-              : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-cuentas"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} data-testid="archivo-cuentas" />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              Arrastra el archivo o haz clic para elegirlo
-            </p>
-            <p className="text-caption text-fg-subtle">
-              Excel o CSV. Nada se crea todavía.
-            </p>
-          </div>
-        </div>
+        <ZonaDeArchivo
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          activo={isDragActive}
+          testid="dropzone-cuentas"
+          inputTestid="archivo-cuentas"
+          titulo="Arrastra el archivo o haz clic para elegirlo"
+          detalle="Excel o CSV. Nada se crea todavía."
+        />
       )}
 
       {error ? <Aviso tono="danger">{error}</Aviso> : null}

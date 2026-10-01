@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { MonoLabel } from '@leasefy/cadence';
 import {
   Select,
@@ -212,7 +212,10 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
           <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted/60 p-3">
             {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
             <input {...getInputProps()} />
-            <CargaDeMarca tamano="lg" texto={t('inmobiliaria.import.upload.parsing')} />
+            <Spinner size="lg" />
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              {t('inmobiliaria.import.upload.parsing')}
+            </p>
           </div>
         ) : (
           <TarjetaDeArchivo

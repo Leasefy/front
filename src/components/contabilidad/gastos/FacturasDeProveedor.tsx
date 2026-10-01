@@ -50,7 +50,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -263,12 +263,10 @@ export function FacturasDeProveedor({
 
   if (cargando && !pagina) {
     return (
-      <CargaDeMarca
-        tamano="lg"
-        disposicion="apilada"
-        texto="Cargando las facturas…"
-        className="flex py-16 text-center"
-      />
+      <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <Spinner size="lg" />
+        <p className="text-sm text-fg-muted">Cargando las facturas…</p>
+      </div>
     );
   }
   if (error || !pagina) {

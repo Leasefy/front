@@ -28,7 +28,7 @@ import { CaretDown, ClockCounterClockwise } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { ApiError } from '@/lib/api/client';
 import { movimientosApi, type MovimientosDelRecurso } from '@/lib/api/movimientos.service';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
@@ -171,7 +171,9 @@ export function BitacoraDelRecurso({
       {abierta && puede ? (
         <div className="border-t border-border px-4 py-3" data-testid="movimientos-contenido">
           {cargando ? (
-            <CargaDeMarca tamano="sm" texto="Leyendo los movimientos…" />
+            <p className="flex items-center gap-2 text-sm text-fg-muted">
+              <Spinner size="sm" /> Leyendo los movimientos…
+            </p>
           ) : error ? (
             <div className="space-y-2">
               <p className="text-sm text-danger" data-testid="movimientos-error">

@@ -493,9 +493,7 @@ export function CommandPalette() {
           {/* `pr-14` en móvil: ahí la ✕ del diálogo flota sobre esta misma
               franja (right-4 top-4) y se comía el final del texto escrito. */}
           <div className="flex h-[52px] flex-shrink-0 items-center gap-2.5 border-b border-border pl-4 pr-14 md:pr-4">
-            {/* 26 px de ancho: lo que mide el logo en carga `xs` (26×14), para
-                que la lupa y la carga ocupen lo mismo y el texto no salte. */}
-            <span className="grid h-[18px] w-[26px] flex-shrink-0 place-items-center">
+            <span className="grid h-[18px] w-[18px] flex-shrink-0 place-items-center">
               {buscando ? (
                 <Spinner size="xs" variant="muted" />
               ) : (

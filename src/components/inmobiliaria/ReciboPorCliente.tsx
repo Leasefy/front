@@ -73,7 +73,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { ApiError } from '@/lib/api/client';
@@ -237,13 +237,10 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
       <p className="text-sm font-medium text-fg">{t(k('label'))}</p>
 
       {clientes === null ? (
-        <CargaDeMarca
-          tamano="sm"
-          tono="negro"
-          texto={t(k('cargando'))}
-          className="flex justify-start py-3"
-          data-testid="clientes-cargando"
-        />
+        <div className="flex items-center gap-2 py-3 text-sm text-fg-muted" data-testid="clientes-cargando">
+          <Spinner size="sm" variant="muted" />
+          {t(k('cargando'))}
+        </div>
       ) : error !== null ? (
         /*
          * R3 (auditoría 13-09): esto era `<p className="text-destructive">` con

@@ -46,7 +46,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
@@ -136,7 +136,7 @@ export default function AcuerdosPage() {
   if (isOnboardingLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

@@ -16,7 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { PropietarioForm } from './PropietarioForm';
 import {
@@ -290,13 +290,11 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   // ── Extracting step ────────────────────────────────────────────────────────
   if (step === 'extracting') {
     return (
-      <div className="flex justify-center py-14">
-        <CargaDeMarca
-          tamano="md"
-          tono="negro"
-          texto={t(k('extractingN'), { n: String(files.length) })}
-          disposicion="apilada"
-        />
+      <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+        <Spinner size="md" variant="muted" />
+        <p className="text-sm text-muted-foreground">
+          {t(k('extractingN'), { n: String(files.length) })}
+        </p>
       </div>
     );
   }

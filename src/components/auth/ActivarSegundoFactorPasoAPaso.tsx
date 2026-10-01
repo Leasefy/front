@@ -305,7 +305,8 @@ export function ActivarSegundoFactorPasoAPaso({
             borres de tu celular.
           </p>
         </div>
-        <CargaDeMarca tamano="xs" tono="negro" texto="Te llevamos a tu cuenta…" />
+        {/* Transición a la cuenta: es de las cargas que llevan el logo (Nico, 01-10). */}
+        <CargaDeMarca tamano="md" tono="negro" disposicion="apilada" texto="Te llevamos a tu cuenta…" />
       </div>
     );
   }

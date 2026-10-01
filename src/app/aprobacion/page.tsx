@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, HouseLine, MapPin, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowsClockwise, CheckCircle, HouseLine, MapPin, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { LeasefyLogotype } from '@/components/brand'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -317,8 +316,9 @@ export default function AprobacionPage() {
           // estudio: mostrarlo y sacarlo un instante después es peor que
           // esperar.
           <Card>
-            <CardContent className="flex items-center py-10">
-              <CargaDeMarca texto="Revisando tu solicitud..." />
+            <CardContent className="flex items-center gap-3 py-10">
+              <ArrowsClockwise className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+              <p className="text-sm text-fg-muted">Revisando tu solicitud...</p>
             </CardContent>
           </Card>
         ) : pagando ? (

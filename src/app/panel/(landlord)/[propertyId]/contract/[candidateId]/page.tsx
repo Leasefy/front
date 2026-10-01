@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { toast } from '@/components/ui/toast';
 import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence';
 import { ContractPreview } from '@/components/contract/ContractPreview';
@@ -230,7 +231,7 @@ function ContractPageLoading() {
     <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-center py-24">
-          <Spinner size="lg" variant="muted" />
+          <CargaDeMarca tamano="lg" />
         </div>
       </div>
     </div>
@@ -362,7 +363,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex items-center justify-center py-24">
-            <Spinner size="lg" variant="muted" />
+            <CargaDeMarca tamano="lg" />
           </div>
         </div>
       </div>

@@ -40,7 +40,7 @@ import { Sparkle, X } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -190,12 +190,10 @@ export function RubrosDelPyg() {
 
   if (cargando || cuentasCargando) {
     return (
-      <CargaDeMarca
-        tamano="lg"
-        disposicion="apilada"
-        texto="Cargando los rubros…"
-        className="flex py-16 text-center"
-      />
+      <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <Spinner size="lg" />
+        <p className="text-sm text-fg-muted">Cargando los rubros…</p>
+      </div>
     );
   }
   if (error || !mapeo) {

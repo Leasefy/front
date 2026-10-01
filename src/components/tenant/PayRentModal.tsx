@@ -12,7 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { MonoLabel } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -211,12 +211,10 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
             >
               {/* Loading */}
               {step === 'loading' && !loadError && (
-                <CargaDeMarca
-                  tamano="lg"
-                  disposicion="apilada"
-                  texto="Cargando información de pago..."
-                  className="flex py-10"
-                />
+                <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-fg-muted">
+                  <Spinner size="lg" variant="current" />
+                  Cargando información de pago...
+                </div>
               )}
 
               {loadError && (
@@ -272,7 +270,8 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
               {/* Step: redirecting */}
               {step === 'redirecting' && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
-                  <CargaDeMarca tamano="lg" disposicion="apilada" texto="Te estamos llevando al pago seguro…" />
+                  <Spinner size="xl" variant="current" className="text-primary" />
+                  <p className="text-sm font-medium text-fg">Te estamos llevando al pago seguro…</p>
                   <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
                 </div>
               )}

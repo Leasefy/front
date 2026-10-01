@@ -41,7 +41,6 @@ import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdo
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -433,11 +432,11 @@ export default function ArcoInboxPage() {
           disabled={isRefreshing}
           aria-label={t('common.refresh')}
         >
-          {isRefreshing ? (
-            <Spinner size="xs" variant="current" className="mr-1.5" />
-          ) : (
-            <ArrowClockwise className="mr-1.5 h-4 w-4" weight="regular" aria-hidden="true" />
-          )}
+          <ArrowClockwise
+            className={cn('mr-1.5 h-4 w-4', isRefreshing && 'animate-spin')}
+            weight="regular"
+            aria-hidden="true"
+          />
           {t('common.refresh')}
         </Button>
       </div>

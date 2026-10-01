@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { formatCanon, formatDate } from './format';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 
@@ -148,7 +148,7 @@ export default function ContratosPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="muted" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

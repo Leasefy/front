@@ -18,10 +18,9 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { LinkSimple } from '@phosphor-icons/react';
+import { LinkSimple, Spinner as SpinnerIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { fotosDesdeEnlace } from '@/lib/inmuebles/fotos-desde-enlace';
@@ -145,7 +144,7 @@ export function FotosDesdeEnlace({
         >
           {trayendo ? (
             <>
-              <Spinner size="xs" variant="current" className="mr-1.5" />
+              <SpinnerIcon className="mr-1.5 h-4 w-4 animate-spin" />
               Trayendo…
             </>
           ) : (

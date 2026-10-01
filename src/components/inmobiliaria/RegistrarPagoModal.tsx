@@ -108,7 +108,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
@@ -815,13 +815,10 @@ export function RegistrarPagoModal({
 
           {/* 2. Su cartera */}
           {conciliando === null && cargando && (
-            <CargaDeMarca
-              tamano="sm"
-              tono="negro"
-              texto={t('recibos.form.cartera.cargando')}
-              className="flex justify-start py-3"
-              data-testid="cartera-cargando"
-            />
+            <div className="flex items-center gap-2 py-3 text-sm text-fg-muted" data-testid="cartera-cargando">
+              <Spinner size="sm" variant="muted" />
+              {t('recibos.form.cartera.cargando')}
+            </div>
           )}
 
           {/*
@@ -1158,14 +1155,14 @@ export function RegistrarPagoModal({
                   cartera nueva: se dice, y el botón espera.
                 */}
                 {problemaDeLaFecha === null && errorDeLaFecha === null && !carteraAlDia && (
-                  <CargaDeMarca
-                    tamano="sm"
-                    tono="negro"
-                    texto={t('recibos.form.recalculandoInteres')}
-                    className="flex justify-start"
+                  <p
+                    className="flex items-center gap-1.5 text-caption text-fg-muted"
                     data-testid="recalculando-interes"
                     aria-live="polite"
-                  />
+                  >
+                    <Spinner size="sm" variant="muted" />
+                    {t('recibos.form.recalculandoInteres')}
+                  </p>
                 )}
               </div>
 

@@ -24,6 +24,14 @@ import { cn } from '@/lib/utils';
  *
  * Movimiento reducido: es un media query de verdad, así que va dentro de un
  * <picture> con <source media>: el navegador baja SÓLO la versión que toca.
+ *
+ * DÓNDE VA (Nico, 01-10: «los spinners sí van dentro de los botones, no el
+ * logo; el logo sólo queda en cargas que son de pantalla total o
+ * transiciones»): SÓLO en cargas que ocupan la pantalla (o toda la página) y en
+ * transiciones entre pantallas — las puertas de acceso, las redirecciones, los
+ * pasos del onboarding y de la puesta en marcha. Botones, filas, tarjetas,
+ * secciones y todo lo que va al lado de un texto llevan el `Spinner` del DS.
+ * Por eso ni el `Spinner` ni el `Button` pintan este logo.
  */
 
 export type TonoDeCarga = 'azul' | 'negro' | 'sobre-color' | 'sobre-blanco';
@@ -49,28 +57,6 @@ type Color = 'azul' | 'negro' | 'blanco';
 const RUTA = '/brand/carga';
 const animada = (color: Color) => `${RUTA}/carga-${color}.webp`;
 const quieta = (color: Color) => `${RUTA}/carga-${color}-quieta.png`;
-
-/**
- * Tono que hereda una carga «del color de lo que la rodea» (la `variant="current"`
- * del Spinner). Lo provee el Button según su variante: sobre un botón primario
- * la carga es blanca; sobre uno outline, azul.
- */
-const TonoDeCargaContext = React.createContext<TonoDeCarga | null>(null);
-
-export function ProveedorDeTonoDeCarga({
-  tono,
-  children,
-}: {
-  tono: TonoDeCarga;
-  children: React.ReactNode;
-}) {
-  return <TonoDeCargaContext.Provider value={tono}>{children}</TonoDeCargaContext.Provider>;
-}
-
-/** El tono que fijó el contenedor más cercano (p. ej. un Button), o null. */
-export function useTonoDeCargaHeredado(): TonoDeCarga | null {
-  return React.useContext(TonoDeCargaContext);
-}
 
 export interface CargaDeMarcaProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   /**

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { EleccionDePerfil } from '@/components/onboarding/perfil/EleccionDePerfil'
 import { PanelAntesDeComenzarConAprovisionamiento } from '@/components/onboarding/perfil/PanelAntesDeComenzar'
 
@@ -50,7 +50,7 @@ export default function SeleccionarRolPage() {
   if (user && !agencyMembershipChecked && !probeWaitElapsed) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <Spinner />
+        <CargaDeMarca tamano="lg" />
       </div>
     )
   }

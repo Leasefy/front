@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { CaretLeft, ChatCircleText } from '@phosphor-icons/react';
-import { Card, Spinner } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerSolicitud } from '@/lib/hooks/useOwnerPortal';
@@ -28,7 +29,7 @@ export default function SolicitudDetallePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

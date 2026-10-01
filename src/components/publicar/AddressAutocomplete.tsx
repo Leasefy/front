@@ -15,7 +15,7 @@
 import { useId, useRef, useState } from 'react';
 import { MapPin, WarningCircle } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { useAddressAutocomplete } from '@/lib/hooks/use-address-autocomplete';
 import type { GeocodeSuggestion } from '@/lib/api/geocode.service';
 import { cn } from '@/lib/utils';
@@ -141,12 +141,10 @@ export function AddressAutocomplete({
           className="absolute left-0 right-0 top-full mt-2 z-dropdown rounded-md border border-border bg-surface shadow-md max-h-64 overflow-y-auto"
         >
           {isLoading && (
-            <CargaDeMarca
-              tamano="sm"
-              tono="negro"
-              texto="Buscando direcciones…"
-              className="flex justify-start px-4 py-3"
-            />
+            <p className="px-4 py-3 text-sm text-fg-muted flex items-center gap-2">
+              <Spinner size="sm" variant="muted" />
+              Buscando direcciones…
+            </p>
           )}
           {!isLoading && error && (
             <p className="px-4 py-3 text-sm text-error flex items-start gap-2">

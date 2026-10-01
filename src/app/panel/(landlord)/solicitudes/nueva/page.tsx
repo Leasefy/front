@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CaretLeft, ChatCircleText } from '@phosphor-icons/react';
 import { Button, Card, Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -61,7 +62,7 @@ export default function NuevaSolicitudPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

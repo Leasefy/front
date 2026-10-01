@@ -12,9 +12,8 @@
  * la barra ni se ve.
  */
 
-import { CloudArrowUp, WarningCircle, WifiSlash } from '@phosphor-icons/react';
+import { CloudArrowUp, SpinnerGap, WarningCircle, WifiSlash } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { AvanceDeSubida } from '@/lib/inventario/subir-borrador';
 
 interface Props {
@@ -70,7 +69,7 @@ export function BarraDeBorradorDeInventario({
     >
       <div className="flex items-start gap-2">
         {subiendo ? (
-          <CargaDeMarca tamano="xs" className="flex-shrink-0 mt-1" />
+          <SpinnerGap className="w-5 h-5 text-info flex-shrink-0 mt-0.5 animate-spin" />
         ) : sinSenal ? (
           <WifiSlash className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
         ) : (

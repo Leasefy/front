@@ -41,7 +41,6 @@ import {
   verificarEstudio,
   type EstudioVerificado,
 } from '@/lib/api/verificacion.service';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { cn } from '@/lib/utils';
 
 /** es-CO, no es-CL: esto es un producto colombiano y antes decía Chile. */
@@ -110,12 +109,10 @@ export default function VerificarPage() {
 
         <div className="overflow-hidden rounded-[22px] border border-border bg-surface">
           {estado === 'preguntando' ? (
-            <CargaDeMarca
-              tamano="lg"
-              disposicion="apilada"
-              texto="Verificando el código…"
-              className="flex p-10"
-            />
+            <div className="flex flex-col items-center gap-4 p-10">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1A40FF]/30 border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Verificando el código…</p>
+            </div>
           ) : estado === 'no-se-pudo' ? (
             /* 🔴 «No se pudo preguntar» NO es «no es auténtico». Decir que un
                documento verdadero es falso porque se cayó la red es el peor

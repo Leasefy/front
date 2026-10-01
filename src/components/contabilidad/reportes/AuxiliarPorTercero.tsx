@@ -31,7 +31,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -155,12 +155,10 @@ export function AuxiliarPorTercero() {
       }
     >
       {cargando && !auxiliar ? (
-        <CargaDeMarca
-          tamano="lg"
-          disposicion="apilada"
-          texto="Buscando los terceros…"
-          className="flex py-16"
-        />
+        <div className="flex flex-col items-center gap-3 py-16">
+          <Spinner size="lg" />
+          <p className="text-sm text-fg-muted">Buscando los terceros…</p>
+        </div>
       ) : error && !auxiliar ? (
         <div className="p-4">
           <FalloDeCarga error={error} queEs="el auxiliar por tercero" onReintentar={cargar} />

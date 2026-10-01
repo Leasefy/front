@@ -24,7 +24,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
@@ -247,7 +246,9 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
 
       <div className="p-5 space-y-5">
         {cargando ? (
-          <CargaDeMarca tamano="sm" texto="Cargando fotos…" className="flex justify-start" />
+          <div className="flex items-center gap-2 text-sm text-fg-muted">
+            <Spinner size="sm" /> Cargando fotos…
+          </div>
         ) : error ? (
           <FalloDeCarga
             error={error}
@@ -329,7 +330,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-white">
-                      <Spinner size="sm" variant="white" />
+                      <Spinner size="sm" className="text-white" />
                       {f.estado === 'subiendo' ? 'Subiendo' : 'En cola'}
                     </span>
                   )}

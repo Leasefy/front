@@ -282,7 +282,12 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaPr
             animate={{ opacity: 1 }}
             transition={{ delay: 0.25, duration: 0.3 }}
           >
-            <CargaDeMarca tamano="xs" texto="Entrando a tu panel…" data-testid="inmobiliaria-creada-entrando" />
+            <CargaDeMarca
+              tamano="md"
+              disposicion="apilada"
+              texto="Entrando a tu panel…"
+              data-testid="inmobiliaria-creada-entrando"
+            />
           </motion.div>
         </div>
       ) : null}

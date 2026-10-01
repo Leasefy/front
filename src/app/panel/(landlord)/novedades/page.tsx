@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { Bell, CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { PageHeader } from '@leasefy/cadence';
-import { Card, Spinner } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerNovedades } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
@@ -20,7 +21,7 @@ export default function NovedadesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

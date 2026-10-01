@@ -1,7 +1,7 @@
 'use client';
 
 import { Wallet } from '@phosphor-icons/react';
-import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useOwnerFinanzas } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { MiPlataView } from '@/components/landlord/portal/finanzas/MiPlataView';
@@ -34,7 +34,7 @@ export default function PortafolioPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

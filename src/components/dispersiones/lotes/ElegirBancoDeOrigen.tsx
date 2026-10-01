@@ -32,7 +32,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Banner } from '@leasefy/cadence';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   lotesDeDispersionApi,
   type BancoDeOrigen,
@@ -130,7 +130,10 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
 
   if (!datos) {
     return (
-      <CargaDeMarca tamano="sm" texto="Cargando los bancos…" className="flex justify-start" />
+      <p className="flex items-center gap-2 text-sm text-fg-muted">
+        <Spinner size="sm" variant="current" />
+        Cargando los bancos…
+      </p>
     );
   }
 

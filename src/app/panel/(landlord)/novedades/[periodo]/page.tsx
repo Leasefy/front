@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { Bell } from '@phosphor-icons/react';
-import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useOwnerDigest } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { DigestView } from '@/components/landlord/portal/novedades/DigestView';
@@ -19,7 +19,7 @@ export default function DigestDetallePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

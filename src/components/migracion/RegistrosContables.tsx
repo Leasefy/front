@@ -248,7 +248,50 @@ export function RegistrosContables({
             }}
           />
 
-          <div className="space-y-3">
+          {/*
+           * El camino elegido ES un filtro de esta pantalla, así que el
+           * selector, su explicación y lo ya cargado van en UNA tarjeta
+           * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
+           * dos islas.
+           */}
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="text-sm font-medium text-fg">
+                Cómo entran tus registros
+              </h2>
+              {/* Con la lectura caída, el resumen que quedó es de ANTES:
+                  mostrarlo diría «0 asientos» a quien acaba de registrar la
+                  apertura. */}
+              {resumen && !falloDeAsientos ? (
+                <p
+                  className="text-caption text-fg-muted"
+                  data-testid="contables-resumen"
+                  aria-live="polite"
+                >
+                  {resumen.total === 0 ? (
+                    "Todavía no hay registros contables."
+                  ) : (
+                    <>
+                      Ya cargados:{" "}
+                      <span className="font-mono tabular-nums text-fg">
+                        {resumen.total}
+                      </span>{" "}
+                      {resumen.total === 1 ? "asiento" : "asientos"}
+                      {resumen.desde && resumen.hasta ? (
+                        <>
+                          {" "}
+                          · del {formatDate(resumen.desde)} al{" "}
+                          {formatDate(resumen.hasta)}
+                          {resumen.parcial
+                            ? ` (fechas de los ${MAX_LIMITE_DE_ASIENTOS} más recientes)`
+                            : ""}
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                </p>
+              ) : null}
+            </div>
             <SegmentedControl<Camino>
               value={camino}
               onChange={setCamino}

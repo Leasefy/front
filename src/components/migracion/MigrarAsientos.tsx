@@ -691,7 +691,7 @@ export function MigrarAsientos({
             </div>
           ) : null}
 
-          <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+          <div className="mt-4 flex items-start gap-2 rounded-md bg-info-soft p-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
             <p className="text-sm text-fg-muted">
               Los montos entran como están («1.500.000», «1500000,00»); las
@@ -832,20 +832,6 @@ function Revision({
         <p className="text-caption text-fg-subtle">
           Nada se escribió todavía. Esto es lo que pasaría si aplicas el lote.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4">
-          <Dato etiqueta="En el archivo" valor={revision.total} />
-          <Dato
-            etiqueta="Listos para entrar"
-            valor={revision.listas}
-            tono="ok"
-          />
-          <Dato
-            etiqueta="Con problemas"
-            valor={revision.rechazadas}
-            tono="mal"
-          />
-          <Dato etiqueta="Ya migrados antes" valor={revision.yaMigradas} />
-        </div>
         {revision.yaMigradas > 0 ? (
           <p
             className="mt-3 text-caption text-fg-muted"

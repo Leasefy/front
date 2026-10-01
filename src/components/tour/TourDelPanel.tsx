@@ -674,15 +674,17 @@ export function TourDelPanel() {
   );
 
   const aspa = (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onClick={() => cerrar('omitido')}
       aria-label={t('inmobiliaria.tour.cerrar')}
       className={ASPA_DE_CIERRE}
       data-testid="tour-cerrar"
     >
       <X size={16} weight="bold" aria-hidden />
-    </button>
+    </Button>
   );
 
   // Omitir, en TODAS las pantallas: es la promesa del recorrido.

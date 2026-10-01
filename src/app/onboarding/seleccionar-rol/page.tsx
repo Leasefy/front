@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
+import {
+  RUTA_DEL_ASISTENTE,
+  useRegistroDeLaInmobiliaria,
+} from '@/lib/auth/registro-de-la-inmobiliaria'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { EleccionDePerfil } from '@/components/onboarding/perfil/EleccionDePerfil'
 import { PanelAntesDeComenzarConAprovisionamiento } from '@/components/onboarding/perfil/PanelAntesDeComenzar'
@@ -29,6 +33,14 @@ export default function SeleccionarRolPage() {
     const id = setTimeout(() => setProbeWaitElapsed(true), 4000)
     return () => clearTimeout(id)
   }, [])
+
+  // 🔴 Membresía activa NO es registro terminado (Nico, 01-10-2026: «nos
+  // llevó al seleccionar rol y nos llevó luego de un rato a esta pantalla,
+  // literal ingresó a la plataforma»). La agencia y la membresía ADMIN nacen
+  // en «Antes de comenzar», ANTES del asistente; la regla de abajo era para
+  // los miembros INVITADOS y sacaba al panel también al dueño a medias.
+  // Mismo veredicto que el candado del panel (`AsistentePendienteGuard`).
+  const registro = useRegistroDeLaInmobiliaria(user?.id ?? null, hasActiveAgencyMembership)
 
   // Defense-in-depth: an invited user must NEVER see the personal role picker.
   // If a pending invitation token is present, send them to /registro (the
@@ -58,9 +70,19 @@ export default function SeleccionarRolPage() {
   // An ACTIVE agency member must never see the personal role picker either —
   // they already have an agency destination. Send them to their per-sub-role
   // agency landing route (the spinner/bounded-wait above guarantees agencyRole
-  // is resolved by the time we get here).
+  // is resolved by the time we get here) — unless the agency's registration
+  // wizard is unfinished: the OWNER who left it a medias goes back to it.
+  // Antes, el dueño con el registro a medias: a terminarlo, nunca al panel.
+  // Mientras se pregunta, el cargador (ni tarjetas ni panel).
   if (hasActiveAgencyMembership) {
-    router.replace(getAgencyHomeRoute(agencyRole))
+    if (registro === 'verificando') {
+      return (
+        <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+          <CargaDeMarca tamano="lg" />
+        </div>
+      )
+    }
+    router.replace(registro === 'a-medias' ? RUTA_DEL_ASISTENTE : getAgencyHomeRoute(agencyRole))
     return null
   }
 

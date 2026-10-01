@@ -30,7 +30,19 @@ import {
 } from '@/components/onboarding/inmobiliaria/policy-step-schema'
 import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
+import { PasoYaGuardado } from '@/components/onboarding/inmobiliaria/PasoYaGuardado'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
+
+/** El orden de `STEP_ORDER` del micro (`onboarding/state-machine.ts`): el cursor sólo avanza. */
+const ORDEN_DEL_MICRO: OnboardingWizardStep[] = [
+  'start',
+  'agency',
+  'members',
+  'payment_provider',
+  'policy',
+  'habeas_data',
+  'complete',
+]
 
 /**
  * Reads the wizard's sessionId. Two sources:
@@ -200,6 +212,18 @@ function OnboardingWizard({
   // `withOverrideClear` releases control back to the hook's own `currentStep`
   // the moment the overridden step is actually resubmitted successfully.
   const [completeStepOverride, setCompleteStepOverride] = useState<OnboardingWizardStep | null>(null)
+  // Para qué se volvió a un paso: desde la barra es para REVISAR (un paso ya
+  // guardado se ve en solo lectura); desde el «completa lo que falta» de
+  // Confirmar es para COMPLETAR (el micro dijo que ese paso falta: editable).
+  const [motivoDelOverride, setMotivoDelOverride] = useState<'revisar' | 'completar'>('revisar')
+  const revisarPaso = (paso: OnboardingWizardStep) => {
+    setMotivoDelOverride('revisar')
+    setCompleteStepOverride(paso)
+  }
+  const completarPaso = (paso: OnboardingWizardStep) => {
+    setMotivoDelOverride('completar')
+    setCompleteStepOverride(paso)
+  }
 
   function withOverrideClear<TArgs extends unknown[], TResult>(
     action: (...args: TArgs) => Promise<TResult | null>,
@@ -212,6 +236,18 @@ function OnboardingWizard({
   }
 
   const effectiveStep = completeStepOverride ?? currentStep
+
+  // 🔴 Un paso ANTERIOR al cursor del micro ya quedó guardado y no se puede
+  // reescribir: el micro sólo acepta el paso actual o el siguiente, y aceptar
+  // Habeas Data cierra la sesión. Volver a él lo muestra en solo lectura
+  // (Nico, 30-09: el formulario vacío que al enviar decía «No puedes
+  // continuar esta sesión»).
+  const pasoYaGuardado =
+    motivoDelOverride === 'revisar' &&
+    completeStepOverride != null &&
+    currentStep != null &&
+    !pendingMembersInvites &&
+    ORDEN_DEL_MICRO.indexOf(completeStepOverride) < ORDEN_DEL_MICRO.indexOf(currentStep)
 
   // While the invite-links screen is pending, keep the stepper/header pinned
   // to "Miembros" instead of following the hook's already-advanced `currentStep`.
@@ -227,7 +263,7 @@ function OnboardingWizard({
     <MarcoDelAsistente
       paso={displayStep}
       pasoAlcanzado={currentStep}
-      onNavigateToStep={setCompleteStepOverride}
+      onNavigateToStep={revisarPaso}
       sinEncabezado={cargando || conErrorDeSesion}
     >
       <div className="space-y-6">
@@ -244,7 +280,14 @@ function OnboardingWizard({
 
         {status !== 'loading' && (error === null || error.kind === 'validation' || error.kind === 'conflict') && (
           <>
-            {effectiveStep === 'agency' || effectiveStep === null || effectiveStep === 'start' ? (
+            {pasoYaGuardado ? (
+              <PasoYaGuardado
+                paso={completeStepOverride}
+                draft={draft}
+                pasoActual={currentStep}
+                onVolver={() => setCompleteStepOverride(null)}
+              />
+            ) : effectiveStep === 'agency' || effectiveStep === null || effectiveStep === 'start' ? (
               <AgencyStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(submitAgency)}
@@ -300,7 +343,7 @@ function OnboardingWizard({
                 isSubmitting={isSubmitting}
                 onSubmit={completeOnboarding}
                 error={error !== null && error.kind === 'conflict' ? error : null}
-                onNavigateToStep={setCompleteStepOverride}
+                onNavigateToStep={completarPaso}
                 draft={draft}
               />
             )}

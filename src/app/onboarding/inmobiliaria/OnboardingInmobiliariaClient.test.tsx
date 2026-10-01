@@ -528,7 +528,7 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
-  it('clic en un paso hecho de la barra vuelve a ese paso (Nico, 2026-09-07)', () => {
+  it('clic en un paso hecho de la barra vuelve a ese paso — en solo lectura, porque el micro ya no lo deja reescribir (Nico, 2026-09-07 y 30-09)', () => {
     mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'habeas_data' }))
     render()
     expect(container.querySelector('[data-testid="terms-step-form"]')).toBeTruthy()
@@ -539,7 +539,8 @@ describe('<OnboardingInmobiliariaClient>', () => {
       volverAAgencia.click()
     })
 
-    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="terms-step-form"]')).toBeFalsy()
     // Los pasos de más adelante siguen hechos: se puede volver a Habeas Data.
     expect(container.querySelector('[data-testid="wizard-step-link-habeas_data"]')).toBeTruthy()
@@ -905,5 +906,45 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
 
     expect(container.querySelector('[data-testid="onboarding-error-banner-retryable"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeFalsy()
+  })
+
+  it('🔴 volver a un paso ya guardado lo muestra en SOLO LECTURA con lo que quedó, nunca el formulario que el micro rechaza (Nico, 30-09)', async () => {
+    const submitAgency = vi.fn()
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({
+        currentStep: 'complete',
+        submitAgency,
+        draft: {
+          agency: {
+            legalName: 'Elpijao SAS',
+            nit: '900998886',
+            address: { calle: 'Calle 10 # 5-55', ciudad: 'Medellín', departamento: 'Antioquia' },
+            primaryContactEmail: 'hola@elpijao.co',
+            primaryContactPhone: '3001234567',
+          },
+          members: [],
+        },
+      }),
+    )
+    render()
+
+    const volverAAgencia = container.querySelector('[data-testid="wizard-step-link-agency"]') as HTMLButtonElement
+    expect(volverAAgencia).toBeTruthy()
+    act(() => {
+      volverAAgencia.click()
+    })
+
+    expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeFalsy()
+    expect(container.textContent).toContain('Elpijao SAS')
+    expect(container.textContent).toContain('Calle 10 # 5-55, Medellín, Antioquia')
+    expect(submitAgency).not.toHaveBeenCalled()
+
+    // «Volver a Confirmar» devuelve al paso donde va la persona.
+    act(() => {
+      ;(container.querySelector('[data-testid="volver-al-paso-actual"]') as HTMLButtonElement).click()
+    })
+    expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
   })
 })

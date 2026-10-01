@@ -89,3 +89,24 @@ describe('computeAgencyStepPrefill', () => {
     expect(result).toEqual({})
   })
 })
+
+describe('computeAgencyStepPrefill — el borrador real del micro (draft.agency)', () => {
+  it('🔴 lee lo que el paso Agencia guardó en draft.agency, dirección incluida (Nico, 30-09: volvía vacío)', () => {
+    const result = computeAgencyStepPrefill(null, {
+      agency: {
+        legalName: 'Elpijao SAS',
+        nit: '900998886',
+        address: { calle: 'Calle 10 # 5-55', ciudad: 'Medellín', departamento: 'Antioquia' },
+        primaryContactEmail: 'hola@elpijao.co',
+        primaryContactPhone: '3001234567',
+      },
+    })
+    expect(result).toEqual({
+      legalName: 'Elpijao SAS',
+      nit: '900998886',
+      primaryContactEmail: 'hola@elpijao.co',
+      primaryContactPhone: '3001234567',
+      address: { calle: 'Calle 10 # 5-55', ciudad: 'Medellín', departamento: 'Antioquia', codigoPostal: '' },
+    })
+  })
+})

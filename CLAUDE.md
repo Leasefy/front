@@ -147,6 +147,15 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
   primera fila de la tanda; las vueltas por reloj de una misma tanda reenvían el mismo `desde`).
   El back guarda un prefijo contiguo del archivo; el informe trae `carga` sólo si el back la
   mandó — ausente es «no sé», nunca «0» ni «terminó».
+- **Continuar una carga cortada** (paso `contables`): `CargasDeAsientosAbiertas` lista las cargas
+  ABIERTAS (`GET .../cargas`) con su avance y dos salidas — «Continuar» y «Descartar» (no borra
+  asientos). Vive en `RegistrosContables`, ARRIBA de las pestañas, porque quien está detrás del
+  muro cae en «Saldos iniciales», no en «Subir el libro diario». Continuar = subir el MISMO
+  archivo con el MISMO lote: `MigrarAsientos` recibe `continuar` y usa el lote de la carga (campo
+  bloqueado) en vez del nombre del reloj (`nombreDeLoteDeAsientos`); con otro nombre el back abre
+  una carga nueva y la vieja queda abierta. Lo ya escrito vuelve como `yaMigrados` y se lee como
+  «ya estaba cargado», nunca como error; un asiento con número ya cargado no se reescribe (se
+  reversa y se vuelve a registrar — `REGLA_DE_CORRECCION`).
 - **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
   `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
 

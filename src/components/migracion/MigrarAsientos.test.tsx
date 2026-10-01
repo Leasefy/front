@@ -11,7 +11,11 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { InformeDeMigracion, RevisionDeLote } from '@/lib/api/contabilidad.service';
+import type {
+  CargaAbierta,
+  InformeDeMigracion,
+  RevisionDeLote,
+} from '@/lib/api/contabilidad.service';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -69,7 +73,9 @@ const INFORME_CON_FALLAS: InformeDeMigracion = {
 let container: HTMLDivElement;
 let root: Root | null = null;
 
-async function pintar(extra: { onIrAComprobantes?: () => void } = {}) {
+async function pintar(
+  extra: Partial<React.ComponentProps<typeof MigrarAsientos>> = {},
+) {
   container = document.createElement('div');
   document.body.appendChild(container);
   await act(async () => {
@@ -275,3 +281,212 @@ describe('la columna que falta, en idioma de persona', () => {
     expect(texto).not.toContain('back');
   });
 });
+
+/*
+ * T-0125 · «si cierro el navegador a mitad, ¿pierdo el trabajo?». No: lo escrito
+ * está en el back y la carga queda ABIERTA. Continuarla es subir el mismo
+ * archivo con el MISMO nombre de lote — con otro, el back abre una carga nueva
+ * y la vieja se queda abierta para siempre.
+ */
+describe('continuar una carga que quedó a medias', () => {
+  const CARGA: CargaAbierta = {
+    lote: 'asientos-2026-09-29-0900',
+    esperados: 1,
+    procesados: 0,
+    creadaAt: '2026-09-29T09:00:00Z',
+    actualizadaAt: '2026-09-29T09:20:00Z',
+  };
+
+  it('🔴 reusa el lote de la carga —no el nombre del reloj— al revisar y al aplicar', async () => {
+    api.migracion.aplicar.mockResolvedValue({ ...INFORME_CON_FALLAS, fallasAlEscribir: [], aplicados: 1 });
+
+    await pintar({ continuar: CARGA });
+    await subirArchivo();
+
+    const campo = q('nombre-del-lote-asientos') as HTMLInputElement;
+    expect(campo.value).toBe(CARGA.lote);
+    // Cambiar el nombre abriría OTRA carga: el campo no se puede tocar.
+    expect(campo.disabled).toBe(true);
+
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    expect((api.migracion.revisar.mock.calls[0]![0] as { lote: string }).lote).toBe(CARGA.lote);
+    const aplicado = api.migracion.aplicar.mock.calls[0]![0] as {
+      lote: string;
+      totalDelArchivo?: number;
+      desde?: number;
+    };
+    expect(aplicado.lote).toBe(CARGA.lote);
+    // Y sigue declarando el avance: es lo que mantiene el prefijo al día.
+    expect(aplicado.totalDelArchivo).toBe(1);
+    expect(aplicado.desde).toBe(0);
+  });
+
+  it('sin carga que continuar, el nombre sigue siendo el del reloj y se puede editar', async () => {
+    await pintar();
+    await subirArchivo();
+
+    const campo = q('nombre-del-lote-asientos') as HTMLInputElement;
+    expect(campo.value).toMatch(/^asientos-\d{4}-\d{2}-\d{2}-\d{4}$/);
+    expect(campo.disabled).toBe(false);
+    expect(q('asientos-continuando')).toBeNull();
+  });
+
+  it('dice qué carga se continúa, cuánto lleva, y que hay que subir el MISMO archivo', async () => {
+    await pintar({ continuar: { ...CARGA, esperados: 116_262, procesados: 10_000 } });
+
+    const aviso = q('asientos-continuando');
+    expect(aviso).not.toBeNull();
+    const texto = aviso!.textContent ?? '';
+    expect(texto).toContain(CARGA.lote);
+    expect(texto).toContain('10.000 de 116.262');
+    expect(texto).toContain('mismo archivo');
+    expect(texto).toContain('no se duplica');
+  });
+
+  it('«Empezar una carga nueva» devuelve el control: el padre deja de continuar', async () => {
+    const dejar = vi.fn();
+    await pintar({ continuar: CARGA, onDejarDeContinuar: dejar });
+
+    await click(q('asientos-continuar-nueva'));
+
+    expect(dejar).toHaveBeenCalledTimes(1);
+  });
+
+  it('al terminar la carga («Subir otro archivo») deja de continuarla; si sigue abierta, la conserva', async () => {
+    const dejar = vi.fn();
+    api.migracion.aplicar.mockResolvedValue({
+      ...INFORME_CON_FALLAS,
+      fallasAlEscribir: [],
+      aplicados: 1,
+      carga: { lote: CARGA.lote, esperados: 1, procesados: 1, estado: 'COMPLETA' },
+    });
+    await pintar({ continuar: CARGA, onDejarDeContinuar: dejar });
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    await click(boton('Subir otro archivo'));
+    expect(dejar).toHaveBeenCalledTimes(1);
+  });
+
+  it('con la carga todavía ABIERTA, «Subir otro archivo» no suelta la continuación', async () => {
+    const dejar = vi.fn();
+    api.migracion.aplicar.mockResolvedValue({
+      ...INFORME_CON_FALLAS,
+      fallasAlEscribir: [],
+      aplicados: 1,
+      carga: { lote: CARGA.lote, esperados: 9, procesados: 1, estado: 'ABIERTA' },
+    });
+    await pintar({ continuar: CARGA, onDejarDeContinuar: dejar });
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    await click(boton('Subir otro archivo'));
+    expect(dejar).not.toHaveBeenCalled();
+  });
+
+  it('un archivo de otro tamaño que la carga avisa, sin bloquear', async () => {
+    await pintar({ continuar: { ...CARGA, esperados: 5 } });
+    await subirArchivo(); // arma 1 asiento
+
+    const aviso = q('asientos-otro-tamano');
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent).toContain('1');
+    expect(aviso!.textContent).toContain('5');
+    expect((q('revisar-asientos') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('un archivo del mismo tamaño no dice nada', async () => {
+    await pintar({ continuar: CARGA });
+    await subirArchivo();
+    expect(q('asientos-otro-tamano')).toBeNull();
+  });
+});
+
+describe('el informe cuando parte del archivo ya estaba', () => {
+  it('🔴 lo que ya estaba se lee como «ya estaba cargado», no como un fallo', async () => {
+    api.migracion.aplicar.mockResolvedValue({
+      ...INFORME_CON_FALLAS,
+      aplicados: 0,
+      omitidos: 0,
+      yaMigrados: 2,
+      fallasAlEscribir: [],
+    });
+
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    const texto = q('informe-asientos')!.textContent ?? '';
+    expect(texto).toContain('2 ya estaban cargados');
+    // Y la regla contable, para quien corrigió un asiento y lo volvió a subir.
+    expect(texto).toMatch(/revers/i);
+  });
+
+  it('con la carga abierta dice que el avance quedó guardado y cómo seguir', async () => {
+    api.migracion.aplicar.mockResolvedValue({
+      ...INFORME_CON_FALLAS,
+      fallasAlEscribir: [],
+      aplicados: 1,
+      carga: { lote: 'asientos-prueba', esperados: 4, procesados: 1, estado: 'ABIERTA' },
+    });
+
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    const guardado = q('asientos-avance-guardado');
+    expect(guardado).not.toBeNull();
+    expect(guardado!.textContent).toContain('1 de 4');
+    expect(guardado!.textContent).toContain('mismo archivo');
+  });
+
+  it('🔴 sin `carga` en la respuesta no se muestra ningún avance guardado', async () => {
+    api.migracion.aplicar.mockResolvedValue({ ...INFORME_CON_FALLAS, fallasAlEscribir: [], aplicados: 1 });
+
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    expect(q('asientos-avance-guardado')).toBeNull();
+  });
+
+  it('una carga COMPLETA se dice completa, sin pedir que se continúe', async () => {
+    api.migracion.aplicar.mockResolvedValue({
+      ...INFORME_CON_FALLAS,
+      fallasAlEscribir: [],
+      aplicados: 1,
+      carga: { lote: 'asientos-prueba', esperados: 1, procesados: 1, estado: 'COMPLETA' },
+    });
+
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    expect(q('asientos-avance-guardado')).toBeNull();
+    expect(q('informe-asientos')!.textContent).toContain('Carga completa');
+  });
+});
+
+describe('un corte en pleno aplicar', () => {
+  it('🔴 dice que el avance está guardado y cómo continuar, no sólo «reintenta»', async () => {
+    api.migracion.aplicar.mockRejectedValue(new Error('No pudimos conectarnos al servidor.'));
+
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-asientos'));
+    await click(q('aplicar-asientos'));
+
+    const texto = container.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(texto).toContain('avance está guardado');
+    expect(texto).toContain('mismo archivo');
+  });
+});
+

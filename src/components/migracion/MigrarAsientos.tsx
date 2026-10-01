@@ -59,6 +59,7 @@ import {
   LARGO_MAXIMO_DE_LOTE,
   MAX_ASIENTOS_POR_LOTE,
   type AsientoMigrado,
+  type CargaAbierta,
   type InformeDeMigracion,
   type RevisionDeLote,
 } from "@/lib/api/contabilidad.service";
@@ -69,6 +70,7 @@ import {
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
 import { hayQueAvisarDeOtraPuerta } from "@/lib/migracion/que-archivo-contable-es";
+import { REGLA_DE_CORRECCION } from "@/lib/migracion/regla-de-correccion";
 import {
   armarAsientos,
   COLUMNAS_DE_ASIENTO,
@@ -82,12 +84,16 @@ const IGNORAR = "__ignorar__";
 const MAX_FILAS_EN_PANTALLA = 50;
 const RUTA_DEL_PASO_4 = "/panel/inmobiliaria/migracion/puc";
 
+const numero = (n: number) => n.toLocaleString("es-CO");
+
 export function MigrarAsientos({
   onAplicado,
   onIrAlPuc,
   onIrAComprobantes,
   enElMuro = false,
   onOcupado,
+  continuar = null,
+  onDejarDeContinuar,
 }: {
   onAplicado: (informe: InformeDeMigracion) => void;
   /** Adentro del muro: abrir el paso 4 en el mismo muro. Sin esto, enlace en pestaña nueva. */
@@ -102,6 +108,17 @@ export function MigrarAsientos({
   enElMuro?: boolean;
   /** Aviso al muro mientras se revisa o aplica el lote: el pie espera. */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * T-0125 · la carga que quedó a medias y que esta pantalla va a CONTINUAR.
+   *
+   * Continuar es subir el mismo archivo con el MISMO nombre de lote: con otro,
+   * el back abre una carga nueva y la vieja queda abierta para siempre. Por eso
+   * con esto puesto el nombre del lote es el de la carga y no se puede editar.
+   * Lo ya escrito vuelve como «ya estaba cargado»; no se duplica.
+   */
+  continuar?: CargaAbierta | null;
+  /** «Empezar una carga nueva»: el padre suelta la carga y el lote vuelve a ser uno nuevo. */
+  onDejarDeContinuar?: () => void;
 }) {
   /** El archivo tal cual. `null` = no hay nada subido; ver TarjetaDeArchivo. */
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -127,6 +144,21 @@ export function MigrarAsientos({
   const detenerRef = useRef(false);
   const [deteniendo, setDeteniendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * El lote de la carga que se continúa, en un ref: `onDrop` es un callback
+   * estable (deps `[]`) y necesita el valor VIGENTE al leer el archivo, no el
+   * del primer render.
+   */
+  const loteDeLaCarga = useRef<string | null>(continuar?.lote ?? null);
+  useEffect(() => {
+    loteDeLaCarga.current = continuar?.lote ?? null;
+    // Continuar una carga con un archivo ya leído: el lote pasa a ser el suyo.
+    // Soltarla devuelve un nombre nuevo (sólo si ya hay archivo; sin él lo
+    // pone `onDrop` al leerlo).
+    setLote((actual) =>
+      continuar ? continuar.lote : actual ? nombreDeLoteDeAsientos() : actual,
+    );
+  }, [continuar]);
 
   // El pie del muro espera mientras el lote se revisa o se aplica — la misma
   // carrera que en terceros e inmuebles: sin esto ofrecía seguir con la
@@ -168,7 +200,8 @@ export function MigrarAsientos({
       setFilas(r.rows as Record<string, unknown>[]);
       setEncabezados(r.headers);
       setMapeo(mapearColumnas(COLUMNAS_DE_ASIENTO, r.headers));
-      setLote(nombreDeLoteDeAsientos());
+      // Continuar una carga = su mismo lote; si no, uno nuevo con el reloj.
+      setLote(loteDeLaCarga.current ?? nombreDeLoteDeAsientos());
     } catch (e) {
       setFilas([]);
       setEncabezados([]);
@@ -295,7 +328,8 @@ export function MigrarAsientos({
       if (vuelta.detenidoPorPersona) {
         setError(
           `Se aplicaron ${r.aplicados} asientos y quedaron ${asientos.length - r.total}. ` +
-            "Nada se duplica: vuelve a aplicar el mismo lote y sigue donde quedó.",
+            "Tu avance está guardado y nada se duplica: vuelve a aplicar el mismo lote " +
+            "—o sube el mismo archivo otro día— y sigue donde quedó.",
         );
       } else if (vuelta.detenidoSinAvance) {
         setError(
@@ -311,7 +345,9 @@ export function MigrarAsientos({
         `${mensajeDeContabilidad(
           e,
           "No pudimos aplicar el lote.",
-        )} Puedes aplicar de nuevo tranquilo: los asientos que ya entraron no se duplican.`,
+        )} Tu avance está guardado: los asientos que ya entraron no se pierden y no se duplican. ` +
+          "Vuelve a tocar «Aplicar», o más tarde sube el mismo archivo: " +
+          "te va a aparecer la carga pendiente para continuarla.",
       );
     } finally {
       setCargando(false);
@@ -326,7 +362,13 @@ export function MigrarAsientos({
       <Informe
         enElMuro={enElMuro}
         informe={informe}
-        onOtro={volverAEmpezar}
+        onOtro={() => {
+          // Una carga que quedó COMPLETA ya no se continúa: el próximo archivo
+          // es otra cosa y no puede heredar su nombre de lote. Una que sigue
+          // abierta sí se conserva — la persona todavía no terminó con ella.
+          if (informe.carga?.estado === "COMPLETA") onDejarDeContinuar?.();
+          volverAEmpezar();
+        }}
         onReintentar={aplicar}
         cargando={cargando}
         error={error}
@@ -365,6 +407,43 @@ export function MigrarAsientos({
           crédito. Las filas con el mismo número forman un asiento. Primero se
           revisa todo; recién después se escribe.
         </p>
+
+        {/* T-0125 · continuar una carga que quedó a medias. */}
+        {continuar ? (
+          <div
+            className="mt-4 flex flex-wrap items-start justify-between gap-3 rounded-md border border-primary/30 bg-primary-soft p-4"
+            data-testid="asientos-continuando"
+          >
+            <div className="flex min-w-0 items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div className="min-w-0 space-y-1 text-sm">
+                <p className="font-medium text-fg">
+                  Estás continuando la carga «{continuar.lote}»
+                </p>
+                <p className="text-fg-muted">
+                  Lleva{" "}
+                  <span className="font-mono tabular-nums">
+                    {numero(continuar.procesados)} de {numero(continuar.esperados)}
+                  </span>{" "}
+                  asientos. Sube el mismo archivo: lo que ya entró se reconoce y
+                  no se duplica, y se sigue donde quedó.
+                </p>
+              </div>
+            </div>
+            {onDejarDeContinuar ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                hideArrow
+                onClick={onDejarDeContinuar}
+                disabled={cargando}
+                data-testid="asientos-continuar-nueva"
+              >
+                Empezar una carga nueva
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
 
         {archivo ? (
           <div className="mt-4">
@@ -590,6 +669,25 @@ export function MigrarAsientos({
             </div>
           ) : null}
 
+          {/* El back tolera el cambio de tamaño (ajusta el avance), pero quien
+              sube OTRO archivo con el nombre de una carga ajena debe enterarse
+              antes de revisar: se dice, no se bloquea. */}
+          {continuar && armados.length > 0 && armados.length !== continuar.esperados ? (
+            <div
+              className="mt-4 flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
+              data-testid="asientos-otro-tamano"
+            >
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <p className="text-sm text-fg-muted">
+                Este archivo arma {numero(armados.length)}{" "}
+                {armados.length === 1 ? "asiento" : "asientos"} y la carga que
+                continúas esperaba {numero(continuar.esperados)}. Si lo
+                corregiste, puedes seguir: lo que ya entró no se duplica. Si es
+                otro archivo, empieza una carga nueva.
+              </p>
+            </div>
+          ) : null}
+
           <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
             <p className="text-sm text-fg-muted">
@@ -612,12 +710,14 @@ export function MigrarAsientos({
                 value={lote}
                 maxLength={LARGO_MAXIMO_DE_LOTE}
                 onChange={(e) => setLote(e.target.value)}
+                disabled={Boolean(continuar)}
                 className="w-72"
                 data-testid="nombre-del-lote-asientos"
               />
               <p className="text-caption text-fg-subtle">
-                Para reconocerlo después. Subir el mismo lote dos veces no
-                duplica nada.
+                {continuar
+                  ? "Es el nombre de la carga que continúas: cambiarlo abriría otra."
+                  : "Para reconocerlo después. Subir el mismo archivo dos veces no duplica nada."}
               </p>
             </div>
             <Button
@@ -723,6 +823,15 @@ function Revision({
           />
           <Dato etiqueta="Ya migrados antes" valor={revision.yaMigradas} />
         </div>
+        {revision.yaMigradas > 0 ? (
+          <p
+            className="mt-3 text-caption text-fg-muted"
+            data-testid="revision-ya-estaban"
+          >
+            Los {numero(revision.yaMigradas)} que ya estaban cargados no se
+            vuelven a escribir ni cuentan como error. {REGLA_DE_CORRECCION}
+          </p>
+        ) : null}
       </section>
 
       {revision.cuentasFaltantes.length > 0 ? (
@@ -961,10 +1070,48 @@ function Informe({
           <p className="mt-1 text-sm text-fg-muted">
             Lote «{informe.lote}»: {informe.total} en el archivo ·{" "}
             {informe.aplicados} aplicados · {informe.omitidos} omitidos ·{" "}
-            {informe.yaMigrados} ya estaban.
+            {informe.yaMigrados} ya estaban cargados.
           </p>
+          {informe.yaMigrados > 0 ? (
+            <p
+              className="mt-1 text-caption text-fg-subtle"
+              data-testid="informe-ya-estaban"
+            >
+              «Ya estaban cargados» no es un error: son asientos que entraron
+              antes y no se volvieron a escribir. {REGLA_DE_CORRECCION}
+            </p>
+          ) : null}
         </div>
       </div>
+
+      {/* T-0125 · el avance que el back guardó. Sólo se dice lo que el back
+          dijo: sin `carga` en la respuesta no se afirma nada. */}
+      {informe.carga && informe.carga.estado === "ABIERTA" ? (
+        <div
+          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+          data-testid="asientos-avance-guardado"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+          <p className="text-sm text-fg-muted">
+            Tu avance está guardado:{" "}
+            <span className="font-mono tabular-nums">
+              {numero(informe.carga.procesados)} de{" "}
+              {numero(informe.carga.esperados)}
+            </span>{" "}
+            asientos del archivo. Para seguir cuando quieras, vuelve a esta
+            pantalla y sube el mismo archivo: la carga pendiente aparece arriba
+            para continuarla.
+          </p>
+        </div>
+      ) : informe.carga && informe.carga.estado === "COMPLETA" ? (
+        <p
+          className="mt-3 text-caption text-fg-subtle"
+          data-testid="asientos-carga-completa"
+        >
+          Carga completa: {numero(informe.carga.procesados)} de{" "}
+          {numero(informe.carga.esperados)} asientos del archivo.
+        </p>
+      ) : null}
 
       {informe.fallasAlEscribir.length > 0 ? (
         <div className="mt-4 rounded-md border border-border bg-danger-soft p-3">

@@ -48,7 +48,6 @@ export interface ContenidoDelPaso {
     titulo: string
     razones: { icono: Icon; texto: string }[]
     pie?: { icono: Icon; texto: string }
-    foto: string
   }
 }
 
@@ -63,7 +62,6 @@ const AGENCIA: ContenidoDelPaso = {
       { icono: Envelope, texto: 'Al correo de la cuenta te llegan los reportes y avisos de Leasefy.' },
       { icono: PencilSimple, texto: 'Después los puedes revisar y editar en Configuración → Perfil.' },
     ],
-    foto: '/images/features/leasefy-brand-14.jpg',
   },
 }
 
@@ -77,7 +75,6 @@ const MIEMBROS: ContenidoDelPaso = {
       { icono: IdentificationBadge, texto: 'El rol define qué ve y qué hace: asesor comercial, contador, administrador o solo lectura.' },
       { icono: UsersThree, texto: 'Es opcional: puedes invitar a tu equipo después desde Configuración → Equipo.' },
     ],
-    foto: '/images/features/leasefy-brand-12.jpg',
   },
 }
 
@@ -92,7 +89,6 @@ const HABEAS_DATA: ContenidoDelPaso = {
       { icono: LockKey, texto: 'Leasefy los usa sólo para lo autorizado, los guarda con seguridad y te avisa si hay un incidente.' },
     ],
     pie: { icono: ListChecks, texto: 'Puedes leer los términos completos sin salir del registro.' },
-    foto: '/images/features/leasefy-brand-10.jpg',
   },
 }
 
@@ -106,7 +102,6 @@ const CONFIRMAR: ContenidoDelPaso = {
       { icono: ChartLineUp, texto: 'Entras a tu panel, donde te guiamos para traer tu operación: propietarios, inmuebles, contratos y pagos.' },
       { icono: Signpost, texto: 'Si falta algún paso, te decimos cuál y te llevamos ahí.' },
     ],
-    foto: '/images/features/leasefy-brand-09.jpg',
   },
 }
 

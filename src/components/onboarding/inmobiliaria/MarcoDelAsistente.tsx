@@ -77,7 +77,6 @@ export function MarcoDelAsistente({
           titulo={contenido.informacion.titulo}
           razones={contenido.informacion.razones}
           pie={contenido.informacion.pie}
-          foto={contenido.informacion.foto}
         />
       }
     >

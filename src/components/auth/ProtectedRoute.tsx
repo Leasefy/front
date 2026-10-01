@@ -154,7 +154,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // no factor to step up to must enroll one first (they're mutually
     // exclusive states per contract.md T-0099 §3, but the check order still
     // matters if that ever changes).
-    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
+    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
       router.replace('/auth/mfa-enroll')
       return
     }
@@ -258,8 +258,9 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     )
   }
 
-  // T-0099: no factor enrolled yet - will redirect to the enroll page.
-  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
+  // T-0099: no factor enrolled yet - will redirect to the enroll page
+  // (except in the agency panel, whose layout shows the enrollment inside).
+  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
@@ -376,4 +377,21 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
  */
 function enElRegistro(pathname: string): boolean {
   return pathname === '/onboarding' || pathname.startsWith('/onboarding/')
+}
+
+/**
+ * 🔴 Nico, 30-09-2026: «¿por qué me está sacando y me lleva a esta página?
+ * … Todo lo de activar el 2FA, si no migro o luego de cuando migre, debe
+ * pasar ya DENTRO, porque yo estoy es dentro».
+ *
+ * En el panel de la inmobiliaria esta guarda ya no manda a
+ * `/auth/mfa-enroll`: deja pasar, y el layout del panel
+ * (`SegundoFactorDentroDelPanel`) pinta en vez del panel un esqueleto quieto
+ * con el paso a paso encima. Ese layout es el que garantiza que con
+ * `mfaEnrollRequired` NO se monte nada que pida datos (el 403
+ * `SEGUNDO_FACTOR_REQUERIDO` de T-0099). Verificar un factor ya inscrito
+ * (`mfaRequired`) sigue siendo afuera: es el inicio de sesión.
+ */
+function enElPanelDeLaInmobiliaria(pathname: string): boolean {
+  return pathname === '/panel/inmobiliaria' || pathname.startsWith('/panel/inmobiliaria/')
 }

@@ -117,6 +117,7 @@ import {
   olvidarBienvenidaPendiente,
 } from "@/lib/migracion/bienvenida-pendiente";
 import {
+  AvisoDelMuroContext,
   MigracionContext,
   type ContextoDeMigracion,
 } from "./migracion-context";
@@ -490,6 +491,17 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: tapado }),
     [conocido, abrir, refrescar, tapado],
   );
+
+  /*
+   * Hacia arriba, al layout: el segundo factor dentro del panel no entra
+   * mientras esto tape (ver `AvisoDelMuroContext`). Al desmontarse, deja de
+   * tapar.
+   */
+  const avisarAlLayout = useContext(AvisoDelMuroContext);
+  useEffect(() => {
+    avisarAlLayout?.(tapado);
+  }, [avisarAlLayout, tapado]);
+  useEffect(() => () => avisarAlLayout?.(false), [avisarAlLayout]);
 
   const inerte = { inert: tapado };
 

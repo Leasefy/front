@@ -42,6 +42,17 @@ import OnboardingInmobiliariaClient from './OnboardingInmobiliariaClient'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
+// «Antes de comenzar» se pinta junto a las tarjetas de perfil: sin esto el
+// hook pediría la config de perfiles a un back que no existe en la prueba.
+vi.mock('@/lib/hooks/use-enabled-profiles', () => ({
+  useEnabledProfiles: () => ({
+    enabled: new Set(['tenant', 'agency']),
+    isEnabled: (clave: string) => clave === 'tenant' || clave === 'agency',
+    isLoading: false,
+    esProvisional: false,
+  }),
+}))
+
 // `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
 // 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -406,7 +417,26 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     render()
 
     expect(container.querySelector('[data-testid="salir-del-registro"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="volver-a-perfiles"]')).toBeTruthy()
+    // «Antes de comenzar» vive al lado de las tarjetas de perfil (Nico,
+    // 2026-09-30): la ✕ las devuelve al centro para elegir otro.
+    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="perfil-inmobiliaria"]')?.getAttribute('data-elegida'),
+    ).toBe('true')
+  })
+
+  it('con la inmobiliaria ya creada no ofrece cambiar de perfil', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({
+        status: 'needs-info',
+        sessionId: null,
+        valoresGuardados: { razonSocial: 'Inmobiliaria Andes SAS', nit: '890903938-8' },
+      }),
+    )
+    render()
+
+    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).toBeNull()
+    expect(container.querySelector('[data-testid="cambiar-de-perfil"]')).toBeNull()
   })
 })
 

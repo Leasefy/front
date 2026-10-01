@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { analyzeProperties, mapRowsToProperties } from '../lib/gapFiller';
-import { recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
+import { recalcularEstado, escribirCampo, sinCanon } from '../lib/requisitosDelBack';
 import { ponerTitulosATodas, sinTitulo as contarSinTitulo } from '../lib/ponerTitulos';
 import { AISuggestionCard } from '../components/AISuggestionCard';
 import { RanuraDelPieSecundaria } from '../ImportWizard';
@@ -84,6 +84,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
   // que «todas» es «todas las seleccionables». Comparar contra `totalCount`
   // dejaba el control en «seleccionar» para siempre en cuanto una fila tenía
   // error: marcaba las sanas, nunca llegaba a «todas» y no se podía desmarcar.
+  const sinCanonCount = properties.filter((p) => !p.hasErrors && sinCanon(p)).length;
   const selectableCount = totalCount - errorCount;
   const selectedCount = properties.filter((p) => p.selected && !p.hasErrors).length;
   const allSelected = selectableCount > 0 && selectedCount === selectableCount;
@@ -346,6 +347,19 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
             <Sparkle className="w-4 h-4 text-warning" />
             <span className="text-sm font-medium text-warning">
               {withSuggestions} con sugerencias
+            </span>
+          </div>
+        )}
+
+        {sinCanonCount > 0 && (
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-muted dark:bg-ink border border-border"
+            data-testid="resumen-sin-canon"
+          >
+            <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
+              {sinCanonCount === 1
+                ? '1 sin canon: se crea con el canon por confirmar'
+                : `${sinCanonCount.toLocaleString('es-CO')} sin canon: se crean con el canon por confirmar`}
             </span>
           </div>
         )}

@@ -15,6 +15,7 @@ import { WarningCircle, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
 import {
   Select,
   SelectContent,
@@ -129,6 +130,13 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
             );
           })}
         </div>
+      )}
+
+      {/* T-0129 — neutral: no frena la fila, sólo avisa cómo va a quedar. */}
+      {fila.datosPendientes?.includes('canon') && (
+        <p className="text-xs text-fg-muted" data-testid="fila-sin-canon">
+          {AVISO_FILA_SIN_CANON}
+        </p>
       )}
 
       {/* Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el

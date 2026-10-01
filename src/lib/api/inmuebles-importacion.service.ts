@@ -194,6 +194,11 @@ export interface FilaDeImportacion {
   fila: number;
   estado: EstadoFilaImportacion;
   faltantes: string[];
+  /**
+   * T-0129 — `['canon']` cuando el inmueble se va a crear con el canon por
+   * confirmar. NO frena la fila: es un dato por completar, no un faltante.
+   */
+  datosPendientes?: string[];
   overrides: string[];
   candidatos: InmuebleDuplicado[];
   propertyId: string | null;
@@ -322,6 +327,73 @@ export interface ResolverInmuebleDto {
   permitirDuplicado?: boolean;
 }
 
+/** Los campos que se pueden poner en bloque (`PATCH filas/masivo`). */
+export interface CamposMasivosInmuebles {
+  title?: string;
+  description?: string;
+  type?: string;
+  listingType?: string;
+  city?: string;
+  department?: string;
+  neighborhood?: string;
+  area?: number;
+  consignedAt?: string;
+  monthlyRent?: number;
+  salePrice?: number;
+}
+
+/** A quién le toca: las filas de este estado, con este motivo. */
+export interface FiltroDeFilasInmuebles {
+  estado?: 'PENDIENTE' | 'LISTO';
+  /** Un código de `faltantes` o `'canon'` (las que no traen canon usable). */
+  motivo?: string;
+}
+
+export interface CambiosMasivosInmuebles {
+  campos?: CamposMasivosInmuebles;
+  permitirDuplicado?: boolean;
+  descartar?: boolean;
+  /** `false` rellena sólo lo vacío; `true` pisa también lo que ya tenía valor. */
+  sobrescribir?: boolean;
+}
+
+export interface RespuestaMasivaPorFiltroInmuebles {
+  lote: string;
+  totalCoincidentes: number;
+  procesadas: number;
+  aplicadas: number;
+  sinCambios: number;
+  listasAhora: number;
+  siguiente: string | null;
+  fallidas: { id: string; fila: number | null; motivo: string }[];
+}
+
+export interface ResultadoMasivoPorFiltroInmuebles {
+  totalAlEmpezar: number;
+  procesadas: number;
+  aplicadas: number;
+  sinCambios: number;
+  listasAhora: number;
+  fallidas: { id: string; fila: number | null; motivo: string }[];
+  /** Se cortó antes de terminar: lo ya aplicado quedó aplicado. */
+  interrumpida?: { motivo: string };
+}
+
+export interface MotivosDelLoteInmuebles {
+  lote: string;
+  requierenAtencion: number;
+  listas: number;
+  /** Filas que se van a crear con el canon por confirmar. */
+  sinCanon: number;
+  /** `codigo: 'canon'` trae `bloquea: false`. */
+  porMotivo: { codigo: string; filas: number; bloquea: boolean }[];
+}
+
+export interface ProgresoDeMasivoInmuebles {
+  procesadas: number;
+  total: number;
+}
+
 export interface ResultadoMasivoInmuebles {
   total: number;
   resueltas: number;
@@ -389,6 +461,72 @@ export const inmueblesImportacionApi = {
    * render "listo" over the failures. */
   async resolverMasivo(ids: string[], cambios: ResolverInmuebleDto): Promise<ResultadoMasivoInmuebles> {
     return apiClient.patch<ResultadoMasivoInmuebles>(`${BASE}/filas`, { ids, ...cambios });
+  },
+
+  /**
+   * T-0129 — lo mismo que `resolverMasivo`, pero a TODAS las filas que cumplen un
+   * filtro, sin listar ids (`PATCH filas/masivo`). `GET filas` topa en 200 por
+   * página, así que «seleccionar las N» no puede ser «los ids que se ven».
+   *
+   * Da vueltas mientras `siguiente` no sea `null`; si una falla a mitad devuelve
+   * lo acumulado con `interrumpida`. Un error de la PRIMERA vuelta se relanza.
+   */
+  async resolverPorFiltro(
+    lote: string,
+    filtro: FiltroDeFilasInmuebles,
+    cambios: CambiosMasivosInmuebles,
+    alAvanzar?: (p: ProgresoDeMasivoInmuebles) => void,
+  ): Promise<ResultadoMasivoPorFiltroInmuebles> {
+    const base: Record<string, unknown> = { lote, filtro };
+    if (cambios.campos) base.campos = cambios.campos;
+    if (cambios.permitirDuplicado !== undefined) base.permitirDuplicado = cambios.permitirDuplicado;
+    if (cambios.descartar !== undefined) base.descartar = cambios.descartar;
+    if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;
+
+    const total: ResultadoMasivoPorFiltroInmuebles = {
+      totalAlEmpezar: 0,
+      procesadas: 0,
+      aplicadas: 0,
+      sinCambios: 0,
+      listasAhora: 0,
+      fallidas: [],
+    };
+    let cursor: string | null = null;
+    const vistos = new Set<string>();
+
+    for (;;) {
+      let r: RespuestaMasivaPorFiltroInmuebles;
+      try {
+        r = await apiClient.patch<RespuestaMasivaPorFiltroInmuebles>(
+          `${BASE}/filas/masivo`,
+          cursor ? { ...base, despuesDe: cursor } : base,
+        );
+      } catch (e) {
+        if (total.procesadas === 0) throw e;
+        total.interrumpida = {
+          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+        };
+        return total;
+      }
+      if (cursor === null) total.totalAlEmpezar = r.totalCoincidentes;
+      total.procesadas += r.procesadas;
+      total.aplicadas += r.aplicadas;
+      total.sinCambios += r.sinCambios ?? 0;
+      total.listasAhora += r.listasAhora;
+      total.fallidas.push(...r.fallidas);
+      alAvanzar?.({ procesadas: total.procesadas, total: total.totalAlEmpezar });
+
+      if (r.siguiente === null || vistos.has(r.siguiente)) return total;
+      vistos.add(r.siguiente);
+      cursor = r.siguiente;
+    }
+  },
+
+  /** Cuántas filas hay por motivo, del lote entero (no de la página). */
+  async motivos(lote: string): Promise<MotivosDelLoteInmuebles> {
+    return apiClient.get<MotivosDelLoteInmuebles>(
+      `${BASE}/filas/motivos?lote=${encodeURIComponent(lote)}`,
+    );
   },
 
   async descartarFila(id: string): Promise<FilaDeImportacion> {

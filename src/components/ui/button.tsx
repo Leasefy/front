@@ -172,7 +172,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             // que usan group-hover en sus children.
             "group",
             SIZE_FIDELITY[resolvedSize],
-            isLoading && "pointer-events-none opacity-70",
+            // Un velo leve: con el 70 % de antes el logo blanco quedaba sobre un
+            // azul lavado y perdía contraste; el logo en movimiento ya dice «ocupado».
+            isLoading && "pointer-events-none opacity-90",
             // Mientras carga, el DS lo deja `disabled` y le pintaría el fondo y
             // el texto grises de deshabilitado: la carga conserva el color del botón.
             isLoading && LOADING_KEEPS_COLOR[resolvedVariant],

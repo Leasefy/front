@@ -106,14 +106,17 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-bg">
+      <div className="flex min-h-screen flex-col bg-bg">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
           <LeasefyLogotype className="h-6 w-auto" />
           <SalirDelRegistro />
         </header>
 
-        <main className="relative mx-auto w-full max-w-[960px] px-4 pb-16 sm:px-6">
+        {/* flex-1 + justify-center: la escena se centra en el alto que sobra
+            (Nico, 2026-09-30: «¿por qué queda tanto espacio abajo?»); si no
+            sobra, la página crece y se desplaza como siempre. */}
+        <main className="relative mx-auto flex w-full max-w-[960px] flex-1 flex-col justify-center px-4 pb-16 sm:px-6">
           <LayoutGroup>
             <AnimatePresence initial={false} mode="popLayout">
               {abierta ? null : (
@@ -242,6 +245,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
   ref,
 ) {
   const entrada = 0.05 + indice * 0.08
+  // La atenuación va en el `animate` de framer, no en una clase: framer deja
+  // `opacity` como estilo inline y una clase `opacity-45` nunca le gana.
+  const atenuada = deshabilitada && !elegida && !yendo
   return (
     <motion.button
       ref={ref}
@@ -251,7 +257,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
       disabled={deshabilitada}
       aria-busy={yendo || undefined}
       initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: atenuada ? 0.4 : 1, y: 0 }}
       transition={{
         ...RESORTE,
         opacity: { duration: 0.4, delay: entrada },
@@ -272,7 +278,6 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
           : 'shadow-[0_14px_36px_-22px_rgba(20,19,15,0.4)]',
         !deshabilitada &&
           'hover:shadow-[0_30px_60px_-24px_rgba(20,19,15,0.5)] hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-bg',
-        deshabilitada && !elegida && !yendo && 'opacity-45',
       )}
     >
       <Image
@@ -281,7 +286,10 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
         fill
         priority
         sizes="(min-width: 1024px) 460px, (min-width: 640px) 50vw, 100vw"
-        className="object-cover transition-transform duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]"
+        className={cn(
+          'object-cover transition-[transform,filter] duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]',
+          atenuada && 'grayscale-[0.5]',
+        )}
         style={{ objectPosition: opcion.encuadre }}
       />
 

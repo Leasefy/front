@@ -531,7 +531,8 @@ export default function MfaVerifyPage() {
                   {/* La pregunta nombra los casos: «No tengo la app» sola no
                       la reconoce quien cambió de celular o ve que ningún
                       código funciona (Nico, 01-10). */}
-                  <p className="text-body-sm text-fg-muted">
+                  {/* Una sola línea desde sm (Nico, 01-10); en teléfono no cabe. */}
+                  <p className="text-caption text-fg-muted sm:whitespace-nowrap">
                     {tieneFactor === true
                       ? '¿Cambiaste de celular, borraste la app o ningún código funciona?'
                       : '¿Todavía no tienes la app de autenticación?'}

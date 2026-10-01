@@ -523,15 +523,24 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   }, [initialMode, explicitRole]);
 
   const handleModeSwitch = (newMode: AuthMode) => {
+    // El correo ya escrito viaja entre «Iniciar sesión» y «Recupera tu
+    // contraseña»: volver a pedirlo era un paso de más (Nico, 01-10).
+    const correoEscrito = (
+      mode === 'forgot-password' ? forgotPasswordForm.getValues('email') : loginForm.getValues('email')
+    )?.trim() ?? '';
     setMode(newMode);
     setRegisterStep('credentials');
     setError(null);
     aceptarCorreoTalCual(null);
     setReenvio({ estado: 'listo', espera: 0, error: null });
     setCorreoSinConfirmar(null);
-    loginForm.reset();
+    loginForm.reset(
+      newMode === 'login' && correoEscrito ? { email: correoEscrito, password: '' } : undefined,
+    );
     registerForm.reset();
-    forgotPasswordForm.reset();
+    forgotPasswordForm.reset(
+      newMode === 'forgot-password' && correoEscrito ? { email: correoEscrito } : undefined,
+    );
   };
 
   // Role → onboarding entry point (the map lives in perfil-de-onboarding.ts).

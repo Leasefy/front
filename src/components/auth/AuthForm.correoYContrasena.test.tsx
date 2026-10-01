@@ -355,4 +355,20 @@ describe('AuthForm — login: el correo', () => {
     await submit()
     expect(signInWithEmailMock).toHaveBeenCalledTimes(1)
   })
+
+  it('🔴 el correo escrito pasa a «Recupera tu contraseña» y vuelve al regresar (Nico, 01-10)', async () => {
+    await renderLogin()
+    await act(async () => {
+      setInputValue(input('email'), 'hola@leasefy.co')
+    })
+    const olvide = [...container.querySelectorAll('button')].find((b) => /Olvidaste tu contraseña/.test(b.textContent ?? ''))
+    await click(olvide ?? null)
+    expect(container.textContent).toContain('Recupera tu contraseña')
+    expect(input('email').value).toBe('hola@leasefy.co')
+
+    const volver = [...container.querySelectorAll('button')].find((b) => /Volver al inicio de sesión/.test(b.textContent ?? ''))
+    await click(volver ?? null)
+    expect(input('email').value).toBe('hola@leasefy.co')
+  })
 })
+

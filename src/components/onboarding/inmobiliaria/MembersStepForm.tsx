@@ -258,17 +258,6 @@ export function MembersStepForm({
     if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   })
 
-  /**
-   * Bypasses row-level validation entirely — the agent now accepts an empty
-   * `members: []` POST (minItems: 0) and no longer gates `/complete` on this
-   * step having entries. This is the explicit "skip" affordance; the regular
-   * "Continuar" button still validates whatever rows are present.
-   */
-  const skipStep = async () => {
-    const resultado = await onSubmit({ members: [] })
-    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
-  }
-
   if (pendingInvites) {
     return (
       <MembersInviteLinksScreen pendingInvites={pendingInvites} onContinueAfterInvites={onContinueAfterInvites} />
@@ -287,7 +276,7 @@ export function MembersStepForm({
         data-testid="members-step-optional-notice"
         className="rounded-md bg-surface-muted px-3.5 py-2.5 text-caption text-fg-muted"
       >
-        Este paso es opcional: puedes omitirlo ahora e invitar a tu equipo más adelante desde
+        Este paso es opcional: puedes seguir sin agregar a nadie y hacerlo más adelante desde
         Configuración → Equipo.
       </p>
 
@@ -313,7 +302,6 @@ export function MembersStepForm({
                 variant="outline"
                 size="icon"
                 hideArrow
-                disabled={fields.length === 1}
                 onClick={() => remove(index)}
                 aria-label={`Quitar miembro ${index + 1}`}
                 data-testid={`members-remove-row-${index}`}
@@ -425,19 +413,6 @@ export function MembersStepForm({
             <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
-      </Button>
-
-      <Button
-        type="button"
-        variant="ghost"
-        hideArrow
-       
-        className="w-full"
-        disabled={isSubmitting}
-        onClick={skipStep}
-        data-testid="members-skip-step"
-      >
-        Omitir por ahora
       </Button>
     </form>
   )

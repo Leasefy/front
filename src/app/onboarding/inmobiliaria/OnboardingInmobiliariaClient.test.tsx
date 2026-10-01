@@ -94,6 +94,9 @@ function baseProvisioningResult(overrides: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
+  // El borrador local de los pasos (sessionStorage) no debe filtrarse entre
+  // pruebas: todas comparten el mismo sessionId.
+  sessionStorage.clear()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -578,6 +581,10 @@ describe('<OnboardingInmobiliariaClient>', () => {
     mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'members', submitMembers }))
     render()
 
+    // El paso arranca sin filas (Nico, 30-09): se agrega una antes de escribir.
+    act(() => {
+      ;(container.querySelector('[data-testid="members-add-row"]') as HTMLButtonElement).click()
+    })
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
 
     const submitBtn = container.querySelector(
@@ -621,6 +628,10 @@ describe('<OnboardingInmobiliariaClient>', () => {
     )
     render()
 
+    // El paso arranca sin filas (Nico, 30-09): se agrega una antes de escribir.
+    act(() => {
+      ;(container.querySelector('[data-testid="members-add-row"]') as HTMLButtonElement).click()
+    })
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
 
     const submitBtn = container.querySelector(

@@ -73,9 +73,11 @@ async function clickSubmit() {
 }
 
 describe('<MembersStepForm>', () => {
-  it('starts with one empty row', () => {
+  it('🔴 arranca SIN filas: el paso es opcional y «Continuar» continúa de verdad (Nico, 30-09)', () => {
     render()
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(0)
+    // Sin el «Omitir por ahora» aparte: con cero filas, Continuar ES la salida.
+    expect(container.querySelector('[data-testid="members-skip-step"]')).toBeFalsy()
   })
 
   it('shows a notice clarifying the step is optional — the agent contract now accepts an empty members list (minItems: 0)', () => {
@@ -86,31 +88,14 @@ describe('<MembersStepForm>', () => {
     expect(container.querySelector('[data-testid="members-step-required-notice"]')).toBeFalsy()
   })
 
-  it('renders a secondary "Omitir por ahora" action', () => {
-    render()
-    const skipBtn = container.querySelector('[data-testid="members-skip-step"]')
-    expect(skipBtn).toBeTruthy()
-    expect(skipBtn?.textContent).toContain('Omitir por ahora')
-  })
-
-  it('clicking "Omitir por ahora" submits an empty members list, bypassing row validation', async () => {
+  it('🔴 «Continuar» sin filas manda la lista vacía, sin pedirle nada a nadie', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
-    // Leave the default row empty (would normally block the regular submit).
-    await act(async () => {
-      clickButton('members-skip-step')
-      await new Promise((r) => setTimeout(r, 0))
-    })
+    await clickSubmit()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith({ members: [] })
-  })
-
-  it('disables "Omitir por ahora" while submitting', () => {
-    render({ isSubmitting: true })
-    const skipBtn = container.querySelector('[data-testid="members-skip-step"]') as HTMLButtonElement
-    expect(skipBtn.disabled).toBe(true)
   })
 
   it('adds and removes member rows', () => {
@@ -118,29 +103,27 @@ describe('<MembersStepForm>', () => {
 
     clickButton('members-add-row')
     clickButton('members-add-row')
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(3)
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
 
     clickButton('members-remove-row-0')
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
   })
 
-  it('does not allow removing the last remaining row', () => {
+  it('la última fila también se puede quitar: se vuelve al paso vacío', () => {
     render()
 
+    clickButton('members-add-row')
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
-    const removeBtn = container.querySelector(
-      '[data-testid="members-remove-row-0"]',
-    ) as HTMLButtonElement
-    expect(removeBtn.disabled).toBe(true)
 
     clickButton('members-remove-row-0')
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(0)
   })
 
   it('shows a validation error for an invalid email and blocks submit', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'not-an-email')
 
     await clickSubmit()
@@ -153,6 +136,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'dup@inmobiliaria.test')
     setInputValue(byId('members.1.email'), 'dup@inmobiliaria.test')
@@ -198,10 +182,11 @@ describe('<MembersStepForm>', () => {
     expect(parsed.success).toBe(false)
   })
 
-  it('blocks submit when the single default row is left with an empty email', async () => {
+  it('una fila agregada y dejada vacía SÍ bloquea el envío: se llena o se quita', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     await clickSubmit()
 
     expect(onSubmit).not.toHaveBeenCalled()
@@ -212,6 +197,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
     setInputValue(byId('members.1.email'), 'viewer@inmobiliaria.test')
@@ -233,6 +219,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue({ sessionId: 'sess-1' })
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
 
     await clickSubmit()
@@ -245,6 +232,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'ana@inmobiliaria.test')
     setInputValue(byId('members.0.nombre'), '  Ana Restrepo  ')
 

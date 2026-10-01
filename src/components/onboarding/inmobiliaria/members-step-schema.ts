@@ -85,9 +85,13 @@ export const MEMBERS_STEP_NEW_ROW: MembersStepFormValues['members'][number] = {
   role: 'AGENTE',
 }
 
-/** Starts with one empty row as an affordance — the step itself is optional. */
+/**
+ * Arranca SIN filas (Nico, 2026-09-30): el paso es opcional, así que
+ * «Continuar» sin agregar a nadie continúa de verdad (manda `members: []`).
+ * La fila vacía de antes obligaba a llenarla o a buscar el «Omitir» aparte.
+ */
 export const MEMBERS_STEP_DEFAULT_VALUES: MembersStepFormValues = {
-  members: [MEMBERS_STEP_NEW_ROW],
+  members: [],
 }
 
 export function toMembersRequest(values: MembersStepFormValues): OnboardingSessionMembersRequest {

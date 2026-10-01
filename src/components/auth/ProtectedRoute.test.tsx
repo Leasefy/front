@@ -183,7 +183,8 @@ describe('ProtectedRoute — T-0099: MFA-pending gate (session assurance level, 
     expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
   })
 
-  it('with mfaEnrollRequired=true (no factor to even step up to): children do NOT render, redirects to /auth/mfa-enroll — takes priority over mfaRequired', async () => {
+  it('with mfaEnrollRequired=true (no factor to even step up to) FUERA del panel de la inmobiliaria: children do NOT render, redirects to /auth/mfa-enroll — takes priority over mfaRequired', async () => {
+    ruta.actual = '/panel/propietario'
     authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
     authState.mfaEnrollRequired = true
     authState.mfaRequired = false
@@ -193,6 +194,81 @@ describe('ProtectedRoute — T-0099: MFA-pending gate (session assurance level, 
     expect(childMounted()).toBe(false)
     expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
     expect(replaceMock).not.toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  /*
+   * 🔴 Nico, 30-09-2026: «¿por qué me está sacando y me lleva a esta página?
+   * … todo lo de activar el 2FA debe pasar ya DENTRO, porque yo estoy es
+   * dentro». En el panel de la inmobiliaria esta guarda ya no lo saca: deja
+   * pasar al layout, que en vez del panel pinta la escena del 2FA dentro
+   * (`SegundoFactorDentroDelPanel`) y no monta nada que pida datos.
+   */
+  it.each(['/panel/inmobiliaria', '/panel/inmobiliaria/contratos', '/panel/inmobiliaria/piloto'])(
+    'con mfaEnrollRequired=true en %s NO redirige: lo resuelve el layout del panel, dentro',
+    async (pathname) => {
+      ruta.actual = pathname
+      authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+      authState.mfaEnrollRequired = true
+
+      await renderPanel()
+
+      expect(replaceMock).not.toHaveBeenCalled()
+      expect(childMounted()).toBe(true)
+      expect(container.textContent).not.toContain('Verificando seguridad')
+    },
+  )
+
+  /*
+   * Nico, 30-09 22:53: la página `/auth/mfa-enroll` SE QUEDA para todo lo que
+   * llega desde fuera del panel de la inmobiliaria (otros roles, enlaces
+   * directos, la recuperación). Lo de adentro es adicional.
+   */
+  it.each([
+    ['/inquilino', 'tenant'],
+    ['/panel/propietario', 'landlord'],
+    ['/configuracion', 'agency'],
+  ])('fuera del panel de la inmobiliaria (%s) sigue mandando a /auth/mfa-enroll', async (pathname, role) => {
+    ruta.actual = pathname
+    authState.user = { id: 'u1', role, onboardingCompleted: true }
+    authState.mfaEnrollRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+    expect(container.textContent).toContain('Verificando seguridad')
+  })
+
+  it('una ruta que sólo EMPIEZA igual (/panel/inmobiliariaX) no cuenta como el panel', async () => {
+    ruta.actual = '/panel/inmobiliariaX'
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaEnrollRequired = true
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-enroll')
+  })
+
+  it('en el panel de la inmobiliaria, un factor YA inscrito se sigue verificando afuera (mfa-verify es el inicio de sesión)', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+
+  it('en el panel de la inmobiliaria con mfaEnrollRequired, el rol se sigue revisando: un inquilino sin membresía sale a su portal', async () => {
+    authState.user = { id: 'u1', role: 'tenant', onboardingCompleted: true }
+    authState.mfaEnrollRequired = true
+    authState.hasActiveAgencyMembership = false
+    authState.agencyMembershipChecked = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino')
   })
 
   it('en el registro (/onboarding) NO manda a inscribir el segundo factor (Nico 30-09: «Reintentar» → «Activa tu segundo factor»)', async () => {

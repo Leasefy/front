@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignOut } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
@@ -14,20 +14,8 @@ import {
   destinoTrasElSegundoFactor,
   rutaAlSegundoFactor,
 } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { useSalidaDelSegundoFactor } from '@/lib/auth/use-salida-del-segundo-factor';
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
-
-/**
- * Cuánto se deja ver el «Listo» antes de salir: lo justo para leerlo.
- * La salida no espera a nadie más que al contexto (ver `TOPE_DEL_CONTEXTO_MS`).
- */
-const PAUSA_DEL_LISTO_MS = 1200;
-/**
- * Si el contexto de auth no se entera del `aal2` en este tiempo, se sale con
- * una carga completa: la sesión `aal2` ya está guardada y el AuthProvider, al
- * arrancar de cero, la lee bien. Navegar con el router ANTES de que se entere
- * es lo que rebotaba (ProtectedRoute veía `mfaEnrollRequired` todavía en true).
- */
-const TOPE_DEL_CONTEXTO_MS = 8000;
 
 /** El `returnUrl` de la barra, saneado donde se lee (como en `/auth/mfa-verify`). */
 function returnUrlDeLaBarra(): string | null {
@@ -40,7 +28,9 @@ function returnUrlDeLaBarra(): string | null {
 /**
  * T-0099 — el destino de «inscripción pendiente»: la política del rol exige
  * `aal2` (`segundoFactor.exigido`) y la cuenta no tiene NINGÚN factor al cual
- * subir. `ProtectedRoute` manda acá cuando `mfaEnrollRequired` es true.
+ * subir. `ProtectedRoute` manda acá cuando `mfaEnrollRequired` es true —
+ * salvo desde el panel de la inmobiliaria, donde se activa DENTRO
+ * (`SegundoFactorDentroDelPanel`, Nico 30-09: «yo estoy es dentro»).
  *
  * ── 🔴 30-09-2026 · El rebote después de activar ──────────────────────────
  *
@@ -67,10 +57,16 @@ export default function MfaEnrollPage() {
     setMfaVerified,
     signOut,
   } = useAuth();
-  /** Cuándo pasó el primer código. Mientras sea null, la pantalla está inscribiendo. */
-  const [activadoEn, setActivadoEn] = useState<number | null>(null);
-  const yaSalioRef = useRef(false);
   const rol = user?.role;
+  // La salida tras activar (el «Listo», esperar al contexto, el tope de 8 s)
+  // es la misma que la de la escena dentro del panel: vive en el hook. Acá se
+  // sale navegando.
+  const { activadoEn, alActivar, yaSalioRef } = useSalidaDelSegundoFactor({
+    mfaEnrollRequired,
+    setMfaVerified,
+    destino: () => destinoTrasElSegundoFactor(returnUrlDeLaBarra(), rol),
+    salir: (destino) => router.replace(destino),
+  });
 
   // Si no hace falta inscribir, no se queda nadie varado acá. Espera a que la
   // sesión termine de cargar: con el valor de fábrica (false) mandaba al panel
@@ -84,35 +80,7 @@ export default function MfaEnrollPage() {
         ? rutaAlSegundoFactor(returnUrlDeLaBarra())
         : destinoTrasElSegundoFactor(returnUrlDeLaBarra(), user.role),
     );
-  }, [user, cargandoLaSesion, mfaEnrollRequired, mfaRequired, activadoEn, router]);
-
-  // Después de activar: se sale cuando el contexto ya sabe que la sesión es
-  // `aal2` (y el «Listo» alcanzó a leerse), o con carga completa si no se
-  // entera a tiempo.
-  useEffect(() => {
-    if (activadoEn === null || yaSalioRef.current) return;
-    const destino = destinoTrasElSegundoFactor(returnUrlDeLaBarra(), rol);
-    const transcurrido = Date.now() - activadoEn;
-    if (!mfaEnrollRequired) {
-      const reloj = setTimeout(() => {
-        yaSalioRef.current = true;
-        router.replace(destino);
-      }, Math.max(0, PAUSA_DEL_LISTO_MS - transcurrido));
-      return () => clearTimeout(reloj);
-    }
-    const tope = setTimeout(() => {
-      yaSalioRef.current = true;
-      window.location.assign(destino);
-    }, Math.max(0, TOPE_DEL_CONTEXTO_MS - transcurrido));
-    return () => clearTimeout(tope);
-  }, [activadoEn, mfaEnrollRequired, rol, router]);
-
-  const alActivar = useCallback(() => {
-    // Como `alActivarElNuevo` de mfa-verify: ProtectedRoute no pide el código
-    // mientras llega el evento del SDK.
-    setMfaVerified();
-    setActivadoEn(Date.now());
-  }, [setMfaVerified]);
+  }, [user, cargandoLaSesion, mfaEnrollRequired, mfaRequired, activadoEn, router, yaSalioRef]);
 
   /**
    * Al abrir, la cuenta ya tenía un factor verificado (otra pestaña, otro
@@ -122,7 +90,7 @@ export default function MfaEnrollPage() {
     if (yaSalioRef.current) return;
     yaSalioRef.current = true;
     router.replace(rutaAlSegundoFactor(returnUrlDeLaBarra()));
-  }, [router]);
+  }, [router, yaSalioRef]);
 
   const handleSignOut = useCallback(async () => {
     await signOut();

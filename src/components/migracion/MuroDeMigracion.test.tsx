@@ -158,6 +158,7 @@ import {
   MuroDeMigracion,
   useMigracion,
 } from './MuroDeMigracion';
+import { AvisoDelMuroContext } from './migracion-context';
 import { AuthContext } from '@/lib/auth/auth-context';
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1878,5 +1879,41 @@ describe('la señal para lo que no puede salir encima del muro (el recorrido del
       (q('bienvenida-entrar') as HTMLButtonElement).click();
     });
     expect(ultimo).toBe(false);
+  });
+});
+
+describe('el aviso hacia arriba, al layout (el segundo factor dentro del panel no entra mientras tape)', () => {
+  it('avisa true con el muro y con la bienvenida, y false al entrar', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    const LISTOS = RECIEN_LLEGADA.map((p) => ({ ...p, estado: 'listo' as const, conteo: 3 }));
+    const completada = { bloquea: false, resuelta: 'completada', pasos: LISTOS };
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: LISTOS });
+    estadoMock.terminar.mockResolvedValue(completada);
+    const avisos: boolean[] = [];
+
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <AvisoDelMuroContext.Provider value={(t) => avisos.push(t)}>
+          <MuroDeMigracion>
+            <div />
+          </MuroDeMigracion>
+        </AvisoDelMuroContext.Provider>,
+      );
+    });
+    await act(async () => {});
+    expect(avisos.at(-1)).toBe(true);
+
+    await click('muro-ya-termine');
+    await act(async () => {});
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    expect(avisos.at(-1)).toBe(true);
+
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+    expect(avisos.at(-1)).toBe(false);
   });
 });

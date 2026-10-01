@@ -58,6 +58,7 @@ import type {
 } from "@/lib/types/inmobiliaria";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
+import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
 import {
@@ -1441,6 +1442,12 @@ export function StepConfirmImport({
             </div>
           </div>
         )}
+
+        <LoteInmueblesMasivo
+          lote={lote}
+          deshabilitado={activando || revisando || descartandoLote}
+          onCambio={() => void refrescarRevision(lote, 1)}
+        />
 
         {pendientes.length > 0 && (
           <div className="space-y-3">

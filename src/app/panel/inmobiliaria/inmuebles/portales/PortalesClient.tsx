@@ -71,6 +71,7 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
@@ -549,6 +550,9 @@ function DialogoDePublicar({
                     <Warning weight="duotone" className="h-4 w-4 text-warning" aria-hidden="true" />
                     Este inmueble todavía no puede salir
                   </p>
+                  {revision.canonPorConfirmar ? (
+                    <AvisoInmuebleSinCanon inmuebleId={revision.propertyId} />
+                  ) : null}
                   <ul className="ml-6 list-disc space-y-1 text-sm text-fg-muted">
                     {revision.falta.map((f) => (
                       <li key={f.campo}>{f.que}</li>

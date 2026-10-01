@@ -272,6 +272,8 @@ export interface RevisionDePublicacion {
   fotosMinimas: number
   falta: { campo: string; que: string }[]
   sePuedePublicar: boolean
+  /** T-0129 — el inmueble tiene el canon por confirmar: no sale a portales hasta ponérselo. */
+  canonPorConfirmar?: boolean
   ocupacion: {
     puede: boolean
     disponibleDesde: string | null

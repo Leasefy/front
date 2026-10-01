@@ -92,6 +92,7 @@ import {
 } from "@/lib/contratos/vista-previa-de-migracion";
 import { armarFilaAMigrar, leerFilaDelArchivo } from "@/lib/contratos/armar-fila";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
+import { motivoDeFilaConCanonPorConfirmar } from "@/lib/inmuebles/canon-por-confirmar";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
 import {
   contractsApi,
@@ -2281,7 +2282,7 @@ function ListaDeTrabajo({
                 .filter((r) => r.estado === "fallido")
                 .map((r) => (
                   <li key={r.fila}>
-                    Fila {r.fila + 2}: {r.motivo}
+                    Fila {r.fila + 2}: {motivoDeFilaConCanonPorConfirmar(r.motivo)}
                   </li>
                 ))}
             </ul>

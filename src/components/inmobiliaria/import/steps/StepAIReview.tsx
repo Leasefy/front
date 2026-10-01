@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { analyzeProperties, mapRowsToProperties } from '../lib/gapFiller';
-import { recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
+import { recalcularEstado, escribirCampo, sinCanon } from '../lib/requisitosDelBack';
 import { ponerTitulosATodas, sinTitulo as contarSinTitulo } from '../lib/ponerTitulos';
 import { AISuggestionCard } from '../components/AISuggestionCard';
 import { RanuraDelPieSecundaria } from '../ImportWizard';
@@ -80,8 +80,15 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
     (p) => !p.hasErrors && p.suggestions.some((s) => s.accepted === null)
   ).length;
   const readyCount = totalCount - errorCount - withSuggestions;
-  const selectedCount = properties.filter((p) => p.selected).length;
-  const allSelected = selectedCount === totalCount && totalCount > 0;
+  // Las filas con errores no se pueden marcar (su checkbox está apagado), así
+  // que «todas» es «todas las seleccionables». Comparar contra `totalCount`
+  // dejaba el control en «seleccionar» para siempre en cuanto una fila tenía
+  // error: marcaba las sanas, nunca llegaba a «todas» y no se podía desmarcar.
+  const sinCanonCount = properties.filter((p) => !p.hasErrors && sinCanon(p)).length;
+  const selectableCount = totalCount - errorCount;
+  const selectedCount = properties.filter((p) => p.selected && !p.hasErrors).length;
+  const allSelected = selectableCount > 0 && selectedCount === selectableCount;
+  const someSelected = selectedCount > 0 && !allSelected;
 
   // Orden: con errores primero, después con sugerencias pendientes, después
   // las completas — pero decidido UNA vez, cuando llega el análisis. Si se
@@ -344,6 +351,19 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           </div>
         )}
 
+        {sinCanonCount > 0 && (
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-muted dark:bg-ink border border-border"
+            data-testid="resumen-sin-canon"
+          >
+            <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
+              {sinCanonCount === 1
+                ? '1 sin canon: se crea con el canon por confirmar'
+                : `${sinCanonCount.toLocaleString('es-CO')} sin canon: se crean con el canon por confirmar`}
+            </span>
+          </div>
+        )}
+
         {errorCount > 0 && (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-danger-soft border border-danger/30">
             <Warning className="w-4 h-4 text-danger" />
@@ -361,14 +381,19 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           <label className="flex items-center gap-2 cursor-pointer">
             <Checkbox
               checked={allSelected}
+              indeterminate={someSelected}
+              disabled={selectableCount === 0}
               onCheckedChange={handleToggleSelectAll}
             />
             <span className="text-sm text-fg-muted dark:text-fg-subtle">
-              {allSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}
+              {allSelected
+                ? 'Deseleccionar todas'
+                : `Seleccionar ${selectableCount === 1 ? 'la' : 'las'} ${selectableCount.toLocaleString('es-CO')}`}
             </span>
           </label>
           <span className="text-xs font-mono text-fg-subtle dark:text-fg-muted">
-            {selectedCount} / {totalCount} seleccionadas
+            {selectedCount} / {selectableCount} seleccionadas
+            {errorCount > 0 ? ` · ${errorCount} con errores no se pueden importar` : ''}
           </span>
         </div>
 

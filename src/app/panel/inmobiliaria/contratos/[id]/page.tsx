@@ -58,6 +58,8 @@ import { CodeudoresSection } from '@/components/contract/CodeudoresSection';
 import { PagareSection } from '@/components/contract/PagareSection';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
 import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
+import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -173,6 +175,8 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
+  // T-0129 — 409 INMUEBLE_SIN_CANON al activar: se explica con el enlace a editar el inmueble.
+  const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
   /** Activar sin inventario actualizado del inmueble: se dice con su enlace. */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -210,12 +214,17 @@ function ContratoDetalleContent() {
   const runAction = useCallback(
     async (key: string, op: () => Promise<unknown>, successMessage?: string) => {
       setActionError(null);
+      setErrorSinCanon(null);
       setBloqueoDeInventario(null);
       setPendingAction(key);
       try {
         await op();
         await refetch();
       } catch (err) {
+        if (esErrorInmuebleSinCanon(err)) {
+          setErrorSinCanon(err);
+          return;
+        }
         const bloqueo = bloqueoDelError(err);
         if (bloqueo) {
           setBloqueoDeInventario(bloqueo);
@@ -529,6 +538,11 @@ function ContratoDetalleContent() {
 
       {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
+      {errorSinCanon !== null && (
+        <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
+          <AvisoInmuebleSinCanon error={errorSinCanon} inmuebleId={contract?.propertyId} />
+        </div>
+      )}
       {actionError && (
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />

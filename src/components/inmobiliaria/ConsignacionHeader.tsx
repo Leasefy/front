@@ -1,5 +1,7 @@
 'use client';
 
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import {
   Buildings,
   House,
@@ -334,9 +336,15 @@ export function ConsignacionHeader({
           ) : (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
               <span className="text-3xl lg:text-4xl font-bold text-fg">
-                {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                {consignacion.canonPorConfirmar
+                  ? TEXTO_CANON_POR_CONFIRMAR
+                  : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </span>
-              <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
+              {consignacion.canonPorConfirmar ? (
+                <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} />
+              ) : (
+                <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
+              )}
               {/* `!!x && x > 0`: con `adminFee = 0`, `{0 && …}` pintaba un «0»
                   suelto al lado de «/mes» (Nico, 2026-09-13, con captura). */}
               {!!consignacion.adminFee && consignacion.adminFee > 0 && (

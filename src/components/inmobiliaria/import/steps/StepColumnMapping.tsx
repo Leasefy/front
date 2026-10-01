@@ -88,7 +88,6 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
   // ImportWizard.isStepValid: a SALE-only file has salePrice mapped and no
   // "Canon" column at all, so monthlyRent alone must not read as missing.
   const unmappedRequired = requiredFields.filter((req) => {
-    if (req.key === 'monthlyRent') return !isMapped('monthlyRent') && !isMapped('salePrice');
     return !isMapped(req.key);
   });
 

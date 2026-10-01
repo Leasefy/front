@@ -316,10 +316,9 @@ export function ImportWizard({
         // Una columna partida en dos cuenta por sus dos partes.
         const isMapped = (key: string) => mappings.some((m) => destinosDe(m).includes(key));
         const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
-        const priceAlternativeOk = isMapped('monthlyRent') || isMapped('salePrice');
+        // T-0129 — sin columna de precio las filas entran con el canon por confirmar.
         return (
-          priceAlternativeOk &&
-          requiredKeys.filter((key) => key !== 'monthlyRent').every(isMapped)
+          requiredKeys.every(isMapped)
         );
       }
       case 4:

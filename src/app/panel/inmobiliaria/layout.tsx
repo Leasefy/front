@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
+import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
 import { filasDelSidebar } from '@/lib/nav/sidebar-del-panel';
@@ -390,6 +391,9 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
   // membership) are admitted alongside pure-agency users.
   return (
     <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
+      {/* 🔴 Quien dejó el asistente de registro a medias no usa el panel:
+          vuelve al paso donde iba (ver AsistentePendienteGuard). */}
+      <AsistentePendienteGuard />
       <AgencySubscriptionGuard>
         <I18nProvider>
           <PermissionsProvider>

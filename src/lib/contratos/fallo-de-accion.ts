@@ -13,6 +13,7 @@
  * `useContracts.ts` las reexporta para quien ya las importaba de ahí.
  */
 import { ApiError } from '@/lib/api/client';
+import { mensajeDeDocumentoFaltante } from '@/lib/errores/documento-del-propietario';
 
 /**
  * ¿Es un 403? Con status manda el status; sin él (errores viejos que no son
@@ -32,6 +33,9 @@ export function isPermissionError(err: unknown): boolean {
  * Si el error no trae nada legible, va `porDefecto`.
  */
 export function mensajeDelFallo(err: unknown, porDefecto: string): string {
+  // T-0128: propietario sin documento / pagaré con datos incompletos.
+  const delDocumento = mensajeDeDocumentoFaltante(err);
+  if (delDocumento) return delDocumento;
   if (err instanceof ApiError) {
     if (err.messages?.length) return err.messages.join(' · ');
     return err.message || porDefecto;

@@ -88,11 +88,10 @@ function enElDocumento(testId: string): HTMLElement | null {
   return document.body.querySelector(`[data-testid="${testId}"]`)
 }
 
-async function clickIrAlPanel() {
-  const btn = enElDocumento('inmobiliaria-creada-ir-al-panel') as HTMLButtonElement
+/** La celebración no tiene botón: se va sola; acá sólo se le adelanta el reloj. */
+async function esperarLaSalida() {
   await act(async () => {
-    btn.click()
-    await new Promise((r) => setTimeout(r, 0))
+    await vi.advanceTimersByTimeAsync(10_000)
   })
 }
 
@@ -123,19 +122,24 @@ describe('<CompleteStepForm>', () => {
       // caía en ERR_CONNECTION_REFUSED tres veces.
       dashboardUrl: 'http://localhost:3001/panel/inmobiliaria?agencyId=tenant-1',
     })
-    render({ onSubmit })
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render({ onSubmit })
 
-    await clickFinish()
-    await clickIrAlPanel()
+      await clickFinish()
+      await esperarLaSalida()
 
-    expect(onSubmit).toHaveBeenCalledTimes(1)
-    expect(routerReplace).toHaveBeenCalledTimes(1)
-    const destino = routerReplace.mock.calls[0]?.[0] as string
-    expect(destino).toBe(RUTA_DEL_PANEL)
-    // Ni el origen del servidor ni el `?agencyId=` que no hace falta.
-    expect(destino).not.toContain('localhost:3001')
-    expect(destino).not.toContain('http')
-    expect(destino).not.toContain('agencyId')
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledTimes(1)
+      const destino = routerReplace.mock.calls[0]?.[0] as string
+      expect(destino).toBe(RUTA_DEL_PANEL)
+      // Ni el origen del servidor ni el `?agencyId=` que no hace falta.
+      expect(destino).not.toContain('localhost:3001')
+      expect(destino).not.toContain('http')
+      expect(destino).not.toContain('agencyId')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('no navega si `/complete` no devolvió nada', async () => {
@@ -180,22 +184,28 @@ describe('<CompleteStepForm>', () => {
     }
   })
 
-  it('su único botón refresca la sesión y LUEGO lleva al panel (el arreglo del bucle del 07-09)', async () => {
-    const orden: string[] = []
-    refreshUser.mockImplementationOnce(async () => {
-      orden.push('refresh')
-    })
-    routerReplace.mockImplementationOnce(() => orden.push('replace'))
-    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
-    await clickFinish()
+  it('al salir refresca la sesión y LUEGO lleva al panel (el arreglo del bucle del 07-09), sin ningún botón', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const orden: string[] = []
+      refreshUser.mockImplementationOnce(async () => {
+        orden.push('refresh')
+      })
+      routerReplace.mockImplementationOnce(() => orden.push('replace'))
+      render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
+      await clickFinish()
 
-    const botones = enElDocumento('inmobiliaria-creada')?.querySelectorAll('button') ?? []
-    expect(botones).toHaveLength(1)
+      // Sin botón (Nico, 30-09): la celebración no tiene nada que apretar.
+      const botones = enElDocumento('inmobiliaria-creada')?.querySelectorAll('button') ?? []
+      expect(botones).toHaveLength(0)
 
-    await clickIrAlPanel()
+      await esperarLaSalida()
 
-    expect(orden).toEqual(['refresh', 'replace'])
-    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+      expect(orden).toEqual(['refresh', 'replace'])
+      expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('con `prefers-reduced-motion` celebra igual, pero sin confeti', async () => {

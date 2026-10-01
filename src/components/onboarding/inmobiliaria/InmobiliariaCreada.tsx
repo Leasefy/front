@@ -53,10 +53,8 @@
 import { useCallback, useEffect, useId, useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
-import { ArrowRight } from '@phosphor-icons/react'
 import confetti from 'canvas-confetti'
 
-import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { AuroraDeMarca } from '@/components/brand/AuroraDeMarca'
@@ -89,13 +87,13 @@ export interface InmobiliariaCreadaProps {
   yendo: boolean
 }
 
-export function InmobiliariaCreada({ nombre, onIrAlPanel, yendo }: InmobiliariaCreadaProps) {
+export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaProps) {
   const sinMovimiento = useReducedMotion() === true
   const animar = !sinMovimiento
   const lenis = useLenis()
   const titulo = useId()
   const descripcion = useId()
-  const botonRef = useRef<HTMLButtonElement>(null)
+  const dialogoRef = useRef<HTMLDivElement>(null)
   const logoRef = useRef<HTMLDivElement>(null)
   const [montado, setMontado] = useState(false)
   const [fase, setFase] = useState<Fase>('viva')
@@ -124,9 +122,11 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel, yendo }: InmobiliariaC
     return () => lenis?.start()
   }, [lenis])
 
+  // Sin botón, el foco vive en el propio diálogo (Nico, 2026-09-30: «para
+  // qué [Ir al panel], si la pantalla solita ya lo lleva»).
   useEffect(() => {
     if (!montado) return
-    botonRef.current?.focus()
+    dialogoRef.current?.focus()
   }, [montado])
 
   // Se va sola.
@@ -193,19 +193,21 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel, yendo }: InmobiliariaC
 
   return createPortal(
     <div
+      ref={dialogoRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titulo}
       aria-describedby={descripcion}
-      className="fixed inset-0 z-[70] overflow-hidden bg-bg"
+      tabIndex={-1}
+      className="fixed inset-0 z-[70] overflow-hidden bg-bg focus:outline-none"
       data-testid="inmobiliaria-creada"
       data-fase={fase}
       data-lenis-prevent
-      // Un solo control: el foco no se escapa a la página de atrás.
+      // Nada que tabular acá y el foco no se escapa a la página de atrás.
       onKeyDown={(e) => {
         if (e.key === 'Tab') {
           e.preventDefault()
-          botonRef.current?.focus()
+          dialogoRef.current?.focus()
         }
       }}
     >
@@ -264,21 +266,6 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel, yendo }: InmobiliariaC
                   </p>
                 ) : null}
                 <p>En tu panel te guiamos para traer tu operación: propietarios, inmuebles, contratos y pagos.</p>
-              </motion.div>
-              <motion.div variants={renglon} className="mt-9">
-                <Button
-                  ref={botonRef}
-                  variant="glass"
-                  size="sm"
-                  hideArrow
-                  onClick={salir}
-                  disabled={!viva || yendo}
-                  className="gap-1.5 px-4 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-0"
-                  data-testid="inmobiliaria-creada-ir-al-panel"
-                >
-                  Ir ahora
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
               </motion.div>
             </motion.div>
           </div>

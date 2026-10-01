@@ -102,11 +102,11 @@ describe('<InmobiliariaCreada>', () => {
     expect(enElDocumento('inmobiliaria-creada-logo')).not.toBeNull()
     expect(enElDocumento('aurora-de-marca')).not.toBeNull()
 
-    const boton = enElDocumento('inmobiliaria-creada-ir-al-panel')
-    expect(boton?.textContent).toContain('Ir ahora')
-    expect(document.activeElement).toBe(boton)
-    // Un solo control.
-    expect(dialogo?.querySelectorAll('button')).toHaveLength(1)
+    // Sin botón (Nico, 2026-09-30: «para qué, si la pantalla solita ya lo
+    // lleva»): no hay nada que apretar y el foco vive en el diálogo.
+    expect(enElDocumento('inmobiliaria-creada-ir-al-panel')).toBeNull()
+    expect(dialogo?.querySelectorAll('button')).toHaveLength(0)
+    expect(document.activeElement).toBe(dialogo)
   })
 
   it('🔴 se va sola al panel UNA vez, cuando termina, sin cuenta regresiva', async () => {
@@ -125,24 +125,6 @@ describe('<InmobiliariaCreada>', () => {
 
     // Pase lo que pase después, no vuelve a navegar.
     await pasan(30_000)
-    expect(onIrAlPanel).toHaveBeenCalledTimes(1)
-  })
-
-  it('🔴 «Ir ahora» navega antes y el reloj ya no navega otra vez', async () => {
-    const { onIrAlPanel } = render()
-    await pasan(800)
-
-    const boton = enElDocumento('inmobiliaria-creada-ir-al-panel') as HTMLButtonElement
-    act(() => {
-      boton.click()
-    })
-    expect(onIrAlPanel).toHaveBeenCalledTimes(1)
-
-    // Un segundo clic (el «clic clic clic») tampoco.
-    act(() => {
-      boton.click()
-    })
-    await pasan(MOMENTO_DE_SALIR_MS + 5_000)
     expect(onIrAlPanel).toHaveBeenCalledTimes(1)
   })
 
@@ -268,22 +250,7 @@ describe('<InmobiliariaCreada> dentro de <CompleteStepForm>', () => {
     expect(routerReplace).toHaveBeenCalledTimes(1)
   })
 
-  it('🔴 «Ir ahora» y después el reloj: una sola navegación', async () => {
-    await crearYCelebrar()
-    await pasan(1_000)
-    const boton = enElDocumento('inmobiliaria-creada-ir-al-panel') as HTMLButtonElement
-    await act(async () => {
-      boton.click()
-      await vi.advanceTimersByTimeAsync(0)
-    })
-    expect(routerReplace).toHaveBeenCalledTimes(1)
-
-    await pasan(MOMENTO_DE_SALIR_MS + 5_000)
-    expect(refreshUser).toHaveBeenCalledTimes(1)
-    expect(routerReplace).toHaveBeenCalledTimes(1)
-  })
-
-  it('🔴 si refrescar la sesión falla, navega igual (lo mismo que hace el botón): no se queda colgada', async () => {
+  it('🔴 si refrescar la sesión falla, navega igual: no se queda colgada', async () => {
     refreshUser.mockImplementation(async () => {
       throw new Error('sin red')
     })

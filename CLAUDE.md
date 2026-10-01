@@ -142,6 +142,11 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
   `POST .../cargas/descartar` (`contabilidadApi.migracion.cargas` / `.descartarCarga`).
   `rutas-del-back.json` se regeneró con `node scripts/rutas-del-back.mjs <back>` para que el
   guardián las conozca.
+- **Libro diario por tandas** (`asientosPorTandas.ts`): UN lote para todas las tandas del archivo, y
+  CADA llamada a `aplicar` manda `totalDelArchivo` (el archivo entero) y `desde` (índice de la
+  primera fila de la tanda; las vueltas por reloj de una misma tanda reenvían el mismo `desde`).
+  El back guarda un prefijo contiguo del archivo; el informe trae `carga` sólo si el back la
+  mandó — ausente es «no sé», nunca «0» ni «terminó».
 - **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
   `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
 

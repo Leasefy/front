@@ -262,7 +262,7 @@ export function ImportarCuentas({
   if (resultado) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
         data-testid="puc-importacion-resultado"
       >
         <p className="flex items-center gap-2 font-medium text-fg">
@@ -311,7 +311,7 @@ export function ImportarCuentas({
   if (revision) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
         data-testid="puc-importacion-revision"
       >
         <h2 className="font-medium text-fg">Así va a quedar</h2>
@@ -374,7 +374,7 @@ export function ImportarCuentas({
 
   return (
     <section
-      className="space-y-5 rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="space-y-5 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       data-testid="puc-importacion"
     >
       <div className="flex items-start justify-between gap-3">

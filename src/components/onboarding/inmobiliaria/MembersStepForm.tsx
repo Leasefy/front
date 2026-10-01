@@ -53,7 +53,7 @@ export interface MembersStepFormProps {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
+  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 function roleLabel(role: string | undefined): string {
@@ -88,10 +88,14 @@ function MembersInviteLinksScreen({
   return (
     <div
       data-testid="members-invite-links"
-      className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
+      className="space-y-4"
     >
       <div>
-        <h2 className="text-h2">Invitaciones enviadas</h2>
+        {/* Sin marco propio: ya vive en la tarjeta del asistente. Y sin
+            negrita, como todos los títulos (Nico, 30-09). */}
+        <h2 className="font-heading text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg">
+          Invitaciones enviadas
+        </h2>
         <p className="text-body-sm text-fg-muted mt-1">
           {enviadas.length > 0
             ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
@@ -160,12 +164,12 @@ function MembersInviteLinksScreen({
               </div>
 
               {invitacion.error ? (
-                <p className="text-xs text-danger" data-testid={`invite-error-${invitacion.email}`}>
+                <p className="text-caption text-danger" data-testid={`invite-error-${invitacion.email}`}>
                   {invitacion.error}
                 </p>
               ) : invitacion.correoEnviado ? (
                 <p
-                  className="flex items-center gap-1.5 text-xs text-fg-muted"
+                  className="flex items-center gap-1.5 text-caption text-fg-muted"
                   data-testid={`invite-sent-${invitacion.email}`}
                 >
                   <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />
@@ -180,7 +184,7 @@ function MembersInviteLinksScreen({
                   data-testid={`invite-copy-${invitacion.email}`}
                   className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
                 >
-                  <span className="text-xs text-fg-muted truncate">{invitacion.enlace}</span>
+                  <span className="truncate font-mono text-caption text-fg-muted">{invitacion.enlace}</span>
                   {copiadoAhora ? (
                     <Check className="w-4 h-4 text-success flex-shrink-0" />
                   ) : (
@@ -202,7 +206,7 @@ function MembersInviteLinksScreen({
         data-testid="members-invite-continue"
       >
         Continuar
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
       </Button>
     </div>
   )
@@ -253,12 +257,16 @@ export function MembersStepForm({
 
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
+      {/* Sólo la instrucción: qué pasa al invitar (el correo con su enlace,
+          qué define el rol) lo cuenta la columna informativa del marco. */}
       <p className="text-body-sm text-fg-muted">
-        Invita a otras personas de tu inmobiliaria. Cada una recibe un correo con su enlace
-        para unirse.
+        Agrega a cada persona con su correo y el rol que va a tener en tu inmobiliaria.
       </p>
 
-      <p data-testid="members-step-optional-notice" className="text-body-sm text-fg-muted">
+      <p
+        data-testid="members-step-optional-notice"
+        className="rounded-md bg-surface-muted px-3.5 py-2.5 text-caption text-fg-muted"
+      >
         Este paso es opcional: puedes omitirlo ahora e invitar a tu equipo más adelante desde
         Configuración → Equipo.
       </p>
@@ -274,7 +282,7 @@ export function MembersStepForm({
           <div
             key={field.id}
             data-testid={`member-row-${index}`}
-            className="space-y-3 rounded-lg border border-border bg-surface p-4"
+            className="space-y-3 rounded-md border border-border bg-bg p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
@@ -297,7 +305,7 @@ export function MembersStepForm({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
               <div>
-                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-sm font-medium text-fg">
+                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-semibold text-fg">
                   Correo
                 </label>
                 <Input
@@ -314,7 +322,7 @@ export function MembersStepForm({
               </div>
 
               <div>
-                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-sm font-medium text-fg">
+                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-semibold text-fg">
                   Rol
                 </label>
                 <Controller
@@ -343,7 +351,7 @@ export function MembersStepForm({
             <div>
               {/* Opcional: sin nombre, el equipo muestra el correo hasta que
                   la persona se registre. No se deriva del correo. */}
-              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-sm font-medium text-fg">
+              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-semibold text-fg">
                 Nombre y apellido <span className="font-normal text-fg-subtle">(opcional)</span>
               </label>
               <Input
@@ -375,7 +383,7 @@ export function MembersStepForm({
       {submitError && (
         <div
           data-testid="members-step-form-error"
-          className="rounded-md bg-danger-soft border border-border p-3"
+          className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
           <p className="text-sm text-danger">{submitError}</p>
         </div>
@@ -390,7 +398,7 @@ export function MembersStepForm({
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

@@ -48,13 +48,13 @@ export interface AgencyStepFormProps {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
+  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 /** A read-only "confirmado" note under a locked field. */
 function ConfirmedHint() {
   return (
-    <p className="mt-1.5 text-xs text-fg-subtle">Confirmado en el paso anterior · no editable.</p>
+    <p className="mt-1.5 text-caption text-fg-subtle">Confirmado en el paso anterior · no editable.</p>
   )
 }
 
@@ -111,7 +111,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="agency-step-form">
       <div>
-        <label htmlFor="legalName" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="legalName" className="mb-1.5 block text-caption font-semibold text-fg">
           Razón social {!legalNameConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -127,7 +127,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       </div>
 
       <div>
-        <label htmlFor="nit" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="nit" className="mb-1.5 block text-caption font-semibold text-fg">
           NIT {!nitConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -155,7 +155,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
 
       {/* Dirección (contract key `calle`) — full width, free text. */}
       <div>
-        <label htmlFor="address.calle" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="address.calle" className="mb-1.5 block text-caption font-semibold text-fg">
           Dirección <span className="text-danger">*</span>
         </label>
         <Input id="address.calle" type="text" autoComplete="address-line1" {...register('address.calle')} />
@@ -168,7 +168,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           municipio so a stale pairing can never be submitted. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <span id="address-departamento-label" className="block text-sm font-medium text-fg mb-2">
+          <span id="address-departamento-label" className="mb-1.5 block text-caption font-semibold text-fg">
             Departamento <span className="text-danger">*</span>
           </span>
           <Controller
@@ -192,7 +192,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           <FieldError message={errors.address?.departamento?.message} />
         </div>
         <div>
-          <span id="address-municipio-label" className="block text-sm font-medium text-fg mb-2">
+          <span id="address-municipio-label" className="mb-1.5 block text-caption font-semibold text-fg">
             Municipio <span className="text-danger">*</span>
           </span>
           <Controller
@@ -217,7 +217,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
 
       {/* Código postal — full width, optional. */}
       <div>
-        <label htmlFor="address.codigoPostal" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="address.codigoPostal" className="mb-1.5 block text-caption font-semibold text-fg">
           Código postal <span className="text-fg-subtle font-normal">(opcional)</span>
         </label>
         <Input
@@ -230,7 +230,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       </div>
 
       <div>
-        <label htmlFor="primaryContactEmail" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="primaryContactEmail" className="mb-1.5 block text-caption font-semibold text-fg">
           Correo de la cuenta <span className="text-danger">*</span>
         </label>
         <Input
@@ -244,14 +244,14 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         {/* No es «el del representante legal» (eso se preguntó antes): queda
             asociado a la cuenta de la inmobiliaria y es a donde el micro manda
             el reporte diario de cartera y los avisos (Nico, 30-09-2026). */}
-        <p className="mt-1.5 text-xs text-fg-subtle">
+        <p className="mt-1.5 text-caption text-fg-subtle">
           Queda asociado a la cuenta de la inmobiliaria: ahí te llegan los reportes y avisos de Leasefy.
         </p>
         <FieldError message={errors.primaryContactEmail?.message} />
       </div>
 
       <div>
-        <label htmlFor="primaryContactPhone" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="primaryContactPhone" className="mb-1.5 block text-caption font-semibold text-fg">
           Teléfono de la cuenta <span className="text-danger">*</span>
         </label>
         {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
@@ -279,14 +279,14 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         {errors.primaryContactPhone?.message ? (
           <FieldError message={errors.primaryContactPhone.message} />
         ) : (
-          <p className="mt-1.5 text-xs text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
+          <p className="mt-1.5 text-caption text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
         )}
       </div>
 
       {submitError && (
         <div
           data-testid="agency-step-form-error"
-          className="rounded-md bg-danger-soft border border-border p-3"
+          className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
           <p className="text-sm text-danger">{submitError}</p>
         </div>
@@ -301,7 +301,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

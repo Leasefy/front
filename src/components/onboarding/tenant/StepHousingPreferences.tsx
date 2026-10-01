@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { CurrencyDollar, MapPin, PawPrint, Plus, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
+import { Check, MapPin, PawPrint, Plus, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { DatePicker, IconButton } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales'
+import { useIntentosDeAvanzar } from './intento-de-avanzar'
 
 const CITIES = [
   'Bogotá',
@@ -40,9 +41,69 @@ const IDS_DE_AMENIDADES = AMENITIES.map((a) => a.id)
 const MAX_AMENIDADES = 30
 const MAX_LARGO_AMENIDAD = 40
 
+/*
+ * Estilos de las opciones que se marcan (ciudades, mascotas, amenidades,
+ * «Aún no lo sé»), con los tokens de la casa: antes cada una repetía a mano
+ * `#1A40FF` / `#EEF1FF` y su versión oscura.
+ */
+const OPCION_BASE =
+  'border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+const OPCION_MARCADA = 'border-primary/40 bg-primary-soft text-primary'
+const OPCION_LIBRE = 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg'
+
+/** El rótulo de un grupo de opciones (`<legend>`): el mismo trazo que `FormLabel`. */
+function Rotulo({ children, requerido }: { children: ReactNode; requerido?: boolean }) {
+  return (
+    <legend className="mb-2.5 flex items-center gap-0.5 text-caption font-semibold text-fg">
+      {children}
+      {requerido ? (
+        <span className="ml-0.5 text-danger" aria-hidden="true">
+          *
+        </span>
+      ) : null}
+    </legend>
+  )
+}
+
+/** Aparece despacio y en orden; con «reducir movimiento», sólo el fundido. */
+function Seccion({ children, orden }: { children: ReactNode; orden: number }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.04 * orden, duration: 0.24 }}
+    >
+      {children}
+    </motion.section>
+  )
+}
+
 export function StepHousingPreferences() {
   const { locale } = useI18n()
-  const { draft, updateDraft, canProceed } = useTenantOnboarding()
+  const { draft, updateDraft } = useTenantOnboarding()
+  const intentos = useIntentosDeAvanzar()
+  const presupuestoRef = useRef<HTMLInputElement>(null)
+
+  /*
+   * El aviso del presupuesto ya no es un bloque amarillo fijo: sale bajo el
+   * presupuesto, con el estilo de error de la casa, cuando la persona intenta
+   * completar el perfil sin él. La regla es la de siempre (`isStepValid(2)`):
+   * mínimo mayor que cero y máximo no menor que el mínimo.
+   */
+  const faltaPresupuesto = !draft.budgetMin || draft.budgetMin <= 0 || !draft.budgetMax
+  const maximoMenor = !faltaPresupuesto && (draft.budgetMax as number) < (draft.budgetMin as number)
+  const errorDelPresupuesto =
+    intentos > 0 && (faltaPresupuesto || maximoMenor)
+      ? faltaPresupuesto
+        ? 'Ingresa tu presupuesto mínimo y máximo para continuar'
+        : 'El máximo no puede ser menor que el mínimo'
+      : null
+
+  useEffect(() => {
+    if (intentos > 0 && (faltaPresupuesto || maximoMenor)) presupuestoRef.current?.focus()
+    // Sólo al intentar: no robar el foco mientras la persona escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intentos])
   const [customZone, setCustomZone] = useState('')
   /*
    * «Otra amenidad» (Nico, 2026-09-15): las ocho de la lista no son todas las
@@ -117,75 +178,74 @@ export function StepHousingPreferences() {
     setOtraAmenidad('')
   }
 
-  return (
-    <div className="space-y-6">
-        {/* Budget Range */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <label className="block text-sm font-medium text-fg-muted mb-3">
-            Presupuesto mensual <span className="text-danger">*</span>
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
-              </div>
-              <Input
-                type="text"
-                inputMode="numeric"
-                id="budgetMin"
-                aria-label="Presupuesto mínimo mensual"
-                value={draft.budgetMin ? formatCurrency(draft.budgetMin).replace('COP', '').trim() : ''}
-                onChange={handleBudgetMinChange}
-                placeholder="Mínimo"
-                className={cn('h-12 pl-12 rounded-xl', draft.budgetMin && 'border-primary/30')}
-              />
-            </div>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
-              </div>
-              <Input
-                type="text"
-                inputMode="numeric"
-                id="budgetMax"
-                aria-label="Presupuesto máximo mensual"
-                value={draft.budgetMax ? formatCurrency(draft.budgetMax).replace('COP', '').trim() : ''}
-                onChange={handleBudgetMaxChange}
-                placeholder="Máximo"
-                className={cn('h-12 pl-12 rounded-xl', draft.budgetMax && 'border-primary/30')}
-              />
-            </div>
-          </div>
-        </motion.div>
+  const zonasPropias = (draft.preferredZones || []).filter((z) => !CITIES.includes(z))
 
-        {/* Preferred Zones */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <label className="block text-sm font-medium text-fg-muted mb-3">
-            Ciudades de interés
-          </label>
-          <div className="flex flex-wrap gap-2 mb-3">
+  return (
+    <div className="space-y-7">
+      {/* Budget Range */}
+      <Seccion orden={0}>
+        <fieldset aria-describedby={errorDelPresupuesto ? 'presupuesto-error' : undefined}>
+          <Rotulo requerido>Presupuesto mensual</Rotulo>
+          <div className="grid grid-cols-2 gap-3">
+            {(
+              [
+                { id: 'budgetMin', etiqueta: 'Presupuesto mínimo mensual', placeholder: 'Mínimo', valor: draft.budgetMin, onChange: handleBudgetMinChange, ref: presupuestoRef },
+                { id: 'budgetMax', etiqueta: 'Presupuesto máximo mensual', placeholder: 'Máximo', valor: draft.budgetMax, onChange: handleBudgetMaxChange, ref: undefined },
+              ] as const
+            ).map((campo) => (
+              <div key={campo.id} className="relative">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-body-sm text-fg-subtle"
+                >
+                  $
+                </span>
+                <Input
+                  ref={campo.ref}
+                  type="text"
+                  inputMode="numeric"
+                  id={campo.id}
+                  aria-label={campo.etiqueta}
+                  aria-invalid={errorDelPresupuesto ? true : undefined}
+                  invalid={!!errorDelPresupuesto}
+                  value={campo.valor ? formatCurrency(campo.valor).replace('COP', '').trim() : ''}
+                  onChange={campo.onChange}
+                  placeholder={campo.placeholder}
+                  className="pl-8 tabular-nums"
+                />
+              </div>
+            ))}
+          </div>
+          {errorDelPresupuesto ? (
+            <p id="presupuesto-error" role="alert" className="mt-1.5 text-caption text-danger">
+              {errorDelPresupuesto}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-caption text-fg-subtle">En pesos colombianos, lo que pagarías al mes.</p>
+          )}
+        </fieldset>
+      </Seccion>
+
+      {/* Preferred Zones */}
+      <Seccion orden={1}>
+        <fieldset>
+          <Rotulo>Ciudades de interés</Rotulo>
+          <div className="mb-3 flex flex-wrap gap-2">
             {CITIES.map((city) => {
-              const isSelected = draft.preferredZones?.includes(city)
+              const isSelected = !!draft.preferredZones?.includes(city)
               return (
                 <button
                   key={city}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => toggleZone(city)}
                   className={cn(
-                    'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
-                    isSelected
-                      ? 'bg-[#1A40FF] text-white'
-                      : 'bg-surface-muted text-fg-muted hover:bg-surface-hover'
+                    'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-body-sm font-medium',
+                    OPCION_BASE,
+                    isSelected ? OPCION_MARCADA : OPCION_LIBRE,
                   )}
                 >
+                  {isSelected ? <Check className="h-3.5 w-3.5" weight="bold" aria-hidden /> : null}
                   {city}
                 </button>
               )
@@ -193,12 +253,12 @@ export function StepHousingPreferences() {
           </div>
 
           {/* Selected custom zones */}
-          {draft.preferredZones && draft.preferredZones.filter(z => !CITIES.includes(z)).length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {draft.preferredZones.filter(z => !CITIES.includes(z)).map((zone) => (
+          {zonasPropias.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {zonasPropias.map((zone) => (
                 <span
                   key={zone}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full text-sm"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary-soft py-1 pl-3 pr-1 text-body-sm text-primary"
                 >
                   {zone}
                   <IconButton
@@ -207,7 +267,7 @@ export function StepHousingPreferences() {
                     aria-label="Quitar zona"
                     onClick={() => toggleZone(zone)}
                     icon={<X className="h-3 w-3" />}
-                    className="rounded-full p-0.5 min-h-0 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                    className="min-h-0 rounded-full p-1 text-primary hover:bg-primary/10"
                   />
                 </span>
               ))}
@@ -216,114 +276,100 @@ export function StepHousingPreferences() {
 
           {/* Add custom zone */}
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <MapPin className="h-5 w-5 text-fg-subtle" />
-              </div>
+            <div className="relative min-w-0 flex-1">
+              <MapPin
+                aria-hidden
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
+              />
               <Input
                 type="text"
+                aria-label="Otro barrio o zona"
                 value={customZone}
                 onChange={(e) => setCustomZone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addCustomZone()}
                 placeholder="Agregar otro barrio o zona"
-                className="h-12 pl-12 rounded-xl"
+                className="pl-10"
               />
             </div>
             <Button
               type="button"
+              variant="outline"
               hideArrow
-              size="lg"
               onClick={addCustomZone}
               disabled={!customZone.trim()}
-              className="rounded-xl"
+              className="h-11 shrink-0"
             >
               Agregar
             </Button>
           </div>
-        </motion.div>
+        </fieldset>
+      </Seccion>
 
-        {/* Move-in Date */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <label htmlFor="moveInDate" className="block text-sm font-medium text-fg-muted mb-2">
-            ¿Cuándo planeas mudarte?
-          </label>
-          {/* El calendario de cadence y no el nativo del navegador (que salía en
-              inglés), y una salida para quien todavía no sabe: la fecha nunca
-              fue obligatoria, pero el campo sólo ofrecía el calendario
-              (Nico, 2026-09-15). Elegir una opción apaga la otra. */}
-          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
-            <DatePicker
-              id="moveInDate"
-              value={fechaLocal(draft.moveInDate)}
-              onChange={(d) => updateDraft({ moveInDate: aFechaIso(d), moveInDateUnknown: false })}
-              minDate={hoyLocal()}
-              placeholder="Elige una fecha"
-              className={cn(
-                'h-12 w-full min-w-0 rounded-xl px-4 text-sm',
-                draft.moveInDate && 'border-[#1A40FF]/30',
-              )}
-            />
+      {/* Move-in Date */}
+      <Seccion orden={2}>
+        <label htmlFor="moveInDate" className="mb-2.5 inline-flex text-caption font-semibold text-fg">
+          ¿Cuándo planeas mudarte?
+        </label>
+        {/* El calendario de cadence y no el nativo del navegador (que salía en
+            inglés), y una salida para quien todavía no sabe: la fecha nunca
+            fue obligatoria, pero el campo sólo ofrecía el calendario
+            (Nico, 2026-09-15). Elegir una opción apaga la otra. */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <DatePicker
+            id="moveInDate"
+            value={fechaLocal(draft.moveInDate)}
+            onChange={(d) => updateDraft({ moveInDate: aFechaIso(d), moveInDateUnknown: false })}
+            minDate={hoyLocal()}
+            placeholder="Elige una fecha"
+            className={cn('h-11 w-full min-w-0 px-4 text-body-sm', draft.moveInDate && 'border-primary/40')}
+          />
+          <button
+            type="button"
+            data-testid="mudanza-sin-fecha"
+            aria-pressed={!!draft.moveInDateUnknown}
+            onClick={() =>
+              updateDraft({ moveInDate: '', moveInDateUnknown: !draft.moveInDateUnknown })
+            }
+            className={cn(
+              'h-11 rounded-[12px] px-5 text-body-sm font-medium',
+              OPCION_BASE,
+              draft.moveInDateUnknown ? OPCION_MARCADA : OPCION_LIBRE,
+            )}
+          >
+            Aún no lo sé
+          </button>
+        </div>
+      </Seccion>
+
+      {/* Pets */}
+      <Seccion orden={3}>
+        <fieldset>
+          <Rotulo>¿Tienes mascotas?</Rotulo>
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              data-testid="mudanza-sin-fecha"
-              aria-pressed={!!draft.moveInDateUnknown}
-              onClick={() =>
-                updateDraft({ moveInDate: '', moveInDateUnknown: !draft.moveInDateUnknown })
-              }
-              className={cn(
-                'h-12 px-5 rounded-xl border text-sm font-semibold transition-all duration-200',
-                draft.moveInDateUnknown
-                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 text-[#1A40FF] dark:bg-[#1A40FF]/20 dark:text-[#5570FF]'
-                  : 'border-border hover:border-border-strong bg-surface text-fg-muted'
-              )}
-            >
-              Aún no lo sé
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Pets */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <label className="block text-sm font-medium text-fg-muted mb-3">
-            ¿Tienes mascotas?
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
+              aria-pressed={!draft.hasPets}
               onClick={() => updateDraft({ hasPets: false, petDetails: '' })}
               className={cn(
-                'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
-                !draft.hasPets
-                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                  : 'border-border hover:border-border-strong bg-surface'
+                'flex min-h-11 items-center justify-center gap-2 rounded-[12px] px-3 py-2.5 text-body-sm font-medium',
+                OPCION_BASE,
+                !draft.hasPets ? OPCION_MARCADA : OPCION_LIBRE,
               )}
             >
-              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
-                No tengo mascotas
-              </span>
+              No tengo mascotas
             </button>
             <button
               type="button"
+              aria-pressed={!!draft.hasPets}
               onClick={() => updateDraft({ hasPets: true })}
               className={cn(
-                'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
-                draft.hasPets
-                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                  : 'border-border hover:border-border-strong bg-surface'
+                'flex min-h-11 items-center justify-center gap-2 rounded-[12px] px-3 py-2.5 text-body-sm font-medium',
+                OPCION_BASE,
+                draft.hasPets ? OPCION_MARCADA : OPCION_LIBRE,
               )}
             >
-              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
-              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
-                Sí, tengo mascotas
-              </span>
+              <PawPrint className="h-4 w-4 shrink-0" aria-hidden />
+              Sí, tengo mascotas
             </button>
           </div>
 
@@ -331,49 +377,43 @@ export function StepHousingPreferences() {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mt-3"
+              className="mt-2"
             >
               <Input
                 type="text"
+                aria-label="Describe tus mascotas"
                 value={draft.petDetails || ''}
                 onChange={(e) => updateDraft({ petDetails: e.target.value })}
                 placeholder="Describe tus mascotas (tipo, tamaño, cantidad)"
-                className="h-12 rounded-xl"
               />
             </motion.div>
           )}
-        </motion.div>
+        </fieldset>
+      </Seccion>
 
-        {/* Amenities */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <label className="block text-sm font-medium text-fg-muted mb-3">
-            Amenidades importantes para ti
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Amenities */}
+      <Seccion orden={4}>
+        <fieldset>
+          <Rotulo>Amenidades importantes para ti</Rotulo>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {AMENITIES.map((amenity) => {
               const Icon = amenity.icon
-              const isSelected = draft.preferredAmenities?.includes(amenity.id)
+              const isSelected = !!draft.preferredAmenities?.includes(amenity.id)
 
               return (
                 <button
                   key={amenity.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => toggleAmenity(amenity.id)}
                   className={cn(
-                    'flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
-                    isSelected
-                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                      : 'border-border hover:border-border-strong bg-surface'
+                    'flex flex-col items-center gap-1.5 rounded-[12px] px-2 py-3',
+                    OPCION_BASE,
+                    isSelected ? OPCION_MARCADA : OPCION_LIBRE,
                   )}
                 >
-                  <Icon className={cn('h-5 w-5', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
-                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
-                    {amenity.label}
-                  </span>
+                  <Icon className="h-5 w-5" aria-hidden />
+                  <span className="text-center text-caption font-medium leading-tight">{amenity.label}</span>
                 </button>
               )
             })}
@@ -385,23 +425,22 @@ export function StepHousingPreferences() {
               aria-expanded={otraAbierta}
               onClick={() => setOtraAbierta((v) => !v)}
               className={cn(
-                'col-span-2 sm:col-span-4 flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-200',
-                otraAbierta || amenidadesPropias.length > 0
-                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 text-[#1A40FF] dark:text-[#5570FF]'
-                  : 'border-border-strong hover:border-fg-subtle bg-surface text-fg-muted'
+                'col-span-2 flex items-center justify-center gap-2 rounded-[12px] border-dashed p-3 sm:col-span-4',
+                OPCION_BASE,
+                otraAbierta || amenidadesPropias.length > 0 ? OPCION_MARCADA : OPCION_LIBRE,
               )}
             >
-              <Plus className="h-4 w-4" />
-              <span className="text-xs font-medium">Otra amenidad</span>
+              <Plus className="h-4 w-4" aria-hidden />
+              <span className="text-caption font-medium">Otra amenidad</span>
             </button>
           </div>
 
           {amenidadesPropias.length > 0 && (
-            <div data-testid="amenidades-propias" className="flex flex-wrap gap-2 mt-3">
+            <div data-testid="amenidades-propias" className="mt-3 flex flex-wrap gap-2">
               {amenidadesPropias.map((amenidad) => (
                 <span
                   key={amenidad}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full text-sm"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary-soft py-1 pl-3 pr-1 text-body-sm text-primary"
                 >
                   {amenidad}
                   <IconButton
@@ -410,7 +449,7 @@ export function StepHousingPreferences() {
                     aria-label={`Quitar ${amenidad}`}
                     onClick={() => toggleAmenity(amenidad)}
                     icon={<X className="h-3 w-3" />}
-                    className="rounded-full p-0.5 min-h-0 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                    className="min-h-0 rounded-full p-1 text-primary hover:bg-primary/10"
                   />
                 </span>
               ))}
@@ -418,7 +457,7 @@ export function StepHousingPreferences() {
           )}
 
           {otraAbierta && (
-            <div className="flex gap-2 mt-3">
+            <div className="mt-3 flex gap-2">
               <Input
                 type="text"
                 id="otraAmenidad"
@@ -433,32 +472,22 @@ export function StepHousingPreferences() {
                   }
                 }}
                 placeholder="¿Cuál? Ej.: ascensor, terraza, cerca al metro"
-                className="h-12 flex-1 rounded-xl"
+                className="min-w-0 flex-1"
               />
               <Button
                 type="button"
+                variant="outline"
                 hideArrow
-                size="lg"
                 onClick={addOtraAmenidad}
                 disabled={!otraAmenidad.trim()}
-                className="rounded-xl"
+                className="h-11 shrink-0"
               >
                 Agregar
               </Button>
             </div>
           )}
-        </motion.div>
-
-      {/* Validation hint */}
-      {!canProceed && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-sm text-warning bg-warning-soft px-4 py-3 rounded-xl"
-        >
-          Ingresa tu presupuesto mínimo y máximo para continuar
-        </motion.p>
-      )}
+        </fieldset>
+      </Seccion>
     </div>
   )
 }

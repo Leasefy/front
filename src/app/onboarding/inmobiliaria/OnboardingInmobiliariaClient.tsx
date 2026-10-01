@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
-import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
+import { MarcoDelAsistente } from '@/components/onboarding/inmobiliaria/MarcoDelAsistente'
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
 import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
@@ -29,7 +29,6 @@ import {
 } from '@/components/onboarding/inmobiliaria/policy-step-schema'
 import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
-import { wizardStepLabel } from '@/components/onboarding/inmobiliaria/wizard-steps'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
 
 /**
@@ -211,61 +210,34 @@ function OnboardingWizard({
   // While the invite-links screen is pending, keep the stepper/header pinned
   // to "Miembros" instead of following the hook's already-advanced `currentStep`.
   const displayStep = pendingMembersInvites ? 'members' : effectiveStep
-  const stepLabel = wizardStepLabel(displayStep)
 
+  const cargando = status === 'loading' && error === null
+  const conErrorDeSesion = error !== null && error.kind !== 'validation' && error.kind !== 'conflict'
+
+  // El marco (pasos a la izquierda, el paso al centro, lo informativo a la
+  // derecha) es el mismo del inquilino: `MarcoDelAsistente`. Acá sólo se
+  // decide qué va adentro.
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
-        {/* Más ancho que el `max-w-md` del cuerpo a propósito: con el logo, los
-            cuatro pasos y la salida en la misma fila, a 2xl el rótulo de un
-            paso se partía en dos renglones. */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-4 h-16">
-            {/*
-              🔴 NO es `BrandHomeLink`. Ese resuelve `getUserHomeRoute`, y
-              mientras la agencia no termina de crearse la persona sigue con
-              rol `tenant`: el logo la mandaba a `/inquilino`, el panel del
-              INQUILINO, a mitad del alta de una inmobiliaria (auditoría
-              2026-09-05). Dentro del asistente el logo es marca, no salida —
-              para salir está `SalirDelRegistro`, acá al lado.
-            */}
-            <span className="flex items-center gap-2" aria-label="Leasefy">
-              <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
-            </span>
-            {/* Un paso hecho devuelve a ese paso (Nico, 2026-09-07). Es el
-                mismo override que usa el CTA de «faltan pasos» de Confirmar:
-                se limpia solo cuando el paso se vuelve a enviar bien. */}
-            <OnboardingWizardStepper
-              currentStep={displayStep}
-              reachedStep={currentStep}
-              onNavigateToStep={setCompleteStepOverride}
-            />
-            {/* El asistente tampoco tenía salida: la única era cerrar la
-                pestaña. Ahora sí, y la promesa de volver donde quedaste la
-                cumple el punto de retorno del back. */}
-            <SalirDelRegistro />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-6 py-12 space-y-6">
-        {status === 'loading' && error === null && (
+    <MarcoDelAsistente
+      paso={displayStep}
+      pasoAlcanzado={currentStep}
+      onNavigateToStep={setCompleteStepOverride}
+      sinEncabezado={cargando || conErrorDeSesion}
+    >
+      <div className="space-y-6">
+        {cargando && (
           <div className="flex flex-col items-center justify-center gap-3 py-16" data-testid="wizard-loading">
             <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
             <p className="text-body-sm text-fg-muted">Cargando tu sesión de onboarding...</p>
           </div>
         )}
 
-        {error !== null && error.kind !== 'validation' && error.kind !== 'conflict' && (
+        {conErrorDeSesion && (
           <OnboardingSessionErrorBanner error={error} onRetry={refresh} isRetrying={status === 'loading'} />
         )}
 
         {status !== 'loading' && (error === null || error.kind === 'validation' || error.kind === 'conflict') && (
           <>
-            <div className="text-center mb-2">
-              <h1 className="text-h1">{stepLabel}</h1>
-            </div>
-
             {effectiveStep === 'agency' || effectiveStep === null || effectiveStep === 'start' ? (
               <AgencyStepForm
                 isSubmitting={isSubmitting}
@@ -326,7 +298,7 @@ function OnboardingWizard({
             )}
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </MarcoDelAsistente>
   )
 }

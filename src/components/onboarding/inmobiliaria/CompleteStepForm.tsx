@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { ArrowRight, CheckCircle, WarningCircle } from '@phosphor-icons/react'
+import { ArrowRight, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import type { OnboardingSessionCompleteResponse, OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
@@ -83,6 +83,8 @@ function textoDelDraft(draft: Record<string, unknown> | null | undefined, ...rut
 export interface LineaDelResumen {
   etiqueta: string
   valor: string
+  /** El valor es un número (NIT, teléfono): se pinta en `font-mono`. */
+  mono?: boolean
 }
 
 /**
@@ -108,7 +110,7 @@ export function resumenDelRegistro(
       valor:
         textoDelDraft(draft, 'legalName') ?? textoDelDraft(draft, 'proposedAgencyName') ?? '',
     },
-    { etiqueta: 'NIT', valor: textoDelDraft(draft, 'nit') ?? '' },
+    { etiqueta: 'NIT', valor: textoDelDraft(draft, 'nit') ?? '', mono: true },
     { etiqueta: 'Dirección', valor: calle ?? '' },
     { etiqueta: 'Ciudad', valor: ubicacion },
     {
@@ -120,6 +122,7 @@ export function resumenDelRegistro(
       etiqueta: 'Teléfono de la cuenta',
       valor:
         textoDelDraft(draft, 'primaryContactPhone') ?? textoDelDraft(draft, 'contactPhone') ?? '',
+      mono: true,
     },
     miembros.length > 0
       ? {
@@ -215,12 +218,9 @@ export function CompleteStepForm({
     const targetStep = missingSteps ? firstMissingStep(missingSteps) : requiredStep
 
     return (
-      <div
-        data-testid="complete-step-missing"
-        className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
-      >
-        <div className="flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+      <div data-testid="complete-step-missing" className="space-y-4">
+        <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning-soft p-4">
+          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" aria-hidden />
           <div>
             <p className="text-sm font-medium text-fg">Te faltan estos pasos antes de finalizar</p>
             {missingStepKeys.length > 0 && (
@@ -243,7 +243,7 @@ export function CompleteStepForm({
             data-testid="complete-step-go-to-missing"
           >
             Ir a {labelFor(targetStep)}
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </Button>
         )}
       </div>
@@ -251,31 +251,33 @@ export function CompleteStepForm({
   }
 
   return (
-    <div
-      data-testid="complete-step-form"
-      className="rounded-lg border border-border bg-surface p-6 text-center space-y-4 shadow-sm"
-    >
-      <div className="w-12 h-12 mx-auto rounded-md bg-primary-soft flex items-center justify-center">
-        <CheckCircle className="w-6 h-6 text-primary" />
-      </div>
-      <div>
-        <h2 className="text-h2">Ya casi está</h2>
-        <p className="text-body-sm text-fg-muted mt-1">
-          {resumen.length > 0
-            ? 'Revisa que todo esté en orden y crea tu inmobiliaria.'
-            : 'Confirma para crear tu inmobiliaria.'}
-        </p>
-      </div>
+    // Sin marco propio, ícono ni «Ya casi está» en negrita: el paso ya vive en
+    // la tarjeta del asistente, con su título («Revisa y crea tu
+    // inmobiliaria»). Acá queda lo que se revisa y el botón. La frase de
+    // apertura sólo cuando no hay resumen: con resumen repetía el título
+    // palabra por palabra (la misma frase no se dice dos veces).
+    <div data-testid="complete-step-form" className="space-y-5">
+      {resumen.length === 0 && (
+        <p className="text-body-sm text-fg-muted">Confirma para crear tu inmobiliaria.</p>
+      )}
 
       {resumen.length > 0 && (
         <dl
           data-testid="complete-step-resumen"
-          className="text-left rounded-md border border-border-faint bg-surface-muted divide-y divide-border-faint"
+          className="divide-y divide-border-faint rounded-md border border-border bg-bg"
         >
           {resumen.map((linea) => (
-            <div key={linea.etiqueta} className="flex items-start justify-between gap-4 px-3 py-2">
-              <dt className="text-body-sm text-fg-muted shrink-0">{linea.etiqueta}</dt>
-              <dd className="text-body-sm text-fg text-right min-w-0 break-words">{linea.valor}</dd>
+            <div key={linea.etiqueta} className="flex items-start justify-between gap-4 px-4 py-2.5">
+              <dt className="shrink-0 text-body-sm text-fg-muted">{linea.etiqueta}</dt>
+              <dd
+                className={
+                  linea.mono
+                    ? 'min-w-0 break-words text-right font-mono text-body-sm tabular-nums text-fg'
+                    : 'min-w-0 break-words text-right text-body-sm text-fg'
+                }
+              >
+                {linea.valor}
+              </dd>
             </div>
           ))}
         </dl>
@@ -298,7 +300,7 @@ export function CompleteStepForm({
         ) : (
           <>
             Crear mi inmobiliaria
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

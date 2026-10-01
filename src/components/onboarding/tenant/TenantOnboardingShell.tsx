@@ -1,63 +1,81 @@
 'use client'
 
-import { LeasefyLogotype } from '@/components/brand';
+import { useState } from 'react'
+import { LeasefyLogotype } from '@/components/brand'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { RUTA_DEL_SELECTOR_DE_PERFIL } from '@/lib/auth/perfil-de-onboarding'
 import { sanitizeReturnUrl } from '@/lib/utils'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Check, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
+import { ArrowLeft, ArrowRight, Clock, Eye, Lightning, SealCheck, Shield, ShieldCheck } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
 import { useI18n } from '@/lib/i18n'
+import {
+  EnlaceDeVuelta,
+  OnboardingInfoPanel,
+  OnboardingStepList,
+  OnboardingStepTitle,
+  OnboardingWizardLayout,
+  type PasoDeLaLista,
+} from '@/components/onboarding/wizard'
+import { IntentoDeAvanzarContext } from './intento-de-avanzar'
 
 interface TenantOnboardingShellProps {
   children: React.ReactNode
 }
 
-const STEP_ICONS = {
-  user: User,
-  home: House,
-}
+/**
+ * Una foto de marca por paso: la sala para «quién eres», el cojín de cerca
+ * para «tu hogar ideal». Las dos son de casa, no de oficina: es el registro
+ * de quien busca dónde vivir.
+ */
+const FOTOS_POR_PASO = [
+  '/images/features/leasefy-brand-13.jpg',
+  '/images/features/leasefy-brand-16.jpg',
+]
 
 // Step-specific "why we need this" content
 const STEP_WHY_CONTENT = {
   es: [
     {
+      eyebrow: 'Tus datos',
       title: '¿Por qué necesitamos esto?',
       points: [
-        { icon: SealCheck, text: 'Verificamos tu identidad para proteger a todos' },
-        { icon: Shield, text: 'Tu información está encriptada y segura' },
-        { icon: Lightning, text: 'Propietarios ven tu perfil verificado' },
+        { icono: SealCheck, texto: 'Verificamos tu identidad para proteger a todos' },
+        { icono: Shield, texto: 'Tu información está encriptada y segura' },
+        { icono: Lightning, texto: 'Propietarios ven tu perfil verificado' },
       ],
     },
     {
+      eyebrow: 'Tu búsqueda',
       title: '¿Por qué preferencias?',
       points: [
-        { icon: Eye, text: 'Te mostramos solo propiedades relevantes' },
-        { icon: Clock, text: 'Ahorra tiempo en tu búsqueda' },
-        { icon: Lightning, text: 'Recibe alertas personalizadas' },
+        { icono: Eye, texto: 'Te mostramos solo propiedades relevantes' },
+        { icono: Clock, texto: 'Ahorra tiempo en tu búsqueda' },
+        { icono: Lightning, texto: 'Recibe alertas personalizadas' },
       ],
     },
   ],
   en: [
     {
+      eyebrow: 'Your details',
       title: 'Why do we need this?',
       points: [
-        { icon: SealCheck, text: 'We verify your identity to protect everyone' },
-        { icon: Shield, text: 'Your information is encrypted and secure' },
-        { icon: Lightning, text: 'Landlords see your verified profile' },
+        { icono: SealCheck, texto: 'We verify your identity to protect everyone' },
+        { icono: Shield, texto: 'Your information is encrypted and secure' },
+        { icono: Lightning, texto: 'Landlords see your verified profile' },
       ],
     },
     {
+      eyebrow: 'Your search',
       title: 'Why preferences?',
       points: [
-        { icon: Eye, text: 'We show you only relevant properties' },
-        { icon: Clock, text: 'Save time in your search' },
-        { icon: Lightning, text: 'Receive personalized alerts' },
+        { icono: Eye, texto: 'We show you only relevant properties' },
+        { icono: Clock, texto: 'Save time in your search' },
+        { icono: Lightning, texto: 'Receive personalized alerts' },
       ],
     },
   ],
@@ -78,15 +96,36 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     submitOnboarding,
     isSubmitting,
     canProceed,
-    progressPercentage,
+    isComplete,
   } = useTenantOnboarding()
 
-  const currentStepConfig = TENANT_ONBOARDING_STEPS[currentStep - 1]
   const isFirstStep = currentStep === 1
   const isLastStep = currentStep === totalSteps
   // Cap step index to valid range (in case localStorage has old step 4)
   const safeStepIndex = Math.min(currentStep - 1, STEP_WHY_CONTENT.es.length - 1)
   const whyContent = STEP_WHY_CONTENT[locale as 'es' | 'en']?.[safeStepIndex] || STEP_WHY_CONTENT.es[safeStepIndex]
+
+  /*
+   * Intentos de «Continuar» con el paso incompleto (ver `intento-de-avanzar`).
+   * Se reinicia al cambiar de paso: el paso nuevo arranca sin errores.
+   */
+  const [intento, setIntento] = useState({ paso: currentStep, veces: 0 })
+  const intentos = intento.paso === currentStep ? intento.veces : 0
+
+  /*
+   * «Cambiar de perfil» (Nico, 30-09: «esa de inquilino no tiene para
+   * devolverse para poder elegir inmobiliaria si se quiere»).
+   *
+   * Volver es seguro mientras el onboarding no termina: elegir «Inquilino» en
+   * el selector sólo guarda `user_metadata.intended_role` en Supabase
+   * (`elegirPerfil`); el rol de verdad lo pone el back recién en
+   * `POST /users/me/onboarding`, al final de este asistente. Si en el selector
+   * elige «Inmobiliaria», la elección se sobrescribe y su alta pone el rol.
+   *
+   * Con el onboarding ya terminado no se ofrece: el rol ya quedó puesto y el
+   * selector mismo manda a esa persona a su panel.
+   */
+  const puedeCambiarDePerfil = !isComplete && user?.onboardingCompleted !== true
 
   // Localized content
   const content = {
@@ -102,12 +141,16 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       ],
       stepOf: 'Paso',
       of: 'de',
+      stepsLabel: 'Pasos de tu registro',
+      goTo: 'Ir a',
       skip: 'Saltar por ahora',
       back: 'Atrás',
       continue: 'Continuar',
       submit: 'Completar perfil',
       saving: 'Guardando...',
       autoFloppyDisk: 'Tu progreso se guarda automáticamente',
+      changeProfile: 'Cambiar de perfil',
+      secure: 'Datos protegidos con encriptación de nivel bancario',
     },
     en: {
       steps: [
@@ -121,18 +164,29 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       ],
       stepOf: 'Step',
       of: 'of',
+      stepsLabel: 'Your sign-up steps',
+      goTo: 'Go to',
       skip: 'Skip for now',
       back: 'Back',
       continue: 'Continue',
       submit: 'Complete profile',
       saving: 'Saving...',
       autoFloppyDisk: 'Your progress is saved automatically',
+      changeProfile: 'Change profile',
+      secure: 'Data protected with bank-level encryption',
     },
   }
 
   const t = content[locale as 'es' | 'en'] || content.es
 
   const handleNext = () => {
+    // El botón ya no se apaga con el paso incompleto: si falta algo, no se
+    // avanza (la misma regla de siempre, `canProceed`) y el paso muestra en
+    // el campo qué falta. Nunca se manda un perfil incompleto.
+    if (!canProceed) {
+      setIntento({ paso: currentStep, veces: intentos + 1 })
+      return
+    }
     if (isLastStep) {
       submitOnboarding()
         .then(() => {
@@ -163,263 +217,114 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     router.push(isAuthenticated ? '/inquilino' : '/')
   }
 
+  const pasos: PasoDeLaLista[] = TENANT_ONBOARDING_STEPS.map(({ id: step }) => {
+    const isCompleted = completedSteps.includes(step)
+    const isCurrent = step === currentStep
+    // La misma regla de antes para poder volver a un paso.
+    const isClickable = isCompleted || isCurrent || step === 1
+    const label = t.steps[step - 1].label
+    return {
+      key: String(step),
+      label,
+      descripcion: t.steps[step - 1].description,
+      estado: isCurrent ? 'actual' : isCompleted ? 'hecho' : 'pendiente',
+      onSelect: isClickable && !isCurrent ? () => goToStep(step) : undefined,
+      etiquetaDelBoton: `${t.goTo} ${label}`,
+      testId: `paso-inquilino-${step}`,
+    }
+  })
+
   return (
-    <div className="min-h-screen w-full bg-bg">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <BrandHomeLink className="flex items-center">
-              <LeasefyLogotype className="h-7 w-auto" title="Leasefy" />
-            </BrandHomeLink>
+    <OnboardingWizardLayout
+      marca={
+        <BrandHomeLink className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+          <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
+        </BrandHomeLink>
+      }
+      accionesDeCabecera={
+        <button
+          type="button"
+          onClick={handleSkip}
+          data-testid="saltar-onboarding-inquilino"
+          className="inline-flex h-9 items-center rounded-full px-4 text-body-sm font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          {t.skip}
+        </button>
+      }
+      pasos={<OnboardingStepList pasos={pasos} etiqueta={t.stepsLabel} nota={t.autoFloppyDisk} />}
+      antesDelContenido={
+        puedeCambiarDePerfil ? (
+          <EnlaceDeVuelta href={RUTA_DEL_SELECTOR_DE_PERFIL} testId="cambiar-de-perfil">
+            {t.changeProfile}
+          </EnlaceDeVuelta>
+        ) : null
+      }
+      informacion={
+        <OnboardingInfoPanel
+          pasoId={`inquilino-${currentStep}`}
+          rotulo={whyContent.eyebrow}
+          titulo={whyContent.title}
+          razones={whyContent.points}
+          foto={FOTOS_POR_PASO[safeStepIndex]}
+          pie={{ icono: ShieldCheck, texto: t.secure }}
+        />
+      }
+    >
+      {/* Step Header */}
+      <div className="px-5 pb-6 pt-6 sm:px-8 sm:pt-8">
+        <OnboardingStepTitle
+          pasoId={String(currentStep)}
+          rotulo={`${t.stepOf} ${currentStep} ${t.of} ${totalSteps}`}
+          titulo={t.stepTitle[currentStep - 1]}
+          subtitulo={t.stepSubtitle[currentStep - 1]}
+        />
+      </div>
 
-            {/* Progress - Mobile */}
-            <div className="sm:hidden text-sm font-mono tabular-nums text-fg-muted">
-              {t.stepOf} {currentStep} {t.of} {totalSteps}
-            </div>
-
-            {/* Skip button */}
-            <Button
-              variant="link"
-              size="sm"
-              onClick={handleSkip}
-              hideArrow
-              className="text-fg-muted hover:text-fg"
+      {/* Form Content */}
+      <div className="px-5 pb-7 sm:px-8 sm:pb-8">
+        <IntentoDeAvanzarContext.Provider value={intentos}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {t.skip}
-            </Button>
-          </div>
-        </div>
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </IntentoDeAvanzarContext.Provider>
+      </div>
 
-        {/* Mobile Progress Bar */}
-        <div className="sm:hidden h-1 bg-surface-muted">
-          <motion.div
-            className="h-full bg-primary"
-            animate={{ width: `${progressPercentage}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      </header>
+      {/* Footer. `px-4` en teléfono: a 390px, con `px-5`, «Atrás» + «Completar
+          perfil» sumaban 1px más que la tarjeta y la página desbordaba (medido
+          con getBoundingClientRect). */}
+      <div className="flex items-center justify-between gap-3 border-t border-border-faint px-4 py-4 sm:px-8 sm:py-5">
+        {/* Back button */}
+        <Button
+          variant="outline"
+          onClick={prevStep}
+          disabled={isFirstStep || isSubmitting}
+          hideArrow
+          className={isFirstStep ? 'invisible' : undefined}
+        >
+          <ArrowLeft className="h-4 w-4" weight="bold" aria-hidden />
+          {t.back}
+        </Button>
 
-      {/* Main Content - Centered 3-column layout */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-
-          {/* Left Column - Steps (Hidden on mobile) */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-28">
-              <nav className="space-y-1">
-                {TENANT_ONBOARDING_STEPS.map(({ id: step }) => {
-                  const Icon = STEP_ICONS[TENANT_ONBOARDING_STEPS[step - 1].icon as keyof typeof STEP_ICONS] || User
-                  const isCompleted = completedSteps.includes(step)
-                  const isCurrent = step === currentStep
-                  const isClickable = isCompleted || isCurrent || step === 1
-
-                  return (
-                    <button
-                      key={step}
-                      onClick={() => isClickable && goToStep(step)}
-                      disabled={!isClickable}
-                      className={cn(
-                        'w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all duration-200',
-                        isCurrent
-                          ? 'bg-surface border border-border'
-                          : isCompleted
-                          ? 'hover:bg-surface-muted'
-                          : 'opacity-50 cursor-not-allowed'
-                      )}
-                    >
-                      {/* Step Number/Check — Cadence: cobalt active, success done, mono numeral */}
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
-                          isCurrent
-                            ? 'bg-primary text-primary-fg'
-                            : isCompleted
-                            ? 'bg-success-soft text-success'
-                            : 'bg-surface-muted text-fg-subtle'
-                        )}
-                      >
-                        {isCompleted && !isCurrent ? (
-                          <Check className="w-5 h-5" weight="bold" />
-                        ) : (
-                          <span className="text-sm font-mono font-semibold tabular-nums">{step}</span>
-                        )}
-                      </div>
-
-                      {/* Step Info */}
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={cn(
-                            'font-medium text-sm',
-                            isCurrent
-                              ? 'text-fg'
-                              : 'text-fg-muted'
-                          )}
-                        >
-                          {t.steps[step - 1].label}
-                        </p>
-                        <p className="text-xs text-fg-subtle mt-0.5">
-                          {t.steps[step - 1].description}
-                        </p>
-                      </div>
-                    </button>
-                  )
-                })}
-              </nav>
-
-              {/* Auto-save indicator */}
-              <div className="mt-6 flex items-center gap-2 text-fg-muted px-4">
-                <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                <span className="text-xs">{t.autoFloppyDisk}</span>
-              </div>
-            </div>
-          </aside>
-
-          {/* Center Column - Form */}
-          <div className="flex-1 max-w-xl">
-            <div className="bg-surface rounded-[22px] border border-border overflow-hidden">
-              {/* Step Header */}
-              <div className="px-6 sm:px-8 pt-8 pb-6 border-b border-border-faint">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`header-${currentStep}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    {/* Mobile step indicator */}
-                    <div className="flex items-center gap-2 mb-4 lg:hidden">
-                      {TENANT_ONBOARDING_STEPS.map(({ id: step }) => (
-                        <div
-                          key={step}
-                          className={cn(
-                            'h-1.5 flex-1 rounded-full transition-colors',
-                            step === currentStep
-                              ? 'bg-primary'
-                              : step < currentStep
-                              ? 'bg-success'
-                              : 'bg-border'
-                          )}
-                        />
-                      ))}
-                    </div>
-
-                    <h1 className="text-xl sm:text-2xl font-semibold text-fg tracking-tight">
-                      {t.stepTitle[currentStep - 1]}
-                    </h1>
-                    <p className="text-fg-muted mt-1">
-                      {t.stepSubtitle[currentStep - 1]}
-                    </p>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Form Content */}
-              <div className="px-6 sm:px-8 py-6">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {children}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Footer Compass */}
-              <div className="px-6 sm:px-8 py-5 bg-bg border-t border-border-faint">
-                <div className="flex items-center justify-between">
-                  {/* Back button */}
-                  <Button
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={isFirstStep || isSubmitting}
-                    hideArrow
-                    className={cn((isFirstStep || isSubmitting) && 'opacity-0 pointer-events-none')}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    {t.back}
-                  </Button>
-
-                  {/* Next/Submit button */}
-                  {isSubmitting ? (
-                    <Button isLoading disabled>
-                      {t.saving}
-                    </Button>
-                  ) : isLastStep ? (
-                    <Button
-                      onClick={handleNext}
-                      disabled={!canProceed}
-                      hideArrow
-                    >
-                      {t.submit}
-                      <Rocket className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleNext}
-                      disabled={!canProceed}
-                    >
-                      {t.continue}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Why we need this (Hidden on mobile) */}
-          <aside className="hidden lg:block w-72 flex-shrink-0">
-            <div className="sticky top-28">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`why-${currentStep}`}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-primary-soft rounded-[14px] border border-primary/30 p-6"
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center">
-                      <Info className="w-4 h-4 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-fg text-sm">
-                      {whyContent.title}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    {whyContent.points.map((point, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
-                          <point.icon className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <p className="text-sm text-fg-muted leading-relaxed">
-                          {point.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Trust badge */}
-              <div className="mt-6 flex items-center gap-3 px-2">
-                <Shield className="w-5 h-5 text-success" />
-                <p className="text-xs text-fg-muted">
-                  {locale === 'es'
-                    ? 'Datos protegidos con encriptación de nivel bancario'
-                    : 'Data protected with bank-level encryption'}
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </main>
-    </div>
+        {/* Next/Submit button */}
+        {isSubmitting ? (
+          <Button isLoading disabled hideArrow size="lg">
+            {t.saving}
+          </Button>
+        ) : (
+          <Button onClick={handleNext} hideArrow size="lg" data-testid="continuar-onboarding-inquilino">
+            {isLastStep ? t.submit : t.continue}
+            <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
+          </Button>
+        )}
+      </div>
+    </OnboardingWizardLayout>
   )
 }

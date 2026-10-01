@@ -21,7 +21,7 @@ const { pushMock, submitMock, authState, wizardState } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   submitMock: vi.fn(),
   authState: { user: undefined as Record<string, unknown> | undefined },
-  wizardState: { isSubmitting: false },
+  wizardState: { isSubmitting: false, canProceed: true, isComplete: false },
 }))
 
 let searchParams = new URLSearchParams()
@@ -57,7 +57,8 @@ vi.mock('@/lib/context/TenantOnboardingContext', async (importOriginal) => {
       nextStep: vi.fn(),
       submitOnboarding: submitMock,
       isSubmitting: wizardState.isSubmitting,
-      canProceed: true,
+      canProceed: wizardState.canProceed,
+      isComplete: wizardState.isComplete,
       progressPercentage: 50,
     }),
   }
@@ -71,6 +72,8 @@ let root: Root
 beforeEach(() => {
   authState.user = { id: 'u1', role: 'tenant' }
   wizardState.isSubmitting = false
+  wizardState.canProceed = true
+  wizardState.isComplete = false
   pushMock.mockClear()
   submitMock.mockReset()
   container = document.createElement('div')
@@ -191,5 +194,54 @@ describe('TenantOnboardingShell — completion navigation', () => {
 
     expect(submitMock).toHaveBeenCalledTimes(1)
     expect(pushMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('TenantOnboardingShell — paso incompleto', () => {
+  beforeEach(() => { searchParams = new URLSearchParams() })
+
+  it('«Continuar» se puede tocar, pero con el paso incompleto no manda nada ni navega', async () => {
+    // Antes el botón se apagaba; ahora el paso muestra en el campo qué falta.
+    // La regla de siempre (`canProceed`) sigue siendo la que decide.
+    wizardState.canProceed = false
+    await renderShell()
+
+    const boton = submitButton()
+    expect(boton.disabled).toBe(false)
+    await act(async () => {
+      boton.click()
+    })
+    expect(submitMock).not.toHaveBeenCalled()
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('TenantOnboardingShell — volver a elegir perfil', () => {
+  beforeEach(() => { searchParams = new URLSearchParams() })
+
+  const enlace = () =>
+    container.querySelector('[data-testid="cambiar-de-perfil"]') as HTMLAnchorElement | null
+
+  it('con el onboarding sin terminar ofrece «Cambiar de perfil», que lleva al selector', async () => {
+    // Elegir «Inquilino» sólo guarda `intended_role` en Supabase; el rol real
+    // lo pone el back al final de este asistente. Volver no deja a nadie atrapado.
+    authState.user = { id: 'u1', role: 'tenant', onboardingCompleted: false }
+    await renderShell()
+
+    expect(enlace()).toBeTruthy()
+    expect(enlace()!.getAttribute('href')).toBe('/onboarding/seleccionar-rol')
+    expect(enlace()!.textContent).toContain('Cambiar de perfil')
+  })
+
+  it('con el onboarding ya terminado no se ofrece', async () => {
+    authState.user = { id: 'u1', role: 'tenant', onboardingCompleted: true }
+    await renderShell()
+    expect(enlace()).toBeNull()
+  })
+
+  it('tampoco mientras se cierra el asistente recién completado', async () => {
+    wizardState.isComplete = true
+    await renderShell()
+    expect(enlace()).toBeNull()
   })
 })

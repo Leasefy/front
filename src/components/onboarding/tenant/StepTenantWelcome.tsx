@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { User, Phone, SignIn, IdentificationCard } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
+import { SignIn } from '@phosphor-icons/react'
+import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
 import { Input } from '@/components/ui/input'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 import { useAuth } from '@/lib/auth/use-auth'
+import { useIntentosDeAvanzar } from './intento-de-avanzar'
 
 export function StepTenantWelcome() {
-  const { draft, updateDraft, canProceed } = useTenantOnboarding()
+  const { draft, updateDraft } = useTenantOnboarding()
   const { user } = useAuth()
+  const intentos = useIntentosDeAvanzar()
+  const nombreRef = useRef<HTMLInputElement>(null)
 
   // The document number is immutable once set on the backend profile —
   // changes go through Leasefy support (the backend enforces this too).
@@ -24,107 +26,86 @@ export function StepTenantWelcome() {
     }
   }, [draft.preferredContact, updateDraft])
 
+  /*
+   * El aviso «Ingresa tu nombre para continuar» ya no es un bloque amarillo
+   * fijo desde que se abre el paso (se sentía a error sin haber hecho nada,
+   * Nico 30-09). Sale en el campo, con el estilo de error de la casa, cuando
+   * corresponde: al intentar «Continuar» sin nombre, o al dejar el campo vacío
+   * después de haber escrito. La regla es la de siempre (`isStepValid(1)`).
+   */
+  const nombreValido = !!draft.displayName && draft.displayName.trim().length > 0
+  const [nombreEscrito, setNombreEscrito] = useState(false)
+  const [nombreRevisado, setNombreRevisado] = useState(false)
+  const errorDelNombre = !nombreValido && (intentos > 0 || nombreRevisado)
+
+  // Cada intento fallido lleva el foco al campo que falta.
+  useEffect(() => {
+    if (intentos > 0 && !nombreValido) nombreRef.current?.focus()
+    // Sólo al intentar: no robar el foco mientras la persona escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intentos])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Name */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <label htmlFor="displayName" className="block text-sm font-medium text-fg-muted mb-2">
-          ¿Cómo te llamas? <span className="text-danger">*</span>
-        </label>
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
-            <User className="h-5 w-5 text-fg-subtle" />
-          </div>
+      <FormField id="displayName" required invalid={errorDelNombre}>
+        <FormLabel>¿Cómo te llamas?</FormLabel>
+        <FormControl>
           <Input
+            ref={nombreRef}
             type="text"
-            id="displayName"
+            autoComplete="name"
             value={draft.displayName || ''}
-            onChange={(e) => updateDraft({ displayName: e.target.value })}
+            onChange={(e) => {
+              setNombreEscrito(true)
+              updateDraft({ displayName: e.target.value })
+            }}
+            // Pasar por el campo sin escribir no es un error; salir de él
+            // después de escribir, sí cuenta como revisado.
+            onBlur={() => {
+              if (nombreEscrito) setNombreRevisado(true)
+            }}
             placeholder="Tu nombre completo"
-            className={cn('h-12 pl-12 rounded-xl', draft.displayName && 'border-primary/30')}
           />
-        </div>
-      </motion.div>
+        </FormControl>
+        <FormError>Ingresa tu nombre para continuar</FormError>
+      </FormField>
 
       {/* CC */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <label htmlFor="rut" className="block text-sm font-medium text-fg-muted mb-2">
-          Cédula de Ciudadanía
-        </label>
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
-            <IdentificationCard className="h-5 w-5 text-fg-subtle" />
-          </div>
+      <FormField id="rut" disabled={rutLocked}>
+        <FormLabel>Cédula de Ciudadanía</FormLabel>
+        <FormControl>
           <Input
             type="text"
-            id="rut"
+            inputMode="numeric"
             value={draft.rut || ''}
             onChange={(e) => updateDraft({ rut: e.target.value })}
             placeholder="Ej: 1090525663"
             disabled={rutLocked}
-            className={cn('h-12 pl-12 rounded-xl', draft.rut && 'border-primary/30')}
           />
-        </div>
+        </FormControl>
         {rutLocked && (
-          <p className="mt-2 text-xs text-fg-subtle">
-            Para modificar tu número de documento, contacta al soporte de Leasefy.
-          </p>
+          <FormHint>Para modificar tu número de documento, contacta al soporte de Leasefy.</FormHint>
         )}
-      </motion.div>
+      </FormField>
 
       {/* Phone */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <label htmlFor="phone" className="block text-sm font-medium text-fg-muted mb-2">
-          Tu número de teléfono
-        </label>
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
-            <Phone className="h-5 w-5 text-fg-subtle" />
-          </div>
+      <FormField id="phone">
+        <FormLabel>Tu número de teléfono</FormLabel>
+        <FormControl>
           <Input
             type="tel"
-            id="phone"
+            autoComplete="tel"
             value={draft.phone || ''}
             onChange={(e) => updateDraft({ phone: e.target.value })}
             placeholder="+57 300 123 4567"
-            className={cn('h-12 pl-12 rounded-xl', draft.phone && 'border-primary/30')}
           />
-        </div>
-        <p className="mt-2 text-xs text-fg-subtle">
-          Para que propietarios puedan contactarte sobre tus aplicaciones
-        </p>
-      </motion.div>
-
-      {/* Validation hint */}
-      {!canProceed && draft.displayName === '' && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-sm text-warning bg-warning-soft px-4 py-3 rounded-xl"
-        >
-          Ingresa tu nombre para continuar
-        </motion.p>
-      )}
+        </FormControl>
+        <FormHint>Para que propietarios puedan contactarte sobre tus aplicaciones</FormHint>
+      </FormField>
 
       {/* Already have account */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="pt-4 border-t border-border-faint"
-      >
+      <div className="border-t border-border-faint pt-4">
         {/* 🔴 22-09: decía `/auth/login?redirect=/inquilino`, y estaba mal dos
             veces. `/auth/login` NO EXISTE —la pantalla es `/auth`—, así que
             «¿Ya tienes cuenta? Inicia sesión» llevaba a un 404. Y el parámetro
@@ -134,12 +115,12 @@ export function StepTenantWelcome() {
             el comentario y no se barrió el resto. */}
         <Link
           href={`/auth?returnUrl=${encodeURIComponent('/inquilino')}`}
-          className="flex items-center justify-center gap-2 w-full py-3 text-sm text-fg-subtle hover:text-primary transition-colors rounded-xl hover:bg-surface-muted"
+          className="mx-auto flex w-fit items-center justify-center gap-2 rounded-full px-3 py-2 text-body-sm text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
-          <SignIn className="w-4 h-4" />
-          ¿Ya tienes cuenta? Inicia sesión
+          <SignIn className="h-4 w-4" aria-hidden />
+          ¿Ya tienes cuenta? <span className="font-medium text-primary">Inicia sesión</span>
         </Link>
-      </motion.div>
+      </div>
     </div>
   )
 }

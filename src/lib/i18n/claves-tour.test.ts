@@ -33,16 +33,6 @@ const CLAVES_PLANAS = [
   'bienvenida.titulo',
   'bienvenida.tuInmobiliaria',
   'bienvenida.cuerpo',
-  // Glow up (30-09): la ruta del arriendo y lo que cuesta el recorrido.
-  'bienvenida.ruta.titulo',
-  'bienvenida.ruta.captar',
-  'bienvenida.ruta.estudiar',
-  'bienvenida.ruta.firmar',
-  'bienvenida.ruta.cobrar',
-  'bienvenida.ruta.pagar',
-  'bienvenida.paradas',
-  'bienvenida.duracion',
-  'bienvenida.omitible',
   'cierre.eyebrow',
   'cierre.titulo',
   'cierre.punto1',
@@ -118,9 +108,7 @@ describe('las claves del recorrido del panel existen en los dos idiomas', () => 
     for (const d of [es, en]) {
       expect(leer(d, `${NS}.bienvenida.saludo`)).toContain('{{nombre}}')
       expect(leer(d, `${NS}.bienvenida.titulo`)).toContain('{{inmobiliaria}}')
-      // Desde el glow up (30-09) el número de paradas no va en el párrafo:
-      // tiene su propio renglón, debajo del avance que las dibuja.
-      expect(leer(d, `${NS}.bienvenida.paradas`)).toContain('{{total}}')
+      expect(leer(d, `${NS}.bienvenida.cuerpo`)).toContain('{{total}}')
     }
   })
 

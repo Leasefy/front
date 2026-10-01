@@ -181,9 +181,10 @@ export function elPanelEstaBloqueado(
  *  · `segundo-factor`     → falta inscribirlo o verificarlo. `ProtectedRoute`
  *                           desmonta el panel y lleva a activarlo; esto cubre
  *                           el instante antes de que lo haga.
- *  · `muro`               → el back dice que el muro va puesto (aunque todavía
- *                           no se haya dibujado: la pregunta previa espera a
- *                           leer la decisión guardada).
+ *  · `muro`               → el contexto del muro dice que tapa el panel
+ *                           (`panelTapado`: el muro, la pregunta previa, la
+ *                           migración abierta a mano o el confeti), o el back
+ *                           dice que bloquea aunque todavía no se haya dibujado.
  *  · `muro-sin-contestar` → el muro todavía no tiene respuesta del back. Quien
  *                           llama decide cuánto esperar esto: «ante la duda,
  *                           el panel se ve» vale también para el recorrido.
@@ -197,7 +198,11 @@ export type MotivoParaEsperar = 'segundo-factor' | 'muro' | 'muro-sin-contestar'
 export interface SenalesDelPanel {
   /** `mfaRequired || mfaEnrollRequired` de la sesión. */
   segundoFactorPendiente: boolean;
-  /** Lo que dice el contexto del muro: `libre` si contestó que no bloquea o si no hay muro. */
+  /**
+   * Lo que dice el contexto del muro (`useMigracion()`): `bloquea` con
+   * `panelTapado` o `estado.bloquea`; `sin-contestar` mientras `estado` es
+   * null; `libre` si contestó que no tapa, o si no hay muro en este árbol.
+   */
   muro: 'bloquea' | 'sin-contestar' | 'libre';
 }
 

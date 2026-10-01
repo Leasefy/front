@@ -50,6 +50,7 @@ const { prefs, sesion, migracion } = vi.hoisted(() => ({
       estado: { bloquea: boolean; resuelta: 'completada' | 'omitida' | null; pasos: never[] } | null
       abrir: () => void
       recargar: () => Promise<void>
+      panelTapado?: boolean
     },
   },
 }))
@@ -294,6 +295,36 @@ describe('🔴 cuenta nueva: el recorrido arranca solo cuando ya no queda nada d
 })
 
 describe('lo que dice el contexto de la migración también cuenta', () => {
+  it('🔴 `panelTapado` (la señal del muro): con `true` espera; con `false` y el segundo factor resuelto, arranca', () => {
+    // Sin nada en el DOM a propósito: la señal del contexto basta sola.
+    plantarAnclajes()
+    prefs.tourDismissed = false
+    const base = {
+      estado: { bloquea: false, resuelta: null, pasos: [] as never[] },
+      abrir: () => {},
+      recargar: async () => {},
+    }
+    // La bienvenida con confeti tapa el panel: el back ya no bloquea, el
+    // contexto sí dice que está tapado.
+    migracion.valor = { ...base, panelTapado: true }
+    pintar()
+    pasar(4000)
+    expect(tour()).toBeNull()
+
+    // «Entrar a Leasefy» → se pide el segundo factor.
+    migracion.valor = { ...base, estado: { ...base.estado, resuelta: 'completada' }, panelTapado: false }
+    sesion.mfaEnrollRequired = true
+    pintar()
+    pasar(3000)
+    expect(tour()).toBeNull()
+
+    sesion.mfaEnrollRequired = false
+    pintar()
+    pasar(5000)
+    expect(pantalla()).toBe('bienvenida')
+    expect(prefs.cerrarRecorrido).not.toHaveBeenCalled()
+  })
+
   it('si el back dice que el muro bloquea, espera aunque el muro todavía no se haya dibujado', () => {
     plantarAnclajes()
     prefs.tourDismissed = false

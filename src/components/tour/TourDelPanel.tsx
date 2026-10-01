@@ -50,8 +50,8 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import Image from 'next/image';
+import { createPortal, preload } from 'react-dom';
+import Image, { getImageProps } from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AirTrafficControl,
@@ -62,26 +62,19 @@ import {
   ChatsCircle,
   Check,
   ClipboardText,
-  Clock,
   Compass,
   CurrencyDollar,
   FilePlus,
-  HandCoins,
-  HouseLine,
   Lightbulb,
   MagnifyingGlass,
-  PaperPlaneTilt,
   Plus,
-  Signature,
   UserCircle,
-  UserCircleCheck,
   X,
   type Icon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
-import { LeasefyMonogram } from '@/components/brand/LeasefyMonogram';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -161,6 +154,30 @@ const ANCHO_CENTRADO = 760;
  */
 const FOTO_DE_LA_BIENVENIDA = '/images/features/leasefy-brand-02.jpg';
 const FOTO_DEL_CIERRE = '/images/features/leasefy-brand-15.jpg';
+/** El ancho que ocupa la foto: la columna en escritorio, todo el ancho en teléfono. */
+const TAMANOS_DE_LA_FOTO = '(min-width: 640px) 320px, 100vw';
+
+/**
+ * Baja las dos fotos mientras el recorrido todavía espera (el muro, el
+ * segundo factor, el conteo), con el MISMO `srcset` que va a pedir
+ * `next/image`: medido en el navegador, la foto del cierre llegaba un rato
+ * después que la tarjeta y la columna se veía gris.
+ */
+function precargarLasFotos(): void {
+  for (const src of [FOTO_DE_LA_BIENVENIDA, FOTO_DEL_CIERRE]) {
+    try {
+      const { props } = getImageProps({ src, alt: '', fill: true, sizes: TAMANOS_DE_LA_FOTO });
+      preload(props.src, {
+        as: 'image',
+        imageSrcSet: props.srcSet,
+        imageSizes: props.sizes,
+        fetchPriority: 'low',
+      });
+    } catch {
+      // Sin precarga la foto llega igual, sólo un poco después.
+    }
+  }
+}
 /**
  * Por debajo de esto la tarjeta se va abajo, a lo ancho: al lado de un
  * elemento no cabe, y centrada tapa justo lo que está señalando.
@@ -309,15 +326,21 @@ export function TourDelPanel() {
   // Se LEE de lo que ya existe: la sesión (segundo factor), el contexto del
   // muro y el DOM. `null` fuera del panel de la inmobiliaria ⇒ no hay muro.
   const migracion = useMigracion();
+  //
+  // `panelTapado` es LA señal del muro (la publica `MuroDeMigracion` desde el
+  // 30-09): `true` mientras el muro, la pregunta previa, la migración abierta
+  // a mano o la bienvenida con confeti tapan el panel. Pero antes de que el
+  // muro conteste vale `false` —«todavía no sé» no es «no tapa»—, así que
+  // mientras `estado` sea null se espera un poco (`ESPERA_POR_EL_MURO_MS`).
   const senales: SenalesDelPanel = {
     segundoFactorPendiente: Boolean(mfaRequired || mfaEnrollRequired),
     muro:
       migracion == null
         ? 'libre'
-        : migracion.estado == null
-          ? 'sin-contestar'
-          : migracion.estado.bloquea
-            ? 'bloquea'
+        : migracion.panelTapado === true || migracion.estado?.bloquea === true
+          ? 'bloquea'
+          : migracion.estado == null
+            ? 'sin-contestar'
             : 'libre',
   };
   // Espejo para el latido, que corre fuera del render.
@@ -367,6 +390,7 @@ export function TourDelPanel() {
       setDelante('sin-mirar');
       return;
     }
+    precargarLasFotos();
     const desde = Date.now();
     let id: ReturnType<typeof setTimeout>;
     const mirar = () => {
@@ -662,20 +686,33 @@ export function TourDelPanel() {
   );
 
   // Omitir, en TODAS las pantallas: es la promesa del recorrido.
+  //
+  // En la bienvenida y el cierre, en teléfono, el pie se apila: los botones
+  // arriba (el primario a lo ancho) y «Omitir» debajo. En una fila no cabían
+  // «Omitir», «Atrás» y «Empezar a trabajar» en 310 px y el cierre se salía
+  // de la tarjeta por la derecha (medido a 390 px).
+  const centrada = pantalla.tipo !== 'paso';
   const pie = (
-    <div className="flex items-center justify-between gap-3">
+    <div
+      className={cn(
+        'flex gap-3',
+        centrada
+          ? 'flex-col-reverse sm:flex-row sm:items-center sm:justify-between'
+          : 'items-center justify-between',
+      )}
+    >
       <Button
         variant="link"
         size="sm"
         hideArrow
         onClick={() => cerrar('omitido')}
-        className="h-auto px-0 text-fg-muted hover:text-fg"
+        className={cn('h-auto px-0 text-fg-muted hover:text-fg', centrada && 'self-center sm:self-auto')}
         data-testid="tour-saltar"
       >
         {t('inmobiliaria.tour.saltar')}
       </Button>
 
-      <div className="flex items-center gap-2">
+      <div className={cn('flex items-center gap-2', centrada && 'w-full sm:w-auto')}>
         {indice > 0 && (
           <Button
             variant="outline"
@@ -692,6 +729,7 @@ export function TourDelPanel() {
           size={pantalla.tipo === 'paso' ? 'sm' : 'default'}
           hideArrow
           onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
+          className={cn(centrada && 'flex-1 sm:flex-none')}
           data-testid="tour-siguiente"
         >
           {t(
@@ -815,44 +853,25 @@ export function TourDelPanel() {
             </p>
 
             {pantalla.tipo === 'bienvenida' && (
-              <PantallaCentrada foto={FOTO_DE_LA_BIENVENIDA} fotoAl="inicio" animar={animar}>
-                <div className="flex items-start justify-between gap-3">
+              <PantallaCentrada foto={FOTO_DE_LA_BIENVENIDA} fotoAl="inicio" animar={animar} aspa={aspa}>
+                {/* El texto se centra en el alto de la foto y el pie se apoya
+                    abajo: sin la ruta (Nico, 30-09: «no es necesario dejarlo
+                    ahí») la columna no queda con un hueco al final. */}
+                <div className="my-auto">
                   <Eyebrow>
-                    {nombre ? t('inmobiliaria.tour.bienvenida.saludo', { nombre }) : ' '}
+                    {nombre ? t('inmobiliaria.tour.bienvenida.saludo', { nombre }) : '\u00A0'}
                   </Eyebrow>
-                  {aspa}
+                  <h2
+                    id={idTitulo}
+                    className="mt-4 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[32px]"
+                  >
+                    {titulo}
+                  </h2>
+                  <p className="mt-4 text-body text-fg-muted">
+                    {t('inmobiliaria.tour.bienvenida.cuerpo', { total })}
+                  </p>
                 </div>
-                <h2
-                  id={idTitulo}
-                  className="mt-3 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[30px]"
-                >
-                  {titulo}
-                </h2>
-                <p className="mt-3 text-body-sm text-fg-muted">
-                  {t('inmobiliaria.tour.bienvenida.cuerpo')}
-                </p>
-
-                <RutaDelArriendo
-                  titulo={t('inmobiliaria.tour.bienvenida.ruta.titulo')}
-                  etapa={(id) => t(`inmobiliaria.tour.bienvenida.ruta.${id}`)}
-                  animar={animar}
-                />
-
-                {/* Lo que cuesta: cuántas paradas, cuánto tiempo, y que se
-                    puede dejar. Las paradas se VEN: un segmento por cada una. */}
-                <div className="mt-6 space-y-2.5">
-                  {progreso}
-                  <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[12px] tabular-nums text-fg-subtle">
-                    <li>{t('inmobiliaria.tour.bienvenida.paradas', { total })}</li>
-                    <li className="flex items-center gap-1.5">
-                      <Clock size={13} aria-hidden />
-                      {t('inmobiliaria.tour.bienvenida.duracion')}
-                    </li>
-                    <li>{t('inmobiliaria.tour.bienvenida.omitible')}</li>
-                  </ul>
-                </div>
-
-                <div className="mt-7">{pie}</div>
+                <div className="mt-8">{pie}</div>
               </PantallaCentrada>
             )}
 
@@ -862,7 +881,7 @@ export function TourDelPanel() {
                 <div className="mt-4 flex items-start gap-3">
                   <IconoDeLaParada id={pantalla.paso.id} />
                   <div className="min-w-0 flex-1">
-                    <Eyebrow>{t('inmobiliaria.tour.paso', { n: nPaso, total })}</Eyebrow>
+                    <Eyebrow punto={false}>{t('inmobiliaria.tour.paso', { n: nPaso, total })}</Eyebrow>
                     <h2
                       id={idTitulo}
                       className="mt-1 font-heading text-[17px] font-semibold leading-snug tracking-[-0.01em] text-fg"
@@ -884,11 +903,8 @@ export function TourDelPanel() {
             )}
 
             {pantalla.tipo === 'cierre' && (
-              <PantallaCentrada foto={FOTO_DEL_CIERRE} fotoAl="final" animar={animar}>
-                <div className="flex items-start justify-between gap-3">
-                  <Eyebrow>{t('inmobiliaria.tour.cierre.eyebrow')}</Eyebrow>
-                  {aspa}
-                </div>
+              <PantallaCentrada foto={FOTO_DEL_CIERRE} fotoAl="final" animar={animar} aspa={aspa}>
+                <Eyebrow>{t('inmobiliaria.tour.cierre.eyebrow')}</Eyebrow>
                 <h2
                   id={idTitulo}
                   className="mt-3 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[30px]"
@@ -939,11 +955,14 @@ export function TourDelPanel() {
 // en mono + la ✕ de la casa), el avance por paradas y el pie.
 // ══════════════════════════════════════════════════════════════════════════
 
-/** El renglón de arriba: mono, mayúsculas, con el punto cobalto de la marca. */
-function Eyebrow({ children }: { children: React.ReactNode }) {
+/**
+ * El renglón de arriba: mono, mayúsculas, con el punto cobalto de la marca.
+ * Las paradas lo llevan sin punto: su acento ya es el ícono de la parada.
+ */
+function Eyebrow({ children, punto = true }: { children: React.ReactNode; punto?: boolean }) {
   return (
     <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
-      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+      {punto && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />}
       {children}
     </p>
   );
@@ -1019,96 +1038,44 @@ function IconoDeLaParada({ id }: { id: string }) {
 }
 
 /**
- * Las cinco etapas de un arriendo, en el orden en que se trabaja — el mismo
- * orden del recorrido («captar un inmueble, estudiar candidatos, firmar,
- * cobrar y pagar»). Es la «imagen» de lo que se va a ver: una ruta, no un
- * párrafo.
- */
-const ETAPAS_DEL_ARRIENDO: ReadonlyArray<{ id: string; Icono: Icon }> = [
-  { id: 'captar', Icono: HouseLine },
-  { id: 'estudiar', Icono: UserCircleCheck },
-  { id: 'firmar', Icono: Signature },
-  { id: 'cobrar', Icono: HandCoins },
-  { id: 'pagar', Icono: PaperPlaneTilt },
-];
-
-function RutaDelArriendo({
-  titulo,
-  etapa,
-  animar,
-}: {
-  titulo: string;
-  etapa: (id: string) => string;
-  animar: boolean;
-}) {
-  return (
-    <div className="mt-6">
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">{titulo}</p>
-      <ol className="relative mt-3 grid grid-cols-5" aria-label={titulo}>
-        {/* La línea que une las paradas pasa POR DETRÁS de los círculos: de
-            centro a centro del primero al último (10 % … 90 %). Se dibuja de
-            izquierda a derecha al abrir; sin movimiento, ya está. */}
-        <span aria-hidden className="absolute left-[10%] right-[10%] top-5 h-px bg-border" />
-        <motion.span
-          aria-hidden
-          className="absolute left-[10%] top-5 h-px w-[80%] origin-left bg-primary"
-          initial={animar ? { scaleX: 0 } : false}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: animar ? 0.2 : 0, duration: animar ? 0.7 : 0, ease: [0.22, 1, 0.36, 1] }}
-        />
-        {ETAPAS_DEL_ARRIENDO.map(({ id, Icono }, i) => (
-          <motion.li
-            key={id}
-            className="relative flex flex-col items-center gap-2 text-center"
-            initial={animar ? { opacity: 0, y: 6 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: animar ? 0.15 + i * 0.08 : 0, duration: animar ? 0.26 : 0 }}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                'grid size-10 place-items-center rounded-full border ring-4 ring-surface',
-                i === 0
-                  ? 'border-primary bg-primary text-primary-fg'
-                  : 'border-border bg-surface text-primary',
-              )}
-            >
-              <Icono size={18} />
-            </span>
-            <span className="text-caption font-medium leading-tight text-fg-muted">{etapa(id)}</span>
-          </motion.li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-/**
  * La bienvenida y el cierre: dos columnas, la foto de marca y el contenido.
  * En pantalla angosta la foto se vuelve una franja arriba. `fotoAl` la pone a
  * la izquierda en la bienvenida y a la derecha en el cierre: el recorrido abre
  * y cierra como un par.
+ *
+ * La ✕ va en la esquina de arriba a la derecha de TODO el modal, no de la
+ * columna del texto (Nico, 30-09: «la x de cerrar en ambos no debería de
+ * quedar en el lado derecho?»). En el cierre —y en teléfono, donde la foto es
+ * la franja de arriba— queda sobre la foto: el chip de la casa es sólido
+ * (`bg-surface-muted`) con un filete (`ring-border`) y una sombra suave para
+ * despegarse de ella, en claro y en oscuro. Va
+ * primera en el DOM: sigue siendo lo primero que encuentra el Tab.
  */
 function PantallaCentrada({
   foto,
   fotoAl,
   animar,
+  aspa,
   children,
 }: {
   foto: string;
   fotoAl: 'inicio' | 'final';
   animar: boolean;
+  aspa: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div
       className={cn(
-        'grid sm:min-h-[480px]',
+        // `minmax(0,1fr)` también en teléfono: con la columna `auto` de
+        // siempre, lo que no podía partirse la estiraba más que la tarjeta.
+        'relative grid grid-cols-[minmax(0,1fr)] sm:min-h-[440px]',
         fotoAl === 'inicio'
           ? 'sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'
           : 'sm:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
       )}
     >
+      <div className="absolute right-4 top-4 z-10 rounded-full shadow-sm ring-1 ring-border">{aspa}</div>
       <FotoDeMarca
         src={foto}
         animar={animar}
@@ -1119,6 +1086,10 @@ function PantallaCentrada({
   );
 }
 
+/**
+ * La foto, limpia: sin píldora ni texto encima (Nico, 30-09: «quitale eso a
+ * las imágenes»). La marca ya está EN la foto.
+ */
 function FotoDeMarca({
   src,
   animar,
@@ -1144,22 +1115,11 @@ function FotoDeMarca({
           src={src}
           alt=""
           fill
-          sizes="(min-width: 640px) 320px, 100vw"
+          sizes={TAMANOS_DE_LA_FOTO}
           className="object-cover object-[50%_42%]"
           priority
         />
       </motion.div>
-      {/* Veladura de tinta abajo: la píldora se lee sobre cualquier foto. */}
-      <span
-        className="absolute inset-x-0 bottom-0 h-2/5"
-        style={{
-          background: 'linear-gradient(to top, color-mix(in srgb, var(--ink) 45%, transparent), transparent)',
-        }}
-      />
-      <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-3 shadow-sm">
-        <LeasefyMonogram size={22} />
-        <span className="text-[12px] font-semibold text-fg">Leasefy</span>
-      </span>
     </div>
   );
 }

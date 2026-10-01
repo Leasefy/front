@@ -10303,18 +10303,7 @@
         "saludo": "Hola, {{nombre}}",
         "titulo": "Este es el panel de {{inmobiliaria}}",
         "tuInmobiliaria": "tu inmobiliaria",
-        "cuerpo": "Un recorrido corto por lo que vas a usar todos los días, en el orden en que se trabaja un arriendo.",
-        "ruta": {
-          "titulo": "El camino de un arriendo",
-          "captar": "Captar",
-          "estudiar": "Estudiar",
-          "firmar": "Firmar",
-          "cobrar": "Cobrar",
-          "pagar": "Pagar"
-        },
-        "paradas": "{{total}} paradas",
-        "duracion": "1 minuto",
-        "omitible": "Lo omites cuando quieras"
+        "cuerpo": "Te muestro {{total}} paradas en el orden en que se trabaja: captar un inmueble, estudiar candidatos, firmar, cobrar y pagar. Toma un minuto y puedes omitirlo cuando quieras."
       },
       "cierre": {
         "titulo": "Listo, ya conoces tu panel",

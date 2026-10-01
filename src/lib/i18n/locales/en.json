@@ -10269,18 +10269,7 @@
         "saludo": "Hi, {{nombre}}",
         "titulo": "This is the {{inmobiliaria}} panel",
         "tuInmobiliaria": "your agency",
-        "cuerpo": "A short tour of what you will use every day, in the order a rental is worked.",
-        "ruta": {
-          "titulo": "How a rental flows",
-          "captar": "List",
-          "estudiar": "Screen",
-          "firmar": "Sign",
-          "cobrar": "Collect",
-          "pagar": "Pay out"
-        },
-        "paradas": "{{total}} stops",
-        "duracion": "1 minute",
-        "omitible": "Skip it anytime"
+        "cuerpo": "I'll show you {{total}} stops in the order the work happens: list a property, screen candidates, sign, collect and pay out. It takes a minute, and you can skip it at any point."
       },
       "cierre": {
         "titulo": "All set, you know your panel",

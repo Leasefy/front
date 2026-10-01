@@ -162,6 +162,16 @@ export function AsientoDeApertura({
         descripcion: descripcion.trim() || descripcionSugerida(fecha),
         movimientos: movimientosDeApertura(filas),
         claveIdempotencia,
+        /*
+         * T-0125 · todo lo que sale de esta pantalla ES la apertura de una
+         * fecha de corte. Con la bandera el back identifica el asiento por
+         * agencia + fecha y ya no depende de que la llave de arriba sobreviva:
+         * cerrar la pestaña, recargar o mandarlo desde otro navegador no puede
+         * contar los saldos iniciales dos veces. La llave se sigue mandando —un
+         * back anterior la usa y el nuevo la ignora—. Un asiento manual que NO
+         * es apertura (`AsientoManual`) no manda la bandera.
+         */
+        esApertura: true,
       });
       setRegistrado(asiento);
       onCreado(asiento);

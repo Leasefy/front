@@ -127,6 +127,24 @@ minificador de SWC produjo al inlinear un cierre — el fuente estaba bien, `nex
 las pruebas no lo veían. Un nombre de librería legítimo se agrega a `PERMITIDOS_DE_LIBRERIAS`
 con su motivo; un chunk que no se puede parsear también hace fallar (no se da por limpio).
 
+## Migración contable reanudable (T-0125)
+
+La migración la maneja el navegador (los importadores recorren los endpoints `aplicar` en un
+bucle), así que cerrar la pestaña o perder la red a mitad NO pierde el trabajo: lo escrito queda
+en el back y la pantalla dice cómo seguir. Contrato congelado en
+`.orchestration/tasks/T-0125-migracion-reanudable-sin-duplicados/contract.md`; el back es WU-1.
+
+- **Apertura** (`AsientoDeApertura.tsx`): manda `esApertura: true`; el back identifica la
+  apertura por agencia + fecha de corte y la llave del formulario deja de ser la garantía. Un 409
+  `APERTURA_YA_REGISTRADA` (otra apertura con otros saldos) se traduce en `contabilidad-errores.ts`
+  con el número y la fecha de `details`. `AsientoManual` NO manda la bandera.
+- **Rutas nuevas del back**: `GET .../contabilidad/migracion/cargas` y
+  `POST .../cargas/descartar` (`contabilidadApi.migracion.cargas` / `.descartarCarga`).
+  `rutas-del-back.json` se regeneró con `node scripts/rutas-del-back.mjs <back>` para que el
+  guardián las conozca.
+- **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
+  `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
+
 ## Agente de proyecto y skills
 
 `.claude/agents/leasify-front-agent.md` delega trabajo pesado; `.claude/skills/` tiene el

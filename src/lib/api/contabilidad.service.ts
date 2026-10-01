@@ -342,6 +342,7 @@ export const CLAVES_DE_CREAR_ASIENTO = [
   'descripcion',
   'movimientos',
   'claveIdempotencia',
+  'esApertura',
 ] as const;
 
 export interface AsientoNuevo {
@@ -356,6 +357,16 @@ export interface AsientoNuevo {
    * veces (los saldos iniciales contados doble).
    */
   claveIdempotencia?: string;
+  /**
+   * T-0125 · «este asiento es el de apertura de la fecha de corte».
+   *
+   * Con `true` la llave del intento la pone el SERVIDOR (agencia + fecha) y
+   * `claveIdempotencia` se ignora: una segunda apertura con los mismos saldos
+   * devuelve la primera (`yaExistia`) y una con otros saldos es un 409
+   * `APERTURA_YA_REGISTRADA`. Ausente = el comportamiento de siempre, así que
+   * un asiento manual que NO es apertura no lo manda.
+   */
+  esApertura?: boolean;
 }
 
 /** `MAX_COP_POR_MOVIMIENTO` en `asientos.service.ts`: es un `Int` de Postgres. */
@@ -597,11 +608,44 @@ export interface AsientoMigrado {
 
 /** `MigrarLoteDto`. El mismo cuerpo para `revisar` y para `aplicar`: no hay
  * id de revisión ni staging — `aplicar` vuelve a preparar el lote entero. */
-export const CLAVES_DE_LOTE = ['lote', 'asientos'] as const;
+export const CLAVES_DE_LOTE = ['lote', 'asientos', 'totalDelArchivo', 'desde'] as const;
 
 export interface LoteDeAsientos {
   lote: string;
   asientos: AsientoMigrado[];
+  /**
+   * T-0125 · cuántos asientos tiene el archivo ENTERO (tras `armarAsientos`).
+   * Sólo `aplicar` lo lee; con él el back lleva la cuenta de la carga y la
+   * pantalla puede decir «vas en N de M» aunque se cierre el navegador. Sin él
+   * no hay seguimiento: no se manda `desde` tampoco.
+   */
+  totalDelArchivo?: number;
+  /** Posición (0-based) del primer asiento de ESTA llamada dentro del archivo. */
+  desde?: number;
+}
+
+/** Estado de una carga de asientos, tal como lo reporta el back. */
+export type EstadoDeCargaDeAsientos = 'ABIERTA' | 'COMPLETA' | 'DESCARTADA';
+
+/**
+ * `carga` de la respuesta de `aplicar` — sólo cuando la llamada declaró
+ * `totalDelArchivo`. Ausente significa «no sé», nunca «0» ni «terminó».
+ * `procesados` es un PREFIJO contiguo del archivo, no un contador de llamadas.
+ */
+export interface ProgresoDeCarga {
+  lote: string;
+  esperados: number;
+  procesados: number;
+  estado: EstadoDeCargaDeAsientos;
+}
+
+/** `GET /migracion/cargas`: una carga ABIERTA, o sea un archivo que quedó a medias. */
+export interface CargaAbierta {
+  lote: string;
+  esperados: number;
+  procesados: number;
+  creadaAt: string;
+  actualizadaAt: string;
 }
 
 /** `MAX_ASIENTOS_POR_LOTE` en `migracion-contable.service.ts`. */
@@ -668,6 +712,12 @@ export interface InformeDeMigracion {
   cuentasFaltantes: CuentaFaltante[];
   motivos: MotivoDeRechazo[];
   fallasAlEscribir: Array<{ fila: number; motivo: string }>;
+  /**
+   * T-0125 · el avance de la carga en el servidor. Opcional a propósito: sólo
+   * viene si la llamada mandó `totalDelArchivo`, y un back anterior no lo
+   * manda. Ausente ⇒ no se muestra progreso guardado.
+   */
+  carga?: ProgresoDeCarga;
 }
 
 // ══ Helpers puros ═══════════════════════════════════════════════════════════
@@ -1576,6 +1626,28 @@ export const contabilidadApi = {
     /** Mismo cuerpo que `revisar`. Idempotente por fila (`YA_MIGRADA`). */
     async aplicar(lote: LoteDeAsientos): Promise<InformeDeMigracion> {
       return apiClient.post<InformeDeMigracion>(`${BASE}/migracion/aplicar`, cuerpoDeLote(lote));
+    },
+
+    /**
+     * T-0125 · los archivos que quedaron a medias (carga ABIERTA), la más
+     * reciente primero. Vacío = nada pendiente.
+     */
+    async cargas(): Promise<CargaAbierta[]> {
+      return apiClient.get<CargaAbierta[]>(`${BASE}/migracion/cargas`);
+    },
+
+    /**
+     * T-0125 · «no voy a seguir con esta carga». NO borra ningún asiento: sólo
+     * deja de contar el archivo como pendiente. Idempotente; un lote que no es
+     * de esta agencia es 404.
+     */
+    async descartarCarga(
+      lote: string,
+    ): Promise<{ lote: string; estado: EstadoDeCargaDeAsientos }> {
+      return apiClient.post<{ lote: string; estado: EstadoDeCargaDeAsientos }>(
+        `${BASE}/migracion/cargas/descartar`,
+        { lote },
+      );
     },
 
     /**

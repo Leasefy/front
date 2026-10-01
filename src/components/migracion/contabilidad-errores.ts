@@ -6,6 +6,7 @@
  */
 
 import { ApiError } from '@/lib/api/client';
+import { formatDate } from '@/lib/format';
 
 const MENSAJES: Record<string, string> = {
   // puc.service.ts
@@ -51,11 +52,38 @@ const MENSAJES: Record<string, string> = {
   LOTE_DEMASIADO_GRANDE: 'El lote es demasiado grande: parte el archivo en tandas de 5.000 asientos.',
 };
 
+/**
+ * T-0125 · 409 `APERTURA_YA_REGISTRADA`: la fecha de corte ya tiene un asiento
+ * de apertura vigente con OTROS saldos. El back manda `details {numero, fecha}`
+ * y un `message` autosuficiente; se prefiere armar la frase con los datos (para
+ * que el número y la fecha estén siempre) y se cae al mensaje del back, y por
+ * último a un texto propio, si `details` no vino bien formado.
+ */
+const CORRECCION_DE_LA_APERTURA =
+  'Los asientos no se editan: si quedó mal, reversa ese asiento y registra el nuevo.';
+
+function mensajeDeAperturaYaRegistrada(e: ApiError): string {
+  const details = e.detalle?.details;
+  if (typeof details === 'object' && details !== null) {
+    const { numero, fecha } = details as { numero?: unknown; fecha?: unknown };
+    if (typeof numero === 'number' && typeof fecha === 'string' && fecha.length >= 10) {
+      return (
+        `Ya hay un asiento de apertura con fecha de corte ${formatDate(fecha.slice(0, 10))}: ` +
+        `el N.º ${numero}, con otros saldos. ${CORRECCION_DE_LA_APERTURA}`
+      );
+    }
+  }
+  // El `message` del back es autosuficiente; «Error 409» es el relleno del cliente.
+  if (e.message && !/^Error \d+$/.test(e.message)) return e.message;
+  return `Ya hay un asiento de apertura con esa fecha de corte y otros saldos. ${CORRECCION_DE_LA_APERTURA}`;
+}
+
 export function mensajeDeContabilidad(e: unknown, respaldo: string): string {
   if (e instanceof ApiError) {
     if (e.status === 403) {
       return 'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
     }
+    if (e.code === 'APERTURA_YA_REGISTRADA') return mensajeDeAperturaYaRegistrada(e);
     if (e.code && MENSAJES[e.code]) return MENSAJES[e.code];
   }
   return e instanceof Error && e.message ? e.message : respaldo;

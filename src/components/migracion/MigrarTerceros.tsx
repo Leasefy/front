@@ -121,6 +121,20 @@ const mensaje = (e: unknown, respaldo: string) =>
   e instanceof Error && e.message ? e.message : respaldo;
 
 /**
+ * T-0125 · botar una carga o una fila exige `configuracion:delete` en el back,
+ * que sólo tiene el administrador. Desde que una fila LISTO sin aplicar frena
+ * el paso, un CONTADOR puede quedar detrás del muro con una fila que no puede
+ * quitar: el «Forbidden» pelado no le dice a quién pedírselo. Los permisos NO
+ * se tocan; se dice qué hacer.
+ */
+const SOLO_EL_ADMINISTRADOR_DESCARTA =
+  'Descartar una carga o una fila requiere permisos de administración y tu rol no los tiene. ' +
+  'Pídele a un administrador de tu inmobiliaria que lo haga: mientras tanto, esta carga sigue pendiente.';
+
+const mensajeDeDescarte = (e: unknown, respaldo: string) =>
+  e instanceof ApiError && e.status === 403 ? SOLO_EL_ADMINISTRADOR_DESCARTA : mensaje(e, respaldo);
+
+/**
  * El parte de una masiva parcial: TODOS los motivos distintos con sus filas,
  * no sólo el primero. Con 200 filas y cuatro causas, mostrar una sola manda a
  * la persona a resolver a ciegas las otras tres.
@@ -490,7 +504,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         if (loteAbierto === l.lote) volverAEmpezar();
         else refrescarLotesAbiertos();
       } catch (e) {
-        setError(mensaje(e, 'No pudimos descartar esa carga.'));
+        setError(mensajeDeDescarte(e, 'No pudimos descartar esa carga.'));
       } finally {
         setCargando(false);
         setLotePorDescartar(null);
@@ -668,7 +682,15 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         }
         onDescartar={(id) =>
           conRefresco(
-            () => migracionTercerosApi.descartar(id),
+            async () => {
+              try {
+                return await migracionTercerosApi.descartar(id);
+              } catch (e) {
+                throw e instanceof ApiError && e.status === 403
+                  ? new Error(SOLO_EL_ADMINISTRADOR_DESCARTA)
+                  : e;
+              }
+            },
             'No pudimos descartar la fila.',
           )
         }

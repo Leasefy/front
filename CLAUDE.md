@@ -156,6 +156,14 @@ en el back y la pantalla dice cómo seguir. Contrato congelado en
   una carga nueva y la vieja queda abierta. Lo ya escrito vuelve como `yaMigrados` y se lee como
   «ya estaba cargado», nunca como error; un asiento con número ya cargado no se reescribe (se
   reversa y se vuelve a registrar — `REGLA_DE_CORRECCION`).
+- **Nunca atascado detrás del muro**: `propietarios`/`inquilinos` quedan `pendiente` mientras haya
+  filas `LISTO` sin aplicar y `contables` mientras haya una carga ABIERTA. Invariante probada en
+  `muro-reglas.test.ts` (729 combinaciones): el primer paso exigible sin terminar SIEMPRE está
+  habilitado (`pasoHabilitado`), así que la persona llega al paso que bloquea. La salida: terceros
+  → «Retomar» / «No la voy a seguir» de `MigrarTerceros`; contables → `CargasDeAsientosAbiertas`.
+  El `detalle` del back se pinta en «Queda por hacer» (`muro-paso-falta`). Botar una carga o una
+  fila de terceros pide `configuracion:delete` (sólo ADMIN): un 403 dice «pídele a un
+  administrador», NO se tocan permisos.
 - **Orden de despliegue**: el back primero. `totalDelArchivo`, `desde` y `esApertura` pasan por
   `forbidNonWhitelisted`; contra un back anterior a T-0125 un `aplicar` con esas claves es un 400.
 

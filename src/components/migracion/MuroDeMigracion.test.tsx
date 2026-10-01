@@ -478,6 +478,65 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
   });
 
   /*
+   * T-0125 · los pasos a medias. Antes `propietarios`/`inquilinos` decían
+   * «listo» con filas LISTO sin aplicar y `contables` con una carga cortada;
+   * ahora son «pendiente» y la persona tiene que ver POR QUÉ y poder salir.
+   */
+  it('T-0125: propietarios a medias se alcanza, monta SU contenido y dice qué falta', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'pendiente', 12, '4999 sin aplicar · 6 con datos por corregir · 12 ya cargados'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 3, '3 inmuebles'),
+        paso('contratos', 'listo', 90, '90 contratos'),
+        paso('puc', 'listo', 99, '99 cuentas'),
+        paso('contables', 'listo', 1, '1 asiento'),
+      ],
+    });
+
+    await pintar();
+
+    // Es el paso en foco (no uno «en espera») y su pantalla —la que tiene
+    // «Retomar» y «No la voy a seguir»— está montada, no un candado.
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
+    expect(q('contenido-propietarios')).not.toBeNull();
+    expect(q('muro-aviso-frenado')).toBeNull();
+    // El detalle del back, tal cual.
+    expect(q('muro-paso-falta')?.textContent).toContain('4999 sin aplicar');
+  });
+
+  it('T-0125: contables con una carga cortada se alcanza, monta SU contenido y dice cuántos faltan', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 3, '3 inmuebles'),
+        paso('contratos', 'listo', 90, '90 contratos'),
+        paso('puc', 'listo', 99, '99 cuentas'),
+        paso(
+          'contables',
+          'pendiente',
+          200,
+          '1 carga sin terminar · faltan 116.062 asientos · 200 asientos ya cargados',
+        ),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contables');
+    // El contenido de ESTE paso es el que trae la lista de cargas con sus salidas.
+    expect(q('contenido-contables')).not.toBeNull();
+    expect(q('muro-aviso-frenado')).toBeNull();
+    expect(q('muro-paso-falta')?.textContent).toContain('1 carga sin terminar');
+    expect(q('muro-paso-falta')?.textContent).toContain('faltan 116.062 asientos');
+  });
+
+  /*
    * 🔴 Nico, 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
    * dice a la izquierda es mentira, apenas voy a volver a subir otro archivo,
    * no hay nada». Leía «Falta: 2145 inmuebles · 3270 preparados sin activar ·

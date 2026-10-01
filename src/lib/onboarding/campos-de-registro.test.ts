@@ -73,11 +73,11 @@ describe('saludo', () => {
   it('no pone el correo de título cuando todavía no hay nombre', () => {
     // `user.name` cae al correo hasta que se completa el perfil, y en la
     // pantalla de elegir perfil eso es lo normal.
-    expect(saludo('pruebasarrendador1902+qaonb0904@gmail.com')).toBe('Bienvenido a Leasefy')
+    expect(saludo('pruebasarrendador1902+qaonb0904@gmail.com')).toBe('Te damos la bienvenida a Leasefy')
   })
 
   it.each([null, undefined, '', '   '])('%s → saludo genérico', (entrada) => {
-    expect(saludo(entrada as string | null)).toBe('Bienvenido a Leasefy')
+    expect(saludo(entrada as string | null)).toBe('Te damos la bienvenida a Leasefy')
   })
 })
 

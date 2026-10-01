@@ -9,6 +9,7 @@
  */
 export function saludo(nombre: string | null | undefined): string {
   const limpio = (nombre ?? '').trim()
-  if (!limpio || limpio.includes('@')) return 'Bienvenido a Leasefy'
+  // Neutro y en tuteo: «Bienvenido» le habla sólo a uno (Nico, 2026-09-30).
+  if (!limpio || limpio.includes('@')) return 'Te damos la bienvenida a Leasefy'
   return `Hola, ${limpio.split(/\s+/)[0]}`
 }

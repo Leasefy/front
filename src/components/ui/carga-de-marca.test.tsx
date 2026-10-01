@@ -152,6 +152,37 @@ describe('Spinner: el del DS, no el logo', () => {
     expect(status.querySelector('.animate-spin')).not.toBeNull();
   });
 
+  it.each([
+    ['default', 'text-primary'],
+    ['muted', 'text-fg-muted'],
+    ['white', 'text-white'],
+    ['current', 'text-current'],
+  ] as const)('variant=%s pinta el anillo del DS en %s (el color va en el envoltorio)', (variant, clase) => {
+    render(<Spinner variant={variant} data-testid="s" />);
+    const s = screen.getByTestId('s');
+    expect(s.className).toContain(clase);
+    if (clase !== 'text-primary') expect(s.className).not.toContain('text-primary');
+  });
+
+  it('el color que pasa el llamador gana sobre el del variant', () => {
+    render(<Spinner variant="current" className="text-primary" data-testid="s" />);
+    const cls = screen.getByTestId('s').className;
+    expect(cls).toContain('text-primary');
+    expect(cls).not.toContain('text-current');
+  });
+
+  it('size xs/md/lg ajustan el anillo (no un <svg> que no existe)', () => {
+    render(
+      <>
+        <Spinner size="xs" data-testid="xs" />
+        <Spinner size="lg" data-testid="lg" />
+      </>
+    );
+    expect(screen.getByTestId('xs').className).toContain('[&>span]:size-3');
+    expect(screen.getByTestId('lg').className).toContain('[&>span]:size-8');
+    expect(screen.getByTestId('xs').querySelector('svg')).toBeNull();
+  });
+
   it.each(['default', 'muted', 'white', 'current', 'info'] as const)(
     'variant=%s tampoco pinta el logo',
     (variant) => {

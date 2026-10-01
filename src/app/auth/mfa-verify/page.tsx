@@ -237,6 +237,17 @@ export default function MfaVerifyPage() {
       const supabase = getSupabase();
       if (!supabase) throw new Error('Supabase not initialized');
 
+      // 🔴 Tras un rato quieto en esta pantalla la sesión (1 h) vence y
+      // Supabase rechaza el reto con «invalid JWT… token is expired»: cada
+      // código, bueno o malo, fallaba (Nico, 01-10). Se renueva antes del
+      // intento si venció o está por vencer.
+      const { data: vigente } = (await supabase.auth.getSession?.()) ?? { data: { session: null } };
+      const venceEnMs = (vigente?.session?.expires_at ?? Infinity) * 1000 - Date.now();
+      if (venceEnMs < 60_000) {
+        const { error: refreshError } = (await supabase.auth.refreshSession?.()) ?? { error: null };
+        if (refreshError) throw refreshError;
+      }
+
       // Create a challenge
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId,
@@ -267,13 +278,12 @@ export default function MfaVerifyPage() {
       // y el campo se queda vacío, así que sin esto no queda rastro de que lo
       // que falló fue el código y no otra cosa.
       setHayError(true);
-      if (msg.includes('invalid') || msg.includes('expired')) {
-        toast.error('Código incorrecto. Intenta con el siguiente.');
-      } else {
-        // Nada en inglés ni un «Error 422» pelado (29-09).
-        const e = err as { status?: number; code?: string };
-        toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
-      }
+      // Por el CÓDIGO del error, no por palabras sueltas: «invalid JWT… token
+      // is expired» (sesión vencida) contiene «invalid» y «expired» y se
+      // mostraba como «Código incorrecto» (Nico, 01-10). Nada en inglés ni un
+      // «Error 422» pelado (29-09).
+      const e = err as { status?: number; code?: string };
+      toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
       setCode('');
     }
   }, [factorId, code, setMfaVerified, user, router]);

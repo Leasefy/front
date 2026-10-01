@@ -86,3 +86,29 @@ describe('mensajeDelRestablecimiento', () => {
     expect(mensajeDelRestablecimiento(e)).toMatch(/3 códigos en la última hora/)
   })
 })
+
+describe('mensajeDeSupabaseAuth — sesión vencida no es «código incorrecto» (Nico, 01-10)', () => {
+  const SESION = 'Tu sesión se cerró. Vuelve a entrar con tu contraseña.'
+
+  it('🔴 «invalid JWT… token is expired» con código bad_jwt → sesión', () => {
+    expect(
+      mensajeDeSupabaseAuth({
+        status: 403,
+        codigo: 'bad_jwt',
+        mensaje: 'invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired',
+      }),
+    ).toBe(SESION)
+  })
+
+  it('🔴 el mismo texto SIN código también se lee como sesión, no como código malo', () => {
+    expect(
+      mensajeDeSupabaseAuth({ mensaje: 'invalid JWT: token has invalid claims: token is expired' }),
+    ).toBe(SESION)
+  })
+
+  it('un código de verdad malo sigue diciendo «Código incorrecto»', () => {
+    expect(
+      mensajeDeSupabaseAuth({ status: 422, codigo: 'mfa_verification_failed', mensaje: 'Invalid TOTP code entered' }),
+    ).toMatch(/Código incorrecto/)
+  })
+})

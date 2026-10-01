@@ -71,7 +71,7 @@ export function PropietarioSelector({
           (p) =>
             p.name.toLowerCase().includes(query) ||
             (p.email?.toLowerCase().includes(query) ?? false) ||
-            p.documentNumber.includes(query)
+            (p.documentNumber ?? '').includes(query)
         )
       : propietarios;
     // El elegido va primero: cuando se llega con el propietario ya marcado

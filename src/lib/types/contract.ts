@@ -313,7 +313,8 @@ export interface PerfilesDelContrato {
 export interface PropietarioDelContrato {
   id: string;
   name: string;
-  documentNumber: string;
+  /** `null` = ficha creada sin documento (T-0128): se completa desde Propietarios. */
+  documentNumber: string | null;
   documentType: string | null;
   participacionBps: number;
   /** Ya escrito: `60 %`, `33,33 %`. */
@@ -573,7 +574,8 @@ export interface Contract {
   propietarioDeLaConsignacion?: {
     id: string;
     name: string;
-    documentNumber: string;
+    /** `null` = ficha sin documento todavía (T-0128). */
+    documentNumber: string | null;
   } | null;
 
   /**

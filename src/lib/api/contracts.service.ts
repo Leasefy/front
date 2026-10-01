@@ -1196,7 +1196,8 @@ export interface FilaDeMigracion {
    * 1003. Lo arma el back en la misma consulta de la página (nunca una
    * petición por fila). `null` = todavía sin consignar.
    */
-  propietario?: { id: string; nombre: string; documento: string } | null;
+  /** `documento` es `null` si la ficha se creó incompleta por la migración (T-0128). */
+  propietario?: { id: string; nombre: string; documento: string | null } | null;
   /**
    * 🔴 QA 22-09: la fila es un contrato TERMINADO y el archivo nombra a otro
    * dueño que el del inmueble de hoy. El contrato queda a nombre de éste.

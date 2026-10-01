@@ -193,7 +193,8 @@ export interface BackendContract {
   propietarioDeLaConsignacion?: {
     id: string;
     name: string;
-    documentNumber: string;
+    /** `null` = ficha sin documento todavía (T-0128). */
+    documentNumber: string | null;
   } | null;
   /**
    * TODOS los dueños del inmueble con su porcentaje y su parte del canon, y

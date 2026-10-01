@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { IconButton } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 
 interface PropietarioCardProps {
   propietario: Propietario;
@@ -104,8 +106,9 @@ export function PropietarioCard({
               {propietario.name}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {propietario.documentType}: {propietario.documentNumber}
+              {propietario.documentType ?? 'Documento'}: {documentoParaMostrar(propietario.documentNumber)}
             </p>
+            <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-1 flex" />
           </div>
         </div>
         {hasPendingBalance && (

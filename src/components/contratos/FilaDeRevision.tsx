@@ -116,13 +116,23 @@ export function FilaDeRevision({
 
   async function elegirPropietario(p: Propietario) {
     await correr(async () => {
+      /*
+       * T-0128: una ficha creada por la migración puede no tener documento. Para
+       * registrarla en este contrato hace falta (el back enlaza por documento),
+       * así que se dice qué hacer en vez de mandar un documento vacío.
+       */
+      if (!consignada && !p.documentNumber?.trim()) {
+        throw new Error(
+          `«${p.name}» todavía no tiene documento registrado. Complétalo desde Propietarios y vuelve a elegirlo.`,
+        );
+      }
       const actualizada = consignada
         ? await contractsApi.migracion.corregirPropietario(fila.id, {
             propietarioId: p.id,
           })
         : await contractsApi.migracion.registrarPropietario(fila.id, {
             nombre: p.name,
-            documento: p.documentNumber,
+            documento: p.documentNumber ?? '',
             correo: p.email ?? undefined,
             telefono: p.phone ?? undefined,
             comisionPorcentaje:

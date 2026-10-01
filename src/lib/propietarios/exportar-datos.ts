@@ -60,8 +60,8 @@ export function armarHojasDelPropietario(
   const ficha: Celda[][] = [
     ['Campo', 'Valor'],
     ['Nombre', propietario.name],
-    ['Tipo de documento', propietario.documentType],
-    ['Número de documento', propietario.documentNumber],
+    ['Tipo de documento', propietario.documentType ?? 'Sin registrar'],
+    ['Número de documento', propietario.documentNumber ?? 'Sin registrar'],
     ['Correo', propietario.email ?? ''],
     ['Teléfono', propietario.phone ?? ''],
     ['Dirección', propietario.address ?? ''],
@@ -262,8 +262,8 @@ export function armarHojaDeLaLista(
       const tieneCuenta = Boolean(ultimos4);
       return [
         p.name,
-        p.documentType,
-        p.documentNumber,
+        p.documentType ?? 'Sin registrar',
+        p.documentNumber ?? 'Sin registrar',
         p.email ?? '',
         p.phone ?? '',
         p.city ?? '',

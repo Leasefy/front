@@ -183,7 +183,9 @@ export function PropietarioForm({
       name: initialData?.name ?? '',
       email: initialData?.email ?? '',
       phone: initialData?.phone ?? '',
-      documentType: initialData?.documentType ?? 'CC',
+      // T-0128: una ficha creada por la migración puede no tener tipo. No se
+      // le inventa uno («CC» por defecto) — se elige al completarla.
+      documentType: initialData?.documentType ?? (mode === 'create' ? 'CC' : ''),
       documentNumber: initialData?.documentNumber ?? '',
       address: initialData?.address ?? '',
       city: initialData?.city ?? '',
@@ -288,6 +290,9 @@ export function PropietarioForm({
       newErrors.phone = t('inmobiliaria.propietario.form.errPhoneInvalid');
     }
 
+    if (!formData.documentType) {
+      newErrors.documentType = 'Elige el tipo de documento';
+    }
     if (!formData.documentNumber.trim()) {
       newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
     } else {
@@ -386,13 +391,17 @@ export function PropietarioForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.documentType')} required>
+          <InputWrapper
+            label={t('inmobiliaria.propietario.form.documentType')}
+            required
+            error={touched.documentType ? errors.documentType : undefined}
+          >
             <Select
               value={formData.documentType}
               onValueChange={(value) => updateField('documentType', value as DocumentType)}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Elige el tipo" />
               </SelectTrigger>
               <SelectContent>
                 {DOCUMENT_TYPE_VALUES.map((type) => (

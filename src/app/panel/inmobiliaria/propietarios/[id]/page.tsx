@@ -78,6 +78,8 @@ import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-reg
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
@@ -682,7 +684,7 @@ function PropietarioDetailContent() {
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
-                {propietario.documentType} {propietario.documentNumber}
+                {propietario.documentType} {documentoParaMostrar(propietario.documentNumber)}
               </span>
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                 {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}
@@ -694,6 +696,11 @@ function PropietarioDetailContent() {
                 </span>
               ))}
             </div>
+            {/* T-0128: una ficha creada por la migración puede venir sin documento. */}
+            <DatosPorCompletar
+              pendientes={propietario.datosPendientes}
+              onCompletar={puedeEditar ? () => setShowEditModal(true) : undefined}
+            />
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
               {[
                 // 🔴 23-09 (QA): quitarle la «s» a «Propiedades» daba «1 propiedade».
@@ -879,7 +886,7 @@ function PropietarioDetailContent() {
               {/* Bank Info */}
               <PropietarioBankInfo
                 bankAccount={propietario.bankAccount}
-                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
                 onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
               />
 
@@ -889,7 +896,7 @@ function PropietarioDetailContent() {
               <CambioDeCuentaBancaria
                 propietarioId={propietario.id}
                 tieneCuenta={!!propietario.bankAccount?.accountNumber}
-                propietario={{ nombre: propietario.name, documento: propietario.documentNumber }}
+                propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
                 puedeEditar={puedeEditar}
                 onCuentaCambiada={() => void refetch()}
               />

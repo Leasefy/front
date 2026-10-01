@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole, MfaDestino } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
@@ -666,13 +666,64 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [probeAgencyMembership, scheduleAgencySelfHeal])
 
-  /** Refresh user data from backend (e.g. after onboarding).
+  /** Check MFA assurance level and update mfaRequired/mfaEnrollRequired.
+   *  Resolves with the destination the caller should take (T-0123 WU-3):
+   *  'enroll' | 'verify' | 'none'.
+   *  `miGeneracion`, when passed, gates the write: a deferred MFA check
+   *  (see `alSoltarElLock` below) that settles after the session has moved
+   *  on must not flip these for whoever is signed in NOW.
+   *
+   *  T-0099: two DIFFERENT pending states share this one check, per
+   *  contract.md T-0099 §3 —
+   *    - `mfaRequired` ("verify-pending"): a factor exists, the session just
+   *      hasn't stepped up to it THIS sign-in. Supabase's own `nextLevel`
+   *      already answers this — unchanged from before this task.
+   *    - `mfaEnrollRequired` ("enroll-pending"): the back's role policy
+   *      (`segundoFactor.exigido`, mirrored in `segundoFactorExigidoRef`)
+   *      requires aal2 but there is NO factor to even step up to —
+   *      something Supabase's aal pair alone cannot say (`nextLevel` stays
+   *      `'aal1'` with nothing enrolled, identical to "no requirement at
+   *      all"). `listFactors()` is only called to break that tie — never
+   *      when `nextLevel === 'aal2'` already proves a factor exists. */
+  const checkMfaLevel = useCallback(async (miGeneracion?: number): Promise<MfaDestino> => {
+    const supabase = getSupabase()
+    if (!supabase) return 'none'
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return 'none'
+      if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
+        setMfaRequired(true)
+      } else if (aal?.currentLevel === 'aal2') {
+        setMfaRequired(false)
+      }
+      if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
+        setMfaEnrollRequired(false)
+        // Only the back's requirement sends anyone to a challenge: a person
+        // with an OPTIONAL factor (tenant) is never routed by this verdict.
+        return segundoFactorExigidoRef.current && aal?.currentLevel !== 'aal2' && aal?.nextLevel === 'aal2'
+          ? 'verify'
+          : 'none'
+      } else {
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return 'none'
+        const tieneFactorVerificado = (factors?.totp ?? []).some((f) => f.status === 'verified')
+        setMfaEnrollRequired(!tieneFactorVerificado)
+        return tieneFactorVerificado ? 'none' : 'enroll'
+      }
+    } catch {
+      // MFA not available — ignore
+      return 'none'
+    }
+  }, [])
+
+  /** Refresh user data from backend (e.g. after onboarding) and re-evaluate the
+   *  second-factor requirement (T-0123 WU-3); resolves with the MFA destination.
    *  T-0082 WU-2b: uses the SAME bootstrap `fetchBootstrap` (one call) the
    *  login path uses, preserving this function's existing semantics — still
    *  awaited (unlike the auth-event listener's fire-and-forget probe), still
    *  gated on the session generation so a stale refresh from an ended session
    *  can never clobber the session that replaced it. */
-  const refreshUser = useCallback(async () => {
+  const refreshUser = useCallback(async (): Promise<MfaDestino> => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
     // If the stored token is still valid the backend will respond; if not,
     // fetchBootstrap handles the 401 gracefully (same contract as fetchUser).
@@ -681,7 +732,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // The session that asked for this refresh may have ended (sign-out, a
     // new sign-in) while the bootstrap was in flight — never let a stale
     // refresh write over whatever session is current now.
-    if (sessionGenerationRef.current !== miGeneracion) return
+    if (sessionGenerationRef.current !== miGeneracion) return 'none'
     setUser(userData)
     setNeedsOnboarding(needsOnb)
     // Probe agency membership for EVERY authenticated user (personal-role
@@ -709,7 +760,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
        */
       await checkMfaLevelRef.current?.(miGeneracion)
     }
-  }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult])
+    return 'none'
+  }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult, checkMfaLevel])
 
   /* ------------------------------------------------------------------
    * 🔴 Self-heal del PERFIL degradado.
@@ -831,6 +883,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const setMfaVerified = useCallback(() => {
     setMfaRequired(false)
+    setMfaEnrollRequired(false)
   }, [])
 
   // T-0099: `clasificar.ts` no puede leer contexto de React — mirror de
@@ -1248,7 +1301,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
-          alSoltarElLock(() => checkMfaLevel(miGeneracion))
+          alSoltarElLock(async () => { await checkMfaLevel(miGeneracion) })
         }
       }
     )

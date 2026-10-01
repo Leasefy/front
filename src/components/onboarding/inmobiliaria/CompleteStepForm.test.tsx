@@ -142,6 +142,43 @@ describe('<CompleteStepForm>', () => {
     }
   })
 
+  const resultadoOk = { tenantId: 't', agencyId: 'a', sessionId: 's', dashboardUrl: 'http://localhost:3001/panel/inmobiliaria' }
+
+  it('T-0123 (a) second factor required and no factor enrolled: goes to /auth/mfa-enroll carrying the panel as returnUrl, never to the panel', async () => {
+    refreshUserMock.mockResolvedValue('enroll')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-enroll?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 verified factor but aal1 session: goes to /auth/mfa-verify carrying the panel as returnUrl', async () => {
+    refreshUserMock.mockResolvedValue('verify')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-verify?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 (b) requirement false or session already aal2: straight to the panel', async () => {
+    refreshUserMock.mockResolvedValue('none')
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+  })
+
+  it('T-0123 refreshUser throws: still navigates to the panel (the guard re-checks on its own)', async () => {
+    refreshUserMock.mockRejectedValue(new Error('network'))
+    render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+    await clickFinish()
+
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+  })
+
   it('no navega si `/complete` no devolvió nada', async () => {
     render({ onSubmit: vi.fn().mockResolvedValue(null) })
     await clickFinish()

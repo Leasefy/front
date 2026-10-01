@@ -74,6 +74,7 @@ function respuesta(body: unknown) {
 
 beforeEach(() => {
   replaceMock.mockClear()
+  setMfaVerifiedMock.mockClear()
   signOutMock.mockClear()
   setMfaVerifiedMock.mockClear()
   authState.user = { id: 'u1', role: 'agency' }

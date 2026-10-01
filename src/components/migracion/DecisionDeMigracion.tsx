@@ -280,7 +280,7 @@ export function ModalDecisionDeMigracion({
             transition={{ delay: animar ? 0.45 : 0, duration: animar ? 0.3 : 0, ease: SUAVE }}
             data-testid="decision-pasando"
           >
-            <CargaDeMarca tamano="xs" texto="Un momento…" />
+            <CargaDeMarca tamano="md" disposicion="apilada" texto="Un momento…" />
           </motion.div>
         ) : null}
       </div>

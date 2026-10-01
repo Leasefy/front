@@ -15,6 +15,7 @@ import {
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
 import { formatCurrency } from '@/lib/format';
@@ -65,7 +66,7 @@ function AgencyCheckoutInner() {
   if (plansLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }
@@ -293,7 +294,7 @@ function AgencyCheckoutContent() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="lg" />
       </div>
     }>
       <AgencyCheckoutInner />

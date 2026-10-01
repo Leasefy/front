@@ -50,7 +50,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 
 // ============================================================================
@@ -370,7 +370,7 @@ export default function AcuerdoDetailPage(props: { params: Promise<{ id: string 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

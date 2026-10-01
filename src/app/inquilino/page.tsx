@@ -34,7 +34,7 @@ import { ScoreDetailSheet } from '@/components/tenant/ScoreDetailSheet';
 import { ScoreShareModal } from '@/components/tenant/ScoreShareModal';
 import { downloadScorePDF } from '@/lib/utils/generate-score-pdf';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
 import { formatArea } from '@/lib/format';
@@ -209,7 +209,7 @@ export default function InquilinoPage() {
   if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

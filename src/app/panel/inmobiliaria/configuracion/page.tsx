@@ -16,7 +16,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { SeccionCompleta } from './contenido';
 import {
@@ -48,7 +48,7 @@ export default function ConfiguracionPage() {
   if (destinoViejo || alternativa) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="md" />
       </div>
     );
   }

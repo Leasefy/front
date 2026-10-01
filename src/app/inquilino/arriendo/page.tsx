@@ -14,7 +14,7 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
@@ -74,7 +74,7 @@ export default function ArriendoPage() {
   if (isOnboardingLoading || isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

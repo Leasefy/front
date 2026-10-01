@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button, Spinner, Card } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -789,7 +790,7 @@ export default function PropertyCandidatesPage(props: PropertyCandidatesPageProp
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

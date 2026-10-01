@@ -21,7 +21,8 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { EmptyState, Spinner } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
@@ -444,7 +445,7 @@ function ResumenDelNegocio() {
   if ((permLoading || kpisLoading) && !kpisData) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-8">
-        <Spinner />
+        <CargaDeMarca tamano="md" />
       </div>
     );
   }

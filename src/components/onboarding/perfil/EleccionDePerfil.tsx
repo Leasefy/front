@@ -35,8 +35,12 @@ export interface EleccionDePerfilProps {
    * próxima entrada, que retoma en el perfil elegido).
    */
   abiertaAlInicio?: boolean
-  /** Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo cerrarse. */
-  panelDeInmobiliaria: (cerrar: () => void) => ReactNode
+  /**
+   * Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo
+   * cerrarse y cómo avisar que está «Abriendo tu registro…» (ahí las
+   * tarjetas se esconden y la carga queda sola, centrada).
+   */
+  panelDeInmobiliaria: (cerrar: () => void, alAbrirRegistro: (abriendo: boolean) => void) => ReactNode
 }
 
 /**
@@ -67,6 +71,8 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
   const [abierta, setAbierta] = useState(abiertaAlInicio)
   // Un toque y ya: mientras se navega, ninguna tarjeta recibe otro.
   const [yendoA, setYendoA] = useState<ValorDePerfil | null>(null)
+  // «Abriendo tu registro…»: la carga queda sola y centrada, sin tarjetas.
+  const [abriendoRegistro, setAbriendoRegistro] = useState(false)
 
   /*
    * Las tarjetas no se pintan hasta saber cuáles dejó el admin (Nico,
@@ -143,7 +149,9 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
             <div
               className={cn(
                 'relative',
-                abierta && 'pt-2 sm:pt-6 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-8',
+                abierta &&
+                  !abriendoRegistro &&
+                  'pt-2 sm:pt-6 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-8',
               )}
             >
               {perfilesListos ? (
@@ -154,11 +162,13 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
                   aria-label="Tu perfil"
                   className={cn(
                     'grid gap-4 sm:gap-6',
-                    abierta
-                      ? 'hidden lg:grid lg:grid-cols-1 lg:gap-4'
-                      : visibles.length >= 3
-                        ? 'sm:grid-cols-2 lg:grid-cols-3'
-                        : 'sm:grid-cols-2',
+                    abriendoRegistro
+                      ? 'hidden'
+                      : abierta
+                        ? 'hidden lg:grid lg:grid-cols-1 lg:gap-4'
+                        : visibles.length >= 3
+                          ? 'sm:grid-cols-2 lg:grid-cols-3'
+                          : 'sm:grid-cols-2',
                   )}
                   data-testid="tarjetas-de-perfil"
                 >
@@ -201,9 +211,9 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
                     initial={{ opacity: 0, x: 32 }}
                     animate={{ opacity: 1, x: 0, transition: { ...RESORTE, delay: 0.08 } }}
                     exit={{ opacity: 0, x: 32, transition: { duration: 0.16 } }}
-                    className="min-w-0"
+                    className={cn('min-w-0', abriendoRegistro && 'mx-auto w-full max-w-md')}
                   >
-                    {panelDeInmobiliaria(cerrar)}
+                    {panelDeInmobiliaria(cerrar, setAbriendoRegistro)}
                   </motion.section>
                 ) : null}
               </AnimatePresence>

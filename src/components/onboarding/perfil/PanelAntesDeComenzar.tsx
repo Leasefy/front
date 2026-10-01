@@ -44,6 +44,22 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
   const { status, valoresGuardados, fallo, retry, provision } = aprovisionamiento
   const sePuedeCambiar = !valoresGuardados && (status === 'resuming' || status === 'needs-info')
 
+  // «Abriendo tu registro…» va solo y centrado, sin el marco de la tarjeta:
+  // las tarjetas de perfil también se esconden (Nico, 2026-09-30: «que se
+  // quede en el centro cargando, que no se vean las cards»).
+  if (esLaApertura(status)) {
+    return (
+      <div
+        role="status"
+        className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center"
+        data-testid="abriendo-registro"
+      >
+        <Spinner />
+        <p className="text-body-sm text-fg-muted">Abriendo tu registro…</p>
+      </div>
+    )
+  }
+
   return (
     <div
       className="relative overflow-hidden rounded-lg border border-border bg-surface"
@@ -118,16 +134,18 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
                 : undefined
             }
           />
-        ) : status === 'error' ? (
-          <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
         ) : (
-          <div role="status" className="flex flex-col items-center gap-3 py-16 text-center">
-            <Spinner />
-            <p className="text-body-sm text-fg-muted">Abriendo tu registro…</p>
-          </div>
+          <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
         )}
       </div>
     </div>
+  )
+}
+
+/** Todo estado que no sea el formulario, su esqueleto o un error es la apertura. */
+function esLaApertura(status: AprovisionamientoDelPanel['status']): boolean {
+  return (
+    status !== 'resuming' && status !== 'needs-info' && status !== 'provisioning' && status !== 'error'
   )
 }
 
@@ -138,14 +156,26 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
  * asistente está lista —recién creada o porque ya existía— sigue al mismo
  * paso de siempre: el asistente de `/onboarding/inmobiliaria`.
  */
-export function PanelAntesDeComenzarConAprovisionamiento({ onCerrar }: { onCerrar: () => void }) {
+export function PanelAntesDeComenzarConAprovisionamiento({
+  onCerrar,
+  onApertura,
+}: {
+  onCerrar: () => void
+  /** Avisa cuando el panel pasa a «Abriendo tu registro…», para esconder las tarjetas. */
+  onApertura?: (abriendo: boolean) => void
+}) {
   const router = useRouter()
   const aprovisionamiento = useOnboardingProvisioning()
   const listo = aprovisionamiento.status === 'ready'
+  const abriendo = esLaApertura(aprovisionamiento.status)
 
   useEffect(() => {
     if (listo) router.push('/onboarding/inmobiliaria')
   }, [listo, router])
+
+  useEffect(() => {
+    onApertura?.(abriendo)
+  }, [abriendo, onApertura])
 
   return <PanelAntesDeComenzar aprovisionamiento={aprovisionamiento} onCerrar={onCerrar} />
 }

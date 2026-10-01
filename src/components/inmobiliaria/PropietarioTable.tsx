@@ -41,6 +41,7 @@ import { IconButton, Chip, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import type {
   CampoDeOrden,
   ConteosDePropietarios,
@@ -327,6 +328,12 @@ export function PropietarioTable({
                         <p className="text-sm text-muted-foreground truncate">
                           {propietario.email ?? '—'}
                         </p>
+                        {/* T-0128: ficha creada por la migración sin todos sus datos. */}
+                        <DatosPorCompletar
+                          pendientes={propietario.datosPendientes}
+                          onCompletar={() => onEdit(propietario)}
+                          className="mt-1 flex flex-wrap items-center gap-2"
+                        />
                       </div>
                     </div>
                   </TableCell>

@@ -347,8 +347,9 @@ export interface CuentaDeCobroDelPropietario {
   propietario: {
     id: string;
     nombre: string;
-    tipoDeDocumento: string;
-    documento: string;
+    /** `null` = propietario sin documento registrado (T-0128). */
+    tipoDeDocumento: string | null;
+    documento: string | null;
     correo: string | null;
     direccion: string | null;
     ciudad: string | null;

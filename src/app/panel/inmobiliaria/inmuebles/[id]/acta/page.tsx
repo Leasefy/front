@@ -38,6 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 const ESTILO_DE_IMPRESION = `
@@ -176,7 +177,7 @@ export default function ActaDeEntregaPage() {
                 )}
                 {propietario?.documentNumber && duenos.length === 1 && (
                   <p className="text-sm text-fg-muted">
-                    {propietario.documentType} {propietario.documentNumber}
+                    {documentoConTipo(propietario.documentType, propietario.documentNumber, ' ')}
                   </p>
                 )}
               </div>

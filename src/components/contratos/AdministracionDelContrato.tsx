@@ -345,7 +345,10 @@ export function AdministracionDelContrato({
             <NaturalezaDeLaParte
               key={p.id}
               etiqueta={propietarios.length > 1 ? p.name : 'Propietario'}
-              tipoPersona={p.documentType === 'NIT' ? 'JURIDICA' : 'NATURAL'}
+              // T-0128: sin tipo de documento NO se infiere la naturaleza («NATURAL»
+              // parecería un perfil tributario): se dice «sin definir».
+              tipoPersona={!p.documentType ? null : p.documentType === 'NIT' ? 'JURIDICA' : 'NATURAL'}
+              tipoSinDefinir={!p.documentType}
               responsableIva={p.responsableIva}
               agenteRetenedorRenta={p.agenteRetenedorRenta}
               agenteRetenedorIva={p.agenteRetenedorIva}
@@ -657,6 +660,7 @@ function leerIvaDelCanon(contract: Contract): { valor: string | null; ausente: s
 function NaturalezaDeLaParte({
   etiqueta,
   tipoPersona,
+  tipoSinDefinir = false,
   responsableIva,
   agenteRetenedorRenta,
   agenteRetenedorIva,
@@ -665,6 +669,8 @@ function NaturalezaDeLaParte({
 }: {
   etiqueta: string
   tipoPersona: TipoPersona | null
+  /** T-0128: el propietario no tiene tipo de documento; no se infiere la persona. */
+  tipoSinDefinir?: boolean
   responsableIva: boolean | null
   agenteRetenedorRenta: boolean | null
   agenteRetenedorIva: boolean | null
@@ -687,11 +693,15 @@ function NaturalezaDeLaParte({
             estado="si"
             testId="chip-tipo-persona"
           />
+        ) : tipoSinDefinir ? (
+          <span className="text-caption text-muted-foreground" data-testid="tipo-persona-sin-definir">
+            Tipo de persona: sin definir
+          </span>
         ) : null}
         {tiene.map((t) => (
           <Chip key={t} texto={t} estado="si" testId="chip-naturaleza" />
         ))}
-        {tipoPersona === null && tiene.length === 0 ? (
+        {tipoPersona === null && !tipoSinDefinir && tiene.length === 0 ? (
           /* Una fila vacía se lee como «no tiene ninguna responsabilidad», que
              es una afirmación que nadie hizo. */
           <span className="text-caption text-muted-foreground">Sin datos tributarios</span>

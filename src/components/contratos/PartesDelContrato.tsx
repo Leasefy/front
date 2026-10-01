@@ -66,6 +66,7 @@ import { conRegreso } from '@/lib/nav/ruta-de-regreso'
 import { contractsApi } from '@/lib/api/contracts.service'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 import type {
   Contract,
@@ -489,7 +490,7 @@ function Propietarios({
               >
                 {p.name}
               </Link>
-              <span className="block text-caption text-muted-foreground">{p.documentNumber}</span>
+              <span className="block text-caption text-muted-foreground">{documentoParaMostrar(p.documentNumber)}</span>
             </div>
             {varios ? (
               /* El % y la plata de cada uno, y el chip en el mayoritario — el
@@ -632,7 +633,7 @@ function SinPropietarios({ contract }: { contract: Contract }) {
           >
             {p.name}
           </Link>
-          <span className="block text-caption text-muted-foreground">{p.documentNumber}</span>
+          <span className="block text-caption text-muted-foreground">{documentoParaMostrar(p.documentNumber)}</span>
         </div>
       </div>
     )

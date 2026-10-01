@@ -27,6 +27,7 @@ import { useMemo } from "react";
 
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import type { Propietario } from "@/lib/types/inmobiliaria";
+import { documentoParaMostrar } from "@/lib/propietarios/datos-por-completar";
 
 export interface SelectorDePropietarioProps {
   /** Todos los de la agencia, cargados una vez por la pantalla. */
@@ -41,7 +42,7 @@ export interface SelectorDePropietarioProps {
 
 /** Nombre y documento juntos: es lo que hace buscable la cédula. */
 export function etiquetaDePropietario(p: Propietario) {
-  return `${p.name} · ${p.documentNumber}`;
+  return `${p.name} · ${documentoParaMostrar(p.documentNumber)}`;
 }
 
 export function SelectorDePropietario({

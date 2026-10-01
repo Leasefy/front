@@ -63,6 +63,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
 import {
   arriendosVigentes,
@@ -426,6 +427,8 @@ function FilaDeInquilino({
               {persona.email ?? t('inquilinos.tabla.sinCorreo')}
             </span>
           </button>
+          {/* T-0128: creado por la migración sin documento. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
         </TableCell>
 
         <TableCell className="p-4 align-middle">

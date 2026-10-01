@@ -21,6 +21,7 @@ import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/co
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
+import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -331,6 +332,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const [reenvio, setReenvio] = React.useState<EstadoDeReenvio>({ estado: 'listo', espera: 0, error: null });
   /** El correo con el que intentó entrar y Supabase dijo «sin confirmar»: ahí se ofrece reenviar. */
   const [correoSinConfirmar, setCorreoSinConfirmar] = React.useState<string | null>(null);
+  /**
+   * El correo con el que intentó entrar y el back confirmó que NO tiene cuenta:
+   * ahí se ofrece crearla con ese mismo correo (Nico, 01-10).
+   */
+  const [correoSinCuenta, setCorreoSinCuenta] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (reenvio.espera <= 0) return;
     const id = setTimeout(() => {
@@ -522,11 +528,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   }, [initialMode, explicitRole]);
 
-  const handleModeSwitch = (newMode: AuthMode) => {
-    // El correo ya escrito viaja entre «Iniciar sesión» y «Recupera tu
-    // contraseña»: volver a pedirlo era un paso de más (Nico, 01-10).
+  const handleModeSwitch = (newMode: AuthMode, correoDado?: string) => {
+    // El correo ya escrito viaja entre «Iniciar sesión», «Recupera tu
+    // contraseña» y «Crea tu cuenta»: volver a pedirlo era un paso de más
+    // (Nico, 01-10). La contraseña nunca viaja.
     const correoEscrito = (
-      mode === 'forgot-password' ? forgotPasswordForm.getValues('email') : loginForm.getValues('email')
+      correoDado ??
+      (mode === 'forgot-password'
+        ? forgotPasswordForm.getValues('email')
+        : mode === 'register'
+          ? registerForm.getValues('email')
+          : loginForm.getValues('email'))
     )?.trim() ?? '';
     setMode(newMode);
     setRegisterStep('credentials');
@@ -534,10 +546,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     aceptarCorreoTalCual(null);
     setReenvio({ estado: 'listo', espera: 0, error: null });
     setCorreoSinConfirmar(null);
+    setCorreoSinCuenta(null);
     loginForm.reset(
       newMode === 'login' && correoEscrito ? { email: correoEscrito, password: '' } : undefined,
     );
-    registerForm.reset();
+    registerForm.reset(
+      newMode === 'register' && correoEscrito
+        ? { email: correoEscrito, password: '', confirmPassword: '' }
+        : undefined,
+    );
     forgotPasswordForm.reset(
       newMode === 'forgot-password' && correoEscrito ? { email: correoEscrito } : undefined,
     );
@@ -605,6 +622,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     setCorreoSinConfirmar(null);
+    setCorreoSinCuenta(null);
     olvidarAviso();
     const correo = normalizarCorreo(data.email);
     try {
@@ -630,11 +648,23 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
       didAuthenticateInForm.current = false;
-      setIsLoading(false);
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-        setError('Correo o contraseña incorrectos.');
-      } else if (msg.includes('Email not confirmed')) {
+        // Supabase dice lo mismo para contraseña mala y para correo sin
+        // cuenta. Se pregunta al back SÓLO acá, tras el intento fallido; si no
+        // contesta un «no» claro, queda el mensaje de siempre (Nico, 01-10).
+        const tieneCuenta = await correoTieneCuentaApi.consultar(correo);
+        setIsLoading(false);
+        if (tieneCuenta === false) {
+          setCorreoSinCuenta(correo);
+          setError('No hay una cuenta con este correo.');
+        } else {
+          setError('Correo o contraseña incorrectos.');
+        }
+        return;
+      }
+      setIsLoading(false);
+      if (msg.includes('Email not confirmed')) {
         // Acá llega quien abrió un enlace de confirmación vencido: /auth/enlace
         // lo manda a entrar. Sin el reenvío no tenía cómo pedir otro.
         setResetEmail(correo);
@@ -892,6 +922,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               {error && <ErrorBanner>{error}</ErrorBanner>}
               {error && correoSinConfirmar && (
                 <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
+              )}
+              {error && correoSinCuenta && (
+                <p className="text-[13px] text-fg-subtle">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('register', correoSinCuenta)}
+                    className={ENLACE}
+                    data-testid="crear-cuenta-con-este-correo"
+                  >
+                    Crear una cuenta con este correo
+                  </button>
+                </p>
               )}
               <Button
                 type="submit"

@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-01",
-  "cuantas": 1193,
+  "cuantas": 1194,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -726,6 +726,7 @@
     "POST /applications/:id/submit",
     "POST /applications/:id/withdraw",
     "POST /applications/guest",
+    "POST /auth/correo-tiene-cuenta",
     "POST /auth/segundo-factor/restablecer/confirmar",
     "POST /auth/segundo-factor/restablecer/solicitar",
     "POST /auth/session/claim",

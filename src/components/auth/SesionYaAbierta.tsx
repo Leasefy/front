@@ -32,8 +32,13 @@ interface Props {
 export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
   const { user, signOut } = useAuth()
   const [saliendo, setSaliendo] = useState(false)
+  // La recarga completa tarda (el destino arma todo el panel): mientras
+  // tanto el botón carga y queda quieto, para que no parezca que el clic no
+  // hizo nada ni se pueda apretar dos veces (Nico, 30-09).
+  const [continuando, setContinuando] = useState(false)
 
   const continuar = useCallback(() => {
+    setContinuando(true)
     // `window.location` y no el router: el resto del formulario ya navega así,
     // y una recarga completa deja el contexto de auth limpio en el destino.
     window.location.href = destino
@@ -87,7 +92,14 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button className="w-full" hideArrow onClick={continuar} disabled={saliendo}>
+        <Button
+          className="w-full"
+          hideArrow
+          onClick={continuar}
+          isLoading={continuando}
+          disabled={saliendo || continuando}
+          data-testid="sesion-continuar"
+        >
           <span className="truncate">Continuar como {comoQuien}</span>
         </Button>
         <Button
@@ -96,7 +108,7 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
           hideArrow
           onClick={() => void cambiar()}
           isLoading={saliendo}
-          disabled={saliendo}
+          disabled={saliendo || continuando}
         >
           <SignOut className="mr-2 h-4 w-4" />
           Entrar con otra cuenta

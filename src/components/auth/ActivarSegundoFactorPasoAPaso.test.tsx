@@ -112,12 +112,14 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     await montar()
     const texto = container.textContent ?? ''
     expect(texto).toContain('Activa tu segundo factor')
-    expect(texto).toContain('plata de propietarios e inquilinos')
+    // Nico, 30-09: el porqué va corto («es muy largo»), pero sigue diciendo
+    // que es por la plata que maneja el rol.
+    expect(texto).toContain('Tu rol maneja plata')
     expect(porTestId('indicador-app')?.getAttribute('aria-current')).toBe('step')
     expect(porTestId('indicador-escanear')?.textContent).toContain('Escanea el código')
     expect(porTestId('indicador-codigo')?.textContent).toContain('Escribe el código')
     expect(texto).toContain('Paso 1 de 3')
-    expect(texto).toContain('Authy, 1Password')
+    expect(texto).toContain('Sirve cualquier app de códigos')
     // Qué hacer si cambia de celular: el flujo que YA existe, sin inventar otro.
     expect(texto).toContain('No tengo la app de autenticación')
   })

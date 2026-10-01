@@ -156,14 +156,14 @@ export default function MfaEnrollPage() {
             {/* `my-auto` y no `justify-center`: si el contenido es más alto que
                 la tarjeta, `justify-center` corta el principio y no se puede
                 subir a verlo (pasaba a 1440×900 con el paso 1). */}
-            <div className="mx-auto w-full max-w-md space-y-7 lg:my-auto lg:max-w-none">
+            <div className="mx-auto w-full max-w-md space-y-6 lg:my-auto lg:max-w-none">
               <ActivarSegundoFactorPasoAPaso
                 onActivado={alActivar}
                 onYaTeniaFactor={alYaTenerFactor}
               />
 
               {activadoEn === null ? (
-                <div className="border-t border-border-faint pt-5 text-center">
+                <div className="border-t border-border-faint pt-4 text-center">
                   <button
                     type="button"
                     onClick={() => void handleSignOut()}

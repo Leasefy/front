@@ -34,6 +34,7 @@ import { Certificate, MagnifyingGlass, User } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { Spinner } from '@/components/ui/spinner'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { toast } from '@/components/ui/toast'
@@ -210,12 +211,11 @@ export function CajonDeLaCertificacion({
                   código.
                 </p>
               ) : buscando ? (
-                <p
-                  className="flex items-center gap-2 text-caption text-fg-muted"
+                <CargaDeMarca
+                  texto="Buscando…"
+                  className="flex justify-start"
                   data-testid="cert-buscando"
-                >
-                  <Spinner className="h-3.5 w-3.5" /> Buscando…
-                </p>
+                />
               ) : resultados.length === 0 ? (
                 <p className="text-caption text-fg-muted" data-testid="cert-sin-resultados">
                   Ningún propietario coincide con «{busqueda.trim()}».

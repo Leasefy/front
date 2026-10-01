@@ -429,7 +429,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                 disabled={!puedeAutorizar || trabajando}
                 onClick={() => void autorizar()}
               >
-                {trabajando ? <Spinner size="sm" /> : 'Autorizar'}
+                {trabajando ? <Spinner size="sm" variant="current" /> : 'Autorizar'}
               </Button>
               <Button variant="secondary" hideArrow disabled={trabajando} onClick={() => setFormulario(false)}>
                 Cancelar

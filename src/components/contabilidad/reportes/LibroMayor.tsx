@@ -28,7 +28,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Table,
   TableBody,
@@ -162,9 +162,8 @@ export function LibroMayor() {
       }
     >
       {cargando && !mayor ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Armando el mayor…</p>
+        <div className="flex justify-center py-16">
+          <CargaDeMarca tamano="lg" texto="Armando el mayor…" disposicion="apilada" />
         </div>
       ) : error && !mayor ? (
         <div className="p-4">

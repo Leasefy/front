@@ -55,7 +55,7 @@ import { createPortal } from 'react-dom'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
 import confetti from 'canvas-confetti'
 
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { AuroraDeMarca } from '@/components/brand/AuroraDeMarca'
 import { LEASEFY_SYMBOL_PATH, LEASEFY_SYMBOL_VIEWBOX } from '@/components/brand/leasefy-logo-paths'
@@ -277,17 +277,13 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaPr
 
       {fase === 'esperando' ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <motion.p
-            role="status"
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.25, duration: 0.3 }}
-            className="flex items-center gap-2 text-body-sm text-fg-muted"
-            data-testid="inmobiliaria-creada-entrando"
           >
-            <Spinner size="xs" variant="current" />
-            Entrando a tu panel…
-          </motion.p>
+            <CargaDeMarca tamano="xs" texto="Entrando a tu panel…" data-testid="inmobiliaria-creada-entrando" />
+          </motion.div>
         </div>
       ) : null}
     </div>,

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 
 export interface PolicyAutoSkipStepProps {
   /** True while a wizard step submit (this one, or a lingering previous one) is in flight. */
@@ -70,9 +70,13 @@ export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepP
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16" data-testid="policy-skip-loading">
-      <Spinner size="md" variant="muted" />
-      <p className="text-body-sm text-fg-muted">Configurando tu cuenta...</p>
-    </div>
+    <CargaDeMarca
+      tamano="md"
+      tono="negro"
+      disposicion="apilada"
+      texto="Configurando tu cuenta..."
+      className="flex py-16"
+      data-testid="policy-skip-loading"
+    />
   )
 }

@@ -36,7 +36,7 @@ import { Button } from '@/components/ui/button';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
@@ -492,11 +492,13 @@ function PropietarioDetailContent() {
   // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
   if (!propietario && isLoading) {
     return (
-      <div className="p-6 lg:p-8" role="status" aria-live="polite" data-testid="propietario-cargando">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Spinner size="sm" />
-          {t('common.loading')}
-        </div>
+      <div className="p-6 lg:p-8">
+        <CargaDeMarca
+          tamano="sm"
+          texto={t('common.loading')}
+          aria-live="polite"
+          data-testid="propietario-cargando"
+        />
       </div>
     );
   }

@@ -39,7 +39,7 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -290,9 +290,11 @@ export function CajonDelEgreso({
               </h3>
 
               {cargando ? (
-                <div className="flex items-center gap-2 text-sm text-fg-muted">
-                  <Spinner size="sm" /> Leyendo el historial…
-                </div>
+                <CargaDeMarca
+                  tamano="sm"
+                  texto="Leyendo el historial…"
+                  className="flex justify-start"
+                />
               ) : errorDeCarga ? (
                 <div className="space-y-2" data-testid="historial-sin-cargar">
                   <p className="text-sm text-danger">{errorDeCarga}</p>

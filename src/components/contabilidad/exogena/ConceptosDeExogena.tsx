@@ -37,7 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Table,
   TableBody,
@@ -151,9 +151,8 @@ export function ConceptosDeExogena({
 
   if (cargando && !conceptos) {
     return (
-      <section className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface py-10">
-        <Spinner />
-        <p className="text-sm text-fg-muted">Cargando los conceptos de {anio}…</p>
+      <section className="flex flex-col items-center rounded-lg border border-border bg-surface py-10">
+        <CargaDeMarca disposicion="apilada" texto={`Cargando los conceptos de ${anio}…`} />
       </section>
     );
   }

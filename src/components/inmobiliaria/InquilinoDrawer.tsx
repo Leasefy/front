@@ -92,7 +92,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   RenglonDeArriendo,
   RUTA_DEL_CONTRATO_MANUAL,
@@ -358,9 +358,11 @@ export function CuerpoDelCajon({
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
             {cargandoArriendos ? (
-              <div className="flex items-center justify-center gap-2 py-16 text-sm text-fg-muted">
-                <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
-              </div>
+              <CargaDeMarca
+                tamano="sm"
+                texto={t(`${NS}.cargandoArriendos`)}
+                className="flex py-16"
+              />
             ) : (
               /* El vacío de esta persona es el caso común en una agencia recién
                  migrada, así que dice lo que falta y ofrece la salida en vez de
@@ -464,9 +466,7 @@ export function CuerpoDelCajon({
               conteo={persona.arriendos.length}
               meta={
                 cargandoArriendos ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
-                    <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
-                  </span>
+                  <CargaDeMarca tamano="sm" texto={t(`${NS}.cargandoArriendos`)} />
                 ) : null
               }
             >
@@ -517,9 +517,11 @@ export function CuerpoDelCajon({
                 }
               >
                 {cargandoPagos ? (
-                  <div className="flex items-center gap-2 py-6 text-sm text-fg-muted">
-                    <Spinner size="sm" /> {t(`${NS}.cargandoPagos`)}
-                  </div>
+                  <CargaDeMarca
+                    tamano="sm"
+                    texto={t(`${NS}.cargandoPagos`)}
+                    className="flex justify-start py-6"
+                  />
                 ) : errorPagos ? (
                   <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
                     <p className="text-sm text-danger" role="alert">

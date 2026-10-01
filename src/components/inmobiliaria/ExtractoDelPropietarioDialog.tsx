@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Input, Label } from '@/components/ui';
 import {
   Dialog,
@@ -141,15 +141,13 @@ export function ExtractoDelPropietarioDialog({
           </div>
 
           {cargando && (
-            <div
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
-              role="status"
+            <CargaDeMarca
+              tamano="sm"
+              texto={t('inmobiliaria.propietario.extracto.cargando')}
               aria-live="polite"
+              className="flex justify-start gap-3 rounded-lg border border-border bg-card p-6"
               data-testid="extracto-cargando"
-            >
-              <Spinner size="sm" />
-              {t('inmobiliaria.propietario.extracto.cargando')}
-            </div>
+            />
           )}
 
           {!cargando && error && (

@@ -61,7 +61,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Table,
   TableBody,
@@ -212,10 +212,12 @@ export function Exogena({ anioInicial }: { anioInicial?: number } = {}) {
 
   if (cargando && !resumen) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Armando los formatos de {anio}…</p>
-      </div>
+      <CargaDeMarca
+        tamano="lg"
+        disposicion="apilada"
+        texto={`Armando los formatos de ${anio}…`}
+        className="flex py-16 text-center"
+      />
     );
   }
   if (error || !resumen) {

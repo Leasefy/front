@@ -12398,7 +12398,11 @@
       "tituloEnCurso": "Finish your migration",
       "avance": "{{hechos}} of {{total}} steps done · next: {{paso}}",
       "migrar": "Migrate now",
-      "cerrar": "Close the migration reminder"
+      "cerrar": "Close the migration reminder",
+      "paso": "Step {{n}} of {{total}}",
+      "pasos": "{{total}} steps",
+      "listos": "{{hechos}} of {{total}}",
+      "sigue": "Next up: {{paso}}. Pick it up where you left off."
     },
     "muro": {
       "cerrar": "Close and continue later",

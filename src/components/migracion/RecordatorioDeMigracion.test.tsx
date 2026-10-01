@@ -116,16 +116,22 @@ describe('qué dice', () => {
     expect(abrir).toHaveBeenCalledTimes(1);
   });
 
-  it('a medias: «Termina tu migración», cuántos pasos van, cuál sigue y una barra de avance', () => {
+  it('a medias: «Termina tu migración», en qué paso va, cuál sigue y una barra de avance', () => {
     pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
 
     expect(q('sidebar-migracion')?.textContent).toContain('migracion.recordatorio.tituloEnCurso');
+    expect(q('sidebar-migracion-paso')?.textContent).toBe('migracion.recordatorio.paso::{"n":3,"total":6}');
     expect(q('sidebar-migracion-detalle')?.textContent).toBe(
-      'migracion.recordatorio.avance::{"hechos":2,"total":6,"paso":"migracion.pasos.propiedades.corto"}',
+      'migracion.recordatorio.sigue::{"paso":"migracion.pasos.propiedades.corto"}',
     );
     const barra = container.querySelector('[role="progressbar"]');
     expect(barra?.getAttribute('aria-valuenow')).toBe('2');
     expect(barra?.getAttribute('aria-valuemax')).toBe('6');
+  });
+
+  it('sin empezar, la pastilla dice «Paso 1 de 6»', () => {
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: SIN_EMPEZAR });
+    expect(q('sidebar-migracion-paso')?.textContent).toBe('migracion.recordatorio.paso::{"n":1,"total":6}');
   });
 
   it('un paso `no_disponible` no cuenta ni como hecho ni en el total', () => {
@@ -133,7 +139,8 @@ describe('qué dice', () => {
     pasos[5] = paso('contables', 'no_disponible');
     pintar({ bloquea: false, resuelta: 'omitida', pasos });
 
-    expect(q('sidebar-migracion-detalle')?.textContent).toContain('"hechos":2,"total":5');
+    expect(q('sidebar-migracion-paso')?.textContent).toBe('migracion.recordatorio.paso::{"n":3,"total":5}');
+    expect(container.querySelector('[role="progressbar"]')?.getAttribute('aria-valuemax')).toBe('5');
   });
 
   it('también recuerda a quien eligió «ahora» y cerró a mitad de camino: lo que manda es el estado del back, no la decisión', () => {

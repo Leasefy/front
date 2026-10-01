@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname /* , useRouter */ } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
@@ -83,7 +83,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { locale, t } = useI18n();
   const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus, modulosPagos } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
-  const router = useRouter();
+  // Sólo lo usaba la tarjeta de invitar (comentada abajo).
+  // const router = useRouter();
   // Upgrade CTA only when the agency is NOT on a paid plan (i.e. on the
   // free/default plan) — derived from the plan's isDefault flag, never a tier
   // name (contrato 29). While the subscription / plan catalog is loading or
@@ -107,7 +108,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { config } = useInmobiliariaConfig();
   // El mismo gate que usa la propia pantalla de Equipo (`SeccionEquipo`) para
   // decidir si muestra el formulario de invitación.
-  const puedeInvitarAlEquipo = isAdmin || canAccess('agentes', 'create');
+  // 🔴 Comentado con la tarjeta de invitar (Nico, 01-10: «no me interesa que
+  // vaya ahí por ahora»). Para volver a mostrarla, descomentar esto y las dos
+  // props de abajo.
+  // const puedeInvitarAlEquipo = isAdmin || canAccess('agentes', 'create');
   const agencyName =
     agency?.name?.trim() ||
     config?.agency?.name?.trim() ||
@@ -279,8 +283,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // La tarjeta de invitar sólo a quien puede invitar: el destino
           // (`/configuracion/equipo`) está detrás de `module: 'agentes'`, y a
           // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.
-          showInvite={puedeInvitarAlEquipo}
-          onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
+          // 🔴 Comentada por ahora (Nico, 01-10): el pie del menú queda con la
+          // migración, ayuda y tema. Se invita desde Configuración › Equipo.
+          // showInvite={puedeInvitarAlEquipo}
+          // onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
           // El recordatorio de migración: cómo va, «Migrar ahora» y una ✕
           // (Nico, 2026-09-07). Lee el estado del muro por contexto.
           footerCards={<RecordatorioDeMigracion />}

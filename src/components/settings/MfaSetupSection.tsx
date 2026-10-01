@@ -143,7 +143,8 @@ export function MfaSetupSection({
         if (verificado) {
           setState('enrolled');
           setFactorId(verificado);
-          onEnrolled?.();
+          if (onYaInscrito) onYaInscrito();
+          else onEnrolled?.();
         }
       } catch {
         // MFA no disponible: se queda en 'idle', que ofrece activarlo.

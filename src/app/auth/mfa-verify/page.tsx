@@ -523,7 +523,15 @@ export default function MfaVerifyPage() {
               {/* 🔴 La puerta de emergencia: sin app no hay código, y hay que
                   poder decirlo aunque el SDK no conteste. */}
               {!inscribiendo && !sinLaApp && (
-                <div className="border-t border-border-faint pt-5 text-center">
+                <div className="space-y-1 border-t border-border-faint pt-5 text-center">
+                  {/* La pregunta nombra los casos: «No tengo la app» sola no
+                      la reconoce quien cambió de celular o ve que ningún
+                      código funciona (Nico, 01-10). */}
+                  <p className="text-body-sm text-fg-muted">
+                    {tieneFactor === true
+                      ? '¿Cambiaste de celular, borraste la app o ningún código funciona?'
+                      : '¿Todavía no tienes la app de autenticación?'}
+                  </p>
                   <Button
                     variant="link"
                     size="sm"
@@ -534,8 +542,8 @@ export default function MfaVerifyPage() {
                     {revisandoLaCuenta
                       ? 'Revisando tu cuenta…'
                       : tieneFactor === true
-                      ? 'No tengo la app de autenticación'
-                      : 'No tengo la app de autenticación — activarla ahora'}
+                      ? 'Restablécelo con un código a tu correo'
+                      : 'Actívala ahora'}
                   </Button>
                 </div>
               )}

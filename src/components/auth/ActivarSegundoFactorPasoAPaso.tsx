@@ -686,8 +686,8 @@ function PasoDescargar({
         <p className="flex gap-2">
           <EnvelopeSimple className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            ¿Cambias de celular o pierdes la app? Al entrar, toca «No tengo la app de autenticación» y
-            lo restableces con un código que te mandamos al correo.
+            ¿Cambias de celular o pierdes la app? Al entrar, toca «Restablécelo con un código a tu
+            correo».
           </span>
         </p>
       </div>

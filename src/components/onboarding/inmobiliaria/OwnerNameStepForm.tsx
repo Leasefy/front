@@ -310,11 +310,18 @@ export function OwnerNameStepForm({
             }}
           />
         </FormControl>
-        {/* Con el NIT bueno la ayuda se calla: el campo ya lo dice con su
-            borde. Repetir el número «mejorado» abajo confundía (Nico, 30-09:
-            «pone un número en el input y el helper pone otra cosa»). */}
+        {/* Sin repetir el número entero «mejorado» (Nico, 30-09: «pone un
+            número en el input y el helper pone otra cosa»), pero SÍ la ayuda
+            que servía: si no escribió el dígito de verificación, se le dice
+            cuál es, en neutro y sin ✓. */}
         {errorDe('nit') ? (
           <FormError>{errorDe('nit')}</FormError>
+        ) : revisados.nit && revision.nitBueno && !revision.nitBueno.traiaDv ? (
+          <FormHint data-testid="nit-digito-sugerido">
+            Su dígito de verificación es{' '}
+            <span className="font-mono font-medium tabular-nums text-fg">{revision.nitBueno.dv}</span>: lo
+            agregamos al guardar.
+          </FormHint>
         ) : (
           <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
         )}

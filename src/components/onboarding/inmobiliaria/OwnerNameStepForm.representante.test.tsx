@@ -207,7 +207,18 @@ describe('OwnerNameStepForm — el NIT se sigue validando (Nico, 30-09: sólo se
     escribir('agencyNit', '900123456')
     salirDe('agencyNit')
     expect(container.textContent).not.toContain('900.123.456-8')
+    // Pero sí dice cuál es su dígito de verificación (Nico, 30-09: la ayuda servía).
+    const sugerido = container.querySelector('[data-testid="nit-digito-sugerido"]')
+    expect(sugerido?.textContent).toContain('Su dígito de verificación es 8')
     enviar()
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ nit: '900123456-8' }))
+  })
+
+  it('si escribió el dígito y está bien, no se le sugiere nada', () => {
+    render()
+    escribir('agencyNit', '900123456-8')
+    salirDe('agencyNit')
+    expect(container.querySelector('[data-testid="nit-digito-sugerido"]')).toBeNull()
+    expect(container.textContent).not.toContain('no corresponde')
   })
 })

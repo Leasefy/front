@@ -33,7 +33,7 @@ import { CheckCircle, Hourglass } from '@phosphor-icons/react';
 
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/ui/money-input';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -117,12 +117,10 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
 
   if (cargando && !config) {
     return (
-      <CargaDeMarca
-        tamano="lg"
-        disposicion="apilada"
-        texto="Cargando la configuración…"
-        className="flex py-12 text-center"
-      />
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <Spinner size="lg" />
+        <p className="text-sm text-fg-muted">Cargando la configuración…</p>
+      </div>
     );
   }
   if (error || !config || !borrador) {

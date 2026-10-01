@@ -88,7 +88,11 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // pantalla montaba; las tarjetas del ejecutor del chat no usan 12 px).
 // 30-09: 2740 al cambiar los spinners por el logo en carga: los textos que
 // acompañaban la carga los pinta `CargaDeMarca` en 13 (`text-caption`).
-const CUANTOS_HABIA = 2740;
+// 01-10: 2739 al devolver el spinner a los botones y a las cargas en línea
+// (el logo queda sólo en pantalla completa y transiciones): los textos que
+// volvieron de `CargaDeMarca` van en `text-caption`, y la etiqueta «Completado»
+// del panel de ejecución subió a 13 para igualar a «En ejecución».
+const CUANTOS_HABIA = 2739;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

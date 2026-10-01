@@ -25,7 +25,6 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import { clasificarFallo, type Contexto, type TipoDeFallo } from '@/lib/errores/clasificar'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { cn } from '@/lib/utils'
@@ -208,11 +207,10 @@ export function FalloDeCarga({
               data-testid="reintentar"
               data-reintentando={reintentando ? 'si' : 'no'}
             >
-              {reintentando ? (
-                <Spinner size="xs" variant="current" />
-              ) : (
-                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-              )}
+              <ArrowsClockwise
+                className={cn('h-4 w-4', reintentando && 'animate-spin')}
+                aria-hidden="true"
+              />
               {reintentando ? 'Intentando…' : 'Intentar de nuevo'}
             </Button>
           )}

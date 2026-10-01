@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractOtpRole, OtpChannelResult } from '@/lib/api/contracts.types';
 import { describirCanales } from '@/lib/contratos/otp-channels';
@@ -357,15 +357,17 @@ export function OTPVerification({
 
           {/* Loader inicial */}
           {!sentTo && !sendError && (
-            <div className="flex justify-center py-6">
-              <CargaDeMarca tamano="sm" texto="Enviando código a tu correo..." />
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
+              <Spinner size="sm" variant="current" />
+              Enviando código a tu correo...
             </div>
           )}
 
           {/* Estado en vivo */}
           {status === 'verifying' && (
-            <div className="flex justify-center">
-              <CargaDeMarca tamano="sm" texto="Verificando..." />
+            <div className="flex items-center justify-center gap-2 text-sm text-fg-muted">
+              <Spinner size="sm" variant="current" />
+              Verificando...
             </div>
           )}
 

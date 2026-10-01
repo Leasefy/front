@@ -5,7 +5,6 @@ import { Upload, File, X, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Spinner } from '@/components/ui/spinner';
 
 // ============================================================================
@@ -279,7 +278,10 @@ export function DocumentUpload({
           />
 
           {state === 'uploading' ? (
-            <CargaDeMarca tamano="lg" tono="negro" disposicion="apilada" texto="Subiendo..." />
+            <div className="flex flex-col items-center gap-2">
+              <Spinner size="lg" variant="muted" />
+              <p className="text-sm text-muted-foreground">Subiendo...</p>
+            </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
               <WarningCircle className="h-8 w-8 text-danger" />

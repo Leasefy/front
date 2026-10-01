@@ -36,7 +36,6 @@ import {
 
 import { SectionLabel } from '@/components/ui/section-label'
 import { Button } from '@/components/ui/button'
-import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { pasaGateDeFila } from '@/lib/nav/agency-nav-filter'
 import { formatCurrency } from '@/lib/format'
@@ -74,12 +73,11 @@ function PildoraDelEstado({ estado }: { estado: EstadoDelEquipo }) {
       data-estado={estado}
       className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption font-medium', tono.clase)}
     >
-      {tono.gira ? (
-        // La píldora ya es `role="status"` y dice qué pasa: el logo es sólo la señal.
-        <CargaDeMarca tono="negro" tamano="xs" className="flex-shrink-0" aria-hidden="true" />
-      ) : (
-        <Icono className="h-4 w-4 flex-shrink-0" weight="bold" aria-hidden="true" />
-      )}
+      <Icono
+        className={cn('h-4 w-4 flex-shrink-0', tono.gira && 'animate-spin motion-reduce:animate-none')}
+        weight="bold"
+        aria-hidden="true"
+      />
       {ETIQUETA_DEL_ESTADO[estado]}
     </span>
   )
@@ -204,19 +202,15 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
                 data-testid={`paso-${paso.id}`}
                 data-estado={paso.estado}
               >
-                {aspecto.gira ? (
-                  // Caja de 20 px como los otros íconos: el logo desborda parejo
-                  // y el texto de los pasos no se corre.
-                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center">
-                    <CargaDeMarca tono="negro" tamano="xs" aria-hidden="true" />
-                  </span>
-                ) : (
-                  <Icono
-                    className={cn('mt-0.5 h-5 w-5 flex-shrink-0', aspecto.clase)}
-                    weight={paso.estado === 'hecho' ? 'fill' : 'regular'}
-                    aria-hidden="true"
-                  />
-                )}
+                <Icono
+                  className={cn(
+                    'mt-0.5 h-5 w-5 flex-shrink-0',
+                    aspecto.clase,
+                    aspecto.gira && 'animate-spin motion-reduce:animate-none',
+                  )}
+                  weight={paso.estado === 'hecho' ? 'fill' : 'regular'}
+                  aria-hidden="true"
+                />
                 <div className="min-w-0 space-y-1">
                   <p className="text-body-sm font-medium text-fg">
                     <span className="mr-2 font-mono text-caption text-fg-subtle tabular-nums">{i + 1}</span>

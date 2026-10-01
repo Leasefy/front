@@ -17,7 +17,7 @@ import { useI18n } from '@/lib/i18n';
 import { Banner, KeyValueList } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui';
 import {
   Dialog,
@@ -118,11 +118,10 @@ export function RecibosDeCajaHistorial({
       )}
 
       {cargando && ordenados.length === 0 ? (
-        <CargaDeMarca
-          tamano="sm"
-          texto={t('recibos.historial.cargando')}
-          className="flex justify-start"
-        />
+        <p className="flex items-center gap-2 text-sm text-fg-muted">
+          <Spinner size="sm" variant="current" />
+          {t('recibos.historial.cargando')}
+        </p>
       ) : ordenados.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <Receipt className="mx-auto mb-2 h-6 w-6 text-fg-muted" weight="duotone" />

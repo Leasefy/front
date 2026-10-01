@@ -14,7 +14,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from '@/components/ui/toast';
@@ -80,11 +79,9 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           result.status === 'COMPLETED' && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
         )}
       >
-        {result.status === 'PROCESSING' ? (
-          <CargaDeMarca tamano="sm" className="flex-shrink-0" aria-hidden="true" />
-        ) : (
-          <StatusIcon className={cn('w-5 h-5 flex-shrink-0', config.color)} />
-        )}
+        <StatusIcon
+          className={cn('w-5 h-5 flex-shrink-0', config.color, result.status === 'PROCESSING' && 'animate-spin')}
+        />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-fg truncate">
             {getDocTypeLabel(result.documentType)}

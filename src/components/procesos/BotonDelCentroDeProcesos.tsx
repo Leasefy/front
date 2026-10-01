@@ -24,7 +24,6 @@ import { ArrowUpRight, Queue } from '@phosphor-icons/react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useCentroDeProcesos } from '@/lib/hooks/use-centro-de-procesos'
 import { toast } from '@/components/ui/toast'
-import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { alEventoDelCentro } from '@/lib/api/procesos.service'
 import type { ListaDeProcesos } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
@@ -251,12 +250,10 @@ export function BotonDelCentroDeProcesos() {
         >
           {/* Recién lanzado y el back todavía no lo registró: se ve igual. */}
           {anuncio && (
-            <CargaDeMarca
-              tamano="xs"
-              texto={<>Arrancando «{anuncio.titulo}»…</>}
-              className="flex justify-start px-4 py-3"
-              data-testid="centro-arrancando"
-            />
+            <p className="flex items-center gap-2 px-4 py-3 text-caption text-fg-muted" data-testid="centro-arrancando">
+              <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
+              Arrancando «{anuncio.titulo}»…
+            </p>
           )}
 
           {data?.disponible && vivos.length > 0 && (

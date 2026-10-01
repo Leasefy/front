@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MagnifyingGlass, User, X } from '@phosphor-icons/react'
 
 import { Button, Input } from '@/components/ui'
-import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import { Spinner } from '@/components/ui/spinner'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 
@@ -148,7 +148,10 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
       )}
 
       {isLoading ? (
-        <CargaDeMarca tamano="sm" texto="Buscando…" className="flex justify-start px-1 py-3" />
+        <div className="flex items-center gap-2 px-1 py-3 text-caption text-fg-muted">
+          <Spinner size="sm" variant="default" />
+          Buscando…
+        </div>
       ) : pages.length === 0 && !error ? (
         <p className="px-1 py-3 text-xs text-fg-muted">
           {payload

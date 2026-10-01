@@ -44,7 +44,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -231,12 +231,10 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
         {/* ══ P&G ═══════════════════════════════════════════════════════ */}
         <TabsContent value="pyg" className="space-y-5 pt-5">
           {cargando && !pyg ? (
-            <CargaDeMarca
-              tamano="lg"
-              disposicion="apilada"
-              texto="Armando el P&G…"
-              className="flex py-16"
-            />
+            <div className="flex flex-col items-center gap-3 py-16">
+              <Spinner size="lg" />
+              <p className="text-sm text-fg-muted">Armando el P&G…</p>
+            </div>
           ) : error && !pyg ? (
             <FalloDeCarga error={error} queEs="el estado de resultados" onReintentar={cargar} />
           ) : pyg ? (
@@ -467,12 +465,10 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
         {/* ══ Balance general ═══════════════════════════════════════════ */}
         <TabsContent value="balance" className="space-y-5 pt-5">
           {cargando && !balance ? (
-            <CargaDeMarca
-              tamano="lg"
-              disposicion="apilada"
-              texto="Armando el balance…"
-              className="flex py-16"
-            />
+            <div className="flex flex-col items-center gap-3 py-16">
+              <Spinner size="lg" />
+              <p className="text-sm text-fg-muted">Armando el balance…</p>
+            </div>
           ) : error && !balance ? (
             <FalloDeCarga error={error} queEs="el balance general" onReintentar={cargar} />
           ) : balance ? (

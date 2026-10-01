@@ -2,7 +2,6 @@
 
 import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
@@ -17,6 +16,7 @@ import {
   ChartBar,
   CheckCircle,
   XCircle,
+  CircleNotch,
   Lightning,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
@@ -97,7 +97,7 @@ function AgentExecutionRow({ agent }: { agent: AgentExecution }) {
       {/* Agent icon + label */}
       <div className={cn('flex items-center gap-1.5', AGENT_COLOR_TEXT[meta.color])}>
         {agent.status === 'running' ? (
-          <CargaDeMarca tamano="xs" className="shrink-0" />
+          <CircleNotch className="w-3.5 h-3.5 animate-spin shrink-0" weight="bold" />
         ) : agent.status === 'completed' ? (
           <CheckCircle className="w-3.5 h-3.5 shrink-0" weight="fill" />
         ) : agent.status === 'failed' ? (

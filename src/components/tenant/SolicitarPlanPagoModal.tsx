@@ -31,7 +31,7 @@ import { toast } from '@/components/ui/toast';
 import { X, Handshake, Info } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { useLeases } from '@/lib/hooks/useLeases';
@@ -200,10 +200,8 @@ export function SolicitarPlanPagoModal({
                 </span>
                 {leasesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-fg-muted rounded-[14px] border border-border bg-surface-muted p-4">
-                    <CargaDeMarca
-                      tamano="sm"
-                      texto={locale === 'es' ? 'Cargando tu arriendo…' : 'Loading your lease…'}
-                    />
+                    <Spinner size="sm" variant="current" />
+                    {locale === 'es' ? 'Cargando tu arriendo…' : 'Loading your lease…'}
                   </div>
                 ) : targetLease ? (
                   <div className="rounded-[14px] border border-border bg-surface-muted p-4">

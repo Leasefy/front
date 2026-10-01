@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Buildings, User, CheckCircle, WarningCircle, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
+import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
@@ -18,19 +18,6 @@ import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
-
-/**
- * Carga dentro del botón `bg-foreground`: oscuro en claro (logo blanco) y claro
- * en oscuro (logo azul). Ningún tono hace ese cruce solo, por eso son dos.
- */
-function CargaSobreElBotonOscuro() {
-  return (
-    <>
-      <CargaDeMarca tono="sobre-color" tamano="xs" className="dark:hidden" />
-      <CargaDeMarca tono="sobre-blanco" tamano="xs" className="hidden dark:inline-flex" />
-    </>
-  );
-}
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
 const PENDING_NAME_KEY = 'pending-invitation-name';
@@ -485,7 +472,7 @@ function RegistroContent() {
                     className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                   >
                     {isSubmitting ? (
-                      <CargaSobreElBotonOscuro />
+                      <SpinnerGap className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
                         Unirme a {invitation.agencyName}
@@ -609,7 +596,7 @@ function RegistroContent() {
                       className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                     >
                       {isSubmitting ? (
-                        <CargaSobreElBotonOscuro />
+                        <SpinnerGap className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
                           Crear cuenta y unirme

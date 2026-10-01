@@ -18,9 +18,8 @@
  * es de hoy o del mes pasado.
  */
 
-import { CheckCircle, CloudArrowDown, WarningCircle, WifiSlash } from '@phosphor-icons/react';
+import { CheckCircle, CloudArrowDown, SpinnerGap, WarningCircle, WifiSlash } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
 
 interface Props {
@@ -100,7 +99,7 @@ export function PrepararParaSinSenal({
           data-testid="preparar-sin-senal-boton"
         >
           {preparando ? (
-            <Spinner size="xs" variant="current" />
+            <SpinnerGap className="w-4 h-4 animate-spin" />
           ) : (
             <CloudArrowDown className="w-4 h-4" />
           )}

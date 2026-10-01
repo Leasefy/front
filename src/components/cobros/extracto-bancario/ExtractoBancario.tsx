@@ -40,7 +40,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -342,12 +342,10 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
           queEs="los movimientos del extracto"
           onReintentar={cargar}
           esqueleto={
-            <CargaDeMarca
-              tamano="lg"
-              disposicion="apilada"
-              texto="Cargando movimientos..."
-              className="flex py-16 text-center"
-            />
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <Spinner size="lg" />
+              <p className="text-body-sm text-fg-muted">Cargando movimientos...</p>
+            </div>
           }
         >
           <Table>

@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle,
   Warning,
+  SpinnerGap,
 } from '@phosphor-icons/react';
 import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -323,7 +324,7 @@ export default function InvitacionPage() {
                 disabled={accepting || declining}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
               >
-                {accepting && <CargaDeMarca tono="sobre-color" tamano="xs" />}
+                {accepting && <SpinnerGap className="h-4 w-4 animate-spin" />}
                 {accepting ? 'Aceptando…' : 'Aceptar invitación'}
               </button>
               <button

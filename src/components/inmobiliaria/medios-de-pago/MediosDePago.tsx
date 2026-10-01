@@ -29,7 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -192,8 +192,9 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
       </p>
 
       {cargando ? (
-        <div className="flex justify-center py-16">
-          <CargaDeMarca tamano="lg" texto="Cargando medios de pago..." disposicion="apilada" />
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <Spinner size="lg" />
+          <p className="text-sm text-fg-muted">Cargando medios de pago...</p>
         </div>
       ) : errorDeCarga ? (
         <FalloDeCarga error={errorDeCarga} queEs="los medios de pago" onReintentar={cargar} />

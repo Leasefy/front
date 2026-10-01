@@ -14,6 +14,7 @@ import {
   FileText,
   MagnifyingGlass,
   CheckCircle,
+  CircleNotch,
   Warning,
   Clock,
   Play,
@@ -24,7 +25,6 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -79,10 +79,11 @@ function StepStatusDot({ status }: { status: ExecutionStepStatus }) {
       );
     case 'running':
       return (
-        // El logo en carga es la señal de «corriendo»; la caja conserva los
-        // 24 px de los otros estados para no correr la línea de pasos.
-        <div className="flex items-center justify-center h-6 w-6">
-          <CargaDeMarca tamano="xs" />
+        <div className="relative flex items-center justify-center h-6 w-6">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40" />
+          <span className="relative flex items-center justify-center h-6 w-6 rounded-full bg-primary">
+            <CircleNotch weight="bold" className="h-3.5 w-3.5 text-white animate-spin" />
+          </span>
         </div>
       );
     case 'failed':
@@ -187,11 +188,10 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                     </div>
                   </div>
                   {isRunning && (
-                    <CargaDeMarca
-                      tamano="sm"
-                      texto={locale === 'es' ? 'Consultando...' : 'Querying...'}
-                      className="flex"
-                    />
+                    <div className="flex items-center justify-center gap-2 text-primary animate-pulse">
+                      <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">{locale === 'es' ? 'Consultando...' : 'Querying...'}</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -205,11 +205,10 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                         {locale === 'es' ? 'Motor de Análisis' : 'Analysis Engine'}
                       </span>
                       {isRunning && (
-                        <CargaDeMarca
-                          tamano="xs"
-                          texto={locale === 'es' ? 'Procesando' : 'Processing'}
-                          className="ml-auto"
-                        />
+                        <span className="ml-auto flex items-center gap-1 text-caption text-primary animate-pulse">
+                          <CircleNotch weight="bold" className="h-3 w-3 animate-spin" />
+                          {locale === 'es' ? 'Procesando' : 'Processing'}
+                        </span>
                       )}
                     </div>
                     {step.reasoning && (
@@ -239,12 +238,10 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       <p className="text-xs text-fg-muted font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
                     )}
                     {isRunning && (
-                      <CargaDeMarca
-                        tono="negro"
-                        tamano="sm"
-                        texto={locale === 'es' ? 'Generando PDF...' : 'Generating PDF...'}
-                        className="mt-4"
-                      />
+                      <div className="mt-4 flex items-center gap-2 text-fg-subtle">
+                        <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">{locale === 'es' ? 'Generando PDF...' : 'Generating PDF...'}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -491,13 +488,12 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
         {/* Status + Progress */}
         <div className="flex items-center gap-3">
           {isRunning ? (
-            <CargaDeMarca
-              tamano="xs"
-              texto={locale === 'es' ? 'En ejecución' : 'Running'}
-              textoClassName="text-primary"
-            />
+            <span className="flex items-center gap-1.5 text-caption font-medium text-primary">
+              <CircleNotch weight="bold" className="h-3.5 w-3.5 animate-spin" />
+              {locale === 'es' ? 'En ejecución' : 'Running'}
+            </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+            <span className="flex items-center gap-1.5 text-caption font-medium text-success">
               <CheckCircle weight="fill" className="h-3.5 w-3.5" />
               {locale === 'es' ? 'Completado' : 'Completed'}
             </span>

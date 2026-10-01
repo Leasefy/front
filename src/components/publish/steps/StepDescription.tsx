@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { TextT, FileText, Sparkle } from '@phosphor-icons/react';
+import { TextT, FileText, Sparkle, SpinnerGap } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { PROPERTY_TYPES } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
 
@@ -134,7 +133,7 @@ export function StepDescription() {
               )}
             >
               {generatingField === 'title' ? (
-                <Spinner size="xs" />
+                <SpinnerGap className="w-3 h-3 animate-spin" />
               ) : (
                 <Sparkle className={cn("w-3 h-3", titleTextTr.isTyping && "animate-pulse")} />
               )}
@@ -185,7 +184,7 @@ export function StepDescription() {
               )}
             >
               {generatingField === 'description' ? (
-                <Spinner size="xs" />
+                <SpinnerGap className="w-3 h-3 animate-spin" />
               ) : (
                 <Sparkle className={cn("w-3 h-3", descTextTr.isTyping && "animate-pulse")} />
               )}

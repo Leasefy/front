@@ -30,7 +30,6 @@ import { UploadSimple, Warning } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { Spinner } from '@/components/ui/spinner'
 import {
   Select,
@@ -227,11 +226,9 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
         </div>
 
         {leyendo && (
-          <CargaDeMarca
-            texto="Leyendo el archivo…"
-            className="flex justify-start"
-            data-testid="lista-leyendo"
-          />
+          <p className="flex items-center gap-2 text-sm text-fg-muted" data-testid="lista-leyendo">
+            <Spinner className="h-4 w-4" /> Leyendo el archivo…
+          </p>
         )}
 
         {/* 🔴 Lo que se encontró, ANTES de cargar. Una lista mal leída bloquea

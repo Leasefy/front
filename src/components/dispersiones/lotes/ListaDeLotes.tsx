@@ -32,7 +32,6 @@ import { Banner } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Spinner } from '@/components/ui/spinner';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
@@ -348,12 +347,10 @@ function FraseDelMes({
   }
   if (!pendientes) {
     return (
-      <CargaDeMarca
-        tamano="sm"
-        texto={<>Contando las dispersiones de {delMes}…</>}
-        className="flex justify-start"
-        data-testid="frase-del-mes"
-      />
+      <p className="flex items-center gap-2 text-sm text-fg-muted" data-testid="frase-del-mes">
+        <Spinner size="sm" variant="current" />
+        Contando las dispersiones de {delMes}…
+      </p>
     );
   }
   if (pendientes.esperan === 0) {

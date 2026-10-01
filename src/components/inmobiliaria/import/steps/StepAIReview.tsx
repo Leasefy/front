@@ -80,8 +80,14 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
     (p) => !p.hasErrors && p.suggestions.some((s) => s.accepted === null)
   ).length;
   const readyCount = totalCount - errorCount - withSuggestions;
-  const selectedCount = properties.filter((p) => p.selected).length;
-  const allSelected = selectedCount === totalCount && totalCount > 0;
+  // Las filas con errores no se pueden marcar (su checkbox está apagado), así
+  // que «todas» es «todas las seleccionables». Comparar contra `totalCount`
+  // dejaba el control en «seleccionar» para siempre en cuanto una fila tenía
+  // error: marcaba las sanas, nunca llegaba a «todas» y no se podía desmarcar.
+  const selectableCount = totalCount - errorCount;
+  const selectedCount = properties.filter((p) => p.selected && !p.hasErrors).length;
+  const allSelected = selectableCount > 0 && selectedCount === selectableCount;
+  const someSelected = selectedCount > 0 && !allSelected;
 
   // Orden: con errores primero, después con sugerencias pendientes, después
   // las completas — pero decidido UNA vez, cuando llega el análisis. Si se
@@ -361,14 +367,19 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           <label className="flex items-center gap-2 cursor-pointer">
             <Checkbox
               checked={allSelected}
+              indeterminate={someSelected}
+              disabled={selectableCount === 0}
               onCheckedChange={handleToggleSelectAll}
             />
             <span className="text-sm text-fg-muted dark:text-fg-subtle">
-              {allSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}
+              {allSelected
+                ? 'Deseleccionar todas'
+                : `Seleccionar ${selectableCount === 1 ? 'la' : 'las'} ${selectableCount.toLocaleString('es-CO')}`}
             </span>
           </label>
           <span className="text-xs font-mono text-fg-subtle dark:text-fg-muted">
-            {selectedCount} / {totalCount} seleccionadas
+            {selectedCount} / {selectableCount} seleccionadas
+            {errorCount > 0 ? ` · ${errorCount} con errores no se pueden importar` : ''}
           </span>
         </div>
 

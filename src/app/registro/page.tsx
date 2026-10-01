@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -338,12 +339,12 @@ function RegistroContent() {
               >
                 Ir a mi panel
               </button>
-              <a
+              <Link
                 href="/"
                 className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Volver al inicio
-              </a>
+              </Link>
             </div>
           )}
         </div>

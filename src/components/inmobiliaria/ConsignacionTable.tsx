@@ -470,13 +470,16 @@ export function ConsignacionTable({
                       )
                     ) : (
                       <p className="font-semibold text-foreground tabular-nums">
-                        {row.kind === 'sinMandato' && row.canonPorConfirmar
+                        {row.canonPorConfirmar
                           ? TEXTO_CANON_POR_CONFIRMAR
                           : row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
                       </p>
                     )}
-                    {row.kind === 'sinMandato' && row.canonPorConfirmar ? (
-                      <CanonPorConfirmarBadge inmuebleId={row.propertyId} className="mt-1" />
+                    {row.canonPorConfirmar ? (
+                      <CanonPorConfirmarBadge
+                        inmuebleId={row.kind === 'sinMandato' ? row.propertyId : row.propertyId}
+                        className="mt-1"
+                      />
                     ) : null}
                     {/*
                       Antes: `consignacion.adminFee && consignacion.adminFee > 0 && (…)`.

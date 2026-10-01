@@ -305,6 +305,8 @@ export interface Consignacion {
    * Never `0` (C6). `Consignacion.monthlyRent` was NOT NULL before T-0038.
    */
   monthlyRent: number | null;
+  /** T-0129 — canon por confirmar: `monthlyRent` es 0 pero NO es un canon; se muestra «Por confirmar». */
+  canonPorConfirmar?: boolean;
   adminFee?: number;
 
   /**

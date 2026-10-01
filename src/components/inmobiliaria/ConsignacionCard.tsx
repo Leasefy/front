@@ -1,5 +1,7 @@
 'use client';
 
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -166,7 +168,9 @@ export function ConsignacionCard({
             {consignacion.propertyZone} ·{' '}
             {consignacion.listingType === 'sale'
               ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
-              : consignacion.monthlyRent != null
+              : consignacion.canonPorConfirmar
+                ? TEXTO_CANON_POR_CONFIRMAR
+                : consignacion.monthlyRent != null
                 ? `${formatCurrency(consignacion.monthlyRent)}${t('inmobiliaria.portafolio.card.perMonth')}`
                 : '—'}
           </p>
@@ -274,9 +278,15 @@ export function ConsignacionCard({
         ) : (
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-xl font-bold text-fg">
-              {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+              {consignacion.canonPorConfirmar
+                ? TEXTO_CANON_POR_CONFIRMAR
+                : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
             </span>
-            <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
+            {consignacion.canonPorConfirmar ? (
+              <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} />
+            ) : (
+              <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
+            )}
             {consignacion.adminFee && consignacion.adminFee > 0 && (
               <span className="text-xs text-fg-subtle dark:text-fg-muted">
                 + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}

@@ -1,5 +1,6 @@
 'use client';
 
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useState, useMemo, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
 import {
@@ -146,6 +147,8 @@ export function AsignacionModal({
               <p className="text-sm font-medium text-primary mt-2">
                 {consignacion.listingType === 'sale'
                   ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+                  : consignacion.canonPorConfirmar
+                  ? TEXTO_CANON_POR_CONFIRMAR
                   : consignacion.monthlyRent != null
                     ? `${formatCurrency(consignacion.monthlyRent)}${t('inmobiliaria.agente.perMonth')}`
                     : '—'}

@@ -182,6 +182,8 @@ function NuevoContratoContent() {
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
   // T-0129 — el inmueble tiene el canon por confirmar: el 409 trae su id.
   const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
+  // El inmueble elegido a mano ya se sabe con canon por confirmar (flag de la consignación).
+  const [inmuebleManualSinCanon, setInmuebleManualSinCanon] = useState<string | null>(null);
   /**
    * 🔴 Nico y Juan Camilo, 2026-09-16: iniciar un contrato exige el inventario
    * del inmueble completo y actualizado. Se pregunta al elegir el inmueble
@@ -666,9 +668,10 @@ function NuevoContratoContent() {
               // El mandato, para que el arrendador del contrato salga del
               // propietario que lo firmó y no haya que buscarlo otra vez.
               setConsignacionElegida(c.id);
+              setInmuebleManualSinCanon(c.canonPorConfirmar ? c.propertyId : null);
               // El canon del mandato, si lo hay: una tecla menos y un número
               // que no se contradice con el de la consignación.
-              if (c.monthlyRent != null && c.monthlyRent > 0) {
+              if (!c.canonPorConfirmar && c.monthlyRent != null && c.monthlyRent > 0) {
                 setForm((f) => ({ ...f, monthlyRent: String(c.monthlyRent) }));
               }
             }}
@@ -941,11 +944,11 @@ function NuevoContratoContent() {
             </div>
           </div>
         )}
-        {errorSinCanon !== null || (!esManual && property?.canonPorConfirmar) ? (
+        {errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar) ? (
           <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
             <AvisoInmuebleSinCanon
               error={errorSinCanon}
-              inmuebleId={!esManual ? property?.id : undefined}
+              inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
             />
           </div>
         ) : null}
@@ -974,7 +977,8 @@ function NuevoContratoContent() {
               !isValid ||
               actions.isSubmitting ||
               bloqueoDeInventario !== null ||
-              (!esManual && property?.canonPorConfirmar === true)
+              (!esManual && property?.canonPorConfirmar === true) ||
+              (esManual && inmuebleManualSinCanon !== null)
             }
             className="gap-2"
           >

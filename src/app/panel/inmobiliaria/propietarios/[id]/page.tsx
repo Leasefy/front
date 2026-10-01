@@ -1,4 +1,5 @@
 'use client';
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
@@ -252,7 +253,9 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
               <>
                 <div>
                   <p className="text-base font-semibold tabular-nums text-foreground">
-                    {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                    {consignacion.canonPorConfirmar
+                      ? TEXTO_CANON_POR_CONFIRMAR
+                      : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
                 </div>

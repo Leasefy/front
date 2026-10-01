@@ -99,3 +99,24 @@ export function toMembersRequest(values: MembersStepFormValues): OnboardingSessi
     members: values.members.map((member) => ({ email: member.email.trim(), role: member.role })),
   }
 }
+
+/**
+ * Los miembros que el paso YA guardó en el micro (`draft.members`, ver
+ * `members-core.ts`: `{ email, role (interno), requestedRole (el de la
+ * plataforma) }`), como filas del formulario. Para volver a editar el paso
+ * con lo que ya había (Nico, 2026-09-30). El nombre no viaja al micro: vuelve
+ * vacío, y es opcional.
+ */
+export function miembrosDelBorrador(
+  draft: Record<string, unknown> | null | undefined,
+): MembersStepFormValues['members'] {
+  const crudos = Array.isArray(draft?.members) ? (draft.members as unknown[]) : []
+  const roles = new Set<string>(MEMBER_ROLE_OPTIONS.map((o) => o.value))
+  return crudos.flatMap((m) => {
+    if (!m || typeof m !== 'object') return []
+    const fila = m as Record<string, unknown>
+    if (typeof fila.email !== 'string' || !fila.email.trim()) return []
+    const rol = typeof fila.requestedRole === 'string' && roles.has(fila.requestedRole) ? fila.requestedRole : 'AGENTE'
+    return [{ email: fila.email.trim(), nombre: '', role: rol as MemberRole }]
+  })
+}

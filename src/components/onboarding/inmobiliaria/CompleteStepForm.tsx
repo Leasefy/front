@@ -95,8 +95,15 @@ export interface LineaDelResumen {
  * la frase no significa nada.
  */
 export function resumenDelRegistro(
-  draft: Record<string, unknown> | null | undefined,
+  borrador: Record<string, unknown> | null | undefined,
 ): LineaDelResumen[] {
+  // El micro guarda el paso Agencia en `draft.agency.{…}`; las claves planas
+  // son del flujo viejo del enlace mágico. Se leen las dos.
+  const agencia = borrador?.agency
+  const draft =
+    agencia && typeof agencia === 'object'
+      ? { ...borrador, ...(agencia as Record<string, unknown>) }
+      : borrador
   const calle = textoDelDraft(draft, 'address', 'calle')
   const ciudad = textoDelDraft(draft, 'address', 'ciudad')
   const departamento = textoDelDraft(draft, 'address', 'departamento')

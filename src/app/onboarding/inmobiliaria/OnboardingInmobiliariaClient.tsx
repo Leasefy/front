@@ -31,6 +31,12 @@ import {
 import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
 import { PasoYaGuardado } from '@/components/onboarding/inmobiliaria/PasoYaGuardado'
+import {
+  borrarBorradorLocal,
+  guardarBorradorLocal,
+  leerBorradorLocal,
+} from '@/components/onboarding/inmobiliaria/borrador-local'
+import { miembrosDelBorrador } from '@/components/onboarding/inmobiliaria/members-step-schema'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
 
 /** El orden de `STEP_ORDER` del micro (`onboarding/state-machine.ts`): el cursor sólo avanza. */
@@ -198,11 +204,15 @@ function OnboardingWizard({
    * pasó con cada persona y el equipo se puede invitar desde el panel.
    */
   const handleSubmitMembers = async (values: MembersStepFormValues) => {
+    // Al volver a editar Miembros, quien ya estaba en el borrador ya tiene su
+    // invitación del back: sólo se invita a los correos NUEVOS.
+    const yaInvitados = new Set(miembrosDelBorrador(draft).map((m) => m.email.toLowerCase()))
     const result = await submitMembers(toMembersRequest(values))
     if (!result) return result
-    if (values.members.length === 0) return result
+    const nuevos = values.members.filter((m) => !yaInvitados.has(m.email.trim().toLowerCase()))
+    if (nuevos.length === 0) return result
 
-    const invitaciones = await crearInvitacionesDelEquipo(values.members)
+    const invitaciones = await crearInvitacionesDelEquipo(nuevos)
     if (invitaciones.length > 0) setPendingMembersInvites({ invitaciones })
     return result
   }
@@ -235,7 +245,35 @@ function OnboardingWizard({
     }
   }
 
-  const effectiveStep = completeStepOverride ?? currentStep
+  // Habeas Data ya no crea la inmobiliaria al continuar (Nico, 30-09: «debería
+  // poder editar la información de los pasos»): aceptar se recuerda acá y la
+  // inmobiliaria nace en «Crear mi inmobiliaria», que llama acceptTerms (el
+  // compromiso del tenant) y luego /complete. Hasta ese clic la sesión sigue
+  // abierta y Agencia y Miembros se pueden reescribir.
+  const [terminosAceptados, setTerminosAceptados] = useState(
+    () => leerBorradorLocal<{ aceptados: boolean }>(sessionId, 'habeas_data')?.aceptados === true,
+  )
+  const aceptarTerminos = async () => {
+    guardarBorradorLocal(sessionId, 'habeas_data', { aceptados: true })
+    setTerminosAceptados(true)
+    setCompleteStepOverride(null)
+    return true
+  }
+  const crearInmobiliaria = async () => {
+    if (currentStep !== 'complete') {
+      const aceptado = await acceptTerms()
+      if (!aceptado) return null
+      borrarBorradorLocal(sessionId, 'habeas_data')
+    }
+    return completeOnboarding()
+  }
+
+  // El paso donde va la persona: con los términos aceptados en este
+  // navegador, Habeas Data ya está hecho y toca Confirmar.
+  const pasoDelMicro: OnboardingWizardStep | null =
+    currentStep === 'habeas_data' && terminosAceptados ? 'complete' : currentStep
+
+  const effectiveStep = completeStepOverride ?? pasoDelMicro
 
   // 🔴 Un paso ANTERIOR al cursor del micro ya quedó guardado y no se puede
   // reescribir: el micro sólo acepta el paso actual o el siguiente, y aceptar
@@ -245,7 +283,7 @@ function OnboardingWizard({
   const pasoYaGuardado =
     motivoDelOverride === 'revisar' &&
     completeStepOverride != null &&
-    currentStep != null &&
+    currentStep === 'complete' &&
     !pendingMembersInvites &&
     ORDEN_DEL_MICRO.indexOf(completeStepOverride) < ORDEN_DEL_MICRO.indexOf(currentStep)
 
@@ -262,7 +300,7 @@ function OnboardingWizard({
   return (
     <MarcoDelAsistente
       paso={displayStep}
-      pasoAlcanzado={currentStep}
+      pasoAlcanzado={pasoDelMicro}
       onNavigateToStep={revisarPaso}
       sinEncabezado={cargando || conErrorDeSesion}
     >
@@ -303,6 +341,7 @@ function OnboardingWizard({
                 pendingInvites={pendingMembersInvites}
                 onContinueAfterInvites={() => setPendingMembersInvites(null)}
                 sessionId={sessionId}
+                guardados={miembrosDelBorrador(draft)}
               />
             ) : effectiveStep === 'payment_provider' ? (
               // Invisible step (fix/onboarding-skip-payment) — an inmobiliaria
@@ -335,13 +374,13 @@ function OnboardingWizard({
               // después» era guardar llamadas a un 404.
               <TermsStepForm
                 isSubmitting={isSubmitting}
-                onSubmit={withOverrideClear(acceptTerms)}
+                onSubmit={aceptarTerminos}
                 submitError={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : (
               <CompleteStepForm
                 isSubmitting={isSubmitting}
-                onSubmit={completeOnboarding}
+                onSubmit={crearInmobiliaria}
                 error={error !== null && error.kind === 'conflict' ? error : null}
                 onNavigateToStep={completarPaso}
                 draft={draft}

@@ -50,6 +50,8 @@ export interface MembersStepFormProps {
   pendingInvites: PendingMembersInvites | null
   /** Con la sesión, lo escrito y no enviado vuelve al devolverse de paso (`borrador-local.ts`). */
   sessionId?: string
+  /** Lo que el paso ya guardó en el micro: al volver a editarlo, arranca con esto. */
+  guardados?: MembersStepFormValues['members']
   /** La persona ya leyó el resultado y quiere seguir. */
   onContinueAfterInvites: () => void
 }
@@ -222,6 +224,7 @@ export function MembersStepForm({
   pendingInvites,
   onContinueAfterInvites,
   sessionId,
+  guardados,
 }: MembersStepFormProps) {
   // Las filas escritas y no enviadas vuelven al devolverse de paso.
   const borrador = sessionId ? leerBorradorLocal<MembersStepFormValues>(sessionId, 'members') : null
@@ -233,10 +236,13 @@ export function MembersStepForm({
     setError,
     formState: { errors },
   } = useForm<MembersStepFormValues>({
+    // Lo escrito sin enviar manda; si no hay, lo que ya quedó guardado.
     defaultValues:
       borrador?.members && borrador.members.length > 0
         ? { members: borrador.members }
-        : MEMBERS_STEP_DEFAULT_VALUES,
+        : guardados && guardados.length > 0
+          ? { members: guardados }
+          : MEMBERS_STEP_DEFAULT_VALUES,
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'members' })
 

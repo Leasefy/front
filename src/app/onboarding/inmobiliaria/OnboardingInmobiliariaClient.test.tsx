@@ -528,8 +528,13 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
-  it('clic en un paso hecho de la barra vuelve a ese paso — en solo lectura, porque el micro ya no lo deja reescribir (Nico, 2026-09-07 y 30-09)', () => {
-    mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'habeas_data' }))
+  it('🔴 clic en un paso hecho de la barra vuelve a ese paso EDITABLE, con lo que ya quedó (Nico, 2026-09-07 y 30-09)', () => {
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({
+        currentStep: 'habeas_data',
+        draft: { agency: { legalName: 'Elpijao SAS', primaryContactEmail: 'hola@elpijao.co', address: { calle: 'Calle 10 # 5-55', ciudad: 'Medellín', departamento: 'Antioquia' } } },
+      }),
+    )
     render()
     expect(container.querySelector('[data-testid="terms-step-form"]')).toBeTruthy()
 
@@ -539,8 +544,11 @@ describe('<OnboardingInmobiliariaClient>', () => {
       volverAAgencia.click()
     })
 
-    expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeFalsy()
+    // La sesión sigue abierta: el formulario se puede editar y trae lo guardado.
+    expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeTruthy()
+    expect(byId('primaryContactEmail').value).toBe('hola@elpijao.co')
+    expect(byId('address.calle').value).toBe('Calle 10 # 5-55')
     expect(container.querySelector('[data-testid="terms-step-form"]')).toBeFalsy()
     // Los pasos de más adelante siguen hechos: se puede volver a Habeas Data.
     expect(container.querySelector('[data-testid="wizard-step-link-habeas_data"]')).toBeTruthy()
@@ -563,7 +571,8 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="habeas-data-step-form"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
 
-    // Accept terms, then submit → acceptTerms is forwarded.
+    // Aceptar y continuar NO crea la inmobiliaria todavía (Nico, 30-09):
+    // sólo pasa a Confirmar; la sesión sigue abierta para editar.
     const cb = container.querySelector('[data-testid="terms-accept"]') as HTMLButtonElement
     act(() => {
       cb.click()
@@ -574,7 +583,38 @@ describe('<OnboardingInmobiliariaClient>', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
-    expect(acceptTerms).toHaveBeenCalledTimes(1)
+    expect(acceptTerms).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
+  })
+
+  it('🔴 «Crear mi inmobiliaria» es lo que crea: acceptTerms y LUEGO /complete (Nico, 30-09)', async () => {
+    const orden: string[] = []
+    const acceptTerms = vi.fn().mockImplementation(async () => {
+      orden.push('acceptTerms')
+      return { sessionId: 'sess-1', currentStep: 'complete', nextStep: null, draft: {} }
+    })
+    const completeOnboarding = vi.fn().mockImplementation(async () => {
+      orden.push('complete')
+      return null
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ currentStep: 'habeas_data', acceptTerms, completeOnboarding }),
+    )
+    render()
+
+    act(() => {
+      ;(container.querySelector('[data-testid="terms-accept"]') as HTMLButtonElement).click()
+    })
+    await act(async () => {
+      ;(container.querySelector('[data-testid="terms-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {
+      ;(container.querySelector('[data-testid="complete-step-finish"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(orden).toEqual(['acceptTerms', 'complete'])
   })
 
   it('mounts <MembersStepForm> on the members step and forwards submitMembers', async () => {
@@ -947,4 +987,42 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
   })
+
+  it('🔴 volver a editar Miembros arranca con los guardados y sólo invita a los correos NUEVOS (Nico, 30-09)', async () => {
+    mockInviteUser.mockClear()
+    mockInviteUser.mockResolvedValue({ emailDelivered: true, emailStatus: 'sent', invitationToken: 'tok-nuevo' })
+    const submitMembers = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'habeas_data',
+      nextStep: 'complete',
+      draft: {},
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({
+        currentStep: 'habeas_data',
+        submitMembers,
+        draft: { members: [{ email: 'ana@inmobiliaria.test', role: 'OPERATOR', requestedRole: 'CONTADOR' }] },
+      }),
+    )
+    render()
+
+    act(() => {
+      ;(container.querySelector('[data-testid="wizard-step-link-members"]') as HTMLButtonElement).click()
+    })
+    expect(byId('members.0.email').value).toBe('ana@inmobiliaria.test')
+
+    act(() => {
+      ;(container.querySelector('[data-testid="members-add-row"]') as HTMLButtonElement).click()
+    })
+    setInputValue(byId('members.1.email'), 'bob@inmobiliaria.test')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="members-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(submitMembers).toHaveBeenCalledTimes(1)
+    expect(mockInviteUser).toHaveBeenCalledTimes(1)
+    expect(mockInviteUser).toHaveBeenCalledWith(expect.objectContaining({ email: 'bob@inmobiliaria.test' }))
+  })
 })
+

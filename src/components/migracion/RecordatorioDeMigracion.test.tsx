@@ -108,7 +108,10 @@ describe('qué dice', () => {
     expect(tarjeta?.textContent).not.toContain('tituloEnCurso');
     expect(q('sidebar-migracion-detalle')?.textContent).toBe('migracion.recordatorio.detalle');
     expect(q('sidebar-migracion-paso')?.textContent).toBe('migracion.recordatorio.paso::{"n":1,"total":6}');
-    expect(container.querySelector('[role="progressbar"]')).toBeNull();
+    // UNA sola pastilla: la barra en cero y «Paso 1 de 6», nada más.
+    expect(container.querySelectorAll('[role="progressbar"]')).toHaveLength(1);
+    expect(container.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('0');
+    expect(q('sidebar-migracion')?.textContent).not.toContain('pasos::');
     expect(q('sidebar-migracion-migrar')?.textContent).toBe('migracion.recordatorio.migrar');
 
     act(() => (q('sidebar-migracion-migrar') as HTMLElement).click());
@@ -123,9 +126,12 @@ describe('qué dice', () => {
     expect(q('sidebar-migracion-detalle')?.textContent).toBe(
       'migracion.recordatorio.sigue::{"paso":"migracion.pasos.propiedades.corto"}',
     );
+    // 🔴 Una sola cosa (Nico, 01-10): no «2 de 6» Y «Paso 3 de 6».
+    expect(container.querySelectorAll('[role="progressbar"]')).toHaveLength(1);
     const barra = container.querySelector('[role="progressbar"]');
     expect(barra?.getAttribute('aria-valuenow')).toBe('2');
     expect(barra?.getAttribute('aria-valuemax')).toBe('6');
+    expect(q('sidebar-migracion')?.textContent).not.toContain('listos::');
     expect(q('sidebar-migracion-migrar')?.textContent).toBe('migracion.recordatorio.continuar');
   });
 

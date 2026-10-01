@@ -25,7 +25,7 @@
  */
 
 import { useContext, useEffect, useState } from "react";
-import { ArrowRight, ListChecks } from "@phosphor-icons/react";
+import { ArrowRight } from "@phosphor-icons/react";
 
 import { LeasefySymbol } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -40,11 +40,10 @@ import { migracionSinTerminar, progresoDeMigracion } from "./muro-reglas";
  * La ilustración: MIGRAR (Nico, 01-10: «la ilustración debería ser otra, algo
  * más asociado al tema de migrar»). A la izquierda, el sistema actual —una
  * hoja de cálculo—; en el medio, sus filas viajando; a la derecha, Leasefy
- * recibiéndolas: una barra por paso, azul la que ya llegó. Lo de la derecha
- * es el avance de esta cuenta, no un adorno.
+ * recibiéndolas. Es dibujo, no dato: el avance lo dice UNA pastilla abajo
+ * («¿por qué muestra dos cosas?», Nico, 01-10).
  */
-function IlustracionDeMigracion({ hechos, total }: { hechos: number; total: number }) {
-  const pasos = Array.from({ length: Math.min(total, 6) }, (_, i) => i);
+function IlustracionDeMigracion() {
   return (
     <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[84px]">
       {/* El sistema de hoy: una hoja de cálculo. */}
@@ -76,12 +75,12 @@ function IlustracionDeMigracion({ hechos, total }: { hechos: number; total: numb
       <div className="absolute right-3 top-3.5 h-[66px] w-[66px] overflow-hidden rounded-md bg-surface px-2 py-1.5 shadow-sm ring-1 ring-border">
         <LeasefySymbol size={9} className="text-primary" />
         <div className="mt-1 flex flex-col gap-[3px]">
-          {pasos.map((i) => (
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <span
               key={i}
               className={cn(
                 "h-1 rounded-full",
-                i < hechos ? "bg-primary" : "bg-surface-muted",
+                i < 2 ? "bg-primary/70" : "bg-surface-muted",
                 i % 3 === 2 ? "w-3/4" : "w-full",
               )}
             />
@@ -122,7 +121,6 @@ export function RecordatorioDeMigracion() {
   // importador abierto suelto desde Configuración).
   if (!leDioMigrar && !empezada) return null;
 
-  const porcentaje = total > 0 ? Math.round((hechos / total) * 100) : 0;
   const n = Math.min(hechos + 1, total);
 
   return (
@@ -135,38 +133,42 @@ export function RecordatorioDeMigracion() {
       {/* La lámina de arriba: la ilustración, cuánto va y en qué paso. */}
       <div className="p-1.5">
         <div className="relative h-[112px] overflow-hidden rounded-lg bg-primary-soft ring-1 ring-primary/10">
-          <IlustracionDeMigracion hechos={hechos} total={total} />
-          <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-surface px-2 py-0.5 text-caption font-semibold text-fg shadow-sm ring-1 ring-border">
-            {empezada ? (
-              <>
-                <span
-                  className="h-1 w-8 overflow-hidden rounded-full bg-surface-muted"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={total}
-                  aria-valuenow={hechos}
-                  aria-label={t("migracion.muro.progreso")}
-                >
-                  <span
-                    className="block h-full rounded-full bg-primary transition-[width]"
-                    style={{ width: `${porcentaje}%` }}
-                  />
-                </span>
-                {t("migracion.recordatorio.listos", { hechos, total })}
-              </>
-            ) : (
-              <>
-                <ListChecks className="h-3.5 w-3.5 text-primary" weight="bold" aria-hidden="true" />
-                {t("migracion.recordatorio.pasos", { total })}
-              </>
-            )}
-          </div>
-          <span
-            className="absolute bottom-2 right-2 rounded-full bg-primary px-2 py-0.5 text-caption font-semibold text-primary-fg shadow-sm"
-            data-testid="sidebar-migracion-paso"
+          <IlustracionDeMigracion />
+          {/* 🔴 UNA sola pastilla (Nico, 01-10: «¿por qué muestra dos cosas?
+              …dónde está y qué le falta para llegar allá»). Un tramo por paso:
+              lleno lo hecho, marcado en el que va, gris lo que falta; y el
+              texto dice en cuál va. */}
+          <div
+            className="absolute bottom-2 left-2 right-2 flex items-center gap-2.5 rounded-full bg-surface py-1 pl-2.5 pr-3 shadow-sm ring-1 ring-border"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={hechos}
+            aria-label={t("migracion.muro.progreso")}
+            data-testid="sidebar-migracion-avance"
           >
-            {t("migracion.recordatorio.paso", { n, total })}
-          </span>
+            <span className="flex flex-1 gap-[3px]" aria-hidden="true">
+              {Array.from({ length: total }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full",
+                    i < hechos
+                      ? "bg-primary"
+                      : i === hechos
+                        ? "bg-primary/25 ring-1 ring-inset ring-primary"
+                        : "bg-surface-muted",
+                  )}
+                />
+              ))}
+            </span>
+            <span
+              className="shrink-0 text-caption font-semibold tabular-nums text-fg"
+              data-testid="sidebar-migracion-paso"
+            >
+              {t("migracion.recordatorio.paso", { n, total })}
+            </span>
+          </div>
         </div>
       </div>
 

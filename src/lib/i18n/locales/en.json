@@ -12400,8 +12400,6 @@
       "migrar": "Migrate now",
       "cerrar": "Close the migration reminder",
       "paso": "Step {{n}} of {{total}}",
-      "pasos": "{{total}} steps",
-      "listos": "{{hechos}} of {{total}}",
       "sigue": "Next up: {{paso}}. Pick it up where you left off.",
       "continuar": "Continue migration"
     },

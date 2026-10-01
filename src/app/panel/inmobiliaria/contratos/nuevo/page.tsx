@@ -84,6 +84,8 @@ import type {
 } from '@/lib/api/contratos-plantilla.service';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
+import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
+import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import {
   bloqueoDeLaConsulta,
   bloqueoDelError,
@@ -178,6 +180,8 @@ function NuevoContratoContent() {
   // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
   // selector y se borra apenas se elige otro inmueble.
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
+  // T-0129 — el inmueble tiene el canon por confirmar: el 409 trae su id.
+  const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
   /**
    * 🔴 Nico y Juan Camilo, 2026-09-16: iniciar un contrato exige el inventario
    * del inmueble completo y actualizado. Se pregunta al elegir el inmueble
@@ -543,6 +547,11 @@ function NuevoContratoContent() {
        *   - postulación que ya tiene contrato → se recupera y se redirige;
        *   - el resto → el motivo del back en palabras.
        */
+      if (esErrorInmuebleSinCanon(err)) {
+        setErrorSinCanon(err);
+        setSubmitError(null);
+        return;
+      }
       const bloqueo = bloqueoDelError(err);
       if (bloqueo) {
         setBloqueoDeInventario(bloqueo);
@@ -642,7 +651,10 @@ function NuevoContratoContent() {
             valor={partes}
             onCambio={(v) => {
               setPartesTocadas(true);
-              if (v.propertyId !== partes.propertyId) setErrorDeInmueble(null);
+              if (v.propertyId !== partes.propertyId) {
+                setErrorDeInmueble(null);
+                setErrorSinCanon(null);
+              }
               setPartes(v);
             }}
             errores={{
@@ -929,6 +941,14 @@ function NuevoContratoContent() {
             </div>
           </div>
         )}
+        {errorSinCanon !== null || (!esManual && property?.canonPorConfirmar) ? (
+          <div className="rounded-lg border border-warning/40 bg-warning/5 p-4">
+            <AvisoInmuebleSinCanon
+              error={errorSinCanon}
+              inmuebleId={!esManual ? property?.id : undefined}
+            />
+          </div>
+        ) : null}
         {submitError && (
           <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
@@ -950,7 +970,12 @@ function NuevoContratoContent() {
           <Button
             type="submit"
             hideArrow
-            disabled={!isValid || actions.isSubmitting || bloqueoDeInventario !== null}
+            disabled={
+              !isValid ||
+              actions.isSubmitting ||
+              bloqueoDeInventario !== null ||
+              (!esManual && property?.canonPorConfirmar === true)
+            }
             className="gap-2"
           >
             {actions.isSubmitting ? (

@@ -58,3 +58,15 @@ export function canonParaMostrar(
   if (canonPorConfirmar || monthlyRent == null) return TEXTO_CANON_POR_CONFIRMAR;
   return formatear(monthlyRent);
 }
+
+/**
+ * El motivo de una fila `fallida` de la migración de contratos NO viaja como
+ * 409: el back lo escribe en la fila con el mismo texto. Se reconoce por su
+ * comienzo y se dice con la misma frase que en todas las demás pantallas.
+ */
+export function motivoDeFilaConCanonPorConfirmar(motivo: string | undefined): string {
+  if (!motivo) return '';
+  return motivo.startsWith('Este inmueble tiene el canon por confirmar')
+    ? MENSAJE_INMUEBLE_SIN_CANON
+    : motivo;
+}

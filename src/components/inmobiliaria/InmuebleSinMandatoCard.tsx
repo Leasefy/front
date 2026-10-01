@@ -24,6 +24,8 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { getPropertyIcon } from './ConsignacionTable';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
 interface InmuebleSinMandatoCardProps {
@@ -102,14 +104,22 @@ export function InmuebleSinMandatoCard({
           <span className="text-xl font-bold text-fg">
             {isSale
               ? (inmueble.salePrice != null ? formatCurrency(inmueble.salePrice) : '—')
-              : (inmueble.monthlyRent != null ? formatCurrency(inmueble.monthlyRent) : '—')}
+              : inmueble.canonPorConfirmar
+                ? TEXTO_CANON_POR_CONFIRMAR
+                : (inmueble.monthlyRent != null ? formatCurrency(inmueble.monthlyRent) : '—')}
           </span>
-          {!isSale && (
+          {!isSale && !inmueble.canonPorConfirmar && (
             <span className="text-sm text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.portafolio.card.perMonth')}
             </span>
           )}
         </div>
+
+        {inmueble.canonPorConfirmar ? (
+          <div className="mb-3">
+            <CanonPorConfirmarBadge inmuebleId={inmueble.propertyId} />
+          </div>
+        ) : null}
 
         <Button
           variant="ghost"

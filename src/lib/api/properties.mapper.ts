@@ -127,6 +127,7 @@ export function mapBackendProperty(bp: BackendProperty): Property {
 
     // Pricing
     monthlyRent: bp.monthlyRent,
+    ...(typeof bp.canonPorConfirmar === 'boolean' ? { canonPorConfirmar: bp.canonPorConfirmar } : {}),
     adminFee: bp.adminFee,
     deposit: bp.deposit,
     // PORTFOLIO-only (§3.2.5) — absent on the two @Public() routes. Passing

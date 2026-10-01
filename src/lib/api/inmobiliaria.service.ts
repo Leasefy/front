@@ -924,6 +924,8 @@ export function normalizeInmuebleSinConsignacion(
     propertyType: lower(raw.propertyType) as InmuebleSinConsignacion['propertyType'],
     propertyThumbnail: raw.propertyThumbnail,
     monthlyRent: raw.monthlyRent,
+    // T-0129 — ausente (back anterior) es «no sé»: se deja sin la clave.
+    ...(typeof raw.canonPorConfirmar === 'boolean' ? { canonPorConfirmar: raw.canonPorConfirmar } : {}),
     adminFee: raw.adminFee,
     status: lower(raw.status) as InmuebleSinConsignacion['status'],
     createdAt: raw.createdAt,

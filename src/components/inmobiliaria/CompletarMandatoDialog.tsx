@@ -30,6 +30,7 @@ import { SelectorDePropietarios, type PropietarioPendiente } from './SelectorDeP
 import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos';
 import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
+import { AvisoInmuebleSinCanon } from './CanonPorConfirmar';
 
 /**
  * The wire body for `POST /inmobiliaria/consignaciones` when completing a
@@ -370,7 +371,9 @@ function CuerpoDelMandato({
   // contract-addendum-2.md §A.1/§A.2 — a SALE listing (`monthlyRent === null`)
   // now carries a REDUCED mandate: propietario + consignedAt + sale
   // commission. No canon, no minimum term, no acta.
-  const isSaleListing = inmueble.monthlyRent == null;
+  // T-0129 — un canon por confirmar también viene `null`, y NO es una venta.
+  const canonPorConfirmar = inmueble.canonPorConfirmar === true;
+  const isSaleListing = inmueble.monthlyRent == null && !canonPorConfirmar;
   // El principal es el que se eligió arriba, o el que ya venía sabido cuando se
   // entra desde la ficha de un propietario.
   const principalId = duenoConocido?.id ?? seleccion[0] ?? null;
@@ -389,6 +392,8 @@ function CuerpoDelMandato({
     Boolean(principalId) &&
     Boolean(contractDate) &&
     !problemaCopropietarios &&
+    // El mandato no se crea mientras el inmueble no tenga su canon (409 del back).
+    !canonPorConfirmar &&
     (isSaleListing ? saleCommissionPercent > 0 : commissionPercent >= 0);
 
   const handleSubmit = async () => {
@@ -486,6 +491,9 @@ function CuerpoDelMandato({
         </DialogHeader>
 
         <div className="space-y-6">
+          {canonPorConfirmar ? (
+            <AvisoInmuebleSinCanon inmuebleId={inmueble.propertyId} />
+          ) : null}
           {/* Read-only summary of the already-imported property — nothing
               here is user input, it all comes off the row (contract §3.2). */}
           <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-1">

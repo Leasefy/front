@@ -203,7 +203,7 @@ function MembersInviteLinksScreen({
       <Button
         type="button"
         hideArrow
-        size="lg"
+       
         className="w-full"
         onClick={onContinueAfterInvites}
         data-testid="members-invite-continue"
@@ -409,7 +409,7 @@ export function MembersStepForm({
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
@@ -427,7 +427,7 @@ export function MembersStepForm({
         type="button"
         variant="ghost"
         hideArrow
-        size="lg"
+       
         className="w-full"
         disabled={isSubmitting}
         onClick={skipStep}

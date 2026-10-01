@@ -237,7 +237,7 @@ export function CompleteStepForm({
           <Button
             type="button"
             hideArrow
-            size="lg"
+           
             className="w-full"
             onClick={() => onNavigateToStep(targetStep)}
             data-testid="complete-step-go-to-missing"
@@ -286,7 +286,7 @@ export function CompleteStepForm({
       <Button
         type="button"
         hideArrow
-        size="lg"
+       
         className="w-full"
         disabled={isSubmitting || creada}
         onClick={handleFinish}

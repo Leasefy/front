@@ -97,7 +97,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />

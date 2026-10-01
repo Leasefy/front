@@ -315,11 +315,11 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
         {/* Next/Submit button */}
         {isSubmitting ? (
-          <Button isLoading disabled hideArrow size="lg">
+          <Button isLoading disabled hideArrow>
             {t.saving}
           </Button>
         ) : (
-          <Button onClick={handleNext} hideArrow size="lg" data-testid="continuar-onboarding-inquilino">
+          <Button onClick={handleNext} hideArrow data-testid="continuar-onboarding-inquilino">
             {isLastStep ? t.submit : t.continue}
             <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
           </Button>

@@ -322,7 +322,7 @@ export function OwnerNameStepForm({
         )}
       </FormField>
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />

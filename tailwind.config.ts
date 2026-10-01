@@ -197,6 +197,10 @@ const config: Config = {
   		// plan-*) no aceptaban modificador de opacidad — Tailwind no emitía la
   		// regla. Ver tailwind.alpha.ts. Los `hsl(var(--x))` pasan intactos.
   		colors: coloresConAlpha({
+  			// El texto de ejemplo de un campo vacío: más claro que cualquier
+  			// texto de verdad, para que nunca parezca un dato ya escrito.
+  			// Ver `--fg-placeholder` en globals.css.
+  			'fg-placeholder': 'var(--fg-placeholder)',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

@@ -283,7 +283,7 @@ function MiniChatInput({
         className={cn(
           'flex-1 min-w-0',
           'bg-transparent',
-          'text-[13px] text-foreground placeholder:text-muted-foreground/60',
+          'text-[13px] text-foreground placeholder:text-fg-placeholder',
           'focus:outline-none',
           'disabled:opacity-50'
         )}

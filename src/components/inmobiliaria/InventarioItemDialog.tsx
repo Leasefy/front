@@ -256,7 +256,7 @@ export function InventarioItemDialog({
                 onChange={(e) => setEspacio(e.target.value)}
                 placeholder={t('inmobiliaria.inventarioDelInmueble.espacioPlaceholder')}
                 maxLength={80}
-                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-placeholder focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           )}
@@ -272,7 +272,7 @@ export function InventarioItemDialog({
               placeholder={t('inmobiliaria.acta.itemDialog.notesPlaceholder')}
               maxLength={500}
               rows={3}
-              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-placeholder focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
 

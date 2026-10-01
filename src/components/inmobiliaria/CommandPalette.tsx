@@ -516,7 +516,7 @@ export function CommandPalette() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={alTeclear}
               placeholder={t('inmobiliaria.commandPalette.inputPlaceholder')}
-              className="min-w-0 flex-1 border-0 bg-transparent text-base text-fg outline-none placeholder:text-fg-subtle"
+              className="min-w-0 flex-1 border-0 bg-transparent text-base text-fg outline-none placeholder:text-fg-placeholder"
             />
             {query && (
               <IconButton

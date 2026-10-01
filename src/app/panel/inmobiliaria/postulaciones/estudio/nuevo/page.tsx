@@ -261,7 +261,7 @@ function EstudioNuevo() {
                   'w-full rounded-md border border-border ' +
                   'bg-surface-muted px-3 py-2 text-sm font-medium ' +
                   'text-success-700 placeholder:font-normal ' +
-                  'placeholder:text-fg-subtle cursor-default'
+                  'placeholder:text-fg-placeholder cursor-default'
                 }
               />
               <p id="valorTotal-hint" className="mt-1 text-xs text-fg-muted">

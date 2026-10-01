@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -9,10 +10,12 @@ import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { Input } from '@/components/ui/input';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
@@ -225,9 +228,15 @@ function RegistroContent() {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
       }));
-      // Redirect back to this same page so the ?code= exchange happens client-side
-      // and the invitationToken stays in the URL for the auto-accept effect.
-      const redirectTo = window.location.href;
+      // Vuelve a esta misma página (con el invitationToken en la URL, para el
+      // auto-accept) pero PASANDO por /auth/callback: la plantilla del correo
+      // le pega «&token_hash=…» al regreso y sólo /auth/callback sabe leerlo
+      // (QA 28-09, ver `regreso-del-correo.ts`). Los correos viejos, con
+      // `?code=`, se siguen canjeando acá abajo.
+      const redirectTo = urlDeRegresoDelRegistro(
+        window.location.origin,
+        `${window.location.pathname}${window.location.search}`,
+      );
       // Normalizado (minúsculas, sin espacios): es lo que después se escribe al entrar.
       const correo = normalizarCorreo(data.email);
       const result = await signUpWithEmail(correo, data.password, redirectTo);
@@ -291,10 +300,7 @@ function RegistroContent() {
   if (autoCompleting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Configurando tu cuenta…</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Configurando tu cuenta…" />
       </div>
     );
   }
@@ -303,7 +309,7 @@ function RegistroContent() {
   if (token === null || loadingInvitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }
@@ -331,12 +337,12 @@ function RegistroContent() {
               >
                 Ir a mi panel
               </button>
-              <a
+              <Link
                 href="/"
                 className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Volver al inicio
-              </a>
+              </Link>
             </div>
           )}
         </div>
@@ -613,7 +619,7 @@ export default function RegistroPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
+        <CargaDeMarca tamano="lg" />
       </div>
     }>
       <RegistroContent />

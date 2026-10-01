@@ -165,3 +165,60 @@ describe('OwnerNameStepForm — representante legal', () => {
     expect(onSubmit.mock.calls[0][0].legalRepresentative).toBe('Alex Ramírez')
   })
 })
+
+describe('OwnerNameStepForm — el NIT se sigue validando (Nico, 30-09: sólo se quitó el eco verde)', () => {
+  function salirDe(id: string) {
+    const input = byId<HTMLInputElement>(id)!
+    act(() => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      input.dispatchEvent(new FocusEvent('blur'))
+    })
+  }
+
+  it('🔴 un NIT corto se marca al salir del campo', () => {
+    render()
+    escribir('agencyNit', '123')
+    salirDe('agencyNit')
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('🔴 un dígito de verificación equivocado se marca y dice el correcto', () => {
+    render()
+    escribir('agencyNit', '900123456-1')
+    salirDe('agencyNit')
+    expect(container.textContent).toContain('El dígito de verificación no corresponde')
+    expect(container.textContent).toContain('es 8')
+  })
+
+  it('🔴 con el NIT malo NO se envía', () => {
+    const onSubmit = render()
+    escribir('ownerFullName', 'Ana María Pérez')
+    escribir('agencyName', 'Inmobiliaria Andes SAS')
+    escribir('agencyNit', '123')
+    enviar()
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('con el NIT bueno no repite el número debajo, y sí lo manda con su dígito', () => {
+    const onSubmit = render()
+    escribir('ownerFullName', 'Ana María Pérez')
+    escribir('agencyName', 'Inmobiliaria Andes SAS')
+    escribir('agencyNit', '900123456')
+    salirDe('agencyNit')
+    expect(container.textContent).not.toContain('900.123.456-8')
+    // Pero sí dice cuál es su dígito de verificación (Nico, 30-09: la ayuda servía).
+    const sugerido = container.querySelector('[data-testid="nit-digito-sugerido"]')
+    expect(sugerido?.textContent).toContain('Su dígito de verificación es 8')
+    enviar()
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ nit: '900123456-8' }))
+  })
+
+  it('si escribió el dígito y está bien, no se le sugiere nada', () => {
+    render()
+    escribir('agencyNit', '900123456-8')
+    salirDe('agencyNit')
+    expect(container.querySelector('[data-testid="nit-digito-sugerido"]')).toBeNull()
+    expect(container.textContent).not.toContain('no corresponde')
+  })
+})

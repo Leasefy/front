@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
@@ -80,7 +81,7 @@ function FirmarContratoContent() {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="md" />
       </div>
     );
   }

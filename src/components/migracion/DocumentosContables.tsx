@@ -30,10 +30,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { CheckCircle, FileArrowUp, Info, Warning } from "@phosphor-icons/react";
+import { CheckCircle, Info, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import {
   Table,
   TableBody,
@@ -258,21 +259,21 @@ export function DocumentosContables({
         en qué se diferencia del libro diario. Confundirlos es cargar 116 mil
         asientos descuadrados.
       */}
-      <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+      {/* Más corto que antes, pero SIEMPRE a la vista: es lo que evita cargar
+          116 mil asientos descuadrados por la puerta equivocada — no va
+          detrás de un «entender más». */}
+      <div className="flex items-start gap-2 rounded-md bg-info-soft p-3">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
         <div className="text-sm text-fg">
           <p className="font-medium">
             Este archivo son los comprobantes, no los asientos
           </p>
           <p className="mt-0.5 text-fg-muted">
-            El export de comprobantes trae el encabezado de cada documento
-            —prefijo, consecutivo, tipo, fecha, concepto y los totales de
-            débitos y créditos— pero <strong>no las líneas por cuenta</strong>.
-            Por eso no entran al libro diario: se guardan como documentos
-            históricos y se cuelgan del contrato del tercero que nombra el
-            concepto. La ficha de cada contrato los lista. Si tu archivo SÍ
-            trae una cuenta y un débito/crédito por línea, ése va en «Subir el
-            libro diario».
+            El export trae el encabezado de cada documento —fecha, concepto y
+            totales—, <strong>no las líneas por cuenta</strong>. Se guardan
+            como histórico y se cuelgan del contrato que nombra el concepto.
+            Si tu archivo sí trae cuenta y débito/crédito por línea, va en
+            «Subir el libro diario».
           </p>
         </div>
       </div>
@@ -296,31 +297,20 @@ export function DocumentosContables({
           testid="archivo-de-documentos"
         />
       ) : (
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive ? "border-primary bg-primary-soft" : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-documentos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} data-testid="archivo-documentos" />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              Arrastra el CSV de comprobantes o haz clic para elegirlo
-            </p>
-            <p className="text-caption text-fg-subtle">
-              Se lee por partes, así que un archivo de decenas de miles de filas
-              no congela la pantalla. Nada se escribe hasta que lo pidas.
-            </p>
-          </div>
-        </div>
+        <ZonaDeArchivo
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          activo={isDragActive}
+          testid="dropzone-documentos"
+          inputTestid="archivo-documentos"
+          titulo="Arrastra el CSV de comprobantes o haz clic para elegirlo"
+          detalle="Se lee por partes: decenas de miles de filas no congelan la pantalla. Nada se escribe hasta que lo pidas."
+        />
       )}
 
       {error ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
           data-testid="documentos-error"
         >
@@ -331,7 +321,7 @@ export function DocumentosContables({
 
       {ocupado ? (
         <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface p-3"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-surface-muted p-3"
           aria-live="polite"
           data-testid="documentos-progreso"
         >
@@ -356,7 +346,7 @@ export function DocumentosContables({
 
       {encabezados.length > 0 && sinMapear.length > 0 ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-warning-soft p-3"
           data-testid="documentos-sin-mapear"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -407,11 +397,11 @@ function ResumenDeDocumentos({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5"
+      className="rounded-lg border border-border-faint bg-surface p-5 shadow-sm"
       data-testid="documentos-resumen"
       aria-live="polite"
     >
-      <h3 className="flex items-center gap-2 font-medium text-fg">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
         {yaSeEscribio ? (
           <CheckCircle className="h-4 w-4 text-success" weight="fill" />
         ) : null}
@@ -420,15 +410,28 @@ function ResumenDeDocumentos({
           : `Así quedarían tus ${acumulado.total.toLocaleString("es-CO")} comprobantes`}
       </h3>
       {!yaSeEscribio ? (
-        <p className="mt-0.5 text-sm text-fg-muted">Todavía no se escribió nada.</p>
+        <p className="mt-0.5 text-caption text-fg-subtle">Todavía no se escribió nada.</p>
       ) : null}
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Dato titulo="Entran" valor={acumulado.listos} />
-        <Dato titulo="Ya estaban" valor={acumulado.yaMigrados} />
-        <Dato titulo="Rechazados" valor={acumulado.rechazados} tono="danger" />
-        <Dato titulo="Con contrato" valor={conContrato} tono="success" />
-      </dl>
+      {/* El resumen es una FRASE con los números en mono, no cuatro fichas
+          sueltas (el molde de la casa). */}
+      <p className="mt-3 max-w-prose text-body text-fg">
+        Entran{" "}
+        <span className="font-mono tabular-nums">{acumulado.listos.toLocaleString("es-CO")}</span>
+        {", "}
+        <span className="font-mono tabular-nums">{acumulado.yaMigrados.toLocaleString("es-CO")}</span>{" "}
+        ya estaban y{" "}
+        <span className={acumulado.rechazados > 0 ? "text-danger" : undefined}>
+          <span className="font-mono tabular-nums">{acumulado.rechazados.toLocaleString("es-CO")}</span>{" "}
+          se {acumulado.rechazados === 1 ? "rechaza" : "rechazan"}
+        </span>
+        {"; "}
+        <span className={conContrato > 0 ? "text-success" : undefined}>
+          <span className="font-mono tabular-nums">{conContrato.toLocaleString("es-CO")}</span>{" "}
+          {conContrato === 1 ? "queda" : "quedan"} con contrato
+        </span>
+        .
+      </p>
 
       <div className="mt-4 space-y-1 text-sm">
         <p className="text-fg">
@@ -530,26 +533,5 @@ function ResumenDeDocumentos({
         </div>
       ) : null}
     </section>
-  );
-}
-
-function Dato({
-  titulo,
-  valor,
-  tono,
-}: {
-  titulo: string;
-  valor: number;
-  tono?: "danger" | "success";
-}) {
-  const color =
-    tono === "danger" ? "text-danger" : tono === "success" ? "text-success" : "text-fg";
-  return (
-    <div className="rounded-md border border-border bg-surface-muted p-3">
-      <dt className="text-caption text-fg-muted">{titulo}</dt>
-      <dd className={`mt-0.5 font-mono text-lg tabular-nums ${color}`}>
-        {valor.toLocaleString("es-CO")}
-      </dd>
-    </div>
   );
 }

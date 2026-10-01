@@ -464,7 +464,7 @@ export function CuerpoDelCajon({
               conteo={persona.arriendos.length}
               meta={
                 cargandoArriendos ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
+                  <span className="inline-flex items-center gap-1.5 text-caption text-fg-muted">
                     <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
                   </span>
                 ) : null

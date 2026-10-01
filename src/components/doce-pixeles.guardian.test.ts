@@ -86,7 +86,13 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-09 noche: 2753 al unir la tercera ronda de seguridad.
 // 24-09: 2746 al retirar `ActionProposalCard` (la tarjeta F5 que ninguna
 // pantalla montaba; las tarjetas del ejecutor del chat no usan 12 px).
-const CUANTOS_HABIA = 2746;
+// 30-09: 2740 al cambiar los spinners por el logo en carga: los textos que
+// acompañaban la carga los pinta `CargaDeMarca` en 13 (`text-caption`).
+// 01-10: 2739 al devolver el spinner a los botones y a las cargas en línea
+// (el logo queda sólo en pantalla completa y transiciones): los textos que
+// volvieron de `CargaDeMarca` van en `text-caption`, y la etiqueta «Completado»
+// del panel de ejecución subió a 13 para igualar a «En ejecución».
+const CUANTOS_HABIA = 2739;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

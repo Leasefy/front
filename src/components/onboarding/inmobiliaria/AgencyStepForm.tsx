@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
+import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { PhoneInput } from '@leasefy/cadence'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -44,17 +46,23 @@ export interface AgencyStepFormProps {
    * only seeded with its initial value.
    */
   prefill?: Partial<AgencyStepFormValues>
+  /**
+   * Con la sesión, lo escrito y no enviado se guarda como borrador local y
+   * vuelve al devolverse de paso (ver `borrador-local.ts`). Sin ella (pruebas,
+   * usos sueltos) el formulario se comporta como siempre.
+   */
+  sessionId?: string
 }
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
+  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 /** A read-only "confirmado" note under a locked field. */
 function ConfirmedHint() {
   return (
-    <p className="mt-1.5 text-xs text-fg-subtle">Confirmado en el paso anterior · no editable.</p>
+    <p className="mt-1.5 text-caption text-fg-subtle">Confirmado en el paso anterior · no editable.</p>
   )
 }
 
@@ -62,7 +70,10 @@ function hasPrefilledValue(value: string | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }: AgencyStepFormProps) {
+export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, sessionId }: AgencyStepFormProps) {
+  // Lo escrito y no enviado la última vez pisa al prefill: es lo más reciente.
+  // (Los campos confirmados son readOnly, así que su borrador == su prefill.)
+  const borrador = sessionId ? leerBorradorLocal<AgencyStepFormValues>(sessionId, 'agency') : null
   const {
     register,
     handleSubmit,
@@ -75,9 +86,21 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
     defaultValues: {
       ...AGENCY_STEP_DEFAULT_VALUES,
       ...prefill,
-      address: { ...AGENCY_STEP_DEFAULT_VALUES.address, ...prefill?.address },
+      ...borrador,
+      address: {
+        ...AGENCY_STEP_DEFAULT_VALUES.address,
+        ...prefill?.address,
+        ...borrador?.address,
+      },
     },
   })
+
+  // Cada tecla actualiza el borrador local del paso.
+  useEffect(() => {
+    if (!sessionId) return
+    const sub = watch((valores) => guardarBorradorLocal(sessionId, 'agency', valores))
+    return () => sub.unsubscribe()
+  }, [watch, sessionId])
   // El país vive en el formulario (no en un `useState` aparte) para que el
   // esquema valide el largo del número con él.
   const paisDelTelefono = watch('primaryContactCountry') || 'CO'
@@ -105,13 +128,15 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       }
       return
     }
-    await onSubmit(toAgencyRequest(parsed.data))
+    const resultado = await onSubmit(toAgencyRequest(parsed.data))
+    // Enviado con éxito: el borrador de verdad ya vive en el back.
+    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'agency')
   })
 
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="agency-step-form">
       <div>
-        <label htmlFor="legalName" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="legalName" className="mb-1.5 block text-caption font-semibold text-fg">
           Razón social {!legalNameConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -127,7 +152,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       </div>
 
       <div>
-        <label htmlFor="nit" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="nit" className="mb-1.5 block text-caption font-semibold text-fg">
           NIT {!nitConfirmed && <span className="text-danger">*</span>}
         </label>
         <Input
@@ -155,7 +180,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
 
       {/* Dirección (contract key `calle`) — full width, free text. */}
       <div>
-        <label htmlFor="address.calle" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="address.calle" className="mb-1.5 block text-caption font-semibold text-fg">
           Dirección <span className="text-danger">*</span>
         </label>
         <Input id="address.calle" type="text" autoComplete="address-line1" {...register('address.calle')} />
@@ -168,7 +193,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           municipio so a stale pairing can never be submitted. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <span id="address-departamento-label" className="block text-sm font-medium text-fg mb-2">
+          <span id="address-departamento-label" className="mb-1.5 block text-caption font-semibold text-fg">
             Departamento <span className="text-danger">*</span>
           </span>
           <Controller
@@ -192,7 +217,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           <FieldError message={errors.address?.departamento?.message} />
         </div>
         <div>
-          <span id="address-municipio-label" className="block text-sm font-medium text-fg mb-2">
+          <span id="address-municipio-label" className="mb-1.5 block text-caption font-semibold text-fg">
             Municipio <span className="text-danger">*</span>
           </span>
           <Controller
@@ -217,7 +242,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
 
       {/* Código postal — full width, optional. */}
       <div>
-        <label htmlFor="address.codigoPostal" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="address.codigoPostal" className="mb-1.5 block text-caption font-semibold text-fg">
           Código postal <span className="text-fg-subtle font-normal">(opcional)</span>
         </label>
         <Input
@@ -230,7 +255,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       </div>
 
       <div>
-        <label htmlFor="primaryContactEmail" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="primaryContactEmail" className="mb-1.5 block text-caption font-semibold text-fg">
           Correo de la cuenta <span className="text-danger">*</span>
         </label>
         <Input
@@ -244,14 +269,14 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         {/* No es «el del representante legal» (eso se preguntó antes): queda
             asociado a la cuenta de la inmobiliaria y es a donde el micro manda
             el reporte diario de cartera y los avisos (Nico, 30-09-2026). */}
-        <p className="mt-1.5 text-xs text-fg-subtle">
+        <p className="mt-1.5 text-caption text-fg-subtle">
           Queda asociado a la cuenta de la inmobiliaria: ahí te llegan los reportes y avisos de Leasefy.
         </p>
         <FieldError message={errors.primaryContactEmail?.message} />
       </div>
 
       <div>
-        <label htmlFor="primaryContactPhone" className="block text-sm font-medium text-fg mb-2">
+        <label htmlFor="primaryContactPhone" className="mb-1.5 block text-caption font-semibold text-fg">
           Teléfono de la cuenta <span className="text-danger">*</span>
         </label>
         {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
@@ -265,12 +290,15 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
             <PhoneInput
               id="primaryContactPhone"
               autoComplete="tel"
+              inputMode="numeric"
               countryCode={paisDelTelefono}
               onCountryChange={(codigo) =>
                 setValue('primaryContactCountry', codigo, { shouldValidate: false })
               }
               value={field.value ?? ''}
-              onChange={field.onChange}
+              // El PhoneInput del DS entrega el texto tal cual (dejaba
+              // escribir letras — Nico, 30-09): acá solo pasan dígitos.
+              onChange={(v) => field.onChange(v.replace(/\D/g, ''))}
               onBlur={field.onBlur}
               invalid={Boolean(errors.primaryContactPhone)}
             />
@@ -279,20 +307,20 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         {errors.primaryContactPhone?.message ? (
           <FieldError message={errors.primaryContactPhone.message} />
         ) : (
-          <p className="mt-1.5 text-xs text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
+          <p className="mt-1.5 text-caption text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
         )}
       </div>
 
       {submitError && (
         <div
           data-testid="agency-step-form-error"
-          className="rounded-md bg-danger-soft border border-border p-3"
+          className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
           <p className="text-sm text-danger">{submitError}</p>
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
@@ -301,7 +329,7 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

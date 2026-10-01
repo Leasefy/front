@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
@@ -553,9 +554,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // /auth/callback (which exchanges the code server-side and honors returnUrl)
   // instead of Supabase's default Site URL (the root "/"), which would drop the
   // invitation/onboarding context and land the user as a bare TENANT.
+  // Con la marca del registro y siempre con «?»: la plantilla del correo le
+  // pega «&token_hash=…» (ver `regreso-del-correo.ts`, QA 28-09).
   const enlaceDeConfirmacion = () => {
     const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
-    return `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+    return urlDeRegresoDelRegistro(window.location.origin, dest);
   };
 
   // Redirect to the correct dashboard based on user role

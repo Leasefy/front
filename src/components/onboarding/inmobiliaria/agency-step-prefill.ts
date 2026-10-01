@@ -41,23 +41,53 @@ function readDraftString(draft: Record<string, unknown> | null | undefined, key:
   return trimmed ? trimmed : undefined
 }
 
+/**
+ * Lo que el paso Agencia YA guardó en el micro: `draft.agency.{…}` (así lo
+ * escribe `agency-core.ts`). Las claves planas de arriba (`contactEmail`…)
+ * son del flujo viejo del enlace mágico; leer sólo ésas dejaba el formulario
+ * vacío al volver al paso (Nico, 30-09).
+ */
+export function agenciaDelBorrador(
+  draft: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+  const agency = draft?.agency
+  return agency && typeof agency === 'object' ? (agency as Record<string, unknown>) : null
+}
+
 export function computeAgencyStepPrefill(
   preStep: AgencyStepPreStepValues | null | undefined,
   draft: Record<string, unknown> | null | undefined,
 ): Partial<AgencyStepFormValues> {
   const prefill: Partial<AgencyStepFormValues> = {}
+  const guardada = agenciaDelBorrador(draft)
 
-  const legalName = preStep?.legalName || readDraftString(draft, 'proposedAgencyName')
+  const legalName =
+    preStep?.legalName ||
+    readDraftString(guardada, 'legalName') ||
+    readDraftString(draft, 'proposedAgencyName')
   if (legalName) prefill.legalName = legalName
 
-  const nit = preStep?.nit || readDraftString(draft, 'nit')
+  const nit = preStep?.nit || readDraftString(guardada, 'nit') || readDraftString(draft, 'nit')
   if (nit) prefill.nit = nit
 
-  const primaryContactEmail = readDraftString(draft, 'contactEmail')
+  const primaryContactEmail =
+    readDraftString(guardada, 'primaryContactEmail') || readDraftString(draft, 'contactEmail')
   if (primaryContactEmail) prefill.primaryContactEmail = primaryContactEmail
 
-  const primaryContactPhone = readDraftString(draft, 'contactPhone')
+  const primaryContactPhone =
+    readDraftString(guardada, 'primaryContactPhone') || readDraftString(draft, 'contactPhone')
   if (primaryContactPhone) prefill.primaryContactPhone = primaryContactPhone
+
+  const direccion = guardada?.address
+  if (direccion && typeof direccion === 'object') {
+    const d = direccion as Record<string, unknown>
+    prefill.address = {
+      calle: readDraftString(d, 'calle') ?? '',
+      ciudad: readDraftString(d, 'ciudad') ?? '',
+      departamento: readDraftString(d, 'departamento') ?? '',
+      codigoPostal: readDraftString(d, 'codigoPostal') ?? '',
+    }
+  }
 
   return prefill
 }

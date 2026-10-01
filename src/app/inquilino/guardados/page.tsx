@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton } from '@leasefy/cadence';
 import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { Property } from '@/lib/types/property';
 
 export default function GuardadosPage() {
@@ -51,7 +52,7 @@ export default function GuardadosPage() {
   if (isOnboardingLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

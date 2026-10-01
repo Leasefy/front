@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { ChatCircleText, CaretRight, Plus } from '@phosphor-icons/react';
 import { PageHeader } from '@leasefy/cadence';
-import { Button, Card, Spinner } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerSolicitudes } from '@/lib/hooks/useOwnerPortal';
@@ -25,7 +26,7 @@ export default function SolicitudesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

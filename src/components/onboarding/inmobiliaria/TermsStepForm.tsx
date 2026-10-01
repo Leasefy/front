@@ -47,7 +47,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         Para finalizar tu registro, lee y acepta los términos y condiciones de Leasefy.
       </p>
 
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3 rounded-md border border-border bg-bg p-4">
         <Checkbox
           id="accept-terms"
           data-testid="terms-accept"
@@ -56,7 +56,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
           disabled={isSubmitting}
           className="mt-0.5 shrink-0"
         />
-        <span className="text-sm text-fg-muted leading-snug">
+        <span className="text-body-sm leading-snug text-fg-muted">
           <label htmlFor="accept-terms" className="cursor-pointer">
             He leído y acepto los
           </label>{' '}
@@ -66,7 +66,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
           <button
             type="button"
             onClick={() => setTerminosAbiertos(true)}
-            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            className="rounded-sm text-primary underline underline-offset-2 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             data-testid="abrir-terminos"
           >
             términos y condiciones
@@ -92,12 +92,12 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
       </Sheet>
 
       {submitError && (
-        <div data-testid="terms-step-form-error" className="rounded-md bg-danger-soft border border-border p-3">
+        <div data-testid="terms-step-form-error" className="rounded-md border border-danger/20 bg-danger-soft p-3">
           <p className="text-sm text-danger">{submitError}</p>
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
@@ -106,7 +106,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

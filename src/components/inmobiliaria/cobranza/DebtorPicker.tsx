@@ -148,7 +148,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
       )}
 
       {isLoading ? (
-        <div className="flex items-center gap-2 px-1 py-3 text-xs text-fg-muted">
+        <div className="flex items-center gap-2 px-1 py-3 text-caption text-fg-muted">
           <Spinner size="sm" variant="default" />
           Buscando…
         </div>

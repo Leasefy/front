@@ -10,7 +10,8 @@ import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Button, Input, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Spinner, Card, Badge } from '@/components/ui';
+import { Button, Input, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Card, Badge } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PageHeader, KpiCard, IconButton, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 
@@ -660,7 +661,7 @@ export default function VisitasPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

@@ -10,7 +10,10 @@ import { cn } from "@/lib/utils"
  * - variant: default/white/destructive/outline/secondary/glass/ghost/link
  *   (default → primary del DS; white/glass viven ahora en el DS).
  * - size: default/sm/lg/icon (default → md del DS + h-10 por fidelidad).
- * - isLoading → loading, hideArrow → apaga la flecha automática.
+ * - isLoading → loading: el spinner del DS (CircleNotch), deshabilita y anuncia
+ *   `aria-busy`. Dentro de un botón va el spinner, NUNCA el logo de Leasefy:
+ *   el logo (`CargaDeMarca`) es sólo para cargas de pantalla completa y
+ *   transiciones (Nico, 01-10). hideArrow → apaga la flecha automática.
  * - Flecha ArrowUpRight automática en default/white (prop `arrow` del DS).
  */
 
@@ -99,6 +102,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variant={VARIANT_MAP[resolvedVariant]}
         size={SIZE_MAP[resolvedSize]}
         loading={isLoading}
+        aria-busy={isLoading || undefined}
         arrow={ARROW_VARIANTS.has(resolvedVariant) && !hideArrow}
         className={cn(
           // El Button legacy del mvp era `group`: se preserva para los call sites

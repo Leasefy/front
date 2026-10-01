@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
@@ -118,10 +119,7 @@ function PostLoginResolver() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-        <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-      </div>
+      <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
     </div>
   );
 }
@@ -131,10 +129,7 @@ export default function PostLoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-muted">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-          </div>
+          <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
         </div>
       }
     >

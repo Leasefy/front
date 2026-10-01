@@ -24,6 +24,15 @@ export interface ContextoDeMigracion {
   abrir: () => void;
   /** Vuelve a preguntar el estado. */
   recargar: () => Promise<void>;
+  /**
+   * `true` mientras algo de la migración tapa el panel: el muro (o la pregunta
+   * previa), la migración abierta a mano o la bienvenida. Es la señal para lo
+   * que NO puede salir encima de eso —el recorrido del panel, por ejemplo—:
+   * con `false` y el segundo factor resuelto (`useAuth().mfaEnrollRequired` y
+   * `mfaRequired` en `false`), la persona ya está en el panel de verdad.
+   * Opcional: quien arme el contexto a mano (pruebas) puede omitirla.
+   */
+  panelTapado?: boolean;
 }
 
 export const MigracionContext = createContext<ContextoDeMigracion | null>(null);
@@ -31,3 +40,15 @@ export const MigracionContext = createContext<ContextoDeMigracion | null>(null);
 export function useMigracion(): ContextoDeMigracion | null {
   return useContext(MigracionContext);
 }
+
+/**
+ * El muro le AVISA hacia arriba si está tapando el panel (`panelTapado`).
+ *
+ * Lo escucha `SegundoFactorDentroDelPanel`, que vive en el layout por ENCIMA
+ * del muro y por eso no puede leer `useMigracion()`. Orden acordado con Nico
+ * (30-09-2026): migración → segundo factor → recorrido. Si `mfaEnrollRequired`
+ * se prende mientras el muro, la pregunta o la bienvenida siguen en pantalla,
+ * el panel (con el muro) se queda; la escena del segundo factor entra cuando
+ * el muro deja de tapar. `null` fuera de ese layout: nadie escucha.
+ */
+export const AvisoDelMuroContext = createContext<((tapado: boolean) => void) | null>(null);

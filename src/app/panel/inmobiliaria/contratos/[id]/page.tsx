@@ -43,6 +43,7 @@ import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/co
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ArriendoDelContrato, AvisoDelContrato } from '@/components/contratos/ArriendoDelContrato';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
@@ -282,7 +283,7 @@ function ContratoDetalleContent() {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="md" />
       </div>
     );
   }

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -166,7 +166,7 @@ export default function ApplicationDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

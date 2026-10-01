@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
+import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
+import { SegundoFactorDentroDelPanel } from '@/components/auth/SegundoFactorDentroDelPanel';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
 import { filasDelSidebar } from '@/lib/nav/sidebar-del-panel';
@@ -390,6 +392,16 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
   // membership) are admitted alongside pure-agency users.
   return (
     <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
+      {/* 🔴 Quien dejó el asistente de registro a medias no usa el panel:
+          vuelve al paso donde iba (ver AsistentePendienteGuard). */}
+      <AsistentePendienteGuard />
+      {/* 🔴 El segundo factor se activa DENTRO (Nico, 30-09: «yo estoy es
+          dentro»). Con `mfaEnrollRequired` no se monta NADA de lo de abajo
+          —guard de suscripción, providers, sidebar, Piloto, la página—: cada
+          uno pediría datos y el back contestaría 403 SEGUNDO_FACTOR_REQUERIDO
+          (T-0099). Se pinta un esqueleto quieto con el paso a paso encima; al
+          activar, se monta el panel de verdad y el recorrido arranca solo. */}
+      <SegundoFactorDentroDelPanel>
       <AgencySubscriptionGuard>
         <I18nProvider>
           <PermissionsProvider>
@@ -411,6 +423,7 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
           </PermissionsProvider>
         </I18nProvider>
       </AgencySubscriptionGuard>
+      </SegundoFactorDentroDelPanel>
     </ProtectedRoute>
   );
 }

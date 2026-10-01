@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 /**
  * AgencySubscriptionGuard — UX-only gate for the agency ("inmobiliaria") panel.
@@ -61,7 +62,7 @@ export function AgencySubscriptionGuard({ children }: { children: ReactNode }) {
   if (isAdmin) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <CargaDeMarca />
       </div>
     );
   }

@@ -1061,6 +1061,42 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaRequired).toBe(false)
   })
 
+  /*
+   * 🔴 Primero la migración (Nico, 30-09-2026): con el muro puesto el back
+   * dice `exigido:false`; al resolver la migración el muro llama
+   * `refreshUser()` y el bootstrap trae `exigido:true`. Antes `refreshUser`
+   * guardaba el `exigido` nuevo pero NO recalculaba `mfaEnrollRequired`, así
+   * que la persona seguía en el panel sin segundo factor hasta recargar.
+   */
+  it('refreshUser() recalcula mfaEnrollRequired cuando el back pasa a exigirlo (migración resuelta)', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    const usuario = { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' }
+    const agencia = { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null }
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'agency', agencia, [], { exigido: false }))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // Muro puesto: no se pide todavía.
+    expect(captured!.mfaEnrollRequired).toBe(false)
+
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'agency', agencia, [], { exigido: true }))
+    await act(async () => {
+      await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
+  })
+
   it('exigido:true + a verified TOTP factor exists + aal1 → verify-pending (mfaRequired), NOT enroll-pending — no listFactors needed', async () => {
     getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
     getMock.mockResolvedValue(bootstrapEnvelope(

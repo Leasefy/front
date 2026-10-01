@@ -6,7 +6,7 @@ import {
   StepTenantWelcome,
   StepHousingPreferences,
 } from '@/components/onboarding/tenant'
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 
 function TenantOnboardingContent() {
   const { currentStep, isComplete } = useTenantOnboarding()
@@ -18,7 +18,7 @@ function TenantOnboardingContent() {
   if (isComplete) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     )
   }

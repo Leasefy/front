@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { WIZARD_STEPS, wizardStepIndex, wizardStepLabel } from './wizard-steps'
+import { WIZARD_STEPS, wizardStepIndex } from './wizard-steps'
 
 // `payment_provider` and `policy` are invisible auto-skip steps (see
 // `PaymentProviderAutoSkipStep` / `PolicyAutoSkipStep`) — neither must appear
@@ -35,21 +35,5 @@ describe('wizardStepIndex', () => {
   })
 })
 
-describe('wizardStepLabel', () => {
-  it('resolves a normal visible step label', () => {
-    expect(wizardStepLabel('habeas_data')).toBe('Habeas Data')
-  })
-
-  it('falls back to the members label while on the invisible payment_provider step', () => {
-    expect(wizardStepLabel('payment_provider')).toBe('Miembros')
-  })
-
-  it('falls back to the members label while on the invisible policy step', () => {
-    expect(wizardStepLabel('policy')).toBe('Miembros')
-  })
-
-  it('falls back to Agencia for null/start', () => {
-    expect(wizardStepLabel(null)).toBe('Agencia')
-    expect(wizardStepLabel('start')).toBe('Agencia')
-  })
-})
+// `wizardStepLabel` se retiró con el marco compartido: el título del paso lo
+// resuelve `contenido-de-los-pasos.ts` (y lo pinta `OnboardingStepTitle`).

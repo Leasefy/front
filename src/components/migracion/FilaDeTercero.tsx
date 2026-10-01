@@ -299,7 +299,12 @@ export function FilaDeTercero({
   const nombre = valorEditable(fila.datos.nombre) || 'sin nombre';
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-surface p-5 shadow-sm">
+    /*
+     * Sin tarjeta propia (glow-up 30-09): la fila vive como renglón de la
+     * lista de trabajo, que es UNA tarjeta con filetes. Doscientas
+     * tarjetitas con la casilla colgando afuera eran el mar de islas.
+     */
+    <div className="min-w-0 space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium text-fg">
           <span className="font-mono text-caption tabular-nums text-fg-subtle">
@@ -326,7 +331,7 @@ export function FilaDeTercero({
       </ul>
 
       {duplicado ? (
-        <div className="space-y-2 rounded-md border border-border bg-warning-soft p-3">
+        <div className="space-y-2 rounded-md bg-warning-soft p-3">
           <p className="text-sm font-medium text-fg">
             {duplicado.referencia?.nombre
               ? chocaPorCorreo

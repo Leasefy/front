@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Select,
   SelectContent,
@@ -224,7 +225,7 @@ function EditarContratoContent() {
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
+        <CargaDeMarca tamano="md" />
       </div>
     );
   }

@@ -342,6 +342,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * it sets.
    */
   const segundoFactorExigidoRef = useRef(false)
+  /** `checkMfaLevel` se declara más abajo; `refreshUser` lo llama por acá. */
+  const checkMfaLevelRef = useRef<((miGeneracion?: number) => Promise<void>) | null>(null)
 
   /**
    * Fetch the user profile from the backend.
@@ -747,19 +749,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // like this function did before WU-2b.
         await probeAgencyMembership()
       }
-      // T-0123 WU-3 (owner constraint): the second factor is an INMOBILIARIA
-      // rule. A user with no ACTIVE agency membership (tenant, landlord) is
-      // never routed to a MFA screen, even if a flag went stale.
-      const esDeInmobiliaria = agencyResult?.memberStatus === 'ACTIVE' && !!agencyResult.agency
-      if (!esDeInmobiliaria) {
-        setMfaEnrollRequired(false)
-        return 'none'
-      }
-      // T-0123 WU-3: `fetchBootstrap` just refreshed `segundoFactorExigidoRef`
-      // (a new agency owner goes false -> true when the registration ends), but
-      // the MFA level was last computed at login. Re-run it so every door gets
-      // the fresh verdict and the caller knows where to send the user.
-      return checkMfaLevel(miGeneracion)
+      /*
+       * 🔴 Primero la migración (Nico, 30-09-2026): `fetchBootstrap` ya dejó
+       * `segundoFactor.exigido` en `segundoFactorExigidoRef`, pero nadie
+       * recalculaba `mfaEnrollRequired` con él — sólo lo hacían los eventos
+       * de sesión. Al resolver la migración el back pasa `exigido` a `true`,
+       * y sin esto la persona seguía en el panel sin segundo factor hasta
+       * recargar. Afuera del lock de auth-js: esto no corre dentro de
+       * `onAuthStateChange`.
+       */
+      await checkMfaLevelRef.current?.(miGeneracion)
     }
     return 'none'
   }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult, checkMfaLevel])
@@ -839,10 +838,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user, fetchUser, probeAgencyMembership])
 
-  // T-0123: a verified step-up (aal2) also means enrollment can no longer be
-  // pending. Clearing only `mfaRequired` left a stale `mfaEnrollRequired` that
-  // bounced /auth/mfa-verify back to /auth/mfa-enroll until the deferred
-  // `checkMfaLevel` (MFA_CHALLENGE_VERIFIED) happened to settle.
+  /** Check MFA assurance level and update mfaRequired/mfaEnrollRequired.
+   *  `miGeneracion`, when passed, gates the write: a deferred MFA check
+   *  (see `alSoltarElLock` below) that settles after the session has moved
+   *  on must not flip these for whoever is signed in NOW.
+   *
+   *  T-0099: two DIFFERENT pending states share this one check, per
+   *  contract.md T-0099 §3 —
+   *    - `mfaRequired` ("verify-pending"): a factor exists, the session just
+   *      hasn't stepped up to it THIS sign-in. Supabase's own `nextLevel`
+   *      already answers this — unchanged from before this task.
+   *    - `mfaEnrollRequired` ("enroll-pending"): the back's role policy
+   *      (`segundoFactor.exigido`, mirrored in `segundoFactorExigidoRef`)
+   *      requires aal2 but there is NO factor to even step up to —
+   *      something Supabase's aal pair alone cannot say (`nextLevel` stays
+   *      `'aal1'` with nothing enrolled, identical to "no requirement at
+   *      all"). `listFactors()` is only called to break that tie — never
+   *      when `nextLevel === 'aal2'` already proves a factor exists. */
+  const checkMfaLevel = useCallback(async (miGeneracion?: number) => {
+    const supabase = getSupabase()
+    if (!supabase) return
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
+      if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
+        setMfaRequired(true)
+      } else if (aal?.currentLevel === 'aal2') {
+        setMfaRequired(false)
+      }
+      if (aal?.currentLevel === 'aal2' || !segundoFactorExigidoRef.current || aal?.nextLevel === 'aal2') {
+        setMfaEnrollRequired(false)
+      } else {
+        const { data: factors } = await supabase.auth.mfa.listFactors()
+        if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
+        const tieneFactorVerificado = (factors?.totp ?? []).some((f) => f.status === 'verified')
+        setMfaEnrollRequired(!tieneFactorVerificado)
+      }
+    } catch {
+      // MFA not available — ignore
+    }
+  }, [])
+
+  checkMfaLevelRef.current = checkMfaLevel
+
   const setMfaVerified = useCallback(() => {
     setMfaRequired(false)
     setMfaEnrollRequired(false)

@@ -255,8 +255,10 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaPr
               <motion.div
                 variants={renglon}
                 id={descripcion}
-                className="mx-auto mt-4 max-w-sm space-y-2 text-pretty text-body-sm text-white/85 sm:text-body"
+                className="mx-auto mt-4 max-w-sm text-pretty text-body-sm text-white/85 sm:text-body"
               >
+                {/* Una sola línea: la pantalla dura 4 segundos (Nico, 30-09:
+                    «hay mucho texto en la descripción, ¿para qué?»). */}
                 {nombre ? (
                   <p>
                     <span className="font-medium text-white" data-testid="inmobiliaria-creada-nombre">
@@ -264,8 +266,9 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaPr
                     </span>{' '}
                     ya tiene su espacio en Leasefy.
                   </p>
-                ) : null}
-                <p>En tu panel te guiamos para traer tu operación: propietarios, inmuebles, contratos y pagos.</p>
+                ) : (
+                  <p>Te damos la bienvenida a Leasefy.</p>
+                )}
               </motion.div>
             </motion.div>
           </div>

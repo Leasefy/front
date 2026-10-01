@@ -517,7 +517,7 @@ export default function MfaVerifyPage() {
 
                   {/* El código cambia cada 30 s: decirlo evita el «lo escribí
                       bien y me lo rechazó». */}
-                  <p className="text-pretty text-center text-caption text-fg-subtle">
+                  <p className="text-pretty text-center text-caption text-fg-subtle sm:whitespace-nowrap">
                     El código cambia cada 30 segundos. Si te lo rechaza, espera
                     al siguiente.
                   </p>

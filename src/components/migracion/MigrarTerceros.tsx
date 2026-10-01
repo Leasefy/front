@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
+  ArrowRight,
   CheckCircle,
   DownloadSimple,
   Info,
@@ -34,6 +35,7 @@ import {
   Users,
   Warning,
 } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SegmentedControl } from '@leasefy/cadence';
 
@@ -1077,24 +1079,54 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table className="min-w-[640px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Columna del archivo</TableHead>
-                  <TableHead>Campo del tercero</TableHead>
-                  <TableHead>Por qué</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mapeo.map((m) => (
-                  <TableRow key={m.columna}>
-                    <TableCell className="font-medium">{m.columna || '(sin nombre)'}</TableCell>
-                    <TableCell>
+          {/* El mapeo como lo que es: tu columna → nuestro campo, pareja por
+              pareja. La tabla de tres columnas con «POR QUÉ: —» leía como un
+              admin crudo (Nico, 30-09: «haz algo hermoso»); el porqué ahora
+              vive debajo del campo, con su color: verde el empate exacto,
+              ámbar el parecido (el que se equivoca), gris lo elegido a mano. */}
+          <div className="overflow-hidden rounded-md border border-border-faint">
+            <div className="hidden items-center justify-between gap-4 border-b border-border-faint bg-surface-muted/60 px-4 py-2.5 sm:flex">
+              <span className="text-label text-fg-subtle">Columna del archivo</span>
+              <span className="w-[280px] text-label text-fg-subtle">Campo del tercero</span>
+            </div>
+            <ul className="divide-y divide-border-faint">
+              {mapeo.map((m) => {
+                const valor =
+                  m.campo ?? (m.parte ? valorDeParte(m.parte) : m.aNotas ? VALOR_A_NOTAS : IGNORAR);
+                const ignorada = valor === IGNORAR;
+                return (
+                  <li
+                    key={m.columna}
+                    className="grid grid-cols-1 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,max-content)_minmax(2.5rem,1fr)_280px] sm:items-start"
+                  >
+                    {/* La columna, el conector y el campo comparten la altura
+                        del select (h-11) para quedar en el mismo renglón; el
+                        porqué cuelga debajo del campo. */}
+                    <span className="flex min-h-11 items-center">
+                      <span
+                        className={cn(
+                          'rounded-md px-2.5 py-1.5 font-mono text-caption leading-snug [overflow-wrap:anywhere]',
+                          ignorada ? 'bg-surface-muted/60 text-fg-subtle line-through decoration-border' : 'bg-surface-muted text-fg',
+                        )}
+                      >
+                        {m.columna || '(sin nombre)'}
+                      </span>
+                    </span>
+                    <span aria-hidden className="hidden h-11 items-center px-3 sm:flex">
+                      <span
+                        className={cn(
+                          'h-px flex-1 border-t border-dashed',
+                          ignorada ? 'border-border-faint' : 'border-border',
+                        )}
+                      />
+                      <ArrowRight
+                        weight="bold"
+                        className={cn('-ml-0.5 h-3.5 w-3.5 shrink-0', ignorada ? 'text-border' : 'text-fg-subtle')}
+                      />
+                    </span>
+                    <div className="space-y-1">
                       <Select
-                        value={
-                          m.campo ?? (m.parte ? valorDeParte(m.parte) : m.aNotas ? VALOR_A_NOTAS : IGNORAR)
-                        }
+                        value={valor}
                         onValueChange={(v) =>
                           setMapeo((actual) =>
                             remapear(actual, m.columna, v === IGNORAR ? null : v),
@@ -1102,7 +1134,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                         }
                       >
                         <SelectTrigger
-                          className="w-full min-w-[200px]"
+                          className="w-full whitespace-nowrap [&>span]:truncate"
                           data-testid={`mapeo-${m.columna}`}
                         >
                           <SelectValue />
@@ -1130,22 +1162,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                           ) : null}
                         </SelectContent>
                       </Select>
-                    </TableCell>
-                    <TableCell className="text-caption text-fg-muted">
                       {/* Tres estados distintos, y decirlos importa: el empate
                           por parecido es el que se equivoca. */}
-                      {m.isManual
-                        ? 'elegido a mano'
-                        : m.porque && m.exacto
-                          ? `coincide con «${m.porque}»`
-                          : m.porque
-                            ? `se parece a «${m.porque}»`
-                            : '—'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      {m.isManual ? (
+                        <p className="text-caption text-fg-subtle">Elegido a mano.</p>
+                      ) : m.aNotas ? (
+                        <p className="text-caption text-fg-subtle">Se guarda en las notas de la ficha.</p>
+                      ) : m.porque && m.exacto ? (
+                        <p className="text-caption text-success">Coincide con «{m.porque}».</p>
+                      ) : m.porque ? (
+                        <p className="text-caption text-warning">Se parece a «{m.porque}» — revísalo.</p>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           {faltanObligatorias.length > 0 ? (
@@ -1201,31 +1233,32 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
           {/* El cierre de la fase: nombre y botón en el mismo renglón, con su
               filete — es la salida de la tarjeta, no un bloque más. */}
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border-faint pt-5">
-            <label className="block w-full max-w-sm space-y-1">
-              <span className="text-sm text-fg-muted">Nombre de esta carga</span>
-              <Input
-                value={lote}
-                maxLength={60}
-                onChange={(e) => setLote(e.target.value)}
-                data-testid="nombre-del-lote"
-              />
-              <span className="block text-caption text-fg-subtle">
-                Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
-              </span>
-            </label>
+          <div className="border-t border-border-faint pt-5">
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+              <label className="block w-full max-w-sm space-y-1.5">
+                <span className="block text-caption font-semibold text-fg">Nombre de esta carga</span>
+                <Input
+                  value={lote}
+                  maxLength={60}
+                  onChange={(e) => setLote(e.target.value)}
+                  data-testid="nombre-del-lote"
+                />
+              </label>
 
-            {/* No dice «importar»: todavía no se crea nada. */}
-            <Button
-              hideArrow
-              className="mb-6"
-              disabled={!puedePreparar}
-              isLoading={cargando}
-              onClick={() => void preparar()}
-              data-testid="revisar-terceros"
-            >
-              Revisar {filas.length} {tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
-            </Button>
+              {/* No dice «importar»: todavía no se crea nada. */}
+              <Button
+                hideArrow
+                disabled={!puedePreparar}
+                isLoading={cargando}
+                onClick={() => void preparar()}
+                data-testid="revisar-terceros"
+              >
+                Revisar {filas.length} {tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
+              </Button>
+            </div>
+            <p className="mt-1.5 text-caption text-fg-subtle">
+              Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
+            </p>
           </div>
         </div>
       ) : null}

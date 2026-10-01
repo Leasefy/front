@@ -119,6 +119,26 @@ export default function MfaVerifyPage() {
   const [quiereInscribir, setQuiereInscribir] = useState(false);
   /** El código no era: las casillas se pintan hasta que se escriba otro. */
   const [hayError, setHayError] = useState(false);
+  // Cuántos códigos rechazó Supabase seguidos: a partir de 3 el problema casi
+  // nunca es «el código cambió», es que esa entrada de la app no es la de
+  // esta cuenta (Nico, 01-10: «le coloqué el de todos los que tengo»).
+  const [rechazados, setRechazados] = useState(0);
+  // Antes del segundo factor el perfil del back puede no haber cargado: el
+  // correo se lee de la sesión de Supabase, que sí está.
+  const [correoDeLaSesion, setCorreoDeLaSesion] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    void getSupabase()
+      ?.auth.getSession?.()
+      .then(({ data }) => {
+        if (vivo) setCorreoDeLaSesion(data?.session?.user?.email ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const correoDeLaCuenta = user?.email ?? correoDeLaSesion;
   /**
    * 🔴 29-09-2026 · «No tengo la app» con un factor YA verificado (caso B).
    *
@@ -283,6 +303,7 @@ export default function MfaVerifyPage() {
       // mostraba como «Código incorrecto» (Nico, 01-10). Nada en inglés ni un
       // «Error 422» pelado (29-09).
       const e = err as { status?: number; code?: string };
+      if (e.code === 'mfa_verification_failed') setRechazados((n) => n + 1);
       toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
       setCode('');
     }
@@ -402,11 +423,11 @@ export default function MfaVerifyPage() {
                 </p>
                 {/* Con qué cuenta se está entrando: quien se fue y volvió (o
                     tiene varias) lo ve sin adivinar (Nico, 01-10). */}
-                {user?.email ? (
+                {correoDeLaCuenta ? (
                   <p className="flex justify-center pt-1" data-testid="mfa-verify-cuenta">
                     <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 py-1.5 text-body-sm text-fg">
                       <UserCircle className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
-                      <span className="truncate">{user.email}</span>
+                      <span className="truncate">{correoDeLaCuenta}</span>
                     </span>
                   </p>
                 ) : null}
@@ -457,6 +478,28 @@ export default function MfaVerifyPage() {
                     disabled={isLoading}
                     autoFocus
                   />
+
+                  {rechazados >= 3 ? (
+                    <div
+                      className="space-y-2 rounded-md bg-warning-soft px-3.5 py-3 text-left text-body-sm text-fg"
+                      data-testid="mfa-verify-ninguno-sirve"
+                    >
+                      <p>
+                        Si ningún código sirve, la entrada de tu app no es la de esta cuenta. Busca la
+                        de Leasefy con {correoDeLaCuenta ?? 'tu correo'}; si no está, restablécelo con
+                        un código a tu correo.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        hideArrow
+                        onClick={() => void noTengoLaApp()}
+                      >
+                        Restablecer con un código al correo
+                      </Button>
+                    </div>
+                  ) : null}
 
                   <Button
                     onClick={() => void handleVerify()}

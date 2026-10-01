@@ -11,11 +11,11 @@ import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
  * with no "Pago" / "Política" entry ever shown in the stepper. The collection
  * policy is an optional adjustment configured later in the agency panel.
  */
-export const WIZARD_STEPS: { key: OnboardingWizardStep; label: string }[] = [
-  { key: 'agency', label: 'Agencia' },
-  { key: 'members', label: 'Miembros' },
-  { key: 'habeas_data', label: 'Habeas Data' },
-  { key: 'complete', label: 'Confirmar' },
+export const WIZARD_STEPS: { key: OnboardingWizardStep; label: string; descripcion: string }[] = [
+  { key: 'agency', label: 'Agencia', descripcion: 'Dirección y contacto' },
+  { key: 'members', label: 'Miembros', descripcion: 'Tu equipo, si quieres' },
+  { key: 'habeas_data', label: 'Habeas Data', descripcion: 'Términos y datos' },
+  { key: 'complete', label: 'Confirmar', descripcion: 'Revisa y crea' },
 ]
 
 /**
@@ -32,10 +32,4 @@ export function wizardStepIndex(step: OnboardingWizardStep | null): number {
   if (!step || step === 'start') return 0
   const idx = WIZARD_STEPS.findIndex((s) => s.key === toVisibleStepKey(step))
   return idx === -1 ? 0 : idx
-}
-
-/** Resolves the step-title label (`<h1>`) shown above the active step form. */
-export function wizardStepLabel(step: OnboardingWizardStep | null): string {
-  if (!step || step === 'start') return WIZARD_STEPS[0].label
-  return WIZARD_STEPS.find((s) => s.key === toVisibleStepKey(step))?.label ?? WIZARD_STEPS[0].label
 }

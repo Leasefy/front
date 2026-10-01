@@ -10230,6 +10230,11 @@
         "evaluar": "Evaluar",
         "cerrar": "Cerrar"
       },
+      "migracion": {
+        "grupo": "Configurar",
+        "label": "Migrar mis datos",
+        "desc": "Trae tus propietarios, inquilinos, inmuebles, contratos y saldos desde tu sistema anterior."
+      },
       "sinResolver": "No pudimos verificar tu acceso. Toca para reintentar.",
       "intro": {
         "queVasAHacer": "Qué vas a hacer",

@@ -42,7 +42,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowSquareOut, Check } from '@phosphor-icons/react'
+import { Plus, ArrowSquareOut, Check, CloudArrowUp } from '@phosphor-icons/react'
 // SplitButton del DS: separa la acción principal del menú en dos segmentos,
 // que es su respuesta a la tensión "+ o chevron, no los dos" (§SplitButton).
 import { Button, SplitButton } from '@leasefy/cadence'
@@ -71,6 +71,7 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { useMigracion } from '@/components/migracion/migracion-context'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 import { SelectorPostulacion } from '@/components/inmobiliaria/SelectorPostulacion'
 import {
@@ -89,6 +90,8 @@ import {
 } from '@/lib/inmobiliaria/flujos'
 
 const NS = 'inmobiliaria.nuevo'
+/** Primer importador suelto; el mismo fallback de `SeccionMigracion`. */
+const RUTA_MIGRACION = '/panel/inmobiliaria/migracion/terceros'
 
 export interface BotonNuevoProps {
   className?: string
@@ -97,7 +100,8 @@ export interface BotonNuevoProps {
 export function BotonNuevo({ className }: BotonNuevoProps) {
   const { t } = useI18n()
   const router = useRouter()
-  const { canAccess, agentPermsResolved, refetch } = usePermissionsContext()
+  const { canAccess, agentPermsResolved, refetch, isAdmin } = usePermissionsContext()
+  const migracion = useMigracion()
   const [porExplicar, setPorExplicar] = useState<FlujoNuevo | null>(null)
   const [selectorAbierto, setSelectorAbierto] = useState(false)
 
@@ -167,6 +171,22 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
     },
     [abrir],
   )
+
+  /**
+   * «Migrar mis datos»: la vuelta a la migración para quien la descartó al
+   * entrar («en otro momento», «no requiero migración» o la ✕ del recordatorio).
+   * No es un flujo de `FLUJOS` —no tiene ruta ni explicación de primera vez—, es
+   * una acción. Misma entrada que Configuración → Migración → «Migrar ahora»:
+   * sin contexto (fuera del panel) cae al primer importador suelto.
+   *
+   * Sólo el ADMIN (el mismo gate de esa sección) y sólo si el muro no está ya
+   * puesto: con el muro arriba la migración ya está en la cara.
+   */
+  const ofreceMigracion = isAdmin && migracion?.estado?.bloquea !== true
+  const migrar = useCallback(() => {
+    if (migracion) migracion.abrir()
+    else router.push(RUTA_MIGRACION)
+  }, [migracion, router])
 
   const confirmar = useCallback(() => {
     if (!porExplicar) return
@@ -272,6 +292,27 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
                 </div>
               )
             })}
+            {ofreceMigracion && (
+              <div>
+                <DropdownListSeparator />
+                <DropdownListLabel>{t(`${NS}.migracion.grupo`)}</DropdownListLabel>
+                <DropdownListItem
+                  data-testid="nuevo-migrar-mis-datos"
+                  onSelect={migrar}
+                  className="items-start gap-2.5 py-2"
+                >
+                  <CloudArrowUp className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1 font-medium text-fg">
+                      {t(`${NS}.migracion.label`)}
+                    </span>
+                    <span className="block text-xs leading-snug text-fg-muted">
+                      {t(`${NS}.migracion.desc`)}
+                    </span>
+                  </span>
+                </DropdownListItem>
+              </div>
+            )}
           </>
         }
       />

@@ -784,8 +784,13 @@ export function PanelDeMigracion({
        * Pantalla completa, no un modal (Nico, 2026-09-07): sin velo, sin
        * tarjeta flotante. Ocupa todo y el contenido se centra a 1200px
        * adentro. Lo que hay detrás queda inerte igual (ver la compuerta).
+       *
+       * `bg-bg` y no `bg-surface` (glow-up 30-09): el lienzo es el fondo
+       * cálido del panel y las tarjetas de cada paso van en `bg-surface`
+       * encima — blanco sobre blanco dejaba los bloques como islas que sólo
+       * un filete separaba («quedan como separadas, es rarísimo todo»).
        */
-      className="fixed inset-0 z-[120] flex flex-col bg-surface"
+      className="fixed inset-0 z-[120] flex flex-col bg-bg"
       data-testid="muro-migracion"
     >
       <div
@@ -842,7 +847,7 @@ export function PanelDeMigracion({
           <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <h1
               id="muro-migracion-titulo"
-              className="text-xl font-semibold tracking-tight text-fg"
+              className="text-xl font-medium tracking-tight text-fg"
             >
               {t("migracion.muro.titulo")}
             </h1>
@@ -1082,7 +1087,7 @@ function BarraDePasos({
   return (
     <ol
       aria-label={t("migracion.muro.progreso")}
-      className="mt-5 grid gap-x-2"
+      className="mt-4 grid gap-x-1"
       style={{ gridTemplateColumns: `repeat(${pasos.length}, minmax(0, 1fr))` }}
       data-testid="muro-barra"
     >
@@ -1095,6 +1100,21 @@ function BarraDePasos({
         const elegido = idx === seleccionado;
         const ultimo = idx === pasos.length - 1;
         const titulo = t(`migracion.pasos.${paso.id}.titulo`);
+        /*
+         * Cada paso es una LOSETA, no un círculo flotando sobre aire (glow-up
+         * 30-09: «el stepper flota desconectado del contenido»). La elegida se
+         * levanta en `bg-surface` sobre el lienzo `bg-bg` — la misma relación
+         * que tienen las tarjetas del cuerpo — y así la barra y el contenido
+         * se leen como una sola pieza.
+         */
+        const loseta = cn(
+          "block w-full rounded-md px-2.5 pb-2 pt-2.5 text-left transition-colors sm:pb-2.5",
+          elegido
+            ? "bg-surface shadow-sm"
+            : habilitado
+              ? "hover:bg-surface-muted/70"
+              : undefined,
+        );
 
         // Lo que se lee debajo del nombre. Un hecho muestra lo que cargó
         // («12 propietarios · 30 inquilinos»); nunca un cero inventado.
@@ -1121,7 +1141,8 @@ function BarraDePasos({
                       ? "border-2 border-primary bg-surface text-primary"
                       : "border border-border bg-surface text-fg-subtle",
                   apagado && "border-dashed",
-                  // «Acá estás mirando»: un anillo, sea el paso que sea.
+                  // «Acá estás mirando» también en el círculo: en el móvil la
+                  // loseta es angosta y el anillo es lo que más se ve.
                   elegido &&
                     "ring-2 ring-primary ring-offset-2 ring-offset-surface",
                 )}
@@ -1145,7 +1166,7 @@ function BarraDePasos({
               ) : null}
             </div>
 
-            <div className="mt-2.5 hidden min-w-0 pr-3 text-left sm:block">
+            <div className="mt-2 hidden min-w-0 pr-1 text-left sm:block">
               <p
                 className={cn(
                   "truncate text-caption font-medium",
@@ -1210,12 +1231,15 @@ function BarraDePasos({
                 disabled={bloqueada}
                 data-testid={`muro-ir-${paso.id}`}
                 aria-label={t("migracion.muro.irAlPaso", { paso: titulo })}
-                className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-progress"
+                className={cn(
+                  "group outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-progress",
+                  loseta,
+                )}
               >
                 {cuerpo}
               </button>
             ) : (
-              <div>{cuerpo}</div>
+              <div className={loseta}>{cuerpo}</div>
             )}
           </li>
         );
@@ -1297,7 +1321,7 @@ function PasoEnFoco({
         </p>
         <h2
           id="muro-en-foco-titulo"
-          className="mt-1 text-balance text-2xl font-semibold tracking-tight text-fg"
+          className="mt-1 text-balance text-2xl font-medium tracking-tight text-fg"
         >
           {t(`migracion.pasos.${paso.id}.titulo`)}
         </h2>
@@ -1306,11 +1330,11 @@ function PasoEnFoco({
         </p>
         {hecho ? (
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-caption tabular-nums text-success"
+            className="mt-4 inline-flex items-start gap-2 rounded-md bg-success-soft px-3 py-2 font-mono text-caption tabular-nums text-success"
             data-testid="muro-paso-listo"
           >
-            <Check className="h-3.5 w-3.5" weight="bold" />
-            {paso.detalle ?? t("migracion.muro.hecho")}
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" weight="bold" />
+            <span className="min-w-0">{paso.detalle ?? t("migracion.muro.hecho")}</span>
           </p>
         ) : paso.estado === "pendiente" &&
           paso.detalle &&
@@ -1330,8 +1354,13 @@ function PasoEnFoco({
            * va al final, «2145 ya cargados»), y este rótulo dejó de afirmar
            * que todo lo que sigue es un faltante.
            */
+          /*
+           * Bloque y no píldora: el pendiente del back puede ser largo
+           * («faltan cuentas para 2 asientos automáticos · 112 cuentas…») y
+           * una píldora partida en tres renglones se lee como un parche.
+           */
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-caption tabular-nums text-warning"
+            className="mt-4 inline-block rounded-md bg-warning-soft px-3 py-2 font-mono text-caption tabular-nums text-warning"
             data-testid="muro-paso-falta"
           >
             {t("migracion.muro.falta", { detalle: paso.detalle })}
@@ -1482,7 +1511,7 @@ function Aviso({
 }) {
   return (
     <div
-      className="rounded-lg border border-border bg-surface-muted p-5 text-sm text-fg-muted"
+      className="rounded-lg border border-border-faint bg-surface p-6 text-sm text-fg-muted shadow-sm"
       data-testid={testid}
     >
       {children}
@@ -1503,7 +1532,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
 
   return (
     <section
-      className="mb-6 flex items-start gap-4 rounded-lg bg-surface-muted p-5 sm:gap-5 sm:p-6"
+      className="mb-6 flex items-start gap-4 rounded-lg bg-primary-soft p-5 sm:gap-5 sm:p-6"
       data-testid="muro-todo-listo"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg">
@@ -1513,7 +1542,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
         <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
           {t("migracion.muro.todoListo.eyebrow")}
         </p>
-        <h2 className="mt-1 text-lg font-semibold tracking-tight text-fg">
+        <h2 className="mt-1 text-lg font-medium tracking-tight text-fg">
           {t("migracion.muro.todoListo.titulo")}
         </h2>
         <p className="mt-1 max-w-prose text-sm leading-relaxed text-fg-muted">
@@ -1527,7 +1556,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
             {conteos.map((c) => (
               <li
                 key={c}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted"
+                className="rounded-full bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted shadow-sm"
               >
                 {c}
               </li>
@@ -1559,17 +1588,17 @@ function ConfirmarArranqueDeCero({
 
   return (
     <section
-      className="rounded-lg bg-warning-soft p-6 sm:p-7"
+      /* Centrada y con tope de ancho: una pregunta de dos frases estirada a
+         1.900 px sobre un cuerpo vacío se leía como una pantalla rota. */
+      className="mx-auto mt-6 max-w-2xl rounded-lg bg-warning-soft p-6 sm:mt-14 sm:p-7"
       data-testid="muro-confirmar-cero"
     >
-      <div className="flex items-start gap-5 sm:gap-7">
-        <div className="flex w-14 shrink-0 pt-0.5">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-warning">
-            <Warning className="h-5 w-5" />
-          </span>
-        </div>
+      <div className="flex items-start gap-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-warning">
+          <Warning className="h-5 w-5" />
+        </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-semibold tracking-tight text-fg">
+          <h2 className="text-xl font-medium tracking-tight text-fg">
             {t("migracion.muro.confirmar.titulo")}
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">

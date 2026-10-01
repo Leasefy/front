@@ -288,7 +288,7 @@ export function PlanDeCuentas({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -311,7 +311,7 @@ export function PlanDeCuentas({
 
       {semilla ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-success-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-success-soft p-3"
           data-testid="puc-semilla-resultado"
         >
           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="fill" />
@@ -411,12 +411,12 @@ export function PlanDeCuentas({
          */
         <section
           ref={mapeoRef}
-          className="scroll-mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="scroll-mt-6 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           aria-labelledby="puc-mapeo-titulo"
           data-testid="puc-mapeo"
         >
           <div className="mb-4">
-            <h2 id="puc-mapeo-titulo" className="font-medium text-fg">
+            <h2 id="puc-mapeo-titulo" className="text-sm font-medium text-fg">
               Cuentas de los asientos automáticos
             </h2>
             <p className="text-sm text-fg-muted">
@@ -445,12 +445,12 @@ export function PlanDeCuentas({
 
       {hayCuentas ? (
         <section
-          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           aria-labelledby="puc-arbol-titulo"
         >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="puc-arbol-titulo" className="font-medium text-fg">
+              <h2 id="puc-arbol-titulo" className="text-sm font-medium text-fg">
                 Tu plan de cuentas
               </h2>
               <p className="text-sm text-fg-muted" data-testid="puc-resumen">
@@ -529,7 +529,7 @@ export function PlanDeCuentas({
          * lo cambia debajo del dedo.
          */
         <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-faint bg-surface p-4 shadow-sm"
           data-testid="puc-pie"
         >
           {mapeo === null ? (
@@ -595,11 +595,11 @@ function SinPlan({
 }) {
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       aria-labelledby="puc-vacio-titulo"
       data-testid="puc-vacio"
     >
-      <h2 id="puc-vacio-titulo" className="font-medium text-fg">
+      <h2 id="puc-vacio-titulo" className="text-sm font-medium text-fg">
         Todavía no hay plan de cuentas
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
@@ -685,14 +685,14 @@ function PendientesDelContador({
 
   return (
     <section
-      className="rounded-lg border border-warning bg-warning-soft p-5"
+      className="rounded-lg bg-warning-soft p-5"
       aria-labelledby="puc-pendientes-titulo"
       data-testid="puc-pendientes"
     >
       <div className="flex items-start gap-2">
         <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div className="min-w-0 flex-1">
-          <h2 id="puc-pendientes-titulo" className="font-medium text-fg">
+          <h2 id="puc-pendientes-titulo" className="text-sm font-medium text-fg">
             {pendientes.length === 1
               ? 'Una cuenta para confirmar con tu contador'
               : `${pendientes.length} cuentas para confirmar con tu contador`}
@@ -710,7 +710,7 @@ function PendientesDelContador({
           return (
             <li
               key={p.codigo}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border bg-surface p-3"
+              className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-surface p-3 shadow-sm"
               data-testid={`puc-pendiente-${p.codigo}`}
             >
               <div className="min-w-0">
@@ -947,13 +947,13 @@ function FormularioDeCuenta({
 
   return (
     <section
-      className="rounded-lg border border-primary bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-primary/40 bg-surface p-6 shadow-sm"
       aria-labelledby="puc-formulario-titulo"
       data-testid="puc-formulario"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id="puc-formulario-titulo" className="font-medium text-fg">
+          <h2 id="puc-formulario-titulo" className="text-sm font-medium text-fg">
             {editando
               ? `Editar ${editando.codigo} · ${editando.nombre}`
               : padreInicial
@@ -1105,7 +1105,7 @@ function FormularioDeCuenta({
       </div>
 
       {error ? (
-        <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3" role="alert">
+        <div className="mt-4 flex items-start gap-2 rounded-md bg-danger-soft p-3" role="alert">
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
           <p className="text-sm text-fg">{error}</p>
         </div>

@@ -211,7 +211,7 @@ export function AsientoDeApertura({
     );
     return (
       <section
-        className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
         data-testid="apertura-creado"
         data-ya-existia={yaEstaba ? "si" : "no"}
       >
@@ -225,7 +225,7 @@ export function AsientoDeApertura({
             />
           )}
           <div>
-            <h2 className="font-medium text-fg">
+            <h2 className="text-sm font-medium text-fg">
               {yaEstaba
                 ? `Este asiento ya estaba registrado: es el N.º ${registrado.numero}`
                 : `Asiento N.º ${registrado.numero} registrado con fecha ${registrado.fecha.slice(0, 10)}`}
@@ -269,11 +269,11 @@ export function AsientoDeApertura({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       aria-labelledby="apertura-titulo"
       data-testid="asiento-de-apertura"
     >
-      <h2 id="apertura-titulo" className="font-medium text-fg">
+      <h2 id="apertura-titulo" className="text-sm font-medium text-fg">
         Saldos iniciales
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
@@ -429,7 +429,7 @@ export function AsientoDeApertura({
       </div>
 
       <div
-        className="mt-4 grid gap-3 rounded-md border border-border bg-surface-muted p-4 sm:grid-cols-3"
+        className="mt-4 grid gap-3 rounded-md bg-surface-muted p-4 sm:grid-cols-3"
         data-testid="apertura-totales"
         aria-live="polite"
       >
@@ -473,7 +473,7 @@ export function AsientoDeApertura({
 
       {error ? (
         <div
-          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="mt-4 flex items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />

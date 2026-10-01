@@ -124,7 +124,7 @@ export function RegistrosContables({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -145,7 +145,7 @@ export function RegistrosContables({
 
       {falloDeAsientos ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-4"
+          className="rounded-lg bg-warning-soft p-4"
           data-testid="contables-cargado-fallo"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -169,49 +169,18 @@ export function RegistrosContables({
         </section>
       ) : null}
 
-      {/* Con la lectura caída, el resumen que quedó es de ANTES: mostrarlo
-          diría «0 asientos» a quien acaba de registrar la apertura. */}
-      {resumen && !falloDeAsientos ? (
-        <section
-          className="rounded-lg border border-border bg-surface p-4"
-          data-testid="contables-resumen"
-          aria-live="polite"
-        >
-          {resumen.total === 0 ? (
-            <p className="text-sm text-fg-muted">
-              Todavía no hay registros contables.
-            </p>
-          ) : (
-            <p className="text-sm text-fg">
-              Ya cargados:{" "}
-              <span className="font-mono font-semibold tabular-nums">
-                {resumen.total}
-              </span>{" "}
-              {resumen.total === 1 ? "asiento" : "asientos"}
-              {resumen.desde && resumen.hasta ? (
-                <span className="text-fg-muted">
-                  {" "}
-                  · del {formatDate(resumen.desde)} al{" "}
-                  {formatDate(resumen.hasta)}
-                  {resumen.parcial
-                    ? ` (fechas de los ${MAX_LIMITE_DE_ASIENTOS} más recientes)`
-                    : ""}
-                </span>
-              ) : null}
-            </p>
-          )}
-        </section>
-      ) : null}
+      {/* El resumen de lo ya cargado baja a la tarjeta del camino (abajo):
+          era una isla de una sola línea flotando arriba de todo. */}
 
       {cuentas.length === 0 && !falloDeCuentas ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-5"
+          className="rounded-lg bg-warning-soft p-5"
           data-testid="contables-sin-puc"
         >
           <div className="flex items-start gap-2">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div>
-              <h2 className="font-medium text-fg">
+              <h2 className="text-sm font-medium text-fg">
                 Primero el plan de cuentas
               </h2>
               <p className="mt-0.5 text-sm text-fg-muted">
@@ -245,7 +214,50 @@ export function RegistrosContables({
         // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
-          <div className="space-y-3">
+          {/*
+           * El camino elegido ES un filtro de esta pantalla, así que el
+           * selector, su explicación y lo ya cargado van en UNA tarjeta
+           * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
+           * dos islas.
+           */}
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="text-sm font-medium text-fg">
+                Cómo entran tus registros
+              </h2>
+              {/* Con la lectura caída, el resumen que quedó es de ANTES:
+                  mostrarlo diría «0 asientos» a quien acaba de registrar la
+                  apertura. */}
+              {resumen && !falloDeAsientos ? (
+                <p
+                  className="text-caption text-fg-muted"
+                  data-testid="contables-resumen"
+                  aria-live="polite"
+                >
+                  {resumen.total === 0 ? (
+                    "Todavía no hay registros contables."
+                  ) : (
+                    <>
+                      Ya cargados:{" "}
+                      <span className="font-mono tabular-nums text-fg">
+                        {resumen.total}
+                      </span>{" "}
+                      {resumen.total === 1 ? "asiento" : "asientos"}
+                      {resumen.desde && resumen.hasta ? (
+                        <>
+                          {" "}
+                          · del {formatDate(resumen.desde)} al{" "}
+                          {formatDate(resumen.hasta)}
+                          {resumen.parcial
+                            ? ` (fechas de los ${MAX_LIMITE_DE_ASIENTOS} más recientes)`
+                            : ""}
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                </p>
+              ) : null}
+            </div>
             <SegmentedControl<Camino>
               value={camino}
               onChange={setCamino}
@@ -294,7 +306,7 @@ export function RegistrosContables({
                   ? "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."
                   : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
             </p>
-          </div>
+          </section>
 
           {camino === "apertura" ? (
             <AsientoDeApertura

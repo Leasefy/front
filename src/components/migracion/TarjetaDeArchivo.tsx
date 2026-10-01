@@ -70,7 +70,7 @@ export function TarjetaDeArchivo({
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted/60 p-3 sm:flex-row sm:items-center"
+      className="flex flex-col gap-3 rounded-md border border-border-faint bg-surface-muted/60 p-3 sm:flex-row sm:items-center"
       data-testid={testid}
     >
       {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}

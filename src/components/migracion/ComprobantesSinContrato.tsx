@@ -109,7 +109,7 @@ export function ComprobantesSinContrato({
   if (error) {
     return (
       <div
-        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft p-3"
         role="alert"
         data-testid="sin-contrato-error"
       >
@@ -129,11 +129,11 @@ export function ComprobantesSinContrato({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5"
+      className="rounded-lg border border-border-faint bg-surface p-5 shadow-sm"
       data-testid="sin-contrato"
       aria-live="polite"
     >
-      <h3 className="font-medium text-fg">
+      <h3 className="text-sm font-medium text-fg">
         Lo que ya está guardado: cuántos quedaron sin inquilino
       </h3>
       <p className="mt-0.5 text-sm text-fg-muted">
@@ -143,7 +143,7 @@ export function ComprobantesSinContrato({
         guardan igual; lo que no se hace es inventarles un contrato.
       </p>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+      <div className="mt-4 overflow-x-auto rounded-md border border-border-faint">
         <Table>
           <TableHeader>
             <TableRow>
@@ -195,7 +195,7 @@ export function ComprobantesSinContrato({
 
       {facturasSinCliente > 0 ? (
         <div
-          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
+          className="mt-4 flex items-start gap-2 rounded-md bg-warning-soft p-3"
           data-testid="sin-contrato-que-pedir"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />

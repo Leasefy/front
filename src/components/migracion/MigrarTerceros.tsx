@@ -28,7 +28,6 @@ import { useDropzone } from 'react-dropzone';
 import {
   CheckCircle,
   DownloadSimple,
-  FileArrowUp,
   Info,
   Trash,
   UserCircle,
@@ -40,6 +39,7 @@ import { SegmentedControl } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
+import { ZonaDeArchivo } from '@/components/migracion/ZonaDeArchivo';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
@@ -728,10 +728,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {fallaronLosLotes ? (
         <section
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-warning-soft p-4"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-warning-soft p-4"
           data-testid="lotes-no-verificados"
         >
           <div className="flex items-start gap-2">
@@ -749,61 +749,70 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       ) : null}
 
       {lotesVisibles.length > 0 ? (
+        /*
+         * Cabecera + filas con filete = UNA tarjeta (glow-up 30-09): antes era
+         * un bloque con las cargas sueltas una debajo de otra y la advertencia
+         * colgando al final.
+         */
         <section
-          className="space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
+          className="overflow-hidden rounded-lg border border-border-faint bg-surface shadow-sm"
           data-testid="lotes-abiertos"
         >
-          <p className="text-sm font-medium text-fg">Tienes una carga sin terminar</p>
-          {lotesVisibles.map((l) => (
-            <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm text-fg-muted">
-                  <span className="text-fg">{l.lote}</span>
-                  {' · '}
-                  {l.tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
-                  {' · '}
-                  <span className="font-mono tabular-nums">{l.requierenAtencion}</span>{' '}
-                  {l.requierenAtencion === 1 ? 'fila por revisar' : 'filas por revisar'}
-                  {l.listos > 0 ? (
-                    <>
-                      {' · '}
-                      <span className="font-mono tabular-nums">{l.listos}</span> listas para crear
-                    </>
-                  ) : null}
-                </p>
-                {/* 🔴 Cuándo se tocó por última vez. Sin esto, una carga
-                    abandonada hace seis días se ofrece igual que la de hace un
-                    rato, y retomarla parece «seguir con lo mío»: Nico
-                    (2026-09-08) terminó revisando 170 filas de dos cargas del 2
-                    de septiembre cuyas personas ya había creado después. */}
-                <p className="text-caption text-fg-subtle">
-                  Última actividad: {fechaDeLote(l.actualizado)}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
-                  Retomar
-                </Button>
-                {/* La segunda salida, que no existía: botarla. Sin esto una
-                    carga a medias se quedaba ofreciéndose para siempre. */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  hideArrow
-                  disabled={cargando}
-                  onClick={() => setLotePorDescartar(l)}
-                  data-testid={`descartar-lote-${l.lote}`}
-                >
-                  <Trash className="h-4 w-4" />
-                  No la voy a seguir
-                </Button>
-              </div>
-            </div>
-          ))}
-          <p className="text-caption text-fg-subtle">
-            Si vuelves a subir el mismo archivo con otro nombre, las personas se duplican y hay
-            que resolver el duplicado una por una.
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-6 pb-3 pt-4">
+            <h2 className="text-sm font-medium text-fg">
+              {lotesVisibles.length === 1 ? 'Tienes una carga sin terminar' : 'Tienes cargas sin terminar'}
+            </h2>
+            <p className="text-caption text-fg-subtle">
+              Volver a subir el mismo archivo con otro nombre duplica a las personas.
+            </p>
+          </div>
+          <ul className="divide-y divide-border-faint border-t border-border-faint">
+            {lotesVisibles.map((l) => (
+              <li key={l.lote} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-fg" title={l.lote}>
+                    {l.lote}
+                  </p>
+                  {/* 🔴 Cuándo se tocó por última vez. Sin esto, una carga
+                      abandonada hace seis días se ofrece igual que la de hace un
+                      rato, y retomarla parece «seguir con lo mío»: Nico
+                      (2026-09-08) terminó revisando 170 filas de dos cargas del 2
+                      de septiembre cuyas personas ya había creado después. */}
+                  <p className="mt-0.5 text-caption text-fg-muted">
+                    {l.tipo === 'PROPIETARIO' ? 'Propietarios' : 'Inquilinos'}
+                    {' · '}
+                    <span className="font-mono tabular-nums">{l.requierenAtencion}</span>{' '}
+                    {l.requierenAtencion === 1 ? 'fila por revisar' : 'filas por revisar'}
+                    {l.listos > 0 ? (
+                      <>
+                        {' · '}
+                        <span className="font-mono tabular-nums">{l.listos}</span> listas para crear
+                      </>
+                    ) : null}
+                    {' · '}última actividad: {fechaDeLote(l.actualizado)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
+                    Retomar
+                  </Button>
+                  {/* La segunda salida, que no existía: botarla. Sin esto una
+                      carga a medias se quedaba ofreciéndose para siempre. */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    hideArrow
+                    disabled={cargando}
+                    onClick={() => setLotePorDescartar(l)}
+                    data-testid={`descartar-lote-${l.lote}`}
+                  >
+                    <Trash className="h-4 w-4" />
+                    No la voy a seguir
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
@@ -861,25 +870,60 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         </AlertDialogContent>
       </AlertDialog>
 
-      <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
+      {/*
+        🔴 Subir, entender las columnas y ponerle nombre a la carga son UNA
+        tarea, así que viven en UNA tarjeta con filetes entre fases (glow-up
+        30-09). Antes eran tres bloques sueltos y «quedaban como separadas».
+      */}
+      <section className="rounded-lg border border-border-faint bg-surface shadow-sm">
+        <div className="space-y-4 p-6">
         {tipoFijo ? (
-          <div className="space-y-1" data-testid="tipo-fijo" data-tipo={tipoFijo}>
-            <h2 className="text-sm font-medium text-fg">
-              {tipoFijo === 'PROPIETARIO' ? 'El archivo de propietarios' : 'El archivo de inquilinos'}
-            </h2>
-            <p className="text-sm text-fg-muted">
-              {tipoFijo === 'PROPIETARIO'
-                ? 'Una fila por propietario: documento, nombre, y el banco, tipo y número de cuenta para poder girarle.'
-                : 'Una fila por inquilino: documento, nombre y correo para poder invitarlo al portal. El contrato de cada uno entra en el paso 4.'}
-            </p>
+          <div
+            className="flex flex-wrap items-start justify-between gap-3"
+            data-testid="tipo-fijo"
+            data-tipo={tipoFijo}
+          >
+            <div className="min-w-0 space-y-1">
+              <h2 className="text-sm font-medium text-fg">
+                {tipoFijo === 'PROPIETARIO' ? 'El archivo de propietarios' : 'El archivo de inquilinos'}
+              </h2>
+              {/* Acá se habla del ARCHIVO. Qué hace falta del propietario ya lo
+                  dice la columna del paso: decirlo dos veces, casi igual, era
+                  una de las cosas que Nico señaló en la captura. */}
+              <p className="max-w-prose text-sm text-fg-muted">
+                {tipoFijo === 'PROPIETARIO'
+                  ? 'Una fila por propietario, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
+                  : 'Una fila por inquilino, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'}
+              </p>
+            </div>
+            <BotonDePlantilla
+              deshabilitado={!plantilla}
+              onDescargar={() =>
+                plantilla &&
+                void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
+                  setError('No pudimos generar la plantilla para descargar. Reintenta.'),
+                )
+              }
+            />
           </div>
         ) : (
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium text-fg">¿Qué estás cargando?</h2>
-            <p className="text-sm text-fg-muted">
-              Van en archivos separados: a un propietario hay que poder pagarle (banco y cuenta) y
-              a un inquilino hay que poder invitarlo (correo). No son las mismas columnas.
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h2 className="text-sm font-medium text-fg">¿Qué estás cargando?</h2>
+              <p className="max-w-prose text-sm text-fg-muted">
+                Van en archivos separados: a un propietario hay que poder pagarle (banco y cuenta) y
+                a un inquilino hay que poder invitarlo (correo). No son las mismas columnas.
+              </p>
+            </div>
+            <BotonDePlantilla
+              deshabilitado={!plantilla}
+              onDescargar={() =>
+                plantilla &&
+                void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
+                  setError('No pudimos generar la plantilla para descargar. Reintenta.'),
+                )
+              }
+            />
           </div>
         )}
 
@@ -914,7 +958,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         )}
 
         {noSoportadas.length > 0 ? (
-          <div className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
+          <div className="flex items-start gap-2 rounded-md bg-danger-soft p-3">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
             <div>
               <p className="text-sm font-medium text-danger">
@@ -928,33 +972,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            disabled={!plantilla}
-            onClick={() =>
-              plantilla &&
-              void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
-                setError('No pudimos generar la plantilla para descargar. Reintenta.'),
-              )
-            }
-          >
-            <DownloadSimple className="mr-1.5 h-4 w-4" />
-            Descargar la plantilla
-          </Button>
-          <p className="text-caption text-fg-subtle">
-            O sube el archivo que ya tienes: abajo se muestra cómo entendimos tus columnas.
-          </p>
-        </div>
-
         {/* Sin plantilla no hay mapeo ni descarga: si su lectura falló, esta
             pantalla está muerta — el reintento tiene que estar ACÁ, no en
             recargar la página entera y perder dónde se estaba parado. */}
         {errorDePlantilla ? (
           <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft p-3"
             data-testid="error-de-plantilla"
           >
             <div className="flex items-start gap-2">
@@ -971,9 +994,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             </Button>
           </div>
         ) : null}
-      </section>
 
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
         {archivo ? (
           <TarjetaDeArchivo
             nombre={archivo.name}
@@ -992,35 +1013,26 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             testid="archivo-de-terceros"
           />
         ) : (
-          <div
-            {...getRootProps()}
-            className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-              isDragActive ? 'border-primary bg-primary-soft' : 'border-border hover:bg-surface-muted'
-            }`}
-            data-testid="dropzone-terceros"
-          >
-            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-            <input {...getInputProps()} />
-            <FileArrowUp className="h-8 w-8 text-fg-muted" />
-            <div>
-              <p className="text-sm font-medium text-fg">
-                {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
-                    La espera y el fallo de la plantilla se dicen acá mismo. */}
-                {plantilla
-                  ? 'Arrastra el archivo o haz clic para elegirlo'
-                  : errorDePlantilla
-                    ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
-                    : 'Preparando la pantalla: leyendo las columnas esperadas…'}
-              </p>
-              <p className="text-caption text-fg-subtle">
-                Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
-              </p>
-            </div>
-          </div>
+          <ZonaDeArchivo
+            rootProps={getRootProps()}
+            inputProps={getInputProps()}
+            activo={isDragActive}
+            testid="dropzone-terceros"
+            /* Deshabilitado sin decir por qué = un dropzone que «no anda».
+               La espera y el fallo de la plantilla se dicen acá mismo. */
+            titulo={
+              plantilla
+                ? 'Arrastra el archivo o haz clic para elegirlo'
+                : errorDePlantilla
+                  ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
+                  : 'Preparando la pantalla: leyendo las columnas esperadas…'
+            }
+            detalle="Excel o CSV exportado de tu sistema actual. Nada se crea todavía."
+          />
         )}
 
         {error ? (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-danger-soft p-3">
             <div className="flex items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
               <p className="text-sm text-fg">{error}</p>
@@ -1041,10 +1053,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             ) : null}
           </div>
         ) : null}
-      </section>
+        </div>
 
       {mapeo.length > 0 ? (
-        <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
+        <div className="space-y-4 border-t border-border-faint p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h2 className="text-sm font-medium text-fg">Así entendimos tus columnas</h2>
@@ -1137,7 +1149,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           </div>
 
           {faltanObligatorias.length > 0 ? (
-            <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+            <div className="flex items-start gap-2 rounded-md bg-info-soft p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
               <div>
                 <p className="text-sm font-medium text-info">
@@ -1155,7 +1167,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
           {columnasDelNombrePorPartes(mapeo).length > 0 ? (
             <div
-              className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+              className="flex items-start gap-2 rounded-md bg-info-soft p-3"
               data-testid="nombre-por-partes"
             >
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
@@ -1187,32 +1199,54 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             </p>
           ) : null}
 
-          <label className="block max-w-sm space-y-1">
-            <span className="text-sm text-fg-muted">Nombre de esta carga</span>
-            <Input
-              value={lote}
-              maxLength={60}
-              onChange={(e) => setLote(e.target.value)}
-              data-testid="nombre-del-lote"
-            />
-            <span className="block text-caption text-fg-subtle">
-              Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
-            </span>
-          </label>
+          {/* El cierre de la fase: nombre y botón en el mismo renglón, con su
+              filete — es la salida de la tarjeta, no un bloque más. */}
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border-faint pt-5">
+            <label className="block w-full max-w-sm space-y-1">
+              <span className="text-sm text-fg-muted">Nombre de esta carga</span>
+              <Input
+                value={lote}
+                maxLength={60}
+                onChange={(e) => setLote(e.target.value)}
+                data-testid="nombre-del-lote"
+              />
+              <span className="block text-caption text-fg-subtle">
+                Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
+              </span>
+            </label>
 
-          {/* No dice «importar»: todavía no se crea nada. */}
-          <Button
-            hideArrow
-            disabled={!puedePreparar}
-            isLoading={cargando}
-            onClick={() => void preparar()}
-            data-testid="revisar-terceros"
-          >
-            Revisar {filas.length} {tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
-          </Button>
-        </section>
+            {/* No dice «importar»: todavía no se crea nada. */}
+            <Button
+              hideArrow
+              className="mb-6"
+              disabled={!puedePreparar}
+              isLoading={cargando}
+              onClick={() => void preparar()}
+              data-testid="revisar-terceros"
+            >
+              Revisar {filas.length} {tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
+            </Button>
+          </div>
+        </div>
       ) : null}
+      </section>
     </div>
+  );
+}
+
+/** El botón de la plantilla, igual en las dos cabeceras (con y sin switch). */
+function BotonDePlantilla({
+  deshabilitado,
+  onDescargar,
+}: {
+  deshabilitado: boolean;
+  onDescargar: () => void;
+}) {
+  return (
+    <Button variant="outline" size="sm" hideArrow disabled={deshabilitado} onClick={onDescargar}>
+      <DownloadSimple className="mr-1.5 h-4 w-4" />
+      Descargar la plantilla
+    </Button>
   );
 }
 
@@ -1293,20 +1327,41 @@ function ListaDeTrabajo({
 }) {
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
 
-  return (
-    <div className="space-y-6" data-testid="lista-de-trabajo">
-      <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <p className="text-sm text-fg-muted">
-          Carga <span className="text-fg">{lote}</span> ·{' '}
-          {tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
-        </p>
+  const cosas = tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos';
 
-        <div className="grid gap-3 sm:grid-cols-4">
-          <Dato etiqueta="En el archivo" valor={resumen.total} />
-          <Dato etiqueta="Listas para crear" valor={resumen.listos} tono="ok" />
-          <Dato etiqueta="Les falta algo" valor={resumen.requierenAtencion} tono="mal" />
-          <Dato etiqueta="Ya creadas" valor={resumen.aplicados} />
+  return (
+    <div className="space-y-5" data-testid="lista-de-trabajo">
+      <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p className="min-w-0 truncate text-sm text-fg-muted" title={lote}>
+            Carga <span className="text-fg">{lote}</span> · {cosas}
+          </p>
+          <Button variant="ghost" size="sm" hideArrow onClick={onOtroArchivo}>
+            Subir otro archivo
+          </Button>
         </div>
+
+        {/*
+         * El resumen es una FRASE, no cuatro fichas sueltas (el molde de la
+         * casa). Los números van en mono y el color acompaña al estado, pero
+         * la oración se lee de corrido: qué trajo el archivo y en qué va.
+         */}
+        <p className="max-w-prose text-body text-fg" data-testid="resumen-del-lote">
+          El archivo trae{' '}
+          <span className="font-mono tabular-nums">{resumen.total}</span>{' '}
+          {resumen.total === 1 ? 'fila' : 'filas'}:{' '}
+          <span className={resumen.listos > 0 ? 'text-success' : undefined}>
+            <span className="font-mono tabular-nums">{resumen.listos}</span>{' '}
+            {resumen.listos === 1 ? 'lista' : 'listas'} para crear
+          </span>
+          {', '}
+          <span className={resumen.requierenAtencion > 0 ? 'text-warning' : undefined}>
+            a <span className="font-mono tabular-nums">{resumen.requierenAtencion}</span>{' '}
+            {resumen.requierenAtencion === 1 ? 'le' : 'les'} falta algo
+          </span>{' '}
+          y <span className="font-mono tabular-nums">{resumen.aplicados}</span> ya se{' '}
+          {resumen.aplicados === 1 ? 'creó' : 'crearon'}.
+        </p>
 
         {resumen.listos > 0 ? (
           <>
@@ -1321,7 +1376,7 @@ function ListaDeTrabajo({
               */}
             {tipo === 'INQUILINO' ? (
               <label
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                className="flex cursor-pointer items-start gap-3 rounded-md bg-surface-muted p-3"
                 data-testid="invitar-al-crear"
               >
                 <Checkbox
@@ -1406,7 +1461,7 @@ function ListaDeTrabajo({
 
       {aplicacion ? (
         <section
-          className="space-y-2 rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="space-y-2 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           data-testid="informe-aplicacion"
         >
           <p className="flex items-center gap-2 text-sm font-medium text-fg">
@@ -1514,113 +1569,137 @@ function ListaDeTrabajo({
        * «25 creadas» y nadie sabía si eran un error, un pendiente o un
        * repetido (Nico lo vio). El conteo baja en vivo a medida que resuelve.
        */}
+      {/*
+       * Cabecera + selección + filas + paginación = UNA tarjeta (glow-up
+       * 30-09). Antes el título flotaba como texto suelto, cada fila era su
+       * propia tarjetita con la casilla colgando afuera, y el pie de página
+       * quedaba huérfano entre dos bloques.
+       */}
       {totalPendientes > 0 ? (
-        <div className="space-y-1 pt-2" data-testid="titulo-por-revisar">
-          <h2 className="text-sm font-medium text-fg">
-            {totalPendientes === 1
-              ? 'Queda 1 fila del archivo por decidir'
-              : `Quedan ${totalPendientes} filas del archivo por decidir`}
-          </h2>
-          <p className="text-sm text-fg-muted">
-            {tipo === 'INQUILINO'
-              ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
-              : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
-            Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
-            lista y quedan listas para crear con el botón de arriba.
-          </p>
-          {/* 🔴 Acá había «Son las mismas personas: vincular todas las que ya
-              existen», que recorría el lote entero y las enganchaba de un
-              clic. Tenía sentido cuando «ya existe» se marcaba SIEMPRE que la
-              llave estuviera ocupada: casi todas eran la misma persona y
-              preguntarlo ochenta y cinco veces era hacerle un bucle a mano.
+        <section className="overflow-hidden rounded-lg border border-border-faint bg-surface shadow-sm">
+          <div className="space-y-3 p-6 pb-4" data-testid="titulo-por-revisar">
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium text-fg">
+                {totalPendientes === 1
+                  ? 'Queda 1 fila del archivo por decidir'
+                  : `Quedan ${totalPendientes} filas del archivo por decidir`}
+              </h2>
+              <p className="max-w-prose text-sm text-fg-muted">
+                {tipo === 'INQUILINO'
+                  ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
+                  : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
+                Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
+                lista y quedan listas para crear con el botón de arriba.
+              </p>
+            </div>
+            {/* 🔴 Acá había «Son las mismas personas: vincular todas las que ya
+                existen», que recorría el lote entero y las enganchaba de un
+                clic. Tenía sentido cuando «ya existe» se marcaba SIEMPRE que la
+                llave estuviera ocupada: casi todas eran la misma persona y
+                preguntarlo ochenta y cinco veces era hacerle un bucle a mano.
 
-              Desde el 2026-09-08 el back ya no pregunta cuando la identidad
-              está corroborada —mismo documento, o mismo nombre—: esas filas
-              entran solas. Las que SIGUEN marcadas son exactamente las que
-              parecen de OTRA persona (un correo que pertenece a otra cuenta,
-              un documento que cae sobre la ficha de otro dueño). Vincularlas
-              todas de un clic es justo el daño que este chequeo existe para
-              evitar, así que el botón se retira: se deciden de a una, o se
-              marcan las que uno mire y se resuelven con la barra de selección. */}
-        </div>
-      ) : null}
-
-      {pendientes.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/*
-           * `aria-labelledby` y no un `<label>` alrededor: el `Checkbox` de
-           * cadence es el de Radix, que renderiza un `<button role="checkbox">`.
-           * Un `<button>` no es un elemento etiquetable, así que ni envolverlo
-           * en un `<label>` ni un `htmlFor` le dan nombre — un lector de
-           * pantalla anunciaría «casilla, sin marcar» y nada más.
-           */}
-          <div className="flex items-center gap-2 text-sm text-fg">
-            <Checkbox
-              aria-labelledby="seleccionar-pagina"
-              checked={todasMarcadas}
-              onCheckedChange={(c) => {
-                // Sólo agrega o quita las de ESTA página: reemplazar toda la
-                // selección borraría lo elegido en las otras.
-                const s = new Set(seleccion);
-                if (c === true) pendientes.forEach((f) => s.add(f.id));
-                else pendientes.forEach((f) => s.delete(f.id));
-                onSeleccionCambia(s);
-              }}
-            />
-            <span id="seleccionar-pagina">
-              Seleccionar las {pendientes.length} de esta página
-            </span>
+                Desde el 2026-09-08 el back ya no pregunta cuando la identidad
+                está corroborada —mismo documento, o mismo nombre—: esas filas
+                entran solas. Las que SIGUEN marcadas son exactamente las que
+                parecen de OTRA persona (un correo que pertenece a otra cuenta,
+                un documento que cae sobre la ficha de otro dueño). Vincularlas
+                todas de un clic es justo el daño que este chequeo existe para
+                evitar, así que el botón se retira: se deciden de a una, o se
+                marcan las que uno mire y se resuelven con la barra de selección. */}
+            {pendientes.length > 0 ? (
+              /*
+               * `aria-labelledby` y no un `<label>` alrededor: el `Checkbox` de
+               * cadence es el de Radix, que renderiza un `<button role="checkbox">`.
+               * Un `<button>` no es un elemento etiquetable, así que ni envolverlo
+               * en un `<label>` ni un `htmlFor` le dan nombre — un lector de
+               * pantalla anunciaría «casilla, sin marcar» y nada más.
+               */
+              <div className="flex items-center gap-2 text-sm text-fg">
+                <Checkbox
+                  aria-labelledby="seleccionar-pagina"
+                  checked={todasMarcadas}
+                  onCheckedChange={(c) => {
+                    // Sólo agrega o quita las de ESTA página: reemplazar toda la
+                    // selección borraría lo elegido en las otras.
+                    const s = new Set(seleccion);
+                    if (c === true) pendientes.forEach((f) => s.add(f.id));
+                    else pendientes.forEach((f) => s.delete(f.id));
+                    onSeleccionCambia(s);
+                  }}
+                />
+                <span id="seleccionar-pagina">
+                  Seleccionar las {pendientes.length} de esta página
+                </span>
+              </div>
+            ) : null}
           </div>
-          {/* El total ya lo dice el título de arriba; repetirlo acá era ruido. */}
-        </div>
-      ) : null}
 
-      {seleccion.size > 0 ? (
-        <ResolucionMasiva
-          cantidad={seleccion.size}
-          columnas={columnas}
-          cargando={cargando}
-          onAplicar={onMasivo}
-          onLimpiar={() => onSeleccionCambia(new Set())}
-        />
-      ) : null}
-
-      {pendientes.map((fila) => (
-        <div key={fila.id} className="flex items-start gap-3">
-          {/* Sin texto al lado, así que el nombre va en `aria-label` — y no
-              dice «seleccionar fila» a secas: con doscientas casillas
-              idénticas, eso no le sirve a nadie que navegue por teclado. */}
-          <Checkbox
-            className="mt-6"
-            aria-label={`Seleccionar la fila ${fila.datos._fila}${
-              typeof fila.datos.nombre === 'string' && fila.datos.nombre
-                ? `, ${fila.datos.nombre}`
-                : ''
-            }`}
-            checked={seleccion.has(fila.id)}
-            onCheckedChange={(c) => {
-              const s = new Set(seleccion);
-              if (c === true) s.add(fila.id);
-              else s.delete(fila.id);
-              onSeleccionCambia(s);
-            }}
-          />
-          <div className="min-w-0 flex-1">
-            <FilaDeTercero
-              fila={fila}
+          {seleccion.size > 0 ? (
+            <ResolucionMasiva
+              cantidad={seleccion.size}
               columnas={columnas}
-              guardando={cargando}
-              tipo={tipo}
-              onCorregir={(campos) => onCorregir(fila.id, campos, fila.version)}
-              onVincular={() => onVincular(fila.id, fila.version)}
-              onDescartar={() => onDescartar(fila.id)}
+              cargando={cargando}
+              onAplicar={onMasivo}
+              onLimpiar={() => onSeleccionCambia(new Set())}
+            />
+          ) : null}
+
+          {pendientes.length > 0 ? (
+            <ul className="divide-y divide-border-faint border-t border-border-faint">
+              {pendientes.map((fila) => (
+                <li key={fila.id} className="flex items-start gap-3 px-6 py-5">
+                  {/* Sin texto al lado, así que el nombre va en `aria-label` — y no
+                      dice «seleccionar fila» a secas: con doscientas casillas
+                      idénticas, eso no le sirve a nadie que navegue por teclado. */}
+                  <Checkbox
+                    className="mt-0.5"
+                    aria-label={`Seleccionar la fila ${fila.datos._fila}${
+                      typeof fila.datos.nombre === 'string' && fila.datos.nombre
+                        ? `, ${fila.datos.nombre}`
+                        : ''
+                    }`}
+                    checked={seleccion.has(fila.id)}
+                    onCheckedChange={(c) => {
+                      const s = new Set(seleccion);
+                      if (c === true) s.add(fila.id);
+                      else s.delete(fila.id);
+                      onSeleccionCambia(s);
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <FilaDeTercero
+                      fila={fila}
+                      columnas={columnas}
+                      guardando={cargando}
+                      tipo={tipo}
+                      onCorregir={(campos) => onCorregir(fila.id, campos, fila.version)}
+                      onVincular={() => onVincular(fila.id, fila.version)}
+                      onDescartar={() => onDescartar(fila.id)}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {/* Pie del design system: dice cuántas filas quedan por decidir y en
+              cuál página vas, no sólo «‹ 2 ›». Las páginas las sirve el back
+              (`filas(lote, { pagina, porPagina })`), así que el tamaño de página
+              no se ofrece: sin `pageSizeOptions` el selector no se monta y no
+              queda un control que no hace nada. */}
+          <div className="border-t border-border-faint px-6 py-3">
+            <TablePagination
+              total={totalPendientes}
+              page={pagina}
+              pageSize={POR_PAGINA}
+              onPageChange={onPaginaCambia}
             />
           </div>
-        </div>
-      ))}
+        </section>
+      ) : null}
 
       {pendientes.length === 0 && resumen.requierenAtencion === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-6 text-sm text-fg-muted shadow-sm">
+        <p className="rounded-lg border border-border-faint bg-surface p-6 text-sm text-fg-muted shadow-sm">
           No queda nada por revisar en esta carga.
           {/* El empujón al paso siguiente sólo adentro del asistente: la
               pantalla suelta no tiene ese pie. */}
@@ -1631,26 +1710,6 @@ function ListaDeTrabajo({
               : ''}
         </p>
       ) : null}
-
-      {/* Pie del design system: dice cuántas filas quedan por decidir y en
-          cuál página vas, no sólo «‹ 2 ›». Las páginas las sirve el back
-          (`filas(lote, { pagina, porPagina })`), así que el tamaño de página
-          no se ofrece: sin `pageSizeOptions` el selector no se monta y no
-          queda un control que no hace nada. */}
-      {totalPendientes > 0 ? (
-        <div className="border-t border-border px-4 py-3">
-          <TablePagination
-            total={totalPendientes}
-            page={pagina}
-            pageSize={POR_PAGINA}
-            onPageChange={onPaginaCambia}
-          />
-        </div>
-      ) : null}
-
-      <Button variant="outline" hideArrow onClick={onOtroArchivo}>
-        Subir otro archivo
-      </Button>
     </div>
   );
 }
@@ -1687,7 +1746,12 @@ function ResolucionMasiva({
   const columna = columnas.find((c) => c.campo === campo);
 
   return (
-    <section className="space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm">
+    /*
+     * Banda de selección DENTRO de la tarjeta de la lista, con el tinte
+     * cobalto de «seleccionado»: antes era otra tarjeta suelta entre el
+     * título y las filas.
+     */
+    <section className="space-y-3 border-t border-border-faint bg-primary-soft px-6 py-4">
       <p className="text-sm font-medium text-fg">
         <span className="font-mono tabular-nums">{cantidad}</span>{' '}
         {cantidad === 1 ? 'fila seleccionada' : 'filas seleccionadas'}
@@ -1778,7 +1842,7 @@ function ResolucionMasiva({
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-primary/15 pt-3">
         {/*
          * Nico, con 25 filas marcadas: «no mostró carga de nada y luego
          * apareció el botón de la nada». La masiva tardaba unos segundos y
@@ -1826,32 +1890,5 @@ function ResolucionMasiva({
         </Button>
       </div>
     </section>
-  );
-}
-
-function Dato({
-  etiqueta,
-  valor,
-  tono,
-}: {
-  etiqueta: string;
-  valor: number;
-  tono?: 'ok' | 'mal';
-}) {
-  return (
-    <div className="rounded-md border border-border p-3">
-      <p className="text-caption text-fg-muted">{etiqueta}</p>
-      <p
-        className={`font-mono text-xl font-semibold tabular-nums ${
-          tono === 'ok' && valor > 0
-            ? 'text-success'
-            : tono === 'mal' && valor > 0
-              ? 'text-danger'
-              : 'text-fg'
-        }`}
-      >
-        {valor}
-      </p>
-    </div>
   );
 }

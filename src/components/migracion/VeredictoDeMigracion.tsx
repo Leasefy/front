@@ -83,7 +83,7 @@ export function VeredictoDeMigracion({
   return (
     <section
       className={cn(
-        "rounded-lg border border-warning/40 bg-warning-soft p-5 sm:p-6",
+        "rounded-lg bg-warning-soft p-5 sm:p-6",
         className,
       )}
       data-testid="muro-veredicto"
@@ -99,7 +99,7 @@ export function VeredictoDeMigracion({
           </p>
           <h2
             id="muro-veredicto-titulo"
-            className="mt-1 text-lg font-semibold tracking-tight text-fg"
+            className="mt-1 text-lg font-medium tracking-tight text-fg"
           >
             {t(`${RAIZ}.titulo`)}
           </h2>
@@ -145,7 +145,7 @@ function LineaDelVeredicto({
 
   return (
     <li
-      className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      className="flex flex-col gap-2 rounded-md bg-surface p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4"
       data-testid="veredicto-linea"
       data-motivo={motivo}
     >
@@ -263,7 +263,7 @@ export function FilasFrenadas({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-lg border border-border bg-surface",
+        "overflow-hidden rounded-lg border border-border-faint bg-surface shadow-sm",
         className,
       )}
       data-testid="veredicto-filas"

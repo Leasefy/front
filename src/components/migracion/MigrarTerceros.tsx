@@ -75,8 +75,15 @@ import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
   migracionTercerosApi,
+  CAMPOS_NO_MASIVOS,
+  CODIGO_CAMPO_NO_MASIVO,
   CODIGO_FILA_DESACTUALIZADA,
   MAX_FILAS_POR_LOTE,
+  type CambiosMasivos,
+  type CodigoDeError,
+  type FiltroDeFilas,
+  type MotivosDelLote,
+  type ProgresoDeMasivo,
   type FilaDeStaging,
   type FilaTercero,
   type LoteDeTerceros,
@@ -100,6 +107,7 @@ import {
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
+import { fraseDelMotivo, motivosConFilas } from '@/lib/migracion/motivos-de-fila';
 import {
   aplicarLoteDeTerceros,
   AplicacionInterrumpida,
@@ -120,8 +128,75 @@ const POR_PAGINA = 25;
 
 type Fila = Record<string, unknown>;
 
-const mensaje = (e: unknown, respaldo: string) =>
-  e instanceof Error && e.message ? e.message : respaldo;
+/**
+ * T-0128 · el 400 de poner en masa un campo que identifica a la persona. La
+ * pantalla ya no los ofrece, pero un back que cambie la lista, o una pestaña
+ * vieja, pueden llegar acá: se explica en vez de mostrar el código.
+ */
+const MENSAJE_CAMPO_NO_MASIVO =
+  'Ese dato identifica a cada persona (documento, dígito de verificación, nombre, correo o id del sistema anterior) ' +
+  'y no se puede poner igual en varias filas. Corrígelo fila por fila.';
+
+const mensaje = (e: unknown, respaldo: string) => {
+  if (e instanceof ApiError && e.code === CODIGO_CAMPO_NO_MASIVO) return MENSAJE_CAMPO_NO_MASIVO;
+  return e instanceof Error && e.message ? e.message : respaldo;
+};
+
+/**
+ * T-0128 · a quién le aplica una acción masiva: a las filas marcadas una por
+ * una (`ids`, el camino de siempre), a TODAS las que requieren atención
+ * (`todas`) o a todas las que traen un motivo (`motivo`). Las dos últimas no
+ * necesitan que las filas estén en pantalla: van por `PATCH filas/masivo`.
+ */
+export type Alcance =
+  | { tipo: 'ids' }
+  | { tipo: 'todas' }
+  | { tipo: 'motivo'; codigo: CodigoDeError };
+
+const SOLO_IDS: Alcance = { tipo: 'ids' };
+
+/** Cuántas filas alcanza la acción masiva con la selección de ahora. */
+export function cantidadDelAlcance(
+  alcance: Alcance,
+  seleccionadas: number,
+  totalPendientes: number,
+  motivos: MotivosDelLote | null,
+): number {
+  if (alcance.tipo === 'ids') return seleccionadas;
+  if (alcance.tipo === 'todas') return totalPendientes;
+  return motivos?.porMotivo.find((m) => m.codigo === alcance.codigo)?.filas ?? 0;
+}
+
+function filtroDelAlcance(alcance: Exclude<Alcance, { tipo: 'ids' }>): FiltroDeFilas {
+  return alcance.tipo === 'todas'
+    ? { estado: 'REQUIERE_ATENCION' }
+    : { estado: 'REQUIERE_ATENCION', motivo: alcance.codigo };
+}
+
+/** Qué se dice cuando una acción masiva terminó bien. */
+function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number): string {
+  const filas = n === 1 ? 'fila' : 'filas';
+  if (cambios.vincularAExistente) {
+    return `${n} ${n === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: salieron de esta lista y quedaron listas para crear con el botón de arriba.`;
+  }
+  if (cambios.descartar) return `${n} ${n === 1 ? 'fila descartada' : 'filas descartadas'}.`;
+  if (cambios.crearIncompleta) {
+    const listas = listasAhora ?? n;
+    return (
+      `${listas} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse con datos por completar: ` +
+      'crea las fichas con el botón de arriba y completa lo que falte después, desde Propietarios o Inquilinos.' +
+      (listasAhora !== undefined && n > listasAhora
+        ? ` Las otras ${(n - listasAhora).toLocaleString('es-CO')} siguen acá porque les falta algo más.`
+        : '')
+    );
+  }
+  if (cambios.campos) {
+    return cambios.sobrescribir
+      ? `Se aplicó el valor a ${n.toLocaleString('es-CO')} ${filas}, también donde ya había otro.`
+      : `Se aplicó el valor por defecto a ${n.toLocaleString('es-CO')} ${filas}: sólo se llenó lo que estaba vacío.`;
+  }
+  return `Se aplicó el cambio a ${n.toLocaleString('es-CO')} ${filas}.`;
+}
 
 /**
  * T-0125 · botar una carga o una fila exige `configuracion:delete` en el back,
@@ -222,6 +297,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  /** T-0128 · `ids` = las marcadas una por una; si no, todas las de un filtro. */
+  const [alcance, setAlcance] = useState<Alcance>(SOLO_IDS);
+  /** T-0128 · cuántas filas hay por motivo, para «a las 2.895 que les falta el documento». */
+  const [motivos, setMotivos] = useState<MotivosDelLote | null>(null);
+  /** Avance de una acción masiva por filtro: `null` mientras no hay una corriendo. */
+  const [progresoMasivo, setProgresoMasivo] = useState<ProgresoDeMasivo | null>(null);
   const [aplicacion, setAplicacion] = useState<ResumenDeAplicacion | null>(null);
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteDeTerceros[]>([]);
@@ -372,7 +453,16 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     } catch {
       // Se lista igual.
     }
-    const [r, p] = await Promise.all([
+    // T-0128 · los conteos por motivo son una AYUDA para elegir de golpe: si no
+    // llegan, la lista funciona igual y simplemente no se ofrecen.
+    const contarMotivos = async (): Promise<MotivosDelLote | null> => {
+      try {
+        return await migracionTercerosApi.motivos(elLote);
+      } catch {
+        return null;
+      }
+    };
+    const [r, p, m] = await Promise.all([
       migracionTercerosApi.resumen(elLote),
       migracionTercerosApi.filas({
         lote: elLote,
@@ -380,7 +470,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         pagina: pag,
         porPagina: POR_PAGINA,
       }),
+      contarMotivos(),
     ]);
+    setMotivos(m);
     setResumen(r);
     setPendientes(p.filas);
     setTotalPendientes(p.total);
@@ -446,6 +538,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setResumen(r);
     setLoteAbierto(lote.trim());
     setSeleccion(new Set());
+    setAlcance(SOLO_IDS);
     try {
       await refrescar(lote.trim());
     } catch {
@@ -463,6 +556,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setTipo(l.tipo);
       setLoteAbierto(l.lote);
       setSeleccion(new Set());
+      setAlcance(SOLO_IDS);
       try {
         await refrescar(l.lote);
       } catch (e) {
@@ -479,6 +573,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setTotalPendientes(0);
     setAplicacion(null);
     setSeleccion(new Set());
+    setAlcance(SOLO_IDS);
+    setMotivos(null);
     setFilas([]);
     setEncabezados([]);
     setMapeo([]);
@@ -540,7 +636,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
    * es mentirle a la persona (y empujarla a repetir la acción).
    */
   const conRefresco = useCallback(
-    async (accion: () => Promise<unknown>, respaldo: string): Promise<ResultadoDeAccion> => {
+    async (
+      accion: () => Promise<unknown>,
+      respaldo: string,
+      /** Con una acción sobre todo un filtro la página de antes puede ya no existir. */
+      paginaAlTerminar?: number,
+    ): Promise<ResultadoDeAccion> => {
       if (!loteAbierto) return { ok: false, mensaje: null };
       setCargando(true);
       setError(null);
@@ -568,7 +669,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         return { ok: false, mensaje: m };
       }
       try {
-        await refrescar(loteAbierto, pagina);
+        await refrescar(loteAbierto, paginaAlTerminar ?? pagina);
       } catch {
         setError(AVISO_DE_REFRESCO);
       }
@@ -672,11 +773,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         totalPendientes={totalPendientes}
         pagina={pagina}
         seleccion={seleccion}
+        alcance={alcance}
+        motivos={motivos}
+        progresoMasivo={progresoMasivo}
         aplicacion={aplicacion}
         cargando={cargando}
         error={error}
         avisoMasivo={avisoMasivo}
-        onSeleccionCambia={setSeleccion}
+        onSeleccionCambia={(s) => {
+          // Marcar filas sueltas devuelve la selección al camino de siempre.
+          setAlcance(SOLO_IDS);
+          setSeleccion(s);
+        }}
+        onAlcanceCambia={(a) => {
+          setSeleccion(new Set());
+          setAlcance(a);
+        }}
         onPaginaCambia={(p) => void cambiarPagina(p)}
         onActualizar={() => void cambiarPagina(pagina)}
         onCorregir={(id, campos, version) =>
@@ -691,6 +803,18 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             'No pudimos vincular la fila.',
           )
         }
+        onCrearIncompleta={async (id, version) => {
+          const r = await conRefresco(
+            () => migracionTercerosApi.corregir(id, { crearIncompleta: true, version }),
+            'No pudimos dejar la fila lista para crear con datos por completar.',
+          );
+          if (r.ok) {
+            setAvisoMasivo(
+              'La fila quedó lista para crearse con datos por completar: se crea con el botón de arriba y el documento se completa después, desde Propietarios o Inquilinos.',
+            );
+          }
+          return r;
+        }}
         onDescartar={(id) =>
           conRefresco(
             async () => {
@@ -706,34 +830,75 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           )
         }
         onMasivo={(cambios) =>
-          void conRefresco(async () => {
-            const r = await migracionTercerosApi.resolverMasivo(
-              Array.from(seleccion),
-              cambios,
-            );
-            if (r.fallidas.length > 0) {
+          void conRefresco(
+            async () => {
               /*
-               * Las que NO se pudieron quedan SELECCIONADAS: son exactamente
-               * el conjunto a reintentar, y volver a marcarlas a mano entre
-               * doscientas casillas es perder el trabajo de la selección.
-               * Una masiva que dice «listo» tapando lo que no pudo es la
-               * mentira que este diseño evita — y un solo motivo tapando los
-               * otros cuatro, la mitad de esa mentira.
+               * T-0128 · dos caminos. Con filas marcadas una por una, el de
+               * siempre (`PATCH filas` en tandas de 200 ids). Con «todas» o con
+               * un motivo, `PATCH filas/masivo`: el back recorre el lote entero
+               * por cursor y acá se dan vueltas hasta que no quede nada —sin
+               * esto, «seleccionar las 2.895» eran catorce clics por página.
                */
-              setSeleccion(new Set(r.fallidas.map((f) => f.id)));
-              setError(resumenDeFallidas(r));
-            } else {
-              setSeleccion(new Set());
-              const n = r.aplicadas;
-              setAvisoMasivo(
-                cambios.vincularAExistente
-                  ? `${n} ${n === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: salieron de esta lista y quedaron listas para crear con el botón de arriba.`
-                  : cambios.descartar
-                    ? `${n} ${n === 1 ? 'fila descartada' : 'filas descartadas'}.`
-                    : `Se aplicó el cambio a ${n} ${n === 1 ? 'fila' : 'filas'}.`,
-              );
-            }
-          }, 'No pudimos aplicar el cambio a las filas seleccionadas.')
+              if (alcance.tipo === 'ids') {
+                const r = await migracionTercerosApi.resolverMasivo(
+                  Array.from(seleccion),
+                  cambios,
+                );
+                if (r.fallidas.length > 0) {
+                  /*
+                   * Las que NO se pudieron quedan SELECCIONADAS: son exactamente
+                   * el conjunto a reintentar, y volver a marcarlas a mano entre
+                   * doscientas casillas es perder el trabajo de la selección.
+                   * Una masiva que dice «listo» tapando lo que no pudo es la
+                   * mentira que este diseño evita — y un solo motivo tapando los
+                   * otros cuatro, la mitad de esa mentira.
+                   */
+                  setSeleccion(new Set(r.fallidas.map((f) => f.id)));
+                  setError(resumenDeFallidas(r));
+                } else {
+                  setSeleccion(new Set());
+                  setAvisoMasivo(avisoDeMasivo(cambios, r.aplicadas));
+                }
+                return;
+              }
+
+              if (!loteAbierto) return;
+              const cantidad = cantidadDelAlcance(alcance, seleccion.size, totalPendientes, motivos);
+              setProgresoMasivo({ procesadas: 0, total: cantidad });
+              try {
+                const r = await migracionTercerosApi.resolverPorFiltro(
+                  loteAbierto,
+                  filtroDelAlcance(alcance),
+                  cambios,
+                  setProgresoMasivo,
+                );
+                if (r.interrumpida) {
+                  // Lo ya aplicado quedó aplicado: repetir la acción sigue donde quedó.
+                  setError(
+                    `Se cortó a mitad: ${r.interrumpida.motivo} Alcanzaron a procesarse ${r.procesadas.toLocaleString('es-CO')} de ${r.totalAlEmpezar.toLocaleString('es-CO')}; lo hecho quedó hecho. Repite la acción y sigue con lo que falta.`,
+                  );
+                } else if (r.fallidas.length > 0) {
+                  setAlcance(SOLO_IDS);
+                  setSeleccion(new Set(r.fallidas.map((f) => f.id)));
+                  setError(
+                    resumenDeFallidas({
+                      pedidas: r.procesadas,
+                      aplicadas: r.aplicadas,
+                      fallidas: r.fallidas,
+                    }),
+                  );
+                } else {
+                  setAlcance(SOLO_IDS);
+                  setSeleccion(new Set());
+                  setAvisoMasivo(avisoDeMasivo(cambios, r.procesadas, r.listasAhora));
+                }
+              } finally {
+                setProgresoMasivo(null);
+              }
+            },
+            'No pudimos aplicar el cambio a las filas seleccionadas.',
+            alcance.tipo === 'ids' ? undefined : 1,
+          )
         }
         onAplicar={() => void aplicar()}
         invitarAlCrear={invitarAlCrear}
@@ -1331,16 +1496,21 @@ function ListaDeTrabajo({
   totalPendientes,
   pagina,
   seleccion,
+  alcance,
+  motivos,
+  progresoMasivo,
   aplicacion,
   cargando,
   error,
   avisoMasivo = null,
   onSeleccionCambia,
+  onAlcanceCambia,
   onPaginaCambia,
   onActualizar,
   onCorregir,
   onVincular,
   onDescartar,
+  onCrearIncompleta,
   onMasivo,
   onAplicar,
   invitarAlCrear,
@@ -1359,11 +1529,17 @@ function ListaDeTrabajo({
   totalPendientes: number;
   pagina: number;
   seleccion: Set<string>;
+  /** T-0128 · a quién le aplica la acción masiva: filas marcadas, o todo un filtro. */
+  alcance: Alcance;
+  motivos: MotivosDelLote | null;
+  /** Avance de una acción masiva por filtro, mientras corre. */
+  progresoMasivo: ProgresoDeMasivo | null;
   aplicacion: ResumenDeAplicacion | null;
   cargando: boolean;
   error: string | null;
   avisoMasivo?: string | null;
   onSeleccionCambia: (s: Set<string>) => void;
+  onAlcanceCambia: (a: Alcance) => void;
   onPaginaCambia: (p: number) => void;
   /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
   onActualizar: () => void;
@@ -1378,18 +1554,21 @@ function ListaDeTrabajo({
   ) => Promise<ResultadoDeAccion>;
   onVincular: (id: string, version: number | undefined) => Promise<ResultadoDeAccion>;
   onDescartar: (id: string) => Promise<ResultadoDeAccion>;
-  onMasivo: (cambios: {
-    campos?: FilaTercero;
-    vincularAExistente?: boolean;
-    descartar?: boolean;
-  }) => void;
+  /** T-0128 · crear la ficha con los datos del documento en blanco. */
+  onCrearIncompleta: (id: string, version: number | undefined) => Promise<ResultadoDeAccion>;
+  onMasivo: (cambios: CambiosMasivos) => void;
   onAplicar: () => void;
   /** Sólo pesa con `tipo === 'INQUILINO'`. */
   invitarAlCrear: boolean;
   onCambiarInvitar: (valor: boolean) => void;
   onOtroArchivo: () => void;
 }) {
+  const porFiltro = alcance.tipo !== 'ids';
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
+  const cantidad = cantidadDelAlcance(alcance, seleccion.size, totalPendientes, motivos);
+  const losMotivos = motivosConFilas(motivos);
+  /** Una acción masiva por filtro corriendo: se bloquea elegir otra cosa. */
+  const hayBandaDeSeleccion = seleccion.size > 0 || porFiltro;
 
   const cosas = tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos';
 
@@ -1553,6 +1732,29 @@ function ListaDeTrabajo({
               </>
             ) : null}
           </p>
+          {(aplicacion.incompletas ?? 0) > 0 ? (
+            /*
+             * T-0128 · las que se crearon SIN su documento. No es un fallo ni
+             * una advertencia: es el trabajo que queda, y se dice dónde se hace.
+             */
+            <p className="text-sm text-fg-muted" data-testid="incompletas">
+              {aplicacion.incompletas === 1
+                ? 'Una ficha se creó con datos por completar (le falta el documento o su tipo).'
+                : `${aplicacion.incompletas} fichas se crearon con datos por completar (les falta el documento o su tipo).`}{' '}
+              Las completas desde{' '}
+              <Link
+                href={
+                  tipo === 'PROPIETARIO'
+                    ? '/panel/inmobiliaria/propietarios'
+                    : '/panel/inmobiliaria/inquilinos'
+                }
+                className="text-primary underline underline-offset-2"
+              >
+                {tipo === 'PROPIETARIO' ? 'Propietarios' : 'Inquilinos'}
+              </Link>
+              : cada una trae la marca «Datos por completar».
+            </p>
+          ) : null}
           {(aplicacion.sinCorreo ?? 0) > 0 ? (
             <p className="text-sm text-fg-muted" data-testid="sin-correo">
               {aplicacion.sinCorreo === 1
@@ -1671,36 +1873,88 @@ function ListaDeTrabajo({
                 evitar, así que el botón se retira: se deciden de a una, o se
                 marcan las que uno mire y se resuelven con la barra de selección. */}
             {pendientes.length > 0 ? (
-              /*
-               * `aria-labelledby` y no un `<label>` alrededor: el `Checkbox` de
-               * cadence es el de Radix, que renderiza un `<button role="checkbox">`.
-               * Un `<button>` no es un elemento etiquetable, así que ni envolverlo
-               * en un `<label>` ni un `htmlFor` le dan nombre — un lector de
-               * pantalla anunciaría «casilla, sin marcar» y nada más.
-               */
-              <div className="flex items-center gap-2 text-sm text-fg">
-                <Checkbox
-                  aria-labelledby="seleccionar-pagina"
-                  checked={todasMarcadas}
-                  onCheckedChange={(c) => {
-                    // Sólo agrega o quita las de ESTA página: reemplazar toda la
-                    // selección borraría lo elegido en las otras.
-                    const s = new Set(seleccion);
-                    if (c === true) pendientes.forEach((f) => s.add(f.id));
-                    else pendientes.forEach((f) => s.delete(f.id));
-                    onSeleccionCambia(s);
-                  }}
-                />
-                <span id="seleccionar-pagina">
-                  Seleccionar las {pendientes.length} de esta página
-                </span>
+              <div className="space-y-3">
+                {/*
+                 * `aria-labelledby` y no un `<label>` alrededor: el `Checkbox` de
+                 * cadence es el de Radix, que renderiza un `<button role="checkbox">`.
+                 * Un `<button>` no es un elemento etiquetable, así que ni envolverlo
+                 * en un `<label>` ni un `htmlFor` le dan nombre — un lector de
+                 * pantalla anunciaría «casilla, sin marcar» y nada más.
+                 */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg">
+                  <span className="flex items-center gap-2">
+                    <Checkbox
+                      aria-labelledby="seleccionar-pagina"
+                      checked={porFiltro ? true : todasMarcadas}
+                      disabled={porFiltro}
+                      onCheckedChange={(c) => {
+                        // Sólo agrega o quita las de ESTA página: reemplazar toda la
+                        // selección borraría lo elegido en las otras.
+                        const s = new Set(seleccion);
+                        if (c === true) pendientes.forEach((f) => s.add(f.id));
+                        else pendientes.forEach((f) => s.delete(f.id));
+                        onSeleccionCambia(s);
+                      }}
+                    />
+                    <span id="seleccionar-pagina">
+                      Seleccionar las {pendientes.length} de esta página
+                    </span>
+                  </span>
+                  {/*
+                   * T-0128 · «seleccionar todos los registros, no sólo los 25
+                   * de la página» (dueño del producto). Sólo aparece cuando hay
+                   * más de las que se ven.
+                   */}
+                  {totalPendientes > pendientes.length ? (
+                    <Button
+                      size="sm"
+                      variant={alcance.tipo === 'todas' ? 'default' : 'outline'}
+                      hideArrow
+                      disabled={cargando}
+                      aria-pressed={alcance.tipo === 'todas'}
+                      onClick={() => onAlcanceCambia({ tipo: 'todas' })}
+                      data-testid="seleccionar-todas"
+                    >
+                      Seleccionar las {totalPendientes.toLocaleString('es-CO')} de la carga
+                    </Button>
+                  ) : null}
+                </div>
+
+                {losMotivos.length > 1 || (losMotivos.length === 1 && totalPendientes > pendientes.length) ? (
+                  <div className="space-y-1.5" data-testid="seleccionar-por-motivo">
+                    <p className="text-caption text-fg-muted">O elige todas las que tienen el mismo problema</p>
+                    <div className="flex flex-wrap gap-2">
+                      {losMotivos.map((m) => {
+                        const activo = alcance.tipo === 'motivo' && alcance.codigo === m.codigo;
+                        return (
+                          <Button
+                            key={m.codigo}
+                            size="sm"
+                            variant={activo ? 'default' : 'outline'}
+                            hideArrow
+                            disabled={cargando}
+                            aria-pressed={activo}
+                            onClick={() => onAlcanceCambia({ tipo: 'motivo', codigo: m.codigo })}
+                            data-testid={`seleccionar-motivo-${m.codigo}`}
+                          >
+                            {fraseDelMotivo(m.codigo, m.filas)}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
 
-          {seleccion.size > 0 ? (
+          {hayBandaDeSeleccion ? (
             <ResolucionMasiva
-              cantidad={seleccion.size}
+              cantidad={cantidad}
+              alcance={alcance}
+              motivos={motivos}
+              progreso={progresoMasivo}
+              tipo={tipo}
               columnas={columnas}
               cargando={cargando}
               onAplicar={onMasivo}
@@ -1722,7 +1976,8 @@ function ListaDeTrabajo({
                         ? `, ${fila.datos.nombre}`
                         : ''
                     }`}
-                    checked={seleccion.has(fila.id)}
+                    checked={porFiltro ? incluidaPorElAlcance(fila, alcance) : seleccion.has(fila.id)}
+                    disabled={porFiltro}
                     onCheckedChange={(c) => {
                       const s = new Set(seleccion);
                       if (c === true) s.add(fila.id);
@@ -1739,6 +1994,7 @@ function ListaDeTrabajo({
                       onCorregir={(campos) => onCorregir(fila.id, campos, fila.version)}
                       onVincular={() => onVincular(fila.id, fila.version)}
                       onDescartar={() => onDescartar(fila.id)}
+                      onCrearIncompleta={() => onCrearIncompleta(fila.id, fila.version)}
                     />
                   </div>
                 </li>
@@ -1779,35 +2035,92 @@ function ListaDeTrabajo({
 }
 
 /**
+ * ¿Esta fila de la página está dentro del alcance de una selección por filtro?
+ * Sólo sirve para pintar la casilla: la acción la resuelve el back sobre TODO
+ * el lote, no sobre lo que se ve.
+ */
+function incluidaPorElAlcance(fila: FilaDeStaging, alcance: Alcance): boolean {
+  if (alcance.tipo === 'todas') return true;
+  if (alcance.tipo === 'motivo') {
+    return (fila.errores ?? []).some((e) => e.codigo === alcance.codigo);
+  }
+  return false;
+}
+
+/**
  * La misma corrección a muchas filas.
  *
- * Un archivo real trae doscientas filas a las que les falta lo mismo: el mismo
- * banco mal escrito, el mismo tipo de documento vacío. Resolverlas de a una son
- * doscientas veces el mismo dato.
+ * Un archivo real trae doscientas —o dos mil— filas a las que les falta lo
+ * mismo: el mismo tipo de documento vacío, la misma ciudad, el mismo banco mal
+ * escrito. Resolverlas de a una son miles de veces el mismo dato.
+ *
+ * T-0128 (dueño del producto): «que me deje poner valores en masa por defecto y
+ * después si los quieren cambiar que lo hagan», y «no quiero descartar
+ * registros, prefiero que queden incompletos». Por eso hay tres cosas y en este
+ * orden de importancia:
+ *
+ *   1. **Poner un valor por defecto** a cualquier campo —menos los que
+ *      identifican a la persona—. Llena sólo lo vacío, salvo que se pida pisar.
+ *   2. **Crear con datos por completar**: la ficha nace ya, el documento se
+ *      completa después.
+ *   3. Las salidas que sacan filas de la lista (vincular, no traer): discretas.
  */
 function ResolucionMasiva({
   cantidad,
+  alcance,
+  motivos,
+  progreso,
+  tipo,
   columnas,
   cargando,
   onAplicar,
   onLimpiar,
 }: {
   cantidad: number;
+  alcance: Alcance;
+  motivos: MotivosDelLote | null;
+  progreso: ProgresoDeMasivo | null;
+  tipo: TipoDeTercero;
   columnas: readonly import('@/lib/api/migracion-terceros.service').ColumnaDePlantilla[];
   cargando: boolean;
-  onAplicar: (cambios: {
-    campos?: FilaTercero;
-    vincularAExistente?: boolean;
-    descartar?: boolean;
-  }) => void;
+  onAplicar: (cambios: CambiosMasivos) => void;
   onLimpiar: () => void;
 }) {
-  /** Qué botón de abajo se apretó, para que gire ése y no los tres. */
-  const [enVuelo, setEnVuelo] = useState<'vincular' | 'descartar' | null>(null);
+  /** Qué botón de abajo se apretó, para que gire ése y no todos. */
+  const [enVuelo, setEnVuelo] = useState<
+    'valor' | 'vincular' | 'descartar' | 'incompleta' | null
+  >(null);
   const [campo, setCampo] = useState<string>('');
   const [valor, setValor] = useState('');
+  const [sobrescribir, setSobrescribir] = useState(false);
+  const [confirmaDescarte, setConfirmaDescarte] = useState(false);
 
-  const columna = columnas.find((c) => c.campo === campo);
+  const porFiltro = alcance.tipo !== 'ids';
+  const seccionDeLaFicha = tipo === 'PROPIETARIO' ? 'Propietarios' : 'Inquilinos';
+
+  /** Los que identifican a la persona no se ofrecen: el back responde 400 si llegan. */
+  const camposPosibles = useMemo(
+    () => columnas.filter((c) => !CAMPOS_NO_MASIVOS.includes(c.campo)),
+    [columnas],
+  );
+  const columna = camposPosibles.find((c) => c.campo === campo);
+
+  /**
+   * Cuántas de las del alcance quedarían listas al crearlas incompletas: el back
+   * lo cuenta (`completables`). Con filas marcadas una por una no se sabe de
+   * antemano — el back decide fila por fila — y entonces es `null`.
+   */
+  const completables =
+    alcance.tipo === 'todas'
+      ? (motivos?.completables ?? null)
+      : alcance.tipo === 'motivo'
+        ? motivos?.porMotivo.find((m) => m.codigo === alcance.codigo)?.completable
+          ? cantidad
+          : 0
+        : null;
+
+  const filas = cantidad === 1 ? 'fila' : 'filas';
+  const aLas = cantidad === 1 ? 'a la fila' : `a las ${cantidad.toLocaleString('es-CO')}`;
 
   return (
     /*
@@ -1815,137 +2128,272 @@ function ResolucionMasiva({
      * cobalto de «seleccionado»: antes era otra tarjeta suelta entre el
      * título y las filas.
      */
-    <section className="space-y-3 border-t border-border-faint bg-primary-soft px-6 py-4">
-      <p className="text-sm font-medium text-fg">
-        <span className="font-mono tabular-nums">{cantidad}</span>{' '}
-        {cantidad === 1 ? 'fila seleccionada' : 'filas seleccionadas'}
-      </p>
-
-      {/*
-       * `div` + `aria-labelledby`, no un `<label>` envolviendo el control: el
-       * `SelectTrigger` de Radix es un `<button>`, y un `<button>` no es
-       * etiquetable — el `<label>` no le presta su texto como nombre
-       * accesible y un lector de pantalla anuncia «botón» a secas.
-       */}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <span id="masivo-campo-etiqueta" className="block text-caption text-fg-muted">
-            Ponerles el mismo
-          </span>
-          <Select
-            value={campo || IGNORAR}
-            onValueChange={(v) => {
-              setCampo(v === IGNORAR ? '' : v);
-              setValor('');
-            }}
-          >
-            <SelectTrigger
-              className="w-56"
-              aria-labelledby="masivo-campo-etiqueta"
-              data-testid="masivo-campo"
-            >
-              <SelectValue placeholder="Elige un campo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={IGNORAR}>Elige un campo</SelectItem>
-              {columnas.map((c) => (
-                <SelectItem key={c.campo} value={c.campo}>
-                  {c.titulo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {columna ? (
-          <div className="space-y-1">
-            <span id="masivo-valor-etiqueta" className="block text-caption text-fg-muted">
-              Valor
-            </span>
-            {columna.opciones ? (
-              <Select value={valor} onValueChange={setValor}>
-                <SelectTrigger
-                  className="w-56"
-                  aria-labelledby="masivo-valor-etiqueta"
-                  data-testid="masivo-valor"
-                >
-                  <SelectValue placeholder="Elige" />
-                </SelectTrigger>
-                <SelectContent>
-                  {columna.opciones.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                className="w-56"
-                value={valor}
-                placeholder={columna.ejemplo}
-                aria-labelledby="masivo-valor-etiqueta"
-                data-testid="masivo-valor"
-                onChange={(e) => setValor(e.target.value)}
-              />
-            )}
-          </div>
+    <section
+      className="space-y-4 border-t border-border-faint bg-primary-soft px-6 py-4"
+      data-testid="resolucion-masiva"
+    >
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-fg">
+          <span className="font-mono tabular-nums">{cantidad.toLocaleString('es-CO')}</span>{' '}
+          {cantidad === 1 ? 'fila seleccionada' : 'filas seleccionadas'}
+          {porFiltro ? ' en toda la carga' : ''}
+        </p>
+        {alcance.tipo === 'motivo' ? (
+          <p className="text-caption text-fg-muted" data-testid="alcance-motivo">
+            {fraseDelMotivo(alcance.codigo, cantidad)}.
+          </p>
         ) : null}
-
-        <Button
-          size="sm"
-          hideArrow
-          disabled={!campo || !valor || cargando}
-          onClick={() => {
-            onAplicar({ campos: { [campo]: valor } as FilaTercero });
-            setCampo('');
-            setValor('');
-          }}
-        >
-          Aplicar a las {cantidad}
-        </Button>
+        {porFiltro ? (
+          <p className="text-caption text-fg-muted" data-testid="alcance-aviso">
+            Lo que hagas acá se aplica a todas, también a las que no ves en esta página.
+          </p>
+        ) : null}
       </div>
 
+      {/* ── 1. El valor por defecto ───────────────────────────────────────── */}
+      <div className="space-y-2" data-testid="valor-por-defecto">
+        <h3 className="text-sm font-medium text-fg">Poner un valor por defecto</h3>
+        {/*
+         * `div` + `aria-labelledby`, no un `<label>` envolviendo el control: el
+         * `SelectTrigger` de Radix es un `<button>`, y un `<button>` no es
+         * etiquetable — el `<label>` no le presta su texto como nombre
+         * accesible y un lector de pantalla anuncia «botón» a secas.
+         */}
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1">
+            <span id="masivo-campo-etiqueta" className="block text-caption text-fg-muted">
+              Campo
+            </span>
+            <Select
+              value={campo || IGNORAR}
+              onValueChange={(v) => {
+                setCampo(v === IGNORAR ? '' : v);
+                setValor('');
+              }}
+            >
+              <SelectTrigger
+                className="w-56"
+                aria-labelledby="masivo-campo-etiqueta"
+                data-testid="masivo-campo"
+              >
+                <SelectValue placeholder="Elige un campo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={IGNORAR}>Elige un campo</SelectItem>
+                {camposPosibles.map((c) => (
+                  <SelectItem key={c.campo} value={c.campo}>
+                    {c.titulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {columna ? (
+            <div className="space-y-1">
+              <span id="masivo-valor-etiqueta" className="block text-caption text-fg-muted">
+                Valor
+              </span>
+              {columna.opciones ? (
+                <Select value={valor} onValueChange={setValor}>
+                  <SelectTrigger
+                    className="w-56"
+                    aria-labelledby="masivo-valor-etiqueta"
+                    data-testid="masivo-valor"
+                  >
+                    <SelectValue placeholder="Elige" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {columna.opciones.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  className="w-56"
+                  value={valor}
+                  placeholder={columna.ejemplo}
+                  aria-labelledby="masivo-valor-etiqueta"
+                  data-testid="masivo-valor"
+                  onChange={(e) => setValor(e.target.value)}
+                />
+              )}
+            </div>
+          ) : null}
+
+          <Button
+            size="sm"
+            hideArrow
+            disabled={!campo || !valor || cargando}
+            isLoading={cargando && enVuelo === 'valor'}
+            onClick={() => {
+              setEnVuelo('valor');
+              onAplicar({ campos: { [campo]: valor } as FilaTercero, sobrescribir });
+              setCampo('');
+              setValor('');
+              setSobrescribir(false);
+            }}
+            data-testid="masivo-aplicar-valor"
+          >
+            {sobrescribir ? 'Reemplazar en' : 'Aplicar a'} {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`}
+          </Button>
+        </div>
+
+        {/* El valor por defecto es eso: un valor para lo que está vacío. Pisar lo
+            que la persona ya tiene es otra decisión y se pide aparte. */}
+        <p className="max-w-prose text-caption text-fg-muted">
+          Sólo se llena donde ese campo está vacío; lo que ya trae valor no se toca. Después puedes
+          cambiarlo fila por fila.
+        </p>
+        {campo ? (
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-fg">
+            <Checkbox
+              className="mt-0.5"
+              checked={sobrescribir}
+              disabled={cargando}
+              onCheckedChange={(c) => setSobrescribir(c === true)}
+              data-testid="masivo-sobrescribir"
+            />
+            <span>
+              También reemplazar los que ya tienen valor
+              {sobrescribir ? (
+                <span className="block text-caption text-warning">
+                  Ojo: el valor que ya traían {aLas} se pierde.
+                </span>
+              ) : null}
+            </span>
+          </label>
+        ) : null}
+      </div>
+
+      {/* ── 2. Crear incompletas ──────────────────────────────────────────── */}
+      <div className="space-y-2 border-t border-primary/15 pt-3" data-testid="masivo-incompletas">
+        <h3 className="text-sm font-medium text-fg">Crear con datos por completar</h3>
+        <p className="max-w-prose text-sm text-fg-muted">
+          Se crea la ficha ahora, con el documento en blanco, y queda marcada como «Datos por
+          completar». Tu inmobiliaria la completa después desde {seccionDeLaFicha}. No se pierde a
+          nadie.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            size="sm"
+            hideArrow
+            disabled={cargando || completables === 0}
+            isLoading={cargando && enVuelo === 'incompleta'}
+            onClick={() => {
+              setEnVuelo('incompleta');
+              onAplicar({ crearIncompleta: true });
+            }}
+            data-testid="masivo-crear-incompletas"
+          >
+            Crear con datos por completar
+          </Button>
+          <span className="text-caption text-fg-muted" data-testid="masivo-incompletas-alcance">
+            {completables === null
+              ? `Sólo cambia las ${filas} a las que únicamente les falta el documento o su tipo; las demás siguen acá.`
+              : completables === 0
+                ? 'Ninguna de éstas se puede crear así: tienen otro problema que hay que resolver.'
+                : completables === cantidad
+                  ? `Alcanza a ${completables === 1 ? 'la fila' : `las ${completables.toLocaleString('es-CO')}`}.`
+                  : `Alcanza a ${completables.toLocaleString('es-CO')} de ${cantidad.toLocaleString('es-CO')}: las que sólo les falta el documento o su tipo. Las demás siguen acá.`}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Avance de una acción por filtro ───────────────────────────────── */}
+      {progreso && cargando ? (
+        <div className="space-y-1.5" data-testid="masivo-avance" aria-live="polite">
+          <div
+            role="progressbar"
+            aria-label="Avance de la acción"
+            aria-valuemin={0}
+            aria-valuemax={progreso.total}
+            aria-valuenow={Math.min(progreso.procesadas, progreso.total)}
+            className="h-2 overflow-hidden rounded-full bg-surface"
+          >
+            <div
+              className="h-full bg-primary transition-[width]"
+              style={{
+                width: `${
+                  progreso.total > 0
+                    ? Math.min(100, Math.round((progreso.procesadas / progreso.total) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </div>
+          <p className="text-caption text-fg">
+            Procesadas{' '}
+            <span className="font-mono tabular-nums">
+              {progreso.procesadas.toLocaleString('es-CO')}
+            </span>{' '}
+            de{' '}
+            <span className="font-mono tabular-nums">{progreso.total.toLocaleString('es-CO')}</span>.
+            No cierres esta pestaña: si se corta, lo hecho queda hecho y repites la acción.
+          </p>
+        </div>
+      ) : null}
+
+      {/* ── 3. Las salidas que sacan filas de la lista ────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 border-t border-primary/15 pt-3">
         {/*
          * Nico, con 25 filas marcadas: «no mostró carga de nada y luego
          * apareció el botón de la nada». La masiva tardaba unos segundos y
          * los botones sólo se apagaban: nada decía que algo estaba pasando.
          * El que se apretó gira, y una línea dice qué se está haciendo.
+         *
+         * «Son las mismas personas» sólo con filas marcadas a mano: vincular
+         * por filtro enganchar miles de fichas de un clic es justo el daño que
+         * la verificación de identidad existe para evitar.
          */}
+        {porFiltro ? null : (
+          <Button
+            size="sm"
+            variant="outline"
+            hideArrow
+            disabled={cargando}
+            isLoading={cargando && enVuelo === 'vincular'}
+            onClick={() => {
+              setEnVuelo('vincular');
+              onAplicar({ vincularAExistente: true });
+            }}
+            data-testid="masivo-vincular"
+          >
+            Son las mismas personas que ya existen
+          </Button>
+        )}
+        {/* La salida discreta: descartar nunca es el camino por defecto. */}
         <Button
           size="sm"
-          variant="outline"
-          hideArrow
-          disabled={cargando}
-          isLoading={cargando && enVuelo === 'vincular'}
-          onClick={() => {
-            setEnVuelo('vincular');
-            onAplicar({ vincularAExistente: true });
-          }}
-          data-testid="masivo-vincular"
-        >
-          Son las mismas personas que ya existen
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
+          variant="ghost"
           hideArrow
           disabled={cargando}
           isLoading={cargando && enVuelo === 'descartar'}
           className="text-danger hover:bg-danger-soft hover:text-danger"
           onClick={() => {
+            // Descartar miles de filas que no se ven pide confirmación.
+            if (porFiltro) {
+              setConfirmaDescarte(true);
+              return;
+            }
             setEnVuelo('descartar');
             onAplicar({ descartar: true });
           }}
+          data-testid="masivo-descartar"
         >
-          No traer ninguna de estas
+          No traer {cantidad === 1 ? 'esta fila' : 'ninguna de estas'}
         </Button>
-        {cargando && enVuelo ? (
+        {cargando && enVuelo === 'vincular' ? (
           <p className="basis-full text-caption text-fg-muted" data-testid="masivo-progreso">
-            {enVuelo === 'vincular'
-              ? `Vinculando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'} con las personas que ya existen… al terminar salen de esta lista y quedan listas para crear.`
-              : `Descartando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'}…`}
+            {`Vinculando ${cantidad} ${filas} con las personas que ya existen… al terminar salen de esta lista y quedan listas para crear.`}
+          </p>
+        ) : null}
+        {cargando && enVuelo === 'descartar' ? (
+          <p className="basis-full text-caption text-fg-muted" data-testid="masivo-progreso">
+            {`Descartando ${cantidad.toLocaleString('es-CO')} ${filas}…`}
           </p>
         ) : null}
         <span className="flex-1" />
@@ -1953,6 +2401,34 @@ function ResolucionMasiva({
           Quitar la selección
         </Button>
       </div>
+
+      <AlertDialog open={confirmaDescarte} onOpenChange={setConfirmaDescarte}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {`¿No traer ${cantidad.toLocaleString('es-CO')} ${filas}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Salen de la carga y no se crea ninguna ficha con ellas; queda el rastro de que se
+              descartaron. Si lo que les falta es el documento, mejor «Crear con datos por
+              completar»: así no se pierde a nadie.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="masivo-confirmar-descartar"
+              onClick={() => {
+                setConfirmaDescarte(false);
+                setEnVuelo('descartar');
+                onAplicar({ descartar: true });
+              }}
+            >
+              Sí, no traerlas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

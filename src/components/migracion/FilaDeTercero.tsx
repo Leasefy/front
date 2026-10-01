@@ -16,10 +16,19 @@
  * crea una ficha que mezcla a dos dueños y le gira la plata al equivocado.
  * Las tres salidas se ofrecen explícitas —es la misma / es otra / no la traigas—
  * y ninguna es el default.
+ *
+ * ── Faltar un dato del documento no es motivo para perder a la persona ──────
+ *
+ * T-0128 (dueño del producto): «el que no traiga un campo lo dejamos en blanco y
+ * la inmobiliaria lo carga después; no quiero descartar registros». Si lo único
+ * que le pasa a la fila es que falta el tipo o el número de documento (o no es
+ * válido), la salida que se ofrece primero es «Crear con datos por completar»:
+ * la ficha se crea y queda marcada. Descartar sigue existiendo, pero es la
+ * salida discreta, nunca el camino por defecto.
  */
 
 import { useId, useMemo, useState } from 'react';
-import { Link as LinkIcon, Trash, Warning } from '@phosphor-icons/react';
+import { Link as LinkIcon, Trash, UserPlus, Users, Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  CODIGOS_COMPLETABLES,
   CODIGOS_DE_DUPLICADO,
   type ColumnaDePlantilla,
   type FilaDeStaging,
@@ -159,6 +169,7 @@ export function FilaDeTercero({
   onCorregir,
   onVincular,
   onDescartar,
+  onCrearIncompleta,
 }: {
   fila: FilaDeStaging;
   columnas: readonly ColumnaDePlantilla[];
@@ -172,6 +183,11 @@ export function FilaDeTercero({
   onCorregir: (campos: FilaTercero) => Promise<ResultadoDeAccion>;
   onVincular: () => Promise<ResultadoDeAccion>;
   onDescartar: () => Promise<ResultadoDeAccion>;
+  /**
+   * T-0128 · crear la ficha con los datos del documento en blanco. Ausente =
+   * la pantalla no lo ofrece (un padre anterior a T-0128).
+   */
+  onCrearIncompleta?: () => Promise<ResultadoDeAccion>;
 }) {
   const errores = useMemo(() => fila.errores ?? [], [fila.errores]);
 
@@ -202,6 +218,18 @@ export function FilaDeTercero({
   const chocaPorCorreo = duplicado?.campo === 'correo';
   const seccionDeLaFicha = tipo === 'INQUILINO' ? 'Inquilinos' : 'Propietarios';
   const queCorregir = chocaPorCorreo ? 'el correo' : 'el documento';
+
+  /**
+   * T-0128 · ¿lo único que le pasa a la fila es que falta (o no vale) el dato
+   * del documento? Entonces se puede crear ya, incompleta. Una fila que además
+   * es duplicada, no trae nombre o trae varias personas necesita una decisión
+   * distinta, y ofrecerle esto prometería algo que el back no hace.
+   */
+  const soloFaltaElDocumento =
+    errores.length > 0 && errores.every((e) => CODIGOS_COMPLETABLES.includes(e.codigo));
+
+  /** T-0128 · varias personas en una celda: se muestra el texto crudo y se decide. */
+  const variasPersonas = errores.find((e) => e.codigo === 'VARIAS_PERSONAS_EN_LA_FILA');
 
   /** Los avisos que NO son el duplicado: ese tiene su propio recuadro abajo. */
   const avisos = useMemo(
@@ -245,7 +273,7 @@ export function FilaDeTercero({
    * pasaba nada visible, y se volvía a apretar (Nico, 2026-09-07). Mientras
    * una acción corre, las tres quedan apagadas y la que corre gira.
    */
-  const [ocupadaEn, setOcupadaEn] = useState<'vincular' | 'descartar' | null>(null);
+  const [ocupadaEn, setOcupadaEn] = useState<'vincular' | 'descartar' | 'incompleta' | null>(null);
   const ocupada = guardando || ocupadaEn !== null;
 
   const guardar = async () => {
@@ -262,6 +290,18 @@ export function FilaDeTercero({
     setOcupadaEn('vincular');
     try {
       const r = await onVincular();
+      if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
+  };
+
+  const crearIncompleta = async () => {
+    if (!onCrearIncompleta) return;
+    setErrorDeFila(null);
+    setOcupadaEn('incompleta');
+    try {
+      const r = await onCrearIncompleta();
       if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
     } finally {
       setOcupadaEn(null);
@@ -315,7 +355,7 @@ export function FilaDeTercero({
           · {nombre}
         </p>
         <p className="font-mono text-caption tabular-nums text-fg-subtle">
-          {valorEditable(fila.datos.documento)}
+          {valorEditable(fila.datos.documento) || 'Sin documento'}
         </p>
       </div>
 
@@ -329,6 +369,36 @@ export function FilaDeTercero({
           </li>
         ))}
       </ul>
+
+      {variasPersonas ? (
+        /*
+         * T-0128 · «Ana Pérez | Luis Gómez» en una sola celda. El back no
+         * adivina cuál es quién ni parte la fila: conserva el texto tal cual y
+         * lo bloquea. Se muestra EL TEXTO CRUDO —es lo que la persona
+         * reconoce de su archivo— y las dos salidas honestas: dejar una sola
+         * persona acá, o no traer la fila y cargar a cada una por su cuenta.
+         */
+        <div
+          className="space-y-2 rounded-md bg-warning-soft p-3"
+          data-testid="varias-personas"
+        >
+          <p className="flex items-start gap-2 text-sm font-medium text-fg">
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+            Esta fila trae a varias personas en la misma celda
+          </p>
+          <p
+            className="rounded bg-surface px-2.5 py-1.5 font-mono text-caption text-fg [overflow-wrap:anywhere]"
+            data-testid="varias-personas-texto"
+          >
+            {valorEditable(fila.datos.nombre) || 'sin texto'}
+          </p>
+          <p className="text-sm text-fg-muted">
+            Una ficha es una sola persona, así que no la creamos así. Edita el nombre acá abajo
+            para dejar a una sola persona, o no traigas esta fila y carga a las demás por su
+            cuenta (desde {seccionDeLaFicha} o en otro archivo).
+          </p>
+        </div>
+      ) : null}
 
       {duplicado ? (
         <div className="space-y-2 rounded-md bg-warning-soft p-3">
@@ -407,9 +477,39 @@ export function FilaDeTercero({
         </div>
       ) : null}
 
+      {/*
+        * T-0128 · la salida que se ofrece PRIMERO cuando sólo falta el documento.
+        * Dice qué pasa de verdad: la ficha se crea ahora y la inmobiliaria la
+        * completa después. No es «ignorar el problema», es dónde se resuelve.
+        */}
+      {soloFaltaElDocumento && onCrearIncompleta ? (
+        <div
+          className="space-y-2 rounded-md bg-primary-soft p-3"
+          data-testid="crear-incompleta"
+        >
+          <p className="text-sm text-fg">
+            Puedes crear a esta persona <strong className="font-medium">ya, con el dato del documento
+            en blanco</strong>. Queda marcada como «datos por completar» y la completas después desde{' '}
+            {seccionDeLaFicha}.
+          </p>
+          <Button
+            size="sm"
+            hideArrow
+            disabled={ocupada}
+            isLoading={ocupadaEn === 'incompleta'}
+            onClick={() => void crearIncompleta()}
+            data-testid="boton-crear-incompleta"
+          >
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            Crear con datos por completar
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
+          variant={soloFaltaElDocumento && onCrearIncompleta ? 'outline' : undefined}
           hideArrow
           disabled={!hayCambios || ocupada}
           isLoading={guardando}
@@ -431,10 +531,11 @@ export function FilaDeTercero({
         <span className="flex-1" />
 
         {/* «No la traigas», no «borrar»: la fila queda como DESCARTADO y el
-            rastro se conserva. */}
+            rastro se conserva. T-0128: la salida discreta, no el camino por
+            defecto — no se pierde a nadie por un dato que falta. */}
         <Button
           size="sm"
-          variant="outline"
+          variant="ghost"
           hideArrow
           disabled={ocupada}
           isLoading={ocupadaEn === 'descartar'}

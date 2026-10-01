@@ -57,6 +57,12 @@ export type CodigoDeError =
   | 'DOCUMENTO_INVALIDO'
   | 'NIT_DV_INVALIDO'
   | 'CORREO_INVALIDO'
+  /**
+   * T-0128 · la celda del nombre trae a VARIAS personas («Ana | Luis»). Bloquea
+   * y NO es completable: el back conserva el texto crudo para que alguien
+   * decida (editar a una sola persona, o no traer la fila).
+   */
+  | 'VARIAS_PERSONAS_EN_LA_FILA'
   // Sin códigos de banco, tipo ni número de cuenta (2026-09-07): la cuenta
   // bancaria no bloquea la fila; se completa después desde Propietarios.
   | 'DUPLICADO_EN_EL_LOTE'
@@ -76,6 +82,34 @@ export const CODIGOS_DE_DUPLICADO: readonly CodigoDeError[] = [
   'CORREO_REPETIDO_EN_EL_LOTE',
   'YA_EXISTE_EN_LA_AGENCIA',
 ];
+
+/**
+ * T-0128 · los códigos que son «falta un dato del documento»: la ficha se puede
+ * crear igual, con esos datos en blanco, y la inmobiliaria los completa después
+ * desde Propietarios / Inquilinos. Es la lista que el back llama «completables»;
+ * la pantalla decide con ella si ofrece «Crear con datos por completar».
+ */
+export const CODIGOS_COMPLETABLES: readonly CodigoDeError[] = [
+  'FALTA_TIPO_DOCUMENTO',
+  'TIPO_DOCUMENTO_DESCONOCIDO',
+  'FALTA_DOCUMENTO',
+  'DOCUMENTO_INVALIDO',
+];
+
+/**
+ * T-0128 · campos que el back NO deja poner en masa: identifican a la persona,
+ * y el mismo valor en miles de filas las fundiría en una sola. Responde 400
+ * `CAMPO_NO_MASIVO`; la pantalla ni los ofrece.
+ */
+export const CAMPOS_NO_MASIVOS: readonly string[] = [
+  'documento',
+  'digitoVerificacion',
+  'nombre',
+  'correo',
+  'externalId',
+];
+
+export const CODIGO_CAMPO_NO_MASIVO = 'CAMPO_NO_MASIVO';
 
 export interface ErrorDeFila {
   codigo: CodigoDeError;
@@ -173,7 +207,9 @@ export interface PlantillaDeTerceros {
 export interface DatosDeTercero {
   /** 1-based, como se ve en el Excel: es el número que el operador busca. */
   _fila: number;
-  _decisiones?: { vincularAExistente?: boolean };
+  _decisiones?: { vincularAExistente?: boolean; crearIncompleta?: boolean };
+  /** T-0128 · qué datos quedan en blanco si la fila se crea incompleta. */
+  _pendientes?: ('tipoDocumento' | 'documento')[];
   [campo: string]: unknown;
 }
 
@@ -225,6 +261,76 @@ export interface ResultadoMasivo {
   fallidas: { id: string; fila: number | null; motivo: string }[];
 }
 
+/**
+ * T-0128 · a quién le aplica una acción masiva sin listar ids: a TODAS las filas
+ * de la carga que cumplen el filtro. Sin `motivo`, todas las que requieren
+ * atención.
+ */
+export interface FiltroDeFilas {
+  estado?: 'REQUIERE_ATENCION' | 'LISTO';
+  motivo?: CodigoDeError;
+}
+
+/** Lo que se hace a cada fila de la selección. Al menos una de las claves. */
+export interface CambiosMasivos {
+  campos?: FilaTercero;
+  vincularAExistente?: boolean;
+  descartar?: boolean;
+  /** T-0128 · crear la ficha con los datos del documento en blanco. */
+  crearIncompleta?: boolean;
+  /**
+   * T-0128 · con `campos`: `false` rellena SÓLO lo vacío, `true` pisa también lo
+   * que ya tenía valor. Ausente en la ruta por ids = pisar (como antes); en la
+   * ruta por filtro, el back asume `false`. La pantalla lo manda siempre.
+   */
+  sobrescribir?: boolean;
+}
+
+/** Una vuelta de `PATCH filas/masivo`. */
+export interface RespuestaMasivaPorFiltro {
+  lote: string;
+  /** Cuántas coinciden AHORA con el filtro: baja a medida que salen de él. */
+  totalCoincidentes: number;
+  procesadas: number;
+  aplicadas: number;
+  /** Cuántas de las procesadas quedaron `LISTO`. */
+  listasAhora: number;
+  /** Cursor para la siguiente vuelta, o `null` cuando no queda nada. */
+  siguiente: string | null;
+  fallidas: { id: string; fila: number | null; motivo: string }[];
+}
+
+/** El total de una acción masiva por filtro, sumando todas las vueltas. */
+export interface ResultadoMasivoPorFiltro {
+  /** Cuántas coincidían al empezar: la meta de la barra de avance. */
+  totalAlEmpezar: number;
+  procesadas: number;
+  aplicadas: number;
+  listasAhora: number;
+  fallidas: { id: string; fila: number | null; motivo: string }[];
+  /**
+   * `true` si se cortó antes de terminar (un fallo de red a mitad). Lo ya
+   * aplicado quedó aplicado: repetir la acción retoma lo que falta.
+   */
+  interrumpida?: { motivo: string };
+}
+
+/** Cuántas hay por motivo, para «a las 2895 que les falta el documento». */
+export interface MotivosDelLote {
+  lote: string;
+  requierenAtencion: number;
+  /** Cuántas quedarían `LISTO` si se crean con datos por completar. */
+  completables: number;
+  /** Una fila con dos motivos cuenta en los dos. */
+  porMotivo: { codigo: CodigoDeError; filas: number; completable: boolean }[];
+}
+
+/** El avance que se muestra mientras corren las vueltas. */
+export interface ProgresoDeMasivo {
+  procesadas: number;
+  total: number;
+}
+
 export interface ResultadoDeFila {
   id: string;
   fila: number;
@@ -239,6 +345,8 @@ export interface ResultadoDeFila {
    * OTRO documento y se dejó el de la cuenta. Un back viejo no lo manda.
    */
   advertencia?: string;
+  /** T-0128 · se creó incompleta: qué datos quedan por completar. */
+  datosPendientes?: ('tipoDocumento' | 'documento')[];
 }
 
 export interface ResumenDeAplicacion {
@@ -249,6 +357,8 @@ export interface ResumenDeAplicacion {
   invitados: number;
   /** Cuentas creadas sin invitación por el límite de correo del proveedor. Un back viejo no lo manda. */
   sinInvitar?: number;
+  /** T-0128 · cuántas de las creadas quedaron con datos por completar. Un back viejo no lo manda. */
+  incompletas?: number;
   /**
    * Inquilinos aplicados SIN cuenta del portal porque la fila no traía correo:
    * existen para la inmobiliaria con su documento; la cuenta nace cuando se
@@ -365,6 +475,8 @@ export const migracionTercerosApi = {
     lote?: string;
     tipo?: TipoDeTercero;
     estado?: EstadoMigracionTercero;
+    /** T-0128 · sólo las que traen este motivo. */
+    motivo?: CodigoDeError;
     pagina?: number;
     porPagina?: number;
   } = {}): Promise<PaginaDeFilas> {
@@ -372,6 +484,7 @@ export const migracionTercerosApi = {
     if (opciones.lote) q.set('lote', opciones.lote);
     if (opciones.tipo) q.set('tipo', opciones.tipo);
     if (opciones.estado) q.set('estado', opciones.estado);
+    if (opciones.motivo) q.set('motivo', opciones.motivo);
     if (opciones.pagina) q.set('pagina', String(opciones.pagina));
     if (opciones.porPagina) q.set('porPagina', String(opciones.porPagina));
     const qs = q.toString();
@@ -395,6 +508,8 @@ export const migracionTercerosApi = {
     cambios: {
       campos?: FilaTercero;
       vincularAExistente?: boolean;
+      /** T-0128 · `true` crea la ficha con los datos del documento en blanco; `false` lo retira. */
+      crearIncompleta?: boolean;
       /**
        * La versión que la pantalla tenía al empezar a editar. Si otra pestaña
        * guardó primero, el back responde 409 `FILA_DESACTUALIZADA` en vez de
@@ -406,12 +521,14 @@ export const migracionTercerosApi = {
     const cuerpo: {
       campos?: FilaTercero;
       vincularAExistente?: boolean;
+      crearIncompleta?: boolean;
       version?: number;
     } = {};
     if (cambios.campos) cuerpo.campos = soloClavesDeFila(cambios.campos);
     if (cambios.vincularAExistente !== undefined) {
       cuerpo.vincularAExistente = cambios.vincularAExistente;
     }
+    if (cambios.crearIncompleta !== undefined) cuerpo.crearIncompleta = cambios.crearIncompleta;
     if (cambios.version !== undefined) cuerpo.version = cambios.version;
     return apiClient.patch<FilaDeStaging>(`${BASE}/filas/${encodeURIComponent(id)}`, cuerpo);
   },
@@ -436,10 +553,12 @@ export const migracionTercerosApi = {
    */
   async resolverMasivo(
     ids: string[],
-    cambios: { campos?: FilaTercero; vincularAExistente?: boolean; descartar?: boolean },
+    cambios: CambiosMasivos,
   ): Promise<ResultadoMasivo> {
-    const base: { campos?: FilaTercero; vincularAExistente?: boolean; descartar?: boolean } = {};
+    const base: CambiosMasivos = {};
     if (cambios.campos) base.campos = soloClavesDeFila(cambios.campos);
+    if (cambios.crearIncompleta !== undefined) base.crearIncompleta = cambios.crearIncompleta;
+    if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;
     if (cambios.vincularAExistente !== undefined) {
       base.vincularAExistente = cambios.vincularAExistente;
     }
@@ -465,6 +584,84 @@ export const migracionTercerosApi = {
     }
 
     return total;
+  },
+
+  /**
+   * T-0128 · lo mismo que `resolverMasivo`, pero a TODAS las filas que cumplen
+   * un filtro, sin listar ids (`PATCH filas/masivo`). Es lo que hace posible
+   * «seleccionar las 2.895»: los ids de las páginas que nunca se abrieron no
+   * existen en el navegador.
+   *
+   * Una llamada procesa hasta `limite` filas y devuelve `siguiente`, un cursor;
+   * este método da vueltas hasta que sea `null` y suma. `totalCoincidentes` se
+   * recalcula en cada vuelta y BAJA a medida que las filas salen del filtro,
+   * así que la meta del avance es la de la primera.
+   *
+   * Si una vuelta falla (red cortada, 5xx) NO se tira lo ya hecho: se devuelve
+   * lo acumulado con `interrumpida`. Un 400 de la PRIMERA vuelta (p. ej.
+   * `CAMPO_NO_MASIVO`, o «no hay nada que aplicar») sí se relanza: no se hizo
+   * nada y la pantalla lo dice tal cual.
+   */
+  async resolverPorFiltro(
+    lote: string,
+    filtro: FiltroDeFilas,
+    cambios: CambiosMasivos,
+    alAvanzar?: (p: ProgresoDeMasivo) => void,
+  ): Promise<ResultadoMasivoPorFiltro> {
+    const base: Record<string, unknown> = { lote, filtro };
+    if (cambios.campos) base.campos = soloClavesDeFila(cambios.campos);
+    if (cambios.vincularAExistente !== undefined) {
+      base.vincularAExistente = cambios.vincularAExistente;
+    }
+    if (cambios.descartar !== undefined) base.descartar = cambios.descartar;
+    if (cambios.crearIncompleta !== undefined) base.crearIncompleta = cambios.crearIncompleta;
+    if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;
+
+    const total: ResultadoMasivoPorFiltro = {
+      totalAlEmpezar: 0,
+      procesadas: 0,
+      aplicadas: 0,
+      listasAhora: 0,
+      fallidas: [],
+    };
+    let cursor: string | null = null;
+    const vistos = new Set<string>();
+
+    for (;;) {
+      let r: RespuestaMasivaPorFiltro;
+      try {
+        r = await apiClient.patch<RespuestaMasivaPorFiltro>(
+          `${BASE}/filas/masivo`,
+          cursor ? { ...base, despuesDe: cursor } : base,
+        );
+      } catch (e) {
+        if (total.procesadas === 0) throw e;
+        total.interrumpida = {
+          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+        };
+        return total;
+      }
+      if (cursor === null) total.totalAlEmpezar = r.totalCoincidentes;
+      total.procesadas += r.procesadas;
+      total.aplicadas += r.aplicadas;
+      total.listasAhora += r.listasAhora;
+      total.fallidas.push(...r.fallidas);
+      alAvanzar?.({ procesadas: total.procesadas, total: total.totalAlEmpezar });
+
+      // Sin cursor nuevo —o con uno que ya se vio— no hay nada más que pedir:
+      // repetirlo sería un bucle infinito contra un back que no avanza.
+      if (r.siguiente === null || vistos.has(r.siguiente)) return total;
+      vistos.add(r.siguiente);
+      cursor = r.siguiente;
+    }
+  },
+
+  /**
+   * T-0128 · cuántas filas hay por motivo, para ofrecer «a las 2.895 que les
+   * falta el documento». Es un conteo del lote entero, no de la página.
+   */
+  async motivos(lote: string): Promise<MotivosDelLote> {
+    return apiClient.get<MotivosDelLote>(`${BASE}/filas/motivos?lote=${encodeURIComponent(lote)}`);
   },
 
   /**

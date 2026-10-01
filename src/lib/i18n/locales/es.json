@@ -12436,7 +12436,8 @@
       "paso": "Paso {{n}} de {{total}}",
       "pasos": "{{total}} pasos",
       "listos": "{{hechos}} de {{total}}",
-      "sigue": "Sigue con {{paso}}. Retómala donde la dejaste."
+      "sigue": "Sigue con {{paso}}. Retómala donde la dejaste.",
+      "continuar": "Continuar migración"
     },
     "muro": {
       "cerrar": "Cerrar y seguir después",

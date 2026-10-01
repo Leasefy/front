@@ -1,18 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowsClockwise, BellSimple, Buildings, FileText, ListNumbers, Users } from '@phosphor-icons/react';
+import { ArrowsClockwise, Buildings, FileText, ListNumbers, Users } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/auth/use-auth';
 import { useMigracion } from '@/components/migracion/migracion-context';
-import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
-import {
-  EVENTO_DECISION_DE_MIGRACION,
-  guardarDecisionDeMigracion,
-  leerDecisionDeMigracion,
-  type DecisionDeMigracion,
-} from '@/lib/migracion/decision-de-migracion';
 import { TarjetaDeAjustes, FilaDeAjuste } from './piezas';
 
 /**
@@ -21,7 +12,12 @@ import { TarjetaDeAjustes, FilaDeAjuste } from './piezas';
  * llega a arrepentirse por más que haya descartado, que tenga la posibilidad
  * de migrar»). «Migrar ahora» abre la migración a pantalla completa —la
  * misma de la puesta en marcha—; cada importador suelto sigue teniendo su
- * pantalla, y el recordatorio del sidebar se prende o se apaga.
+ * pantalla.
+ *
+ * 🔴 Ya no hay «Recordatorio en el menú» con «Descartar» (Nico, 01-10): la
+ * tarjeta del menú es fija mientras la migración esté en curso, sale sólo a
+ * quien le dio «Migrar» y se va sola al terminar. Un botón para apagarla no
+ * haría nada. Estaba en git antes de `feat(menú): migración fija`.
  */
 const PASOS = [
   {
@@ -52,28 +48,7 @@ const PASOS = [
 
 export function SeccionMigracion() {
   const router = useRouter();
-  const { agency } = useAuth();
   const migracion = useMigracion();
-  const agencyId = agency?.id ?? null;
-  const [decision, setDecision] = useState<DecisionDeMigracion | null>(null);
-
-  useEffect(() => {
-    const leer = () => setDecision(leerDecisionDeMigracion(agencyId));
-    leer();
-    window.addEventListener(EVENTO_DECISION_DE_MIGRACION, leer);
-    return () => window.removeEventListener(EVENTO_DECISION_DE_MIGRACION, leer);
-  }, [agencyId]);
-
-  // El recordatorio se apaga sólo con «no requiero migración» o con su ✕. La
-  // cuenta manda (`recordatorioDescartado` del back); el navegador adelanta.
-  const recordando = !(migracion?.estado?.recordatorioDescartado === true || decision === 'nunca');
-  const alternar = () => {
-    guardarDecisionDeMigracion(agencyId, recordando ? 'nunca' : 'luego');
-    void migracionEstadoApi
-      .recordatorio(recordando)
-      .then(() => migracion?.recargar())
-      .catch(() => undefined);
-  };
 
   return (
     <div className="space-y-4" data-testid="seccion-migracion">
@@ -104,29 +79,6 @@ export function SeccionMigracion() {
             </Button>
           </FilaDeAjuste>
         ))}
-      </TarjetaDeAjustes>
-
-      <TarjetaDeAjustes>
-        <FilaDeAjuste
-          icono={recordando ? BellSimple : ArrowsClockwise}
-          titulo="Recordatorio en el menú"
-          descripcion={
-            recordando
-              ? 'Mientras la migración esté sin terminar, el menú muestra cómo va y desde ahí se retoma.'
-              : 'Sin recordatorio en el menú. Puedes migrar desde acá cuando quieras.'
-          }
-        >
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            hideArrow
-            data-testid="alternar-recordatorio-de-migracion"
-            onClick={alternar}
-          >
-            {recordando ? 'Descartar' : 'Recordármelo'}
-          </Button>
-        </FilaDeAjuste>
       </TarjetaDeAjustes>
     </div>
   );

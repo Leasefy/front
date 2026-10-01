@@ -101,10 +101,11 @@ export default function MfaEnrollPage() {
   return (
     <ForceLightMode>
       {/* 🔴 El asistente de registro a medias manda sobre el segundo factor
-          (Nico, 30-09: «no me llevó al paso donde lo dejé»): misma regla que
-          «primero la migración». Si hay asistente pendiente, este guard se
-          lleva a la persona a terminarlo; el 2FA la espera a la salida. */}
-      <AsistentePendienteGuard />
+          (Nico, 30-09: «no me llevó al paso donde lo dejé»; 01-10: «literal
+          ingresó a la plataforma»). Envuelve: hasta saber que el registro
+          está terminado no se pinta el paso a paso; a medias, se va a
+          terminarlo y el 2FA la espera a la salida. */}
+      <AsistentePendienteGuard>
       {/* La misma caja que `/auth` y `/auth/mfa-verify`: entrar es una sola
           secuencia, con el mismo fondo y la tarjeta en el mismo sitio. */}
       <div className="relative min-h-screen bg-background" data-lenis-prevent>
@@ -156,6 +157,7 @@ export default function MfaEnrollPage() {
           </div>
         </div>
       </div>
+      </AsistentePendienteGuard>
     </ForceLightMode>
   );
 }

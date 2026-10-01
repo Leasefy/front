@@ -393,8 +393,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
   return (
     <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
       {/* 🔴 Quien dejó el asistente de registro a medias no usa el panel:
-          vuelve al paso donde iba (ver AsistentePendienteGuard). */}
-      <AsistentePendienteGuard />
+          vuelve al paso donde iba (ver AsistentePendienteGuard). ENVUELVE al
+          segundo factor: mientras no se sepa que el registro terminó no se
+          monta ni el panel ni «Protege tu cuenta» (Nico, 01-10: «literal
+          ingresó a la plataforma»). Orden: registro → migración → 2FA. */}
+      <AsistentePendienteGuard>
       {/* 🔴 El segundo factor se activa DENTRO (Nico, 30-09: «yo estoy es
           dentro»). Con `mfaEnrollRequired` no se monta NADA de lo de abajo
           —guard de suscripción, providers, sidebar, Piloto, la página—: cada
@@ -424,6 +427,7 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
         </I18nProvider>
       </AgencySubscriptionGuard>
       </SegundoFactorDentroDelPanel>
+      </AsistentePendienteGuard>
     </ProtectedRoute>
   );
 }

@@ -8,7 +8,8 @@ import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioni
 import { MarcoDelAsistente } from '@/components/onboarding/inmobiliaria/MarcoDelAsistente'
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
-import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
+import { EleccionDePerfil } from '@/components/onboarding/perfil/EleccionDePerfil'
+import { PanelAntesDeComenzar } from '@/components/onboarding/perfil/PanelAntesDeComenzar'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
 import {
@@ -73,16 +74,21 @@ function ProvisionedOnboardingWizard() {
   // social and NIT — collect them here and provision explicitly (see
   // useOnboardingProvisioning). The form stays mounted while the request is
   // in flight so the submit button can disable itself (double-submit guard).
+  //
+  // «Antes de comenzar» vive en el selector de perfil (Nico, 2026-09-30): las
+  // tarjetas a la izquierda, con «Inmobiliaria» elegida, y el formulario a la
+  // derecha. Quien llega acá directo (enlace, atrás, la próxima entrada) ve lo
+  // mismo que quien lo abrió desde «Selecciona tu perfil».
   if (status === 'needs-info' || status === 'provisioning') {
     return (
-      <OwnerNameStepForm
-        onSubmit={provision}
-        isSubmitting={status === 'provisioning'}
-        valoresIniciales={
-          valoresGuardados
-            ? { razonSocial: valoresGuardados.razonSocial, nit: valoresGuardados.nit }
-            : undefined
-        }
+      <EleccionDePerfil
+        abiertaAlInicio
+        panelDeInmobiliaria={(cerrar) => (
+          <PanelAntesDeComenzar
+            aprovisionamiento={{ status, valoresGuardados, fallo, retry, provision }}
+            onCerrar={cerrar}
+          />
+        )}
       />
     )
   }

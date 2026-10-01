@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { EnvelopeSimple, CircleNotch } from '@phosphor-icons/react';
+import { EnvelopeSimple } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -278,7 +279,7 @@ export function ArcoFormClient() {
           >
             {isSubmitting ? (
               <>
-                <CircleNotch className="mr-2 h-4 w-4 animate-spin" />
+                <Spinner size="xs" variant="current" className="mr-2" />
                 {t('inmobiliaria.ai.arco.public.submitting')}
               </>
             ) : (

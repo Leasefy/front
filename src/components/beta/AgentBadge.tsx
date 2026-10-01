@@ -12,9 +12,9 @@ import {
   Bank,
   CheckCircle,
   XCircle,
-  CircleNotch,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { AgentType, AgentExecutionStatus } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import type { Icon } from '@phosphor-icons/react';
@@ -140,7 +140,7 @@ export function AgentBadge({ agentType, status, duration, className }: AgentBadg
     >
       {/* Status icon or agent icon */}
       {status === 'running' ? (
-        <CircleNotch className="w-3.5 h-3.5 animate-spin flex-shrink-0" weight="bold" />
+        <CargaDeMarca tamano="xs" className="flex-shrink-0" />
       ) : status === 'completed' ? (
         <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" weight="fill" />
       ) : status === 'failed' ? (

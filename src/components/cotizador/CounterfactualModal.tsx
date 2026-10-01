@@ -23,7 +23,8 @@ import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 void React
-import { Minus, Plus, Spinner } from '@phosphor-icons/react'
+import { Minus, Plus } from '@phosphor-icons/react'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useI18n } from '@/lib/i18n'
 import { CarrierCard } from '@/components/inmobiliaria/cotizador/CarrierCard'
@@ -440,14 +441,10 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 {t('inmobiliaria.ai.cotizador.askWhy.hypotheticalColumn')}
               </h3>
               {isLoading && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Spinner weight="bold" className="w-4 h-4 animate-spin" />
-                  {tardando && (
-                    <span className="text-xs">
-                      {t('inmobiliaria.ai.cotizador.askWhy.tardando')}
-                    </span>
-                  )}
-                </div>
+                <CargaDeMarca
+                  tamano="sm"
+                  texto={tardando ? t('inmobiliaria.ai.cotizador.askWhy.tardando') : undefined}
+                />
               )}
               {!isLoading && !result && !error && (
                 <p className="text-xs text-muted-foreground">

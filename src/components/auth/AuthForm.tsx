@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
@@ -22,7 +23,6 @@ import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import {
-  SpinnerGap,
   ArrowLeft,
   ArrowSquareOut,
   CheckCircle,
@@ -109,7 +109,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
-        <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
+        <Spinner size="xs" variant="muted" />
       ) : (
         <GoogleIcon className="w-4 h-4" />
       )}
@@ -891,7 +891,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               >
                 {isLoading ? (
                   <>
-                    <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner size="xs" variant="current" className="mr-2" />
                     Ingresando…
                   </>
                 ) : (
@@ -985,7 +985,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
+                {isLoading ? (<><Spinner size="xs" variant="current" className="mr-2" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
 
@@ -1094,7 +1094,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
             <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
-              {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
+              {isLoading ? (<><Spinner size="xs" variant="current" className="mr-2" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
             <p className="text-[12px] text-fg-subtle leading-relaxed">
               Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.

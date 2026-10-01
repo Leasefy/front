@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 
 export default function RetencionLayout({ children }: { children: React.ReactNode }) {
@@ -9,7 +10,7 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <CargaDeMarca />
       </div>
     );
   }

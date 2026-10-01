@@ -3,13 +3,14 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Buildings, User, CheckCircle, WarningCircle, SpinnerGap, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
+import { Buildings, User, CheckCircle, WarningCircle, Envelope, Key, ArrowRight, Phone } from '@phosphor-icons/react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { Input } from '@/components/ui/input';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
@@ -17,6 +18,19 @@ import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
+
+/**
+ * Carga dentro del botón `bg-foreground`: oscuro en claro (logo blanco) y claro
+ * en oscuro (logo azul). Ningún tono hace ese cruce solo, por eso son dos.
+ */
+function CargaSobreElBotonOscuro() {
+  return (
+    <>
+      <CargaDeMarca tono="sobre-color" tamano="xs" className="dark:hidden" />
+      <CargaDeMarca tono="sobre-blanco" tamano="xs" className="hidden dark:inline-flex" />
+    </>
+  );
+}
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
 const PENDING_NAME_KEY = 'pending-invitation-name';
@@ -299,10 +313,7 @@ function RegistroContent() {
   if (autoCompleting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Configurando tu cuenta…</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Configurando tu cuenta…" />
       </div>
     );
   }
@@ -311,7 +322,7 @@ function RegistroContent() {
   if (token === null || loadingInvitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }
@@ -474,7 +485,7 @@ function RegistroContent() {
                     className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                   >
                     {isSubmitting ? (
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
+                      <CargaSobreElBotonOscuro />
                     ) : (
                       <>
                         Unirme a {invitation.agencyName}
@@ -598,7 +609,7 @@ function RegistroContent() {
                       className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background text-[14px] font-semibold disabled:opacity-60 transition-opacity"
                     >
                       {isSubmitting ? (
-                        <SpinnerGap className="w-4 h-4 animate-spin" />
+                        <CargaSobreElBotonOscuro />
                       ) : (
                         <>
                           Crear cuenta y unirme
@@ -621,7 +632,7 @@ export default function RegistroPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <SpinnerGap className="w-8 h-8 animate-spin text-muted-foreground" />
+        <CargaDeMarca tamano="lg" />
       </div>
     }>
       <RegistroContent />

@@ -72,6 +72,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
@@ -156,11 +157,12 @@ function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
       <div className="flex items-start gap-3">
         {corrida.estado === 'sinLectura' ? (
           <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+        ) : corrida.estado === 'corriendo' ? (
+          // La sección ya es `role="status"` y su texto dice qué pasa: el logo
+          // es sólo la señal visual.
+          <CargaDeMarca tono="negro" tamano="xs" className="mt-0.5 shrink-0" aria-hidden="true" />
         ) : (
-          <ArrowsClockwise
-            className={`mt-0.5 h-4 w-4 shrink-0 text-fg-muted ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
-            aria-hidden="true"
-          />
+          <ArrowsClockwise className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
         )}
         <div className="min-w-0 space-y-1">
           <p className="text-body-sm font-medium text-fg">Última corrida</p>

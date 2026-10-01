@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
@@ -122,7 +123,11 @@ function AvisoResumenEstimado({ onReintentar }: { onReintentar: () => void | Pro
         className="gap-1.5"
         data-testid="resumen-reintentar"
       >
-        <ArrowsClockwise className={cn('h-4 w-4', intentando && 'animate-spin')} aria-hidden="true" />
+        {intentando ? (
+          <Spinner size="xs" variant="current" />
+        ) : (
+          <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+        )}
         {intentando ? 'Intentando…' : 'Intentar de nuevo'}
       </Button>
     </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { MarcoDelAsistente } from '@/components/onboarding/inmobiliaria/MarcoDelAsistente'
@@ -80,10 +81,12 @@ function ProvisionedOnboardingWizard() {
   if (status === 'resuming') {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-3" data-testid="onboarding-resuming">
-          <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
-          <p className="text-body-sm text-fg-muted">Buscando dónde quedaste...</p>
-        </div>
+        <CargaDeMarca
+          tamano="lg"
+          disposicion="apilada"
+          texto="Buscando dónde quedaste..."
+          data-testid="onboarding-resuming"
+        />
       </div>
     )
   }
@@ -130,10 +133,12 @@ function ProvisionedOnboardingWizard() {
   if (status !== 'ready' || !sessionId) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-3" data-testid="provisioning-loading">
-          <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
-          <p className="text-body-sm text-fg-muted">Preparando tu sesión de onboarding...</p>
-        </div>
+        <CargaDeMarca
+          tamano="lg"
+          disposicion="apilada"
+          texto="Preparando tu sesión de onboarding..."
+          data-testid="provisioning-loading"
+        />
       </div>
     )
   }
@@ -306,10 +311,13 @@ function OnboardingWizard({
     >
       <div className="space-y-6">
         {cargando && (
-          <div className="flex flex-col items-center justify-center gap-3 py-16" data-testid="wizard-loading">
-            <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
-            <p className="text-body-sm text-fg-muted">Cargando tu sesión de onboarding...</p>
-          </div>
+          <CargaDeMarca
+            tamano="lg"
+            disposicion="apilada"
+            texto="Cargando tu sesión de onboarding..."
+            className="flex py-16"
+            data-testid="wizard-loading"
+          />
         )}
 
         {conErrorDeSesion && (

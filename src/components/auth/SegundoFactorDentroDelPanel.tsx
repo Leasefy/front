@@ -91,6 +91,13 @@ function EscenaDelSegundoFactor({
   const pathname = usePathname();
   const { agency, mfaEnrollRequired, setMfaVerified, signOut } = useAuth();
   const caja = useRef<HTMLDivElement>(null);
+  /**
+   * El portal va después de montar: en el servidor no hay `document`, y
+   * decidirlo en el render con `typeof document` hace que el HTML del servidor
+   * y el primer render del cliente no coincidan (error de hidratación).
+   */
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
   const lenis = useLenis();
   const lenisRef = useRef(lenis);
   lenisRef.current = lenis;
@@ -139,6 +146,7 @@ function EscenaDelSegundoFactor({
 
   // Foco adentro al abrir, y el Tab da la vuelta sin salir del modal.
   useEffect(() => {
+    if (!montado) return;
     const raf = requestAnimationFrame(() => caja.current?.focus());
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !caja.current) return;
@@ -165,7 +173,7 @@ function EscenaDelSegundoFactor({
       cancelAnimationFrame(raf);
       document.removeEventListener('keydown', alTeclear);
     };
-  }, []);
+  }, [montado]);
 
   return (
     <div className="relative min-h-screen bg-plan-page" data-testid="segundo-factor-dentro-del-panel">
@@ -178,7 +186,7 @@ function EscenaDelSegundoFactor({
         <EsqueletoDelPanel nombre={agency?.name} />
       </div>
 
-      {typeof document === 'undefined'
+      {!montado
         ? null
         : createPortal(
             <div
@@ -194,7 +202,7 @@ function EscenaDelSegundoFactor({
                 role="dialog"
                 aria-modal="true"
                 aria-label="Activa tu segundo factor"
-                className="max-h-[calc(100dvh-32px)] w-full max-w-[540px] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface p-6 shadow-lg outline-none sm:p-10"
+                className="max-h-[calc(100dvh-32px)] w-full max-w-[540px] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface p-6 shadow-lg outline-none sm:p-8"
                 style={{ overscrollBehavior: 'contain' }}
                 data-lenis-prevent
                 data-testid="segundo-factor-dentro-modal"

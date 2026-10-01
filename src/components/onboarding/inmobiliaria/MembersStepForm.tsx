@@ -323,7 +323,8 @@ export function MembersStepForm({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+            {/* 12rem: «Asesor comercial», el rol más largo, cabe en UNA línea. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
               <div>
                 <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-semibold text-fg">
                   Correo
@@ -352,7 +353,10 @@ export function MembersStepForm({
                     <Select value={roleField.value} onValueChange={roleField.onChange}>
                       {/* Misma altura que el correo de al lado, y el rótulo arriba
                           en los dos: así los controles quedan al mismo nivel. */}
-                      <SelectTrigger id={`members.${index}.role`} className="h-11">
+                      <SelectTrigger
+                        id={`members.${index}.role`}
+                        className="h-11 whitespace-nowrap [&>span]:truncate"
+                      >
                         <SelectValue placeholder="Rol" />
                       </SelectTrigger>
                       <SelectContent>

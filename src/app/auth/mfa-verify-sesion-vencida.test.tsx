@@ -1,0 +1,113 @@
+/**
+ * Nico, 01-10: «cuando uno se queda en la pantalla que pide el código un buen
+ * rato y pone un código nuevo y nuevo y nuevo, dice que no sirve». La sesión
+ * (1 h) vencía mientras esperaba y Supabase rechazaba el reto con «invalid
+ * JWT… token is expired», que la pantalla mostraba como «Código incorrecto».
+ */
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createRoot, type Root } from 'react-dom/client';
+import { act } from 'react';
+
+const { supa, sesion, auth, toastError } = vi.hoisted(() => ({
+  supa: { listFactors: vi.fn(), challenge: vi.fn(), verify: vi.fn() },
+  sesion: { getSession: vi.fn(), refreshSession: vi.fn() },
+  auth: { user: { id: 'u-1', role: 'agency' }, mfaRequired: true, setMfaVerified: vi.fn(), signOut: vi.fn() },
+  toastError: vi.fn(),
+}));
+
+vi.mock('@/lib/supabase/client', () => ({
+  getSupabase: () => ({ auth: { mfa: supa, ...sesion } }),
+}));
+vi.mock('@/lib/auth', () => ({ useAuth: () => auth }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
+vi.mock('@/components/settings/MfaSetupSection', () => ({ MfaSetupSection: () => null }));
+
+import MfaVerifyPage from './mfa-verify/page';
+
+let root: Root | null = null;
+
+async function montar() {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  root = createRoot(host);
+  await act(async () => {
+    root!.render(<MfaVerifyPage />);
+  });
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+}
+
+async function escribirElCodigo(codigo: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+  for (let i = 0; i < codigo.length; i++) {
+    const casillas = document.querySelectorAll<HTMLInputElement>('[data-testid^="casilla-"]');
+    await act(async () => {
+      setter.call(casillas[i]!, codigo[i]!);
+      casillas[i]!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+}
+
+beforeEach(() => {
+  supa.listFactors.mockReset().mockResolvedValue({ data: { totp: [{ id: 'f-1', status: 'verified' }] } });
+  supa.challenge.mockReset().mockResolvedValue({ data: { id: 'ch-1' }, error: null });
+  supa.verify.mockReset().mockResolvedValue({ error: null });
+  sesion.refreshSession.mockReset().mockResolvedValue({ error: null });
+  toastError.mockReset();
+  auth.setMfaVerified.mockReset();
+});
+
+afterEach(() => {
+  act(() => root?.unmount());
+  root = null;
+  document.body.innerHTML = '';
+});
+
+describe('/auth/mfa-verify — la sesión vence mientras se espera', () => {
+  it('🔴 con la sesión vencida, la renueva ANTES del reto y el código bueno entra', async () => {
+    const vencida = Math.floor(Date.now() / 1000) - 60;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: vencida } } });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(sesion.refreshSession).toHaveBeenCalledTimes(1);
+    expect(sesion.refreshSession.mock.invocationCallOrder[0]).toBeLessThan(
+      supa.challenge.mock.invocationCallOrder[0]!,
+    );
+    expect(auth.setMfaVerified).toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('con la sesión vigente no la renueva de más', async () => {
+    const enUnaHora = Math.floor(Date.now() / 1000) + 3600;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: enUnaHora } } });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(sesion.refreshSession).not.toHaveBeenCalled();
+    expect(auth.setMfaVerified).toHaveBeenCalled();
+  });
+
+  it('🔴 si la sesión no se pudo renovar, lo dice: NO «Código incorrecto»', async () => {
+    const enUnaHora = Math.floor(Date.now() / 1000) + 3600;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: enUnaHora } } });
+    supa.challenge.mockResolvedValue({
+      data: null,
+      error: Object.assign(new Error('invalid JWT: token has invalid claims: token is expired'), {
+        status: 403,
+        code: 'bad_jwt',
+      }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastError.mock.calls[0]![0]).toMatch(/sesión/);
+    expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
+  });
+});

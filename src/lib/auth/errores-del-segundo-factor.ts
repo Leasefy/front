@@ -63,6 +63,11 @@ export function mensajeDeSupabaseAuth({ status, codigo, mensaje }: ErrorDeSupaba
     case 'over_request_rate_limit':
       return 'Demasiados intentos seguidos. Espera un minuto e intenta de nuevo.'
   }
+  // Antes que «invalid|expired»: la sesión vencida («invalid JWT… token is
+  // expired») trae las dos palabras y no es un código malo (Nico, 01-10).
+  if (/\bjwt\b|token is expired|session/i.test(mensaje ?? '')) {
+    return 'Tu sesión se cerró. Vuelve a entrar con tu contraseña.'
+  }
   if (/invalid|expired/i.test(mensaje ?? '')) return CODIGO_INCORRECTO
   if (status === 401) return 'Tu sesión se cerró. Vuelve a entrar con tu contraseña.'
   if (status === 429) return 'Demasiados intentos seguidos. Espera un minuto e intenta de nuevo.'

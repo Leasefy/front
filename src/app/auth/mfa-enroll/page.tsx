@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignOut } from '@phosphor-icons/react';
@@ -8,7 +10,6 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
 import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import {
   destinoTrasElSegundoFactor,
@@ -110,15 +111,18 @@ export default function MfaEnrollPage() {
         <FondoDeMarca />
 
         <LogoDefs />
-        <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
-          <BrandHomeLink
+        {/* z-20: por encima del contenido (z-10), que ocupa toda la pantalla y se
+            tragaba el clic. La capa no recibe eventos; sólo el logo. */}
+        <div className="pointer-events-none fixed inset-0 z-20 hidden lg:block">
+          <Link
+            href="/"
             aria-label="Leasefy — inicio"
             className="pointer-events-auto absolute left-8 top-8 inline-flex text-white"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy">
               <use href="#lfLogo" />
             </svg>
-          </BrandHomeLink>
+          </Link>
         </div>
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">

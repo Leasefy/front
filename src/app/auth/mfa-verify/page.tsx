@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, SignOut, UserCircle } from '@phosphor-icons/react';
@@ -15,7 +17,6 @@ import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/Restablecer
 import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
 import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
@@ -371,15 +372,18 @@ export default function MfaVerifyPage() {
         <FondoDeMarca />
 
         <LogoDefs />
-        <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
-          <BrandHomeLink
+        {/* z-20: por encima del contenido (z-10), que ocupa toda la pantalla y se
+            tragaba el clic. La capa no recibe eventos; sólo el logo. */}
+        <div className="pointer-events-none fixed inset-0 z-20 hidden lg:block">
+          <Link
+            href="/"
             aria-label="Leasefy — inicio"
             className="pointer-events-auto absolute left-8 top-8 inline-flex text-white"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy">
               <use href="#lfLogo" />
             </svg>
-          </BrandHomeLink>
+          </Link>
         </div>
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">

@@ -39,6 +39,7 @@ import {
 } from '@/lib/hooks/use-table-pagination';
 import type { ExtractoPropietario as ExtractoPropietarioType, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
@@ -360,7 +361,7 @@ export function ExtractoPropietario({
               {propietario && (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    {propietario.documentType}: {propietario.documentNumber}
+                    {documentoConTipo(propietario.documentType, propietario.documentNumber)}
                   </p>
                   <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
                   <p className="text-sm text-muted-foreground">{propietario.phone ?? '—'}</p>

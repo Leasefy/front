@@ -86,6 +86,8 @@ export interface Inquilino {
   telefono: string | null;
   /** Ya normalizado por el back (una cédula son sólo dígitos). */
   documento: string | null;
+  /** Qué falta de su ficha (T-0128). Ausente = completa, o un back anterior. */
+  datosPendientes?: ['documento'];
   arriendos: ArriendoDeInquilino[];
 }
 

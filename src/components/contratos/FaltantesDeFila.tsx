@@ -32,6 +32,7 @@ import {
   usePortafolioDeLaAgencia,
 } from "./SelectorDeInmueble";
 import type { Propietario } from "@/lib/types/inmobiliaria";
+import { documentoParaMostrar } from "@/lib/propietarios/datos-por-completar";
 
 /** El nombre humano de cada faltante, y por qué importa. */
 export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
@@ -616,7 +617,7 @@ function RegistrarPropietario({
   }, [busqueda]);
   const elegir = (p: Propietario) => {
     setNombre(p.name);
-    setDocumento(p.documentNumber);
+    setDocumento(p.documentNumber ?? '');
     setCorreo(p.email ?? undefined);
     setTelefono(p.phone ?? undefined);
     setBusqueda(p.name);
@@ -646,7 +647,7 @@ function RegistrarPropietario({
                 >
                   <span className="truncate">{p.name}</span>
                   <span className="shrink-0 font-mono text-caption text-fg-subtle">
-                    {p.documentNumber}
+                    {documentoParaMostrar(p.documentNumber)}
                   </span>
                 </button>
               </li>

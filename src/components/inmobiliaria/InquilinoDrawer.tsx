@@ -107,6 +107,7 @@ import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import { estadoDeLaDeuda } from '@/lib/estado-de-cuenta/estado-de-la-deuda';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
 import type { CobroStatus } from '@/lib/types/inmobiliaria';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 
 const NS = 'inquilinos.cajon';
 
@@ -336,6 +337,8 @@ export function CuerpoDelCajon({
               mono
             />
           ) : null}
+          {/* T-0128: el documento puede faltar si lo creó la migración. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} />
           {/* Sin correo ni teléfono no es un detalle: es a quién no se le
               puede cobrar ni avisar. Va en la cabecera, no escondido. */}
           {!persona.email && !persona.telefono ? (

@@ -20,6 +20,7 @@ import { useI18n } from '@/lib/i18n';
 import type { CuentaDeCobroDelPropietario as Cuenta } from '@/lib/types/deducciones';
 import { CSS_DE_IMPRESION } from './CuentaDeCobro';
 import { fechaEnPalabras } from './lineas';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 export interface CuentaDeCobroDelPropietarioProps {
   cuenta: Cuenta;
@@ -78,7 +79,7 @@ export function CuentaDeCobroDelPropietario({
         <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">{t(k('a'))}</p>
         <p className="text-sm font-medium text-fg">{cuenta.propietario.nombre}</p>
         <p className="font-mono text-caption tabular-nums text-fg-muted">
-          {cuenta.propietario.tipoDeDocumento} {cuenta.propietario.documento}
+          {documentoConTipo(cuenta.propietario.tipoDeDocumento, cuenta.propietario.documento, ' ')}
         </p>
         {ubicacionDelPropietario ? (
           <p className="text-caption text-fg-muted">{ubicacionDelPropietario}</p>

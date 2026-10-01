@@ -56,6 +56,9 @@ export interface PropietarioBankAccount {
   accountHolderDocumentType?: DocumentType;
 }
 
+/** Lo que `GET /inmobiliaria/propietarios` reporta como faltante (T-0128). */
+export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento';
+
 export interface Propietario {
   id: string;
   name: string;
@@ -63,8 +66,14 @@ export interface Propietario {
   email: string | null;
   /** Nullable in the DB (Prisma `String?`) — always guard before use. */
   phone: string | null;
-  documentType: DocumentType;
-  documentNumber: string;
+  /** `null` = ficha creada incompleta por la migración (T-0128): se completa desde la edición. */
+  documentType: DocumentType | null;
+  documentNumber: string | null;
+  /**
+   * Qué datos faltan para que la ficha esté completa (T-0128). Ausente o vacío =
+   * completa; un back anterior a T-0128 no lo manda.
+   */
+  datosPendientes?: DatoPendienteDelPropietario[];
   address?: string;
   city?: string;
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
@@ -132,7 +141,8 @@ export interface PropietarioFormData {
   name: string;
   email: string;
   phone: string;
-  documentType: DocumentType;
+  /** `''` = ficha incompleta que todavía no tiene tipo (T-0128): hay que elegirlo al completarla. */
+  documentType: DocumentType | '';
   documentNumber: string;
   address?: string;
   city?: string;

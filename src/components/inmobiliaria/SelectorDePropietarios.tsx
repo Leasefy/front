@@ -65,7 +65,7 @@ export function SelectorDePropietarios({
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.email?.toLowerCase().includes(q) ?? false) ||
-            p.documentNumber.includes(q),
+            (p.documentNumber ?? '').includes(q),
         )
       : propietarios;
     // Los elegidos van primero: si se llegó con uno ya marcado (desde su

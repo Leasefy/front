@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
   FileText,
   Clock,
@@ -14,11 +15,7 @@ import {
   FileCsv,
   DownloadSimple,
   CalendarBlank,
-  MapPin,
-  ArrowUp,
-  ArrowDown,
-  Minus,
-  Buildings,
+  ArrowRight,
   CurrencyCircleDollar,
   Percent,
 } from '@phosphor-icons/react';
@@ -37,7 +34,8 @@ import {
   getReportCategoryColor,
   formatCurrency,
 } from '@/lib/types/inmobiliaria';
-import { formatoDelArchivo } from '@/lib/reportes/exportables';
+import { comoSeBaja, formatoDelArchivo, parametrosDelPeriodo } from '@/lib/reportes/exportables';
+import type { ReportId } from '@/lib/types/inmobiliaria';
 import type { ReporteFiltersState } from './ReporteFilters';
 import {
   useComisionesReport,
@@ -45,7 +43,21 @@ import {
   useVencimientosReport,
   useFlujoCajaReport,
   useCarteraReport,
+  useRendimientoAgentesReport,
+  useRentabilidadReport,
 } from '@/lib/hooks/useInmobiliaria';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
+import { CollectionsReport } from '@/components/inmobiliaria/reports/CollectionsReport';
+import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentPerformanceReport';
+import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
+import { GraficoDeRentabilidad } from '@/components/inmobiliaria/reports/GraficoDeRentabilidad';
+import {
+  adaptOccupancy,
+  adaptCollections,
+  adaptAgentPerformance,
+  adaptExecutive,
+} from '@/lib/utils/report-adapters';
 
 interface ReporteViewerProps {
   isOpen: boolean;
@@ -84,11 +96,71 @@ const CATEGORY_ICON_COLORS: Record<ReportCategory, string> = {
   agentes: 'text-fg-muted dark:text-fg-subtle',
 };
 
+type Traductor = (key: string, params?: Record<string, string | number>) => string;
+
+/** El mes en curso, `YYYY-MM`: el que usan comisiones y rendimiento. */
+const mesEnCurso = () => new Date().toISOString().slice(0, 7);
+
 /**
- * Format period for display
+ * La respuesta llegó y no trae nada que dibujar (agencia recién creada, mes
+ * sin movimiento). Dice qué pasó, no sólo «no hay datos».
  */
-function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: (d: string) => string): string {
-  return `${fmtDate(period.start)} - ${fmtDate(period.end)}`;
+function SinDatosDelReporte() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-12 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
+        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-body font-semibold text-fg">Todavía no hay nada que mostrar</p>
+        <p className="mx-auto max-w-sm text-body-sm text-fg-muted">
+          Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
+          cobros del período, aparece acá.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 🔴 Lo que se pinta mientras el reporte no está (Nico, 01-10: «alguno no
+ * muestra la vista previa»). Cada vista hacía `if (!data) return null`: mientras
+ * cargaba, si fallaba o si venía vacío, el cajón quedaba con una caja en
+ * blanco. Ahora carga, falla con «Reintentar» o dice que no hay datos.
+ */
+function EsperandoElReporte({
+  cargando,
+  error,
+  queEs,
+  onReintentar,
+}: {
+  cargando?: boolean;
+  error?: unknown;
+  queEs: string;
+  onReintentar?: () => unknown;
+}) {
+  return (
+    <EstadoDeDatos
+      cargando={Boolean(cargando)}
+      error={error}
+      vacio
+      queEs={queEs}
+      onReintentar={onReintentar ? () => void onReintentar() : undefined}
+      cuandoVacio={<SinDatosDelReporte />}
+    >
+      {null}
+    </EstadoDeDatos>
+  );
+}
+
+/** Un bloque del cajón con su título: la vista se lee por partes, no como una pila. */
+function SeccionDelReporte({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h4 className="font-mono text-label uppercase tracking-wider text-fg-subtle">{titulo}</h4>
+      {children}
+    </section>
+  );
 }
 
 /**
@@ -100,9 +172,11 @@ function formatPeriodDisplayFn(period: { start: string; end: string }, fmtDate: 
  * casa y, por asesor, los arriendos que cerró. Sin plata y sin tendencias
  * inventadas.
  */
-function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const { report: data } = useComisionesReport(new Date().toISOString().slice(0, 7));
-  if (!data) return null;
+function ComisionesAgentePreview({ t }: { t: Traductor }) {
+  const { report: data, isLoading, errorCrudo, refetch } = useComisionesReport(mesEnCurso());
+  if (!data) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="las comisiones" />;
+  }
 
   return (
     <div className="space-y-4">
@@ -162,96 +236,159 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
 }
 
 /**
- * Ocupacion Preview
+ * Ocupación: la vista COMPLETA (la que antes vivía apilada debajo del
+ * catálogo, en «Reportes Avanzados»). Nico, 01-10: «son un montón de tablas
+ * dispuestas en scroll, se siente rarísimo». Ahora cada reporte se abre solo,
+ * en su cajón.
  */
-function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const { report: data } = useOcupacionReport();
-  if (!data) return null;
+function VistaDeOcupacion() {
+  const { report, isLoading, errorCrudo, refetch } = useOcupacionReport();
+  const datos = React.useMemo(() => adaptOccupancy(report), [report]);
+  if (!datos) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la ocupación" />;
+  }
+  return <OccupancyReport data={datos} />;
+}
 
+/** Cartera por edades: los tramos y, debajo, el recaudo y la mora del período. */
+function VistaDeCartera({ t }: { t: Traductor }) {
+  const { report } = useCarteraReport();
+  const recaudo = React.useMemo(() => adaptCollections(report), [report]);
   return (
-    <div className="space-y-4">
-      {/* Overall Summary */}
-      <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-primary font-medium">
-              {t('inmobiliaria.reporte.generalOccupancy')}
-            </p>
-            <p className="text-3xl font-bold text-primary">
-              {data.overallOccupancyRate}%
-            </p>
-          </div>
-          {/* 🔴 Acá había un «vs mes anterior» que inventaba la comparación.
-              Leía `previousMonthOccupancyRate`, que el back no manda, así que
-              el ternario caía SIEMPRE al else: flecha roja hacia abajo, y como
-              diferencia `|ocupación - 0|`, o sea la ocupación entera. Una
-              inmobiliaria con 83 % de ocupación leía «↓ 83 %» en rojo, una
-              caída que nunca ocurrió. Vuelve cuando el back mande el dato. */}
-        </div>
-      </div>
+    <div className="space-y-8">
+      <SeccionDelReporte titulo="Por días de mora">
+        <CarteraEdadesPreview t={t} />
+      </SeccionDelReporte>
+      {recaudo && (
+        <SeccionDelReporte titulo="Recaudo y mora">
+          <CollectionsReport data={recaudo} />
+        </SeccionDelReporte>
+      )}
+    </div>
+  );
+}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-2">
-        {/* 🔴 El total es el CATÁLOGO: la ocupación se mide «contra el inmueble
-            disponible, no contra el no disponible» (Nico, 2026-09-12). Si hay
-            inmuebles fuera, se dicen acá mismo en vez de desaparecer. */}
-        <div className="p-3 rounded-md bg-muted/50 text-center">
-          <Buildings className="w-5 h-5 mx-auto text-fg-muted mb-1" />
-          <p className="text-lg font-bold text-foreground">{data.totalProperties}</p>
-          <p className="text-xs text-muted-foreground">En catálogo</p>
-          {(data.totalOutOfCatalog ?? 0) > 0 && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {(data.totalOutOfCatalog ?? 0).toLocaleString('es-CO')} fuera del catálogo
-            </p>
-          )}
-        </div>
-        <div className="p-3 rounded-md bg-success-soft text-center">
-          <p className="text-lg font-bold text-success">
-            {data.totalOccupied}
-          </p>
-          <p className="text-xs text-success">{t('inmobiliaria.reporte.rented')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-warning-soft text-center">
-          <p className="text-lg font-bold text-warning">
-            {data.totalVacant}
-          </p>
-          <p className="text-xs text-warning">{t('inmobiliaria.reporte.available')}</p>
-        </div>
-      </div>
+/** Rendimiento de agentes: cierres, conversión y la comisión de la casa. */
+function VistaDeRendimiento() {
+  const mes = mesEnCurso();
+  const rendimiento = useRendimientoAgentesReport(mes);
+  const comisiones = useComisionesReport(mes);
+  const datos = React.useMemo(
+    () => adaptAgentPerformance(rendimiento.report, comisiones.report),
+    [rendimiento.report, comisiones.report],
+  );
+  if (!datos) {
+    return (
+      <EsperandoElReporte
+        cargando={rendimiento.isLoading || comisiones.isLoading}
+        error={rendimiento.errorCrudo ?? comisiones.errorCrudo}
+        onReintentar={() => {
+          void rendimiento.refetch();
+          void comisiones.refetch();
+        }}
+        queEs="el desempeño de los agentes"
+      />
+    );
+  }
+  return <AgentPerformanceReport data={datos} />;
+}
 
-      {/* By Zone */}
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-foreground">{t('inmobiliaria.reporte.byZone')}</h4>
-        <div className="space-y-2">
-          {data.zones.map((zone) => (
-            <div
-              key={zone.zone}
-              className="flex items-center justify-between p-3 rounded-md border border-border"
-            >
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">
-                  {zone.zone}
-                </span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-muted-foreground">
-                  {zone.occupied}/{zone.total}
-                </span>
-                <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-success rounded-full"
-                    style={{ width: `${zone.rate}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium text-foreground w-12 text-right">
-                  {zone.rate}%
-                </span>
-              </div>
+/** Flujo de caja: los meses y, debajo, el resumen ejecutivo que sale de ellos. */
+function VistaDeFlujo({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) => string }) {
+  const flujo = useFlujoCajaReport('semester');
+  const ocupacion = useOcupacionReport();
+  const ejecutivo = React.useMemo(
+    () => adaptExecutive(flujo.report, ocupacion.report),
+    [flujo.report, ocupacion.report],
+  );
+  return (
+    <div className="space-y-8">
+      <SeccionDelReporte titulo="Ingresos y comisiones">
+        <FlujoCajaPreview t={t} fmtDate={fmtDate} />
+      </SeccionDelReporte>
+      {ejecutivo && (
+        <SeccionDelReporte titulo="Resumen ejecutivo">
+          <ExecutiveSummary data={ejecutivo} />
+        </SeccionDelReporte>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Rentabilidad por inmueble. 🔴 Antes «Vista previa» navegaba a su pantalla y
+ * el cajón no mostraba nada (Nico, 01-10). Ahora: los totales del rango y los
+ * diez inmuebles que más le dejan al propietario; la tabla entera, ordenable y
+ * con su período, sigue en su pantalla.
+ */
+function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period'] }) {
+  const router = useRouter();
+  const { desde, hasta } = parametrosDelPeriodo('rentabilidad-inmueble', periodo).params;
+  const { report, isLoading, errorCrudo, refetch } = useRentabilidadReport(desde, hasta);
+  if (!report) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la rentabilidad" />;
+  }
+  const { totales } = report;
+  const cifras = [
+    { rotulo: 'Esperado', valor: formatCurrency(totales.esperadoCop) },
+    { rotulo: 'Recaudado', valor: formatCurrency(totales.recaudadoCop) },
+    { rotulo: 'Comisión', valor: formatCurrency(totales.comisionCop) },
+    { rotulo: 'Neto al propietario', valor: formatCurrency(totales.netoPropietarioCop) },
+  ];
+  return (
+    <div className="space-y-8">
+      <SeccionDelReporte titulo={`De ${report.desde} a ${report.hasta} · ${totales.inmuebles} inmuebles`}>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {cifras.map((c) => (
+            <div key={c.rotulo} className="rounded-md border border-border-faint bg-surface-muted px-3 py-2.5">
+              <p className="text-caption text-fg-muted">{c.rotulo}</p>
+              <p className="font-mono text-body font-semibold tabular-nums text-fg">{c.valor}</p>
             </div>
           ))}
         </div>
+      </SeccionDelReporte>
+      {report.filas.length > 0 && (
+        <SeccionDelReporte titulo="Los que más le dejan al propietario">
+          <GraficoDeRentabilidad filas={report.filas} />
+        </SeccionDelReporte>
+      )}
+      <Button
+        variant="outline"
+        hideArrow
+        onClick={() => router.push('/panel/inmobiliaria/reportes/rentabilidad')}
+        data-testid="ver-rentabilidad-completa"
+      >
+        Ver la tabla completa, por inmueble
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Extractos: son POR propietario y salen de la dispersión de su mes, así que
+ * no hay un archivo único. En vez de «Vista previa no disponible», dice dónde
+ * están.
+ */
+function VistaDeExtractos({ reportId }: { reportId: ReportId }) {
+  const router = useRouter();
+  const como = comoSeBaja(reportId);
+  const donde = !como.disponible ? como.dondeSiHay : undefined;
+  return (
+    <div className="flex flex-col items-start gap-4 rounded-lg border border-border bg-surface p-6">
+      <div className="space-y-1">
+        <p className="text-body font-semibold text-fg">Cada propietario tiene su extracto</p>
+        <p className="text-body-sm text-fg-muted">
+          {!como.disponible ? como.motivo : null} Ahí ves lo que se le cobró, la comisión y lo que se
+          le giró, mes por mes.
+        </p>
       </div>
+      {donde && (
+        <Button variant="outline" hideArrow onClick={() => router.push(donde.href)}>
+          {donde.label}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -259,9 +396,11 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
 /**
  * Vencimientos Preview
  */
-function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const { report: data } = useVencimientosReport();
-  if (!data) return null;
+function VencimientosPreview({ t }: { t: Traductor }) {
+  const { report: data, isLoading, errorCrudo, refetch } = useVencimientosReport();
+  if (!data) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="los vencimientos" />;
+  }
 
   const bucketColors = {
     '0-30': 'bg-danger-soft text-danger',
@@ -340,9 +479,11 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
 /**
  * Flujo de Caja Preview
  */
-function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<string, string | number>) => string; fmtDate: (d: string) => string }) {
-  const { report: data } = useFlujoCajaReport('semester');
-  if (!data) return null;
+function FlujoCajaPreview({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) => string }) {
+  const { report: data, isLoading, errorCrudo, refetch } = useFlujoCajaReport('semester');
+  if (!data) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="el flujo de caja" />;
+  }
 
   return (
     <div className="space-y-4">
@@ -437,9 +578,11 @@ const TONO_DEL_TRAMO: Record<ReturnType<typeof tramosDelInformeDeEdades>[number]
 /**
  * Cartera Edades Preview
  */
-export function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
-  const { report: data } = useCarteraReport();
-  if (!data) return null;
+export function CarteraEdadesPreview({ t }: { t: Traductor }) {
+  const { report: data, isLoading, errorCrudo, refetch } = useCarteraReport();
+  if (!data) {
+    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la cartera" />;
+  }
 
   return (
     <div className="space-y-4">
@@ -517,23 +660,6 @@ export function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<s
 }
 
 /**
- * Generic Preview Placeholder
- */
-function GenericPreview({ report, t }: { report: ReportDefinition; t: (key: string, params?: Record<string, string | number>) => string }) {
-  return (
-    <div className="p-8 rounded-lg bg-muted/50 text-center">
-      <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-      <h4 className="text-lg font-semibold text-foreground mb-2">
-        {t('inmobiliaria.reporte.previewNotAvailable')}
-      </h4>
-      <p className="text-sm text-muted-foreground">
-        {t('inmobiliaria.reporte.generateToView', { title: report.title })}
-      </p>
-    </div>
-  );
-}
-
-/**
  * ReporteViewer - Sheet drawer for previewing report data
  * Shows report header, applied filters, preview content, and export actions
  */
@@ -576,22 +702,31 @@ export function ReporteViewer({
   // arriba del botón que dice «Descargar CSV» y baja un `.csv`.
   const formatoDelArchivoQueBaja = formatoDelArchivo(report.id);
 
-  // Get preview component based on report type
+  // Qué dice el archivo del período elegido: la misma nota que el aviso de la
+  // descarga. Va al lado del botón, que es de lo que habla.
+  const como = comoSeBaja(report.id as ReportId);
+  const notaDelArchivo = como.disponible ? parametrosDelPeriodo(como.tipo, filters.period).nota : null;
+
+  // La vista de cada reporte. Ninguna deja el cajón en blanco: todas cargan,
+  // fallan con «Reintentar» o dicen que no hay datos.
   const PreviewContent = () => {
     switch (report.id) {
       case 'cartera-edades':
-        return <CarteraEdadesPreview t={t} />;
+        return <VistaDeCartera t={t} />;
       case 'comisiones-agente':
-      case 'rendimiento-agentes':
         return <ComisionesAgentePreview t={t} />;
+      case 'rendimiento-agentes':
+        return <VistaDeRendimiento />;
       case 'ocupacion-portafolio':
-        return <OcupacionPreview t={t} />;
+        return <VistaDeOcupacion />;
       case 'vencimientos':
         return <VencimientosPreview t={t} />;
       case 'flujo-caja':
-        return <FlujoCajaPreview t={t} fmtDate={fmtDate} />;
+        return <VistaDeFlujo t={t} fmtDate={fmtDate} />;
+      case 'rentabilidad-inmueble':
+        return <VistaDeRentabilidad periodo={filters.period} />;
       default:
-        return <GenericPreview report={report} t={t} />;
+        return <VistaDeExtractos reportId={report.id as ReportId} />;
     }
   };
 
@@ -600,7 +735,8 @@ export function ReporteViewer({
       {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll,
           pie fijo) con `SheetContent` propio: `Cajon` apaga `aria-describedby`
           y este cajón SÍ registra su descripción (ver el test de al lado). */}
-      <SheetContent className="flex w-full flex-col gap-0 !p-0 sm:max-w-xl">
+      {/* Ancho: la vista completa trae tablas y gráficos; en 576 px no cabían. */}
+      <SheetContent className="flex w-full flex-col gap-0 !p-0 sm:max-w-3xl">
         {/* Header */}
         <div className="flex-none border-b border-border px-6 py-5 pr-14">
           {/* La ✕ la pone `SheetContent`: es la misma de todos los cajones y
@@ -649,41 +785,12 @@ export function ReporteViewer({
           </div>
         </div>
 
-        {/* Filters Applied: fijos debajo de la cabecera, no hacen scroll. */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex-none px-6 py-4 bg-primary-soft border-b border-primary/30"
-        >
-          <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
-            {t('inmobiliaria.reporte.appliedFilters')}
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card border border-primary/30">
-              <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
-              <span className="text-sm font-medium text-foreground">
-                {formatPeriodDisplayFn(filters.period, fmtDate)}
-              </span>
-            </div>
-            {filters.zone && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card border border-primary/30">
-                <MapPin className="w-4 h-4 text-primary" weight="duotone" />
-                <span className="text-sm font-medium text-foreground">{filters.zone}</span>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
         {/* Preview Content */}
-        <CajonCuerpo className="space-y-4">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {t('inmobiliaria.reporte.previewLabel')}
-          </h4>
+        <CajonCuerpo>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-lg border border-border bg-card p-4"
+            transition={{ delay: 0.05 }}
           >
             <PreviewContent />
           </motion.div>
@@ -691,7 +798,15 @@ export function ReporteViewer({
 
         {/* Actions Footer */}
         <CajonPie>
-          {/* Export Primary */}
+          {notaDelArchivo && (
+            <p className="mr-auto flex min-w-0 items-center gap-2 text-caption text-fg-muted" data-testid="nota-del-archivo">
+              <CalendarBlank className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{notaDelArchivo}</span>
+            </p>
+          )}
+          {/* Sin archivo (los extractos) no hay botón: antes decía «Descargar
+              CSV» y respondía «todavía no se puede descargar». */}
+          {formatoDelArchivoQueBaja && (
           <Button
             hideArrow
             onClick={() => handleExport(report.format)}
@@ -712,6 +827,7 @@ export function ReporteViewer({
               </>
             )}
           </Button>
+          )}
 
           {/* Acá había un botón de imprimir (`window.print()`) sin una sola
               regla `@media print` en este componente: imprimía el panel

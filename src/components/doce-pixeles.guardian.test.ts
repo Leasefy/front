@@ -92,7 +92,10 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // (el logo queda sólo en pantalla completa y transiciones): los textos que
 // volvieron de `CargaDeMarca` van en `text-caption`, y la etiqueta «Completado»
 // del panel de ejecución subió a 13 para igualar a «En ejecución».
-const CUANTOS_HABIA = 2739;
+// 01-10 tarde: 2733 al pasar los reportes a un cajón por reporte (salieron el
+// bloque «Filtros aplicados» y dos vistas de 12 px). Develop había subido uno
+// (2740) con la migración de terceros; queda contado acá.
+const CUANTOS_HABIA = 2733;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

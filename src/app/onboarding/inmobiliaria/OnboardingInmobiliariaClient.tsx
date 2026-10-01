@@ -250,6 +250,7 @@ function OnboardingWizard({
                 onSubmit={withOverrideClear(submitAgency)}
                 submitError={error !== null && error.kind === 'validation' ? error.message : null}
                 prefill={computeAgencyStepPrefill(preStepAgency, draft)}
+                sessionId={sessionId}
               />
             ) : effectiveStep === 'members' || pendingMembersInvites ? (
               <MembersStepForm
@@ -258,6 +259,7 @@ function OnboardingWizard({
                 submitError={error !== null && error.kind === 'validation' ? error.message : null}
                 pendingInvites={pendingMembersInvites}
                 onContinueAfterInvites={() => setPendingMembersInvites(null)}
+                sessionId={sessionId}
               />
             ) : effectiveStep === 'payment_provider' ? (
               // Invisible step (fix/onboarding-skip-payment) — an inmobiliaria

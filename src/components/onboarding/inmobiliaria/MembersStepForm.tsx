@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useFieldArray, useForm, type FieldPath } from 'react-hook-form'
+import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { ArrowRight, Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,6 +48,8 @@ export interface MembersStepFormProps {
   submitError?: string | null
   /** Con esto puesto se muestra el resultado de las invitaciones en vez del formulario. */
   pendingInvites: PendingMembersInvites | null
+  /** Con la sesión, lo escrito y no enviado vuelve al devolverse de paso (`borrador-local.ts`). */
+  sessionId?: string
   /** La persona ya leyó el resultado y quiere seguir. */
   onContinueAfterInvites: () => void
 }
@@ -218,15 +221,30 @@ export function MembersStepForm({
   submitError,
   pendingInvites,
   onContinueAfterInvites,
+  sessionId,
 }: MembersStepFormProps) {
+  // Las filas escritas y no enviadas vuelven al devolverse de paso.
+  const borrador = sessionId ? leerBorradorLocal<MembersStepFormValues>(sessionId, 'members') : null
   const {
     register,
     handleSubmit,
     control,
+    watch,
     setError,
     formState: { errors },
-  } = useForm<MembersStepFormValues>({ defaultValues: MEMBERS_STEP_DEFAULT_VALUES })
+  } = useForm<MembersStepFormValues>({
+    defaultValues:
+      borrador?.members && borrador.members.length > 0
+        ? { members: borrador.members }
+        : MEMBERS_STEP_DEFAULT_VALUES,
+  })
   const { fields, append, remove } = useFieldArray({ control, name: 'members' })
+
+  useEffect(() => {
+    if (!sessionId) return
+    const sub = watch((valores) => guardarBorradorLocal(sessionId, 'members', valores))
+    return () => sub.unsubscribe()
+  }, [watch, sessionId])
 
   const submit = handleSubmit(async (values) => {
     const parsed = membersStepSchema.safeParse(values)
@@ -236,7 +254,8 @@ export function MembersStepForm({
       }
       return
     }
-    await onSubmit(parsed.data)
+    const resultado = await onSubmit(parsed.data)
+    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   })
 
   /**
@@ -246,7 +265,8 @@ export function MembersStepForm({
    * "Continuar" button still validates whatever rows are present.
    */
   const skipStep = async () => {
-    await onSubmit({ members: [] })
+    const resultado = await onSubmit({ members: [] })
+    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   }
 
   if (pendingInvites) {

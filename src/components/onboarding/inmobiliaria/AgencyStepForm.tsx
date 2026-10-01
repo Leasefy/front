@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
+import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { PhoneInput } from '@leasefy/cadence'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -44,6 +46,12 @@ export interface AgencyStepFormProps {
    * only seeded with its initial value.
    */
   prefill?: Partial<AgencyStepFormValues>
+  /**
+   * Con la sesión, lo escrito y no enviado se guarda como borrador local y
+   * vuelve al devolverse de paso (ver `borrador-local.ts`). Sin ella (pruebas,
+   * usos sueltos) el formulario se comporta como siempre.
+   */
+  sessionId?: string
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -62,7 +70,10 @@ function hasPrefilledValue(value: string | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }: AgencyStepFormProps) {
+export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill, sessionId }: AgencyStepFormProps) {
+  // Lo escrito y no enviado la última vez pisa al prefill: es lo más reciente.
+  // (Los campos confirmados son readOnly, así que su borrador == su prefill.)
+  const borrador = sessionId ? leerBorradorLocal<AgencyStepFormValues>(sessionId, 'agency') : null
   const {
     register,
     handleSubmit,
@@ -75,9 +86,21 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
     defaultValues: {
       ...AGENCY_STEP_DEFAULT_VALUES,
       ...prefill,
-      address: { ...AGENCY_STEP_DEFAULT_VALUES.address, ...prefill?.address },
+      ...borrador,
+      address: {
+        ...AGENCY_STEP_DEFAULT_VALUES.address,
+        ...prefill?.address,
+        ...borrador?.address,
+      },
     },
   })
+
+  // Cada tecla actualiza el borrador local del paso.
+  useEffect(() => {
+    if (!sessionId) return
+    const sub = watch((valores) => guardarBorradorLocal(sessionId, 'agency', valores))
+    return () => sub.unsubscribe()
+  }, [watch, sessionId])
   // El país vive en el formulario (no en un `useState` aparte) para que el
   // esquema valide el largo del número con él.
   const paisDelTelefono = watch('primaryContactCountry') || 'CO'
@@ -105,7 +128,9 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       }
       return
     }
-    await onSubmit(toAgencyRequest(parsed.data))
+    const resultado = await onSubmit(toAgencyRequest(parsed.data))
+    // Enviado con éxito: el borrador de verdad ya vive en el back.
+    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'agency')
   })
 
   return (
@@ -265,12 +290,15 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
             <PhoneInput
               id="primaryContactPhone"
               autoComplete="tel"
+              inputMode="numeric"
               countryCode={paisDelTelefono}
               onCountryChange={(codigo) =>
                 setValue('primaryContactCountry', codigo, { shouldValidate: false })
               }
               value={field.value ?? ''}
-              onChange={field.onChange}
+              // El PhoneInput del DS entrega el texto tal cual (dejaba
+              // escribir letras — Nico, 30-09): acá solo pasan dígitos.
+              onChange={(v) => field.onChange(v.replace(/\D/g, ''))}
               onBlur={field.onBlur}
               invalid={Boolean(errors.primaryContactPhone)}
             />

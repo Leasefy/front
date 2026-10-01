@@ -278,7 +278,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
       data-testid={`perfil-${opcion.valor}`}
       data-elegida={elegida || undefined}
       className={cn(
-        'group relative block w-full cursor-pointer overflow-hidden bg-surface-muted text-left',
+        'group relative flex w-full cursor-pointer flex-col overflow-hidden bg-surface text-left',
         'transition-[box-shadow,opacity] duration-300',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:cursor-default',
@@ -290,75 +290,73 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
           'hover:shadow-[0_30px_60px_-24px_rgba(20,19,15,0.5)] hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-bg',
       )}
     >
-      <Image
-        src={opcion.imagen}
-        alt=""
-        fill
-        priority
-        sizes="(min-width: 1024px) 460px, (min-width: 640px) 50vw, 100vw"
-        className={cn(
-          'object-cover transition-[transform,filter] duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]',
-          atenuada && 'grayscale-[0.5]',
+      {/* La foto se lleva la mayor parte de la tarjeta; el texto vive abajo,
+          sobre blanco (Nico, 2026-09-30: sobre la foto no se leía bien). */}
+      <span className="relative block w-full flex-1 overflow-hidden bg-surface-muted">
+        <Image
+          src={opcion.imagen}
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 460px, (min-width: 640px) 50vw, 100vw"
+          className={cn(
+            'object-cover transition-[transform,filter] duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]',
+            atenuada && 'grayscale-[0.5]',
+          )}
+          style={{ objectPosition: opcion.encuadre }}
+        />
+
+        {/* El «Elegir» que invita al clic. Decorativo (aria-hidden): el nombre del botón ya es el rol. */}
+        {deshabilitada ? null : (
+          <span
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3.5 py-1.5',
+              'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-all duration-300',
+              'motion-safe:translate-y-1 group-hover:opacity-100 group-focus-visible:opacity-100',
+              'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0',
+            )}
+          >
+            Elegir
+            <ArrowRight className="h-3.5 w-3.5" weight="bold" aria-hidden />
+          </span>
         )}
-        style={{ objectPosition: opcion.encuadre }}
-      />
 
-      {/* El degradé que hace legible el texto; sólo donde el texto vive. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
-      />
-
-      {/* El «Elegir» que invita al clic. Decorativo (aria-hidden): el nombre del botón ya es el rol. */}
-      {deshabilitada ? null : (
-        <span
-          aria-hidden
-          className={cn(
-            'pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5',
-            'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-all duration-300',
-            'motion-safe:translate-y-1 group-hover:opacity-100 group-focus-visible:opacity-100',
-            'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0',
-          )}
-        >
-          Elegir
-          <ArrowRight className="h-3.5 w-3.5" weight="bold" aria-hidden />
-        </span>
-      )}
-
-      {elegida || yendo ? (
-        <motion.span
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-          className={cn(
-            'absolute right-4 top-4 flex size-8 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)]',
-            yendo ? 'bg-surface text-primary' : 'bg-primary text-primary-fg',
-          )}
-          data-testid={yendo ? 'perfil-yendo' : 'perfil-elegido'}
-        >
-          {yendo ? (
-            <Spinner size="xs" variant="current" />
-          ) : (
-            <Check className="h-4 w-4" weight="bold" aria-hidden />
-          )}
-        </motion.span>
-      ) : null}
+        {elegida || yendo ? (
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+            className={cn(
+              'absolute right-4 top-4 flex size-8 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)]',
+              yendo ? 'bg-surface text-primary' : 'bg-primary text-primary-fg',
+            )}
+            data-testid={yendo ? 'perfil-yendo' : 'perfil-elegido'}
+          >
+            {yendo ? (
+              <Spinner size="xs" variant="current" />
+            ) : (
+              <Check className="h-4 w-4" weight="bold" aria-hidden />
+            )}
+          </motion.span>
+        ) : null}
+      </span>
 
       <motion.span
         layout="position"
         transition={RESORTE}
-        className={cn('absolute inset-x-0 bottom-0 block', compacta ? 'p-5' : 'p-6 sm:p-7')}
+        className={cn('block bg-surface', compacta ? 'px-4 py-3' : 'px-5 py-4 sm:px-6 sm:py-5')}
       >
         <span
           className={cn(
-            'block font-heading font-medium leading-tight tracking-[-0.02em] text-white',
-            compacta ? 'text-[19px]' : 'text-[24px] sm:text-[26px]',
+            'block font-heading font-medium leading-tight tracking-[-0.02em] text-fg',
+            compacta ? 'text-[16px]' : 'text-[21px] sm:text-[23px]',
           )}
         >
           {opcion.titulo}
         </span>
         {compacta ? null : (
-          <span className="mt-1.5 block max-w-[36ch] text-pretty text-[14px] leading-relaxed text-white/75">
+          <span className="mt-1 block max-w-[40ch] text-pretty text-[14px] leading-relaxed text-fg-muted">
             {opcion.descripcion}
           </span>
         )}

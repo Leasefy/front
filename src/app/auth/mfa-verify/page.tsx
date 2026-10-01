@@ -6,10 +6,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, SignOut, UserCircle } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
-import { getAccessToken } from '@/lib/api/client';
+import { getAccessToken, hayRespuestaDeSesion } from '@/lib/api/client';
+import { decodeAccessToken } from '@/lib/auth/jwt';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
@@ -56,11 +58,34 @@ function conTope<T>(promesa: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
- * El factor verificado por HTTP (`GET /auth/v1/user`), sin pasar por el
- * candado del SDK. Falla si no hay token o Supabase no contesta en 10 s.
+ * El token en memoria lo pone el AuthProvider un instante DESPUÉS de montar:
+ * al recargar esta pantalla todavía no está. Se espera (con tope) en vez de
+ * rendirse — rendirse dejaba la pregunta del factor colgada del SDK, y con
+ * ella el pie con el texto equivocado y «Verificar» sin factor (Nico, 01-10).
  */
-async function factorVerificadoPorHttp(): Promise<string | null> {
-  const token = getAccessToken();
+async function esperarElToken(seguir: () => boolean, topeMs = 8_000): Promise<string | null> {
+  const desde = Date.now();
+  let token = getAccessToken();
+  // Si el AuthProvider ya contestó y no hay token, no hay sesión: no se espera.
+  while (!token && !hayRespuestaDeSesion() && seguir() && Date.now() - desde < topeMs) {
+    await new Promise((r) => setTimeout(r, 150));
+    token = getAccessToken();
+  }
+  return token;
+}
+
+/** El correo viene dentro del token de Supabase: se lee sin esperar a nadie. */
+function correoDelToken(token: string | null): string | null {
+  const correo = decodeAccessToken(token)?.email;
+  return typeof correo === 'string' && correo ? correo : null;
+}
+
+/**
+ * El factor verificado por HTTP (`GET /auth/v1/user`), sin pasar por el
+ * candado del SDK. Falla si el token no llega o Supabase no contesta en 10 s.
+ */
+async function factorVerificadoPorHttp(seguir: () => boolean): Promise<string | null> {
+  const token = await esperarElToken(seguir);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!token || !url || !anonKey) throw new Error('sin sesión');
@@ -125,16 +150,26 @@ export default function MfaVerifyPage() {
   // esta cuenta (Nico, 01-10: «le coloqué el de todos los que tengo»).
   const [rechazados, setRechazados] = useState(0);
   // Antes del segundo factor el perfil del back puede no haber cargado: el
-  // correo se lee de la sesión de Supabase, que sí está.
-  const [correoDeLaSesion, setCorreoDeLaSesion] = useState<string | null>(null);
+  // correo se lee del token (al instante, si ya está) o de la sesión de
+  // Supabase. Mientras se busca, la píldora guarda su sitio: que la tarjeta no
+  // salte cuando aparece (Nico, 01-10).
+  const [correoDeLaSesion, setCorreoDeLaSesion] = useState<string | null>(() =>
+    correoDelToken(getAccessToken()),
+  );
+  const [buscandoElCorreo, setBuscandoElCorreo] = useState(true);
   useEffect(() => {
     let vivo = true;
-    void getSupabase()
-      ?.auth.getSession?.()
-      .then(({ data }) => {
-        if (vivo) setCorreoDeLaSesion(data?.session?.user?.email ?? null);
-      })
+    const anotar = (correo: string | null | undefined) => {
+      if (vivo && correo) setCorreoDeLaSesion((actual) => actual ?? correo);
+    };
+    const porLaSesion = Promise.resolve(getSupabase()?.auth.getSession?.())
+      .then((r) => anotar(r?.data?.session?.user?.email))
       .catch(() => {});
+    const porElToken = esperarElToken(() => vivo).then((token) => anotar(correoDelToken(token)));
+    // `getSession` puede quedarse esperando el candado del SDK: con tope.
+    void Promise.allSettled([conTope(porLaSesion, 8_000), porElToken]).then(() => {
+      if (vivo) setBuscandoElCorreo(false);
+    });
     return () => {
       vivo = false;
     };
@@ -221,7 +256,7 @@ export default function MfaVerifyPage() {
       if (error) throw error;
       return factors?.totp?.find((f) => f.status === 'verified')?.id ?? null;
     })();
-    const consulta = primeroQueConteste([porElSdk, factorVerificadoPorHttp()]);
+    const consulta = primeroQueConteste([porElSdk, factorVerificadoPorHttp(() => vivo)]);
     consultaDelFactorRef.current = consulta;
     consulta
       .then((id) => {
@@ -416,7 +451,11 @@ export default function MfaVerifyPage() {
                         ? 'Activa tu segundo factor'
                         : 'Verificación de seguridad'}
                 </h1>
-                <p className="text-pretty text-body-sm text-fg-muted">
+                {/* `lg:-mx-4`: 16 px más por lado, dentro del relleno de la
+                    tarjeta. «Si perdiste la app…» mide 778 px y en 400 se iba
+                    a tres renglones por una palabra; en 432 son dos (Nico,
+                    01-10). */}
+                <p className="text-pretty text-body-sm text-fg-muted lg:-mx-4">
                   {restablecido
                     ? 'Listo: quitamos el anterior. Escanea el código QR con tu app de autenticación y escribe el primer código; al terminar entras.'
                     : sinLaApp
@@ -429,11 +468,15 @@ export default function MfaVerifyPage() {
                     tiene varias) lo ve sin adivinar (Nico, 01-10). */}
                 {correoDeLaCuenta ? (
                   <p className="flex justify-center pt-1" data-testid="mfa-verify-cuenta">
-                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 py-1.5 text-body-sm text-fg">
+                    <span className="inline-flex h-9 max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 text-body-sm text-fg">
                       <UserCircle className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
                       <span className="truncate">{correoDeLaCuenta}</span>
                     </span>
                   </p>
+                ) : buscandoElCorreo ? (
+                  <div className="flex justify-center pt-1" data-testid="mfa-verify-cuenta-cargando" aria-hidden="true">
+                    <Skeleton className="h-9 w-64 rounded-full bg-surface-muted" />
+                  </div>
                 ) : null}
               </div>
 
@@ -444,7 +487,7 @@ export default function MfaVerifyPage() {
               */}
               {sinLaApp && !restablecido ? (
                 <RestablecerSegundoFactorPorCorreo
-                  correo={user?.email}
+                  correo={correoDeLaCuenta}
                   usuarioId={usuarioId}
                   onRestablecido={() => {
                     setRestablecido(true);
@@ -533,10 +576,14 @@ export default function MfaVerifyPage() {
                       la reconoce quien cambió de celular o ve que ningún
                       código funciona (Nico, 01-10). */}
                   {/* Una sola línea desde sm (Nico, 01-10); en teléfono no cabe. */}
+                  {/* 🔴 Un solo texto, el del que YA tiene la app. Este pie sólo
+                      se ve con factor o mientras se pregunta (sin factor, la
+                      tarjeta pasa a inscribirlo y el pie se va), y a esta
+                      pantalla se llega porque Supabase sabe que hay factor. El
+                      «¿Todavía no tienes la app?» que salía mientras tanto era
+                      una adivinanza que cambiaba al rato (Nico, 01-10). */}
                   <p className="text-caption text-fg-muted sm:whitespace-nowrap">
-                    {tieneFactor === true
-                      ? '¿Cambiaste de celular, borraste la app o ningún código funciona?'
-                      : '¿Todavía no tienes la app de autenticación?'}
+                    ¿Cambiaste de celular, borraste la app o ningún código funciona?
                   </p>
                   <Button
                     variant="link"
@@ -545,11 +592,7 @@ export default function MfaVerifyPage() {
                     disabled={isLoading || revisandoLaCuenta}
                     data-testid="no-tengo-la-app"
                   >
-                    {revisandoLaCuenta
-                      ? 'Revisando tu cuenta…'
-                      : tieneFactor === true
-                      ? 'Restablécelo con un código a tu correo'
-                      : 'Actívala ahora'}
+                    {revisandoLaCuenta ? 'Revisando tu cuenta…' : 'Restablécelo con un código a tu correo'}
                   </Button>
                 </div>
               )}

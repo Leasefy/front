@@ -100,7 +100,10 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
           </div>
         </div>
 
-        <div className="flex items-end gap-1.5 h-40">
+        {/* `items-stretch`: alineadas abajo, las columnas medían lo que su
+            contenido y las barras —porcentajes de la columna— quedaban en 0
+            (el mismo defecto de la tendencia de ocupación, Nico 01-10). */}
+        <div className="flex items-stretch gap-1.5 h-40">
           {byMonth.map((m) => {
             const collectedPct = (m.collected / maxExpected) * 100;
             const latePct = (m.late / maxExpected) * 100;
@@ -112,7 +115,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap">
                   {textoDeTasa(m.moraRate)} mora
                 </span>
-                <div className="w-full flex-1 flex flex-col justify-end gap-px">
+                <div className="w-full min-h-0 flex-1 flex flex-col justify-end gap-px">
                   <div
                     className="w-full bg-danger dark:bg-danger/60 rounded-t transition-all duration-300"
                     style={{ height: `${latePct}%` }}

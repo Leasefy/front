@@ -17,7 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -459,9 +459,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <div className="space-y-1.5">
               <Label htmlFor="factura-proveedor">{t(k('proveedorLabel'))}</Label>
               {vendors === null && catalogosError === null ? (
-                <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
-                  <Spinner size="sm" variant="muted" /> {t(k('proveedorCargando'))}
-                </p>
+                <CargaDeMarca tamano="sm" tono="negro" texto={t(k('proveedorCargando'))} />
               ) : (
                 <Combobox
                   value={form.vendorId || undefined}
@@ -724,9 +722,13 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   // ── Extracting ──────────────────────────────────────────────────────────
   if (step === 'extracting') {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
-        <Spinner size="md" variant="muted" />
-        <p className="text-sm text-muted-foreground">{t(k('extractingN'), { n: String(files.length) })}</p>
+      <div className="flex justify-center py-14">
+        <CargaDeMarca
+          tamano="md"
+          tono="negro"
+          texto={t(k('extractingN'), { n: String(files.length) })}
+          disposicion="apilada"
+        />
       </div>
     );
   }

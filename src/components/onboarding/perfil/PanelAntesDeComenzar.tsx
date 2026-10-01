@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre'
 import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
@@ -49,14 +49,12 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
   // quede en el centro cargando, que no se vean las cards»).
   if (esLaApertura(status)) {
     return (
-      <div
-        role="status"
-        className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center"
+      <CargaDeMarca
+        disposicion="apilada"
+        texto="Abriendo tu registro…"
+        className="flex min-h-[40vh] text-center"
         data-testid="abriendo-registro"
-      >
-        <Spinner />
-        <p className="text-body-sm text-fg-muted">Abriendo tu registro…</p>
-      </div>
+      />
     )
   }
 

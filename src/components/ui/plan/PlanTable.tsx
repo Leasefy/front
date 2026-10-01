@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { CaretDown, CaretUp, CaretUpDown, Check, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PlanProgressBar } from './PlanProgressBar';
 import { PlanStatusBadge, PlanStatusType } from './PlanStatusBadge';
 
@@ -209,10 +210,7 @@ export function PlanTable<T extends object>({
   if (loading) {
     return (
       <div className={cn('bg-surface border border-plan-border overflow-hidden', className)}>
-        <div className="p-8 text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-plan-border border-t-plan-status-green rounded-full mx-auto" />
-          <p className="text-[13px] text-plan-muted mt-3">Cargando...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Cargando..." className="flex p-8" />
       </div>
     );
   }

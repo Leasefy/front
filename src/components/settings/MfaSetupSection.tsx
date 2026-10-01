@@ -551,7 +551,8 @@ export function MfaSetupSection({
             disabled={isLoading || code.length !== 6}
             className="flex-1 rounded-lg bg-success text-white hover:bg-success"
           >
-            {isLoading ? <Spinner size="xs" variant="current" /> : <ShieldCheck className="w-4 h-4" />}
+            {/* `white` y no `current`: el botón es `secondary` (carga azul) pintado de verde. */}
+            {isLoading ? <Spinner size="xs" variant="white" /> : <ShieldCheck className="w-4 h-4" />}
             {isLoading ? 'Verificando...' : 'Verificar'}
           </Button>
         </div>
@@ -579,7 +580,7 @@ export function MfaSetupSection({
         disabled={isLoading}
         className="rounded-md text-xs bg-success text-white hover:bg-success"
       >
-        {isLoading ? <Spinner size="xs" variant="current" /> : <Shield className="w-3.5 h-3.5" />}
+        {isLoading ? <Spinner size="xs" variant="white" /> : <Shield className="w-3.5 h-3.5" />}
         {isLoading ? 'Cargando...' : 'Activar'}
       </Button>
     </div>

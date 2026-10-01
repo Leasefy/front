@@ -5,12 +5,15 @@ import { Button as DSButton, buttonVariants as dsButtonVariants } from "@leasefy
 
 import { cn } from "@/lib/utils"
 
+import { CargaDeMarca, ProveedorDeTonoDeCarga, type TonoDeCarga } from "./carga-de-marca"
+
 /**
  * ADAPTER fino sobre el Button de @leasefy/cadence que preserva la API local del mvp:
  * - variant: default/white/destructive/outline/secondary/glass/ghost/link
  *   (default → primary del DS; white/glass viven ahora en el DS).
  * - size: default/sm/lg/icon (default → md del DS + h-10 por fidelidad).
- * - isLoading → loading, hideArrow → apaga la flecha automática.
+ * - isLoading → el logo de Leasefy en carga (CargaDeMarca xs), pintado por este
+ *   wrapper y no por el DS; hideArrow → apaga la flecha automática.
  * - Flecha ArrowUpRight automática en default/white (prop `arrow` del DS).
  */
 
@@ -84,34 +87,104 @@ function buttonVariants(options?: {
   )
 }
 
+// Tono del logo de carga según el fondo del botón (pedido de Nico, 30-09):
+// sobre un fondo lleno va blanco; sobre uno claro, azul (o negro si es discreto).
+// `white` es blanco también en oscuro, por eso no puede pasar a blanco.
+const TONO_DE_CARGA: Record<ButtonVariant, TonoDeCarga> = {
+  default: "sobre-color",
+  destructive: "sobre-color",
+  glass: "sobre-color",
+  white: "sobre-blanco",
+  outline: "azul",
+  secondary: "azul",
+  link: "azul",
+  ghost: "negro",
+}
+
+// Mientras carga, el botón queda `disabled` y el DS le pondría el gris de
+// deshabilitado: cargar no es estar deshabilitado, así que conserva su color
+// (y el logo blanco se lee sobre el azul del primario).
+const LOADING_KEEPS_COLOR: Record<ButtonVariant, string> = {
+  default: "disabled:bg-primary disabled:text-primary-fg",
+  destructive: "disabled:bg-danger disabled:text-white",
+  white: "disabled:bg-white disabled:text-fg",
+  glass: "disabled:bg-white/15 disabled:text-white disabled:border-white/25",
+  outline: "disabled:bg-transparent disabled:text-fg disabled:border-border",
+  secondary: "disabled:bg-surface disabled:text-fg disabled:border-border",
+  ghost: "disabled:text-fg",
+  link: "disabled:text-fg",
+}
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, variant, size, asChild = false, isLoading = false, hideArrow = false, children, ...props },
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      isLoading = false,
+      hideArrow = false,
+      disabled,
+      children,
+      ...props
+    },
     ref
   ) => {
     const resolvedVariant = variant ?? "default"
     const resolvedSize = size ?? "default"
+    const tono = TONO_DE_CARGA[resolvedVariant]
+
+    // La carga la pinta este wrapper y no el DS: el `loading` de cadence dibuja
+    // su propio CircleNotch girando, y acá va el logo de Leasefy. Por eso al DS
+    // le llega `loading={false}` y este wrapper repone lo que `loading` hacía:
+    // deshabilitar, esconder la flecha y anunciar `aria-busy`.
+    const carga = isLoading ? (
+      <CargaDeMarca tamano="xs" tono={tono} aria-hidden etiqueta="Cargando" role={undefined} />
+    ) : null
+
+    // Con asChild el hijo único es el que se renderiza (Slot): la carga entra
+    // DENTRO de él para no romper el Slot.
+    let contenido: React.ReactNode = children
+    if (carga && asChild && React.isValidElement<{ children?: React.ReactNode }>(children)) {
+      contenido = React.cloneElement(children, undefined, carga, children.props.children)
+    } else if (carga && !asChild) {
+      contenido = (
+        <>
+          {carga}
+          {children}
+        </>
+      )
+    }
 
     return (
-      <DSButton
-        ref={ref}
-        asChild={asChild}
-        variant={VARIANT_MAP[resolvedVariant]}
-        size={SIZE_MAP[resolvedSize]}
-        loading={isLoading}
-        arrow={ARROW_VARIANTS.has(resolvedVariant) && !hideArrow}
-        className={cn(
-          // El Button legacy del mvp era `group`: se preserva para los call sites
-          // que usan group-hover en sus children.
-          "group",
-          SIZE_FIDELITY[resolvedSize],
-          isLoading && "pointer-events-none opacity-70",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </DSButton>
+      <ProveedorDeTonoDeCarga tono={tono}>
+        <DSButton
+          ref={ref}
+          asChild={asChild}
+          variant={VARIANT_MAP[resolvedVariant]}
+          size={SIZE_MAP[resolvedSize]}
+          loading={false}
+          disabled={asChild ? undefined : disabled || isLoading}
+          aria-busy={isLoading || undefined}
+          arrow={ARROW_VARIANTS.has(resolvedVariant) && !hideArrow && !isLoading}
+          className={cn(
+            // El Button legacy del mvp era `group`: se preserva para los call sites
+            // que usan group-hover en sus children.
+            "group",
+            SIZE_FIDELITY[resolvedSize],
+            // Un velo leve: con el 70 % de antes el logo blanco quedaba sobre un
+            // azul lavado y perdía contraste; el logo en movimiento ya dice «ocupado».
+            isLoading && "pointer-events-none opacity-90",
+            // Mientras carga, el DS lo deja `disabled` y le pintaría el fondo y
+            // el texto grises de deshabilitado: la carga conserva el color del botón.
+            isLoading && LOADING_KEEPS_COLOR[resolvedVariant],
+            className
+          )}
+          {...props}
+        >
+          {contenido}
+        </DSButton>
+      </ProveedorDeTonoDeCarga>
     )
   }
 )

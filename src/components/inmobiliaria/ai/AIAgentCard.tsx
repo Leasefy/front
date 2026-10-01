@@ -28,7 +28,7 @@ import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 import { useAgentExecution } from '@/lib/hooks/use-agent';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -202,10 +202,11 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
             'mt-3 pt-3 border-t border-border-faint',
           )}>
             {isRunning && (
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <Spinner size="sm" />
-                <span>{locale === 'es' ? 'Ejecutando...' : 'Running...'}</span>
-              </div>
+              <CargaDeMarca
+                tamano="sm"
+                texto={locale === 'es' ? 'Ejecutando...' : 'Running...'}
+                className="flex justify-start"
+              />
             )}
             {!isRunning && error && (
               <div className="flex items-center gap-2 text-sm text-danger">

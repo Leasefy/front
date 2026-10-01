@@ -60,7 +60,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Table,
   TableBody,
@@ -356,10 +356,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
   if (cargando && egresos === null) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Cargando los egresos…</p>
-      </div>
+      <CargaDeMarca
+        tamano="lg"
+        disposicion="apilada"
+        texto="Cargando los egresos…"
+        className="flex py-16 text-center"
+      />
     );
   }
   if (error || egresos === null || lotes === null) {

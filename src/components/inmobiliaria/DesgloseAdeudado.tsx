@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Banner, Callout, KeyValueList, type KeyValueItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import {
   enOrden,
@@ -155,10 +155,11 @@ export function DesgloseAdeudado({
       <p className="text-sm text-fg-muted">{t('recibos.desglose.ayuda')}</p>
 
       {cargando && (
-        <p className="flex items-center gap-2 text-sm text-fg-muted">
-          <Spinner size="sm" variant="current" />
-          {t('recibos.desglose.cargando')}
-        </p>
+        <CargaDeMarca
+          tamano="sm"
+          texto={t('recibos.desglose.cargando')}
+          className="flex justify-start"
+        />
       )}
 
       {fallo && (

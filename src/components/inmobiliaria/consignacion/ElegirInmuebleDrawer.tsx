@@ -22,7 +22,7 @@ import { useMemo, useState } from 'react';
 import { MagnifyingGlass, HouseLine, CaretRight } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -122,9 +122,11 @@ export function ElegirInmuebleDrawer({
           data-lenis-prevent
         >
           {cargando ? (
-            <div className="flex items-center gap-2 px-3 py-8 text-sm text-fg-muted">
-              <Spinner size="sm" /> {t(`${NS}.cargando`)}
-            </div>
+            <CargaDeMarca
+              tamano="sm"
+              texto={t(`${NS}.cargando`)}
+              className="flex justify-start px-3 py-8"
+            />
           ) : error ? (
             <p className="px-3 py-8 text-sm text-danger" role="alert">
               {error}

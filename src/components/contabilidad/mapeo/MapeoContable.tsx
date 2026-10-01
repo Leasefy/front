@@ -31,7 +31,7 @@ import { CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import {
   Table,
   TableBody,
@@ -270,10 +270,12 @@ export function MapeoContable({
 
   if (cargando || cuentasCargando) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Spinner size="lg" />
-        <p className="text-sm text-fg-muted">Cargando el mapeo…</p>
-      </div>
+      <CargaDeMarca
+        tamano="lg"
+        disposicion="apilada"
+        texto="Cargando el mapeo…"
+        className="flex py-16 text-center"
+      />
     );
   }
   if (error || !mapeo) {

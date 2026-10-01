@@ -350,8 +350,9 @@ describe('FilaDeTercero', () => {
     expect(onDescartar).toHaveBeenCalledTimes(1);
     const descartando = boton('No traer esta fila')!;
     expect(descartando.disabled).toBe(true);
-    // `isLoading` del Button: gira y no recibe clics.
-    expect(descartando.className).toContain('opacity-70');
+    // `isLoading` del Button: el logo en carga, `aria-busy` y no recibe clics.
+    expect(descartando.getAttribute('aria-busy')).toBe('true');
+    expect(descartando.className).toContain('pointer-events-none');
     expect(boton('Guardar')?.disabled).toBe(true);
 
     await act(async () => {

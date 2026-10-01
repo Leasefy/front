@@ -56,7 +56,7 @@ import {
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { getAccessToken } from '@/lib/api/client';
 import {
   crearFactorTotp,
@@ -298,10 +298,7 @@ export function ActivarSegundoFactorPasoAPaso({
             borres de tu celular.
           </p>
         </div>
-        <p className="inline-flex items-center gap-2 text-body-sm text-fg-muted">
-          <Spinner size="xs" variant="muted" />
-          Te llevamos a tu cuenta…
-        </p>
+        <CargaDeMarca tamano="xs" tono="negro" texto="Te llevamos a tu cuenta…" />
       </div>
     );
   }

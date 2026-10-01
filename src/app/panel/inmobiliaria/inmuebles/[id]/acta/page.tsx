@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-import { ArrowLeft, DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowLeft, DownloadSimple, Package, Printer } from '@phosphor-icons/react';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { descargar } from '@/lib/propietarios/exportar-datos';
@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useConsignacion, usePropietario } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
@@ -114,7 +115,7 @@ export default function ActaDeEntregaPage() {
             {t('inmobiliaria.acta.print')}
           </Button>
           <Button hideArrow onClick={() => void bajarPdf()} disabled={!consignacion || bajando} data-testid="acta-descargar">
-            {bajando ? <SpinnerGap className="h-4 w-4 animate-spin" /> : <DownloadSimple className="h-4 w-4" />}
+            {bajando ? <Spinner size="xs" variant="current" /> : <DownloadSimple className="h-4 w-4" />}
             {t('inmobiliaria.acta.downloadPdf')}
           </Button>
         </div>

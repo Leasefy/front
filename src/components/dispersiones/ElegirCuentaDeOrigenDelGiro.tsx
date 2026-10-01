@@ -23,7 +23,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import type {
@@ -127,10 +127,11 @@ export function ElegirCuentaDeOrigenDelGiro({
 
   if (!datos) {
     return (
-      <p className="flex items-center gap-2 text-caption text-fg-muted">
-        <Spinner size="sm" variant="current" />
-        {t('inmobiliaria.dispersiones.origenDelGiro.cargando')}
-      </p>
+      <CargaDeMarca
+        tamano="sm"
+        texto={t('inmobiliaria.dispersiones.origenDelGiro.cargando')}
+        className="flex justify-start"
+      />
     );
   }
 

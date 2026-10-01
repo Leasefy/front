@@ -18,7 +18,6 @@ import {
   ArrowsLeftRight,
   Bank,
   CheckCircle,
-  CircleNotch,
   Circle,
   X,
   Sparkle,
@@ -30,6 +29,7 @@ import type { Icon } from '@phosphor-icons/react';
 import { Button, Badge } from '@/components/ui';
 import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useI18n } from '@/lib/i18n';
 import type {
   ResponseMeta,
@@ -136,10 +136,11 @@ function StepItem({
               weight="fill"
             />
           ) : step.status === 'active' ? (
-            <CircleNotch
-              className="w-5 h-5 text-primary animate-spin"
-              weight="bold"
-            />
+            // Caja del ancho de los otros íconos (20 px): el logo es más ancho
+            // y desborda parejo a los lados sin correr la línea del tiempo.
+            <span className="flex h-5 w-5 items-center justify-center">
+              <CargaDeMarca tamano="xs" />
+            </span>
           ) : (
             <Circle
               className="w-5 h-5 text-fg-subtle"

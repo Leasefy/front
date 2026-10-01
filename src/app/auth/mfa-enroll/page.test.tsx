@@ -180,7 +180,7 @@ describe('/auth/mfa-enroll', () => {
     expect(container.textContent).toContain('Cerrar sesión')
     expect(container.textContent).toContain('Activa tu segundo factor')
     expect(container.textContent).toContain('Tu rol maneja plata')
-    expect(container.textContent).not.toContain('Protege tu cuenta para entrar')
+    expect(container.textContent).not.toContain('Protege tu cuenta')
   })
 
   it('🔴 al completar el código: verifica por el SDK, llama setMfaVerified y sale al panel — NUNCA a /auth/mfa-verify', async () => {

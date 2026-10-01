@@ -222,7 +222,7 @@ function EscenaDelSegundoFactor({
       {!montado ? null : (
         <TarjetaDePuestaEnMarcha
           foto={FOTO_DEL_SEGUNDO_FACTOR}
-          encuadre="object-[50%_50%]"
+          encuadre="object-[50%_72%]"
           entrada={relevo ? 'ya-estaba' : 'aparece'}
           fotoAnterior={fotoAnterior}
           capa="z-[300]"
@@ -258,21 +258,21 @@ function EscenaDelSegundoFactor({
                   id={idTitulo}
                   className="mt-4 text-balance font-heading text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg md:text-[34px]"
                 >
-                  Protege tu cuenta para entrar
+                  Protege tu cuenta
                 </h2>
                 <p
                   id={idEntrada}
                   className="mt-3 text-pretty text-body text-fg-muted"
                   data-testid="segundo-factor-dentro-obligatorio"
                 >
-                  Es el último paso y es obligatorio: tu rol maneja plata, así que además de la
-                  contraseña te pediremos un código de tu celular. Toma unos dos minutos.
+                  Es el último paso antes de entrar y es obligatorio: tu rol maneja plata. Toma
+                  unos dos minutos.
                 </p>
               </div>
             )}
             {/* 🔴 Siempre en este mismo lugar del árbol: si cambiara de sitio
                 al activar, se volvería a montar y perdería su «Listo». */}
-            <div className={activado ? 'flex flex-1 flex-col justify-center' : 'mt-8'}>
+            <div className={activado ? 'flex flex-1 flex-col justify-center' : 'mt-5'}>
               <ActivarSegundoFactorPasoAPaso
                 onActivado={activar}
                 onYaTeniaFactor={alYaTenerFactor}

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * La tarjeta de la puesta en marcha: «¿Migramos tu inmobiliaria?» y, si toca,
- * «Protege tu cuenta para entrar». Dos pasos de lo mismo, en la MISMA tarjeta
+ * «Protege tu cuenta». Dos pasos de lo mismo, en la MISMA tarjeta
  * (Nico, 30-09-2026: «no se ve que es como un paso que continúa, no se siente
  * que esto del 2FA es obligatorio realmente»). Antes cada uno era su modal:
  * otro ancho, otro velo, otra entrada, y entre los dos el panel se destapaba
@@ -101,7 +101,10 @@ export function TarjetaDePuestaEnMarcha({
         // La cáscara de los modales hechos a mano (`rounded-[20px]`, DESIGN
         // §17), la de la bienvenida del recorrido. `minmax(0,1fr)` también en
         // teléfono: con `auto`, lo que no podía partirse la estiraba.
-        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none md:min-h-[560px] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        // En escritorio, el MISMO alto para los dos pasos: en el relevo la
+        // tarjeta no crece ni se corre; lo que no cabe scrollea en la columna
+        // del contenido, con la foto quieta. En teléfono scrollea la tarjeta.
+        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none md:h-[min(880px,calc(100dvh-32px))] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
         style={{ overscrollBehavior: 'contain' }}
         data-lenis-prevent
         data-entrada={entrada}
@@ -114,7 +117,22 @@ export function TarjetaDePuestaEnMarcha({
           animar={animar}
           testid={testids.foto}
         />
-        <div className="flex min-w-0 flex-col p-6 md:p-10">{children}</div>
+        <div
+          className="flex min-w-0 flex-col p-6 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:p-10"
+          style={{ overscrollBehavior: 'contain' }}
+          data-lenis-prevent
+        >
+          {children}
+          {/* Si el contenido no cabe (laptops bajas), el borde de abajo se
+              desvanece: se nota que hay más sin poner una barra. Vive en el
+              relleno de abajo (`-bottom-10`: el sticky se mide desde el borde
+              del contenido, no desde el de la caja), así que cuando todo cabe
+              no tapa nada. */}
+          <div
+            aria-hidden
+            className="pointer-events-none sticky -bottom-10 -mb-10 hidden h-10 shrink-0 bg-gradient-to-t from-surface to-transparent md:block"
+          />
+        </div>
       </motion.div>
     </motion.div>,
     document.body,

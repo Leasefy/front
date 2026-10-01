@@ -186,12 +186,12 @@ describe('SegundoFactorDentroDelPanel — con mfaEnrollRequired', () => {
     const modal = document.querySelector<HTMLElement>('[data-testid="segundo-factor-dentro-modal"]')!
     expect(modal.textContent).toContain('Antes de empezar')
     const titulo = modal.querySelector('h2')!
-    expect(titulo.textContent).toBe('Protege tu cuenta para entrar')
+    expect(titulo.textContent).toBe('Protege tu cuenta')
     // El diálogo se nombra por su título y se describe por la línea de obligatorio.
     expect(modal.getAttribute('aria-labelledby')).toBe(titulo.id)
     const obligatorio = document.querySelector('[data-testid="segundo-factor-dentro-obligatorio"]')!
     expect(modal.getAttribute('aria-describedby')).toBe(obligatorio.id)
-    expect(obligatorio.textContent).toMatch(/último paso/)
+    expect(obligatorio.textContent).toMatch(/último paso antes de entrar/)
     expect(obligatorio.textContent).toMatch(/obligatorio/)
     // El porqué se dice UNA vez: el paso a paso va sin su encabezado.
     expect(document.querySelector('[data-testid="paso-a-paso"]')!.getAttribute('data-sin-encabezado')).toBe('si')
@@ -269,7 +269,7 @@ describe('SegundoFactorDentroDelPanel — al activar', () => {
     })
     expect(setMfaVerifiedMock).toHaveBeenCalled()
     // Con el «Listo», el encabezado del paso se va: ya no hay nada que pedir.
-    expect(document.body.textContent).not.toContain('Protege tu cuenta para entrar')
+    expect(document.body.textContent).not.toContain('Protege tu cuenta')
     expect(hay('paso-a-paso')).toBe(true)
 
     // El contexto se entera (MFA_CHALLENGE_VERIFIED)…

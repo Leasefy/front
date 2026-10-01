@@ -488,3 +488,45 @@ describe('dos pestañas sobre la misma fila', () => {
     ).toBe('nuevo@correo.co');
   });
 });
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. Un archivo leído en el navegador
+ * y NO preparado todavía existe sólo ahí: cerrar la pestaña lo pierde. Una vez
+ * preparado vive en el back (se retoma), así que ya no hay nada que avisar.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    await pintar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('🔴 con el archivo leído y sin preparar, cerrar pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras se prepara, cerrar pregunta', async () => {
+    api.preparar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await pintar();
+    await subirArchivo();
+    await clic('Revisar 2 inquilinos');
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('con la carga ya preparada en el back, cerrar no pregunta: se retoma', async () => {
+    api.preparar.mockResolvedValue(LOTE);
+    await pintar();
+    await subirArchivo();
+    await clic('Revisar 2 inquilinos');
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).not.toBeNull();
+    expect(intentarSalir()).toBe(false);
+  });
+});
+

@@ -1052,6 +1052,13 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaEnrollRequired).toBe(true)
     expect(captured!.mfaRequired).toBe(false)
     expect(listFactorsMock).toHaveBeenCalled()
+
+    // T-0123: a verified step-up means enrollment can no longer be pending.
+    await act(async () => {
+      captured!.setMfaVerified()
+    })
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
   })
 
   /*
@@ -1169,6 +1176,148 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaRequired).toBe(false)
     expect(captured!.mfaEnrollRequired).toBe(false)
     expect(listFactorsMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * T-0123 WU-3: a brand-new agency owner signs in with NO agency, so the
+ * requirement is `false` at login. Finishing registration flips it to `true`
+ * (they are now an ACTIVE ADMIN) but `refreshUser()` only refreshed the user
+ * and never re-ran the MFA level check: the panel loaded on aal1 and every
+ * back call answered 403 SEGUNDO_FACTOR_REQUERIDO.
+ */
+describe('AuthProvider — T-0123 WU-3: refreshUser re-evaluates the MFA requirement', () => {
+  const sinAgencia = bootstrapEnvelope(
+    { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+    'agency',
+    null,
+    [],
+    { exigido: false },
+  )
+  const conAgencia = (exigido: boolean) => bootstrapEnvelope(
+    { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+    'agency',
+    { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    [],
+    { exigido },
+  )
+
+  async function iniciarSesion() {
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('exigido flips false → true after the profile change, no factor: refreshUser sets enroll-pending and reports "enroll"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+    expect(captured!.mfaEnrollRequired).toBe(false)
+
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
+    expect(destino).toBe('enroll')
+  })
+
+  it('exigido true and a verified factor but aal1: refreshUser sets verify-pending and reports "verify"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaRequired).toBe(true)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('verify')
+  })
+
+  it('requirement stays false: refreshUser changes nothing and reports "none"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getMock.mockResolvedValue(conAgencia(false))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(destino).toBe('none')
+  })
+
+  it('tenant (no ACTIVE agency membership) is never gated: a stale exigido:true still yields "none" and mfaEnrollRequired=false', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    // The back would never say exigido:true without an ACTIVE agency role;
+    // this proves the front does not depend on that to keep tenants out.
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+      [],
+      { exigido: true },
+    ))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(listFactorsMock).not.toHaveBeenCalled()
+    expect(destino).toBe('none')
+  })
+
+  it('tenant with an OPTIONAL factor at aal1 (exigido:false): refreshUser reports "none", not "verify"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('none')
+  })
+
+  it('session already aal2: reports "none" even with exigido true', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('none')
   })
 })
 

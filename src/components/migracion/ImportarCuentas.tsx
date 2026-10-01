@@ -56,6 +56,7 @@ import {
   type ResultadoImportacionPuc,
   type RevisionDeImportacionPuc,
 } from "@/lib/api/contabilidad.service";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
 import {
   mapearColumnas,
   obligatoriasSinMapear,
@@ -146,6 +147,10 @@ export function ImportarCuentas({
     onOcupado?.(cargando);
   }, [cargando, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  // T-0125 · el archivo leído vive sólo en el navegador hasta que se importa
+  // (la importación en sí es atómica en el back): se avisa antes de perderlo.
+  useAvisoAlSalir(cargando || (filas.length > 0 && !resultado));
 
   const onDrop = useCallback(async (aceptados: File[]) => {
     const archivo = aceptados[0];

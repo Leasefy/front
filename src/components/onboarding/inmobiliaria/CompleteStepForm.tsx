@@ -209,10 +209,25 @@ export function CompleteStepForm({
      * Si el refresco falla igual se navega: el guardián vuelve a sondear la
      * membresía por su cuenta, y quedarse acá sería otro callejón.
      */
+    let destinoMfa: 'enroll' | 'verify' | 'none' | void = 'none'
     try {
-      await refreshUser()
+      destinoMfa = await refreshUser()
     } catch {
       // ver arriba
+    }
+    /*
+     * T-0123: el segundo factor es el ÚLTIMO paso del registro. Quien acaba
+     * de crear su inmobiliaria pasa a ser ADMIN activo y el back le exige
+     * aal2; si entrara al panel con la sesión aal1, sus primeras llamadas
+     * responderían 403 SEGUNDO_FACTOR_REQUERIDO. `refreshUser` ya volvió a
+     * evaluar el requisito con el veredicto fresco: acá se decide la ruta
+     * de forma explícita, sin depender de que un guardián alcance a
+     * redirigir antes de que el panel pida datos.
+     */
+    if (destinoMfa === 'enroll' || destinoMfa === 'verify') {
+      const pantalla = destinoMfa === 'enroll' ? '/auth/mfa-enroll' : '/auth/mfa-verify'
+      router.replace(`${pantalla}?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+      return
     }
     router.replace(RUTA_DEL_PANEL)
   }

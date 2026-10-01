@@ -13,6 +13,9 @@ import type { PerfilDeOnboarding } from './perfil-de-onboarding'
 // ============================================================================
 
 /** Frontend-facing role (used in UI logic, routes, etc.) */
+/** Where a session must go before it may reach a panel (T-0123 WU-3). */
+export type MfaDestino = 'enroll' | 'verify' | 'none'
+
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
@@ -252,7 +255,9 @@ export interface AuthContextType extends AuthState {
   signOut: () => Promise<void>
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  /** Re-fetches the bootstrap AND re-evaluates the second-factor requirement;
+   *  resolves with where the user must go before reaching a panel (T-0123 WU-3). */
+  refreshUser: () => Promise<MfaDestino>
   /** null clears a field on the backend; undefined leaves it unchanged */
   updateProfile: (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }) => Promise<void>
   setMfaVerified: () => void

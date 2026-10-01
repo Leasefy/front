@@ -286,3 +286,82 @@ describe('aplicarPorTandas', () => {
     expect(hechos[hechos.length - 1]).toBe(5_000);
   });
 });
+
+/*
+ * T-0125 · el avance de un archivo cortado. El back sabe cuánto del archivo
+ * lleva escrito SÓLO si cada llamada le dice de qué archivo es (`totalDelArchivo`)
+ * y en qué posición empieza (`desde`). Sin eso, cerrar el navegador a mitad
+ * dejaba una carga que nadie podía reconocer como incompleta.
+ */
+describe('aplicarPorTandas · declara el avance del archivo', () => {
+  type Cuerpo = { lote: string; asientos: AsientoMigrado[]; totalDelArchivo?: number; desde?: number };
+
+  it('🔴 manda totalDelArchivo = el archivo ENTERO y desde = posición de la tanda, en CADA llamada', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('L', asientos(12_000), aplicar);
+
+    expect(aplicar.mock.calls.map((c) => c[0].totalDelArchivo)).toEqual([12_000, 12_000, 12_000]);
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 5_000, 10_000]);
+  });
+
+  it('el desde sigue el tamaño de tanda que se use, no un 5.000 fijo', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('L', asientos(25), aplicar, undefined, { tamano: 10 });
+
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 10, 20]);
+    expect(aplicar.mock.calls.every((c) => c[0].totalDelArchivo === 25)).toBe(true);
+  });
+
+  it('un MISMO lote en todas las tandas: es lo que hace que el back las cuente como un solo archivo', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('mi-lote', asientos(12_000), aplicar);
+
+    expect(new Set(aplicar.mock.calls.map((c) => c[0].lote))).toEqual(new Set(['mi-lote']));
+  });
+
+  it('las vueltas por reloj DENTRO de una tanda reenvían el mismo desde (no avanzan el prefijo)', async () => {
+    const aplicar = vi
+      .fn()
+      .mockResolvedValueOnce(informe({ total: 10, aplicados: 4, restantes: 6 }))
+      .mockResolvedValueOnce(informe({ total: 10, aplicados: 6, restantes: 0, yaMigrados: 4 }));
+
+    await aplicarPorTandas('L', asientos(10), aplicar);
+
+    expect(aplicar).toHaveBeenCalledTimes(2);
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 0]);
+    expect(aplicar.mock.calls.map((c) => c[0].totalDelArchivo)).toEqual([10, 10]);
+  });
+
+  it('un archivo vacío no llama al back: no hay nada que declarar', async () => {
+    const aplicar = vi.fn();
+    await aplicarPorTandas('L', [], aplicar);
+    expect(aplicar).not.toHaveBeenCalled();
+  });
+
+  it('el informe lleva la `carga` de la ÚLTIMA respuesta (la más reciente del back)', async () => {
+    const aplicar = vi
+      .fn()
+      .mockResolvedValueOnce(
+        informe({ total: 5_000, aplicados: 5_000, carga: { lote: 'L', esperados: 6_000, procesados: 5_000, estado: 'ABIERTA' } }),
+      )
+      .mockResolvedValueOnce(
+        informe({ total: 1_000, aplicados: 1_000, carga: { lote: 'L', esperados: 6_000, procesados: 6_000, estado: 'COMPLETA' } }),
+      );
+
+    const r = await aplicarPorTandas('L', asientos(6_000), aplicar);
+
+    expect(r.informe.carga).toEqual({ lote: 'L', esperados: 6_000, procesados: 6_000, estado: 'COMPLETA' });
+  });
+
+  it('🔴 sin `carga` en la respuesta, el informe no la inventa: ausente es «no sé», no «0» ni «terminó»', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    const r = await aplicarPorTandas('L', asientos(6_000), aplicar);
+
+    expect(r.informe.carga).toBeUndefined();
+  });
+});
+

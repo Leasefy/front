@@ -248,3 +248,45 @@ describe('fraseDeLoQueNoSeAsigno — el motivo verdadero (QA 22-09)', () => {
     expect(fraseDeLoQueNoSeAsigno([{ codigo: '110505' }])).toBe('Tu plan no tiene 110505.');
   });
 });
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. El archivo leído vive sólo en el
+ * navegador hasta que se importa; la importación es atómica en el back.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    await pintar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('🔴 con el archivo leído y sin importar, cerrar pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras importa, cerrar pregunta', async () => {
+    api.puc.importar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('importado el plan, cerrar no pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+    expect(q('puc-importacion-resultado')).not.toBeNull();
+    expect(intentarSalir()).toBe(false);
+  });
+});
+

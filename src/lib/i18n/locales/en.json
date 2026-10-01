@@ -10196,6 +10196,11 @@
         "evaluar": "Assess",
         "cerrar": "Close"
       },
+      "migracion": {
+        "grupo": "Set up",
+        "label": "Migrate my data",
+        "desc": "Bring over your owners, tenants, properties, contracts and balances from your previous system."
+      },
       "sinResolver": "We couldn't verify your access. Tap to retry.",
       "intro": {
         "queVasAHacer": "What you'll do",

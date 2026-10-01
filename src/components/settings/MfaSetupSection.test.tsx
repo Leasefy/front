@@ -230,4 +230,27 @@ describe('MfaSetupSection', () => {
 
     expect(onEnrolled).toHaveBeenCalledTimes(1)
   })
+
+  it('T-0123: with onYaInscrito, a verified factor on mount notifies ONLY onYaInscrito — onEnrolled stays reserved for a fresh enroll+verify', async () => {
+    const fetchMock = vi.fn(async (_url: string) => {
+      const url = String(_url)
+      if (url.endsWith('/user')) {
+        return respuesta({ factors: [{ id: 'f1', factor_type: 'totp', status: 'verified' }] })
+      }
+      return respuesta({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const onEnrolled = vi.fn()
+    const onYaInscrito = vi.fn()
+    await act(async () => {
+      root.render(<MfaSetupSection onEnrolled={onEnrolled} onYaInscrito={onYaInscrito} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onYaInscrito).toHaveBeenCalledTimes(1)
+    expect(onEnrolled).not.toHaveBeenCalled()
+  })
 })

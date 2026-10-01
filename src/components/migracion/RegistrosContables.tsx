@@ -18,7 +18,7 @@
  * camino, se manda al paso 4.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
@@ -27,11 +27,13 @@ import { Button } from "@/components/ui/button";
 import {
   contabilidadApi,
   MAX_LIMITE_DE_ASIENTOS,
+  type CargaAbierta,
   type CuentaPuc,
 } from "@/lib/api/contabilidad.service";
 import { formatDate } from "@/lib/format";
 
 import { AsientoDeApertura } from "./AsientoDeApertura";
+import { CargasDeAsientosAbiertas } from "./CargasDeAsientosAbiertas";
 import { DocumentosContables } from "./DocumentosContables";
 import { MigrarAsientos } from "./MigrarAsientos";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
@@ -61,6 +63,27 @@ export function RegistrosContables({
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
+  /*
+   * T-0125 · la carga de asientos que se está CONTINUANDO (viene de la franja
+   * de cargas a medias) y el contador que la franja usa para volver a leer.
+   * `ocupado` espeja lo que los caminos le avisan al muro: mientras algo
+   * corre, la franja no deja continuar ni descartar.
+   */
+  const [continuar, setContinuar] = useState<CargaAbierta | null>(null);
+  const [versionDeCargas, setVersionDeCargas] = useState(0);
+  const [ocupado, setOcupado] = useState(false);
+  const estabaOcupado = useRef(false);
+  const marcarOcupado = useCallback(
+    (hayTrabajo: boolean, cancelar?: () => void) => {
+      setOcupado(hayTrabajo);
+      // Al soltarse —terminó o se cortó— las cargas pudieron cambiar: se relee.
+      // Sólo en la transición ocupado → libre, no en cada aviso de «libre».
+      if (!hayTrabajo && estabaOcupado.current) setVersionDeCargas((v) => v + 1);
+      estabaOcupado.current = hayTrabajo;
+      onOcupado?.(hayTrabajo, cancelar);
+    },
+    [onOcupado],
+  );
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);
   const [resumen, setResumen] = useState<ResumenDeCargado | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -214,6 +237,17 @@ export function RegistrosContables({
         // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
+          {/* La salida de una carga a medias va ANTES de los caminos: la pestaña
+              de por defecto es la de saldos iniciales, no la del libro diario. */}
+          <CargasDeAsientosAbiertas
+            version={versionDeCargas}
+            ocupado={ocupado}
+            onContinuar={(carga) => {
+              setContinuar(carga);
+              setCamino("historico");
+            }}
+          />
+
           {/*
            * El camino elegido ES un filtro de esta pantalla, así que el
            * selector, su explicación y lo ya cargado van en UNA tarjeta
@@ -314,20 +348,25 @@ export function RegistrosContables({
               onCreado={() => void cargar()}
               onRevisarCargado={() => void cargar()}
               enElMuro={Boolean(onIrAlPuc)}
-              onOcupado={onOcupado}
+              onOcupado={marcarOcupado}
             />
           ) : camino === "historico" ? (
             <MigrarAsientos
-              onAplicado={() => void cargar()}
+              onAplicado={() => {
+                void cargar();
+                setVersionDeCargas((v) => v + 1);
+              }}
+              continuar={continuar}
+              onDejarDeContinuar={() => setContinuar(null)}
               onIrAlPuc={onIrAlPuc}
               /* El archivo de comprobantes metido en el libro diario tiene su
                  puerta acá al lado: el aviso la abre en vez de nombrarla. */
               onIrAComprobantes={() => setCamino("documentos")}
               enElMuro={Boolean(onIrAlPuc)}
-              onOcupado={onOcupado}
+              onOcupado={marcarOcupado}
             />
           ) : (
-            <DocumentosContables onOcupado={onOcupado} />
+            <DocumentosContables onOcupado={marcarOcupado} />
           )}
         </>
       )}

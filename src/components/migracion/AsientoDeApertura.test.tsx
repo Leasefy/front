@@ -309,3 +309,36 @@ describe('AsientoDeApertura — el cartel del final', () => {
     expect(segunda).not.toBe(primera);
   });
 });
+
+describe('AsientoDeApertura — T-0125: la apertura se identifica por su fecha, no por la llave del formulario', () => {
+  it('🔴 manda esApertura: true (y sigue mandando la llave, que el back ignora)', async () => {
+    await pintar();
+    await registrar(asientoDelBack(false));
+
+    const enviado = api.asientos.crear.mock.calls[0]![0];
+    expect(enviado.esApertura).toBe(true);
+    expect(enviado.claveIdempotencia).toBeTruthy();
+  });
+
+  it('el 409 APERTURA_YA_REGISTRADA se muestra con el número del asiento y cómo corregirlo', async () => {
+    await pintar();
+    const { ApiError } = await import('@/lib/api/client');
+    api.asientos.crear.mockRejectedValue(
+      new ApiError(409, 'Ya hay un asiento de apertura…', 'APERTURA_YA_REGISTRADA', {
+        statusCode: 409,
+        code: 'APERTURA_YA_REGISTRADA',
+        message: 'Ya hay un asiento de apertura…',
+        details: { asientoId: 'as-12', numero: 12, fecha: '2026-01-31' },
+      }),
+    );
+    await llenarUnAsientoQueCuadra();
+    await click(q('apertura-enviar'));
+    await act(async () => {});
+
+    // Sigue en el formulario (no hay cartel de «registrado») y dice qué pasó.
+    expect(q('apertura-creado')).toBeNull();
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toContain('N.º 12');
+    expect(alerta?.textContent).toMatch(/revers/i);
+  });
+});

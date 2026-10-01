@@ -59,12 +59,14 @@ vi.mock('@/components/auth/AgencySubscriptionGuard', () => ({
   },
 }))
 
+// Acá el registro está terminado: el guard deja pasar lo de adentro. El caso
+// a medias, con el guard de verdad, vive en `registro-a-medias.test.tsx`.
 vi.mock('@/components/auth/AsistentePendienteGuard', () => ({
-  AsistentePendienteGuard: () => {
+  AsistentePendienteGuard: ({ children }: { children?: React.ReactNode }) => {
     React.useEffect(() => {
       montajes.asistente += 1
     }, [])
-    return null
+    return <>{children}</>
   },
 }))
 

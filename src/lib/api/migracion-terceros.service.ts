@@ -352,6 +352,11 @@ export interface ResultadoDeFila {
    * OTRO documento y se dejó el de la cuenta. Un back viejo no lo manda.
    */
   advertencia?: string;
+  /**
+   * `true` cuando una fila que falló al crearse volvió a «por decidir»
+   * (`REQUIERE_ATENCION`) con su motivo: se corrige ahí y se vuelve a crear.
+   */
+  pasaARevisar?: true;
   /** T-0128 · se creó incompleta: qué datos quedan por completar. */
   datosPendientes?: ('tipoDocumento' | 'documento')[];
 }

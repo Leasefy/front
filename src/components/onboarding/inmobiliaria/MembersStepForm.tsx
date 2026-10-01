@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useFieldArray, useForm, type FieldPath } from 'react-hook-form'
+import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { ArrowRight, Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,13 +48,17 @@ export interface MembersStepFormProps {
   submitError?: string | null
   /** Con esto puesto se muestra el resultado de las invitaciones en vez del formulario. */
   pendingInvites: PendingMembersInvites | null
+  /** Con la sesión, lo escrito y no enviado vuelve al devolverse de paso (`borrador-local.ts`). */
+  sessionId?: string
+  /** Lo que el paso ya guardó en el micro: al volver a editarlo, arranca con esto. */
+  guardados?: MembersStepFormValues['members']
   /** La persona ya leyó el resultado y quiere seguir. */
   onContinueAfterInvites: () => void
 }
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
+  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
 }
 
 function roleLabel(role: string | undefined): string {
@@ -88,10 +93,14 @@ function MembersInviteLinksScreen({
   return (
     <div
       data-testid="members-invite-links"
-      className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
+      className="space-y-4"
     >
       <div>
-        <h2 className="text-h2">Invitaciones enviadas</h2>
+        {/* Sin marco propio: ya vive en la tarjeta del asistente. Y sin
+            negrita, como todos los títulos (Nico, 30-09). */}
+        <h2 className="font-heading text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg">
+          Invitaciones enviadas
+        </h2>
         <p className="text-body-sm text-fg-muted mt-1">
           {enviadas.length > 0
             ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
@@ -160,12 +169,12 @@ function MembersInviteLinksScreen({
               </div>
 
               {invitacion.error ? (
-                <p className="text-xs text-danger" data-testid={`invite-error-${invitacion.email}`}>
+                <p className="text-caption text-danger" data-testid={`invite-error-${invitacion.email}`}>
                   {invitacion.error}
                 </p>
               ) : invitacion.correoEnviado ? (
                 <p
-                  className="flex items-center gap-1.5 text-xs text-fg-muted"
+                  className="flex items-center gap-1.5 text-caption text-fg-muted"
                   data-testid={`invite-sent-${invitacion.email}`}
                 >
                   <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />
@@ -180,7 +189,7 @@ function MembersInviteLinksScreen({
                   data-testid={`invite-copy-${invitacion.email}`}
                   className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
                 >
-                  <span className="text-xs text-fg-muted truncate">{invitacion.enlace}</span>
+                  <span className="truncate font-mono text-caption text-fg-muted">{invitacion.enlace}</span>
                   {copiadoAhora ? (
                     <Check className="w-4 h-4 text-success flex-shrink-0" />
                   ) : (
@@ -196,13 +205,13 @@ function MembersInviteLinksScreen({
       <Button
         type="button"
         hideArrow
-        size="lg"
+       
         className="w-full"
         onClick={onContinueAfterInvites}
         data-testid="members-invite-continue"
       >
         Continuar
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
       </Button>
     </div>
   )
@@ -214,15 +223,34 @@ export function MembersStepForm({
   submitError,
   pendingInvites,
   onContinueAfterInvites,
+  sessionId,
+  guardados,
 }: MembersStepFormProps) {
+  // Las filas escritas y no enviadas vuelven al devolverse de paso.
+  const borrador = sessionId ? leerBorradorLocal<MembersStepFormValues>(sessionId, 'members') : null
   const {
     register,
     handleSubmit,
     control,
+    watch,
     setError,
     formState: { errors },
-  } = useForm<MembersStepFormValues>({ defaultValues: MEMBERS_STEP_DEFAULT_VALUES })
+  } = useForm<MembersStepFormValues>({
+    // Lo escrito sin enviar manda; si no hay, lo que ya quedó guardado.
+    defaultValues:
+      borrador?.members && borrador.members.length > 0
+        ? { members: borrador.members }
+        : guardados && guardados.length > 0
+          ? { members: guardados }
+          : MEMBERS_STEP_DEFAULT_VALUES,
+  })
   const { fields, append, remove } = useFieldArray({ control, name: 'members' })
+
+  useEffect(() => {
+    if (!sessionId) return
+    const sub = watch((valores) => guardarBorradorLocal(sessionId, 'members', valores))
+    return () => sub.unsubscribe()
+  }, [watch, sessionId])
 
   const submit = handleSubmit(async (values) => {
     const parsed = membersStepSchema.safeParse(values)
@@ -232,18 +260,9 @@ export function MembersStepForm({
       }
       return
     }
-    await onSubmit(parsed.data)
+    const resultado = await onSubmit(parsed.data)
+    if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   })
-
-  /**
-   * Bypasses row-level validation entirely — the agent now accepts an empty
-   * `members: []` POST (minItems: 0) and no longer gates `/complete` on this
-   * step having entries. This is the explicit "skip" affordance; the regular
-   * "Continuar" button still validates whatever rows are present.
-   */
-  const skipStep = async () => {
-    await onSubmit({ members: [] })
-  }
 
   if (pendingInvites) {
     return (
@@ -253,13 +272,17 @@ export function MembersStepForm({
 
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
+      {/* Sólo la instrucción: qué pasa al invitar (el correo con su enlace,
+          qué define el rol) lo cuenta la columna informativa del marco. */}
       <p className="text-body-sm text-fg-muted">
-        Invita a otras personas de tu inmobiliaria. Cada una recibe un correo con su enlace
-        para unirse.
+        Agrega a cada persona con su correo y el rol que va a tener en tu inmobiliaria.
       </p>
 
-      <p data-testid="members-step-optional-notice" className="text-body-sm text-fg-muted">
-        Este paso es opcional: puedes omitirlo ahora e invitar a tu equipo más adelante desde
+      <p
+        data-testid="members-step-optional-notice"
+        className="rounded-md bg-surface-muted px-3.5 py-2.5 text-caption text-fg-muted"
+      >
+        Este paso es opcional: puedes seguir sin agregar a nadie y hacerlo más adelante desde
         Configuración → Equipo.
       </p>
 
@@ -274,7 +297,7 @@ export function MembersStepForm({
           <div
             key={field.id}
             data-testid={`member-row-${index}`}
-            className="space-y-3 rounded-lg border border-border bg-surface p-4"
+            className="space-y-3 rounded-md border border-border bg-bg p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
@@ -285,7 +308,6 @@ export function MembersStepForm({
                 variant="outline"
                 size="icon"
                 hideArrow
-                disabled={fields.length === 1}
                 onClick={() => remove(index)}
                 aria-label={`Quitar miembro ${index + 1}`}
                 data-testid={`members-remove-row-${index}`}
@@ -295,9 +317,10 @@ export function MembersStepForm({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+            {/* 12rem: «Asesor comercial», el rol más largo, cabe en UNA línea. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
               <div>
-                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-sm font-medium text-fg">
+                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-caption font-semibold text-fg">
                   Correo
                 </label>
                 <Input
@@ -314,7 +337,7 @@ export function MembersStepForm({
               </div>
 
               <div>
-                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-sm font-medium text-fg">
+                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-caption font-semibold text-fg">
                   Rol
                 </label>
                 <Controller
@@ -324,7 +347,10 @@ export function MembersStepForm({
                     <Select value={roleField.value} onValueChange={roleField.onChange}>
                       {/* Misma altura que el correo de al lado, y el rótulo arriba
                           en los dos: así los controles quedan al mismo nivel. */}
-                      <SelectTrigger id={`members.${index}.role`} className="h-11">
+                      <SelectTrigger
+                        id={`members.${index}.role`}
+                        className="h-11 whitespace-nowrap [&>span]:truncate"
+                      >
                         <SelectValue placeholder="Rol" />
                       </SelectTrigger>
                       <SelectContent>
@@ -343,7 +369,7 @@ export function MembersStepForm({
             <div>
               {/* Opcional: sin nombre, el equipo muestra el correo hasta que
                   la persona se registre. No se deriva del correo. */}
-              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-sm font-medium text-fg">
+              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-caption font-semibold text-fg">
                 Nombre y apellido <span className="font-normal text-fg-subtle">(opcional)</span>
               </label>
               <Input
@@ -375,13 +401,13 @@ export function MembersStepForm({
       {submitError && (
         <div
           data-testid="members-step-form-error"
-          className="rounded-md bg-danger-soft border border-border p-3"
+          className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
           <p className="text-sm text-danger">{submitError}</p>
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
@@ -390,22 +416,9 @@ export function MembersStepForm({
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
-      </Button>
-
-      <Button
-        type="button"
-        variant="ghost"
-        hideArrow
-        size="lg"
-        className="w-full"
-        disabled={isSubmitting}
-        onClick={skipStep}
-        data-testid="members-skip-step"
-      >
-        Omitir por ahora
       </Button>
     </form>
   )

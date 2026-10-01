@@ -10,6 +10,7 @@ import {
   Warning,
   SpinnerGap,
 } from '@phosphor-icons/react';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useInvitation } from '@/lib/hooks/useInvitation';
 import { apiClient } from '@/lib/api/client';
@@ -47,10 +48,7 @@ function formatExpiry(isoDate: string): string {
 /** Spinner while validating token */
 function LoadingView() {
   return (
-    <div className="flex flex-col items-center gap-4">
-      <SpinnerGap className="h-10 w-10 text-[#1A40FF] animate-spin" />
-      <p className="text-fg-muted text-sm">Validando invitación…</p>
-    </div>
+    <CargaDeMarca tamano="lg" disposicion="apilada" texto="Validando invitación…" />
   );
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useSinSenal } from '@/lib/hooks/use-sin-senal'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
@@ -154,7 +155,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // no factor to step up to must enroll one first (they're mutually
     // exclusive states per contract.md T-0099 §3, but the check order still
     // matters if that ever changes).
-    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
+    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
       router.replace('/auth/mfa-enroll')
       return
     }
@@ -206,10 +207,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (isLoading || isCheckingStorage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando acceso...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando acceso..." />
       </div>
     )
   }
@@ -223,10 +221,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if ((needsOnboarding && !pathname.startsWith('/onboarding')) || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
@@ -250,22 +245,17 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding') && !isAgencyUser && !onAgencyPanelAsMember) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
 
-  // T-0099: no factor enrolled yet - will redirect to the enroll page.
-  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname)) {
+  // T-0099: no factor enrolled yet - will redirect to the enroll page
+  // (except in the agency panel, whose layout shows the enrollment inside).
+  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }
@@ -274,10 +264,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (mfaRequired && !pathname.startsWith('/auth/mfa-verify')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }
@@ -316,7 +303,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       return (
         <div className="min-h-screen flex items-center justify-center bg-muted p-6">
           <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-            <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+            <CargaDeMarca tamano="lg" />
             <p className="text-sm text-muted-foreground">
               No pudimos confirmar tu sesión con el servidor. Estamos
               reintentando — no cierres la pestaña.
@@ -335,12 +322,11 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     }
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">
-            {holdingForMembership ? 'Verificando acceso...' : 'Redirigiendo...'}
-          </p>
-        </div>
+        <CargaDeMarca
+          tamano="lg"
+          disposicion="apilada"
+          texto={holdingForMembership ? 'Verificando acceso...' : 'Redirigiendo...'}
+        />
       </div>
     )
   }
@@ -349,10 +335,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (blockedAgencyRoles && agencyRole && blockedAgencyRoles.includes(agencyRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
@@ -376,4 +359,21 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
  */
 function enElRegistro(pathname: string): boolean {
   return pathname === '/onboarding' || pathname.startsWith('/onboarding/')
+}
+
+/**
+ * 🔴 Nico, 30-09-2026: «¿por qué me está sacando y me lleva a esta página?
+ * … Todo lo de activar el 2FA, si no migro o luego de cuando migre, debe
+ * pasar ya DENTRO, porque yo estoy es dentro».
+ *
+ * En el panel de la inmobiliaria esta guarda ya no manda a
+ * `/auth/mfa-enroll`: deja pasar, y el layout del panel
+ * (`SegundoFactorDentroDelPanel`) pinta en vez del panel un esqueleto quieto
+ * con el paso a paso encima. Ese layout es el que garantiza que con
+ * `mfaEnrollRequired` NO se monte nada que pida datos (el 403
+ * `SEGUNDO_FACTOR_REQUERIDO` de T-0099). Verificar un factor ya inscrito
+ * (`mfaRequired`) sigue siendo afuera: es el inicio de sesión.
+ */
+function enElPanelDeLaInmobiliaria(pathname: string): boolean {
+  return pathname === '/panel/inmobiliaria' || pathname.startsWith('/panel/inmobiliaria/')
 }

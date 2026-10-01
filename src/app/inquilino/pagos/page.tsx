@@ -19,6 +19,7 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
@@ -60,7 +61,7 @@ export default function PagosPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-bg flex items-center justify-center">
-          <Spinner size="lg" />
+          <CargaDeMarca tamano="lg" />
         </div>
       }
     >
@@ -283,7 +284,7 @@ function PagosPageContent() {
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

@@ -22,7 +22,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 // ============================================================================
 // Helpers
@@ -158,7 +158,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-muted">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

@@ -443,7 +443,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Spinner weight="bold" className="w-4 h-4 animate-spin" />
                   {tardando && (
-                    <span className="text-xs">
+                    <span className="text-caption">
                       {t('inmobiliaria.ai.cotizador.askWhy.tardando')}
                     </span>
                   )}

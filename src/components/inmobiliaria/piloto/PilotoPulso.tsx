@@ -12,9 +12,10 @@
  *
  *   1. El ESTADO como eyebrow — encima del titular, que es a quien encabeza.
  *      El punto late cuando hay trabajo en curso: la señal de que esto vive.
- *   2. El TITULAR — la frase que resume el momento. Es lo más importante de
- *      la pantalla, así que se compone como tal (`text-h2`), no como un
- *      renglón de 14 px debajo de números de 30.
+ *   2. El TITULAR — la frase que resume el momento, compuesta como el título
+ *      de una tarjeta (18/20 px), no como el de la página: con `text-h2`
+ *      crecía hasta 36 px y se comía el ancho (Nico, 30-09: «eso está
+ *      demasiado grande»).
  *   3. Los NÚMEROS DEL DÍA en un `StatStrip` del DS — una banda propia. Antes
  *      vivían apretados en la esquina superior derecha con etiquetas de 10 px
  *      compitiendo contra el titular; ahí no se leían ni dejaban leer.
@@ -244,12 +245,25 @@ export function PilotoPulso({
           </MonoLabel>
         </div>
 
-        <h2 className="mt-3 max-w-3xl text-balance text-h2 font-semibold text-fg">
+        {/* Titular de TARJETA, no de página (Nico, 30-09: «eso está demasiado
+            grande»). `text-h2` es el tamaño de encabezado de página, y además
+            choca con la `.text-h2` de globals.css, que crece hasta 36 px en
+            escritorio: «Todo tranquilo…» ocupaba casi todo el ancho y pesaba
+            más que el título de la pantalla. 18/20 px se lee como el título
+            de una tarjeta y deja a las cifras de abajo (21 px en la banda)
+            como lo más grande del bloque, igual que en Contratos y Cobranza.
+            Las variantes con cosas esperando («23 promesas de pago
+            vencidas.») usan el mismo tamaño: la urgencia la dicen el punto y
+            el estado de arriba, no el cuerpo de letra. */}
+        <h2
+          className="mt-2 max-w-2xl text-balance text-lg font-semibold leading-snug tracking-[-0.01em] text-fg sm:text-xl"
+          data-testid="piloto-pulso-titular"
+        >
           {data.titular}
         </h2>
 
         {lectura && lectura.length > 0 && (
-          <p className="mt-2 max-w-3xl text-body text-fg-muted">{lectura.join(' ')}</p>
+          <p className="mt-1.5 max-w-3xl text-body-sm text-fg-muted">{lectura.join(' ')}</p>
         )}
       </div>
 

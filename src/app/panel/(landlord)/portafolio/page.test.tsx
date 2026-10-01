@@ -15,7 +15,6 @@ const hook = vi.hoisted(() => ({
   valor: {} as Record<string, unknown>,
 }));
 vi.mock('@/lib/hooks/useOwnerPortal', () => ({ useOwnerFinanzas: () => hook.valor }));
-vi.mock('@/components/ui', () => ({ Spinner: () => React.createElement('div', { 'data-testid': 'spinner' }) }));
 vi.mock('@/components/landlord/portal/PortalPlaceholder', () => ({
   PortalPlaceholder: () => React.createElement('div', { 'data-testid': 'proximamente' }),
 }));
@@ -81,9 +80,9 @@ describe('Mi plata — cuatro estados (O1)', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
   });
 
-  it('cargando muestra el spinner y con datos la vista', () => {
+  it('cargando muestra la carga de pantalla completa (el logo) y con datos la vista', () => {
     pintar({ isLoading: true });
-    expect(container.querySelector('[data-testid="spinner"]')).toBeTruthy();
+    expect(container.querySelector('[role="status"] picture')).toBeTruthy();
     pintar({ portafolio: { totalCop: 1 } });
     expect(container.querySelector('[data-testid="mi-plata"]')).toBeTruthy();
   });

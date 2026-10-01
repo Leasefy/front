@@ -1,14 +1,12 @@
 'use client'
 
 import { useMemo, useState, type FormEvent } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, ArrowRight, CheckCircle } from '@phosphor-icons/react'
+import { ArrowRight } from '@phosphor-icons/react'
 import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { LeasefyLogotype } from '@/components/brand'
-import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
+import { cn } from '@/lib/utils'
 import { formatearNitAlEscribir, revisarNit, LARGO_MAXIMO_AL_ESCRIBIR } from '@/lib/onboarding/nit'
 import {
   revisarNombreCompleto,
@@ -33,6 +31,21 @@ export interface OwnerNameStepFormProps {
 type Campo = 'nombre' | 'razonSocial' | 'nit' | 'representante'
 
 /**
+ * El campo del glow-up de /auth (`AuthInput`): en reposo un relleno apenas
+ * gris y sin filete; al enfocar, blanco con el azul de la marca. Con error o
+ * verificado el borde lo pinta el DS, así que ahí sólo se pone el fondo blanco.
+ */
+function claseDeCampo(conEstado: boolean, extra?: string) {
+  return cn(
+    'h-12',
+    conEstado
+      ? 'bg-surface'
+      : 'border-transparent bg-surface-muted/70 hover:border-border focus-visible:bg-surface',
+    extra,
+  )
+}
+
+/**
  * Paso previo al aprovisionamiento (`useOnboardingProvisioning` responde
  * `needs-info`). Junta todo lo que necesita `POST /users/me/onboarding` para
  * crear la agencia: el nombre del dueño (el back rechaza un firstName o
@@ -49,6 +62,13 @@ type Campo = 'nombre' | 'razonSocial' | 'nit' | 'representante'
  * con el algoritmo de la DIAN (ver `lib/onboarding/nit.ts`). Si escribieron uno
  * que no corresponde, el mensaje dice cuál es — el dígito se deduce del resto
  * del número, así que decirlo ahorra ir a buscar el RUT.
+ *
+ * ── Dónde vive (Nico, 2026-09-30) ──────────────────────────────────────────
+ * «Se siente como desconectado»: era una página aparte, con su propio logo y
+ * su «Volver». Ahora es sólo el formulario y lo monta `PanelAntesDeComenzar`
+ * a la derecha de las tarjetas de «Selecciona tu perfil» (ver
+ * `components/onboarding/perfil/`). La cabecera, la salida y el «cambiar de
+ * perfil» son del panel; acá queda lo que se llena.
  */
 export function OwnerNameStepForm({
   onSubmit,
@@ -142,192 +162,184 @@ export function OwnerNameStepForm({
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        {/* El logotipo de la marca, el mismo del selector y del resto del asistente: el cuadrado azul no es la marca (Nico, 2026-09-07). */}
-        <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
-        <SalirDelRegistro />
-      </header>
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      className="space-y-5"
+      data-testid="owner-name-step-form"
+    >
+      {/* El título como los de /auth: peso medio, sin negrita, tracking cerrado. El aire
+          a la derecha es el de la ✕ del panel, que va en esta misma fila. */}
+      <div className="pb-1 lg:pr-12">
+        <h1 className="text-balance font-heading text-[28px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
+          Antes de comenzar
+        </h1>
+        <p className="mt-2 text-pretty text-[14px] leading-relaxed text-fg-subtle">
+          Con esto creamos tu cuenta y la de tu inmobiliaria. Toma menos de un minuto.
+        </p>
+      </div>
 
-      <main className="flex min-h-[calc(100vh-5rem)] items-start justify-center px-6 pb-16 pt-2 sm:items-center sm:pt-0">
-        <div className="w-full max-w-md">
-          <Link
-            href="/onboarding/seleccionar-rol"
-            className="mb-6 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 -ml-2.5 text-body-sm text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            data-testid="volver-a-perfiles"
-          >
-            <ArrowLeft className="h-4 w-4" weight="bold" aria-hidden />
-            Volver
-          </Link>
+      <FormField id="ownerFullName" required invalid={!!errorDe('nombre')}>
+        <FormLabel>Tu nombre completo</FormLabel>
+        <FormControl>
+          <Input
+            id="ownerFullName"
+            type="text"
+            autoComplete="name"
+            autoFocus
+            placeholder="Ej: Ana María Pérez"
+            className={claseDeCampo(!!errorDe('nombre'))}
+            value={displayName}
+            invalid={!!errorDe('nombre')}
+            onBlur={() => marcarRevisado('nombre')}
+            onChange={(event) => {
+                marcarTocado('nombre')
+                setDisplayName(event.target.value)
+              }}
+          />
+        </FormControl>
+        {errorDe('nombre') ? (
+          <FormError>{errorDe('nombre')}</FormError>
+        ) : (
+          <FormHint>
+            Como aparece en tu documento de identidad. Quedarás como administrador de la cuenta.
+          </FormHint>
+        )}
+      </FormField>
 
-          <form
-            noValidate
-            onSubmit={handleSubmit}
-            className="space-y-5"
-            data-testid="owner-name-step-form"
-          >
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">
-                Antes de comenzar
-              </h1>
-              <p className="mt-2 text-body-sm text-fg-muted">
-                Con esto creamos tu cuenta y la de tu inmobiliaria. Toma menos de un minuto.
-              </p>
-            </div>
+      {/*
+        El dueño y quien se registra no siempre son la misma persona: un
+        contador o un asesor puede crear la cuenta de la inmobiliaria de
+        otro. Antes esto se pedía en un solo campo y el correo de quien se
+        registraba quedaba atado al nombre del dueño.
+        El tilde cubre el caso común sin obligar a escribir dos veces.
+      */}
+      <label className="-mt-1 flex cursor-pointer select-none items-start gap-2.5 text-body-sm text-fg-muted">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+          checked={esElRepresentante}
+          onChange={(event) => {
+            setEsElRepresentante(event.target.checked)
+            if (event.target.checked) setRepresentante('')
+          }}
+        />
+        <span>Soy el representante legal de la inmobiliaria</span>
+      </label>
 
-            <FormField id="ownerFullName" required invalid={!!errorDe('nombre')}>
-              <FormLabel>Tu nombre completo</FormLabel>
-              <FormControl>
-                <Input
-                  id="ownerFullName"
-                  type="text"
-                  autoComplete="name"
-                  autoFocus
-                  placeholder="Ej: Ana María Pérez"
-                  value={displayName}
-                  invalid={!!errorDe('nombre')}
-                  onBlur={() => marcarRevisado('nombre')}
-                  onChange={(event) => {
-                      marcarTocado('nombre')
-                      setDisplayName(event.target.value)
-                    }}
-                />
-              </FormControl>
-              {errorDe('nombre') ? (
-                <FormError>{errorDe('nombre')}</FormError>
-              ) : (
-                <FormHint>
-                  Como aparece en tu documento de identidad. Quedarás como administrador de la cuenta.
-                </FormHint>
-              )}
-            </FormField>
+      {!esElRepresentante && (
+        <FormField
+          id="legalRepresentative"
+          required
+          invalid={!!errorDe('representante')}
+        >
+          <FormLabel>Representante legal</FormLabel>
+          <FormControl>
+            <Input
+              id="legalRepresentative"
+              type="text"
+              autoComplete="off"
+              placeholder="Ej: Roberto Gómez Díaz"
+              className={claseDeCampo(!!errorDe('representante'))}
+              value={representante}
+              invalid={!!errorDe('representante')}
+              onBlur={() => marcarRevisado('representante')}
+              onChange={(event) => {
+                marcarTocado('representante')
+                setRepresentante(event.target.value)
+              }}
+            />
+          </FormControl>
+          {errorDe('representante') ? (
+            <FormError>{errorDe('representante')}</FormError>
+          ) : (
+            <FormHint>Nombre de quien figura como representante legal en el RUT.</FormHint>
+          )}
+        </FormField>
+      )}
 
-            {/*
-              El dueño y quien se registra no siempre son la misma persona: un
-              contador o un asesor puede crear la cuenta de la inmobiliaria de
-              otro. Antes esto se pedía en un solo campo y el correo de quien se
-              registraba quedaba atado al nombre del dueño.
-              El tilde cubre el caso común sin obligar a escribir dos veces.
-            */}
-            <label className="-mt-2 flex items-start gap-2 text-body-sm text-fg-muted">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                checked={esElRepresentante}
-                onChange={(event) => {
-                  setEsElRepresentante(event.target.checked)
-                  if (event.target.checked) setRepresentante('')
-                }}
-              />
-              <span>Soy el representante legal de la inmobiliaria</span>
-            </label>
 
-            {!esElRepresentante && (
-              <FormField
-                id="legalRepresentative"
-                required
-                invalid={!!errorDe('representante')}
-              >
-                <FormLabel>Representante legal</FormLabel>
-                <FormControl>
-                  <Input
-                    id="legalRepresentative"
-                    type="text"
-                    autoComplete="off"
-                    placeholder="Ej: Roberto Gómez Díaz"
-                    value={representante}
-                    invalid={!!errorDe('representante')}
-                    onBlur={() => marcarRevisado('representante')}
-                    onChange={(event) => {
-                      marcarTocado('representante')
-                      setRepresentante(event.target.value)
-                    }}
-                  />
-                </FormControl>
-                {errorDe('representante') ? (
-                  <FormError>{errorDe('representante')}</FormError>
-                ) : (
-                  <FormHint>Nombre de quien figura como representante legal en el RUT.</FormHint>
-                )}
-              </FormField>
+      <FormField id="agencyName" required invalid={!!errorDe('razonSocial')}>
+        <FormLabel>Razón social</FormLabel>
+        <FormControl>
+          <Input
+            id="agencyName"
+            type="text"
+            autoComplete="organization"
+            placeholder="Ej: Inmobiliaria Andes SAS"
+            className={claseDeCampo(!!errorDe('razonSocial'))}
+            value={agencyName}
+            invalid={!!errorDe('razonSocial')}
+            onBlur={() => marcarRevisado('razonSocial')}
+            onChange={(event) => {
+                marcarTocado('razonSocial')
+                setAgencyName(event.target.value)
+              }}
+          />
+        </FormControl>
+        {errorDe('razonSocial') ? (
+          <FormError>{errorDe('razonSocial')}</FormError>
+        ) : (
+          <FormHint>El nombre legal, como está en el RUT.</FormHint>
+        )}
+      </FormField>
+
+      <FormField id="agencyNit" required invalid={!!errorDe('nit')}>
+        <FormLabel>NIT</FormLabel>
+        <FormControl>
+          <Input
+            id="agencyNit"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            className={claseDeCampo(
+              !!errorDe('nit') || (revisados.nit && !!revision.nitBueno),
+              'font-mono tabular-nums',
             )}
+            placeholder="Ej: 900123456-8"
+            maxLength={LARGO_MAXIMO_AL_ESCRIBIR}
+            value={nit}
+            invalid={!!errorDe('nit')}
+            valid={revisados.nit && !!revision.nitBueno}
+            onBlur={() => marcarRevisado('nit')}
+            // El guion lo pone el campo; la persona sólo teclea números y
+            // no puede pasarse del largo (ver `formatearNitAlEscribir`).
+            onChange={(event) => {
+              marcarTocado('nit')
+              setNit(formatearNitAlEscribir(event.target.value))
+            }}
+          />
+        </FormControl>
+        {/* Sin repetir el número entero «mejorado» (Nico, 30-09: «pone un
+            número en el input y el helper pone otra cosa»), pero SÍ la ayuda
+            que servía: si no escribió el dígito de verificación, se le dice
+            cuál es, en neutro y sin ✓. */}
+        {errorDe('nit') ? (
+          <FormError>{errorDe('nit')}</FormError>
+        ) : revisados.nit && revision.nitBueno && !revision.nitBueno.traiaDv ? (
+          <FormHint data-testid="nit-digito-sugerido">
+            Su dígito de verificación es{' '}
+            <span className="font-mono font-medium tabular-nums text-fg">{revision.nitBueno.dv}</span>: lo
+            agregamos al guardar.
+          </FormHint>
+        ) : (
+          <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
+        )}
+      </FormField>
 
-
-            <FormField id="agencyName" required invalid={!!errorDe('razonSocial')}>
-              <FormLabel>Razón social</FormLabel>
-              <FormControl>
-                <Input
-                  id="agencyName"
-                  type="text"
-                  autoComplete="organization"
-                  placeholder="Ej: Inmobiliaria Andes SAS"
-                  value={agencyName}
-                  invalid={!!errorDe('razonSocial')}
-                  onBlur={() => marcarRevisado('razonSocial')}
-                  onChange={(event) => {
-                      marcarTocado('razonSocial')
-                      setAgencyName(event.target.value)
-                    }}
-                />
-              </FormControl>
-              {errorDe('razonSocial') ? (
-                <FormError>{errorDe('razonSocial')}</FormError>
-              ) : (
-                <FormHint>El nombre legal, como está en el RUT.</FormHint>
-              )}
-            </FormField>
-
-            <FormField id="agencyNit" required invalid={!!errorDe('nit')}>
-              <FormLabel>NIT</FormLabel>
-              <FormControl>
-                <Input
-                  id="agencyNit"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  className="font-mono tabular-nums"
-                  placeholder="Ej: 900123456-8"
-                  maxLength={LARGO_MAXIMO_AL_ESCRIBIR}
-                  value={nit}
-                  invalid={!!errorDe('nit')}
-                  valid={revisados.nit && !!revision.nitBueno}
-                  onBlur={() => marcarRevisado('nit')}
-                  // El guion lo pone el campo; la persona sólo teclea números y
-                  // no puede pasarse del largo (ver `formatearNitAlEscribir`).
-                  onChange={(event) => {
-                    marcarTocado('nit')
-                    setNit(formatearNitAlEscribir(event.target.value))
-                  }}
-                />
-              </FormControl>
-              {errorDe('nit') ? (
-                <FormError>{errorDe('nit')}</FormError>
-              ) : revision.nitBueno && revisados.nit ? (
-                <FormHint className="flex items-center gap-1.5 text-success">
-                  <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" weight="fill" aria-hidden />
-                  <span className="font-mono tabular-nums">{revision.nitBueno.bonito}</span>
-                </FormHint>
-              ) : (
-                <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
-              )}
-            </FormField>
-
-            <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
-              {isSubmitting ? (
-                <>
-                  <Spinner size="xs" variant="current" />
-                  Creando tu cuenta...
-                </>
-              ) : (
-                <>
-                  Continuar
-                  <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
-      </main>
-    </div>
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
+        {isSubmitting ? (
+          <>
+            <Spinner size="xs" variant="current" />
+            Creando tu cuenta...
+          </>
+        ) : (
+          <>
+            Continuar
+            <ArrowRight className="h-4 w-4" weight="bold" aria-hidden />
+          </>
+        )}
+      </Button>
+    </form>
   )
 }

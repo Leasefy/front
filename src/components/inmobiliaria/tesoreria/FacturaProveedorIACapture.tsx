@@ -459,7 +459,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <div className="space-y-1.5">
               <Label htmlFor="factura-proveedor">{t(k('proveedorLabel'))}</Label>
               {vendors === null && catalogosError === null ? (
-                <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
+                <p className="text-caption text-muted-foreground inline-flex items-center gap-2">
                   <Spinner size="sm" variant="muted" /> {t(k('proveedorCargando'))}
                 </p>
               ) : (

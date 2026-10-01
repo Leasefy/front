@@ -24,7 +24,6 @@ import { useDropzone } from "react-dropzone";
 import {
   ArrowRight,
   CheckCircle,
-  FileArrowUp,
   Info,
   Receipt,
   Warning,
@@ -32,6 +31,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -356,9 +356,12 @@ export function MigrarAsientos({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <h2 className="font-medium text-fg">Migrar el histórico</h2>
+    <div className="space-y-5">
+      {/* Subir y mapear son UNA tarea: una tarjeta con filetes entre fases
+          (glow-up 30-09), igual que en terceros. */}
+      <section className="rounded-lg border border-border-faint bg-surface shadow-sm">
+        <div className="space-y-4 p-6">
+        <h2 className="text-sm font-medium text-fg">Migrar el histórico</h2>
         <p className="mt-1 max-w-2xl text-sm text-fg-muted">
           El libro diario exportado de tu sistema actual: una fila por
           movimiento, con número de comprobante, fecha, cuenta, débito y
@@ -367,7 +370,7 @@ export function MigrarAsientos({
         </p>
 
         {archivo ? (
-          <div className="mt-4">
+          <div>
             <TarjetaDeArchivo
               nombre={archivo.name}
               peso={archivo.size}
@@ -386,48 +389,37 @@ export function MigrarAsientos({
             />
           </div>
         ) : (
-          <div
-            {...getRootProps()}
-            className={`mt-4 flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-              isDragActive
-                ? "border-primary bg-primary-soft"
-                : "border-border hover:bg-surface-muted"
-            }`}
-            data-testid="dropzone-asientos"
-          >
-            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-            <input {...getInputProps()} />
-            <FileArrowUp className="h-8 w-8 text-fg-muted" />
-            <div>
-              <p className="text-sm font-medium text-fg">
-                Arrastra el archivo o haz clic para elegirlo
-              </p>
-              <p className="text-caption text-fg-subtle">
-                Excel o CSV. Nada se crea todavía.
-              </p>
-            </div>
+          <div>
+            <ZonaDeArchivo
+              rootProps={getRootProps()}
+              inputProps={getInputProps()}
+              activo={isDragActive}
+              testid="dropzone-asientos"
+              titulo="Arrastra el archivo o haz clic para elegirlo"
+              detalle="Excel o CSV. Nada se crea todavía."
+            />
           </div>
         )}
 
         {error ? (
           <div
-            className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+            className="flex items-start gap-2 rounded-md bg-danger-soft p-3"
             role="alert"
           >
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
             <p className="text-sm text-fg">{error}</p>
           </div>
         ) : null}
-      </section>
+        </div>
 
       {encabezados.length > 0 ? (
-        <section
-          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        <div
+          className="border-t border-border-faint p-6"
           data-testid="mapeo-asientos"
         >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="font-medium text-fg">Qué es cada columna</h2>
+              <h2 className="text-sm font-medium text-fg">Qué es cada columna</h2>
               <p className="text-sm text-fg-muted">
                 {filas.length} filas → {armados.length} asientos. Revisa lo que
                 adivinamos.
@@ -508,7 +500,7 @@ export function MigrarAsientos({
               equivocada no es un archivo con un error. */}
           {esOtroArchivo ? (
             <div
-              className="mt-4 rounded-md border border-warning bg-warning-soft p-4"
+              className="mt-4 rounded-md bg-warning-soft p-4"
               data-testid="asientos-archivo-de-comprobantes"
             >
               <div className="flex items-start gap-2">
@@ -547,7 +539,7 @@ export function MigrarAsientos({
             </div>
           ) : sinMapear.length > 0 ? (
             <div
-              className="mt-4 flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
+              className="mt-4 flex items-start gap-2 rounded-md bg-warning-soft p-3"
               data-testid="asientos-sin-mapear"
             >
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -577,7 +569,7 @@ export function MigrarAsientos({
 
           {cuantasTandas > 1 ? (
             <div
-              className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+              className="mt-4 flex items-start gap-2 rounded-md bg-info-soft p-3"
               data-testid="asientos-en-tandas"
             >
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
@@ -590,7 +582,7 @@ export function MigrarAsientos({
             </div>
           ) : null}
 
-          <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+          <div className="mt-4 flex items-start gap-2 rounded-md bg-info-soft p-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
             <p className="text-sm text-fg-muted">
               Los montos entran como están («1.500.000», «1500000,00»); las
@@ -599,7 +591,7 @@ export function MigrarAsientos({
             </p>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-end gap-3">
+          <div className="mt-5 flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border-faint pt-5">
             <div className="space-y-1">
               <label
                 htmlFor="lote-asientos"
@@ -655,8 +647,9 @@ export function MigrarAsientos({
               />
             </div>
           ) : null}
-        </section>
+        </div>
       ) : null}
+      </section>
     </div>
   );
 }
@@ -704,36 +697,41 @@ function Revision({
 
   return (
     <div className="space-y-6" data-testid="revision-asientos">
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <h2 className="font-medium text-fg">Revisión de «{revision.lote}»</h2>
-        <p className="mt-1 text-sm text-fg-muted">
+      <section className="space-y-3 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+        <h2 className="text-sm font-medium text-fg">Revisión de «{revision.lote}»</h2>
+        {/* El resumen es una FRASE con los números en mono, no cuatro fichas
+            sueltas (el molde de la casa). */}
+        <p className="max-w-prose text-body text-fg" data-testid="resumen-de-revision">
+          El archivo trae{" "}
+          <span className="font-mono tabular-nums">{revision.total.toLocaleString("es-CO")}</span>{" "}
+          {revision.total === 1 ? "asiento" : "asientos"}:{" "}
+          <span className={revision.listas > 0 ? "text-success" : undefined}>
+            <span className="font-mono tabular-nums">{revision.listas.toLocaleString("es-CO")}</span>{" "}
+            {revision.listas === 1 ? "listo" : "listos"} para entrar
+          </span>
+          {", "}
+          <span className={revision.rechazadas > 0 ? "text-danger" : undefined}>
+            <span className="font-mono tabular-nums">{revision.rechazadas.toLocaleString("es-CO")}</span>{" "}
+            con problemas
+          </span>{" "}
+          y{" "}
+          <span className="font-mono tabular-nums">{revision.yaMigradas.toLocaleString("es-CO")}</span>{" "}
+          ya {revision.yaMigradas === 1 ? "migrado" : "migrados"} antes.
+        </p>
+        <p className="text-caption text-fg-subtle">
           Nada se escribió todavía. Esto es lo que pasaría si aplicas el lote.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4">
-          <Dato etiqueta="En el archivo" valor={revision.total} />
-          <Dato
-            etiqueta="Listos para entrar"
-            valor={revision.listas}
-            tono="ok"
-          />
-          <Dato
-            etiqueta="Con problemas"
-            valor={revision.rechazadas}
-            tono="mal"
-          />
-          <Dato etiqueta="Ya migrados antes" valor={revision.yaMigradas} />
-        </div>
       </section>
 
       {revision.cuentasFaltantes.length > 0 ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-5"
+          className="rounded-lg bg-warning-soft p-5"
           data-testid="cuentas-faltantes"
         >
           <div className="flex items-start gap-2">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-fg">
+              <h3 className="text-sm font-medium text-fg">
                 {revision.cuentasFaltantes.length === 1
                   ? "Una cuenta del archivo no existe en tu plan"
                   : `${revision.cuentasFaltantes.length} cuentas del archivo no existen en tu plan`}
@@ -749,7 +747,7 @@ function Revision({
             {revision.cuentasFaltantes.map((c) => (
               <li
                 key={c.codigo}
-                className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-fg"
+                className="rounded-md bg-surface px-2.5 py-1 text-sm text-fg shadow-sm"
               >
                 <span className="font-mono tabular-nums">{c.codigo}</span>
                 <span className="text-fg-subtle">
@@ -789,8 +787,8 @@ function Revision({
       ) : null}
 
       {revision.motivos.length > 0 ? (
-        <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-          <h3 className="font-medium text-fg">Por qué no entran</h3>
+        <section className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+          <h3 className="text-sm font-medium text-fg">Por qué no entran</h3>
           <ul className="mt-2 space-y-1 text-sm text-fg-muted">
             {revision.motivos.map((m) => (
               <li key={m.motivo}>
@@ -860,7 +858,7 @@ function Revision({
 
       {error ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -868,7 +866,7 @@ function Revision({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-faint bg-surface p-4 shadow-sm">
         <Button
           onClick={onAplicar}
           disabled={!puedeAplicar}
@@ -941,7 +939,7 @@ function Informe({
 }) {
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       data-testid="informe-asientos"
     >
       <div className="flex items-start gap-3">
@@ -950,7 +948,7 @@ function Informe({
           weight="fill"
         />
         <div>
-          <h2 className="font-medium text-fg">
+          <h2 className="text-sm font-medium text-fg">
             {informe.aplicados === 1
               ? "Entró 1 asiento"
               : `Entraron ${informe.aplicados} asientos`}
@@ -967,7 +965,7 @@ function Informe({
       </div>
 
       {informe.fallasAlEscribir.length > 0 ? (
-        <div className="mt-4 rounded-md border border-border bg-danger-soft p-3">
+        <div className="mt-4 rounded-md bg-danger-soft p-3">
           <p className="text-sm font-medium text-fg">
             {informe.fallasAlEscribir.length} no se pudieron escribir
           </p>
@@ -989,7 +987,7 @@ function Informe({
 
       {error ? (
         <div
-          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="mt-4 flex items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -1022,32 +1020,5 @@ function Informe({
         </Button>
       </div>
     </section>
-  );
-}
-
-function Dato({
-  etiqueta,
-  valor,
-  tono,
-}: {
-  etiqueta: string;
-  valor: number;
-  tono?: "ok" | "mal";
-}) {
-  return (
-    <div className="rounded-md border border-border p-3">
-      <p className="text-caption text-fg-muted">{etiqueta}</p>
-      <p
-        className={`font-mono text-xl font-semibold tabular-nums ${
-          tono === "ok" && valor > 0
-            ? "text-success"
-            : tono === "mal" && valor > 0
-              ? "text-danger"
-              : "text-fg"
-        }`}
-      >
-        {valor}
-      </p>
-    </div>
   );
 }

@@ -214,3 +214,57 @@ describe('<AgencyStepForm> — address fields', () => {
     expect(municipio.disabled).toBe(false)
   })
 })
+
+describe('<AgencyStepForm> — teléfono y borrador local (Nico, 30-09)', () => {
+  it('🔴 el teléfono sólo acepta dígitos: las letras no entran al valor', () => {
+    render()
+    const tel = byId('primaryContactPhone')
+    setInputValue(tel, '300abc123')
+    expect(tel.value).not.toMatch(/[a-zA-Z]/)
+    expect(tel.value.replace(/\D/g, '')).toBe('300123')
+  })
+
+  it('🔴 lo escrito y NO enviado vuelve al desmontar y volver a montar (devolverse de paso)', () => {
+    sessionStorage.clear()
+    render({ sessionId: 'ses-1' })
+    setInputValue(byId('address.calle'), 'Calle 10 # 5-55')
+    setInputValue(byId('primaryContactEmail'), 'ana@andes.test')
+
+    act(() => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    render({ sessionId: 'ses-1' })
+
+    expect(byId('address.calle').value).toBe('Calle 10 # 5-55')
+    expect(byId('primaryContactEmail').value).toBe('ana@andes.test')
+  })
+
+  it('al enviar con éxito, el borrador local del paso se borra', async () => {
+    sessionStorage.clear()
+    const onSubmit = vi.fn().mockResolvedValue({ ok: true })
+    render({
+      sessionId: 'ses-2',
+      onSubmit,
+      prefill: {
+        legalName: 'Inmobiliaria Andes SAS',
+        nit: '900123456-8',
+        address: { departamento: 'Cundinamarca', ciudad: 'Bogotá', calle: '', codigoPostal: '' },
+      },
+    })
+    fillEditableFields()
+    expect(sessionStorage.getItem('leasefy-asistente:ses-2:agency')).not.toBeNull()
+
+    await clickSubmit()
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(sessionStorage.getItem('leasefy-asistente:ses-2:agency')).toBeNull()
+  })
+
+  it('sin sessionId no guarda nada (los usos sueltos siguen igual)', () => {
+    sessionStorage.clear()
+    render()
+    setInputValue(byId('address.calle'), 'Calle 1')
+    expect(sessionStorage.length).toBe(0)
+  })
+})

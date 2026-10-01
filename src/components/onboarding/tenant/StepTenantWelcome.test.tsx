@@ -38,6 +38,7 @@ vi.mock('sonner', () => ({
 
 import { TenantOnboardingProvider } from '@/lib/context/TenantOnboardingContext'
 import { StepTenantWelcome } from './StepTenantWelcome'
+import { IntentoDeAvanzarContext } from './intento-de-avanzar'
 
 const SUPPORT_TEXT =
   'Para modificar tu número de documento, contacta al soporte de Leasefy.'
@@ -59,11 +60,13 @@ afterEach(async () => {
   vi.clearAllMocks()
 })
 
-async function render() {
+async function render(intentos = 0) {
   await act(async () => {
     root.render(
       <TenantOnboardingProvider>
-        <StepTenantWelcome />
+        <IntentoDeAvanzarContext.Provider value={intentos}>
+          <StepTenantWelcome />
+        </IntentoDeAvanzarContext.Provider>
       </TenantOnboardingProvider>,
     )
   })
@@ -109,5 +112,25 @@ describe('StepTenantWelcome — rut lock', () => {
 
     expect(rutInput().disabled).toBe(false)
     expect(container.textContent).not.toContain(SUPPORT_TEXT)
+  })
+})
+
+describe('StepTenantWelcome — el aviso del nombre sale sólo cuando corresponde', () => {
+  const AVISO = 'Ingresa tu nombre para continuar'
+  const nombre = () => container.querySelector('#displayName') as HTMLInputElement
+
+  it('al abrir el paso, sin nombre, no hay ningún aviso (antes era un bloque amarillo fijo)', async () => {
+    await render()
+    expect(container.textContent).not.toContain(AVISO)
+    expect(nombre().getAttribute('aria-invalid')).toBeNull()
+  })
+
+  it('al intentar continuar sin nombre, el error sale en el campo y el foco va ahí', async () => {
+    await render(0)
+    await render(1)
+    const error = container.querySelector('[role="alert"]')
+    expect(error?.textContent).toBe(AVISO)
+    expect(nombre().getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(nombre())
   })
 })

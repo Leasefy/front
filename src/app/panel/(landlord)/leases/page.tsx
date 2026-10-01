@@ -6,7 +6,8 @@ import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { PageHeader, KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLeases } from '@/lib/hooks/useLeases';
@@ -105,7 +106,7 @@ export default function LandlordLeasesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

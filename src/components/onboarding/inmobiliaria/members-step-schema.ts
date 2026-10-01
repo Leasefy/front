@@ -85,13 +85,38 @@ export const MEMBERS_STEP_NEW_ROW: MembersStepFormValues['members'][number] = {
   role: 'AGENTE',
 }
 
-/** Starts with one empty row as an affordance — the step itself is optional. */
+/**
+ * Arranca SIN filas (Nico, 2026-09-30): el paso es opcional, así que
+ * «Continuar» sin agregar a nadie continúa de verdad (manda `members: []`).
+ * La fila vacía de antes obligaba a llenarla o a buscar el «Omitir» aparte.
+ */
 export const MEMBERS_STEP_DEFAULT_VALUES: MembersStepFormValues = {
-  members: [MEMBERS_STEP_NEW_ROW],
+  members: [],
 }
 
 export function toMembersRequest(values: MembersStepFormValues): OnboardingSessionMembersRequest {
   return {
     members: values.members.map((member) => ({ email: member.email.trim(), role: member.role })),
   }
+}
+
+/**
+ * Los miembros que el paso YA guardó en el micro (`draft.members`, ver
+ * `members-core.ts`: `{ email, role (interno), requestedRole (el de la
+ * plataforma) }`), como filas del formulario. Para volver a editar el paso
+ * con lo que ya había (Nico, 2026-09-30). El nombre no viaja al micro: vuelve
+ * vacío, y es opcional.
+ */
+export function miembrosDelBorrador(
+  draft: Record<string, unknown> | null | undefined,
+): MembersStepFormValues['members'] {
+  const crudos = Array.isArray(draft?.members) ? (draft.members as unknown[]) : []
+  const roles = new Set<string>(MEMBER_ROLE_OPTIONS.map((o) => o.value))
+  return crudos.flatMap((m) => {
+    if (!m || typeof m !== 'object') return []
+    const fila = m as Record<string, unknown>
+    if (typeof fila.email !== 'string' || !fila.email.trim()) return []
+    const rol = typeof fila.requestedRole === 'string' && roles.has(fila.requestedRole) ? fila.requestedRole : 'AGENTE'
+    return [{ email: fila.email.trim(), nombre: '', role: rol as MemberRole }]
+  })
 }

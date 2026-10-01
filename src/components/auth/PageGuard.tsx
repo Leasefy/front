@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAcceso } from '@/components/auth/acceso-de-la-pantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -110,7 +111,7 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <CargaDeMarca />
       </div>
     );
   }

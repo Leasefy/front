@@ -138,7 +138,7 @@ export function PaymentProviderStepForm({ isSubmitting, onSubmit, submitError }:
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting || !hidratado} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting || !hidratado} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />

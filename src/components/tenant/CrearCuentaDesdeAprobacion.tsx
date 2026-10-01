@@ -34,6 +34,7 @@ import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { useTf, type Tf } from '@/lib/i18n/use-tf'
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo'
 
 const NS = 'inquilino.crearCuenta'
 
@@ -106,7 +107,7 @@ export function CrearCuentaDesdeAprobacion({
       const { requiresConfirmation } = await signUpWithEmail(
         normalizarCorreo(email),
         password,
-        `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(DESTINO)}`,
+        urlDeRegresoDelRegistro(window.location.origin, DESTINO),
         'tenant',
         {
           full_name: nombre.trim(),

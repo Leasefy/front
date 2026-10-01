@@ -41,25 +41,56 @@
  *    la casa, no con un negro clavado.
  * 6. **`prefers-reduced-motion` apaga la respiración del halo** y acorta las
  *    transiciones a cero.
+ * 7. **Es lo ÚLTIMO de una cuenta nueva** (Nico, 30-09-2026): con migración,
+ *    muro → confeti → segundo factor → recorrido; sin migración, la pregunta
+ *    previa → segundo factor → recorrido. Arranca solo cuando no queda nada
+ *    delante (`motivoParaEsperar`), lo mira cada `LATIDO` en vez de una vez, y
+ *    si algo aparece con él abierto se PAUSA: se esconde sin marcarse visto y
+ *    vuelve en la misma pantalla.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, preload } from 'react-dom';
+import Image, { getImageProps } from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { X } from '@phosphor-icons/react';
+import {
+  AirTrafficControl,
+  ArrowLeft,
+  ArrowRight,
+  Buildings,
+  ChartLine,
+  ChatsCircle,
+  Check,
+  ClipboardText,
+  Compass,
+  CurrencyDollar,
+  FilePlus,
+  Lightbulb,
+  MagnifyingGlass,
+  Plus,
+  UserCircle,
+  X,
+  type Icon,
+} from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { useMigracion } from '@/components/migracion/migracion-context';
 import {
   PASOS_DEL_TOUR,
   elPanelEstaBloqueado,
+  motivoParaEsperar,
   pantallasDelTour,
   pasosVisibles,
+  type MotivoParaEsperar,
   type PantallaDelTour,
   type PasoDelTour,
+  type SenalesDelPanel,
 } from './pasos-del-tour';
 
 /** Aire alrededor del elemento resaltado. */
@@ -83,12 +114,70 @@ const LATIDO = 300;
 const ESTABLES = 3;
 const MIN_INTENTOS = 4;
 const INTENTOS = 20;
-/** Ancho de la tarjeta anclada; también su tope en pantallas chicas. */
-const ANCHO = 340;
+/**
+ * Después de que cae una capa (el muro, el confeti, el segundo factor), la
+ * calma que se pide antes de arrancar es más larga: al tocar «Entrar a
+ * Leasefy» la sesión se refresca y RECIÉN AHÍ se sabe si hay que pedir el
+ * segundo factor. Con los 1,2 s de siempre el recorrido alcanzaba a asomarse
+ * antes de que `ProtectedRoute` se llevara a la persona a activarlo.
+ */
+const MIN_INTENTOS_TRAS_UNA_CAPA = 8;
+/**
+ * Cuánto se espera a que el muro conteste antes de arrancar igual. Sin esto,
+ * con un back lento el recorrido salía y a los pocos segundos lo tapaba la
+ * pregunta «¿Migramos tu inmobiliaria?». Con tope: si el muro nunca contesta
+ * (el back falló), el recorrido no se pierde — ante la duda, el panel se ve.
+ */
+const ESPERA_POR_EL_MURO_MS = 6000;
+/**
+ * Ancho de la tarjeta anclada; también su tope en pantallas chicas. Era 340:
+ * con el ícono de la parada, el dato en su pozo y el avance por paradas
+ * (glow up, 30-09) el cuerpo quedaba en renglones de cuatro palabras.
+ */
+export const ANCHO_DE_LA_TARJETA = 360;
+const ANCHO = ANCHO_DE_LA_TARJETA;
 /** Hasta dónde llega la columna del sidebar (240 px + aire): lo que termina antes, se señala desde el costado. */
 const COLUMNA_LATERAL = 320;
-/** Ancho de la bienvenida y el cierre, que no anclan a nada. */
-const ANCHO_CENTRADO = 420;
+/**
+ * Ancho de la bienvenida y el cierre, que no anclan a nada. Era 420: una
+ * tarjeta chica con tres renglones de texto (Nico, 30-09: «super básico, usa
+ * alguna imagen, hazlo más grande, más bonito»). Ahora son dos columnas —la
+ * foto de marca y el contenido— y en pantalla angosta se apilan.
+ */
+const ANCHO_CENTRADO = 760;
+/**
+ * Las fotos de marca del recorrido: la marca instalada en espacios reales.
+ * Las tres que `AgentIntroModal` le reservó al recorrido son la 02, la 09 y la
+ * 15 (ver la nota de `AGENT_INTROS`). La bienvenida abre con una ENTRADA (la
+ * 02: el portal de un edificio al atardecer) y el cierre termina ADENTRO (la
+ * 15: la recepción de noche): se entra al panel y se queda uno en él.
+ */
+const FOTO_DE_LA_BIENVENIDA = '/images/features/leasefy-brand-02.jpg';
+const FOTO_DEL_CIERRE = '/images/features/leasefy-brand-15.jpg';
+/** El ancho que ocupa la foto: la columna en escritorio, todo el ancho en teléfono. */
+const TAMANOS_DE_LA_FOTO = '(min-width: 640px) 320px, 100vw';
+
+/**
+ * Baja las dos fotos mientras el recorrido todavía espera (el muro, el
+ * segundo factor, el conteo), con el MISMO `srcset` que va a pedir
+ * `next/image`: medido en el navegador, la foto del cierre llegaba un rato
+ * después que la tarjeta y la columna se veía gris.
+ */
+function precargarLasFotos(): void {
+  for (const src of [FOTO_DE_LA_BIENVENIDA, FOTO_DEL_CIERRE]) {
+    try {
+      const { props } = getImageProps({ src, alt: '', fill: true, sizes: TAMANOS_DE_LA_FOTO });
+      preload(props.src, {
+        as: 'image',
+        imageSrcSet: props.srcSet,
+        imageSizes: props.sizes,
+        fetchPriority: 'low',
+      });
+    } catch {
+      // Sin precarga la foto llega igual, sólo un poco después.
+    }
+  }
+}
 /**
  * Por debajo de esto la tarjeta se va abajo, a lo ancho: al lado de un
  * elemento no cabe, y centrada tapa justo lo que está señalando.
@@ -224,7 +313,7 @@ function focusables(caja: HTMLElement): HTMLElement[] {
 
 export function TourDelPanel() {
   const { t } = useI18n();
-  const { user, agency } = useAuth();
+  const { user, agency, mfaRequired, mfaEnrollRequired } = useAuth();
   const { tourDismissed, cerrarRecorrido } = usePanelPrefs();
   const reducirMovimiento = useReducedMotion();
   // Los permisos deciden qué filas del sidebar existen. Medir antes de que
@@ -232,6 +321,38 @@ export function TourDelPanel() {
   // poder montarse (y probarse) sin el provider.
   const permisos = usePermissionsContextSafe();
   const permisosListos = permisos == null || !permisos.isLoading;
+
+  // ── Lo que hay delante (ver `motivoParaEsperar`) ─────────────────────────
+  // Se LEE de lo que ya existe: la sesión (segundo factor), el contexto del
+  // muro y el DOM. `null` fuera del panel de la inmobiliaria ⇒ no hay muro.
+  const migracion = useMigracion();
+  //
+  // `panelTapado` es LA señal del muro (la publica `MuroDeMigracion` desde el
+  // 30-09): `true` mientras el muro, la pregunta previa, la migración abierta
+  // a mano o la bienvenida con confeti tapan el panel. Pero antes de que el
+  // muro conteste vale `false` —«todavía no sé» no es «no tapa»—, así que
+  // mientras `estado` sea null se espera un poco (`ESPERA_POR_EL_MURO_MS`).
+  const senales: SenalesDelPanel = {
+    segundoFactorPendiente: Boolean(mfaRequired || mfaEnrollRequired),
+    muro:
+      migracion == null
+        ? 'libre'
+        : migracion.panelTapado === true || migracion.estado?.bloquea === true
+          ? 'bloquea'
+          : migracion.estado == null
+            ? 'sin-contestar'
+            : 'libre',
+  };
+  // Espejo para el latido, que corre fuera del render.
+  const senalesRef = useRef(senales);
+  senalesRef.current = senales;
+  /**
+   * El último motivo medido por el latido. `'sin-mirar'` hasta la primera
+   * medición: arrancar a contar antes de mirar es justo lo que no se quiere.
+   */
+  const [delante, setDelante] = useState<MotivoParaEsperar | 'sin-mirar' | null>('sin-mirar');
+  /** Hubo algo delante en esta sesión del recorrido ⇒ la calma pedida es más larga. */
+  const vioAlgoDelanteRef = useRef(false);
 
   const [pasos, setPasos] = useState<PasoDelTour[] | null>(null);
   const [indice, setIndice] = useState(0);
@@ -249,23 +370,76 @@ export function TourDelPanel() {
 
   const activo = tourDismissed === false;
 
+  /*
+   * 🔴 EL LATIDO: qué hay delante, medido cada `LATIDO` mientras el recorrido
+   * está pendiente (y también con él abierto, para pausarlo).
+   *
+   * Hasta el 30-09 esto se miraba UNA vez, dentro del conteo, y si había una
+   * capa el conteo se cortaba sin volver a programarse. El comentario decía
+   * «para que el recorrido salga solo cuando la capa caiga», pero nadie lo
+   * despertaba: las dependencias del efecto eran `[activo, permisosListos]` y
+   * ninguna cambia cuando el muro baja. La cuenta nueva que entraba con el
+   * muro puesto se quedaba sin recorrido toda la sesión (Nico, 30-09: «no se
+   * está mostrando de manera automática a las cuentas nuevas»).
+   *
+   * Son cinco `querySelector` cada 300 ms, y sólo mientras la inmobiliaria no
+   * lo haya visto: una vez por agencia.
+   */
+  useEffect(() => {
+    if (!activo) {
+      setDelante('sin-mirar');
+      return;
+    }
+    precargarLasFotos();
+    const desde = Date.now();
+    let id: ReturnType<typeof setTimeout>;
+    const mirar = () => {
+      const actuales = senalesRef.current;
+      const motivo = motivoParaEsperar((sel) => document.querySelector(sel) != null, {
+        ...actuales,
+        // El muro sin respuesta se espera, pero no para siempre.
+        muro:
+          actuales.muro === 'sin-contestar' && Date.now() - desde >= ESPERA_POR_EL_MURO_MS
+            ? 'libre'
+            : actuales.muro,
+      });
+      // Esperar la PRIMERA respuesta del muro no es que algo haya caído: no
+      // alarga la calma de quien entra a un panel que ya estaba abierto.
+      if (motivo && motivo !== 'muro-sin-contestar') vioAlgoDelanteRef.current = true;
+      setDelante(motivo);
+      id = setTimeout(mirar, LATIDO);
+    };
+    mirar();
+    return () => clearTimeout(id);
+  }, [activo]);
+
+  // Lo que viene de React (sesión y muro) se obedece en el mismo render, sin
+  // esperar al latido: un segundo factor pendiente esconde el recorrido YA.
+  const libre =
+    delante === null && !senales.segundoFactorPendiente && senales.muro !== 'bloquea';
+
   // Los pasos se resuelven al arrancar el recorrido, no al montar: el panel
   // tarda en pintar el sidebar y la píldora, y medir antes daría un recorrido
-  // recortado (ver `LATIDO`).
+  // recortado (ver `LATIDO`). Mientras haya algo delante no se cuenta; cuando
+  // cae, el efecto vuelve a correr con `libre` y el conteo empieza de cero.
   useEffect(() => {
     if (!activo) {
       setPasos(null);
       setIndice(0);
       yaArrancoRef.current = false;
+      vioAlgoDelanteRef.current = false;
       return;
     }
-    // Un refetch de permisos no puede reiniciar un recorrido ya empezado.
-    if (!permisosListos || yaArrancoRef.current) return;
+    // Un refetch de permisos no puede reiniciar un recorrido ya empezado, y
+    // una capa que aparece con el recorrido abierto lo PAUSA (ver `abierto`),
+    // no lo vuelve a armar.
+    if (!permisosListos || !libre || yaArrancoRef.current) return;
     let cancelado = false;
     let anterior = -1;
     let estables = 0;
     let intentos = 0;
     let id: ReturnType<typeof setTimeout>;
+    const minimo = vioAlgoDelanteRef.current ? MIN_INTENTOS_TRAS_UNA_CAPA : MIN_INTENTOS;
 
     const arrancar = (visibles: PasoDelTour[]) => {
       yaArrancoRef.current = true;
@@ -280,13 +454,14 @@ export function TourDelPanel() {
 
     const contar = () => {
       if (cancelado) return;
-      const hay = (sel: string) => document.querySelector(sel) != null;
-
-      // Con el muro de la puesta en marcha —o un modal que la persona abrió—
-      // no se arranca, y la preferencia se deja COMO ESTÁ, para que el
-      // recorrido salga solo cuando la capa caiga, en vez de perderse.
-      if (elPanelEstaBloqueado(hay)) {
-        setPasos(null);
+      // Una capa que aparece ENTRE dos latidos: se deja de contar hasta que
+      // caiga, y se vuelve a mirar (nunca se corta: ése era el defecto).
+      if (elPanelEstaBloqueado((sel) => document.querySelector(sel) != null)) {
+        vioAlgoDelanteRef.current = true;
+        anterior = -1;
+        estables = 0;
+        intentos = 0;
+        id = setTimeout(contar, LATIDO);
         return;
       }
 
@@ -294,7 +469,7 @@ export function TourDelPanel() {
       intentos += 1;
       estables = visibles.length === anterior ? estables + 1 : 0;
       anterior = visibles.length;
-      const asentado = visibles.length > 0 && estables >= ESTABLES && intentos >= MIN_INTENTOS;
+      const asentado = visibles.length > 0 && estables >= ESTABLES && intentos >= minimo;
       if (asentado || intentos >= INTENTOS) {
         arrancar(visibles);
         return;
@@ -307,7 +482,7 @@ export function TourDelPanel() {
       cancelado = true;
       clearTimeout(id);
     };
-  }, [activo, permisosListos]);
+  }, [activo, permisosListos, libre]);
 
   const pantallas = useMemo<PantallaDelTour[]>(
     () => (pasos ? pantallasDelTour(pasos) : []),
@@ -324,6 +499,10 @@ export function TourDelPanel() {
       setRecuadro(null);
       return;
     }
+    // En pausa (una capa delante) no se mide ni se escucha nada: detrás de un
+    // muro el elemento puede medir cero y el paso se saltaría sin que nadie
+    // lo viera. Al reanudar, el efecto vuelve a correr y mide de nuevo.
+    if (!libre) return;
     const abrio = abrirSuSeccion(selectorActual);
     acercar(selectorActual, !reducirMovimiento);
     const medida = medir(selectorActual);
@@ -358,7 +537,7 @@ export function TourDelPanel() {
       window.removeEventListener('scroll', remedir, true);
       window.removeEventListener('resize', remedir);
     };
-  }, [selectorActual, reducirMovimiento]);
+  }, [selectorActual, reducirMovimiento, libre]);
 
   const cerrar = useCallback((estado: 'completo' | 'omitido') => {
     void cerrarRecorrido(estado);
@@ -371,7 +550,12 @@ export function TourDelPanel() {
     if (previo && typeof previo.focus === 'function' && previo.isConnected) previo.focus();
   }, [cerrarRecorrido]);
 
-  const abierto = activo && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
+  // `libre` también cuenta con el recorrido ya empezado: una capa que aparece
+  // encima (el muro abierto a mano, un modal que la persona pidió) lo PAUSA.
+  // Se esconde sin marcar nada, sin teclado vivo —Esc no lo «omite» a
+  // ciegas— y vuelve en la misma pantalla cuando la capa cae.
+  const abierto =
+    activo && libre && pantalla != null && (pantalla.tipo !== 'paso' || recuadro != null);
 
   useLayoutEffect(() => {
     const caja = tarjetaRef.current;
@@ -462,11 +646,11 @@ export function TourDelPanel() {
 
   const total = pantalla.tipo === 'paso' ? pantalla.totalDePasos : (pasos?.length ?? 0);
   const nPaso = pantalla.tipo === 'paso' ? pantalla.indiceDelPaso + 1 : 0;
-  const avance =
-    pantalla.tipo === 'bienvenida' ? 0 : pantalla.tipo === 'cierre' ? 1 : nPaso / Math.max(1, total);
+  const hechos = pantalla.tipo === 'bienvenida' ? 0 : pantalla.tipo === 'cierre' ? total : nPaso;
 
   const idTitulo = 'tour-del-panel-titulo';
-  const duracion = reducirMovimiento ? 0 : 0.18;
+  const animar = !reducirMovimiento;
+  const duracion = animar ? 0.18 : 0;
   // El velo se oscurece con la tinta de la casa: en oscuro `--ink` ya es
   // `#0a0a0a`, así que el recorrido no aclara ni ensucia el tema.
   const velo = 'color-mix(in srgb, var(--ink) 62%, transparent)';
@@ -474,6 +658,96 @@ export function TourDelPanel() {
   const nombre = user?.firstName?.trim() || user?.name?.trim() || '';
   const nombreInmobiliaria =
     agency?.name?.trim() || t('inmobiliaria.tour.bienvenida.tuInmobiliaria');
+
+  const titulo =
+    pantalla.tipo === 'paso'
+      ? t(pantalla.paso.tituloKey)
+      : t(
+          pantalla.tipo === 'bienvenida'
+            ? 'inmobiliaria.tour.bienvenida.titulo'
+            : 'inmobiliaria.tour.cierre.titulo',
+          { inmobiliaria: nombreInmobiliaria },
+        );
+
+  const progreso = (
+    <ProgresoPorParadas total={total} hechos={hechos} etiqueta={t('inmobiliaria.tour.progreso')} />
+  );
+
+  const aspa = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={() => cerrar('omitido')}
+      aria-label={t('inmobiliaria.tour.cerrar')}
+      className={ASPA_DE_CIERRE}
+      data-testid="tour-cerrar"
+    >
+      <X size={16} weight="bold" aria-hidden />
+    </Button>
+  );
+
+  // Omitir, en TODAS las pantallas: es la promesa del recorrido.
+  //
+  // En la bienvenida y el cierre, en teléfono, el pie se apila: los botones
+  // arriba (el primario a lo ancho) y «Omitir» debajo. En una fila no cabían
+  // «Omitir», «Atrás» y «Empezar a trabajar» en 310 px y el cierre se salía
+  // de la tarjeta por la derecha (medido a 390 px).
+  const centrada = pantalla.tipo !== 'paso';
+  const pie = (
+    <div
+      className={cn(
+        'flex gap-3',
+        centrada
+          ? 'flex-col-reverse sm:flex-row sm:items-center sm:justify-between'
+          : 'items-center justify-between',
+      )}
+    >
+      <Button
+        variant="link"
+        size="sm"
+        hideArrow
+        onClick={() => cerrar('omitido')}
+        className={cn('h-auto px-0 text-fg-muted hover:text-fg', centrada && 'self-center sm:self-auto')}
+        data-testid="tour-saltar"
+      >
+        {t('inmobiliaria.tour.saltar')}
+      </Button>
+
+      <div className={cn('flex items-center gap-2', centrada && 'w-full sm:w-auto')}>
+        {indice > 0 && (
+          <Button
+            variant="outline"
+            size={pantalla.tipo === 'paso' ? 'sm' : 'default'}
+            hideArrow
+            onClick={retroceder}
+            data-testid="tour-atras"
+          >
+            <ArrowLeft size={14} weight="bold" aria-hidden className="mr-1.5" />
+            {t('inmobiliaria.tour.atras')}
+          </Button>
+        )}
+        <Button
+          size={pantalla.tipo === 'paso' ? 'sm' : 'default'}
+          hideArrow
+          onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
+          className={cn(centrada && 'flex-1 sm:flex-none')}
+          data-testid="tour-siguiente"
+        >
+          {t(
+            pantalla.tipo === 'bienvenida'
+              ? 'inmobiliaria.tour.empezar'
+              : pantalla.tipo === 'cierre'
+                ? 'inmobiliaria.tour.entendido'
+                : 'inmobiliaria.tour.siguiente',
+          )}
+          {pantalla.tipo !== 'cierre' && (
+            <ArrowRight size={14} weight="bold" aria-hidden className="ml-1.5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   return createPortal(
     <div
@@ -503,9 +777,7 @@ export function TourDelPanel() {
             width: recuadro.width + MARGEN * 2,
             height: recuadro.height + MARGEN * 2,
           }}
-          transition={
-            reducirMovimiento ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }
-          }
+          transition={animar ? { type: 'spring', stiffness: 380, damping: 36 } : { duration: 0 }}
           style={{ boxShadow: `0 0 0 9999px ${velo}` }}
         >
           {/* El halo: un anillo con el primario que respira muy despacio. */}
@@ -513,11 +785,9 @@ export function TourDelPanel() {
             aria-hidden
             className="absolute inset-0 rounded-lg"
             style={{ boxShadow: `0 0 0 2px hsl(var(--primary)), 0 0 0 8px hsl(var(--primary) / 0.18)` }}
-            animate={reducirMovimiento ? { opacity: 1 } : { opacity: [0.55, 1, 0.55] }}
+            animate={animar ? { opacity: [0.55, 1, 0.55] } : { opacity: 1 }}
             transition={
-              reducirMovimiento
-                ? { duration: 0 }
-                : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
+              animar ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }
             }
           />
         </motion.div>
@@ -529,7 +799,7 @@ export function TourDelPanel() {
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: duracion }}
+          transition={{ duration: animar ? 0.24 : 0 }}
           style={{ backgroundColor: velo }}
         />
       )}
@@ -559,165 +829,300 @@ export function TourDelPanel() {
             aria-modal="true"
             aria-labelledby={idTitulo}
             tabIndex={-1}
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            // Sólo lo que se ve: la tarjeta sube un poco y aparece. Con
+            // «reducir movimiento» no se mueve nada.
+            initial={animar ? { opacity: 0, y: 10, scale: 0.98 } : false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: duracion }}
+            exit={animar ? { opacity: 0, y: -6, scale: 0.98 } : { opacity: 0 }}
+            transition={{ duration: pantalla.tipo === 'paso' ? duracion : animar ? 0.32 : 0, ease: [0.22, 1, 0.36, 1] }}
             style={ubicacion ? undefined : { width: ANCHO_CENTRADO, maxWidth: '100%' }}
-            className={
+            // La cáscara es la de los modales hechos a mano (`rounded-[20px]`,
+            // DESIGN §17) y la elevación, la de las capas: `shadow-lg`.
+            className={cn(
+              'overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none',
               ubicacion
-                ? 'max-h-[calc(100vh-16px)] w-full overflow-y-auto rounded-lg border border-border bg-surface p-5 shadow-xl outline-none'
-                : 'pointer-events-auto max-h-[calc(100vh-32px)] overflow-y-auto rounded-lg border border-border bg-surface p-6 shadow-xl outline-none'
-            }
+                ? 'max-h-[calc(100dvh-16px)] w-full p-5'
+                : 'pointer-events-auto max-h-[calc(100dvh-32px)]',
+            )}
+            data-lenis-prevent
             data-testid="tour-tarjeta"
           >
             {/* Lo que el lector de pantalla anuncia en cada cambio de pantalla. */}
             <p className="sr-only" aria-live="polite">
               {pantalla.tipo === 'paso'
-                ? `${t('inmobiliaria.tour.paso', { n: nPaso, total })} — ${t(pantalla.paso.tituloKey)}`
-                : t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.bienvenida.titulo'
-                      : 'inmobiliaria.tour.cierre.titulo',
-                    { inmobiliaria: nombreInmobiliaria },
-                  )}
+                ? `${t('inmobiliaria.tour.paso', { n: nPaso, total })} — ${titulo}`
+                : titulo}
             </p>
 
-            <div className="flex items-start justify-between gap-3">
-              <p className="font-mono text-caption uppercase tracking-wide text-fg-subtle">
-                {pantalla.tipo === 'paso'
-                  ? t('inmobiliaria.tour.paso', { n: nPaso, total })
-                  : nombre
-                    ? t('inmobiliaria.tour.bienvenida.saludo', { nombre })
-                    : '\u00A0'}
-              </p>
-              <Button
-                variant="ghost"
-                size="icon"
-                hideArrow
-                onClick={() => cerrar('omitido')}
-                aria-label={t('inmobiliaria.tour.cerrar')}
-                className="-mr-2 -mt-2 h-8 w-8 shrink-0 text-fg-subtle hover:text-fg"
-                data-testid="tour-cerrar"
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
-
-            {/* El progreso real: cuánto del recorrido va, contando sólo los pasos
-                anclados (la bienvenida arranca en cero y el cierre lo completa). */}
-            <div
-              className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-muted"
-              role="progressbar"
-              aria-label={t('inmobiliaria.tour.progreso')}
-              aria-valuemin={0}
-              aria-valuemax={total}
-              aria-valuenow={pantalla.tipo === 'cierre' ? total : nPaso}
-              data-testid="tour-progreso"
-            >
-              <motion.span
-                className="block h-full rounded-full"
-                style={{ backgroundColor: 'hsl(var(--primary))' }}
-                initial={false}
-                animate={{ width: `${Math.round(avance * 100)}%` }}
-                transition={{ duration: duracion }}
-              />
-            </div>
-
-            <h2 id={idTitulo} className="mt-3 text-base font-semibold text-fg">
-              {pantalla.tipo === 'paso'
-                ? t(pantalla.paso.tituloKey)
-                : t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.bienvenida.titulo'
-                      : 'inmobiliaria.tour.cierre.titulo',
-                    { inmobiliaria: nombreInmobiliaria },
-                  )}
-            </h2>
+            {pantalla.tipo === 'bienvenida' && (
+              <PantallaCentrada foto={FOTO_DE_LA_BIENVENIDA} fotoAl="inicio" animar={animar} aspa={aspa}>
+                {/* El texto se centra en el alto de la foto y el pie se apoya
+                    abajo: sin la ruta (Nico, 30-09: «no es necesario dejarlo
+                    ahí») la columna no queda con un hueco al final. */}
+                <div className="my-auto">
+                  <Eyebrow>
+                    {nombre ? t('inmobiliaria.tour.bienvenida.saludo', { nombre }) : '\u00A0'}
+                  </Eyebrow>
+                  <h2
+                    id={idTitulo}
+                    className="mt-4 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[32px]"
+                  >
+                    {titulo}
+                  </h2>
+                  <p className="mt-4 text-body text-fg-muted">
+                    {t('inmobiliaria.tour.bienvenida.cuerpo', { total })}
+                  </p>
+                </div>
+                <div className="mt-8">{pie}</div>
+              </PantallaCentrada>
+            )}
 
             {pantalla.tipo === 'paso' && (
               <>
-                <p className="mt-1.5 text-body-sm text-fg-muted">{t(pantalla.paso.cuerpoKey)}</p>
+                {progreso}
+                <div className="mt-4 flex items-start gap-3">
+                  <IconoDeLaParada id={pantalla.paso.id} />
+                  <div className="min-w-0 flex-1">
+                    <Eyebrow punto={false}>{t('inmobiliaria.tour.paso', { n: nPaso, total })}</Eyebrow>
+                    <h2
+                      id={idTitulo}
+                      className="mt-1 font-heading text-[17px] font-semibold leading-snug tracking-[-0.01em] text-fg"
+                    >
+                      {titulo}
+                    </h2>
+                  </div>
+                  <div className="-mr-1 -mt-1">{aspa}</div>
+                </div>
+                <p className="mt-3 text-body-sm text-fg-muted">{t(pantalla.paso.cuerpoKey)}</p>
                 {pantalla.paso.datoKey && (
-                  <p className="mt-2 border-l-2 border-border pl-3 text-body-sm text-fg-subtle">
-                    {t(pantalla.paso.datoKey)}
+                  <p className="mt-3 flex gap-2.5 rounded-md bg-surface-muted px-3 py-2.5 text-caption text-fg-muted">
+                    <Lightbulb size={16} aria-hidden className="mt-px shrink-0 text-primary" />
+                    <span>{t(pantalla.paso.datoKey)}</span>
                   </p>
                 )}
+                <div className="mt-5">{pie}</div>
               </>
-            )}
-
-            {pantalla.tipo === 'bienvenida' && (
-              <p className="mt-1.5 text-body-sm text-fg-muted">
-                {t('inmobiliaria.tour.bienvenida.cuerpo', { total })}
-              </p>
             )}
 
             {pantalla.tipo === 'cierre' && (
-              <>
-                <ul className="mt-3 space-y-2">
-                  {['punto1', 'punto2', 'punto3'].map((k) => (
-                    <li key={k} className="flex gap-2 text-body-sm text-fg-muted">
+              <PantallaCentrada foto={FOTO_DEL_CIERRE} fotoAl="final" animar={animar} aspa={aspa}>
+                <Eyebrow>{t('inmobiliaria.tour.cierre.eyebrow')}</Eyebrow>
+                <h2
+                  id={idTitulo}
+                  className="mt-3 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg [text-wrap:balance] sm:text-[30px]"
+                >
+                  {titulo}
+                </h2>
+                <div className="mt-5">{progreso}</div>
+                <ul className="mt-5 space-y-3">
+                  {['punto1', 'punto2', 'punto3'].map((k, i) => (
+                    <motion.li
+                      key={k}
+                      initial={animar ? { opacity: 0, y: 6 } : false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: animar ? 0.12 + i * 0.07 : 0, duration: animar ? 0.24 : 0 }}
+                      className="flex gap-3 text-body-sm text-fg-muted"
+                    >
                       <span
                         aria-hidden
-                        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: 'hsl(var(--primary))' }}
-                      />
-                      {t(`inmobiliaria.tour.cierre.${k}`)}
-                    </li>
+                        className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"
+                      >
+                        <Check size={12} weight="bold" />
+                      </span>
+                      <span>{t(`inmobiliaria.tour.cierre.${k}`)}</span>
+                    </motion.li>
                   ))}
                 </ul>
-                <p className="mt-3 text-body-sm text-fg-subtle">
-                  {t('inmobiliaria.tour.cierre.volver')}
+                <p className="mt-5 flex gap-2.5 rounded-md bg-surface-muted px-3 py-2.5 text-caption text-fg-muted">
+                  <Compass size={16} aria-hidden className="mt-px shrink-0 text-primary" />
+                  <span>{t('inmobiliaria.tour.cierre.volver')}</span>
                 </p>
-              </>
+                <div className="mt-7">{pie}</div>
+              </PantallaCentrada>
             )}
-
-            <div className="mt-5 flex items-center justify-between gap-3">
-              {/* Omitir, en TODAS las pantallas: es la promesa del recorrido. */}
-              <Button
-                variant="link"
-                size="sm"
-                hideArrow
-                onClick={() => cerrar('omitido')}
-                className="h-auto px-0 text-fg-muted hover:text-fg"
-                data-testid="tour-saltar"
-              >
-                {t('inmobiliaria.tour.saltar')}
-              </Button>
-
-              <div className="flex items-center gap-2">
-                {indice > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    onClick={retroceder}
-                    data-testid="tour-atras"
-                  >
-                    {t('inmobiliaria.tour.atras')}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  hideArrow
-                  onClick={pantalla.tipo === 'cierre' ? () => cerrar('completo') : avanzar}
-                  data-testid="tour-siguiente"
-                >
-                  {t(
-                    pantalla.tipo === 'bienvenida'
-                      ? 'inmobiliaria.tour.empezar'
-                      : pantalla.tipo === 'cierre'
-                        ? 'inmobiliaria.tour.entendido'
-                        : 'inmobiliaria.tour.siguiente',
-                  )}
-                </Button>
-              </div>
-            </div>
           </motion.div>
         </AnimatePresence>
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Las piezas de la puesta en escena (glow up, 30-09-2026).
+//
+// Nico, de la bienvenida: «super básico, usa alguna imagen, hazlo más grande,
+// más bonito». Y el mismo nivel en las paradas y en el cierre, para que no se
+// vea un salto: las tres comparten la cáscara, el renglón de arriba (eyebrow
+// en mono + la ✕ de la casa), el avance por paradas y el pie.
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * El renglón de arriba: mono, mayúsculas, con el punto cobalto de la marca.
+ * Las paradas lo llevan sin punto: su acento ya es el ícono de la parada.
+ */
+function Eyebrow({ children, punto = true }: { children: React.ReactNode; punto?: boolean }) {
+  return (
+    <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-subtle">
+      {punto && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />}
+      {children}
+    </p>
+  );
+}
+
+/**
+ * El avance, UN segmento por parada. En la bienvenida está vacío y dice
+ * cuántas son sin contarlas en texto; en cada paso se llena hasta donde va; en
+ * el cierre, lleno. Es el mismo `progressbar` de antes, con sus números.
+ */
+function ProgresoPorParadas({
+  total,
+  hechos,
+  etiqueta,
+}: {
+  total: number;
+  hechos: number;
+  etiqueta: string;
+}) {
+  return (
+    <div
+      role="progressbar"
+      aria-label={etiqueta}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={hechos}
+      className="flex gap-1"
+      data-testid="tour-progreso"
+    >
+      {Array.from({ length: Math.max(1, total) }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={cn(
+            'h-1 flex-1 rounded-full transition-colors duration-200 motion-reduce:transition-none',
+            i < hechos ? 'bg-primary' : 'bg-border',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * El ícono de cada parada es EL MISMO de la fila que señala (sidebar,
+ * `arquitectura-del-panel.ts`; la píldora del Piloto; el perfil): lo que se
+ * aprende en la tarjeta es lo que después se busca en el menú.
+ */
+const ICONO_DE_LA_PARADA: Record<string, Icon> = {
+  buscador: MagnifyingGlass,
+  nuevo: Plus,
+  inmuebles: Buildings,
+  postulaciones: ClipboardText,
+  contratos: FilePlus,
+  pagos: CurrencyDollar,
+  reportes: ChartLine,
+  piloto: AirTrafficControl,
+  chat: ChatsCircle,
+  perfil: UserCircle,
+};
+
+function IconoDeLaParada({ id }: { id: string }) {
+  const Icono = ICONO_DE_LA_PARADA[id] ?? Compass;
+  // Tinted Icon Tile (DESIGN §4): cobalto suave, el único acento del momento.
+  return (
+    <span
+      aria-hidden
+      className="grid size-10 shrink-0 place-items-center rounded-md bg-primary-soft text-primary"
+    >
+      <Icono size={20} />
+    </span>
+  );
+}
+
+/**
+ * La bienvenida y el cierre: dos columnas, la foto de marca y el contenido.
+ * En pantalla angosta la foto se vuelve una franja arriba. `fotoAl` la pone a
+ * la izquierda en la bienvenida y a la derecha en el cierre: el recorrido abre
+ * y cierra como un par.
+ *
+ * La ✕ va en la esquina de arriba a la derecha de TODO el modal, no de la
+ * columna del texto (Nico, 30-09: «la x de cerrar en ambos no debería de
+ * quedar en el lado derecho?»). En el cierre —y en teléfono, donde la foto es
+ * la franja de arriba— queda sobre la foto: el chip de la casa es sólido
+ * (`bg-surface-muted`) con un filete (`ring-border`) y una sombra suave para
+ * despegarse de ella, en claro y en oscuro. Va
+ * primera en el DOM: sigue siendo lo primero que encuentra el Tab.
+ */
+function PantallaCentrada({
+  foto,
+  fotoAl,
+  animar,
+  aspa,
+  children,
+}: {
+  foto: string;
+  fotoAl: 'inicio' | 'final';
+  animar: boolean;
+  aspa: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        // `minmax(0,1fr)` también en teléfono: con la columna `auto` de
+        // siempre, lo que no podía partirse la estiraba más que la tarjeta.
+        'relative grid grid-cols-[minmax(0,1fr)] sm:min-h-[440px]',
+        fotoAl === 'inicio'
+          ? 'sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'
+          : 'sm:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+      )}
+    >
+      <div className="absolute right-4 top-4 z-10 rounded-full shadow-sm ring-1 ring-border">{aspa}</div>
+      <FotoDeMarca
+        src={foto}
+        animar={animar}
+        className={fotoAl === 'final' ? 'sm:order-last' : undefined}
+      />
+      <div className="flex flex-col p-6 sm:p-8">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * La foto, limpia: sin píldora ni texto encima (Nico, 30-09: «quitale eso a
+ * las imágenes»). La marca ya está EN la foto.
+ */
+function FotoDeMarca({
+  src,
+  animar,
+  className,
+}: {
+  src: string;
+  animar: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={cn('relative h-36 overflow-hidden bg-surface-muted sm:h-auto', className)}
+    >
+      {/* Un acercamiento lento al abrir, como quien entra. Sin movimiento, quieta. */}
+      <motion.div
+        className="absolute inset-0"
+        initial={animar ? { scale: 1.06 } : false}
+        animate={{ scale: 1 }}
+        transition={{ duration: animar ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes={TAMANOS_DE_LA_FOTO}
+          className="object-cover object-[50%_42%]"
+          priority
+        />
+      </motion.div>
+    </div>
   );
 }
 

@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { WizardShell } from '@/components/wizard/WizardShell';
 import { PostulacionEnviadaModal } from '@/components/tenant/PostulacionEnviadaModal';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
@@ -126,7 +127,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }
@@ -227,7 +228,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   if (decidiendoCamino || (isAuthed && existingApp === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

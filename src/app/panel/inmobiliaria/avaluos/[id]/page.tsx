@@ -23,7 +23,7 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Spinner } from '@/components/ui';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 
 export default function AvaluoDetalleLegacyPage() {
   const params = useParams<{ id: string }>();
@@ -40,7 +40,7 @@ export default function AvaluoDetalleLegacyPage() {
 
   return (
     <div className="flex items-center justify-center py-24">
-      <Spinner size="md" variant="muted" />
+      <CargaDeMarca tamano="md" />
     </div>
   );
 }

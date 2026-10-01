@@ -205,7 +205,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                         {locale === 'es' ? 'Motor de Análisis' : 'Analysis Engine'}
                       </span>
                       {isRunning && (
-                        <span className="ml-auto flex items-center gap-1 text-xs text-primary animate-pulse">
+                        <span className="ml-auto flex items-center gap-1 text-caption text-primary animate-pulse">
                           <CircleNotch weight="bold" className="h-3 w-3 animate-spin" />
                           {locale === 'es' ? 'Procesando' : 'Processing'}
                         </span>
@@ -488,12 +488,12 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
         {/* Status + Progress */}
         <div className="flex items-center gap-3">
           {isRunning ? (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+            <span className="flex items-center gap-1.5 text-caption font-medium text-primary">
               <CircleNotch weight="bold" className="h-3.5 w-3.5 animate-spin" />
               {locale === 'es' ? 'En ejecución' : 'Running'}
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+            <span className="flex items-center gap-1.5 text-caption font-medium text-success">
               <CheckCircle weight="fill" className="h-3.5 w-3.5" />
               {locale === 'es' ? 'Completado' : 'Completed'}
             </span>

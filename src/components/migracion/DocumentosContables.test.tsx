@@ -254,7 +254,7 @@ describe('subir los comprobantes', () => {
     // «Con contrato» suma los cuatro caminos con contrato: 4 por documento + 2 + 2.
     // Los colgados sólo del inmueble NO tienen contrato y no entran.
     expect(contenedor.querySelector('[data-testid="documentos-resumen"]')?.textContent).toContain(
-      'Con contrato8',
+      '8 quedan con contrato',
     );
   });
 

@@ -9,7 +9,7 @@ import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope
 import { toast } from 'sonner';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { cn } from '@/lib/utils';
 import {
   useLease,
@@ -55,7 +55,7 @@ export default function LeaseDetailPage() {
   if (leaseLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

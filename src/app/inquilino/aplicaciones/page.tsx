@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import type { Contract } from '@/lib/types/contract';
 
 const ITEMS_PER_PAGE = 4;
@@ -230,7 +230,7 @@ export default function AplicacionesPage() {
   if (isOnboardingLoading || isAppsLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

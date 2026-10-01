@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { FirmaDelInventarioDelInquilino } from '@/components/inmobiliaria/inventario/FirmaDelInventarioDelInquilino';
@@ -415,7 +416,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="muted" />
+        <CargaDeMarca tamano="lg" />
       </div>
     );
   }

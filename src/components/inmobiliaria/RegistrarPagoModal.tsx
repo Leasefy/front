@@ -1156,7 +1156,7 @@ export function RegistrarPagoModal({
                 */}
                 {problemaDeLaFecha === null && errorDeLaFecha === null && !carteraAlDia && (
                   <p
-                    className="flex items-center gap-1.5 text-xs text-fg-muted"
+                    className="flex items-center gap-1.5 text-caption text-fg-muted"
                     data-testid="recalculando-interes"
                     aria-live="polite"
                   >

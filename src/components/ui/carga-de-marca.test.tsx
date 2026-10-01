@@ -214,6 +214,25 @@ describe('Button cargando', () => {
     expect(colores(screen.getByTestId('s'))).toEqual(['blanco']);
   });
 
+  it('un <Spinner> sin variant dentro del botón también hereda; con variant explícita, no', () => {
+    render(
+      <>
+        <Button>
+          <Spinner data-testid="sin" />
+          Cargar la lista
+        </Button>
+        <Button>
+          <Spinner variant="default" data-testid="con" />
+          Otro
+        </Button>
+      </>
+    );
+    expect(colores(screen.getByTestId('sin'))).toEqual(['blanco']);
+    // y dentro de un botón siempre xs, como la carga de `isLoading`
+    expect(screen.getByTestId('sin').querySelector('img')!.getAttribute('height')).toBe('14');
+    expect(colores(screen.getByTestId('con'))).toEqual(['azul', 'blanco']);
+  });
+
   it('sin cargar no pinta logo y respeta disabled', () => {
     render(<Button disabled>Listo</Button>);
     const boton = screen.getByRole('button', { name: 'Listo' });

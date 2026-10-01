@@ -24,7 +24,8 @@ import {
  *   white   → sobre-color: blanco siempre (fondos llenos)
  *   current → el tono que fije el contenedor (el Button lo provee según su
  *             variante: blanco sobre primario/destructivo, azul sobre outline);
- *             fuera de un botón, azul.
+ *             fuera de un botón, azul. Un Spinner SIN variant dentro de un
+ *             Button también hereda.
  */
 
 type SpinnerSize = 'xs' | 'sm' | 'default' | 'md' | 'lg' | 'xl' | '2xl';
@@ -84,14 +85,19 @@ const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(
     const heredado = useTonoDeCargaHeredado();
     const resolvedSize = size ?? 'default';
     const resolvedVariant = variant ?? 'default';
-    const tono: TonoDeCarga =
-      resolvedVariant === 'current' ? (heredado ?? 'azul') : VARIANT_MAP[resolvedVariant];
+    // Sin variant explícita, dentro de un Button, también hereda: un Spinner
+    // dentro de un botón es su indicador de carga, y azul sobre el primario
+    // no se vería.
+    const hereda = resolvedVariant === 'current' || (variant == null && heredado !== null);
+    const tono: TonoDeCarga = hereda ? (heredado ?? 'azul') : VARIANT_MAP[resolvedVariant];
 
     return (
       <CargaDeMarca
         ref={ref}
         tono={tono}
-        tamano={SIZE_MAP[resolvedSize]}
+        // Dentro de un Button, siempre xs: la misma carga que pinta `isLoading`,
+        // sin ensanchar el botón más de la cuenta.
+        tamano={heredado !== null ? 'xs' : SIZE_MAP[resolvedSize]}
         etiqueta={label}
         className={cn(sinClasesDelCirculoViejo(className))}
         {...props}

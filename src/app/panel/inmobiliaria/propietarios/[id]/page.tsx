@@ -78,7 +78,7 @@ import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-reg
 import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
-import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
@@ -684,7 +684,7 @@ function PropietarioDetailContent() {
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
-                {propietario.documentType} {documentoParaMostrar(propietario.documentNumber)}
+                {documentoConTipo(propietario.documentType, propietario.documentNumber, ' ')}
               </span>
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                 {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}

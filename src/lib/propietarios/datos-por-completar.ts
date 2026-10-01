@@ -22,6 +22,21 @@ export function documentoParaMostrar(numero: string | null | undefined): string 
 }
 
 /**
+ * «CC: 123», «Sin registrar» si falta el número, y sólo el número si falta el
+ * tipo. Nunca imprime «null» ni deja un separador colgando.
+ */
+export function documentoConTipo(
+  tipo: string | null | undefined,
+  numero: string | null | undefined,
+  separador = ': ',
+): string {
+  const n = numero?.trim();
+  if (!n) return SIN_REGISTRAR;
+  const t = tipo?.trim();
+  return t ? `${t}${separador}${n}` : n;
+}
+
+/**
  * «Datos por completar: documento, tipo de documento», o `null` si no falta
  * nada. Un dato que el back agregue después se muestra tal cual en vez de
  * perderse.

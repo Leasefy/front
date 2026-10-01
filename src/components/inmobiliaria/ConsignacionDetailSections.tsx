@@ -37,6 +37,7 @@ import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 // Bank name mapping
 const BANK_NAMES: Record<string, string> = {
@@ -229,7 +230,7 @@ export function PropietarioSection({
             <div>
               <h4 className="font-semibold text-fg">{propietario.name}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                {propietario.documentType}: {propietario.documentNumber}
+                {documentoConTipo(propietario.documentType, propietario.documentNumber)}
               </p>
             </div>
           </div>

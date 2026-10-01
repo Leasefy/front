@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 const TIPOS = ['PROPIETARIO', 'ARRENDATARIO', 'PROVEEDOR', 'OTRO'] as const;
 type Tipo = (typeof TIPOS)[number];
@@ -121,7 +122,7 @@ export function EstadoDeCuenta() {
             ? (await propietariosApi.getAll({ search: q, limit: 8 })).map((p) => ({
                 id: p.id,
                 nombre: p.name,
-                detalle: p.documentNumber ? `${p.documentType} ${p.documentNumber}` : (p.email ?? ''),
+                detalle: p.documentNumber ? documentoConTipo(p.documentType, p.documentNumber, ' ') : (p.email ?? ''),
               }))
             : (await inquilinosApi.listar({ buscar: q })).slice(0, 8).map((i) => ({
                 id: i.tenantId,

@@ -30,6 +30,7 @@ import type {
   TerceroDeApertura as Tercero,
   TipoDeTerceroDeApertura,
 } from '@/lib/migracion/asiento-de-apertura';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 const NOMBRE_DE_TIPO: Record<TipoDeTerceroDeApertura, string> = {
   PROPIETARIO: 'Propietario',
@@ -48,7 +49,7 @@ async function buscarCandidatos(tipo: TipoDeTerceroDeApertura, q: string): Promi
     return (await propietariosApi.getAll({ search: q, limit: 8 })).map((p) => ({
       id: p.id,
       nombre: p.name,
-      detalle: p.documentNumber ? `${p.documentType} ${p.documentNumber}` : (p.email ?? ''),
+      detalle: p.documentNumber ? documentoConTipo(p.documentType, p.documentNumber, ' ') : (p.email ?? ''),
     }));
   }
   return (await inquilinosApi.listar({ buscar: q })).slice(0, 8).map((i) => ({

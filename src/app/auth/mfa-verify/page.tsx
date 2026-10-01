@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, SignOut } from '@phosphor-icons/react';
+import { ShieldCheck, SignOut, UserCircle } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
 import { getAccessToken } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth';
@@ -400,6 +400,16 @@ export default function MfaVerifyPage() {
                         ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
                         : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
+                {/* Con qué cuenta se está entrando: quien se fue y volvió (o
+                    tiene varias) lo ve sin adivinar (Nico, 01-10). */}
+                {user?.email ? (
+                  <p className="flex justify-center pt-1" data-testid="mfa-verify-cuenta">
+                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 py-1.5 text-body-sm text-fg">
+                      <UserCircle className="h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
+                      <span className="truncate">{user.email}</span>
+                    </span>
+                  </p>
+                ) : null}
               </div>
 
               {/*

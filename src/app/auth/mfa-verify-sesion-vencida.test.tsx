@@ -111,3 +111,13 @@ describe('/auth/mfa-verify — la sesión vence mientras se espera', () => {
     expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
   });
 });
+
+describe('/auth/mfa-verify — con qué cuenta (Nico, 01-10)', () => {
+  it('🔴 muestra el correo de la cuenta que está verificando', async () => {
+    (auth.user as { email?: string }).email = 'hola+27@leasefy.co';
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: null } });
+    await montar();
+    expect(document.querySelector('[data-testid="mfa-verify-cuenta"]')?.textContent).toBe('hola+27@leasefy.co');
+    delete (auth.user as { email?: string }).email;
+  });
+});

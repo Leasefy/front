@@ -255,8 +255,7 @@ describe('MessageActions — Reintentar', () => {
     mount(mkMessage({ reintentable: REINTENTABLE }));
     expect(container.querySelector('[data-testid="reintentar"]')!.className).toContain('animate-in');
     await clic(botonReintentar()!);
-    // «ocupado» es el logo de Leasefy en carga (antes, un círculo con animate-spin).
-    expect(container.querySelector('[data-testid="reintentar"] [aria-busy="true"] picture')).not.toBeNull();
+    expect(container.querySelector('[data-testid="reintentar"] .animate-spin')).not.toBeNull();
   });
 
   it('con «reducir movimiento» no se anima: ni entrada ni giro', async () => {
@@ -265,7 +264,7 @@ describe('MessageActions — Reintentar', () => {
     const envoltura = container.querySelector('[data-testid="reintentar"]')!;
     expect(envoltura.className).not.toContain('animate-in');
     await clic(botonReintentar()!);
-    expect(container.querySelector('[data-testid="reintentar"] picture')).toBeNull();
+    expect(container.querySelector('[data-testid="reintentar"] .animate-spin')).toBeNull();
     expect(container.querySelector('[data-testid="reintentar"] [class*="animate-"]')).toBeNull();
     // Sigue diciendo que está ocupado, con texto.
     expect(botonReintentar()?.textContent).toBe('beta.actions.reintentando');

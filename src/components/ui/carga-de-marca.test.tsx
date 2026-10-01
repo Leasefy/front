@@ -1,8 +1,13 @@
 /**
- * El logo de Leasefy en carga en lugar de los spinners (pedido de Nico, 30-09):
- * azul en claro para casi todo, negro para lo discreto, blanco en oscuro y
- * sobre fondos llenos; quieto con movimiento reducido; el texto que acompaña
- * se queda, en mono y en mayúsculas; y nada grande.
+ * El logo de Leasefy en carga (pedido de Nico, 30-09): azul en claro para casi
+ * todo, negro para lo discreto, blanco en oscuro y sobre fondos llenos; quieto
+ * con movimiento reducido; el texto que acompaña se queda, en mono y en
+ * mayúsculas; y nada grande.
+ *
+ * Y su frontera (Nico, 01-10): «los spinners sí van dentro de los botones, no
+ * el logo; el logo sólo queda en cargas que son de pantalla total o
+ * transiciones». El `Spinner` compartido y el `isLoading` del `Button` pintan
+ * el spinner del DS, nunca el logo.
  */
 import * as React from 'react';
 import { act } from 'react';
@@ -139,115 +144,75 @@ describe('CargaDeMarca', () => {
   });
 });
 
-describe('Spinner (adapter sobre CargaDeMarca)', () => {
-  it('conserva role="status" y el label que se le pase', () => {
-    render(<Spinner label="Cargando contratos" />);
-    expect(screen.getByRole('status', { name: 'Cargando contratos' })).toBeTruthy();
+describe('Spinner: el del DS, no el logo', () => {
+  it('es un role="status" con el label que se le pase y gira, sin <picture>', () => {
+    render(<Spinner label="Cargando contratos" data-testid="s" />);
+    const status = screen.getByRole('status', { name: 'Cargando contratos' });
+    expect(status.querySelector('picture')).toBeNull();
+    expect(status.querySelector('.animate-spin')).not.toBeNull();
   });
 
-  it.each([
-    ['default', ['azul', 'blanco']],
-    ['info', ['azul', 'blanco']],
-    ['muted', ['negro', 'blanco']],
-    ['white', ['blanco']],
-    ['current', ['azul', 'blanco']],
-  ] as const)('variant=%s → %j', (variant, esperado) => {
-    render(<Spinner variant={variant} data-testid="s" />);
-    expect(colores(screen.getByTestId('s'))).toEqual(esperado);
-  });
-
-  it('size legacy → alto del logo (xs 14 · sm 18 · default 24 · 2xl tope 36)', () => {
-    render(
-      <>
-        <Spinner size="xs" data-testid="xs" />
-        <Spinner size="sm" data-testid="sm" />
-        <Spinner data-testid="def" />
-        <Spinner size="2xl" data-testid="xxl" />
-      </>
-    );
-    const alto = (id: string) => screen.getByTestId(id).querySelector('img')!.getAttribute('height');
-    expect([alto('xs'), alto('sm'), alto('def'), alto('xxl')]).toEqual(['14', '18', '24', '36']);
-  });
-
-  it('quita las clases del círculo viejo (animate-spin, h-4, w-4) y deja las demás', () => {
-    render(<Spinner className="h-4 w-4 animate-spin mr-2" data-testid="s" />);
-    const cls = screen.getByTestId('s').className;
-    expect(cls).not.toContain('animate-spin');
-    expect(cls).not.toMatch(/\b[hw]-4\b/);
-    expect(cls).toContain('mr-2');
-  });
+  it.each(['default', 'muted', 'white', 'current', 'info'] as const)(
+    'variant=%s tampoco pinta el logo',
+    (variant) => {
+      render(<Spinner variant={variant} data-testid="s" />);
+      expect(screen.getByTestId('s').querySelector('picture')).toBeNull();
+    }
+  );
 });
 
-describe('Button cargando', () => {
-  it('pinta el logo blanco sobre el primario, deshabilita y anuncia aria-busy', () => {
+describe('Button cargando: el spinner del DS, no el logo', () => {
+  it('gira, deshabilita y anuncia aria-busy, sin <picture>', () => {
     render(<Button isLoading>Guardar</Button>);
     const boton = screen.getByRole('button', { name: /Guardar/ });
     expect(boton.hasAttribute('disabled')).toBe(true);
     expect(boton.getAttribute('aria-busy')).toBe('true');
-    expect(colores(boton)).toEqual(['blanco']);
-    // sin el CircleNotch girando del DS
-    expect(boton.querySelector('.animate-spin')).toBeNull();
+    expect(boton.querySelector('.animate-spin')).not.toBeNull();
+    expect(boton.querySelector('picture')).toBeNull();
   });
 
-  it.each([
-    ['destructive', ['blanco']],
-    ['outline', ['azul', 'blanco']],
-    ['secondary', ['azul', 'blanco']],
-    ['ghost', ['negro', 'blanco']],
-    ['white', ['azul']],
-  ] as const)('variant=%s → %j', (variant, esperado) => {
-    render(
-      <Button isLoading variant={variant}>
-        Enviar
-      </Button>
-    );
-    expect(colores(screen.getByRole('button', { name: /Enviar/ }))).toEqual(esperado);
-  });
+  it.each(['default', 'destructive', 'outline', 'secondary', 'ghost', 'white'] as const)(
+    'variant=%s cargando: spinner y nunca logo',
+    (variant) => {
+      render(
+        <Button isLoading variant={variant}>
+          Enviar
+        </Button>
+      );
+      const boton = screen.getByRole('button', { name: /Enviar/ });
+      expect(boton.querySelector('.animate-spin')).not.toBeNull();
+      expect(boton.querySelector('picture')).toBeNull();
+    }
+  );
 
-  it('un <Spinner variant="current"> dentro del botón toma el tono del botón', () => {
+  it('un <Spinner> dentro del botón es el spinner, no el logo', () => {
     render(
       <Button>
         <Spinner variant="current" data-testid="s" />
         Procesando
       </Button>
     );
-    expect(colores(screen.getByTestId('s'))).toEqual(['blanco']);
+    expect(screen.getByTestId('s').querySelector('picture')).toBeNull();
+    expect(screen.getByTestId('s').querySelector('.animate-spin')).not.toBeNull();
   });
 
-  it('un <Spinner> sin variant dentro del botón también hereda; con variant explícita, no', () => {
-    render(
-      <>
-        <Button>
-          <Spinner data-testid="sin" />
-          Cargar la lista
-        </Button>
-        <Button>
-          <Spinner variant="default" data-testid="con" />
-          Otro
-        </Button>
-      </>
-    );
-    expect(colores(screen.getByTestId('sin'))).toEqual(['blanco']);
-    // y dentro de un botón siempre xs, como la carga de `isLoading`
-    expect(screen.getByTestId('sin').querySelector('img')!.getAttribute('height')).toBe('14');
-    expect(colores(screen.getByTestId('con'))).toEqual(['azul', 'blanco']);
-  });
-
-  it('sin cargar no pinta logo y respeta disabled', () => {
+  it('sin cargar no gira, respeta disabled y no anuncia aria-busy', () => {
     render(<Button disabled>Listo</Button>);
     const boton = screen.getByRole('button', { name: 'Listo' });
-    expect(boton.querySelector('picture')).toBeNull();
+    expect(boton.querySelector('.animate-spin')).toBeNull();
     expect(boton.hasAttribute('disabled')).toBe(true);
     expect(boton.hasAttribute('aria-busy')).toBe(false);
   });
 
-  it('con asChild la carga entra dentro del hijo', () => {
+  it('con asChild el spinner entra dentro del hijo', () => {
     render(
       <Button asChild isLoading>
         <a href="/x">Ir</a>
       </Button>
     );
     const enlace = screen.getByRole('link', { name: /Ir/ });
-    expect(colores(enlace)).toEqual(['blanco']);
+    expect(enlace.querySelector('.animate-spin')).not.toBeNull();
+    expect(enlace.querySelector('picture')).toBeNull();
+    expect(enlace.getAttribute('aria-busy')).toBe('true');
   });
 });

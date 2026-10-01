@@ -227,7 +227,41 @@ type EstadoDeReenvio = {
   /** Segundos hasta poder reenviar otra vez; Supabase limita a uno por minuto. */
   espera: number;
   error: string | null;
+  /** Ya se reenvió el máximo: no se ofrece otro (`MAXIMO_DE_REENVIOS`). */
+  agotado?: boolean;
 };
+
+/**
+ * 🔴 El freno de «Reenviar» (Nico, 01-10: «¿tienes algo para cuando reenvían
+ * muchas veces, que paren, para que no saturen la API ni nos hagan perder
+ * dinero?»). Antes: un reenvío por minuto, para siempre. Ahora la espera
+ * crece (1, 2, 5 y 10 minutos) y a los cuatro reenvíos del mismo correo se
+ * deja de ofrecer: si cuatro enlaces no llegaron, un quinto tampoco, y lo que
+ * sirve es escribirnos. Se cuenta por correo en `sessionStorage`, así que
+ * recargar no reinicia la cuenta. Supabase tiene además su propio tope por
+ * correo y por proyecto; esto es la primera barrera, no la única.
+ */
+const ESPERAS_DE_REENVIO_S = [60, 120, 300, 600] as const;
+export const MAXIMO_DE_REENVIOS = ESPERAS_DE_REENVIO_S.length;
+const claveDeReenvios = (correo: string) => `leasefy:reenvios:${correo}`;
+
+function reenviosHechos(correo: string): number {
+  try {
+    return Number(window.sessionStorage.getItem(claveDeReenvios(correo))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function anotarReenvio(correo: string): number {
+  const n = reenviosHechos(correo) + 1;
+  try {
+    window.sessionStorage.setItem(claveDeReenvios(correo), String(n));
+  } catch {
+    // Sin almacenamiento: el freno vale mientras la pantalla siga abierta.
+  }
+  return n;
+}
 
 /**
  * «¿No te llegó? Reenviar el enlace», con su espera y su error. Lo usan la
@@ -246,7 +280,15 @@ function ReenvioDeConfirmacion({
 }) {
   return (
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
-      {reenvio.estado === 'enviado' ? (
+      {reenvio.agotado ? (
+        <p data-testid="reenvio-agotado">
+          Ya te enviamos {MAXIMO_DE_REENVIOS} enlaces. Si no aparecen en tu bandeja ni en spam, escríbenos a{' '}
+          <a href="mailto:hola@leasefy.co" className={ENLACE}>
+            hola@leasefy.co
+          </a>{' '}
+          y lo revisamos.
+        </p>
+      ) : reenvio.estado === 'enviado' ? (
         <p className="text-success" role="status">
           Listo, te lo reenviamos. Dale un minuto y revisa también spam.
         </p>
@@ -263,7 +305,7 @@ function ReenvioDeConfirmacion({
             {reenvio.estado === 'enviando'
               ? 'Reenviando…'
               : reenvio.espera > 0
-                ? `Reenviar en ${reenvio.espera} s`
+                ? `Reenviar en ${reenvio.espera >= 60 ? `${Math.floor(reenvio.espera / 60)}:${String(reenvio.espera % 60).padStart(2, '0')}` : `${reenvio.espera} s`}`
                 : 'Reenviar el enlace'}
           </button>
         </p>
@@ -337,6 +379,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    * ahí se ofrece crearla con ese mismo correo (Nico, 01-10).
    */
   const [correoSinCuenta, setCorreoSinCuenta] = React.useState<string | null>(null);
+  /** Se intentó registrar un correo que ya tiene cuenta: se ofrece entrar con él. */
+  const [correoYaRegistrado, setCorreoYaRegistrado] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (reenvio.espera <= 0) return;
     const id = setTimeout(() => {
@@ -714,6 +758,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // dos personas para quien lo mira sin saber.
       const correo = normalizarCorreo(data.email);
       redirectDeConfirmacion.current = emailRedirectTo;
+      setCorreoYaRegistrado(null);
       const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
         // El flujo termina en pantalla («Revisa tu correo»), no en un redirect:
@@ -732,7 +777,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setIsLoading(false);
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setError('Este correo ya está registrado. Inicia sesión en su lugar.');
+        setError('Ya hay una cuenta con este correo.');
+        setCorreoYaRegistrado(normalizarCorreo(data.email));
       } else if (msg.includes('Password should be')) {
         setError('La contraseña debe tener al menos 6 caracteres.');
       } else {
@@ -747,10 +793,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    * acepta un reenvío por minuto; la espera se muestra en el propio enlace.
    */
   const reenviarConfirmacion = async () => {
+    if (reenviosHechos(resetEmail) >= MAXIMO_DE_REENVIOS) {
+      setReenvio({ estado: 'listo', espera: 0, error: null, agotado: true });
+      return;
+    }
     setReenvio({ estado: 'enviando', espera: 0, error: null });
     try {
       await resendSignUpEmail(resetEmail, redirectDeConfirmacion.current ?? undefined);
-      setReenvio({ estado: 'enviado', espera: 60, error: null });
+      const n = anotarReenvio(resetEmail);
+      setReenvio(
+        n >= MAXIMO_DE_REENVIOS
+          ? { estado: 'enviado', espera: 0, error: null, agotado: true }
+          : { estado: 'enviado', espera: ESPERAS_DE_REENVIO_S[n - 1], error: null },
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
       const limite = msg.includes('rate') || msg.includes('over_email') || msg.includes('security purposes');
@@ -851,11 +906,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
-            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
+            // Sin punto al final: pegado al correo se leía como parte de él (Nico, 01-10).
+            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
           )}
           {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña.'}
           {mode === 'reset-sent' && (
-            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
+            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
           )}
         </p>
       </div>
@@ -1035,6 +1091,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               />
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
+              {error && correoYaRegistrado && (
+                <p className="text-[13px] text-fg-subtle">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('login', correoYaRegistrado)}
+                    className={ENLACE}
+                    data-testid="entrar-con-este-correo"
+                  >
+                    Iniciar sesión con este correo
+                  </button>
+                </p>
+              )}
               <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>

@@ -33,6 +33,7 @@ import {
 } from './active-context'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
+import { esCorreoYaRegistrado } from './correo'
 
 /**
  * Auth Context
@@ -1363,6 +1364,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       },
     })
     if (error) throw error
+    /*
+     * 🔴 Correo que YA tiene cuenta (Nico, 01-10: «no llegan los correos, ni
+     * dando reenviar»: era `hola+40`, creada y confirmada horas antes).
+     * Supabase responde 200 con un usuario SIN identidades —para no revelar qué
+     * correos existen— y NO manda ningún correo. La pantalla decía «Revisa tu
+     * correo» y la persona esperaba un enlace que nunca iba a llegar.
+     */
+    if (esCorreoYaRegistrado(data.user)) {
+      throw Object.assign(new Error('User already registered'), { code: 'user_already_exists' })
+    }
     const requiresConfirmation = !data.session
     return { requiresConfirmation }
   }, [])

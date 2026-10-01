@@ -88,6 +88,15 @@ vi.mock('framer-motion', async () => {
   }
 })
 
+/*
+ * Tras «Invalid login credentials» el login pregunta si el correo tiene
+ * cuenta (01-10); acá la tiene, así que queda el mensaje de siempre. Lo del
+ * correo sin cuenta se prueba en `AuthForm.correoSinCuenta.test.tsx`.
+ */
+vi.mock('@/lib/api/correo-tiene-cuenta.service', () => ({
+  correoTieneCuentaApi: { consultar: vi.fn().mockResolvedValue(true) },
+}))
+
 vi.mock('@/lib/supabase/client', () => ({ getSupabase: () => null }))
 vi.mock('@/lib/firebase/messaging', () => ({
   requestNotificationPermission: vi.fn().mockResolvedValue(undefined),

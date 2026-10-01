@@ -21,6 +21,7 @@
  *   · «Entendido» la deja `completo`; Esc, el fondo o la ✕, `omitido`.
  *   · Mientras no se sabe si ya la vio (`estaVista` → `null`) no sale.
  *   · Se vuelve a ver desde «¿Cómo funciona?» (`forzada`), sin tocar la marca.
+ *   · El halo va limpio, sin la píldora «L Leasefy» (`brand={false}`).
  *
  * ── Nunca encima de otra bienvenida (coordinación, 30-09) ────────────────
  * El Inicio es donde también abre el recorrido del panel, y el orden de Nico
@@ -189,9 +190,14 @@ export function PilotoNovedad({ forzada = false, onCerrarForzada }: PilotoNoveda
         >
           <DialogPrimitive.Title className="sr-only">{titulo}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{descripcion}</DialogPrimitive.Description>
+          {/*
+            Sin la píldora «L Leasefy» sobre el halo (Nico, 30-09: «quitale
+            eso a las imágenes»). `brand` reemplaza la píldora entera, y
+            cadence la pinta con `brand ?? …`: `false` —no `null`, que caería
+            a la píldora— no pinta nada, sin tocar el sistema de diseño.
+          */}
           <FeatureAnnouncement
-            appName="Leasefy"
-            appInitial="L"
+            brand={false}
             title={titulo}
             description={descripcion}
             items={[

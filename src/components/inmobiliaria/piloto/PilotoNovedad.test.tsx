@@ -82,6 +82,16 @@ describe('PilotoNovedad', () => {
     expect(texto).toContain('inmobiliaria.piloto.novedad.paso3.titulo')
   })
 
+  it('el halo va limpio: sin la píldora «L Leasefy» (Nico, 30-09: «quitale eso a las imágenes»)', async () => {
+    await montar(<PilotoNovedad />)
+    expect(modal()).not.toBeNull()
+    expect(modal()?.textContent ?? '').not.toContain('Leasefy')
+    const monogramas = [...(modal()?.querySelectorAll('span') ?? [])].filter(
+      (s) => s.children.length === 0 && s.textContent?.trim() === 'L',
+    )
+    expect(monogramas).toHaveLength(0)
+  })
+
   it('«Entendido» la cierra y la deja vista, por persona, como completa', async () => {
     await montar(<PilotoNovedad />)
     const cta = [...(modal()?.querySelectorAll('button') ?? [])].find((b) =>

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignOut } from '@phosphor-icons/react';
@@ -8,7 +10,6 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
 import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import {
   destinoTrasElSegundoFactor,
@@ -100,25 +101,29 @@ export default function MfaEnrollPage() {
   return (
     <ForceLightMode>
       {/* 🔴 El asistente de registro a medias manda sobre el segundo factor
-          (Nico, 30-09: «no me llevó al paso donde lo dejé»): misma regla que
-          «primero la migración». Si hay asistente pendiente, este guard se
-          lleva a la persona a terminarlo; el 2FA la espera a la salida. */}
-      <AsistentePendienteGuard />
+          (Nico, 30-09: «no me llevó al paso donde lo dejé»; 01-10: «literal
+          ingresó a la plataforma»). Envuelve: hasta saber que el registro
+          está terminado no se pinta el paso a paso; a medias, se va a
+          terminarlo y el 2FA la espera a la salida. */}
+      <AsistentePendienteGuard>
       {/* La misma caja que `/auth` y `/auth/mfa-verify`: entrar es una sola
           secuencia, con el mismo fondo y la tarjeta en el mismo sitio. */}
       <div className="relative min-h-screen bg-background" data-lenis-prevent>
         <FondoDeMarca />
 
         <LogoDefs />
-        <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
-          <BrandHomeLink
+        {/* z-20: por encima del contenido (z-10), que ocupa toda la pantalla y se
+            tragaba el clic. La capa no recibe eventos; sólo el logo. */}
+        <div className="pointer-events-none fixed inset-0 z-20 hidden lg:block">
+          <Link
+            href="/"
             aria-label="Leasefy — inicio"
             className="pointer-events-auto absolute left-8 top-8 inline-flex text-white"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy">
               <use href="#lfLogo" />
             </svg>
-          </BrandHomeLink>
+          </Link>
         </div>
 
         <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
@@ -152,6 +157,7 @@ export default function MfaEnrollPage() {
           </div>
         </div>
       </div>
+      </AsistentePendienteGuard>
     </ForceLightMode>
   );
 }

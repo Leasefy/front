@@ -40,13 +40,23 @@ vi.mock('@/components/auth/PageGuard', () => ({
 }))
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
+  useRouter: () => ({ push, replace: () => {}, back: () => {} }),
   usePathname: () => '/panel/inmobiliaria/reportes',
   useSearchParams: () => new URLSearchParams(),
 }))
 
-vi.mock('@/components/ui/toast', () => ({
-  toast: { success: () => {}, error: () => {}, info: () => {}, loading: () => {} },
+const { toast, exportarReportes, abrirCentroDeProcesos, push } = vi.hoisted(() => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), loading: vi.fn(), warning: vi.fn() },
+  exportarReportes: vi.fn(),
+  abrirCentroDeProcesos: vi.fn(),
+  push: vi.fn(),
+}))
+
+vi.mock('@/components/ui/toast', () => ({ toast }))
+
+vi.mock('@/lib/api/procesos.service', () => ({
+  procesosApi: { exportarReportes },
+  abrirCentroDeProcesos,
 }))
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => {
@@ -134,6 +144,24 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => {
       { consignacionId: 'c2', propertyId: 'p2', propertyTitle: 'Apto 102', propertyAddress: 'Cra 2', tenantName: 'Ana', tenantPhone: '301', propietarioName: 'Pro', contractEndDate: '2026-11-01', daysUntilExpiry: 57, renewalStatus: 'negotiating', bucket: '31-60' },
     ],
   }
+  const fila = (n: number, neto: number) => ({
+    consignacionId: 'c' + n, propertyId: 'i' + n, inmueble: 'Apto ' + n, zona: 'Sabaneta',
+    canonCop: 2000000, mesesArrendado: 12, mesesEnElRango: 12, ocupacionPct: 100,
+    esperadoCop: 24000000, recaudadoCop: 24000000, pendienteCop: 0, enMoraCop: 0, tasaDeRecaudoPct: 100,
+    comisionCop: 2400000, retencionesYCargosCop: 0, gastosMantenimientoCop: 0,
+    netoPropietarioCop: neto, ingresoPerdidoPorVacanciaCop: 0, valorComercialCop: null, rentabilidadAnualPct: null,
+  })
+  const RENTABILIDAD = {
+    desde: '2025-10', hasta: '2026-09', meses: 12, generatedAt: '2026-09-05T00:00:00.000Z',
+    filas: [fila(1, 21600000), fila(2, 20000000)],
+    totales: {
+      inmuebles: 2, esperadoCop: 48000000, recaudadoCop: 48000000, pendienteCop: 0, enMoraCop: 0,
+      tasaDeRecaudoPct: 100, comisionCop: 4800000, retencionesYCargosCop: 0, gastosMantenimientoCop: 0,
+      netoPropietarioCop: 41600000, ocupacionPromedioPct: 100, ingresoPerdidoPorVacanciaCop: 0, conValor: 0,
+      gastosDescontadosEnElReporte: true,
+    },
+    notas: [],
+  }
   const h = (report: unknown) => () => ({
     report, isLoading: false, error: null, errorCrudo: null,
     refetch: () => Promise.resolve(report),
@@ -145,8 +173,18 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => {
     useFlujoCajaReport: h(FLUJO),
     useRendimientoAgentesReport: h(RENDIMIENTO),
     useVencimientosReport: h(VENCIMIENTOS),
+    useRentabilidadReport: h(RENTABILIDAD),
   }
 })
+
+// El gráfico de rentabilidad es de recharts: en happy-dom no hay layout, mide
+// 0×0 y avisa en consola. En el navegador tiene su tamaño. Mismo doble que la
+// prueba de la pantalla de rentabilidad.
+vi.mock('@/components/inmobiliaria/reports/GraficoDeRentabilidad', () => ({
+  GraficoDeRentabilidad: ({ filas }: { filas: unknown[] }) => (
+    <div data-testid="grafico-rentabilidad">{filas.length} inmuebles</div>
+  ),
+}))
 
 vi.mock('@/lib/hooks/useAgencyPlan', () => ({
   useAgencyPlan: () => ({ hasAdvancedReports: true, hasFeature: () => true, plan: 'pro' }),
@@ -191,7 +229,6 @@ afterEach(async () => {
   console.warn = origWarn
 })
 
-const TABS = ['ocupacion', 'cobros', 'agentes', 'ejecutivo']
 const TITULOS = [
   'Extractos Propietarios', 'Cartera por Edades', 'Comisiones por Agente',
   // 20-09: el catálogo se escribió sin tildes («Ocupacion», «Analisis de mora
@@ -212,17 +249,9 @@ function botonPorTexto(txt: string) {
 }
 
 describe('/reportes — la consola queda limpia', () => {
-  it('al montar y al recorrer las cuatro pestañas avanzadas', async () => {
+  it('al montar', async () => {
     await montar()
     expect(avisosReales(), 'al montar').toEqual([])
-
-    for (const tab of TABS) {
-      const b = botonPorTexto(tab.slice(0, 6))
-      expect(b, `no encontré la pestaña ${tab}`).toBeTruthy()
-      await act(async () => { b!.click() })
-      await act(async () => { await Promise.resolve() })
-      expect(avisosReales(), `pestaña ${tab}`).toEqual([])
-    }
   })
 
   it('al abrir el cajón de vista previa de los ocho reportes', async () => {
@@ -278,5 +307,88 @@ describe('/reportes — la consola queda limpia', () => {
 
     expect(container.textContent).not.toContain('Cartera por Edades')
     expect(avisosReales(), 'búsqueda sin resultados').toEqual([])
+  })
+})
+
+/** Abre el cajón de la tarjeta con ese título y devuelve el cajón. */
+async function abrirCajon(titulo: string): Promise<HTMLElement> {
+  const tarjeta = Array.from(container.querySelectorAll('div')).find(
+    (d) => d.querySelector('h3')?.textContent?.trim() === titulo,
+  )
+  const ver = tarjeta
+    ? Array.from(tarjeta.querySelectorAll('button')).find((b) => /vista previa/i.test(b.textContent ?? ''))
+    : undefined
+  expect(ver, `no encontré «Vista previa» de «${titulo}»`).toBeTruthy()
+  await act(async () => { ver!.click() })
+  await act(async () => { await Promise.resolve() })
+  const cajon = document.querySelector<HTMLElement>('[role="dialog"]')
+  expect(cajon, `no se abrió el cajón de «${titulo}»`).toBeTruthy()
+  return cajon!
+}
+
+describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
+  beforeEach(() => {
+    exportarReportes.mockReset()
+    abrirCentroDeProcesos.mockReset()
+    push.mockReset()
+    toast.loading.mockReset()
+    toast.success.mockReset()
+  })
+
+  it('🔴 la página ya no apila las tablas de «Reportes Avanzados» debajo del catálogo', async () => {
+    await montar()
+    expect(container.textContent).not.toContain('Reportes Avanzados')
+    expect(container.textContent).not.toContain('Detalle por propiedad')
+  })
+
+  it('🔴 la vista completa vive en el cajón: ocupación trae su detalle por propiedad', async () => {
+    await montar()
+    const cajon = await abrirCajon('Ocupación del Portafolio')
+    expect(cajon.textContent).toContain('Detalle por propiedad')
+    expect(cajon.textContent).toContain('Apto 101')
+  })
+
+  it('🔴 «Vista previa» de rentabilidad muestra la vista en el cajón y NO navega', async () => {
+    await montar()
+    const cajon = await abrirCajon('Rentabilidad por inmueble')
+    expect(push).not.toHaveBeenCalled()
+    expect(cajon.textContent).toContain('Neto al propietario')
+    const completa = cajon.querySelector<HTMLElement>('[data-testid="ver-rentabilidad-completa"]')
+    expect(completa).not.toBeNull()
+    await act(async () => { completa!.click() })
+    expect(push).toHaveBeenCalledWith('/panel/inmobiliaria/reportes/rentabilidad')
+  })
+
+  it('los extractos dicen dónde están, y su cajón no ofrece un «Descargar CSV» que no baja nada', async () => {
+    await montar()
+    const cajon = await abrirCajon('Extractos Propietarios')
+    expect(cajon.textContent).toContain('Ir a dispersiones')
+    expect(cajon.textContent).not.toContain('Descargar CSV')
+  })
+
+  it('cada cajón dice qué hace el archivo con el período elegido, al lado del botón', async () => {
+    await montar()
+    const cajon = await abrirCajon('Cartera por Edades')
+    expect(cajon.querySelector('[data-testid="nota-del-archivo"]')?.textContent).toContain('foto de hoy')
+  })
+
+  it('🔴 «Generar todos» manda UN pedido al centro de procesos y lo abre: sin pila de avisos', async () => {
+    exportarReportes.mockResolvedValue({ procesoId: 'proc-1' })
+    await montar()
+    const generar = botonPorTexto('generar')
+    expect(generar).toBeTruthy()
+    await act(async () => { generar!.click() })
+    await act(async () => { await Promise.resolve() })
+
+    expect(exportarReportes).toHaveBeenCalledTimes(1)
+    const pedidos = exportarReportes.mock.calls[0]![0] as Array<{ tipo: string }>
+    // Los seis que el back sabe armar; los extractos y el rendimiento no.
+    expect(pedidos.map((p) => p.tipo).sort()).toEqual([
+      'cartera-edades', 'comisiones-agente', 'flujo-caja', 'ocupacion-portafolio',
+      'rentabilidad-inmueble', 'vencimientos',
+    ])
+    expect(abrirCentroDeProcesos).toHaveBeenCalledWith({ procesoId: 'proc-1' })
+    expect(toast.loading).not.toHaveBeenCalled()
+    expect(toast.success).not.toHaveBeenCalled()
   })
 })

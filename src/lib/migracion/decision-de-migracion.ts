@@ -6,9 +6,11 @@
  *  - `ahora`: ve la migración a pantalla completa, con los pasos.
  *  - `luego`: el muro se omite en el back (`POST /inmobiliaria/migracion/omitir`).
  *    También es lo que queda al cerrar la migración con su ✕ sin terminarla.
- *  - `nunca`: se omite en el back y el recordatorio del sidebar se apaga. Es
- *    lo que escribe la ✕ del propio recordatorio. Desde Configuración →
- *    Migración siempre se puede migrar igual y volver a prender el recordatorio.
+ *  - `nunca`: se omite en el back. Desde Configuración → Migración siempre
+ *    se puede migrar igual.
+ *
+ * La tarjeta del menú NO lee la decisión: lee `eligioMigrar` (abajo), porque
+ * la decisión se pisa al cerrar el muro a mitad de camino.
  *
  * 🔴 Lo que el recordatorio MUESTRA —cuántos pasos van, cuál sigue— no vive
  * acá: sale del estado que contesta el back (`GET /inmobiliaria/migracion/estado`),
@@ -55,11 +57,34 @@ export function guardarDecisionDeMigracion(
 }
 
 /**
- * El recordatorio del sidebar se apaga sólo con «no requiero migración» o con
- * su ✕ (las dos escriben `nunca`). Mientras tanto se muestra siempre que el
- * back diga que la migración está sin terminar — incluida la agencia que
- * eligió «ahora» y cerró a mitad de camino.
+ * 🔴 ¿Le dio «Migrar» alguna vez? (Nico, 01-10: «pon estático ese modal de
+ * migración mientras esté la migración en proceso, cuando ya se complete se
+ * quita, y si no le da migrar pues no aparece»).
+ *
+ * Una marca APARTE de la decisión, porque la decisión se pisa: la ✕ del muro
+ * escribe `luego` también a quien eligió «ahora» y cerró a mitad de camino, y
+ * ésa persona SÍ está migrando. Se marca al elegir «Migrar ahora» y cada vez
+ * que se abre la migración (desde Configuración o desde la tarjeta). No se
+ * desmarca: cuando la migración termina, la tarjeta se va sola.
  */
-export function recordatorioDeMigracionDescartado(agencyId: string | null | undefined): boolean {
-  return leerDecisionDeMigracion(agencyId) === 'nunca'
+const PREFIJO_ELIGIO = 'leasefy:migracion:eligio-migrar:'
+
+export function marcarQueEligioMigrar(agencyId: string | null | undefined): void {
+  if (typeof window === 'undefined') return
+  try {
+    if (window.localStorage.getItem(`${PREFIJO_ELIGIO}${agencyId ?? 'agencia'}`) === '1') return
+    window.localStorage.setItem(`${PREFIJO_ELIGIO}${agencyId ?? 'agencia'}`, '1')
+  } catch {
+    // Sin almacenamiento: la tarjeta igual sale en cuanto haya un paso listo.
+  }
+  window.dispatchEvent(new CustomEvent(EVENTO_DECISION_DE_MIGRACION, { detail: { agencyId } }))
+}
+
+export function eligioMigrar(agencyId: string | null | undefined): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(`${PREFIJO_ELIGIO}${agencyId ?? 'agencia'}`) === '1'
+  } catch {
+    return false
+  }
 }

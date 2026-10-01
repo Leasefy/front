@@ -198,8 +198,11 @@ export function BarChart({
   // Vertical bars (default)
   return (
     <div className="w-full">
+      {/* `items-stretch` en la fila y en cada columna: con `items-end` la
+          columna medía su contenido y la barra —un porcentaje— quedaba en 0
+          (Nico, 01-10: los gráficos de reportes salían sin barras). */}
       <div
-        className="flex items-end gap-1.5 w-full"
+        className="flex items-stretch gap-1.5 w-full"
         style={{ height: `${height}px` }}
       >
         {data.map((point, i) => {
@@ -212,7 +215,7 @@ export function BarChart({
           return (
             <div
               key={`${point.label}-${i}`}
-              className="flex-1 flex items-end justify-center gap-0.5 group"
+              className="flex-1 flex items-stretch justify-center gap-0.5 group"
             >
               {/* Primary bar */}
               <div className="relative flex-1 flex items-end justify-center">

@@ -119,7 +119,7 @@ describe('/auth/mfa-verify: todo bloqueado mientras se verifica', () => {
     }
     // Con un factor verificado ya no dice «activarla ahora» (29-09: lleva a
     // restablecerlo por correo); la puerta es la misma.
-    expect(botonPorTexto(/No tengo la app/).disabled).toBe(true);
+    expect(botonPorTexto(/Restablécelo con un código|Actívala ahora/).disabled).toBe(true);
     expect(botonPorTexto(/Cerrar sesión/).disabled).toBe(true);
   });
 

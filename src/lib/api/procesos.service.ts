@@ -9,7 +9,17 @@
  */
 
 import { apiClient } from '@/lib/api/client'
+import type { TipoDeExport } from '@/lib/reportes/exportables'
 import { invalidar } from './refresco-de-datos'
+
+/** Un reporte del zip de `exportarReportes`: el tipo y lo que acepta su export. */
+export interface PedidoDeReporte {
+  tipo: TipoDeExport
+  period?: string
+  month?: string
+  desde?: string
+  hasta?: string
+}
 import type {
   DescargaDeProceso,
   FiltrosDeProcesos,
@@ -113,5 +123,17 @@ export const procesosApi = {
       `/inmobiliaria/contabilidad/reportes/libro.csv/exportar${consulta(rango)}`,
       {},
     )
+  },
+  /**
+   * Varios reportes del portafolio en UN zip, armado en el centro (Nico,
+   * 01-10: «esas cargas ¿por qué no las metes al centro de procesos?»). Cada
+   * reporte lleva los mismos parámetros que su `GET /reports/export`.
+   */
+  exportarReportes(reportes: PedidoDeReporte[]): Promise<{ procesoId: string }> {
+    anunciarProceso({
+      titulo: reportes.length === 1 ? 'Exportando 1 reporte' : `Exportando ${reportes.length} reportes`,
+      tipoDeProceso: 'EXPORTACION',
+    })
+    return apiClient.post<{ procesoId: string }>('/inmobiliaria/reports/exportar', { reportes })
   },
 }

@@ -1,105 +1,57 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { getOnboardingResumePoint } from '@/lib/api/onboarding-provisioning.service'
-import { resumeOnboarding } from '@/lib/api/onboarding-session.service'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import {
+  RUTA_DEL_ASISTENTE,
+  useRegistroDeLaInmobiliaria,
+} from '@/lib/auth/registro-de-la-inmobiliaria'
 
 /**
- * 🔴 El candado del asistente a medias (Nico, 2026-09-30: creó la cuenta,
- * llegó a «Miembros», lo sacó la plataforma, volvió a entrar y aterrizó en
- * el panel sin Habeas Data ni Confirmar — «un bug fuerte»).
+ * 🔴 El candado del registro a medias: lo de adentro (el panel, el segundo
+ * factor) NO se monta hasta que se sabe que el registro está terminado.
  *
- * La cadena: la agencia y la membresía ADMIN nacen en «Antes de comenzar»
- * (`POST /users/me/onboarding`), y el back estampa AHÍ
- * `onboardingCompletedAt` — a propósito: para el back, el onboarding de la
- * PERSONA termina ahí y la agencia es «otro eje» (users.service.ts:444). El
- * login y los guards leen ese sello, así que quien quedó a mitad del
- * ASISTENTE (la sesión del micro: Agencia → Miembros → Habeas Data →
- * Confirmar) vuelve a entrar como cuenta completa, directo al panel.
+ * Nico, 2026-09-30: creó la cuenta, llegó a «Miembros», lo sacó la
+ * plataforma, volvió a entrar y aterrizó en el panel sin Habeas Data ni
+ * Confirmar. Nico, 2026-10-01: «nos llevó luego de un rato a esta pantalla,
+ * literal ingresó a la plataforma» — el panel con «Protege tu cuenta» encima,
+ * con el registro sin terminar.
  *
- * Este guard pregunta UNA vez por montaje del panel, encadenando las dos
- * fuentes de verdad:
- *   1. `GET /users/me/onboarding/session` (back) → ¿esta persona tiene una
- *      sesión del asistente? Un miembro invitado no la tiene y no se toca.
- *   2. `GET {agent}/onboarding/session/{id}/resume` (micro) → ¿en qué paso
- *      va? Cualquier paso distinto de `'complete'` = a medias → de vuelta a
- *      `/onboarding/inmobiliaria`, que retoma en el paso exacto.
- *      `'complete'` = terminado: en el micro, aceptar Habeas Data finaliza
- *      la sesión (estampa `completedAt`, compromete el tenant y deja el
- *      cursor en `'complete'`; `onboarding-session-accept-terms.ts`), y
- *      `/resume` responde 200 también para sesiones completadas
- *      (`allowCompleted: true`) justo para poder distinguirlo así.
+ * Antes este guard era un hermano que devolvía `null` y redirigía cuando la
+ * pregunta volvía: mientras tanto el layout ya montaba el panel y la escena
+ * del segundo factor, y si la agencia no tenía sesión del asistente (el
+ * traspaso al micro había fallado) ni siquiera redirigía. Ahora envuelve:
+ *   - `verificando` → un cargador; ni panel ni segundo factor.
+ *   - `a-medias` → a `/onboarding/inmobiliaria`, que retoma en el paso; el
+ *     cargador se queda hasta que la navegación lo desmonte.
+ *   - `terminado` → lo de adentro (y se recuerda: la próxima vez sin espera).
+ *   - `no-se` → lo de adentro: fail-open, no se expulsa a nadie por no poder
+ *     preguntar.
  *
- * El veredicto «terminado» se guarda por usuario en localStorage para no
- * repetir las llamadas en cada montaje del panel. Cualquier fallo de red o
- * del back es fail-open: no se expulsa a nadie por no poder preguntar.
+ * El veredicto vive en `registro-de-la-inmobiliaria.ts`; «Selecciona tu
+ * perfil» usa el mismo.
  */
-
-const CLAVE = (userId: string) => `leasefy-asistente-listo:${userId}`
-
-function yaVerificado(userId: string): boolean {
-  try {
-    return window.localStorage.getItem(CLAVE(userId)) === '1'
-  } catch {
-    return false
-  }
-}
-
-function marcarListo(userId: string): void {
-  try {
-    window.localStorage.setItem(CLAVE(userId), '1')
-  } catch {
-    /* sin caché se vuelve a preguntar la próxima vez, y ya */
-  }
-}
-
-export function AsistentePendienteGuard() {
+export function AsistentePendienteGuard({ children }: { children?: ReactNode }) {
   const router = useRouter()
   const { user } = useAuth()
-  const userId = user?.id ?? null
+  const registro = useRegistroDeLaInmobiliaria(user?.id ?? null)
 
   useEffect(() => {
-    if (!userId || yaVerificado(userId)) return
-    let vivo = true
+    if (registro === 'a-medias') router.replace(RUTA_DEL_ASISTENTE)
+  }, [registro, router])
 
-    void (async () => {
-      let punto
-      try {
-        punto = await getOnboardingResumePoint()
-      } catch {
-        return // fail-open: sin señal del back no se expulsa a nadie
-      }
-      if (!vivo) return
+  if (registro === 'verificando' || registro === 'a-medias') {
+    return (
+      <div
+        className="min-h-screen bg-bg flex items-center justify-center p-6"
+        data-testid="asistente-pendiente-verificando"
+      >
+        <CargaDeMarca tamano="lg" />
+      </div>
+    )
+  }
 
-      if (punto.agentSessionId == null) {
-        // Miembro invitado o agencia sin traspaso al micro: acá no hay
-        // asistente que retomar. Con la agencia aún sin crear ni siquiera se
-        // llega a este layout (ProtectedRoute no deja entrar sin membresía).
-        if (punto.provisioningStatus == null) marcarListo(userId)
-        return
-      }
-
-      try {
-        const sesion = await resumeOnboarding(punto.agentSessionId)
-        if (!vivo) return
-        if (sesion.currentStep === 'complete') {
-          marcarListo(userId)
-          return
-        }
-        // El asistente quedó a medias: se retoma antes de usar el panel.
-        router.replace('/onboarding/inmobiliaria')
-      } catch {
-        // Red, 401, 404 (sesión limpiada), 5xx: fail-open sin caché — el
-        // panel sigue usable y la próxima entrada vuelve a preguntar.
-      }
-    })()
-
-    return () => {
-      vivo = false
-    }
-  }, [userId, router])
-
-  return null
+  return <>{children}</>
 }

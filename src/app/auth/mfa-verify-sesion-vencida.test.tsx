@@ -111,3 +111,39 @@ describe('/auth/mfa-verify — la sesión vence mientras se espera', () => {
     expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
   });
 });
+
+describe('/auth/mfa-verify — con qué cuenta (Nico, 01-10)', () => {
+  it('🔴 muestra el correo de la cuenta que está verificando', async () => {
+    (auth.user as { email?: string }).email = 'hola+27@leasefy.co';
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: null } });
+    await montar();
+    expect(document.querySelector('[data-testid="mfa-verify-cuenta"]')?.textContent).toBe('hola+27@leasefy.co');
+    delete (auth.user as { email?: string }).email;
+  });
+});
+
+describe('/auth/mfa-verify — cuando ningún código sirve (Nico, 01-10)', () => {
+  it('🔴 sin perfil cargado, el correo sale de la sesión de Supabase', async () => {
+    sesion.getSession.mockReset().mockResolvedValue({
+      data: { session: { expires_at: Math.floor(Date.now() / 1000) + 3600, user: { email: 'hola+27@leasefy.co' } } },
+    });
+    await montar();
+    expect(document.querySelector('[data-testid="mfa-verify-cuenta"]')?.textContent).toBe('hola+27@leasefy.co');
+  });
+
+  it('🔴 tras 3 códigos rechazados dice qué pasa y ofrece restablecer por correo', async () => {
+    sesion.getSession.mockReset().mockResolvedValue({
+      data: { session: { expires_at: Math.floor(Date.now() / 1000) + 3600, user: { email: 'hola+27@leasefy.co' } } },
+    });
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Invalid TOTP code entered'), { status: 422, code: 'mfa_verification_failed' }),
+    });
+    await montar();
+    for (const codigo of ['111111', '222222']) await escribirElCodigo(codigo);
+    expect(document.querySelector('[data-testid="mfa-verify-ninguno-sirve"]')).toBeNull();
+    await escribirElCodigo('333333');
+    const aviso = document.querySelector('[data-testid="mfa-verify-ninguno-sirve"]');
+    expect(aviso?.textContent).toContain('hola+27@leasefy.co');
+    expect(aviso?.textContent).toContain('Restablecer con un código al correo');
+  });
+});

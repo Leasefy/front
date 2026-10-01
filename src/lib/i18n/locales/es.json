@@ -12432,7 +12432,10 @@
       "tituloEnCurso": "Termina tu migración",
       "avance": "{{hechos}} de {{total}} pasos listos · sigue {{paso}}",
       "migrar": "Migrar ahora",
-      "cerrar": "Cerrar el recordatorio de migración"
+      "cerrar": "Cerrar el recordatorio de migración",
+      "paso": "Paso {{n}} de {{total}}",
+      "sigue": "Sigue con {{paso}}. Retómala donde la dejaste.",
+      "continuar": "Continuar migración"
     },
     "muro": {
       "cerrar": "Cerrar y seguir después",

@@ -1617,6 +1617,25 @@ describe('la pregunta previa al muro', () => {
     expect(q('muro-migracion')).toBeNull();
   });
 
+  it('🔴 «Migrar ahora» deja la marca «le dio Migrar»: la tarjeta del menú acompaña hasta el final (Nico, 01-10)', async () => {
+    await pintar();
+    expect(localStorage.getItem('leasefy:migracion:eligio-migrar:agencia')).toBeNull();
+    await clickDoc('migrar-ahora');
+    expect(localStorage.getItem('leasefy:migracion:eligio-migrar:agencia')).toBe('1');
+  });
+
+  it('«En otro momento» NO deja la marca: sin «Migrar», no hay tarjeta en el menú', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintar();
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+    expect(localStorage.getItem('leasefy:migracion:eligio-migrar:agencia')).toBeNull();
+  });
+
   it('«No requiero migración» omite en el back Y apaga el recordatorio EN LA CUENTA', async () => {
     const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA, recordatorioDescartado: true };
     estadoMock.estado

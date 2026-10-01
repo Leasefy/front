@@ -121,7 +121,7 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     expect(texto).toContain('Paso 1 de 3')
     expect(texto).toContain('Sirve cualquier app de códigos')
     // Qué hacer si cambia de celular: el flujo que YA existe, sin inventar otro.
-    expect(texto).toContain('No tengo la app de autenticación')
+    expect(texto).toContain('Restablécelo con un código a tu')
   })
 
   it('con `sinEncabezado` (dentro del panel) no repite el porqué: lo pone la tarjeta que la monta', async () => {

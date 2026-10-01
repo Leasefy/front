@@ -1589,6 +1589,45 @@ describe('la pregunta previa al muro', () => {
     expect(q('bienvenida-a-leasefy')).toBeNull();
     expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('luego');
   });
+
+  /*
+   * 🔴 Nico, 30-09-2026: «le di en otro momento a ese modal de migración y me
+   * abrió el modal de migración gigante, y lo volvió a cerrar». La decisión se
+   * marcaba ANTES de que el back omitiera: con el muro todavía puesto, eso
+   * pintaba el muro entero mientras volvía `omitir`, y al volver se cerraba.
+   */
+  it.each([
+    ['migrar-en-otro-momento', 'en_otro_momento'],
+    ['no-requiero-migracion', 'no_requiere_migracion'],
+  ])('«%s» no asoma el muro mientras el back omite', async (boton, motivo) => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA, recordatorioDescartado: false };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    let soltarOmitir: (v: typeof abierto) => void = () => {};
+    estadoMock.omitir.mockReturnValue(new Promise((r) => (soltarOmitir = r)));
+    estadoMock.recordatorio.mockResolvedValue(undefined);
+    await pintar();
+
+    await clickDoc(boton);
+    expect(estadoMock.omitir).toHaveBeenCalledWith(motivo);
+    expect(q('muro-migracion')).toBeNull();
+
+    await act(async () => soltarOmitir(abierto));
+    await act(async () => {});
+    expect(q('muro-migracion')).toBeNull();
+    expect(qDoc('decision-de-migracion')).toBeNull();
+  });
+
+  it('si omitir falla, entonces sí queda el muro (mejor que un panel a medias)', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockRejectedValue(new Error('500'));
+    await pintar();
+
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+    expect(q('muro-migracion')).not.toBeNull();
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════

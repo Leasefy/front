@@ -412,11 +412,24 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
+  /** Una salida («en otro momento», «no requiero») esperando al back. */
+  const saliendo = useRef(false);
   const decidir = useCallback(
     async (elegida: DecisionDeMigracion) => {
+      if (saliendo.current) return;
       guardarDecisionDeMigracion(agencyId, elegida);
-      setDecision(elegida);
-      if (elegida === "ahora") return;
+      if (elegida === "ahora") {
+        setDecision(elegida);
+        return;
+      }
+      /*
+       * 🔴 La decisión se marca DESPUÉS de omitir (Nico, 30-09-2026: «le di en
+       * otro momento… y me abrió el modal de migración gigante, y lo volvió a
+       * cerrar»). Con el muro todavía puesto, marcarla antes pintaba el muro
+       * entero mientras volvía `omitir`. Mientras tanto sigue la pregunta en
+       * pantalla; si omitir falla, recién ahí queda el muro.
+       */
+      saliendo.current = true;
       saltarBienvenida.current = true;
       // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
       // para que no reaparezca en otro navegador (Nico, 2026-09-07). ANTES de
@@ -436,7 +449,12 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       } catch {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
       }
-      await refrescar(respuesta);
+      try {
+        await refrescar(respuesta);
+      } finally {
+        setDecision(elegida);
+        saliendo.current = false;
+      }
     },
     [agencyId, refrescar],
   );

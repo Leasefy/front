@@ -46,7 +46,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
@@ -135,8 +135,9 @@ export default function AcuerdosPage() {
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }

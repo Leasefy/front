@@ -1,7 +1,7 @@
 'use client';
 
 import { Wallet } from '@phosphor-icons/react';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useOwnerFinanzas } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { MiPlataView } from '@/components/landlord/portal/finanzas/MiPlataView';
@@ -12,7 +12,7 @@ import { ApiError } from '@/lib/api/client';
  * Mi plata (F3) — v8-02. Cableado a los endpoints de finanzas del back
  * (`/api/portal/{agencyId}/propietario/{portafolio,inmuebles,proyeccion,recaudo/anual,informe.pdf}`).
  *
- * Cuatro estados: cargando → Spinner; falló (403, 5xx, red) → `FalloDeCarga` con reintento;
+ * Cuatro estados: cargando → esqueleto de la página; falló (403, 5xx, red) → `FalloDeCarga` con reintento;
  * no-disponible (flag-OFF / owner-JWT no cableado) → "Próximamente" honesto; con data → `MiPlataView`.
  * Una caída NUNCA se disfraza de «Próximamente» (O1). NUNCA se fabrican números.
  */
@@ -33,8 +33,9 @@ export default function PortafolioPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
     );
   }

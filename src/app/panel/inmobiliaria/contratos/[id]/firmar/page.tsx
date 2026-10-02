@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import { Spinner } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
@@ -80,9 +80,8 @@ function FirmarContratoContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <CargaDeMarca tamano="md" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="detail" className="mx-auto max-w-4xl" />
     );
   }
 

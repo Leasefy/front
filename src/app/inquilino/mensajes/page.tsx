@@ -3,15 +3,16 @@
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { MessagesWidget } from '@/components/messages/MessagesWidget';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 
 export default function MensajesPage() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   if (isOnboardingLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <CargaDeMarca tamano="lg" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }

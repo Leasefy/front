@@ -22,7 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
@@ -444,9 +444,8 @@ function ResumenDelNegocio() {
   // renders silent zeros while the KPIs are still in flight.
   if ((permLoading || kpisLoading) && !kpisData) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center p-8">
-        <CargaDeMarca tamano="md" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="dashboard" />
     );
   }
 

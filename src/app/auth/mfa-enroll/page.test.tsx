@@ -54,8 +54,9 @@ vi.mock('@/components/providers/ForceLightMode', () => ({
 
 // El candado del asistente a medias tiene sus propias pruebas
 // (AsistentePendienteGuard.test.tsx); acá se prueba el paso a paso del 2FA.
+// Con el registro terminado el guard deja pasar lo de adentro.
 vi.mock('@/components/auth/AsistentePendienteGuard', () => ({
-  AsistentePendienteGuard: () => null,
+  AsistentePendienteGuard: ({ children }: { children?: import('react').ReactNode }) => children ?? null,
 }))
 
 import MfaEnrollPage from './page'
@@ -180,7 +181,7 @@ describe('/auth/mfa-enroll', () => {
     await render()
     expect(container.textContent).toContain('Cerrar sesión')
     expect(container.textContent).toContain('Activa tu segundo factor')
-    expect(container.textContent).toContain('Tu rol maneja plata')
+    expect(container.textContent).toContain('aunque tenga tu contraseña')
     expect(container.textContent).not.toContain('Protege tu cuenta')
   })
 

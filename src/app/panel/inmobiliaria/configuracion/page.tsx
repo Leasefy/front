@@ -16,7 +16,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { Spinner } from '@/components/ui/spinner';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { SeccionCompleta } from './contenido';
 import {
@@ -48,7 +48,8 @@ export default function ConfiguracionPage() {
   if (destinoViejo || alternativa) {
     return (
       <div className="flex items-center justify-center py-24">
-        <CargaDeMarca tamano="md" />
+        {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <Spinner size="md" variant="muted" label="Cargando" />
       </div>
     );
   }

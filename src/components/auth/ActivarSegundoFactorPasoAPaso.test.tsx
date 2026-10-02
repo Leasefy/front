@@ -32,6 +32,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }))
 
 import { ActivarSegundoFactorPasoAPaso, APPS_RECOMENDADAS } from './ActivarSegundoFactorPasoAPaso'
+import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor'
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://sb.test'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon'
@@ -112,27 +113,28 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     await montar()
     const texto = container.textContent ?? ''
     expect(texto).toContain('Activa tu segundo factor')
-    // Nico, 30-09: el porqué va corto («es muy largo»), pero sigue diciendo
-    // que es por la plata que maneja el rol.
-    expect(texto).toContain('Tu rol maneja plata')
-    expect(porTestId('indicador-app')?.getAttribute('aria-current')).toBe('step')
-    expect(porTestId('indicador-escanear')?.textContent).toContain('Escanea el código')
-    expect(porTestId('indicador-codigo')?.textContent).toContain('Escribe el código')
-    expect(texto).toContain('Paso 1 de 3')
+    // Nico, 01-10: el porqué, corto — se lo exigimos, así que tiene que saber
+    // por qué: la plata que se mueve desde su cuenta.
+    expect(texto).toContain(POR_QUE_LO_PEDIMOS)
+    // 🔴 Sin la barra de pasos arriba: el avance es un anillo junto al título.
+    expect(container.querySelector('[data-testid^="indicador-"]')).toBeNull()
+    const anillo = porTestId('anillo-de-pasos')
+    expect(anillo?.getAttribute('aria-label')).toBe('Paso 1 de 3: Descarga la app')
+    expect(anillo?.textContent).toBe('1/3')
+    expect(anillo?.querySelectorAll('[data-tramo="hecho"]')).toHaveLength(1)
     expect(texto).toContain('Sirve cualquier app de códigos')
     // Qué hacer si cambia de celular: el flujo que YA existe, sin inventar otro.
-    expect(texto).toContain('No tengo la app de autenticación')
+    expect(texto).toContain('Restablécelo con un código a tu')
   })
 
   it('con `sinEncabezado` (dentro del panel) no repite el porqué: lo pone la tarjeta que la monta', async () => {
     await montar({ ...props(), sinEncabezado: true })
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('Activa tu segundo factor')
-    expect(texto).not.toContain('Tu rol maneja plata')
+    expect(texto).not.toContain(POR_QUE_LO_PEDIMOS)
     expect(container.querySelector('h1')).toBeNull()
     // Los pasos siguen intactos.
-    expect(porTestId('indicador-app')?.getAttribute('aria-current')).toBe('step')
-    expect(texto).toContain('Paso 1 de 3')
+    expect(porTestId('anillo-de-pasos')?.getAttribute('data-paso')).toBe('1')
   })
 
   it('enlaza las fichas OFICIALES de App Store y Google Play de cada app, en otra pestaña', async () => {
@@ -163,7 +165,8 @@ describe('<ActivarSegundoFactorPasoAPaso>', () => {
     await clic(porTestId('ya-tengo-la-app'))
 
     expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith('/factors'))).toBe(true)
-    expect(porTestId('indicador-escanear')?.getAttribute('aria-current')).toBe('step')
+    expect(porTestId('anillo-de-pasos')?.getAttribute('aria-label')).toBe('Paso 2 de 3: Escanea el código')
+    expect(porTestId('anillo-de-pasos')?.querySelectorAll('[data-tramo="hecho"]')).toHaveLength(2)
     expect(porTestId('qr-del-segundo-factor')?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/)
 
     // En escritorio la clave va plegada; se abre a pedido.

@@ -392,7 +392,7 @@ export function ChatInput({
                 'bg-transparent',
                 'text-[16px] leading-relaxed',
                 'text-foreground',
-                'placeholder:text-fg-subtle',
+                'placeholder:text-fg-placeholder',
                 'focus:outline-none',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -495,7 +495,7 @@ export function ChatInput({
               'bg-transparent',
               'text-[15px] leading-relaxed',
               'text-foreground',
-              'placeholder:text-fg-subtle',
+              'placeholder:text-fg-placeholder',
               'focus:outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'py-1.5'

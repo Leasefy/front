@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
+import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
 import { EsqueletoDelPanel } from '@/components/inmobiliaria/EsqueletoDelPanel';
 import { SUAVE, TarjetaDePuestaEnMarcha } from '@/components/puesta-en-marcha/TarjetaDePuestaEnMarcha';
 import { leerRelevo } from '@/components/puesta-en-marcha/relevo';
@@ -260,13 +261,14 @@ function EscenaDelSegundoFactor({
                 >
                   Protege tu cuenta
                 </h2>
+                {/* El PORQUÉ, corto (Nico, 01-10): se lo estamos exigiendo, así
+                    que tiene que saber por qué. */}
                 <p
                   id={idEntrada}
                   className="mt-3 text-pretty text-body text-fg-muted"
                   data-testid="segundo-factor-dentro-obligatorio"
                 >
-                  Es el último paso antes de entrar y es obligatorio: tu rol maneja plata. Toma
-                  unos dos minutos.
+                  {POR_QUE_LO_PEDIMOS}
                 </p>
               </div>
             )}

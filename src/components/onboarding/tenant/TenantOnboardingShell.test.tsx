@@ -258,3 +258,33 @@ describe('TenantOnboardingShell — volver a elegir perfil', () => {
     expect(enlace()).toBeNull()
   })
 })
+
+// Nico, 01-10-2026: «saltar por ahora no debería existir… y ¿por qué al dar
+// clic en el logo hace algo? Ese logo es netamente visual», y la foto de la
+// derecha fuera, como en el asistente de la inmobiliaria.
+describe('TenantOnboardingShell — como el asistente de la inmobiliaria', () => {
+  beforeEach(() => { searchParams = new URLSearchParams() })
+
+  it('no hay «Saltar por ahora»: la salida es «Salir», que confirma', async () => {
+    await renderShell()
+    expect(container.textContent).not.toMatch(/saltar/i)
+    expect(container.querySelector('[data-testid="saltar-onboarding-inquilino"]')).toBeNull()
+    const salir = Array.from(container.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('Salir'),
+    )
+    expect(salir, 'botón Salir').toBeTruthy()
+  })
+
+  it('el logo es sólo marca: no es un enlace', async () => {
+    await renderShell()
+    const header = container.querySelector('header') ?? container
+    const logo = header.querySelector('[title="Leasefy"], svg[aria-label="Leasefy"]')
+    expect(logo, 'logo').toBeTruthy()
+    expect(logo!.closest('a')).toBeNull()
+  })
+
+  it('la tarjeta de la derecha va sin foto', async () => {
+    await renderShell()
+    expect(container.querySelector('img')).toBeNull()
+  })
+})

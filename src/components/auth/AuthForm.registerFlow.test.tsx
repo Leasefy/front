@@ -19,10 +19,11 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { pushMock, replaceMock, signUpWithEmailMock } = vi.hoisted(() => ({
+const { pushMock, replaceMock, signUpWithEmailMock, resendMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
   signUpWithEmailMock: vi.fn(),
+  resendMock: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -35,6 +36,7 @@ vi.mock('@/lib/auth/use-auth', () => ({
     signInWithGoogle: vi.fn(),
     signInWithEmail: vi.fn(),
     signUpWithEmail: signUpWithEmailMock,
+    resendSignUpEmail: resendMock,
     sendPasswordReset: vi.fn(),
     user: null,
     isAuthenticated: false,
@@ -63,6 +65,7 @@ beforeEach(() => {
   pushMock.mockClear()
   replaceMock.mockClear()
   signUpWithEmailMock.mockReset()
+  resendMock.mockReset().mockResolvedValue(undefined)
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -179,4 +182,59 @@ describe('AuthForm register — single-picker routing', () => {
       `returnUrl=${encodeURIComponent('/panel/propiedades')}`,
     )
   })
+
+  it('🔴 correo que YA tiene cuenta: lo dice y ofrece entrar, no «Revisa tu correo» (Nico, 01-10)', async () => {
+    signUpWithEmailMock.mockRejectedValue(new Error('User already registered'))
+    await submitRegister()
+    expect(container.textContent).toContain('Ya hay una cuenta con este correo.')
+    expect(container.textContent).not.toContain('Revisa tu correo')
+    expect(container.querySelector('[data-testid="entrar-con-este-correo"]')).not.toBeNull()
+  })
+
+  it('el correo de «Revisa tu correo» no lleva punto al final', async () => {
+    signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
+    await submitRegister()
+    expect(container.textContent).toContain('Enviamos un enlace de confirmación a nuevo@example.com')
+    expect(container.textContent).not.toContain('nuevo@example.com.')
+  })
+
+/** La pantalla de «Revisa tu correo» entra animada: se espera a que esté. */
+async function esperarReenvio(): Promise<HTMLButtonElement | null> {
+  for (let i = 0; i < 40; i++) {
+    const b = container.querySelector<HTMLButtonElement>('[data-testid="reenviar-confirmacion"]')
+    if (b) return b
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 25))
+    })
+  }
+  return null
+}
+
+describe('«Reenviar el enlace» tiene freno (Nico, 01-10)', () => {
+  beforeEach(() => {
+    resendMock.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('🔴 a los cuatro reenvíos deja de ofrecer otro y dice que nos escriba', async () => {
+    signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
+    sessionStorage.setItem('leasefy:reenvios:nuevo@example.com', '3')
+    await submitRegister()
+    const reenviar = await esperarReenvio()
+    expect(reenviar).not.toBeNull()
+    await act(async () => reenviar!.click())
+    expect(resendMock).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('[data-testid="reenvio-agotado"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="reenviar-confirmacion"]')).toBeNull()
+  })
+
+  it('con el máximo ya gastado (aunque se haya recargado) no vuelve a llamar a Supabase', async () => {
+    signUpWithEmailMock.mockResolvedValue({ requiresConfirmation: true })
+    sessionStorage.setItem('leasefy:reenvios:nuevo@example.com', '4')
+    await submitRegister()
+    const reenviar = await esperarReenvio()
+    await act(async () => reenviar!.click())
+    expect(resendMock).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="reenvio-agotado"]')).not.toBeNull()
+  })
+})
 })

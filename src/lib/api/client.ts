@@ -5,6 +5,21 @@ import {
   mensajeDeDemasiadasSolicitudes,
   segundosDeEspera,
 } from './demasiadas-solicitudes'
+import {
+  avisarFallaDeRed,
+  avisarQueLeasefyNoResponde,
+  avisarQueLeasefyRespondio,
+  CODIGO_LEASEFY_NO_RESPONDE,
+  esRespuestaDeCaidaGeneral,
+  esStatusDeIntermediario,
+  MENSAJE_LEASEFY_NO_RESPONDE,
+} from '@/lib/conexion/estado-de-conexion'
+import {
+  esCaidaDeLaBase,
+  esServicioNoDisponible,
+  servicioDelError,
+  textoParaUnAviso,
+} from '@/lib/conexion/servicio-no-disponible'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -371,6 +386,74 @@ export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiEr
   return new ApiError(429, message, code, { ...cuerpo, reintentarEnSegundos: segundos })
 }
 
+/**
+ * `fetch` tiró antes de que hubiera respuesta: sin red, back apagado, DNS,
+ * CORS. Además de construir el `ApiError(0)` de siempre, le avisa a la franja
+ * global (`<AvisoDeConexion>`) — ver `src/lib/conexion/estado-de-conexion.ts`.
+ */
+function errorDeRed(err: unknown): ApiError {
+  avisarFallaDeRed()
+  const raw = err instanceof Error ? err.message : String(err)
+  const message = typeof navigator !== 'undefined' && !navigator.onLine
+    ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+    : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
+  return new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+}
+
+/** El cuerpo de un error como objeto: un `null` o un texto suelto no traen claves. */
+function cuerpoComoObjeto(cuerpo: unknown): Record<string, unknown> {
+  return cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)
+    ? (cuerpo as Record<string, unknown>)
+    : {}
+}
+
+/**
+ * Un no-2xx que no es 401/402/403/429, leído y convertido en `ApiError`.
+ *
+ * Tres casos se separan acá, por el contrato de caídas del 01-10-2026 (las
+ * reglas viven en `src/lib/conexion/`; acá sólo se aplican):
+ *
+ *   · Leasefy entero no responde (capa 1): un 502/503/504 que NO mandó el
+ *     back (sin `statusCode` ni `code`: el balanceador), o la base caída
+ *     (`servicio: 'base'`; sin Postgres no funciona nada). Se avisa a la
+ *     franja global y el error sale con `code: 'LEASEFY_NO_RESPONDE'` y un
+ *     mensaje humano en vez de «Error 503».
+ *   · Se cayó UNA parte (capa 2): 502/503 `SERVICIO_NO_DISPONIBLE` (los
+ *     proxies de avalúos y del cotizador siguen en 502), o cualquier 5xx con
+ *     `servicio` (el 502 `WOMPI_NO_RESPONDIO` cuando Wompi se cayó). El
+ *     `status` y el `code` no se tocan —la página de avalúos mira el 502 y
+ *     dispersiones el code—; el `message` pasa a ser el texto que nombra lo
+ *     caído, así todo toast que pinte `error.message` dice qué se cayó y qué
+ *     hacer. Lo que mandó el back sigue entero en `detalle`.
+ *
+ * Todo lo que no es capa 1 es el back contestando: la conexión está bien.
+ */
+function errorDeLaRespuesta(status: number, errorBody: Record<string, unknown>): ApiError {
+  // La respuesta con la forma que leen las reglas de `src/lib/conexion/`.
+  const respuesta = { status, detalle: errorBody }
+  if (esCaidaDeLaBase(respuesta) || esRespuestaDeCaidaGeneral(status, errorBody)) {
+    avisarQueLeasefyNoResponde()
+    return new ApiError(status, MENSAJE_LEASEFY_NO_RESPONDE, CODIGO_LEASEFY_NO_RESPONDE, errorBody)
+  }
+  avisarQueLeasefyRespondio()
+  // Forwarded generally — not a special case for any one endpoint. 401
+  // already reads `code` above; this makes every other non-2xx status do
+  // the same, so a caller can branch on a machine-readable code instead of
+  // pattern-matching a human `.message` string.
+  const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+  if (esServicioNoDisponible(respuesta)) {
+    return new ApiError(status, textoParaUnAviso(servicioDelError(respuesta)), code, errorBody)
+  }
+  return new ApiError(
+    status,
+    (errorBody.message as string | string[] | undefined) || `Error ${status}`,
+    code,
+    // El cuerpo entero, para lo que `message` y `code` no alcanzan a decir
+    // (`motivos[]`, `etiquetasFaltantes[]`, …). Ver `ApiError.detalle`.
+    errorBody,
+  )
+}
+
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -422,12 +505,12 @@ async function request<T>(
     // `fetch` throws a plain TypeError in these cases — wrap it in ApiError(0)
     // with a user-friendly message so UI code can distinguish "backend down"
     // from "backend returned 4xx/5xx".
-    const raw = err instanceof Error ? err.message : String(err)
-    const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
-    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+    throw errorDeRed(err)
   }
+
+  // Contestó el back. Un 502/503/504 todavía puede ser el balanceador diciendo
+  // que atrás no hay nadie: ése se decide con el cuerpo, en `errorDeLaRespuesta`.
+  if (!esStatusDeIntermediario(res.status)) avisarQueLeasefyRespondio()
 
   if (res.status === 401) {
     // Preserve the backend message so callers can distinguish "User not found"
@@ -537,19 +620,7 @@ async function request<T>(
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
-    // Forwarded generally — not a special case for any one endpoint. 401
-    // already reads `code` above; this makes every other non-2xx status do
-    // the same, so a caller can branch on a machine-readable code instead of
-    // pattern-matching a human `.message` string.
-    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
-    throw new ApiError(
-      res.status,
-      errorBody.message || `Error ${res.status}`,
-      code,
-      // El cuerpo entero, para lo que `message` y `code` no alcanzan a decir
-      // (`motivos[]`, `etiquetasFaltantes[]`, …). Ver `ApiError.detalle`.
-      errorBody as Record<string, unknown>,
-    )
+    throw errorDeLaRespuesta(res.status, cuerpoComoObjeto(errorBody))
   }
 
   /*
@@ -598,12 +669,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   try {
     res = await fetch(url, { method: 'GET', headers })
   } catch (err) {
-    const raw = err instanceof Error ? err.message : String(err)
-    const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
-    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+    throw errorDeRed(err)
   }
+
+  if (!esStatusDeIntermediario(res.status)) avisarQueLeasefyRespondio()
 
   if (res.status === 401) {
     const errorBody = await res.json().catch(() => ({}))
@@ -633,8 +702,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   }
 
   if (!res.ok) {
+    // La misma lectura que `request`: antes esta rama tiraba el `code` y el
+    // cuerpo, así que una descarga con el servicio caído decía «Error 503».
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
+    throw errorDeLaRespuesta(res.status, cuerpoComoObjeto(errorBody))
   }
   return res.blob()
 }

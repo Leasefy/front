@@ -27,6 +27,7 @@
  */
 
 import { mensajeDeDocumentoFaltante } from './documento-del-propietario'
+import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible'
 
 /** El identificador de una migración: `20260917120000_modalidad_del_mandato`. */
 const ID_DE_MIGRACION = /\b\d{14}_[a-z0-9_]+\b/i
@@ -147,6 +148,10 @@ export function motivoEnCristiano(motivo: string | null | undefined): string | n
  * puede seguir hablándole al operador.
  */
 export function errorEnCristiano(error: unknown, porDefecto: string): string {
+  // 01-10-2026: una parte de Leasefy caída, o Leasefy entero sin responder —
+  // ver `src/lib/conexion/servicio-no-disponible.ts`.
+  const caida = mensajeDeCaida(error)
+  if (caida) return caida
   // T-0128: propietario sin documento / pagaré con datos incompletos.
   const delDocumento = mensajeDeDocumentoFaltante(error)
   if (delDocumento) return delDocumento

@@ -65,6 +65,7 @@ import {
   verificarFactorNuevo,
   type FactorPorVerificar,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
+import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
 import { cn } from '@/lib/utils';
 
 /**
@@ -326,25 +327,21 @@ export function ActivarSegundoFactorPasoAPaso({
           <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
             Activa tu segundo factor
           </h1>
-          <p className="text-pretty text-body-sm text-fg-muted">
-            Tu rol maneja plata: además de la contraseña pedimos un código que solo aparece en tu
-            celular. Son tres pasos, unos dos minutos.
-          </p>
+          <p className="text-pretty text-body-sm text-fg-muted">{POR_QUE_LO_PEDIMOS}</p>
         </div>
       )}
 
-      <IndicadorDePasos actual={indice} />
-
       <section aria-labelledby="paso-titulo" className="space-y-5">
-        <div className="space-y-1.5">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-            Paso {indice + 1} de 3
-          </p>
+        {/* Nico, 01-10: «sin esos steps de arriba… quizás los steps los puedes
+            hacer en círculo». La barra de tres pasos se fue; el avance es un
+            anillo al lado del título del paso, y la persona sigue el paso. */}
+        <div className="flex items-center gap-4">
+          <AnilloDePasos actual={indice} />
           <h2
             id="paso-titulo"
             ref={tituloRef}
             tabIndex={-1}
-            className="text-balance text-[20px] font-semibold leading-tight tracking-[-0.015em] text-fg outline-none"
+            className="min-w-0 text-balance text-[20px] font-semibold leading-tight tracking-[-0.015em] text-fg outline-none"
           >
             {paso === 'app'
               ? 'Descarga una app de autenticación en tu celular'
@@ -551,54 +548,50 @@ function NumeroDeInstruccion({ n }: { n: number }) {
   );
 }
 
-/** Tres círculos con su nombre debajo; cabe a 390 px. */
-function IndicadorDePasos({ actual }: { actual: number }) {
+/**
+ * El avance como un ANILLO de tres tramos, con «1/3» adentro. Lo hecho y el
+ * paso en curso van en azul; lo que falta, en el gris del borde. Para un lector
+ * de pantalla es una imagen con nombre: «Paso 1 de 3: Descarga la app».
+ */
+function AnilloDePasos({ actual }: { actual: number }) {
+  const total = PASOS.length;
+  const radio = 19;
+  const vuelta = 2 * Math.PI * radio;
+  const porTramo = vuelta / total;
+  // El hueco entre tramos descuenta las puntas redondas del trazo.
+  const tramo = porTramo - 9;
   return (
-    <ol aria-label="Pasos para activar el segundo factor" className="flex items-start">
-      {PASOS.map((p, i) => {
-        const hecho = i < actual;
-        const esActual = i === actual;
-        return (
-          <li
+    <div
+      role="img"
+      aria-label={`Paso ${actual + 1} de ${total}: ${PASOS[actual]?.titulo ?? ''}`}
+      className="relative h-12 w-12 shrink-0"
+      data-testid="anillo-de-pasos"
+      data-paso={actual + 1}
+    >
+      <svg viewBox="0 0 48 48" className="h-12 w-12 -rotate-90" aria-hidden="true">
+        {PASOS.map((p, i) => (
+          <circle
             key={p.paso}
-            className="relative flex flex-1 flex-col items-center gap-2 text-center"
-            aria-current={esActual ? 'step' : undefined}
-            data-testid={`indicador-${p.paso}`}
-          >
-            {i > 0 ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute right-1/2 top-3.5 mr-5 h-px w-[calc(100%-2.5rem)]',
-                  i <= actual ? 'bg-primary' : 'bg-border',
-                )}
-              />
-            ) : null}
-            <span
-              className={cn(
-                'relative flex h-7 w-7 items-center justify-center rounded-full font-mono text-caption font-semibold tabular-nums transition-colors',
-                hecho
-                  ? 'bg-primary text-primary-fg'
-                  : esActual
-                    ? 'border-2 border-primary bg-surface text-primary'
-                    : 'border border-border bg-surface text-fg-subtle',
-              )}
-            >
-              {hecho ? <Check className="h-3.5 w-3.5" weight="bold" aria-hidden="true" /> : i + 1}
-            </span>
-            <span
-              className={cn(
-                'text-caption leading-tight',
-                esActual ? 'font-medium text-fg' : hecho ? 'text-fg-muted' : 'text-fg-subtle',
-              )}
-            >
-              {p.titulo}
-              {hecho ? <span className="sr-only"> (hecho)</span> : null}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+            cx="24"
+            cy="24"
+            r={radio}
+            fill="none"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray={`${tramo} ${vuelta - tramo}`}
+            strokeDashoffset={-(i * porTramo) - 4.5}
+            className={cn('transition-colors duration-300', i <= actual ? 'stroke-primary' : 'stroke-border-strong')}
+            data-tramo={i <= actual ? 'hecho' : 'pendiente'}
+          />
+        ))}
+      </svg>
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center justify-center font-mono text-caption font-semibold tabular-nums text-fg"
+      >
+        {actual + 1}/{total}
+      </span>
+    </div>
   );
 }
 
@@ -686,8 +679,8 @@ function PasoDescargar({
         <p className="flex gap-2">
           <EnvelopeSimple className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            ¿Cambias de celular o pierdes la app? Al entrar, toca «No tengo la app de autenticación» y
-            lo restableces con un código que te mandamos al correo.
+            ¿Cambias de celular o pierdes la app? Al entrar, toca «Restablécelo con un código a tu
+            correo».
           </span>
         </p>
       </div>

@@ -28,6 +28,11 @@ vi.mock('@/lib/api/onboarding-session.service', async (original) => ({
   ...(await original<typeof import('@/lib/api/onboarding-session.service')>()),
   resumeOnboarding,
 }))
+vi.mock('@/components/ui/carga-de-marca', () => ({
+  CargaDeMarca: () => <span data-testid="carga" />,
+}))
+
+const CLAVE = 'leasefy-registro-terminado:u1'
 
 let container: HTMLDivElement
 let root: Root
@@ -53,10 +58,16 @@ afterEach(() => {
 
 async function montar() {
   await act(async () => {
-    root.render(<AsistentePendienteGuard />)
+    root.render(
+      <AsistentePendienteGuard>
+        <div data-testid="adentro">el panel y el segundo factor</div>
+      </AsistentePendienteGuard>,
+    )
     await new Promise((r) => setTimeout(r, 0))
   })
 }
+
+const adentro = () => container.querySelector('[data-testid="adentro"]')
 
 function puntoDeRetorno(sobre: Record<string, unknown> = {}) {
   return {
@@ -86,8 +97,9 @@ describe('<AsistentePendienteGuard>', () => {
 
     expect(resumeOnboarding).toHaveBeenCalledWith('ses-1')
     expect(routerReplace).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    expect(adentro()).toBeNull()
     // Un veredicto «a medias» NO se cachea: al volver se vuelve a preguntar.
-    expect(localStorage.getItem('leasefy-asistente-listo:u1')).toBeNull()
+    expect(localStorage.getItem(CLAVE)).toBeNull()
   })
 
   it('🔴 con el asistente TERMINADO (currentStep «complete») no toca a nadie y cachea el veredicto', async () => {
@@ -106,24 +118,29 @@ describe('<AsistentePendienteGuard>', () => {
     await montar()
 
     expect(routerReplace).not.toHaveBeenCalled()
-    expect(localStorage.getItem('leasefy-asistente-listo:u1')).toBe('1')
+    expect(localStorage.getItem(CLAVE)).toBe('1')
   })
 
-  it('un miembro invitado (sin sesión del asistente) no se toca y se cachea', async () => {
-    getOnboardingResumePoint.mockResolvedValue(puntoDeRetorno())
+  it('un miembro invitado con membresía ACTIVA (la agencia ya terminó su registro) entra a su panel', async () => {
+    // El punto de retorno es el de SU agencia: la sesión del dueño, completa.
+    getOnboardingResumePoint.mockResolvedValue(
+      puntoDeRetorno({ tenantId: 'ag-1', agentSessionId: 'ses-dueno', provisioningStatus: 'ACTIVE' }),
+    )
+    resumeOnboarding.mockResolvedValue({ sessionId: 'ses-dueno', currentStep: 'complete', nextStep: null, draft: {} })
 
     await montar()
 
-    expect(resumeOnboarding).not.toHaveBeenCalled()
     expect(routerReplace).not.toHaveBeenCalled()
-    expect(localStorage.getItem('leasefy-asistente-listo:u1')).toBe('1')
+    expect(adentro()).not.toBeNull()
+    expect(localStorage.getItem(CLAVE)).toBe('1')
   })
 
   it('con el veredicto cacheado no pregunta nada', async () => {
-    localStorage.setItem('leasefy-asistente-listo:u1', '1')
+    localStorage.setItem(CLAVE, '1')
 
     await montar()
 
+    expect(adentro()).not.toBeNull()
     expect(getOnboardingResumePoint).not.toHaveBeenCalled()
     expect(resumeOnboarding).not.toHaveBeenCalled()
     expect(routerReplace).not.toHaveBeenCalled()
@@ -138,15 +155,88 @@ describe('<AsistentePendienteGuard>', () => {
     await montar()
 
     expect(routerReplace).not.toHaveBeenCalled()
-    expect(localStorage.getItem('leasefy-asistente-listo:u1')).toBeNull()
+    expect(localStorage.getItem(CLAVE)).toBeNull()
   })
 
-  it('el traspaso al micro caído (ACTIVE sin sesión) no expulsa y NO cachea: puede repararse', async () => {
-    getOnboardingResumePoint.mockResolvedValue(puntoDeRetorno({ provisioningStatus: 'ACTIVE' }))
+  it.each([
+    ['FAILED sin sesión (la captura del 01-10: el back no alcanzó el micro)', { provisioningStatus: 'FAILED' }],
+    ['PENDING sin sesión (el traspaso todavía en curso)', { provisioningStatus: 'PENDING' }],
+    ['ACTIVE sin sesión (el segundo llamado al micro falló)', { provisioningStatus: 'ACTIVE' }],
+  ])(
+    '🔴 agencia creada y asistente sin empezar — %s: al asistente, sin montar panel ni 2FA, y sin cachear',
+    async (_caso, sobre) => {
+      getOnboardingResumePoint.mockResolvedValue(puntoDeRetorno({ tenantId: 'ag-1', ...sobre }))
+
+      await montar()
+
+      expect(resumeOnboarding).not.toHaveBeenCalled()
+      expect(routerReplace).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+      expect(adentro()).toBeNull()
+      expect(localStorage.getItem(CLAVE)).toBeNull()
+    },
+  )
+
+  it('🔴 FAILED con un id de sesión también es registro a medias (no se le pregunta al micro)', async () => {
+    getOnboardingResumePoint.mockResolvedValue(
+      puntoDeRetorno({ tenantId: 'ag-1', agentSessionId: 'ses-1', provisioningStatus: 'FAILED' }),
+    )
 
     await montar()
 
+    expect(resumeOnboarding).not.toHaveBeenCalled()
+    expect(routerReplace).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    expect(adentro()).toBeNull()
+  })
+
+  it('🔴 mientras pregunta NO monta lo de adentro (la carrera: el 2FA salía antes del veredicto)', async () => {
+    getOnboardingResumePoint.mockReturnValue(new Promise(() => {}))
+
+    await montar()
+
+    expect(adentro()).toBeNull()
+    expect(container.querySelector('[data-testid="asistente-pendiente-verificando"]')).not.toBeNull()
     expect(routerReplace).not.toHaveBeenCalled()
-    expect(localStorage.getItem('leasefy-asistente-listo:u1')).toBeNull()
+  })
+
+  it('a los 8 s sin respuesta es fail-open: monta lo de adentro y no cachea', async () => {
+    vi.useFakeTimers()
+    try {
+      getOnboardingResumePoint.mockReturnValue(new Promise(() => {}))
+      await act(async () => {
+        root.render(
+          <AsistentePendienteGuard>
+            <div data-testid="adentro" />
+          </AsistentePendienteGuard>,
+        )
+      })
+      expect(adentro()).toBeNull()
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8000)
+      })
+      expect(adentro()).not.toBeNull()
+      expect(routerReplace).not.toHaveBeenCalled()
+      expect(localStorage.getItem(CLAVE)).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('quien todavía no tiene inmobiliaria pasa, pero NO se cachea: puede crearla después', async () => {
+    getOnboardingResumePoint.mockResolvedValue(puntoDeRetorno({ onboardingCompleted: false }))
+
+    await montar()
+
+    expect(adentro()).not.toBeNull()
+    expect(localStorage.getItem(CLAVE)).toBeNull()
+  })
+
+  it('la caché vieja (`leasefy-asistente-listo:`) ya no abre la puerta', async () => {
+    localStorage.setItem('leasefy-asistente-listo:u1', '1')
+    getOnboardingResumePoint.mockResolvedValue(puntoDeRetorno({ tenantId: 'ag-1', provisioningStatus: 'FAILED' }))
+
+    await montar()
+
+    expect(getOnboardingResumePoint).toHaveBeenCalled()
+    expect(routerReplace).toHaveBeenCalledWith('/onboarding/inmobiliaria')
   })
 })

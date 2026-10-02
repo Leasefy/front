@@ -25,6 +25,7 @@ import {
   componerNombre,
   nombreDeLoteSugerido,
   nombreSeArmaPorPartes,
+  placeholderDeEjemplo,
   valorDeParte,
 } from './columnas-de-tercero';
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
@@ -445,5 +446,21 @@ describe('el nombre partido en columnas', () => {
     ).toBe('MARIA RUIZ GOMEZ');
     expect(componerNombre({ primerNombre: 'MARIA', nombres: 'IGNORADO', apellidos: 'RUIZ GOMEZ' })).toBe('MARIA RUIZ GOMEZ');
     expect(componerNombre({})).toBe('');
+  });
+});
+
+describe('placeholderDeEjemplo', () => {
+  // Nico, 01-10: un «050» o un «7» pelados en un campo vacío se leían como
+  // un valor ya escrito.
+  it('🔴 el ejemplo de la plantilla va marcado como ejemplo', () => {
+    expect(placeholderDeEjemplo('050')).toBe('Ej: 050');
+    expect(placeholderDeEjemplo('7')).toBe('Ej: 7');
+  });
+
+  it('sin ejemplo no hay placeholder (nunca un «Ej:» suelto)', () => {
+    expect(placeholderDeEjemplo('')).toBeUndefined();
+    expect(placeholderDeEjemplo('   ')).toBeUndefined();
+    expect(placeholderDeEjemplo(undefined)).toBeUndefined();
+    expect(placeholderDeEjemplo(null)).toBeUndefined();
   });
 });

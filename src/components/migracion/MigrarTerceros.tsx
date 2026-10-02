@@ -23,7 +23,7 @@
  * 4. **Un duplicado se pregunta.** Nunca se fusiona solo.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   ArrowRight,
@@ -101,6 +101,7 @@ import {
   nombreDeLoteSugerido,
   obligatoriasSinMapear,
   PARTES_DEL_NOMBRE,
+  placeholderDeEjemplo,
   remapear,
   VALOR_A_NOTAS,
   valorDeParte,
@@ -115,6 +116,7 @@ import {
   type ProgresoDeAplicacion,
 } from '@/lib/migracion/aplicar-lote-de-terceros';
 import { FilaDeTercero, type ResultadoDeAccion } from './FilaDeTercero';
+import { TercerosYaCargados, type EstadoDeLoCargado } from './TercerosYaCargados';
 
 /** Sentinel de Radix: un `<Select>` no admite `value=""`. */
 const IGNORAR = '__ignorar__';
@@ -314,6 +316,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   /** Qué hizo la última masiva, EN la página: un cambio silencioso en los
    *  contadores se lee como «apareció de la nada». */
   const [avisoMasivo, setAvisoMasivo] = useState<string | null>(null);
+
+  /*
+   * 🔴 Lo que ya está en Leasefy, adentro del muro (Nico, 01-10: «si ya subí
+   * el archivo y me devuelvo a propietarios, ¿por qué no me muestra lo que ya
+   * subí?»). Con personas ya creadas el paso abre con ELLAS y la subida queda
+   * detrás de «Subir otro archivo». Ver `TercerosYaCargados`.
+   */
+  const [loCargado, setLoCargado] = useState<EstadoDeLoCargado>({ cargando: true });
+  const [subiendoOtro, setSubiendoOtro] = useState(false);
+  const subidaRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (subiendoOtro) subidaRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [subiendoOtro]);
 
   /*
    * `useMemo` y no `plantilla?.columnas ?? []` suelto: ese `[]` es un array
@@ -576,6 +591,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setSeleccion(new Set());
     setAlcance(SOLO_IDS);
     setMotivos(null);
+    setArchivo(null);
     setFilas([]);
     setEncabezados([]);
     setMapeo([]);
@@ -904,7 +920,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         onAplicar={() => void aplicar()}
         invitarAlCrear={invitarAlCrear}
         onCambiarInvitar={setInvitarAlCrear}
-        onOtroArchivo={volverAEmpezar}
+        onOtroArchivo={() => {
+          volverAEmpezar();
+          // Pidió subir otro: la subida abre aunque ya haya personas cargadas.
+          setSubiendoOtro(true);
+        }}
       />
     );
   }
@@ -925,6 +945,25 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const cargaEnConflicto = loteEnConflicto
     ? lotesVisibles.find((l) => l.lote === loteEnConflicto) ?? null
     : null;
+
+  /*
+   * ¿La subida va abierta? Fuera del muro, siempre (la pantalla suelta es
+   * sólo para subir). Adentro, cuando todavía no hay nadie cargado, cuando la
+   * lista no se pudo leer (no saber quién está no puede frenar una carga),
+   * cuando la persona pidió subir otro, o cuando ya hay algo en curso que vive
+   * en esta tarjeta — un archivo leído o un error que contar.
+   */
+  const hayCargados = !loCargado.cargando && !loCargado.fallo && loCargado.total > 0;
+  const subidaAbierta =
+    !tipoFijo ||
+    subiendoOtro ||
+    archivo !== null ||
+    error !== null ||
+    (!loCargado.cargando && !hayCargados);
+  const cancelarSubida = () => {
+    soltarArchivo();
+    setSubiendoOtro(false);
+  };
 
   return (
     <div className="space-y-5">
@@ -1074,7 +1113,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         tarea, así que viven en UNA tarjeta con filetes entre fases (glow-up
         30-09). Antes eran tres bloques sueltos y «quedaban como separadas».
       */}
-      <section className="rounded-lg border border-border-faint bg-surface shadow-sm">
+      {subidaAbierta ? (
+      <section
+        ref={subidaRef}
+        className="scroll-mt-4 rounded-lg border border-border-faint bg-surface shadow-sm"
+        data-testid="subida-de-terceros"
+      >
         <div className="space-y-4 p-6">
         {tipoFijo ? (
           <div
@@ -1084,26 +1128,51 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           >
             <div className="min-w-0 space-y-1">
               <h2 className="text-sm font-medium text-fg">
-                {tipoFijo === 'PROPIETARIO' ? 'El archivo de propietarios' : 'El archivo de inquilinos'}
+                {hayCargados
+                  ? tipoFijo === 'PROPIETARIO'
+                    ? 'Otro archivo de propietarios'
+                    : 'Otro archivo de inquilinos'
+                  : tipoFijo === 'PROPIETARIO'
+                    ? 'El archivo de propietarios'
+                    : 'El archivo de inquilinos'}
               </h2>
               {/* Acá se habla del ARCHIVO. Qué hace falta del propietario ya lo
                   dice la columna del paso: decirlo dos veces, casi igual, era
                   una de las cosas que Nico señaló en la captura. */}
               <p className="max-w-prose text-sm text-fg-muted">
-                {tipoFijo === 'PROPIETARIO'
-                  ? 'Una fila por propietario, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
-                  : 'Una fila por inquilino, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'}
+                {hayCargados
+                  ? tipoFijo === 'PROPIETARIO'
+                    ? 'Para sumar los propietarios que no venían en el primero. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
+                    : 'Para sumar los inquilinos que no venían en el primero. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
+                  : tipoFijo === 'PROPIETARIO'
+                    ? 'Una fila por propietario, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'
+                    : 'Una fila por inquilino, tal como la exporta tu sistema actual. Lo que falte se completa acá, fila por fila, sin volver a subir el archivo.'}
               </p>
             </div>
-            <BotonDePlantilla
-              deshabilitado={!plantilla}
-              onDescargar={() =>
-                plantilla &&
-                void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
-                  setError('No pudimos generar la plantilla para descargar. Reintenta.'),
-                )
-              }
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Abierta a pedido, se cierra igual: la tabla de abajo es lo
+                  que ya está, y arrepentirse no puede exigir recargar. */}
+              {hayCargados && !cargando ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  onClick={cancelarSubida}
+                  data-testid="cancelar-subida"
+                >
+                  Cancelar
+                </Button>
+              ) : null}
+              <BotonDePlantilla
+                deshabilitado={!plantilla}
+                onDescargar={() =>
+                  plantilla &&
+                  void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
+                    setError('No pudimos generar la plantilla para descargar. Reintenta.'),
+                  )
+                }
+              />
+            </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1460,6 +1529,16 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         </div>
       ) : null}
       </section>
+      ) : null}
+
+      {tipoFijo ? (
+        <TercerosYaCargados
+          tipo={tipoFijo}
+          onEstado={setLoCargado}
+          subiendoOtro={subidaAbierta}
+          onSubirOtro={() => setSubiendoOtro(true)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -2271,7 +2350,7 @@ function ResolucionMasiva({
                 <Input
                   className="w-56"
                   value={valor}
-                  placeholder={columna.ejemplo}
+                  placeholder={placeholderDeEjemplo(columna.ejemplo)}
                   aria-labelledby="masivo-valor-etiqueta"
                   data-testid="masivo-valor"
                   onChange={(e) => setValor(e.target.value)}

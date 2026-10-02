@@ -1,12 +1,18 @@
 /**
- * PreScoringStudyPanel — T-0024 (prescoring-result-reuse), WU-2
+ * PreScoringStudyPanel — T-0024 (prescoring-result-reuse), WU-2.
+ * Widened by T-0132 (asegurabilidad-opcional-al-postular) to two more
+ * states, since the application now pins ANY vigent order, not just an
+ * approved one.
  *
- * Contract: `.orchestration/tasks/T-0024-prescoring-result-reuse/contract.md` §3.2.
- * Four states, none of which may render a blank panel:
+ * Contract: `.orchestration/tasks/T-0024-prescoring-result-reuse/contract.md` §3.2,
+ * `.orchestration/tasks/T-0132-asegurabilidad-opcional-al-postular/contract.md` §3.2.
+ * None of these states may render a blank panel:
  *  1. `preScoringStudy` is null/absent → an honest "no study" state.
- *  2. Full result → ceiling + per-carrier rows.
- *  3. Ceiling only (`carriers: []`) → ceiling renders clearly, NOT the "no study" state.
- *  4. `status: 'EXPIRED'` → still shown, labeled, not treated as void.
+ *  2. `maxAsegurableCop === 0` (any status) → REJECTED — no ceiling, no D13 note.
+ *  3. `status` in `{PAID, STUDY_STARTED}` → IN-PROGRESS.
+ *  4. Full result → ceiling + per-carrier rows.
+ *  5. Ceiling only (`carriers: []`) → ceiling renders clearly, NOT the "no study" state.
+ *  6. `status: 'EXPIRED'` → still shown, labeled, not treated as void.
  */
 
 import * as React from 'react';
@@ -145,5 +151,59 @@ describe('<PreScoringStudyPanel>', () => {
 
     // The carrier WITH a real ceiling still renders its currency figure normally.
     expect(panel?.textContent).toContain('3.000.000');
+  });
+
+  // T-0132 (asegurabilidad-opcional-al-postular) — contract §3.2 display
+  // rule, widened from §3.3 of the original contract above: the application
+  // now binds ANY vigent order (rejected / in-progress included), so the
+  // panel must stop treating those as the "full" or "empty" state.
+  describe('T-0132 — rejected and in-progress states', () => {
+    it('renders the REJECTED state when maxAsegurableCop is 0, regardless of status', () => {
+      render({
+        status: 'COMPLETED',
+        completedAt: '2026-09-01T00:00:00.000Z',
+        maxAsegurableCop: 0,
+        carriers: [{ name: 'Sura', maxAsegurableCop: null, viable: false }],
+      });
+      expect(container.querySelector('[data-testid="prescoring-panel-rejected"]')).toBeTruthy();
+      expect(container.querySelector('[data-testid="prescoring-panel-empty"]')).toBeFalsy();
+      expect(container.querySelector('[data-testid="prescoring-panel-full"]')).toBeFalsy();
+    });
+
+    it('REJECTED: never renders "$0" as a ceiling and never shows the D13 tope-informativo note', () => {
+      render({ status: 'COMPLETED', maxAsegurableCop: 0, carriers: [] });
+      const panel = container.querySelector('[data-testid="prescoring-panel-rejected"]');
+      expect(panel?.textContent).not.toContain('$ 0');
+      expect(panel?.textContent).not.toContain('$0');
+      expect(container.querySelector('[data-testid="prescoring-tope-informativo"]')).toBeFalsy();
+    });
+
+    it('REJECTED: carrier rows MAY still be listed', () => {
+      render({
+        status: 'COMPLETED',
+        maxAsegurableCop: 0,
+        carriers: [{ name: 'Sura', maxAsegurableCop: null, viable: false }],
+      });
+      expect(container.querySelectorAll('[data-testid="prescoring-carrier-row"]').length).toBe(1);
+    });
+
+    it('renders the IN-PROGRESS state for status PAID', () => {
+      render({ status: 'PAID', maxAsegurableCop: null, carriers: [] });
+      expect(container.querySelector('[data-testid="prescoring-panel-in-progress"]')).toBeTruthy();
+      expect(container.querySelector('[data-testid="prescoring-panel-empty"]')).toBeFalsy();
+      expect(container.querySelector('[data-testid="prescoring-panel-full"]')).toBeFalsy();
+    });
+
+    it('renders the IN-PROGRESS state for status STUDY_STARTED', () => {
+      render({ status: 'STUDY_STARTED', maxAsegurableCop: null, carriers: [] });
+      expect(container.querySelector('[data-testid="prescoring-panel-in-progress"]')).toBeTruthy();
+    });
+
+    it('a COMPLETED study with maxAsegurableCop:null (unknown, not rejected) still renders the FULL panel, not in-progress or rejected', () => {
+      render({ status: 'COMPLETED', maxAsegurableCop: null, carriers: [] });
+      expect(container.querySelector('[data-testid="prescoring-panel-full"]')).toBeTruthy();
+      expect(container.querySelector('[data-testid="prescoring-panel-rejected"]')).toBeFalsy();
+      expect(container.querySelector('[data-testid="prescoring-panel-in-progress"]')).toBeFalsy();
+    });
   });
 });

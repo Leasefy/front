@@ -43,7 +43,7 @@ import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/co
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ArriendoDelContrato, AvisoDelContrato } from '@/components/contratos/ArriendoDelContrato';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
@@ -291,9 +291,8 @@ function ContratoDetalleContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <CargaDeMarca tamano="md" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
     );
   }
 

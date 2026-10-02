@@ -66,6 +66,7 @@ import { olvidarRelevo } from "@/components/puesta-en-marcha/relevo";
 import {
   guardarDecisionDeMigracion,
   leerDecisionDeMigracion,
+  marcarQueEligioMigrar,
   type DecisionDeMigracion,
 } from "@/lib/migracion/decision-de-migracion";
 import {
@@ -468,6 +469,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       if (saliendo.current) return;
       guardarDecisionDeMigracion(agencyId, elegida);
       if (elegida === "ahora") {
+        // Le dio «Migrar»: desde ya, la tarjeta del menú acompaña hasta el final.
+        marcarQueEligioMigrar(agencyId);
         setDecision(elegida);
         return;
       }
@@ -536,9 +539,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   }, [agencyId, puesto, refrescar]);
 
   const abrir = useCallback(() => {
+    // Abrir la migración (Configuración, la tarjeta del menú) es darle «Migrar».
+    marcarQueEligioMigrar(agencyId);
     setAbiertaAMano(true);
     void refrescar();
-  }, [refrescar]);
+  }, [agencyId, refrescar]);
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;

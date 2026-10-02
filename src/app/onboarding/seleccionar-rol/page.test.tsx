@@ -114,6 +114,23 @@ vi.mock('framer-motion', async () => {
   return { motion, AnimatePresence: Pasa, LayoutGroup: Pasa, MotionConfig: Pasa, useReducedMotion: () => true }
 })
 
+/*
+ * Las dos fuentes del veredicto del registro (`registro-de-la-inmobiliaria.ts`):
+ * el punto de retorno del back y el paso del micro.
+ */
+const { getOnboardingResumePoint, resumeOnboarding } = vi.hoisted(() => ({
+  getOnboardingResumePoint: vi.fn(),
+  resumeOnboarding: vi.fn(),
+}))
+vi.mock('@/lib/api/onboarding-provisioning.service', async (original) => ({
+  ...(await original<typeof import('@/lib/api/onboarding-provisioning.service')>()),
+  getOnboardingResumePoint,
+}))
+vi.mock('@/lib/api/onboarding-session.service', async (original) => ({
+  ...(await original<typeof import('@/lib/api/onboarding-session.service')>()),
+  resumeOnboarding,
+}))
+
 import SeleccionarRolPage from './page'
 
 let container: HTMLDivElement
@@ -136,6 +153,8 @@ beforeEach(() => {
   aprovisionamientoState.valoresGuardados = null
   elegirPerfilMock.mockReset()
   elegirPerfilMock.mockResolvedValue(undefined)
+  getOnboardingResumePoint.mockReset()
+  resumeOnboarding.mockReset()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -207,6 +226,91 @@ describe('SeleccionarRolPage — invitation guard', () => {
   })
 })
 
+
+/**
+ * 🔴 Nico, 01-10-2026: «luego de crear la cuenta, entramos desde un correo,
+ * nos llevó al seleccionar rol y nos llevó luego de un rato a esta pantalla,
+ * literal ingresó a la plataforma». La agencia y la membresía ADMIN nacen en
+ * «Antes de comenzar», antes del asistente: membresía activa no es registro
+ * terminado.
+ */
+describe('SeleccionarRolPage — el dueño con el registro a medias va al asistente, nunca al panel', () => {
+  function punto(sobre: Record<string, unknown>) {
+    return {
+      agentSessionId: null,
+      tenantId: 'ag-1',
+      provisioningStatus: 'ACTIVE',
+      legalName: 'Periquito company LTDA',
+      nit: '900',
+      onboardingCompleted: true,
+      ...sobre,
+    }
+  }
+
+  async function renderYResolver() {
+    await act(async () => {
+      root.render(<SeleccionarRolPage />)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  beforeEach(() => {
+    authState.user = { id: 'u1', name: 'Nico', onboardingCompleted: true, role: 'agency' }
+    authState.hasActiveAgencyMembership = true
+    authState.agencyRole = 'ADMIN'
+  })
+
+  it.each([
+    ['FAILED sin sesión (la captura: el back no alcanzó el micro)', { provisioningStatus: 'FAILED' }],
+    ['PENDING sin sesión', { provisioningStatus: 'PENDING' }],
+    ['ACTIVE sin sesión', { provisioningStatus: 'ACTIVE' }],
+  ])('%s → /onboarding/inmobiliaria', async (_caso, sobre) => {
+    getOnboardingResumePoint.mockResolvedValue(punto(sobre))
+
+    await renderYResolver()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    expect(replaceMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
+  })
+
+  it('con la sesión del asistente en «Miembros» → /onboarding/inmobiliaria', async () => {
+    getOnboardingResumePoint.mockResolvedValue(punto({ agentSessionId: 'ses-1' }))
+    resumeOnboarding.mockResolvedValue({ sessionId: 'ses-1', currentStep: 'members', nextStep: 'habeas_data', draft: {} })
+
+    await renderYResolver()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    expect(replaceMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
+  })
+
+  it('mientras pregunta: cargador, ni tarjetas ni panel', async () => {
+    getOnboardingResumePoint.mockReturnValue(new Promise(() => {}))
+
+    await renderYResolver()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.textContent).not.toContain('Inquilino')
+  })
+
+  it('un invitado con membresía ACTIVA (su agencia terminó el registro) sigue yendo a su panel', async () => {
+    authState.agencyRole = 'AGENTE'
+    getOnboardingResumePoint.mockResolvedValue(punto({ agentSessionId: 'ses-dueno' }))
+    resumeOnboarding.mockResolvedValue({ sessionId: 'ses-dueno', currentStep: 'complete', nextStep: null, draft: {} })
+
+    await renderYResolver()
+
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
+    expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/inmobiliaria')
+  })
+
+  it('si no se puede preguntar (back caído) es fail-open: al panel, cuyo candado vuelve a preguntar', async () => {
+    getOnboardingResumePoint.mockRejectedValue(new Error('sin red'))
+
+    await renderYResolver()
+
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
+  })
+})
 
 /**
  * «Propietario» está apagado desde el admin y aun así se alcanzó a ver un

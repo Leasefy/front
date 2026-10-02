@@ -1,13 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { LeasefyLogotype } from '@/components/brand'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
 import { RUTA_DEL_SELECTOR_DE_PERFIL } from '@/lib/auth/perfil-de-onboarding'
 import { sanitizeReturnUrl } from '@/lib/utils'
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
+import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Clock, Eye, Lightning, SealCheck, Shield, ShieldCheck } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -26,16 +25,6 @@ import { IntentoDeAvanzarContext } from './intento-de-avanzar'
 interface TenantOnboardingShellProps {
   children: React.ReactNode
 }
-
-/**
- * Una foto de marca por paso: la sala para «quién eres», el cojín de cerca
- * para «tu hogar ideal». Las dos son de casa, no de oficina: es el registro
- * de quien busca dónde vivir.
- */
-const FOTOS_POR_PASO = [
-  '/images/features/leasefy-brand-13.jpg',
-  '/images/features/leasefy-brand-16.jpg',
-]
 
 // Step-specific "why we need this" content
 const STEP_WHY_CONTENT = {
@@ -84,7 +73,7 @@ const STEP_WHY_CONTENT = {
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
   const returnUrl = useSearchParams().get('returnUrl')
-  const { isAuthenticated, user } = useAuth()
+  const { user } = useAuth()
   const { locale } = useI18n()
   const {
     currentStep,
@@ -143,7 +132,6 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       of: 'de',
       stepsLabel: 'Pasos de tu registro',
       goTo: 'Ir a',
-      skip: 'Saltar por ahora',
       back: 'Atrás',
       continue: 'Continuar',
       submit: 'Completar perfil',
@@ -166,7 +154,6 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       of: 'of',
       stepsLabel: 'Your sign-up steps',
       goTo: 'Go to',
-      skip: 'Skip for now',
       back: 'Back',
       continue: 'Continue',
       submit: 'Complete profile',
@@ -213,10 +200,6 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
     }
   }
 
-  const handleSkip = () => {
-    router.push(isAuthenticated ? '/inquilino' : '/')
-  }
-
   const pasos: PasoDeLaLista[] = TENANT_ONBOARDING_STEPS.map(({ id: step }) => {
     const isCompleted = completedSteps.includes(step)
     const isCurrent = step === currentStep
@@ -236,21 +219,17 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
   return (
     <OnboardingWizardLayout
-      marca={
-        <BrandHomeLink className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-          <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
-        </BrandHomeLink>
-      }
-      accionesDeCabecera={
-        <button
-          type="button"
-          onClick={handleSkip}
-          data-testid="saltar-onboarding-inquilino"
-          className="inline-flex h-9 items-center rounded-full px-4 text-body-sm font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        >
-          {t.skip}
-        </button>
-      }
+      /*
+       * Igual que el asistente de la inmobiliaria (Nico, 01-10-2026):
+       *  - El logo es marca, no un enlace: sin `marca`, el marco pone el
+       *    logotipo sin enlace. Antes era `BrandHomeLink` y llevaba al panel
+       *    del inquilino a mitad del registro, que lo devolvía acá.
+       *  - Sin «Saltar por ahora»: estos datos se llenan, no se saltan. Saltar
+       *    mandaba a `/inquilino` sin perfil y el guard lo regresaba al
+       *    asistente. La salida es `SalirDelRegistro`, que confirma y cierra
+       *    sesión; el borrador queda guardado para cuando vuelva.
+       */
+      accionesDeCabecera={<SalirDelRegistro />}
       pasos={<OnboardingStepList pasos={pasos} etiqueta={t.stepsLabel} nota={t.autoFloppyDisk} />}
       antesDelContenido={
         puedeCambiarDePerfil ? (
@@ -265,7 +244,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
           rotulo={whyContent.eyebrow}
           titulo={whyContent.title}
           razones={whyContent.points}
-          foto={FOTOS_POR_PASO[safeStepIndex]}
+          // Sin foto, como en el asistente de la inmobiliaria (Nico, 01-10-2026).
           pie={{ icono: ShieldCheck, texto: t.secure }}
         />
       }

@@ -14,6 +14,7 @@
  */
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDocumentoFaltante } from '@/lib/errores/documento-del-propietario';
+import { mensajeDeCaida } from '@/lib/conexion/servicio-no-disponible';
 
 /**
  * ¿Es un 403? Con status manda el status; sin él (errores viejos que no son
@@ -33,6 +34,12 @@ export function isPermissionError(err: unknown): boolean {
  * Si el error no trae nada legible, va `porDefecto`.
  */
 export function mensajeDelFallo(err: unknown, porDefecto: string): string {
+  // 01-10-2026: si se cayó una parte de Leasefy (503 `SERVICIO_NO_DISPONIBLE`)
+  // o Leasefy entero no respondió, se dice eso —qué se cayó y que reintentar en
+  // unos minutos sirve— y no el `message` crudo ni «Error 503». Ver
+  // `src/lib/conexion/servicio-no-disponible.ts`.
+  const caida = mensajeDeCaida(err);
+  if (caida) return caida;
   // T-0128: propietario sin documento / pagaré con datos incompletos.
   const delDocumento = mensajeDeDocumentoFaltante(err);
   if (delDocumento) return delDocumento;

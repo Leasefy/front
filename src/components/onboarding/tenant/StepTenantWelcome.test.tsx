@@ -134,3 +134,55 @@ describe('StepTenantWelcome — el aviso del nombre sale sólo cuando correspond
     expect(document.activeElement).toBe(nombre())
   })
 })
+
+// Nico, 01-10-2026: «¿el número de documento por qué no tiene tipo de
+// documento y número? ¿y el número por qué no tiene indicador y todas las
+// validaciones que tenemos en los números de celular en otros lados?»
+describe('StepTenantWelcome — documento con su tipo y celular con indicativo', () => {
+  function escribir(input: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+  const telefono = () => container.querySelector('#phone') as HTMLInputElement
+  const alertas = () => Array.from(container.querySelectorAll('[role="alert"]')).map((a) => a.textContent)
+
+  it('el documento trae su tipo (cédula por defecto) y el celular su indicativo +57', async () => {
+    await render()
+    const tipo = container.querySelector('[data-testid="tipo-de-documento-inquilino"]')
+    expect(tipo?.textContent).toContain('Cédula de ciudadanía')
+    expect(container.textContent).toContain('+57')
+    expect(telefono().getAttribute('placeholder')).toMatch(/^Ej: 3/)
+  })
+
+  it('el celular no acepta símbolos ni letras (el «!@#$%^&*» de la captura)', async () => {
+    await render()
+    escribir(telefono(), '!@#$.   %^&*')
+    expect(telefono().value).toBe('')
+    escribir(telefono(), '300 123 4567 99')
+    expect(telefono().value).toBe('3001234567')
+  })
+
+  it('al intentar continuar sin documento ni celular, cada campo dice qué falta', async () => {
+    await render(0)
+    await render(1)
+    expect(alertas()).toEqual(
+      expect.arrayContaining(['Escribe tu número de documento.', 'Ingresa tu celular.']),
+    )
+  })
+
+  it('una cédula corta o un celular que no empieza por 3 se dicen con las reglas de la plataforma', async () => {
+    await render(0)
+    escribir(rutInput(), '123')
+    escribir(telefono(), '2001234567')
+    await render(1)
+    expect(alertas()).toEqual(
+      expect.arrayContaining([
+        'Debe tener entre 6 y 10 dígitos.',
+        'Un celular en Colombia empieza por 3.',
+      ]),
+    )
+  })
+})

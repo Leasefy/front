@@ -11,6 +11,11 @@ import { act } from 'react'
 void React
 
 import { OnboardingProvisioningErrorBanner } from './OnboardingProvisioningErrorBanner'
+import {
+  avisarQueLeasefyNoResponde,
+  reiniciarEstadoDeConexion,
+} from '@/lib/conexion/estado-de-conexion'
+import { olvidarEstadoDeLosServicios } from '@/lib/conexion/servicio-no-disponible'
 
 let container: HTMLDivElement
 let root: Root
@@ -87,5 +92,87 @@ describe('<OnboardingProvisioningErrorBanner>', () => {
   it('sin detalle del fallo se comporta como antes: reintentar', () => {
     render(<OnboardingProvisioningErrorBanner onRetry={vi.fn()} />)
     expect(container.textContent).toContain('Reintentar')
+  })
+})
+
+/*
+ * 01-10-2026: el micro de agentes caído dejaba «No pudimos abrir tu registro»
+ * con «Código 503» abajo. Una caída tiene título humano, ningún código,
+ * «Reintentar» siempre visible y el aviso de equipo sólo si el back lo dice.
+ */
+describe('<OnboardingProvisioningErrorBanner> ante una caída', () => {
+  beforeEach(() => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    reiniciarEstadoDeConexion()
+    olvidarEstadoDeLosServicios()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    reiniciarEstadoDeConexion()
+  })
+
+  const asistenteCaido = {
+    mensaje: 'Lo que escribiste no se pierde. No es nada que hayas hecho; vuelve a intentar en unos minutos.',
+    reintentable: true,
+    status: 503,
+    caida: { tipo: 'servicio' as const, servicio: 'asistente' as const },
+  }
+
+  function stubServicios(equipoAvisado: boolean) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          revisadoEn: null,
+          servicios: [{ servicio: 'asistente', estado: 'caido', desde: null, equipoAvisado }],
+        }),
+      }),
+    )
+  }
+
+  it('nombra lo caído, sin «Código 503», y deja «Reintentar» a la vista', async () => {
+    stubServicios(false)
+    const onRetry = vi.fn()
+    await act(async () => {
+      root.render(<OnboardingProvisioningErrorBanner onRetry={onRetry} fallo={asistenteCaido} />)
+    })
+    const t = container.textContent ?? ''
+    expect(t).toContain('El asistente de Leasefy no está disponible en este momento')
+    expect(t).toContain('Lo que escribiste no se pierde.')
+    expect(t).not.toContain('Código')
+    expect(t).not.toContain('503')
+    expect(t).not.toContain('equipo')
+    const boton = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Reintentar'),
+    )
+    expect(boton).toBeTruthy()
+    act(() => {
+      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('dice que el equipo está avisado sólo si /health/servicios lo confirma', async () => {
+    stubServicios(true)
+    await act(async () => {
+      root.render(<OnboardingProvisioningErrorBanner onRetry={vi.fn()} fallo={asistenteCaido} />)
+    })
+    expect(container.textContent).toContain('Nuestro equipo ya está avisado.')
+  })
+
+  it('con Leasefy entero caído no repite la franja: «Esperando a Leasefy…»', async () => {
+    avisarQueLeasefyNoResponde()
+    await act(async () => {
+      root.render(
+        <OnboardingProvisioningErrorBanner
+          onRetry={vi.fn()}
+          fallo={{ mensaje: 'x', reintentable: true, status: 0, caida: { tipo: 'conexion' } }}
+        />,
+      )
+    })
+    expect(container.textContent).toContain('Esperando a Leasefy…')
+    expect(container.textContent).toContain('Reintentar')
+    expect(container.textContent).not.toContain('Código')
   })
 })

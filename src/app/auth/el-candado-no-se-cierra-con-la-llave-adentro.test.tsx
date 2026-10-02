@@ -31,6 +31,9 @@ vi.mock('@/lib/supabase/client', () => ({
   getSupabase: () => ({ auth: { mfa: supa } }),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => auth }));
+// El AuthProvider ya contestó y no hay token: la pregunta por HTTP no espera
+// (con el provider todavía sin contestar, espera el token hasta 8 s).
+vi.mock('@/lib/api/client', () => ({ getAccessToken: () => null, hayRespuestaDeSesion: () => true }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/components/settings/MfaSetupSection', () => ({

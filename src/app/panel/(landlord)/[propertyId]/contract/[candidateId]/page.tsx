@@ -9,7 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, Spinner } from '@/components/ui';
-import { CargaDeMarca } from '@/components/ui/carga-de-marca';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { toast } from '@/components/ui/toast';
 import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence';
 import { ContractPreview } from '@/components/contract/ContractPreview';
@@ -229,11 +229,8 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
 function ContractPageLoading() {
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-center py-24">
-          <CargaDeMarca tamano="lg" />
-        </div>
-      </div>
+      {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+      <EsqueletoDePagina variante="wizard" className="mx-auto max-w-7xl" />
     </div>
   );
 }
@@ -359,15 +356,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Loading state
   if (propertyLoading || candidateLoading) {
-    return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex items-center justify-center py-24">
-            <CargaDeMarca tamano="lg" />
-          </div>
-        </div>
-      </div>
-    );
+    return <ContractPageLoading />;
   }
 
   // Not found state

@@ -80,9 +80,15 @@ describe('Mi plata — cuatro estados (O1)', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
   });
 
-  it('cargando muestra la carga de pantalla completa (el logo) y con datos la vista', () => {
+  // Mi plata vive dentro del panel del propietario (menú + cabecera): su carga
+  // es el esqueleto de la página, no el logo (Nico, 01-10: «el logo sólo en
+  // cargas de pantalla completa»).
+  it('cargando muestra el esqueleto de la página (no el logo) y con datos la vista', () => {
     pintar({ isLoading: true });
-    expect(container.querySelector('[role="status"] picture')).toBeTruthy();
+    const carga = container.querySelector('[role="status"][aria-busy="true"]');
+    expect(carga).toBeTruthy();
+    expect(carga?.querySelector('[data-slot="skeleton"]')).toBeTruthy();
+    expect(carga?.querySelector('picture')).toBeNull();
     pintar({ portafolio: { totalCop: 1 } });
     expect(container.querySelector('[data-testid="mi-plata"]')).toBeTruthy();
   });

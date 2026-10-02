@@ -3,7 +3,8 @@ import {
   EVENTO_DECISION_DE_MIGRACION,
   guardarDecisionDeMigracion,
   leerDecisionDeMigracion,
-  recordatorioDeMigracionDescartado,
+  eligioMigrar,
+  marcarQueEligioMigrar,
 } from './decision-de-migracion'
 
 describe('decisión de migración', () => {
@@ -15,15 +16,20 @@ describe('decisión de migración', () => {
     expect(leerDecisionDeMigracion('a2')).toBeNull()
   })
 
-  it('sólo «no requiero migración» (o la ✕ del recordatorio) apaga el recordatorio del sidebar', () => {
-    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
+  it('🔴 «le dio Migrar» es una marca aparte: la ✕ del muro (que escribe «luego») no la borra', () => {
+    expect(eligioMigrar('a1')).toBe(false)
+    marcarQueEligioMigrar('a1')
     guardarDecisionDeMigracion('a1', 'luego')
-    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
-    guardarDecisionDeMigracion('a1', 'ahora')
-    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
-    guardarDecisionDeMigracion('a1', 'nunca')
-    expect(recordatorioDeMigracionDescartado('a1')).toBe(true)
-    expect(recordatorioDeMigracionDescartado('a2')).toBe(false)
+    expect(eligioMigrar('a1')).toBe(true)
+    expect(eligioMigrar('a2')).toBe(false)
+  })
+
+  it('marcar avisa con el mismo evento, para que la tarjeta del menú aparezca sin recargar', () => {
+    const oido = vi.fn()
+    window.addEventListener(EVENTO_DECISION_DE_MIGRACION, oido)
+    marcarQueEligioMigrar('a1')
+    expect(oido).toHaveBeenCalledTimes(1)
+    window.removeEventListener(EVENTO_DECISION_DE_MIGRACION, oido)
   })
 
   it('avisa con un evento para que el sidebar reaccione sin recargar', () => {
